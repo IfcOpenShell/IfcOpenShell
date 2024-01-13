@@ -56,7 +56,12 @@ class Pset(blenderbim.core.tool.Pset):
 
     @classmethod
     def is_pset_applicable(cls, element, pset_name):
-        return bool(pset_name in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), pset_only=True))
+        return bool(
+            pset_name
+            in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
+                element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
+            )
+        )
 
     @classmethod
     def is_pset_empty(cls, pset):
@@ -69,7 +74,7 @@ class Pset(blenderbim.core.tool.Pset):
 
     @classmethod
     def enable_pset_editing(cls, pset_id=None, pset_name=None, pset_type=None, obj=None, obj_type=None):
-        #TODO REFACTOR ONCE toll/CORE functions are available
+        # TODO REFACTOR ONCE toll/CORE functions are available
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=tool.Pset.get_pset_name(obj, obj_type), pset_type="PSET", obj=obj, obj_type=obj_type
         )
