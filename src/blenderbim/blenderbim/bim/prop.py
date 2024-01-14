@@ -489,6 +489,8 @@ class BIMFacet(PropertyGroup):
             ("<=", "lesser than or equal to", ""),
             (">", "greater than", ""),
             ("<", "less than", ""),
+            ("*=", "contains", ""),
+            ("!*=", "does not contain", ""),
         ],
     )
 
