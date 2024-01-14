@@ -144,7 +144,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 new2.pset = arg["pset"]
             if "comparison" in arg:
                 new2.comparison = arg["comparison"]
-######################################################################
+
     def facet(self, args):
         return args[0]
 
@@ -169,8 +169,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def property(self, args):
         pset, prop, comparison, value = args
-        #return {"type": "property", "pset": pset, "name": prop, "value": f"{comparison}{value}"}
-        return {"type": "property", "pset": pset, "name": prop, "comparison" : comparison, "value": f"{value}"}
+        return {"type": "property", "pset": pset, "name": prop, "comparison": comparison, "value": f"{value}"}
 
     def classification(self, args):
         comparison, value = args
@@ -189,19 +188,24 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
 
     def comparison(self, args):
-        if args[0].data == "equals":
-            return "="
-        elif args[0].data == "morethanequalto":
-            return ">="
-        elif args[0].data == "lessthanequalto":
-            return "<="
-        elif args[0].data == "morethan":
-            return ">"
-        elif args[0].data == "lessthan":
-            return "<"
+        if args[0].data == "not":
+            comparison = args[1].data
+            is_not = "!"
         else:
-            return "!="
-        #return "" if args[0].data == "equals" else "!="
+            comparison = args[0].data
+            is_not = ""
+
+        return (
+            is_not
+            + {
+                "equals": "=",
+                "morethanequalto": ">=",
+                "lessthanequalto": "<=",
+                "morethan": ">",
+                "lessthan": "<",
+                "contains": "*=",
+            }[comparison]
+        )
 
     def keys(self, args):
         return self.value(args)
