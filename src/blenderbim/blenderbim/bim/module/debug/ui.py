@@ -87,6 +87,13 @@ class BIM_PT_debug(Panel):
         row.prop(props, "display_type", text="")
         row.operator("bim.override_display_type").display = context.scene.BIMDebugProperties.display_type
 
+        layout.operator("bim.purge_unused_representations")
+
+        row = layout.row(align=True)
+        row.prop(context.scene.BIMDebugProperties, "ifc_class_purge", text="")
+        row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
+        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")
+
         if context.active_object and context.active_object.data:
             mprops = context.active_object.data.BIMMeshProperties
             row = layout.row()
