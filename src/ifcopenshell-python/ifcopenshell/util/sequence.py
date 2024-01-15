@@ -18,6 +18,7 @@
 
 import datetime
 import ifcopenshell.util.date
+from math import floor
 from functools import lru_cache
 
 
@@ -221,7 +222,7 @@ def is_work_time_applicable_to_day(work_time, day):
         return False  # TODO
     elif recurrence.RecurrenceType == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
-            return (day.weekday() + 1) in recurrence.WeekdayComponent and math.floor(
+            return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(
                 day.day / 7
             ) + 1 == recurrence["Position"]
         return False  # TODO
@@ -237,7 +238,7 @@ def is_work_time_applicable_to_day(work_time, day):
             return (
                 day.month in recurrence.MonthComponent
                 and (day.weekday() + 1) in recurrence.WeekdayComponent
-                and math.floor(day.day / 7) + 1 == recurrence.Position
+                and floor(day.day / 7) + 1 == recurrence.Position
             )
         return False  # TODO
 
