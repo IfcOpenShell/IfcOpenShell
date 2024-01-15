@@ -264,11 +264,12 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
         temp_po_dir.cleanup()
 
         # update translations in current Blender session
-        bpy.app.translations.unregister(ADDON_NAME)
-        addon_module = importlib.import_module(ADDON_NAME)
-        translations_module = getattr(addon_module, "translations")
-        importlib.reload(translations_module)
-        bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
+        if is_addon_loaded(ADDON_NAME):
+            bpy.app.translations.unregister(ADDON_NAME)
+            addon_module = importlib.import_module(ADDON_NAME)
+            translations_module = getattr(addon_module, "translations")
+            importlib.reload(translations_module)
+            bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
         self.report({"INFO"}, f"Addon's translation updated from .po in {BRANCHES_DIR}")
         return {"FINISHED"}
 
