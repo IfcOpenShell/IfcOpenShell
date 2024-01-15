@@ -510,8 +510,116 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
         "Will find all elements of class that have no inverse refernces and will remove them, use very carefully"
     )
     bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
 
     def _execute(self, context):
         props = context.scene.BIMDebugProperties
-        purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
-        self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
+        if props.ifc_class_purge:
+            purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
+            self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
+            tool.Ifc.get().write(self.filepath)
+            return
+
+        # A whitelisted class is a class that only contains simple data that
+        # has no meaning by itself (only has meaning when combined with other
+        # data). E.g. a colour by itself has no meaning so is whitelisted, but
+        # a material by itself may be part of your materials library.
+
+        # There are classes I don't know enough about to decide. Not whitelisting in case.
+        # IfcAlignmentParameterSegment
+        # IfcBoundaryCondition
+        # IfcStructuralConnectionCondition
+        # IfcStructuralLoad
+
+        whitelisted_classes = [
+            "IfcActorRole",
+            "IfcAddress",
+            "IfcApplication",
+            "IfcAppliedValue",
+            "IfcConnectionGeometry",
+            "IfcCoordinateReferenceSystem",
+            "IfcDerivedUnit",
+            "IfcDerivedUnitElement",
+            "IfcDimensionalExponents",
+            "IfcExternalReference",
+            "IfcGridAxis",
+            "IfcIrregularTimeSeriesValue",
+            "IfcLightDistributionData",
+            "IfcLightIntensityDistribution",
+            "IfcMeasureWithUnit",
+            "IfcMonetaryUnit",
+            "IfcNamedUnit",
+            "IfcObjectPlacement",
+            "IfcOrganization",  # Should be referenced as part of an actor
+            "IfcOwnerHistory",
+            "IfcPerson",  # Should be referenced as part of an actor
+            "IfcPersonAndOrganization",  # Should be referenced as part of an actor
+            "IfcPhysicalQuantity",
+            "IfcPresentationItem",
+            "IfcProductDefinitionShape",
+            "IfcPropertyAbstraction",
+            "IfcRecurrencePattern",
+            "IfcReference",
+            "IfcRepresentation",
+            "IfcRepresentationContext",
+            "IfcRepresentationItem",
+            "IfcRepresentationMap",
+            "IfcPropertyDefinition",  # A bit of a questionable one, and the odd one out from IfcRoot.
+            "IfcSchedulingTime",
+            "IfcShapeAspect",
+            "IfcTable",
+            "IfcTableColumn",
+            "IfcTableRow",
+            "IfcTextureCoordinateIndices",
+            "IfcTimePeriod",
+            "IfcTimeSeries",
+            "IfcTimeSeriesValue",
+            "IfcUnitAssignment",
+            "IfcVirtualGridIntersection",
+        ]
+
+        total_purged = 0
+        while True:
+            total_batches = 0
+            print("*" * 100)
+            total_batch_purged = 0
+            for ifc_class in whitelisted_classes:
+                total_class_purged = 0
+                try:
+                    elements = tool.Ifc.get().by_type(ifc_class)
+                except:
+                    continue  # Probably not in this schema?
+                to_purge = set()
+                for element in elements:
+                    try:
+                        if ifc_class == "IfcRepresentationItem" and element.is_a("IfcStyledItem") and element.Item:
+                            continue
+                    except:
+                        to_purge.add(element.id())  # It's invalid, definitely purge it.
+                    if tool.Ifc.get().get_total_inverses(element) == 0:
+                        to_purge.add(element.id())
+                for element_id in to_purge:
+                    try:
+                        element = tool.Ifc.get().by_id(element_id)
+                        ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), element)
+                        total_class_purged += 1
+                    except:
+                        continue
+                if total_class_purged > 0:
+                    total_batch_purged += total_class_purged
+                    print(f"Auto purged {total_class_purged} {ifc_class}")
+            if total_batch_purged > 0:
+                total_purged += total_batch_purged
+                print(f"Auto purged in batch: {total_batch_purged}")
+            total_batches += 1
+            if total_batch_purged == 0:
+                break
+            elif total_batches > 20:
+                print("Finished 20 batches. Manually stopping in case of infinite loop.")
+        self.report({"INFO"}, f"Auto purged {total_purged} orphaned elements")
+        tool.Ifc.get().write(self.filepath)
