@@ -16,18 +16,23 @@ you will need to categorise your 3D elements (such as "Wall", "Column",
 Creating a single object
 ------------------------
 
-In the **Properties** panel in the bottom right, activate the icon for the
-**Scene Properties** tab, and find the **IFC Project** subpanel. Click on
-**Create Project** to create a blank IFC project.
+In the **Properties** panel on the right, ensure the icon for the **Scene
+Properties** tab is active showing the **Project Overview**. Click on **Create
+Project** to create a blank IFC project.
 
 .. image:: images/create-project.png
 
-In the top right **Outliner** panel, you will see a hierarchy of spaces that has
-been automatically created for you.  This hierarchy is known is the **Spatial
-Tree**. The Camera, Cube, and Light come with a fresh new Blender session by
-default, and are not part of your IFC project.
+In the left **Outliner** panel, you will see a hierarchy of spaces that has
+been automatically created for you. This hierarchy is known is the **Spatial
+Tree**.
 
 .. image:: images/default-spatial-tree.png
+
+There are many ways to create objects. In practice, you should use an element
+type library, and we will see how to do this later. For now, we will only add a
+single element. In the **Add** menu, add a cube.
+
+.. image:: images/add-cube.png
 
 Any Blender object that you want to be part of IFC project must be converted
 into a IFC object by assigning a category. This category is known as the **IFC
@@ -39,11 +44,11 @@ Class**.
    <https://blenderbim.org/search-ifc-class.html>`__ to help choose an **IFC
    Class**!
 
-Select only the default Blender Cube (selected objects are highlighted in
-orange, careful not to select anything else!), switch to the **Object
-Properties** tab, and find the **IFC Class** panel. Let's pretend our Cube is a
-column, so select **IfcColumn** from the **Class** drop-down, and press **Assign
-IFC Class**.
+Select the cube (selected objects are highlighted in orange, careful not to
+select anything else!) and switch to the **Object Information** tab. Let's
+pretend our Cube is a column, so select **IfcElement** from the **Products**
+dropdown, **IfcColumn** from the **Class** drop-down, and press **Assign IFC
+Class**.
 
 .. image:: images/assign-class.png
 
@@ -53,13 +58,12 @@ IFC Class**.
    the shape of your object. You can have a monkey-shaped wall if you want!
 
 All IFC objects must also belong inside the **Spatial Tree**. In the
-**Outliner** panel, you can drag and drop your newly created **IfcColumn/Cube**
-inside the **IfcBuildingStorey/Ground Floor**. Wasn't that simple? 
+**Outliner** panel, you will see that your newly created **IfcColumn/Cube** has
+been automatically placed in **IfcBuildingStorey/My Storey**.
 
-.. image:: images/drag-drop-outliner-tree.png
+.. image:: images/outliner-cube.png
 
-Go back to the **Scene Properties** tab and to the **IFC Project** panel and
-press **Save Project**. Save your new IFC model somewhere on your computer.
+In the top left **File** menu, Save your new IFC model on your computer.
 
 .. image:: images/save-project.png
 
