@@ -21,13 +21,13 @@ bl_info = {
 context = bpy.context
 SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
 ADDON_NAME = "localization_test"
-BRANCHES_DIR = Path(context.preferences.filepaths.i18n_branches_directory)
-
 
 def is_addon_loaded(addon_name) -> bool:
     loaded_default, loaded_state = addon_utils.check(addon_name)
     return loaded_state
 
+def get_branches_directory():
+    return Path(context.preferences.filepaths.i18n_branches_directory)
 
 def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
     ignore_addon_dirs = ["libs"]
@@ -160,15 +160,52 @@ class SetupTranslationUI(bpy.types.Operator):
         if not is_addon_loaded("ui_translate"):
             raise Exception('"Manage UI translations" addon is not enabled')
 
+        addon_prefs = context.preferences.addons["ui_translate"].preferences
+
+        # check branches directory
+        branches_dir = get_branches_directory()
+        if not branches_dir.is_dir():
+            raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}). "
+                            "Setup I18n branches directory (Preferences > File Paths > Development > I18n Branches) "
+                            "to a folder containing (or that will contain) .po files.")
+
+        # check translations directory
+        i18n_dir = Path(addon_prefs.I18N_DIR)
+        # we won't really use the translations directory, we just need addon to stop complaining about it
+        if not i18n_dir.is_dir():
+            addon_prefs.I18N_DIR = str(branches_dir)
+            self.report({"INFO"}, f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"')
+
+        # check source directory
+        source_dir = Path(addon_prefs.SOURCE_DIR)
+        default_source_path = Path(bpy.app.binary_path).parent / '.'.join([str(i) for i in bpy.app.version[:2]])
+
+        if not source_dir.is_dir():
+            addon_prefs.SOURCE_DIR = str(default_source_path)
+            self.report({"INFO"}, f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"')
+            source_dir = default_source_path
+
+        source_locale_path = source_dir / "locale/po"
+        # Blender UI translations also expect "scripts/presets/keyconfig" to be present in SOURCE_DIR
+        # but default directory has it by default
+        if not source_locale_path.is_dir():
+            source_locale_path.mkdir(parents=True, exist_ok=True)
+            self.report({"INFO"}, f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.")
+
         from ui_translate.settings import settings as ui_translate_settings
+        from ui_translate.update_ui import UI_OT_i18n_updatetranslation_init_settings
 
         i18n_settings = context.window_manager.i18n_update_settings
         if not i18n_settings.is_init:
-            raise Exception(
-                "UI Translation settings are not initalized. Make sure the following directories exist:\n"
-                f" - {ui_translate_settings.WORK_DIR}\n"
-                f" - {ui_translate_settings.BLENDER_I18N_PO_DIR}\n"
-            )
+            # if it's not loaded yet, we'll try to reload it one more time
+            # since we default values we set up during the current operator might helped
+            UI_OT_i18n_updatetranslation_init_settings.execute_static(context, ui_translate_settings)
+            if not i18n_settings.is_init:
+                raise Exception(
+                    "UI Translation settings are not initalized. Make sure the following directories exist:\n"
+                    f" - {ui_translate_settings.WORK_DIR}\n"
+                    f" - {ui_translate_settings.BLENDER_I18N_PO_DIR}\n"
+                )
 
         # we monkey patch `bl_i18n_utils.bl_extract_messages.dump_py_messages`
         # as it's doesn't support ignoring folders
@@ -216,9 +253,7 @@ class ConvertTranslationsToPo(bpy.types.Operator):
 
     def execute(self, context):
         temp_po_dir = tempfile.TemporaryDirectory()
-
-        if not BRANCHES_DIR.is_dir():
-            raise Exception(f"I18n Branches directory doesn't exist: {BRANCHES_DIR.as_posix()}")
+        branches_dir = get_branches_directory()
 
         bpy.ops.ui.i18n_addon_translation_export(
             module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=False
@@ -230,12 +265,12 @@ class ConvertTranslationsToPo(bpy.types.Operator):
         # every .po file has a parent folder with the same name
         # so we rearrange the exported data that way
         for file in Path(temp_po_dir.name).iterdir():
-            branches_subdir = BRANCHES_DIR / file.stem
+            branches_subdir = branches_dir / file.stem
             branches_subdir.mkdir(exist_ok=True)
             file.replace(branches_subdir / file.name)
 
         temp_po_dir.cleanup()
-        self.report({"INFO"}, f"Translations .po files are saved to {BRANCHES_DIR}.")
+        self.report({"INFO"}, f"Translations .po files are saved to {branches_dir}.")
         return {"FINISHED"}
 
 
@@ -251,7 +286,9 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
     def execute(self, context):
         temp_po_dir = tempfile.TemporaryDirectory()
         temp_po_dir_path = Path(temp_po_dir.name)
-        for file in BRANCHES_DIR.glob("**/*"):
+        branches_dir = get_branches_directory()
+
+        for file in branches_dir.glob("**/*"):
             if file.suffix != ".po":
                 continue
             shutil.copy(file, temp_po_dir_path / file.name)
@@ -270,7 +307,7 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
             translations_module = getattr(addon_module, "translations")
             importlib.reload(translations_module)
             bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
-        self.report({"INFO"}, f"Addon's translation updated from .po in {BRANCHES_DIR}")
+        self.report({"INFO"}, f"Addon's translation updated from .po in {branches_dir}")
         return {"FINISHED"}
 
 
@@ -306,7 +343,7 @@ class OpenPoDirectory(bpy.types.Operator):
     def execute(self, context):
         import webbrowser
 
-        webbrowser.open(BRANCHES_DIR)
+        webbrowser.open(get_branches_directory())
         return {"FINISHED"}
 
 
