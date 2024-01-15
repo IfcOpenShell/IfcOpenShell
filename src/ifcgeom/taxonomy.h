@@ -759,6 +759,7 @@ typedef item const* ptr;
 				DECLARE_PTR(loop)
 
 				boost::optional<bool> external, closed;
+				boost::optional<taxonomy::piecewise_function::ptr> pwf;
 
 				bool is_polyhedron() const {
 					for (auto& e : children) {
@@ -1130,25 +1131,30 @@ typedef item const* ptr;
                 loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
                     auto loop = taxonomy::dcast<taxonomy::loop>(item);
                     if (loop) {
-                        pwf_ = taxonomy::make<taxonomy::piecewise_function>();
-                        for (auto& edge : loop->children) {
-                            // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
-                            if (edge->basis) {
-                                Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
-                            }
+                        if (loop->pwf.is_initialized()) {
+                            pwf_ = loop->pwf;
+                        } else {
+                            pwf_ = taxonomy::make<taxonomy::piecewise_function>();
+                            for (auto& edge : loop->children) {
+                                // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+                                if (edge->basis) {
+                                    Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+                                }
 
-                            const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
-                            const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
-                            Eigen::Vector3d v = e - s;
-                            auto l = v.norm(); // the norm of a vector is a measure of its length
-                            v.normalize();     // normalize the vector so that it is a unit direction vector
-                            std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-                                Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-                                auto Y = axis.cross(refDirection).normalized();
-                                axis = refDirection.cross(Y).normalized();
-                                return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
-                            };
-                            (*pwf_)->spans.emplace_back(l, fn);
+                                const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
+                                const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
+                                Eigen::Vector3d v = e - s;
+                                auto l = v.norm(); // the norm of a vector is a measure of its length
+                                v.normalize();     // normalize the vector so that it is a unit direction vector
+                                std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+                                    Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+                                    auto Y = axis.cross(refDirection).normalized();
+                                    axis = refDirection.cross(Y).normalized();
+                                    return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
+                                };
+                                (*pwf_)->spans.emplace_back(l, fn);
+                            }
+                            loop->pwf = pwf_;
                         }
                     }
                 }
