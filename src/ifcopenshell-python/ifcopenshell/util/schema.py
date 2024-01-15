@@ -151,8 +151,11 @@ class Migrator:
         self.class_4_to_2x3 = json.load(open(os.path.join(cwd, "class_4_to_2x3.json"), "r"))
         self.class_2x3_to_4 = json.load(open(os.path.join(cwd, "class_2x3_to_4.json"), "r"))
 
-        # IFC4 classes, and their IFC4 attribute : IFC2X3 attributes
-        self.attribute_4_to_2x3 = json.load(open(os.path.join(cwd, "attribute_4_to_2x3.json"), "r"))
+        # IFC classes, and their IFC attributes mapping
+        self.attributes_mapping = {
+            ("IFC4", "IFC2X3"): json.load(open(os.path.join(cwd, "attribute_4_to_2x3.json"), "r")),
+            ("IFC4X3", "IFC4"): json.load(open(os.path.join(cwd, "attribute_4x3_to_4.json"), "r")),
+        }
 
         self.default_values = {
             "ChangeAction": "NOCHANGE",
@@ -241,47 +244,62 @@ class Migrator:
             self.migrate_attribute(attribute, element, new_file, new_element, new_element_schema)
         return new_element
 
-    def migrate_attribute(self, attribute, element, new_file, new_element, new_element_schema):
+    def find_equivalent_attribute(self, new_element, attribute, element, attributes_mapping, reverse_mapping=False):
+        # print("Searching for an equivalent", element, new_element, attribute.name())
+        try:
+            if reverse_mapping:
+                equivalent_map = attributes_mapping[new_element.is_a()]
+                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
+            else:
+                equivalent = attributes_mapping[new_element.is_a()][attribute.name()]
+            if hasattr(element, equivalent):
+                # print("Equivalent found", equivalent)
+                value = getattr(element, equivalent)
+            else:
+                return
+        except Exception as e:
+            print(
+                "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
+                    attribute.name(), element, new_element
+                )
+            )
+            raise e
+
+    def migrate_attribute(
+        self, attribute, element, new_file: ifcopenshell.file, new_element, new_element_schema
+    ):
+        # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.wrapped_data.file
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
             # print("Attribute names matched", value)
-        elif new_file.schema == "IFC2X3":
+
+        elif new_file.schema == "IFC2X3" and old_file.schema == "IFC4":
             # IFC4 to IFC2X3: We know the IFC2X3 attribute name, but not its IFC4 equivalent
-            # print("Searching for an equivalent", new_element, attribute.name())
             try:
-                equivalent_map = self.attribute_4_to_2x3[new_element.is_a()]
-                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
-                if hasattr(element, equivalent):
-                    # print("Equivalent found", equivalent)
-                    value = getattr(element, equivalent)
-                else:
-                    return
-            except:
-                print(
-                    "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
-                        attribute.name(), element, new_element
-                    )
+                value = self.find_equivalent_attribute(
+                    new_element, attribute, element, self.attributes_mapping[("IFC4", "IFC2X3")], reverse_mapping=True
                 )
-                return  # We tried our best
-        elif new_file.schema == "IFC4":
+            except:  # We tried our best
+                return
+
+        elif new_file.schema == "IFC4" and old_file.schema == "IFC2X3":
             # IFC2X3 to IFC4: We know the IFC4 attribute name, but not its IFC2X3 equivalent
-            # print("Searching for an equivalent", element, new_element, attribute.name())
             try:
-                equivalent = self.attribute_4_to_2x3[new_element.is_a()][attribute.name()]
-                # print("Searching for equivalent", equivalent)
-                if hasattr(element, equivalent):
-                    value = getattr(element, equivalent)
-                else:
-                    return
-            except:
-                print(
-                    "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
-                        attribute.name(), element, new_element
-                    )
+                value = self.find_equivalent_attribute(
+                    new_element, attribute, element, self.attributes_mapping[("IFC4", "IFC2X3")]
                 )
-                return  # We tried our best
+            except:  # We tried our best
+                return
+
+        elif new_file.schema == "IFC4X3" and old_file.schema == "IFC4":
+            try:
+                value = self.find_equivalent_attribute(
+                    new_element, attribute, element, self.attributes_mapping[("IFC4X3", "IFC4")]
+                )
+            except:  # We tried our best
+                return
 
         try:
             value
