@@ -24,7 +24,7 @@ ADDON_NAME = "localization_test"
 BRANCHES_DIR = Path(context.preferences.filepaths.i18n_branches_directory)
 
 
-def is_addon_loaded(addon_name):
+def is_addon_loaded(addon_name) -> bool:
     loaded_default, loaded_state = addon_utils.check(addon_name)
     return loaded_state
 
@@ -183,9 +183,6 @@ class SetupTranslationUI(bpy.types.Operator):
 
         context.scene.translation_ui_is_loaded = True
 
-        # TODO: restart blender
-        # https://blender.stackexchange.com/questions/282431/restarting-blender-with-a-script
-
         return {"FINISHED"}
 
 
@@ -276,6 +273,30 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DisableEnableAddon(bpy.types.Operator):
+    bl_idname = "bim.disable_enable_addon"
+    bl_label = "Disable/Enable addon"
+    bl_description = "Will enable addon if it's disabled, will disable it and restart Blender otherwise"
+    bl_options = set()
+
+    def execute(self, context):
+        if not is_addon_loaded(ADDON_NAME):
+            addon_utils.enable("blenderbim", default_set=True)
+            return {"FINISHED"}
+
+        import os
+        import subprocess
+
+        addon_utils.disable("blenderbim", default_set=True)
+
+        blender_exe = bpy.app.binary_path
+        head, tail = os.path.split(blender_exe)
+        blender_launcher = os.path.join(head, "blender-launcher.exe")
+        subprocess.run([blender_launcher, "-con", "--python-expr", "import bpy; bpy.ops.wm.recover_last_session()"])
+        bpy.ops.wm.quit_blender()
+        return {"FINISHED"}
+
+
 class BBIM_PT_translations(bpy.types.Panel):
     bl_label = "BlenderBIM Translations"
     bl_idname = "BBIM_PT_translations"
@@ -290,6 +311,11 @@ class BBIM_PT_translations(bpy.types.Panel):
             return
 
         layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
+        addon_enabled = is_addon_loaded(ADDON_NAME)
+        layout.operator("bim.disable_enable_addon",
+                        icon="QUIT" if addon_enabled else "PLUGIN",
+                        text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon")
+        layout.separator()
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
         layout.operator("bim.update_translations_from_po", icon="IMPORT")
 
@@ -299,6 +325,7 @@ classes = (
     ConvertTranslationsToPo,
     UpdateTranslationsFromPo,
     SetupTranslationUI,
+    DisableEnableAddon,
     BBIM_PT_translations,
 )
 
