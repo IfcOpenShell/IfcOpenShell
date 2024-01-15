@@ -30,8 +30,6 @@ class Usecase:
         called NetSideArea with a area value of "4.2". Quantities are grouped
         into quantity sets, so that related quantities are grouped together.
 
-        Quantities can only be assigned to occurrences, not types.
-
         Quantities are similar to, but different from properties in that they
         may store a method of measurement or formula. Quantities may also have
         parametric relationships to other calculated values, such as cost
