@@ -213,7 +213,7 @@ class CreateAllShapes(bpy.types.Operator):
         settings_2d.set(settings_2d.INCLUDE_CURVES, True)
         failures = []
         excludes = ()  # For the developer to debug with
-        for i, element in enumerate(elements):
+        for i, element in enumerate(elements, 1):
             if element.GlobalId in excludes:
                 continue
             print(f"{i}/{total}:", element)
