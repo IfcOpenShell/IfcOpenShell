@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import json
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
