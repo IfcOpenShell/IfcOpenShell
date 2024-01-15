@@ -243,6 +243,7 @@ class Migrator:
 
     def migrate_attribute(self, attribute, element, new_file, new_element, new_element_schema):
         # print("Migrating attribute", element, new_element, attribute.name())
+        old_file = element.wrapped_data.file
         if hasattr(element, attribute.name()):
             value = getattr(element, attribute.name())
             # print("Attribute names matched", value)
@@ -281,6 +282,16 @@ class Migrator:
                     )
                 )
                 return  # We tried our best
+
+        try:
+            value
+        except UnboundLocalError:
+            print(
+                f"Couldn't match attribute {attribute.name()} by name to migrate from {element} "
+                f"to {new_element} and there is no special mapping to handle migration "
+                f"from {old_file.schema} -> {new_file.schema}"
+            )
+            return
 
         # print("Continuing migration of {} to migrate from {} to {}".format(attribute.name(), element, new_element))
         if value is None and not attribute.optional():
