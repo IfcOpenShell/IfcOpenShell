@@ -54,16 +54,16 @@ def reassign_class(ifc_file, element, new_class):
     Attempts to change the class (entity name) of `element` to `new_class` by
     removing element and recreating a similar instance of type `new_class`
     with the same id.
-    
+
     In certain cases it may affect the structure of inversely related instances:
     - Multiple occurrences of reassigned instance within the same aggregate
       (such as start and end-point of polyline)
     - Occurrences of reassigned instance within an ordered aggregate
       (such as IfcRelNests)
-    
+
     It's unlikely that this affects real-world usage of this function.
     """
-    
+
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
     try:
         declaration = schema.declaration_by_name(new_class)
@@ -132,7 +132,7 @@ class BatchReassignClass:
         for inverse, replacements in self.replacements.items():
             for index, element_map in replacements.items():
                 value = inverse[index]
-                new = inverse.walk(lambda x : True, lambda v: element_map.get(v, v), value)
+                new = inverse.walk(lambda x: True, lambda v: element_map.get(v, v), value)
                 if value != new:
                     inverse[index] = new
 
