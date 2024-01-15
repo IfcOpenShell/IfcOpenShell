@@ -297,6 +297,18 @@ class DisableEnableAddon(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OpenPoDirectory(bpy.types.Operator):
+    bl_idname = "bim.open_po_directory"
+    bl_label = "Open Directory With .po Files"
+    bl_options = set()
+
+    def execute(self, context):
+        import webbrowser
+
+        webbrowser.open(BRANCHES_DIR)
+        return {"FINISHED"}
+
+
 class BBIM_PT_translations(bpy.types.Panel):
     bl_label = "BlenderBIM Translations"
     bl_idname = "BBIM_PT_translations"
@@ -316,6 +328,7 @@ class BBIM_PT_translations(bpy.types.Panel):
                         icon="QUIT" if addon_enabled else "PLUGIN",
                         text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon")
         layout.separator()
+        layout.operator("bim.open_po_directory", icon="FILE_FOLDER")
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
         layout.operator("bim.update_translations_from_po", icon="IMPORT")
 
@@ -326,6 +339,7 @@ classes = (
     UpdateTranslationsFromPo,
     SetupTranslationUI,
     DisableEnableAddon,
+    OpenPoDirectory,
     BBIM_PT_translations,
 )
 
