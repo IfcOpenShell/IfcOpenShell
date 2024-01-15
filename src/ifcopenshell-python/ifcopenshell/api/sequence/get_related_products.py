@@ -70,7 +70,7 @@ class Usecase:
         elif self.settings["relating_product"]:
             for reference in self.settings["relating_product"].ReferencedBy:
                 if reference.is_a("IfcRelAssignsToProduct"):
-                    related_object = referenced_by.RelatedObjects[0]
+                    related_object = reference.RelatedObjects[0]
         if related_object:
             assignments = self.settings["related_object"].HasAssignments
             for assignment in assignments:
