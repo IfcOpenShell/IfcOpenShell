@@ -139,7 +139,7 @@ class entity_instance(object):
         # ugh circular imports, name collisions
         from . import file
 
-        return file.file.from_pointer(self.wrapped_data.file_pointer())
+        return file.from_pointer(self.wrapped_data.file_pointer())
 
     def __getattr__(self, name):
         INVALID, FORWARD, INVERSE = range(3)
