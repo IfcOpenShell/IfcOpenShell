@@ -256,7 +256,7 @@ class ConvertTranslationsToPo(bpy.types.Operator):
         branches_dir = get_branches_directory()
 
         bpy.ops.ui.i18n_addon_translation_export(
-            module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=False
+            module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=True
         )
 
         # NOTE: we use I18n branches directory
