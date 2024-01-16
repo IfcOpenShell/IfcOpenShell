@@ -20,7 +20,7 @@ bl_info = {
 
 context = bpy.context
 SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
-ADDON_NAME = "localization_test"
+ADDON_NAME = "blenderbim"
 
 def is_addon_loaded(addon_name) -> bool:
     loaded_default, loaded_state = addon_utils.check(addon_name)
