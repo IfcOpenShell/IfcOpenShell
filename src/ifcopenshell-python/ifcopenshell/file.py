@@ -252,7 +252,11 @@ class file(object):
         self.future = []
         self.transaction = None
 
-        file_dict[self.file_pointer()] = self
+        import weakref
+        file_dict[self.file_pointer()] = weakref.ref(self)
+        
+    def __del__(self):
+        del file_dict[self.file_pointer()]
 
     def set_history_size(self, size):
         self.history_size = size
@@ -574,4 +578,4 @@ class file(object):
 
     @staticmethod
     def from_pointer(v):
-        return file_dict.get(v)
+        return file_dict.get(v)()
