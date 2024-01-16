@@ -360,14 +360,16 @@ class BBIM_PT_translations(bpy.types.Panel):
             layout.operator("bim.setup_translation_ui")
             return
 
+        layout.label(text="Developer UI:")
         layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
         addon_enabled = is_addon_loaded(ADDON_NAME)
         layout.operator("bim.disable_enable_addon",
                         icon="QUIT" if addon_enabled else "PLUGIN",
                         text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon")
-        layout.separator()
-        layout.operator("bim.open_po_directory", icon="FILE_FOLDER")
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
+        layout.separator()
+        layout.label(text="Translator UI:")
+        layout.operator("bim.open_po_directory", icon="FILE_FOLDER")
         layout.operator("bim.update_translations_from_po", icon="IMPORT")
 
 
