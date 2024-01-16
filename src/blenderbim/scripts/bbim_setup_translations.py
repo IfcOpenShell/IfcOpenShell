@@ -162,9 +162,12 @@ class SetupTranslationUI(bpy.types.Operator):
 
         addon_prefs = context.preferences.addons["ui_translate"].preferences
 
+        def is_valid_path(path: Path):
+            return path.is_dir() and path.is_absolute()
+
         # check branches directory
         branches_dir = get_branches_directory()
-        if not branches_dir.is_dir():
+        if not is_valid_path(branches_dir):
             raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}). "
                             "Setup I18n branches directory (Preferences > File Paths > Development > I18n Branches) "
                             "to a folder containing (or that will contain) .po files.")
@@ -172,7 +175,7 @@ class SetupTranslationUI(bpy.types.Operator):
         # check translations directory
         i18n_dir = Path(addon_prefs.I18N_DIR)
         # we won't really use the translations directory, we just need addon to stop complaining about it
-        if not i18n_dir.is_dir():
+        if not is_valid_path(i18n_dir):
             addon_prefs.I18N_DIR = str(branches_dir)
             self.report({"INFO"}, f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"')
 
@@ -180,7 +183,7 @@ class SetupTranslationUI(bpy.types.Operator):
         source_dir = Path(addon_prefs.SOURCE_DIR)
         default_source_path = Path(bpy.app.binary_path).parent / '.'.join([str(i) for i in bpy.app.version[:2]])
 
-        if not source_dir.is_dir():
+        if not is_valid_path(source_dir):
             addon_prefs.SOURCE_DIR = str(default_source_path)
             self.report({"INFO"}, f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"')
             source_dir = default_source_path
