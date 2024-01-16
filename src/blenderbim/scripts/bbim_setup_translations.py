@@ -169,7 +169,7 @@ class SetupTranslationUI(bpy.types.Operator):
         branches_dir = get_branches_directory()
         if not is_valid_path(branches_dir):
             raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
-                            "Setup I18n branches directory (Preferences > File Paths > Development > I18n Branches) "
+                            "Setup I18n branches directory below (or in Preferences > File Paths > Development > I18n Branches) "
                             "to a folder containing (or that will contain) .po files.")
 
         # check translations directory
@@ -338,18 +338,6 @@ class DisableEnableAddon(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OpenPoDirectory(bpy.types.Operator):
-    bl_idname = "bim.open_po_directory"
-    bl_label = "Open Directory With .po Files"
-    bl_options = set()
-
-    def execute(self, context):
-        import webbrowser
-
-        webbrowser.open(get_branches_directory())
-        return {"FINISHED"}
-
-
 class BBIM_PT_translations(bpy.types.Panel):
     bl_label = "BlenderBIM Translations"
     bl_idname = "BBIM_PT_translations"
@@ -361,6 +349,7 @@ class BBIM_PT_translations(bpy.types.Panel):
         layout = self.layout
         if not context.scene.translation_ui_is_loaded:
             layout.operator("bim.setup_translation_ui")
+            layout.prop(context.preferences.filepaths, "i18n_branches_directory", text="I18n branches directory")
             return
 
         layout.label(text="Developer UI:")
@@ -370,9 +359,9 @@ class BBIM_PT_translations(bpy.types.Panel):
                         icon="QUIT" if addon_enabled else "PLUGIN",
                         text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon")
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
-        layout.separator()
+        layout.separator(factor=3)
         layout.label(text="Translator UI:")
-        layout.operator("bim.open_po_directory", icon="FILE_FOLDER")
+        layout.prop(context.preferences.filepaths, "i18n_branches_directory")
         layout.operator("bim.update_translations_from_po", icon="IMPORT")
 
 
@@ -382,7 +371,6 @@ classes = (
     UpdateTranslationsFromPo,
     SetupTranslationUI,
     DisableEnableAddon,
-    OpenPoDirectory,
     BBIM_PT_translations,
 )
 
