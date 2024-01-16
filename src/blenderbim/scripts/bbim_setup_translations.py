@@ -177,7 +177,8 @@ class SetupTranslationUI(bpy.types.Operator):
 
     def execute(self, context):
         if not is_addon_loaded("ui_translate"):
-            raise Exception('"Manage UI translations" addon is not enabled')
+            addon_utils.enable("ui_translate", default_set=True)
+            self.report({"INFO"}, '"Manage UI translations" addon was not enabled, it\'s enabled now.')
 
         addon_prefs = context.preferences.addons["ui_translate"].preferences
 
