@@ -252,8 +252,7 @@ class file(object):
         self.future = []
         self.transaction = None
 
-        # Temporarily commented out until bot builds are available and tested to prevent user bugs.
-        # file_dict[self.file_pointer()] = self
+        file_dict[self.file_pointer()] = self
 
     def set_history_size(self, size):
         self.history_size = size
