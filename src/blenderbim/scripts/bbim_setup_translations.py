@@ -168,7 +168,7 @@ class SetupTranslationUI(bpy.types.Operator):
         # check branches directory
         branches_dir = get_branches_directory()
         if not is_valid_path(branches_dir):
-            raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}). "
+            raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
                             "Setup I18n branches directory (Preferences > File Paths > Development > I18n Branches) "
                             "to a folder containing (or that will contain) .po files.")
 
