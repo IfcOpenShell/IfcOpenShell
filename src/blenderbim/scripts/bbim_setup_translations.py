@@ -21,6 +21,7 @@ bl_info = {
 context = bpy.context
 SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
 ADDON_NAME = "blenderbim"
+TRANSLATION_UI_IS_LOADED = False
 
 def is_addon_loaded(addon_name) -> bool:
     loaded_default, loaded_state = addon_utils.check(addon_name)
@@ -221,7 +222,8 @@ class SetupTranslationUI(bpy.types.Operator):
         for lang in i18n_settings.langs:
             lang.use = lang.uid in SUPPORT_LANGUAGES
 
-        context.scene.translation_ui_is_loaded = True
+        global TRANSLATION_UI_IS_LOADED
+        TRANSLATION_UI_IS_LOADED = True
 
         return {"FINISHED"}
 
@@ -347,7 +349,7 @@ class BBIM_PT_translations(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        if not context.scene.translation_ui_is_loaded:
+        if not TRANSLATION_UI_IS_LOADED:
             layout.operator("bim.setup_translation_ui")
             layout.prop(context.preferences.filepaths, "i18n_branches_directory", text="I18n branches directory")
             return
@@ -378,10 +380,8 @@ classes = (
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    bpy.types.Scene.translation_ui_is_loaded = bpy.props.BoolProperty(default=False)
 
 
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
-    del bpy.types.Scene.translation_ui_is_loaded
