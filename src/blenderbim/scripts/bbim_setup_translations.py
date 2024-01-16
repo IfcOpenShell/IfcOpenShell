@@ -23,12 +23,15 @@ SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
 ADDON_NAME = "blenderbim"
 TRANSLATION_UI_IS_LOADED = False
 
+
 def is_addon_loaded(addon_name) -> bool:
     loaded_default, loaded_state = addon_utils.check(addon_name)
     return loaded_state
 
+
 def get_branches_directory():
     return Path(context.preferences.filepaths.i18n_branches_directory)
+
 
 def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
     ignore_addon_dirs = ["libs"]
@@ -169,24 +172,32 @@ class SetupTranslationUI(bpy.types.Operator):
         # check branches directory
         branches_dir = get_branches_directory()
         if not is_valid_path(branches_dir):
-            raise Exception(f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
-                            "Setup I18n branches directory below (or in Preferences > File Paths > Development > I18n Branches) "
-                            "to a folder containing (or that will contain) .po files.")
+            raise Exception(
+                f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
+                "Setup I18n branches directory below (or in Preferences > File Paths > Development > I18n Branches) "
+                "to a folder containing (or that will contain) .po files."
+            )
 
         # check translations directory
         i18n_dir = Path(addon_prefs.I18N_DIR)
         # we won't really use the translations directory, we just need addon to stop complaining about it
         if not is_valid_path(i18n_dir):
             addon_prefs.I18N_DIR = str(branches_dir)
-            self.report({"INFO"}, f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"')
+            self.report(
+                {"INFO"},
+                f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"',
+            )
 
         # check source directory
         source_dir = Path(addon_prefs.SOURCE_DIR)
-        default_source_path = Path(bpy.app.binary_path).parent / '.'.join([str(i) for i in bpy.app.version[:2]])
+        default_source_path = Path(bpy.app.binary_path).parent / ".".join([str(i) for i in bpy.app.version[:2]])
 
         if not is_valid_path(source_dir):
             addon_prefs.SOURCE_DIR = str(default_source_path)
-            self.report({"INFO"}, f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"')
+            self.report(
+                {"INFO"},
+                f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"',
+            )
             source_dir = default_source_path
 
         source_locale_path = source_dir / "locale/po"
@@ -194,7 +205,10 @@ class SetupTranslationUI(bpy.types.Operator):
         # but default directory has it by default
         if not source_locale_path.is_dir():
             source_locale_path.mkdir(parents=True, exist_ok=True)
-            self.report({"INFO"}, f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.")
+            self.report(
+                {"INFO"},
+                f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
+            )
 
         from ui_translate.settings import settings as ui_translate_settings
         from ui_translate.update_ui import UI_OT_i18n_updatetranslation_init_settings
@@ -357,9 +371,11 @@ class BBIM_PT_translations(bpy.types.Panel):
         layout.label(text="Developer UI:")
         layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
         addon_enabled = is_addon_loaded(ADDON_NAME)
-        layout.operator("bim.disable_enable_addon",
-                        icon="QUIT" if addon_enabled else "PLUGIN",
-                        text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon")
+        layout.operator(
+            "bim.disable_enable_addon",
+            icon="QUIT" if addon_enabled else "PLUGIN",
+            text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon",
+        )
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
         layout.separator(factor=3)
         layout.label(text="Translator UI:")
