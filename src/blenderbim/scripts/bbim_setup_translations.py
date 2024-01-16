@@ -4,6 +4,7 @@ import shutil
 import tempfile
 import importlib
 import os
+import sys
 import bl_i18n_utils
 from pathlib import Path
 
@@ -31,6 +32,20 @@ def is_addon_loaded(addon_name) -> bool:
 
 def get_branches_directory():
     return Path(context.preferences.filepaths.i18n_branches_directory)
+
+
+def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.TemporaryDirectory):
+    """I18n directory also has a bit different format then `ui_translate.export/import`,
+    every .po file has a parent folder with the same name.
+    So we rearrange the data that way"""
+    # NOTE: TemporaryDirectory is cleared automatically as variable goes out of scope
+    # so we expect it as an argument so it won't get cleared right away
+
+    temp_po_dir_path = Path(temp_directory.name)
+    for file in po_dir_path.glob("**/*"):
+        if file.suffix != ".po":
+            continue
+        shutil.copy(file, temp_po_dir_path / file.name)
 
 
 def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
@@ -304,20 +319,13 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
 
     def execute(self, context):
         temp_po_dir = tempfile.TemporaryDirectory()
-        temp_po_dir_path = Path(temp_po_dir.name)
         branches_dir = get_branches_directory()
-
-        for file in branches_dir.glob("**/*"):
-            if file.suffix != ".po":
-                continue
-            shutil.copy(file, temp_po_dir_path / file.name)
+        rearrange_files_for_po_import(branches_dir, temp_po_dir)
 
         bpy.ops.ui.i18n_addon_translation_import(
             module_name=ADDON_NAME,
             directory=temp_po_dir.name,
         )
-
-        temp_po_dir.cleanup()
 
         # update translations in current Blender session
         if is_addon_loaded(ADDON_NAME):
@@ -401,3 +409,40 @@ def register():
 def unregister():
     for cls in classes:
         bpy.utils.unregister_class(cls)
+
+
+def update_translations_from_po(po_directory: Path, translations_module: Path):
+    from bl_i18n_utils.settings import I18nSettings
+    import bl_i18n_utils.utils as utils_i18n
+
+    temp_po_dir = tempfile.TemporaryDirectory()
+    rearrange_files_for_po_import(po_directory, temp_po_dir)
+
+    settings = I18nSettings()
+
+    trans = utils_i18n.I18n(kind="PY", src=translations_module.as_posix(), settings=settings)
+    po_files = dict(utils_i18n.get_po_files_from_dir(temp_po_dir.name))
+
+    for po_uid, po_filepath in po_files.items():
+        po_uid = po_uid[0]
+        msgs = utils_i18n.I18nMessages(uid=po_uid, kind="PO", key=po_uid, src=po_filepath, settings=settings)
+        if po_uid in trans.trans:
+            trans.trans[po_uid].merge(msgs, replace=True)
+        else:
+            trans.trans[po_uid] = msgs
+
+    trans.write(kind="PY")
+
+
+if __name__ == "__main__":
+    # Example:
+    # py src/blenderbim/scripts/bbim_setup_translations.py -i "C:/blenderbim-translations" -o "C:/Blender/4.0/scripts/addons/blenderbim/translations.py"
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Converts .po files to translations.py")
+    parser.add_argument("-i", "--input", type=str, required=True, help="Directory with .po files")
+    parser.add_argument(
+        "-o", "--output", type=str, required=True, help="translations.py module location (file may not exist yet)"
+    )
+    args = parser.parse_args()
+    update_translations_from_po(po_directory=Path(args.input), translations_module=Path(args.output))
