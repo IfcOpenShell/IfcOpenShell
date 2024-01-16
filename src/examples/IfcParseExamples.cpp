@@ -121,7 +121,7 @@ void process_pset(element_properties& props, const T* inst) {
 		auto ps = pset->HasProperties();
 		for (auto it = ps->begin(); it != ps->end(); ++it) {
 			auto& p = *it;
-			if (auto singleval = p->as<typename Schema::IfcPropertySingleValue>()) {
+			if (auto singleval = p->template as<typename Schema::IfcPropertySingleValue>()) {
 				std::string propname, propvalue;
 				if constexpr (is_ifc4_or_higher<Schema>::value) {
 					if (!singleval->Name()) {
@@ -135,26 +135,26 @@ void process_pset(element_properties& props, const T* inst) {
 				if (!singleval->NominalValue()) {
 					propvalue = "-";
 				} else {
-					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->as<IfcUtil::IfcBaseClass>()->data().getArgument(0));
+					props[*pset->Name()][propname] = format_string(singleval->NominalValue()->template as<IfcUtil::IfcBaseClass>()->data().getArgument(0));
 				}
 			}
 		}
 	}
-	if (auto qset = inst->as<Schema::IfcElementQuantity>()) {
+	if (auto qset = inst->template as<Schema::IfcElementQuantity>()) {
 		if (!qset->Name()) {
 			return;
 		}
 		auto qs = qset->Quantities();
 		for (auto it = qs->begin(); it != qs->end(); ++it) {
 			auto& q = *it;
-			if (q->as<typename Schema::IfcPhysicalSimpleQuantity>() && q->data().getArgument(3)->type() == IfcUtil::Argument_DOUBLE) {
+			if (q->template as<typename Schema::IfcPhysicalSimpleQuantity>() && q->data().getArgument(3)->type() == IfcUtil::Argument_DOUBLE) {
 				double v = *q->data().getArgument(3);
 				props[*qset->Name()][q->Name()] = std::to_string(v);
 			}
 		}
 	}
 	if constexpr (is_ifc4_or_higher<Schema>::value) {
-		if (auto extprops = inst->as<Schema::IfcExtendedProperties>()) {
+		if (auto extprops = inst->template as<Schema::IfcExtendedProperties>()) {
 			// @todo
 		}
 	}
@@ -163,7 +163,7 @@ void process_pset(element_properties& props, const T* inst) {
 template <typename Schema>
 void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefinition* inst) {
 	// Extracts the property definitions for an IFC instance. 
-	if (auto tyob = inst->as<typename Schema::IfcTypeObject>()) {
+	if (auto tyob = inst->template as<typename Schema::IfcTypeObject>()) {
 		if (tyob->HasPropertySets()) {
 			auto defs = *tyob->HasPropertySets();
 			for (auto it = defs->begin(); it != defs->end(); ++it) {
@@ -173,14 +173,14 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 		}
 	}
 	if constexpr (is_ifc4_or_higher<Schema>::value) {
-		if (auto mdef = inst->as<typename Schema::IfcMaterialDefinition>()) {
+		if (auto mdef = inst->template as<typename Schema::IfcMaterialDefinition>()) {
 			auto defs = mdef->HasProperties();
 			for (auto it = defs->begin(); it != defs->end(); ++it) {
 				auto& def = *it;
 				process_pset<Schema>(props, def);
 			}
 		}
-		if (auto pdef = inst->as<typename Schema::IfcProfileDef>()) {
+		if (auto pdef = inst->template as<typename Schema::IfcProfileDef>()) {
 			auto defs = pdef->HasProperties();
 			for (auto it = defs->begin(); it != defs->end(); ++it) {
 				auto& def = *it;
@@ -188,7 +188,7 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 			}
 		}
 	}
-	if (auto ob = inst->as<typename Schema::IfcObject>()) {
+	if (auto ob = inst->template as<typename Schema::IfcObject>()) {
 		if constexpr (is_ifc4_or_higher<Schema>::value) {
 			auto rels = ob->IsTypedBy();
 			for (auto it = rels->begin(); it != rels->end(); ++it) {
@@ -200,9 +200,9 @@ void get_psets_s(element_properties& props, const typename Schema::IfcObjectDefi
 			auto rels = ob->IsDefinedBy();
 			for (auto it = rels->begin(); it != rels->end(); ++it) {
 				auto& rel = *it;
-				if (auto bytype = rel->as<typename Schema::IfcRelDefinesByType>()) {
+				if (auto bytype = rel->template as<typename Schema::IfcRelDefinesByType>()) {
 					get_psets_s<Schema>(props, bytype->RelatingType());
-				} else if (auto byprops = rel->as<typename Schema::IfcRelDefinesByProperties>()) {
+				} else if (auto byprops = rel->template as<typename Schema::IfcRelDefinesByProperties>()) {
 					process_pset<Schema>(props, byprops->RelatingPropertyDefinition());
 				}
 			}
