@@ -79,6 +79,7 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
         r'Property\(.*?name\s*=\s*"(.*?)"',  # property names
         r'report\(\{.*?\}\s*,\s*"(.*?)"',  # operator reports
         r'info\(\{.*?\}\s*,\s*"(.*?)"',  # operator info
+        r'\b_\("(.*?)"\)' # gettext called with `_`
     ]
     regexes = [re.compile(pattern) for pattern in patterns]
     matched_dict: Dict[str, Message] = dict()
