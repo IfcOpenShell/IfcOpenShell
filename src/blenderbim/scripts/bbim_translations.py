@@ -8,6 +8,8 @@ import sys
 import re
 import bl_i18n_utils
 from pathlib import Path
+from dataclasses import dataclass
+from typing import Dict
 
 bl_info = {
     "name": "BlenderBIM Translations",
@@ -49,6 +51,13 @@ def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.Te
         shutil.copy(file, temp_po_dir_path / file.name)
 
 
+@dataclass
+class Message:
+    msg_id: str
+    context: str | None
+    sources: list[str]
+
+
 def blenderbim_strings_parse(addon_directory=None, po_directory=None):
     # NOTE: we decided to use our own parser due bug in Blender parser
     # as it tends to pick up strings from other addons and other Blender parts
@@ -72,38 +81,53 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
         r'info\(\{.*?\}\s*,\s*"(.*?)"',  # operator info
     ]
     regexes = [re.compile(pattern) for pattern in patterns]
-    operator_matches = set()
-    matches = set()
+    matched_dict: Dict[str, Message] = dict()
 
+    # NOTE: currently there is no special handling same message with different contexts
     for root, dirs, files in os.walk(directory):
+        root = Path(root)
         for file in files:
             if not file.endswith(".py"):
                 continue
-            filepath = os.path.join(root, file)
+            filepath = root / file
+            source_rel_path = filepath.relative_to(addon_directory).as_posix()
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
                 for i, regex in enumerate(regexes):
                     is_operator = i < 2
-                    for match in regex.finditer(content):
-                        if "{" in match.group(1):
+                    for regex_match in regex.finditer(content):
+                        string = regex_match.group(1)
+                        if string == "":
+                            continue
+                        elif "{" in string:
                             # Includes a formatting string. To fix.
                             # print(match.group(1))
-                            pass
+                            continue
                         elif is_operator:
-                            operator_matches.add(match.group(1))
+                            ctx = "Operator"
                         else:
-                            matches.add(match.group(1))
+                            ctx = None
+                        message = matched_dict.get(string)
+                        if message is None:
+                            message = Message(string, ctx, [])
+                            matched_dict[string] = message
+                        elif ctx != message.context and False:
+                            print(
+                                f'WARNING. Message "{string}" was already registered with different context {message.context}. '
+                                f"Current context: {ctx}. File: {source_rel_path}"
+                            )
+                        message.sources.append(source_rel_path)
 
     pot_filepath = po_directory / "blenderbim.pot"
     with open(pot_filepath, "w", encoding="utf-8") as fo:
-        for m in sorted(operator_matches):
-            fo.write('msgctxt "Operator"\n')
-            fo.write(f'msgid "{m}"\n')
-            fo.write('msgstr ""\n')
-            fo.write("\n")
-
-        for m in sorted(matches):
-            fo.write(f'msgid "{m}"\n')
+        for msg in matched_dict.values():
+            # make sure sources are unique but keep the order
+            sources = list(dict.fromkeys(msg.sources))
+            for source in sources:
+                fo.write(f"#: {source}\n")
+            if msg.context != None:
+                fo.write(f'msgctxt "{msg.context}"\n')
+            fo.write(f'msgid "{msg.msg_id}"\n')
             fo.write('msgstr ""\n')
             fo.write("\n")
 
