@@ -22,9 +22,12 @@ import bpy
 import bpy.utils.previews
 import blenderbim
 import importlib
-from blenderbim.translations import translations_dict
 from . import handler, ui, prop, operator, helper
 
+try:
+    from blenderbim.translations import translations_dict
+except ImportError:
+    translations_dict = {}
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 modules = {
