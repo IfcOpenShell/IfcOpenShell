@@ -114,7 +114,7 @@ std::string format_string(const Argument* argument) {
 template <typename Schema, typename T>
 void process_pset(element_properties& props, const T* inst) {
 	// Process an individual Property or Quantity set.
-	if (auto pset = inst->as<Schema::IfcPropertySet>()) {
+	if (auto pset = inst->as<typename Schema::IfcPropertySet>()) {
 		if (!pset->Name()) {
 			return;
 		}
@@ -140,7 +140,7 @@ void process_pset(element_properties& props, const T* inst) {
 			}
 		}
 	}
-	if (auto qset = inst->template as<Schema::IfcElementQuantity>()) {
+	if (auto qset = inst->template as<typename Schema::IfcElementQuantity>()) {
 		if (!qset->Name()) {
 			return;
 		}
