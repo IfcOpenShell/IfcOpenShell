@@ -312,15 +312,22 @@ class cant_adjuster : public segment_geometry_adjuster {
     const Eigen::Matrix4d& get_start_of_segment() const { return transformation_matrix_; }
 };
 
+// vector of parent curve types that are supported for IfcCurveSegment.ParentCurve
 typedef boost::mpl::vector<
 	IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
 	, IfcSchema::IfcClothoid
 #endif
 #if defined SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-	//, IfcSchema::IfcSecondOrderPolynomialSpiral // this isn't implemented yet, just some stubbed out dummy code
+	, IfcSchema::IfcSecondOrderPolynomialSpiral
 #endif
-	, IfcSchema::IfcPolyline
+#if defined SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
+    , IfcSchema::IfcThirdOrderPolynomialSpiral
+#endif
+#if defined SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
+    , IfcSchema::IfcSeventhOrderPolynomialSpiral
+#endif
+   , IfcSchema::IfcPolyline
 	, IfcSchema::IfcCircle
 	, IfcSchema::IfcPolynomialCurve
 > curve_seg_types;
@@ -453,7 +460,7 @@ class curve_segment_evaluator {
       // also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
       // which defines the clothoid constant as sqrt(L*R) and L is the length measured from the inflection point and R is the radius at L
       auto A = c->ClothoidConstant();
-      auto s = fabs(A * sqrt(PI));
+      auto s = fabs(A * sqrt(PI)); // curve length when u = 1.0
 
       auto fn_x = [A, s](double t) -> double { return s * cos(PI * A * t * t / (2 * fabs(A))); };
       auto fn_y = [A, s](double t) -> double { return s * sin(PI * A * t * t / (2 * fabs(A))); };
@@ -465,7 +472,6 @@ class curve_segment_evaluator {
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
 	void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral* c)
 	{
-		// @todo: rb verify - this is an example implementation of a different kind of spiral - lots of clean up needed
 		auto A0 = c->ConstantTerm();
 		auto A1 = c->LinearTerm();
 		auto A2 = c->QuadraticTerm();
@@ -481,9 +487,66 @@ class curve_segment_evaluator {
 		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
 		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
 
-		double s = 1.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
+		double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
+      Logger::Warning(std::string("IfcSecondOrderPolynomialSpiral - the implementation has a bug"));
 		set_spiral_function(mapping_, c, s, fn_x, fn_y);
 	}
+#endif
+
+#ifdef SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
+    void operator()(const IfcSchema::IfcThirdOrderPolynomialSpiral* c) {
+        auto A0 = c->ConstantTerm();
+        auto A1 = c->LinearTerm();
+        auto A2 = c->QuadraticTerm();
+        auto A3 = c->CubicTerm();
+
+        auto theta = [A0, A1, A2, A3](double t) {
+            auto a0 = A0.has_value() ? t / A0.value() : 0.0;
+            auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
+            auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
+            auto a3 = A3 * std::pow(t, 4) / (4 * fabs(std::pow(A3, 5)));
+            return a0 + a1 + a2 + a3;
+        };
+
+        auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+        auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+
+        double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
+        Logger::Warning(std::string("IfcThirdOrderPolynomialSpiral - the implementation has a bug"));
+        set_spiral_function(mapping_, c, s, fn_x, fn_y);
+    }
+#endif
+
+#ifdef SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
+    void operator()(const IfcSchema::IfcSeventhOrderPolynomialSpiral* c) {
+        auto A0 = c->ConstantTerm();
+        auto A1 = c->LinearTerm();
+        auto A2 = c->QuadraticTerm();
+        auto A3 = c->CubicTerm();
+        auto A4 = c->QuarticTerm();
+        auto A5 = c->QuinticTerm();
+        auto A6 = c->SexticTerm();
+        auto A7 = c->SepticTerm();
+
+        auto theta = [A0, A1, A2, A3, A4, A5, A6, A7](double t) {
+            auto a0 = A0.has_value() ? t / A0.value() : 0.0;
+            auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
+            auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
+            auto a3 = A3.has_value() ? A3.value() * std::pow(t, 4) / (4 * fabs(std::pow(A3.value(), 5))) : 0.0;
+            auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value(), 5)) : 0.0;
+            auto a5 = A5.has_value() ? A5.value() * std::pow(t, 6) / (6 * fabs(std::pow(A5.value(), 7))) : 0.0;
+            auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value(), 7)) : 0.0;
+            auto a7 = A7 * std::pow(t, 8) / (8 * fabs(std::pow(A7, 9)));
+            return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+        };
+
+        auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+        auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+
+        double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
+        Logger::Warning(std::string("IfcSeventhOrderPolynomialSpiral - the implementation has a bug"));
+        set_spiral_function(mapping_, c, s, fn_x, fn_y);
+    }
 #endif
 
 	void operator()(const IfcSchema::IfcCircle* c)
@@ -714,7 +777,7 @@ class curve_segment_evaluator {
          std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
          std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
          std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
-         for (int i = 0; i < 2; i++) {
+         for (int i = 0; i < 2; i++) { // loop over X and Y
              auto length_conversion = length_unit;
              auto begin = coefficients[i]->cbegin();
              auto end = coefficients[i]->cend();
