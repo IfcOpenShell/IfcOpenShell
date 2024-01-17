@@ -23,7 +23,9 @@ bl_info = {
 }
 
 context = bpy.context
-SUPPORT_LANGUAGES = ["ru_RU", "de_DE"]
+# NOTE: list of available languages in Blender can be retrieved
+# by the command below:
+# bpy.context.preferences.view.language = "test"
 ADDON_NAME = "blenderbim"
 TRANSLATION_UI_IS_LOADED = False
 
@@ -335,7 +337,7 @@ class SetupTranslationUI(bpy.types.Operator):
 
         # setup selected languages
         for lang in i18n_settings.langs:
-            lang.use = lang.uid in SUPPORT_LANGUAGES
+            lang.use = lang.uid == context.preferences.view.language
 
         global TRANSLATION_UI_IS_LOADED
         TRANSLATION_UI_IS_LOADED = True
@@ -463,6 +465,8 @@ class BBIM_PT_translations(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        layout.prop(context.preferences.view, "language")
+
         if not TRANSLATION_UI_IS_LOADED:
             layout.operator("bim.setup_translation_ui")
             layout.prop(context.preferences.filepaths, "i18n_branches_directory", text="I18n branches directory")
