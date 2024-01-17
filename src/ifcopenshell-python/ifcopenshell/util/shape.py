@@ -217,7 +217,8 @@ def get_edges(geometry):
 def get_faces(geometry):
     """Get all the faces as a numpy array
 
-    Faces are always triangulated.
+    Faces are always triangulated. If the shape is a BRep and you want to get
+    the original untriangulated output, refer to ``get_edges``.
 
     Results are a nested numpy array e.g. [[f1v1, f1v2, f1v3], [f2v1, f2v2, f2v3], ...]
 
