@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import blenderbim.tool as tool
+import math
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
@@ -683,6 +684,7 @@ class BIMRoofProperties(PropertyGroup):
         "roof_type",
         "generation_method",
         "angle",
+        "percentage",
         "rafter_edge_angle",
     )
     roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
@@ -701,7 +703,8 @@ class BIMRoofProperties(PropertyGroup):
     height: bpy.props.FloatProperty(
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
-    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage())
+    percentage: bpy.props.FloatProperty(name="Slope %", default=17.63269754733197, subtype="PERCENTAGE", update=lambda self, context: self.update_angle())
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
 
@@ -718,6 +721,7 @@ class BIMRoofProperties(PropertyGroup):
             kwargs["height"] = self.height
         else:
             kwargs["angle"] = self.angle
+            kwargs["percentage"] = self.percentage
 
         if not convert_to_project_units:
             return kwargs
@@ -727,3 +731,9 @@ class BIMRoofProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
+    def update_angle(self):
+        self.angle = math.atan(self.percentage / 100)
+
+    def update_percentage(self):
+        self.percentage = math.tan(self.angle)*100
