@@ -114,7 +114,7 @@ std::string format_string(const Argument* argument) {
 template <typename Schema, typename T>
 void process_pset(element_properties& props, const T* inst) {
 	// Process an individual Property or Quantity set.
-	if (auto pset = inst->as<typename Schema::IfcPropertySet>()) {
+	if (auto pset = inst->template as<typename Schema::IfcPropertySet>()) {
 		if (!pset->Name()) {
 			return;
 		}
