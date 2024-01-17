@@ -5,6 +5,7 @@ import tempfile
 import importlib
 import os
 import sys
+import re
 import bl_i18n_utils
 from pathlib import Path
 
@@ -46,6 +47,65 @@ def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.Te
         if file.suffix != ".po":
             continue
         shutil.copy(file, temp_po_dir_path / file.name)
+
+
+def blenderbim_strings_parse(addon_directory=None, po_directory=None):
+    # NOTE: we decided to use our own parser due bug in Blender parser
+    # as it tends to pick up strings from other addons and other Blender parts
+    # and this bug probably would be to low of a priority for Blender to fix
+    # ref: https://projects.blender.org/blender/blender/issues/116579
+
+    if addon_directory is None:
+        addon_module = importlib.import_module(ADDON_NAME)
+        addon_directory = Path(addon_module.__file__).parent
+    directory = addon_directory / "bim"
+
+    if po_directory is None:
+        po_directory = get_branches_directory()
+
+    patterns = [
+        r'bl_label\s*=\s*"(.*)"',  # operator labels
+        r'bl_description\s*=\s*"(.*)"',  # operator descriptions
+        r'text\s*=\s*"(.*?)"',  # UI labels
+        r'Property\(.*?name\s*=\s*"(.*?)"',  # property names
+        r'report\(\{.*?\}\s*,\s*"(.*?)"',  # operator reports
+        r'info\(\{.*?\}\s*,\s*"(.*?)"',  # operator info
+    ]
+    regexes = [re.compile(pattern) for pattern in patterns]
+    operator_matches = set()
+    matches = set()
+
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if not file.endswith(".py"):
+                continue
+            filepath = os.path.join(root, file)
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+                for i, regex in enumerate(regexes):
+                    is_operator = i < 2
+                    for match in regex.finditer(content):
+                        if "{" in match.group(1):
+                            # Includes a formatting string. To fix.
+                            # print(match.group(1))
+                            pass
+                        elif is_operator:
+                            operator_matches.add(match.group(1))
+                        else:
+                            matches.add(match.group(1))
+
+    pot_filepath = po_directory / "blenderbim.pot"
+    with open(pot_filepath, "w", encoding="utf-8") as fo:
+        for m in sorted(operator_matches):
+            fo.write('msgctxt "Operator"\n')
+            fo.write(f'msgid "{m}"\n')
+            fo.write('msgstr ""\n')
+            fo.write("\n")
+
+        for m in sorted(matches):
+            fo.write(f'msgid "{m}"\n')
+            fo.write('msgstr ""\n')
+            fo.write("\n")
 
 
 def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
@@ -263,17 +323,23 @@ class ReloadPyTranslations(bpy.types.Operator):
     bl_label = "Reload Py Translations"
     bl_description = "Parse strings from Blender objects of the addon to `translations.py`"
     bl_options = set()
+    use_bbim_parser: bpy.props.BoolProperty(
+        name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
+    )
 
     def execute(self, context):
-        if is_addon_loaded(ADDON_NAME):
-            # ref: https://projects.blender.org/blender/blender/issues/116579
-            raise Exception(
-                f"'{ADDON_NAME}' addon is enabled.\n"
-                "Need to disable it, restart Blender and start reloading translations again.\n"
-                "Otherwise some strings to translate might get lost due Blender bug."
-            )
+        if self.use_bbim_parser:
+            blenderbim_strings_parse()
+        else:
+            if is_addon_loaded(ADDON_NAME):
+                # ref: https://projects.blender.org/blender/blender/issues/116579
+                raise Exception(
+                    f"'{ADDON_NAME}' addon is enabled.\n"
+                    "Need to disable it, restart Blender and start reloading translations again.\n"
+                    "Otherwise some strings to translate might get lost due Blender bug."
+                )
 
-        bpy.ops.ui.i18n_addon_translation_update("INVOKE_DEFAULT", module_name=ADDON_NAME)
+            bpy.ops.ui.i18n_addon_translation_update("INVOKE_DEFAULT", module_name=ADDON_NAME)
         self.report({"INFO"}, "Translations py data is saved.")
         return {"FINISHED"}
 
@@ -379,12 +445,17 @@ class BBIM_PT_translations(bpy.types.Panel):
 
         layout.label(text="Developer UI:")
         layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
+
+        # blender restart is disabled as we'll parse strings with BBIM parser
         addon_enabled = is_addon_loaded(ADDON_NAME)
-        layout.operator(
+        row = layout.row()
+        row.operator(
             "bim.disable_enable_addon",
             icon="QUIT" if addon_enabled else "PLUGIN",
             text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon",
         )
+        row.enabled = False
+
         layout.operator("bim.convert_translations_to_po", icon="EXPORT")
         layout.separator(factor=3)
         layout.label(text="Translator UI:")
