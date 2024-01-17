@@ -15,7 +15,7 @@ classifiers = [
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 [project.optional-dependencies]
-geometry = ["mathutils"]
+geometry = ["mathutils", "shapely"]
 date = ["isodate"]
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
