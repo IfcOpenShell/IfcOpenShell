@@ -437,7 +437,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
 
 if __name__ == "__main__":
     # Example:
-    # py src/blenderbim/scripts/bbim_setup_translations.py -i "C:/blenderbim-translations" -o "C:/Blender/4.0/scripts/addons/blenderbim/translations.py"
+    # py src/blenderbim/scripts/bbim_translations.py -i "C:/blenderbim-translations" -o "C:/Blender/4.0/scripts/addons/blenderbim/translations.py"
     import argparse
 
     parser = argparse.ArgumentParser(description="Converts .po files to translations.py")
