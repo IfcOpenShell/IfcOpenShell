@@ -1,6 +1,6 @@
 
 # Ifc2CA - IFC Code_Aster utility
-# Copyright (C) 2020, 2021 Ioannis P. Christovasilis <ipc@aethereng.com>
+# Copyright (C) 2020, 2021, 2023, 2024 Ioannis P. Christovasilis <ipc@aethereng.com>
 #
 # This file is part of Ifc2CA.
 #
@@ -17,509 +17,435 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Ifc2CA.  If not, see <http://www.gnu.org/licenses/>.
 
-import json
-import ifcopenshell
-import os
-from datetime import datetime
+import itertools
+
+import ifcopenshell as ios
+import meshio
+import numpy as np
+
+flatten = itertools.chain.from_iterable
 
 
-class CA2IFC:
-    def __init__(self, inputFilename, outputFilename):
-        self.inputFilename = inputFilename
-        self.outputFilename = outputFilename
-        self.data = None
-        self.f = None
-        self.reps = {}
-        self.origin = None
-        self.xAxis = None
-        self.yAxis = None
-        self.zAxis = None
+def get_element_data(model, name, element):
+    if element["geometry_type"] == "Edge":
+        for i, cell_block in enumerate(model.cells):
+            if cell_block.type == "line":
+                cell_tags = model.cell_data["cell_tags"][i]
+                break
+        rows = []
+        for i_row, i in enumerate(cell_tags):
+            if i == 0:
+                continue
+            tags = model.cell_tags[i]
+            for tag in tags:
+                if tag == name:
+                    # print(i_row, i)
+                    rows.append(i_row)
+                    break
 
-    def convert(self):
-        # load json file
-        with open(self.inputFilename) as dataFile:
-            self.data = json.load(dataFile)
+        points = list(set(flatten([cell_block.data[c] for c in rows])))
+        points.sort(key=lambda p: np.linalg.norm(model.points[p] - np.array(element["origin"])))
+        coords = [np.round(model.points[p], 4).tolist() for p in points]
+        local_coords = [
+            [float(round(np.linalg.norm(model.points[p] - np.array(element["origin"])), 4))] for p in points
+        ]
 
-        # initiate ifc file
-        self.f = ifcopenshell.file()
+        return {
+            "name": name,
+            "points": points,
+            "coords": coords,
+            "local_coords": local_coords,
+        }
 
-        # create header
-        self.create_header()
+    elif element["geometry_type"] == "Face":
+        triangle_cell_tags = None
+        quad_cell_tags = None
+        for i, cell_block in enumerate(model.cells):
+            if cell_block.type == "triangle":
+                triangle_cell_tags = model.cell_data["cell_tags"][i]
+                break
 
-        # create global axes
-        globalAxes = self.create_global_axes()
-        localPlacement = self.f.createIfcLocalPlacement(None, globalAxes)
-
-        # TODO: create units
-        lengthUnit = self.f.createIfcSIUnit(None, "LENGTHUNIT", None, "METRE")
-        unitAssignment = self.f.createIfcUnitAssignment((lengthUnit,))
-
-        # create owner history
-        ownerHistory = self.create_owner_history()
-
-        # create representations and subrepresentations
-        self.reps = self.create_reference_subrep(globalAxes)
-
-        # create project and model
-        project = self.f.createIfcProject(
-            self.guid(), ownerHistory, "A Project", None, None, None, None, (self.reps["model"],), unitAssignment
-        )
-        model = self.f.createIfcStructuralAnalysisModel(
-            self.guid(),
-            ownerHistory,
-            self.data["name"],
-            None,
-            None,
-            "NOTDEFINED",
-            globalAxes,
-            None,
-            None,
-            localPlacement,
-        )
-        self.f.createIfcRelDeclares(self.guid(), ownerHistory, None, None, project, (model,))
-
-        # create materials
-        ifcMaterials = [None for _ in range(len(self.data["db"]["materials"]))]
-        for i, material in enumerate(self.data["db"]["materials"]):
-            ifcMaterials[i] = self.create_material(material)
-
-        # create profiles
-        ifcProfiles = [None for _ in range(len(self.data["db"]["profiles"]))]
-        for i, profile in enumerate(self.data["db"]["profiles"]):
-            ifcProfiles[i] = self.create_profile(profile)
-
-        # create material-profile sets
-        mpSets = list(
-            set([el["material"] + "-" + el["profile"] for el in self.data["elements"] if el["geometryType"] == "line"])
-        )
-        ifcMaterialProfileSets = [None for _ in range(len(mpSets))]
-        for i, mpSet in enumerate(mpSets):
-            materialIndex = [mat["referenceName"] for mat in self.data["db"]["materials"]].index(mpSet.split("-")[0])
-            profileIndex = [prof["referenceName"] for prof in self.data["db"]["profiles"]].index(mpSet.split("-")[1])
-            material = ifcMaterials[materialIndex]
-            profile = ifcProfiles[profileIndex]
-            matProf = self.f.createIfcMaterialProfile(
-                self.data["db"]["materials"][materialIndex]["name"]
-                + " | "
-                + self.data["db"]["profiles"][profileIndex]["profileName"],
-                None,
-                material,
-                profile,
-            )
-            ifcMaterialProfileSets[i] = self.f.createIfcMaterialProfileSet(None, None, (matProf,))
-
-        # create structural elements
-        ifcElements = [None for _ in range(len(self.data["elements"]))]
-        for i, el in enumerate(self.data["elements"]):
-            # geometry - product definition shape
-            prodDefShape = self.create_geometry(el)
-
-            if el["geometryType"] == "line":
-                # z axis TODO: group by elements
-                localZAxis = self.f.createIfcDirection(tuple(el["orientation"][2]))
-                # element
-                ifcElements[i] = self.f.createIfcStructuralCurveMember(
-                    self.guid(),
-                    ownerHistory,
-                    el["name"],
-                    None,
-                    None,
-                    localPlacement,
-                    prodDefShape,
-                    el["predefinedType"],
-                    localZAxis,
-                )
-
-            if el["geometryType"] == "surface":
-                ifcElements[i] = self.f.createIfcStructuralSurfaceMember(
-                    self.guid(),
-                    ownerHistory,
-                    el["name"],
-                    None,
-                    None,
-                    localPlacement,
-                    prodDefShape,
-                    el["predefinedType"],
-                    el["thickness"],
-                )
-
-        # create structural point connections
-        ifcConnections = [None for _ in range(len(self.data["connections"]))]
-        for i, conn in enumerate(self.data["connections"]):
-            # geometry - product definition shape
-            prodDefShape = self.create_geometry(conn)
-
-            # boundary conditions
-            if conn["appliedCondition"]:
-                bc = self.create_applied_conditions(conn["appliedCondition"], conn["geometryType"])
-                if conn["geometryType"] == "point":
-                    appliedCondition = self.f.createIfcBoundaryNodeCondition(
-                        None, bc["dx"], bc["dy"], bc["dz"], bc["drx"], bc["dry"], bc["drz"]
-                    )
-                if conn["geometryType"] == "line":
-                    appliedCondition = self.f.createIfcBoundaryEdgeCondition(
-                        None, bc["dx"], bc["dy"], bc["dz"], bc["drx"], bc["dry"], bc["drz"]
-                    )
-                if conn["geometryType"] == "surface":
-                    appliedCondition = self.f.createIfcBoundaryFaceCondition(None, bc["dx"], bc["dy"], bc["dz"])
+        if triangle_cell_tags is not None:
+            rows = []
+            for i_row, i in enumerate(triangle_cell_tags):
+                if i == 0:
+                    continue
+                tags = model.cell_tags[i]
+                for tag in tags:
+                    if tag == name:
+                        # print(i_row, i)
+                        rows.append(i_row)
+                        break
+            if not len(rows):
+                points = []
             else:
-                appliedCondition = None
+                points = list(flatten([cell_block.data[c] for c in rows]))
 
-            if conn["geometryType"] == "point":
-                # local axes
-                localAxes = self.create_orientation(conn["orientation"])
-                # connection
-                ifcConnections[i] = self.f.createIfcStructuralPointConnection(
-                    self.guid(),
-                    ownerHistory,
-                    conn["name"],
-                    None,
-                    None,
-                    localPlacement,
-                    prodDefShape,
-                    appliedCondition,
-                    localAxes,
-                )
+        for i, cell_block in enumerate(model.cells):
+            if cell_block.type == "quad":
+                quad_cell_tags = model.cell_data["cell_tags"][i]
+                break
 
-            if conn["geometryType"] == "line":
-                # z axis TODO: group by elements
-                localZAxis = self.f.createIfcDirection(tuple(conn["orientation"][2]))
-                # connection
-                ifcConnections[i] = self.f.createIfcStructuralCurveConnection(
-                    self.guid(),
-                    ownerHistory,
-                    conn["name"],
-                    None,
-                    None,
-                    localPlacement,
-                    prodDefShape,
-                    appliedCondition,
-                    localZAxis,
-                )
+        if quad_cell_tags is not None:
+            rows = []
+            for i_row, i in enumerate(quad_cell_tags):
+                if i == 0:
+                    continue
+                tags = model.cell_tags[i]
+                for tag in tags:
+                    if tag == name:
+                        # print(i_row, i)
+                        rows.append(i_row)
+                        break
+            if len(rows):
+                points.extend(list(flatten([cell_block.data[c] for c in rows])))
 
-            if conn["geometryType"] == "surface":
-                ifcConnections[i] = self.f.createIfcStructuralSurfaceConnection(
-                    self.guid(), ownerHistory, conn["name"], None, None, localPlacement, prodDefShape, appliedCondition
-                )
+        points = list(set(points))
+        points.sort()
+        coords = [model.points[p].tolist() for p in points]
+        local_coords = [
+            np.round(np.array(element["orientation"]).dot(model.points[p] - np.array(element["origin"])), 4).tolist()[
+                :2
+            ]
+            for p in points
+        ]
 
-        # assign material-profile-sets
-        for i, mpSet in enumerate(mpSets):
-            groupOfElements = []
-            for j, el in enumerate(self.data["elements"]):
-                if el["geometryType"] == "line" and el["material"] + "-" + el["profile"] == mpSet:
-                    groupOfElements.append(ifcElements[j])
+        return {
+            "name": name,
+            "points": points,
+            "coords": coords,
+            "local_coords": local_coords,
+        }
 
-            if groupOfElements:
-                self.f.createIfcRelAssociatesMaterial(
-                    self.guid(), ownerHistory, None, None, tuple(groupOfElements), ifcMaterialProfileSets[i]
-                )
 
-        # assign materials
-        for i, mat in enumerate(self.data["db"]["materials"]):
-            groupOfElements = []
-            for j, el in enumerate(self.data["elements"]):
-                if el["geometryType"] == "surface" and el["material"] == mat["referenceName"]:
-                    groupOfElements.append(ifcElements[j])
-            if groupOfElements:
-                self.f.createIfcRelAssociatesMaterial(
-                    self.guid(), ownerHistory, None, None, tuple(groupOfElements), ifcMaterials[i]
-                )
+def get_element_result_data(model, field_label, name, element, field_type):
+    points = get_element_data(model, name, element)["points"]
+    if field_type == "InternalForces":
+        if element["geometry_type"] == "Edge":
+            return {
+                "N": [round(model.point_data[field_label][p][0], 4) for p in points],
+                "VY": [round(model.point_data[field_label][p][1], 4) for p in points],
+                "VZ": [round(model.point_data[field_label][p][2], 4) for p in points],
+                "MT": [round(model.point_data[field_label][p][3], 4) for p in points],
+                "MFY": [round(model.point_data[field_label][p][4], 4) for p in points],
+                "MFZ": [round(model.point_data[field_label][p][5], 4) for p in points],
+            }
 
-        # create connections with elements
-        for i, el in enumerate(self.data["elements"]):
-            for conn in el["connections"]:
-                j = [c["referenceName"] for c in self.data["connections"]].index(conn["relatedConnection"])
-                geometryType = self.data["connections"][j]["geometryType"]
+        elif element["geometry_type"] == "Face":
+            if len(model.point_data[field_label][points[0]]) == 8:
+                offset = 0
+            elif len(model.point_data[field_label][points[0]]) == 14:
+                offset = 6
+            else:
+                assert (
+                    False
+                ), f"Internal force field with {len(model.point_data[field_label][points[0]])} field values for {field_label} and {element['Name']} "
 
-                if conn["appliedCondition"]:
-                    bc = self.create_applied_conditions(conn["appliedCondition"], geometryType)
-                    if geometryType == "point":
-                        appliedCondition = self.f.createIfcBoundaryNodeCondition(
-                            None, bc["dx"], bc["dy"], bc["dz"], bc["drx"], bc["dry"], bc["drz"]
-                        )
-                    if geometryType == "line":
-                        appliedCondition = self.f.createIfcBoundaryEdgeCondition(
-                            None, bc["dx"], bc["dy"], bc["dz"], bc["drx"], bc["dry"], bc["drz"]
-                        )
-                    if geometryType == "surface":
-                        appliedCondition = self.f.createIfcBoundaryFaceCondition(None, bc["dx"], bc["dy"], bc["dz"])
-                else:
-                    appliedCondition = None
+            return {
+                "NXX": [round(model.point_data[field_label][p][offset + 0], 4) for p in points],
+                "NYY": [round(model.point_data[field_label][p][offset + 1], 4) for p in points],
+                "NXY": [round(model.point_data[field_label][p][offset + 2], 4) for p in points],
+                "MXX": [round(model.point_data[field_label][p][offset + 3], 4) for p in points],
+                "MYY": [round(model.point_data[field_label][p][offset + 4], 4) for p in points],
+                "MXY": [round(model.point_data[field_label][p][offset + 5], 4) for p in points],
+                "QX": [round(model.point_data[field_label][p][offset + 6], 4) for p in points],
+                "QY": [round(model.point_data[field_label][p][offset + 7], 4) for p in points],
+            }
 
-                # local axes
-                localAxes = self.create_orientation(conn["orientation"])
+    if field_type == "Displacements":
+        return {
+            "DX": [round(model.point_data[field_label][p][0], 4) for p in points],
+            "DY": [round(model.point_data[field_label][p][1], 4) for p in points],
+            "DZ": [round(model.point_data[field_label][p][2], 4) for p in points],
+            "DRX": [round(model.point_data[field_label][p][3], 4) for p in points],
+            "DRY": [round(model.point_data[field_label][p][4], 4) for p in points],
+            "DRZ": [round(model.point_data[field_label][p][5], 4) for p in points],
+        }
 
-                if geometryType == "point":
-                    if not conn["eccentricity"]:
-                        self.f.createIfcRelConnectsStructuralMember(
-                            self.guid(),
-                            ownerHistory,
-                            None,
-                            None,
-                            ifcElements[i],
-                            ifcConnections[j],
-                            appliedCondition,
-                            None,
-                            None,
-                            localAxes,
-                        )
-                    else:
-                        pointOnElement = self.f.createIfcCartesianPoint(tuple(conn["eccentricity"]["pointOnElement"]))
-                        vector = conn["eccentricity"]["vector"]
-                        connPointEcc = self.f.createIfcConnectionPointEccentricity(
-                            pointOnElement, None, vector[0], vector[1], vector[2]
-                        )
-                        self.f.createIfcRelConnectsWithEccentricity(
-                            self.guid(),
-                            ownerHistory,
-                            None,
-                            None,
-                            ifcElements[i],
-                            ifcConnections[j],
-                            appliedCondition,
-                            None,
-                            None,
-                            localAxes,
-                            connPointEcc,
-                        )
 
-                if geometryType in ["line", "surface"]:
-                    self.f.createIfcRelConnectsStructuralMember(
-                        self.guid(),
-                        ownerHistory,
-                        None,
-                        None,
-                        ifcElements[i],
-                        ifcConnections[j],
-                        appliedCondition,
-                        None,
-                        None,
-                        localAxes,
+def results_to_ifc(ifc_file, ifc_model, rmed_path, global_case, field_types, data):
+    if not rmed_path.exists():
+        print(f"Med file with results not found for case_instant: {global_case}")
+        return
+
+    result = meshio.read(rmed_path, "med")
+    if global_case == "LC":
+        model_cases = data["load_cases"]
+    elif global_case == "COMB":
+        model_cases = data["load_combinations"]
+    for field in field_types:
+        if field == "InternalForces":
+            _parsed_data = internal_forces_to_ifc(ifc_file, ifc_model, result, model_cases, data["elements"])
+        elif field == "Displacements":
+            _parsed_data = displacements_to_ifc(ifc_file, ifc_model, result, model_cases, data["elements"])
+
+
+def internal_forces_to_ifc(ifc_file, ifc_model, result, model_cases, elements):
+    result_cases = [dict() for _ in model_cases]
+    field_cases = [f"ELEMENT_FORCE[{i}] - {i + 1}" for i in range(len(result_cases))]
+
+    # Create Result Groups for load case_instance combinations
+    for iCase, case_instance in enumerate(model_cases):
+        result_cases[iCase]["case_instance"] = ifc_file.create_entity(
+            "IfcStructuralResultGroup",
+            **{
+                "GlobalId": ios.guid.new(),
+                "Name": "Internal Forces for " + case_instance["Name"],
+                "TheoryType": "FIRST_ORDER_THEORY",
+                "ResultForLoadGroup": ifc_file.by_id(case_instance["id"]),
+                "IsLinear": True,
+            },
+        )
+
+        result_cases[iCase]["assignment"] = ifc_file.create_entity(
+            "IfcRelAssignsToGroup",
+            **{
+                "GlobalId": ios.guid.new(),
+                "RelatedObjects": [],
+                "RelatingGroup": result_cases[iCase]["case_instance"],
+            },
+        )
+
+    if ifc_model.HasResults:
+        ifc_model.HasResults += tuple([result["case_instance"] for result in result_cases])
+    else:
+        ifc_model.HasResults = tuple([result["case_instance"] for result in result_cases])
+
+    data = []
+    for _, element in enumerate(elements):
+        group_name = getGroupName(element["ref_id"])
+        name = element["Name"]
+        info = get_element_data(result, group_name, element)
+        assert len(info["coords"]) >= 2
+        for iCase, field_case in enumerate(field_cases):
+            forces = get_element_result_data(result, field_case, group_name, element, field_type="InternalForces")
+            reaction = ifc_file.create_entity(
+                "IfcStructuralCurveReaction" if element["geometry_type"] == "Edge" else "IfcStructuralSurfaceReaction",
+                **{
+                    "GlobalId": ios.guid.new(),
+                    "Name": "Internal Forces for " + model_cases[iCase]["Name"] + f" on {name}",
+                    # "AppliedLoad": load["ifcLoad"],
+                    "GlobalOrLocal": "LOCAL_COORDS",
+                    "PredefinedType": "DISCRETE",
+                },
+            )
+            result_cases[iCase]["assignment"].RelatedObjects += (reaction,)
+
+            ifc_file.create_entity(
+                "IfcRelConnectsStructuralActivity",
+                **{
+                    "GlobalId": ios.guid.new(),
+                    "RelatingElement": ifc_file.by_id(element["id"]),
+                    "RelatedStructuralActivity": reaction,
+                },
+            )
+
+            reaction.AppliedLoad = ifc_file.create_entity(
+                "IfcStructuralLoadConfiguration",
+                **{
+                    "Name": "Internal Forces for " + model_cases[iCase]["Name"] + f" on {name}",
+                    "Values": [],
+                    "Locations": tuple([tuple(node) for node in info["local_coords"]]),
+                },
+            )
+
+            if element["geometry_type"] == "Edge":
+                for iNode, node in enumerate(info["coords"]):
+                    location = f"({node[0]}, {node[1]}, {node[2]})"
+                    distance = info["local_coords"][iNode][0]
+
+                    N = forces["N"][iNode]
+                    VY = forces["VY"][iNode]
+                    VZ = forces["VZ"][iNode]
+                    MT = forces["MT"][iNode]
+                    MFY = forces["MFY"][iNode]
+                    MFZ = forces["MFZ"][iNode]
+
+                    data.append([name, f"LCC-{iCase + 1} @ {distance}", location, N, VY, VZ, MT, MFY, MFZ])
+
+                    pointValue = ifc_file.create_entity(
+                        "IfcStructuralLoadSingleForce",
+                        **{
+                            "Name": "Internal Forces for " + model_cases[iCase]["Name"] + f" @ {distance} on {name}",
+                            "ForceX": N,
+                            "ForceY": VY,
+                            "ForceZ": VZ,
+                            "MomentX": MT,
+                            "MomentY": MFY,
+                            "MomentZ": MFZ,
+                        },
                     )
+                    reaction.AppliedLoad.Values += (pointValue,)
 
-        # assign elements and connections to group
-        self.f.createIfcRelAssignsToGroup(
-            self.guid(), ownerHistory, None, None, tuple(ifcElements + ifcConnections), None, model
+            elif element["geometry_type"] == "Face":
+                for iNode, node in enumerate(info["coords"]):
+                    location = f"({node[0]}, {node[1]}, {node[2]})"
+                    distance = tuple(info["local_coords"][iNode])
+
+                    NXX = forces["NXX"][iNode]
+                    NYY = forces["NYY"][iNode]
+                    NXY = forces["NXY"][iNode]
+                    MXX = forces["MXX"][iNode]
+                    MYY = forces["MYY"][iNode]
+                    MXY = forces["MXY"][iNode]
+
+                    data.append([name, f"LCC-{iCase + 1} @ {distance}", location, NXX, NYY, NXY, MXX, MYY, MXY])
+
+                    pointValue = ifc_file.create_entity(
+                        "IfcStructuralLoadSingleForce",
+                        **{
+                            "Name": "Internal Forces for " + model_cases[iCase]["Name"] + f" @ {distance} on {name}",
+                            "ForceX": NXX,
+                            "ForceY": NYY,
+                            "ForceZ": NXY,
+                            "MomentX": MXX,
+                            "MomentY": MYY,
+                            "MomentZ": MXY,
+                        },
+                    )
+                    reaction.AppliedLoad.Values += (pointValue,)
+
+    return data
+
+
+def displacements_to_ifc(ifc_file, ifc_model, result, model_cases, elements):
+    result_cases = [dict() for _ in model_cases]
+    field_cases = [f"MODEL_DISP[{i}] - {i + 1}" for i in range(len(result_cases))]
+
+    # Create Result Groups for load case_instance combinations
+    for iCase, case_instance in enumerate(model_cases):
+        result_cases[iCase]["case_instance"] = ifc_file.create_entity(
+            "IfcStructuralResultGroup",
+            **{
+                "GlobalId": ios.guid.new(),
+                "Name": "Global Displacements for " + case_instance["Name"],
+                "TheoryType": "FIRST_ORDER_THEORY",
+                "ResultForLoadGroup": ifc_file.by_id(case_instance["id"]),
+                "IsLinear": True,
+            },
         )
 
-        # finalize ifc file
-        self.f.write(self.outputFilename)
-
-    def guid(self):
-        return ifcopenshell.guid.new()
-
-    def create_header(self):
-        self.f.wrapped_data.header.file_name.name = os.path.basename(self.outputFilename)
-
-    def create_global_axes(self):
-        self.xAxis = self.f.createIfcDirection((1.0, 0.0, 0.0))
-        self.yAxis = self.f.createIfcDirection((0.0, 1.0, 0.0))
-        self.zAxis = self.f.createIfcDirection((0.0, 0.0, 1.0))
-        self.origin = self.f.createIfcCartesianPoint((0.0, 0.0, 0.0))
-        axes = self.f.createIfcAxis2Placement3D(self.origin, self.zAxis, self.xAxis)
-
-        return axes
-
-    def create_orientation(self, orientation):
-        xAxis = self.f.createIfcDirection(tuple(orientation[0]))
-        zAxis = self.f.createIfcDirection(tuple(orientation[2]))
-        axes = self.f.createIfcAxis2Placement3D(self.origin, zAxis, xAxis)
-
-        return axes
-
-    def create_owner_history(self):
-        actor = self.f.createIfcActorRole("ENGINEER", None, None)
-        person = self.f.createIfcPerson("Christovasilis", None, "Ioannis", None, None, None, (actor,))
-        organization = self.f.createIfcOrganization(
-            None,
-            "IfcOpenShell",
-            "IfcOpenShell, an open source (LGPL) software library that helps users and software developers to work with the IFC file format.",
-        )
-        p_o = self.f.createIfcPersonAndOrganization(person, organization)
-        application = self.f.createIfcApplication(organization, "v0.0.x", "IFC2CA", "IFC2CA")
-        timestamp = int(datetime.now().timestamp())
-        ownerHistory = self.f.createIfcOwnerHistory(p_o, application, "READWRITE", None, None, None, None, timestamp)
-
-        return ownerHistory
-
-    def create_reference_subrep(self, globalAxes):
-        modelRep = self.f.createIfcGeometricRepresentationContext(None, "Model", 3, 1.0e-05, globalAxes, None)
-        bodySubRep = self.f.createIfcGeometricRepresentationSubContext(
-            "Body", "Model", None, None, None, None, modelRep, None, "MODEL_VIEW", None
-        )
-        refSubRep = self.f.createIfcGeometricRepresentationSubContext(
-            "Reference", "Model", None, None, None, None, modelRep, None, "GRAPH_VIEW", None
+        result_cases[iCase]["assignment"] = ifc_file.create_entity(
+            "IfcRelAssignsToGroup",
+            **{
+                "GlobalId": ios.guid.new(),
+                "RelatedObjects": [],
+                "RelatingGroup": result_cases[iCase]["case_instance"],
+            },
         )
 
-        return {"model": modelRep, "body": bodySubRep, "reference": refSubRep}
+    if ifc_model.HasResults:
+        ifc_model.HasResults += tuple([result["case_instance"] for result in result_cases])
+    else:
+        ifc_model.HasResults = tuple([result["case_instance"] for result in result_cases])
 
-    def create_material(self, material):
-        ifcMaterial = self.f.createIfcMaterial(material["name"], None, material["category"])
+    data = []
+    for _, element in enumerate(elements):
+        group_name = getGroupName(element["ref_id"])
+        name = element["Name"]
+        info = get_element_data(result, group_name, element)
+        assert len(info["coords"]) >= 2
+        for iCase, case_instance in enumerate(field_cases):
+            displacements = get_element_result_data(
+                result, case_instance, group_name, element, field_type="Displacements"
+            )
+            reaction = ifc_file.create_entity(
+                "IfcStructuralCurveReaction" if element["geometry_type"] == "Edge" else "IfcStructuralSurfaceReaction",
+                **{
+                    "GlobalId": ios.guid.new(),
+                    "Name": "Global Displacements for " + model_cases[iCase]["Name"] + f" on {name}",
+                    # "AppliedLoad": load["ifcLoad"],
+                    "GlobalOrLocal": "LOCAL_COORDS",
+                    "PredefinedType": "DISCRETE",
+                },
+            )
+            result_cases[iCase]["assignment"].RelatedObjects += (reaction,)
 
-        mechProps = []
-        if "youngModulus" in material["mechProps"]:
-            youngModulus = self.f.createIfcPropertySingleValue(
-                "YoungModulus", None, self.f.createIfcModulusOfElasticityMeasure(material["mechProps"]["youngModulus"])
-            )
-            mechProps.append(youngModulus)
-        if "shearModulus" in material["mechProps"]:
-            shearModulus = self.f.createIfcPropertySingleValue(
-                "ShearModulus", None, self.f.createIfcModulusOfElasticityMeasure(material["mechProps"]["shearModulus"])
-            )
-            mechProps.append(shearModulus)
-        if "poissonRatio" in material["mechProps"]:
-            poissonRatio = self.f.createIfcPropertySingleValue(
-                "PoissonRatio", None, self.f.createIfcPositiveRatioMeasure(material["mechProps"]["poissonRatio"])
-            )
-            mechProps.append(poissonRatio)
-        if mechProps:
-            self.f.createIfcMaterialProperties(
-                "Pset_MaterialMechanical", material["name"], tuple(mechProps), ifcMaterial
-            )
-
-        commonProps = []
-        if "massDensity" in material["commonProps"]:
-            massDensity = self.f.createIfcPropertySingleValue(
-                "MassDensity", None, self.f.createIfcMassDensityMeasure(material["commonProps"]["massDensity"])
-            )
-            commonProps.append(massDensity)
-        if commonProps:
-            self.f.createIfcMaterialProperties("Pset_MaterialCommon", material["name"], tuple(commonProps), ifcMaterial)
-
-        return ifcMaterial
-
-    def create_profile(self, profile):
-        if profile["profileShape"] == "rectangular":
-            ifcProfile = self.f.createIfcRectangleProfileDef(
-                profile["profileType"], profile["profileName"], None, profile["xDim"], profile["yDim"]
+            ifc_file.create_entity(
+                "IfcRelConnectsStructuralActivity",
+                **{
+                    "GlobalId": ios.guid.new(),
+                    "RelatingElement": ifc_file.by_id(element["id"]),
+                    "RelatedStructuralActivity": reaction,
+                },
             )
 
-        if profile["profileShape"] == "iSymmetrical":
-            ifcProfile = self.f.createIfcIShapeProfileDef(
-                profile["profileType"],
-                profile["profileName"],
-                None,
-                profile["commonProps"]["overallWidth"],
-                profile["commonProps"]["overallDepth"],
-                profile["commonProps"]["webThickness"],
-                profile["commonProps"]["flangeThickness"],
-                profile["commonProps"]["filletRadius"],
+            reaction.AppliedLoad = ifc_file.create_entity(
+                "IfcStructuralLoadConfiguration",
+                **{
+                    "Name": "Global Displacements for " + model_cases[iCase]["Name"] + f" on {name}",
+                    "Values": [],
+                    "Locations": tuple([tuple(node) for node in info["local_coords"]]),
+                },
             )
 
-            mechProps = []
-            if "massPerLength" in profile["mechProps"]:
-                massPerLength = self.f.createIfcPropertySingleValue(
-                    "MassPerLength", None, self.f.createIfcMassPerLengthMeasure(profile["mechProps"]["massPerLength"])
-                )
-                mechProps.append(massPerLength)
-            if "crossSectionArea" in profile["mechProps"]:
-                crossSectionArea = self.f.createIfcPropertySingleValue(
-                    "CrossSectionArea", None, self.f.createIfcAreaMeasure(profile["mechProps"]["crossSectionArea"])
-                )
-                mechProps.append(crossSectionArea)
-            if "momentOfInertiaY" in profile["mechProps"]:
-                momentOfInertiaY = self.f.createIfcPropertySingleValue(
-                    "MomentOfInertiaY",
-                    None,
-                    self.f.createIfcMomentOfInertiaMeasure(profile["mechProps"]["momentOfInertiaY"]),
-                )
-                mechProps.append(momentOfInertiaY)
-            if "momentOfInertiaZ" in profile["mechProps"]:
-                momentOfInertiaZ = self.f.createIfcPropertySingleValue(
-                    "MomentOfInertiaZ",
-                    None,
-                    self.f.createIfcMomentOfInertiaMeasure(profile["mechProps"]["momentOfInertiaZ"]),
-                )
-                mechProps.append(momentOfInertiaZ)
-            if "torsionalConstantX" in profile["mechProps"]:
-                torsionalConstantX = self.f.createIfcPropertySingleValue(
-                    "TorsionalConstantX",
-                    None,
-                    self.f.createIfcMomentOfInertiaMeasure(profile["mechProps"]["torsionalConstantX"]),
-                )
-                mechProps.append(torsionalConstantX)
-            if mechProps:
-                self.f.createIfcProfileProperties(
-                    "Pset_ProfileMechanical", profile["profileName"], tuple(mechProps), ifcProfile
-                )
+            if element["geometry_type"] == "Edge":
+                for iNode, node in enumerate(info["coords"]):
+                    location = f"({node[0]}, {node[1]}, {node[2]})"
+                    distance = info["local_coords"][iNode][0]
 
-        return ifcProfile
+                    DX = displacements["DX"][iNode]
+                    DY = displacements["DY"][iNode]
+                    DZ = displacements["DZ"][iNode]
+                    DRX = displacements["DRX"][iNode]
+                    DRY = displacements["DRY"][iNode]
+                    DRZ = displacements["DRZ"][iNode]
 
-    def create_geometry(self, object):
-        if object["geometryType"] == "point":
-            point = self.f.createIfcCartesianPoint(tuple(object["geometry"]))
-            vertex = self.f.createIfcVertexPoint(point)
-            vertexTopologyRep = self.f.createIfcTopologyRepresentation(
-                self.reps["reference"], "Reference", "Vertex", (vertex,)
-            )
-            vertexProdDefShape = self.f.createIfcProductDefinitionShape(None, None, (vertexTopologyRep,))
+                    data.append([name, f"LCC-{iCase + 1} @ {distance}", location, DX, DY, DZ, DRX, DRY, DRZ])
 
-            return vertexProdDefShape
+                    pointValue = ifc_file.create_entity(
+                        "IfcStructuralLoadSingleDisplacement",
+                        **{
+                            "Name": "Global Displacements for "
+                            + model_cases[iCase]["Name"]
+                            + f" @ {distance} on {name}",
+                            "DisplacementX": DX,
+                            "DisplacementY": DY,
+                            "DisplacementZ": DZ,
+                            "RotationalDisplacementRX": DRX,
+                            "RotationalDisplacementRY": DRY,
+                            "RotationalDisplacementRZ": DRZ,
+                        },
+                    )
+                    reaction.AppliedLoad.Values += (pointValue,)
 
-        if object["geometryType"] == "line":
-            startPoint = self.f.createIfcCartesianPoint(tuple(object["geometry"][0]))
-            startVertex = self.f.createIfcVertexPoint(startPoint)
-            endPoint = self.f.createIfcCartesianPoint(tuple(object["geometry"][1]))
-            endVertex = self.f.createIfcVertexPoint(endPoint)
-            edge = self.f.createIfcEdge(startVertex, endVertex)
-            edgeTopologyRep = self.f.createIfcTopologyRepresentation(
-                self.reps["reference"], "Reference", "Edge", (edge,)
-            )
-            edgeProdDefShape = self.f.createIfcProductDefinitionShape(None, None, (edgeTopologyRep,))
+            elif element["geometry_type"] == "Face":
+                for iNode, node in enumerate(info["coords"]):
+                    location = f"({node[0]}, {node[1]}, {node[2]})"
+                    distance = tuple(info["local_coords"][iNode])
 
-            return edgeProdDefShape
+                    DX = displacements["DX"][iNode]
+                    DY = displacements["DY"][iNode]
+                    DZ = displacements["DZ"][iNode]
+                    DRX = displacements["DRX"][iNode]
+                    DRY = displacements["DRY"][iNode]
+                    DRZ = displacements["DRZ"][iNode]
 
-        if object["geometryType"] == "surface":
-            verts = [None for _ in range(len(object["geometry"]))]
-            for i, p in enumerate(object["geometry"]):
-                point = self.f.createIfcCartesianPoint(tuple(p))
-                verts[i] = self.f.createIfcVertexPoint(point)
+                    data.append([name, f"LCC-{iCase + 1} @ {distance}", location, DX, DY, DZ, DRX, DRY, DRZ])
 
-            orientedEdges = [None for _ in range(len(object["geometry"]))]
-            for i, v in enumerate(verts):
-                v2Index = (i + 1) if i < len(verts) - 1 else 0
-                edge = self.f.createIfcEdge(v, verts[v2Index])
-                orientedEdges[i] = self.f.createIfcOrientedEdge(None, None, edge, True)
+                    pointValue = ifc_file.create_entity(
+                        "IfcStructuralLoadSingleDisplacement",
+                        **{
+                            "Name": "Global Displacements for "
+                            + model_cases[iCase]["Name"]
+                            + f" @ {distance} on {name}",
+                            "DisplacementX": DX,
+                            "DisplacementY": DY,
+                            "DisplacementZ": DZ,
+                            "RotationalDisplacementRX": DRX,
+                            "RotationalDisplacementRY": DRY,
+                            "RotationalDisplacementRZ": DRZ,
+                        },
+                    )
+                    reaction.AppliedLoad.Values += (pointValue,)
 
-            edgeLoop = self.f.createIfcEdgeLoop(tuple(orientedEdges))
-            localAxes = self.create_orientation(object["orientation"])
-            plane = self.f.createIfcPlane(localAxes)
-            faceBound = self.f.createIfcFaceBound(edgeLoop, True)
-            face = self.f.createIfcFaceSurface((faceBound,), plane, True)
-            faceTopologyRep = self.f.createIfcTopologyRepresentation(
-                self.reps["reference"], "Reference", "Face", (face,)
-            )
-            faceProdDefShape = self.f.createIfcProductDefinitionShape(None, None, (faceTopologyRep,))
-
-            return faceProdDefShape
-
-    def create_applied_conditions(self, bc, geometryType):
-        for dof in ["dx", "dy", "dz"]:
-            if isinstance(bc[dof], bool):
-                bc[dof] = self.f.createIfcBoolean(bc[dof])
-            else:
-                if geometryType == "point":
-                    bc[dof] = self.f.createIfcLinearStiffnessMeasure(bc[dof])
-                if geometryType == "line":
-                    bc[dof] = self.f.createIfcModulusOfLinearSubgradeReactionMeasure(bc[dof])
-                if geometryType == "surface":
-                    bc[dof] = self.f.createIfcModulusOfSubgradeReactionMeasure(bc[dof])
-
-        for dof in ["drx", "dry", "drz"]:
-            if isinstance(bc[dof], bool):
-                bc[dof] = self.f.createIfcBoolean(bc[dof])
-            else:
-                if geometryType == "point":
-                    bc[dof] = self.f.createIfcRotationalStiffnessMeasure(bc[dof])
-                if geometryType == "line":
-                    bc[dof] = self.f.createIfcModulusOfRotationalSubgradeReactionMeasure(bc[dof])
-
-        return bc
+    return data
 
 
-if __name__ == "__main__":
-    inputFilename = "grid_of_beams.json"
-    outputFilename = "grid_of_beams.ifc"
-
-    ca2ifc = CA2IFC(inputFilename, outputFilename)
-    ca2ifc.convert()
+def getGroupName(name):
+    if "|" in name:
+        info = name.split("|")
+        sortName = "".join(c for c in info[0] if c.isupper())
+        return f"{sortName[2:]}_{info[1]}"
+    else:
+        return name
