@@ -405,8 +405,8 @@ class PartOf(Facet):
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
-    def asdict(self):
-        results = super().asdict()
+    def asdict(self, clause_type):
+        results = super().asdict(clause_type)
         entity = {}
         if "name" in results:
             entity["name"] = results["name"]
