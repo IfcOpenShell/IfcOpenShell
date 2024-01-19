@@ -662,10 +662,8 @@ endif
 	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
 
 	# generate translations module for BBIM build
-	# note that bpy is typically available only for current Blender python version
-	pip install bpy
 	git clone https://github.com/IfcOpenShell/blenderbim-translations.git dist/working
-	python blenderbim/scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim/translations.py"
+	python blenderbim/scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
 	rm -rf dist/working
 
 	# Remove dependencies also bundled with Blender
