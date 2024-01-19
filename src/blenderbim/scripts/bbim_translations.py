@@ -171,8 +171,10 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             msg.translations[language] = msgstr
 
     # load data from .po files
+    langs = set()
     for po_file_path in po_directory.glob("**/*.po"):
         lang = po_file_path.stem
+        langs.add(lang)
         with open(po_file_path, "r") as po_file:
             current_chunk = []
             for line in po_file:
@@ -182,59 +184,22 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
                     current_chunk = []
 
     # generate translations.py file
-    # code originating from Blender's bl_i18n_utils/utils.py
-    # https://projects.blender.org/blender/blender/src/branch/main/scripts/modules/bl_i18n_utils/utils.py
-    ret = [
-        "# Tuple of tuples:",
-        "# ((msgctxt, msgid), (sources, gen_comments), (lang, translation, (is_fuzzy, comments)), ...)",
-        "translations_tuple = (",
-    ]
     tab = "    "
     default_context = "*"
-    for msgid, msg in translation_data.items():
-        # Key (context + msgid).
-        msgctxt = msg.msgctxt
-        if not msgctxt:
-            msgctxt = default_context
-        ret.append(tab + '(({}, "{}"),'.format(f'"{msgctxt}"' if msgctxt else "None", msgid))
-        # Common comments (mostly sources!).
-        sources = []
-        if not (sources):
-            ret.append(tab + " ((), ()),")
-        else:
-            if len(sources) > 1:
-                # make sure sources are unique but keep the order
-                sources = list(dict.fromkeys(msg.sources))
-                ret.append(tab + f' (("{sources[0]}",')
-                ret += [tab + f'   "{s}",' for s in sources[1:-1]]
-                ret.append(tab + f'   "{sources[-1]}"),')
-            else:
-                ret.append(tab + " ((" + (f'"{sources[0]}",' if sources else "") + "),")
+    ret = ["translations_dict = {"]
 
-        # All languages
-        for lang, msgstr in msg.translations.items():
-            is_fuzzy = False
-            # Language code and translation.
-            ret.append(tab + ' ("' + lang + f'", "{msgstr}",')
-            # User comments and fuzzy.
-            comments = []
-            lngspaces = " " * (len(lang) + 6)
-            ret.append(tab + lngspaces + "(" + ("True" if is_fuzzy else "False") + ",")
-            ret[-1] = ret[-1] + " (" + ((f'"{comments[0]}",') if comments else "") + "))),"
+    for lang in langs:
+        ret.append(f'{tab}"{lang}": {{')
+        for msgid, msg in translation_data.items():
+            if (msgstr := msg.translations[lang]) in (None, ""):
+                continue
+            msgctxt = msg.msgctxt
+            if not msgctxt:
+                msgctxt = default_context
+            ret.append(f"{tab*2}({msgctxt!r}, {msgid!r}): {msgstr!r},")
+        ret.append(f"{tab}}},")
 
-        ret.append(tab + "),")
-
-    ret += [
-        ")",
-        "",
-        "translations_dict = {}",
-        "for msg in translations_tuple:",
-        tab + "key = msg[0]",
-        tab + "for lang, trans, (is_fuzzy, comments) in msg[2:]:",
-        tab * 2 + "if trans and not is_fuzzy:",
-        tab * 3 + "translations_dict.setdefault(lang, {})[key] = trans",
-        "",
-    ]
+    ret.append("}")
 
     with open(translations_module / "translations.py", "w") as fo:
         fo.write("\n".join(ret))
