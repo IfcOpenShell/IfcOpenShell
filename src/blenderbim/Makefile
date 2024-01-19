@@ -698,7 +698,7 @@ endif
 
 	# generate translations module for BBIM build
 	git clone https://github.com/IfcOpenShell/blenderbim-translations.git dist/working
-	python blenderbim/scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
+	python scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
 	rm -rf dist/working
 
 	# Remove dependencies also bundled with Blender
