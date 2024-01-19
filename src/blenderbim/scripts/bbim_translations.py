@@ -107,7 +107,8 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
                 for i, regex in enumerate(regexes):
-                    is_operator = i < 2
+                    # NOTE: operator tooltips doesnt seem to need Operator context
+                    is_operator = i < 1
                     for regex_match in regex.finditer(content):
                         string = regex_match.group(1)
                         if string == "":
