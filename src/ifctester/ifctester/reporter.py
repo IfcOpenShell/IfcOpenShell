@@ -256,6 +256,7 @@ class Json(Reporter):
             {
                 "reason": requirement.failed_reasons[i],
                 "element": str(e),
+                "element_type": str(ifcopenshell.util.element.get_type(e)),
                 "class": e.is_a(),
                 "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
                 "name": getattr(e, "Name", None),
@@ -395,7 +396,7 @@ class Ods(Json):
                     continue
                 for failure in requirement["failed_entities"]:
                     element = failure.get("element", None)
-                    element_type = ifcopenshell.util.element.get_type(failure.get("element", None))
+                    element_type = failure.get("element_type", None)
                     row = [
                         requirement["description"],
                         failure.get("reason", "No reason provided"),
