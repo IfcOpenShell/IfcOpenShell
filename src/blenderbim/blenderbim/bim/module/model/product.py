@@ -204,7 +204,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if (
             building_obj
             and building_element
-            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
             and instance_class in ["IfcWindow", "IfcDoor"]
         ):
             # Fills should be a sibling to the building element
@@ -234,7 +234,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if (
             building_obj
             and building_element
-            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering"]
+            and building_element.is_a() in ["IfcWall", "IfcWallStandardCase", "IfcCovering", "IfcElementAssembly"]
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
