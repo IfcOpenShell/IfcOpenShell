@@ -65,16 +65,20 @@ class IFCFileSelector:
                     split = box.split()
                     split.label(text=key.title().replace("_", " "))
                     split.label(text=str(value))
-                    if (
-                        key.lower() == "schema_name"
-                        and str(value).lower() == "ifc2x3"
-                        and filepath[-4:].lower() == ".ifc"
-                    ):
-                        row = box.row()
-                        op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
-                        op.infile = filepath
-                        op.outfile = filepath[0:-4] + "-IFC4.ifc"
-                        op.schema = "IFC4"
+                    if key.lower() == "schema_name" and filepath[-4:].lower() == ".ifc":
+                        schema_lower = str(value).lower()
+                        if schema_lower == "ifc2x3":
+                            row = box.row()
+                            op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
+                            op.infile = filepath
+                            op.outfile = filepath[0:-4] + "-IFC4.ifc"
+                            op.schema = "IFC4"
+                        elif schema_lower == "ifc4":
+                            row = box.row()
+                            op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4X3")
+                            op.infile = filepath
+                            op.outfile = filepath[0:-4] + "-IFC4X3.ifc"
+                            op.schema = "IFC4X3"
 
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")

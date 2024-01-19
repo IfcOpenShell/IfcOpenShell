@@ -640,11 +640,17 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
     def auto_generate_boundaries(self, space, space_obj):
         # Identify all potential building elements
+        # TODO: don't select everything, use AABB culling in Blender
         building_elements = (
             tool.Ifc.get().by_type("IfcWall")
             + tool.Ifc.get().by_type("IfcSlab")
             + tool.Ifc.get().by_type("IfcVirtualElement")
         )
+
+        # Don't generate boundaries of building elements that we've already got bounaries for.
+        for boundary in space.BoundedBy:
+            if boundary.RelatedBuildingElement in building_elements:
+                building_elements.remove(boundary.RelatedBuildingElement)
 
         # Create tree of gross shapes of all potential related building elements
         include = building_elements + [space]
@@ -689,7 +695,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 bm.faces.new([bm.verts[i] for i in face])
             bm.verts.ensure_lookup_table()
             bm.faces.ensure_lookup_table()
-            bm.normal_update()  # Needed to recalculate edges so that dissolve_limit will work.
+            bm.normal_update()  # Needed so that dissolve_limit will work.
             bmesh.ops.dissolve_limit(bm, angle_limit=radians(1), verts=bm.verts[:], edges=bm.edges[:])
             bm.verts.ensure_lookup_table()
             bm.faces.ensure_lookup_table()
@@ -718,7 +724,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         continue
 
                     # Project the building element face onto the space face
-                    # This bit onwards is copy pasted from the old implementation
                     space_face_verts = [v.co.copy() for v in space_face.verts]
                     space_face_matrix = self.get_face_matrix(*[v.copy() for v in space_face_verts[0:3]])
                     space_face_matrix_i = space_face_matrix.inverted()
@@ -745,65 +750,114 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     ):
                         continue
 
+                    # The gross boundary polygon may not be a true gross boundary since it
+                    # may have openings already removed, such as in IFC4 Reference View. So
+                    # we cheat by using the exterior boundary to mean "gross".
+                    exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
+
                     parent_boundary = tool.Ifc.run(
                         "root.create_entity", ifc_class=bpy.context.scene.BIMModelProperties.boundary_class
                     )
-                    parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
-                    # Set to EXTERNAL by default and turn later to internal if there is a corresponding boundary relating to an
-                    # internal space
-                    parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
-
-                    # The gross boundary polygon may not be a true gross boundary since it
-                    # may have openings already removed, such as in IFC4 Reference View. So
-                    # we cheat by using the exterior boundary to mean "gross". Later, we
-                    # can use this to check whether or not the opening is relevant to our
-                    # space.
-                    exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
+                    if building_element.is_a("IfcVirtualElement"):
+                        parent_boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
+                    else:
+                        parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+                    parent_boundary.InternalOrExternalBoundary = "NOTDEFINED"
+                    if building_element.is_a("IfcWall"):
+                        is_external = ifcopenshell.util.element.get_pset(
+                            building_element, "Pset_WallCommon", "IsExternal"
+                        )
+                        if is_external is True:
+                            parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
+                        elif is_external is False:
+                            parent_boundary.InternalOrExternalBoundary = "INTERNAL"
+                    elif building_element.is_a("IfcSlab"):
+                        predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
+                        if predefined_type == "BASESLAB":
+                            parent_boundary.InternalOrExternalBoundary = "EXTERNAL_EARTH"
+                        else:
+                            is_external = ifcopenshell.util.element.get_pset(
+                                building_element, "Pset_SlabCommon", "IsExternal"
+                            )
+                            if is_external is True:
+                                parent_boundary.InternalOrExternalBoundary = "EXTERNAL"
+                            elif is_external is False:
+                                parent_boundary.InternalOrExternalBoundary = "INTERNAL"
+                    parent_boundary.RelatingSpace = space
+                    parent_boundary.RelatedBuildingElement = building_element
+                    parent_boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
+                        exterior_boundary_polygon, space_face_matrix
+                    )
+                    self.set_boundary_name(parent_boundary)
 
                     for rel in getattr(building_element, "HasOpenings", []):
                         opening = rel.RelatedOpeningElement
-                        if not opening.HasFillings:
-                            continue
-                        filling = opening.HasFillings[0].RelatedBuildingElement
-                        opening_polygon = self.get_flattened_polygon(opening, space_obj, space_face_matrix_i)
+                        filling = opening.HasFillings[0].RelatedBuildingElement if opening.HasFillings else None
 
-                        # An inner boundary is supposed to overlap its parent boundary according to IFC4 documentation
-                        # so we extend our exterior boundary with all opening which has a filling
-                        # Also see Implementation aggreement SB 1.1 for IFC 2x3 TC1 Space Boundary Addon View
-                        # https://standards.buildingsmart.org/MVD/RELEASE/IFC2x3/TC1/SB1_1/IFC%20Space%20Boundary%20Implementation%20Agreement%20Addendum%202010-03-22.pdf
-                        unionised_object = exterior_boundary_polygon.union(opening_polygon)
-                        if isinstance(unionised_object, shapely.Polygon):
-                            exterior_boundary_polygon = unionised_object
+                        # Create shape of opening as a dissolved BMesh
+                        settings = ifcopenshell.geom.settings()
+                        settings.set(settings.STRICT_TOLERANCE, True)
+                        shape = ifcopenshell.geom.create_shape(settings, opening)
+                        m = shape.transformation.matrix.data
+                        mat = Matrix(
+                            (
+                                [m[0], m[3], m[6], m[9]],
+                                [m[1], m[4], m[7], m[10]],
+                                [m[2], m[5], m[8], m[11]],
+                                [0, 0, 0, 1],
+                            )
+                        )
+                        opening_bm = bmesh.new()
+                        verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+                        for vert in verts:
+                            opening_bm.verts.new(Vector(vert))
+                        opening_bm.verts.ensure_lookup_table()
+                        faces = ifcopenshell.util.shape.get_faces(shape.geometry)
+                        for face in faces:
+                            opening_bm.faces.new([opening_bm.verts[i] for i in face])
+                        opening_bm.verts.ensure_lookup_table()
+                        opening_bm.faces.ensure_lookup_table()
+                        opening_bm.normal_update()  # Needed so that dissolve_limit will work.
+                        bmesh.ops.dissolve_limit(
+                            opening_bm, angle_limit=radians(1), verts=opening_bm.verts[:], edges=opening_bm.edges[:]
+                        )
+                        opening_bm.verts.ensure_lookup_table()
+                        opening_bm.faces.ensure_lookup_table()
+
+                        # Get relevant faces of BMesh that can turn into boundaries
+                        opening_polygons = []
+                        for opening_face in opening_bm.faces:
+                            opening_face_normal = mat.to_3x3() @ opening_face.normal
+                            angle = degrees(acos(max(min(opening_face_normal.dot(face_normal), 1), -1)))
+                            if not tool.Cad.is_x(angle, 180, tolerance=2):
+                                continue  # Any non-parallel faces are not relevant
+                            opening_face_verts = [space_matrix_world_i @ mat @ v.co.copy() for v in opening_face.verts]
+                            polygon = shapely.Polygon([tuple((space_face_matrix_i @ v).xy) for v in opening_face_verts])
+                            opening_polygons.append(polygon)
+
+                        # Merge them all into a single opening polygon for our boundary
+                        opening_polygon = shapely.ops.unary_union(opening_polygons)
 
                         # Only openings that are projected onto our exterior boundary are relevant.
                         if opening_polygon.intersection(exterior_boundary_polygon).area == 0:
                             continue
 
-                        connection_geometry = self.create_connection_geometry_from_polygon(
-                            opening_polygon, space_face_matrix
-                        )
                         boundary = tool.Ifc.run(
                             "root.create_entity", ifc_class=bpy.context.scene.BIMModelProperties.boundary_class
                         )
                         boundary.RelatingSpace = space
-                        boundary.RelatedBuildingElement = filling
-                        boundary.ConnectionGeometry = connection_geometry
-                        if building_element.is_a("IfcVirtualElement"):
-                            boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
-                        else:
+                        boundary.RelatedBuildingElement = filling or opening
+                        boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
+                            opening_polygon, space_face_matrix
+                        )
+                        if filling:
                             boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
+                        else:
+                            boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
                         boundary.InternalOrExternalBoundary = parent_boundary.InternalOrExternalBoundary
-                        self.set_boundary_name(boundary)
-                        if boundary.is_a("IfcRelSpaceBoundary2ndLevel"):
+                        if boundary.is_a() != "IfcRelSpaceBoundary":
                             boundary.ParentBoundary = parent_boundary
-
-                    connection_geometry = self.create_connection_geometry_from_polygon(
-                        exterior_boundary_polygon, space_face_matrix
-                    )
-                    parent_boundary.RelatingSpace = space
-                    parent_boundary.RelatedBuildingElement = building_element
-                    parent_boundary.ConnectionGeometry = connection_geometry
-                    self.set_boundary_name(parent_boundary)
+                        self.set_boundary_name(boundary)
 
     def create_element_boundary(
         self, context, relating_space, relating_space_obj, related_building_element, related_building_element_obj

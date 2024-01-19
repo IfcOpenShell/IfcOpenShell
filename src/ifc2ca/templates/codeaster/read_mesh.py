@@ -1,0 +1,3 @@
+# STEP: READ MED FILE
+mesh = LIRE_MAILLAGE(FORMAT="MED", UNITE=20)
+{{"\n"}}
