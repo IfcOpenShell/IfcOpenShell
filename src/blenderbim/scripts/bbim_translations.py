@@ -1,12 +1,16 @@
-import bpy
-import addon_utils
+try:
+    import bpy
+    import bl_i18n_utils
+    import addon_utils
+    BPY_IS_LOADED = True
+except ModuleNotFoundError:
+    BPY_IS_LOADED = False
+
 import shutil
 import tempfile
 import importlib
 import os
-import sys
 import re
-import bl_i18n_utils
 from pathlib import Path
 from dataclasses import dataclass
 from typing import Dict
@@ -22,7 +26,6 @@ bl_info = {
     "category": "System",
 }
 
-context = bpy.context
 # NOTE: list of available languages in Blender can be retrieved
 # by the command below:
 # bpy.context.preferences.view.language = "test"
@@ -36,7 +39,7 @@ def is_addon_loaded(addon_name) -> bool:
 
 
 def get_branches_directory():
-    return Path(context.preferences.filepaths.i18n_branches_directory)
+    return Path(bpy.context.preferences.filepaths.i18n_branches_directory)
 
 
 def get_addon_directory() -> Path:
@@ -326,266 +329,266 @@ def dump_addon_messages(module_name, do_checks, settings):
 
     return pot
 
+if BPY_IS_LOADED:
+    class SetupTranslationUI(bpy.types.Operator):
+        bl_idname = "bim.setup_translation_ui"
+        bl_label = "Setup Translation UI"
+        bl_options = set()
 
-class SetupTranslationUI(bpy.types.Operator):
-    bl_idname = "bim.setup_translation_ui"
-    bl_label = "Setup Translation UI"
-    bl_options = set()
+        def execute(self, context):
+            if not is_addon_loaded("ui_translate"):
+                addon_utils.enable("ui_translate", default_set=True)
+                self.report({"INFO"}, '"Manage UI translations" addon was not enabled, it\'s enabled now.')
 
-    def execute(self, context):
-        if not is_addon_loaded("ui_translate"):
-            addon_utils.enable("ui_translate", default_set=True)
-            self.report({"INFO"}, '"Manage UI translations" addon was not enabled, it\'s enabled now.')
+            addon_prefs = context.preferences.addons["ui_translate"].preferences
 
-        addon_prefs = context.preferences.addons["ui_translate"].preferences
+            def is_valid_path(path: Path):
+                return path.is_dir() and path.is_absolute()
 
-        def is_valid_path(path: Path):
-            return path.is_dir() and path.is_absolute()
+            # check branches directory
+            branches_dir = get_branches_directory()
+            if not is_valid_path(branches_dir):
+                raise Exception(
+                    f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
+                    "Setup I18n branches directory below (or in Preferences > File Paths > Development > I18n Branches) "
+                    "to a folder containing (or that will contain) .po files."
+                )
 
-        # check branches directory
-        branches_dir = get_branches_directory()
-        if not is_valid_path(branches_dir):
-            raise Exception(
-                f"I18n Branches directory is not set up or doesn't exist ({branches_dir}).\n"
-                "Setup I18n branches directory below (or in Preferences > File Paths > Development > I18n Branches) "
-                "to a folder containing (or that will contain) .po files."
-            )
+            # check translations directory
+            i18n_dir = Path(addon_prefs.I18N_DIR)
+            # we won't really use the translations directory, we just need addon to stop complaining about it
+            if not is_valid_path(i18n_dir):
+                addon_prefs.I18N_DIR = str(branches_dir)
+                self.report(
+                    {"INFO"},
+                    f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"',
+                )
 
-        # check translations directory
-        i18n_dir = Path(addon_prefs.I18N_DIR)
-        # we won't really use the translations directory, we just need addon to stop complaining about it
-        if not is_valid_path(i18n_dir):
-            addon_prefs.I18N_DIR = str(branches_dir)
-            self.report(
-                {"INFO"},
-                f'Translations directory ({i18n_dir}) doesn\'t exist. It was reset to I18n branches directory: "{branches_dir}"',
-            )
+            # check source directory
+            source_dir = Path(addon_prefs.SOURCE_DIR)
+            default_source_path = Path(bpy.app.binary_path).parent / ".".join([str(i) for i in bpy.app.version[:2]])
 
-        # check source directory
-        source_dir = Path(addon_prefs.SOURCE_DIR)
-        default_source_path = Path(bpy.app.binary_path).parent / ".".join([str(i) for i in bpy.app.version[:2]])
+            if not is_valid_path(source_dir):
+                addon_prefs.SOURCE_DIR = str(default_source_path)
+                self.report(
+                    {"INFO"},
+                    f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"',
+                )
+                source_dir = default_source_path
 
-        if not is_valid_path(source_dir):
-            addon_prefs.SOURCE_DIR = str(default_source_path)
-            self.report(
-                {"INFO"},
-                f'Source directory ({source_dir}) doesn\'t exist. It was reset to default directory: "{default_source_path}"',
-            )
-            source_dir = default_source_path
+            source_locale_path = source_dir / "locale/po"
+            # Blender UI translations also expect "scripts/presets/keyconfig" to be present in SOURCE_DIR
+            # but default directory has it by default
+            if not source_locale_path.is_dir():
+                source_locale_path.mkdir(parents=True, exist_ok=True)
+                self.report(
+                    {"INFO"},
+                    f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
+                )
 
-        source_locale_path = source_dir / "locale/po"
-        # Blender UI translations also expect "scripts/presets/keyconfig" to be present in SOURCE_DIR
-        # but default directory has it by default
-        if not source_locale_path.is_dir():
-            source_locale_path.mkdir(parents=True, exist_ok=True)
-            self.report(
-                {"INFO"},
-                f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
-            )
+            from ui_translate.settings import settings as ui_translate_settings
+            from ui_translate.update_ui import UI_OT_i18n_updatetranslation_init_settings
 
-        from ui_translate.settings import settings as ui_translate_settings
-        from ui_translate.update_ui import UI_OT_i18n_updatetranslation_init_settings
-
-        i18n_settings = context.window_manager.i18n_update_settings
-        if not i18n_settings.is_init:
-            # if it's not loaded yet, we'll try to reload it one more time
-            # since we default values we set up during the current operator might helped
-            UI_OT_i18n_updatetranslation_init_settings.execute_static(context, ui_translate_settings)
+            i18n_settings = context.window_manager.i18n_update_settings
             if not i18n_settings.is_init:
-                raise Exception(
-                    "UI Translation settings are not initalized. Make sure the following directories exist:\n"
-                    f" - {ui_translate_settings.WORK_DIR}\n"
-                    f" - {ui_translate_settings.BLENDER_I18N_PO_DIR}\n"
-                )
+                # if it's not loaded yet, we'll try to reload it one more time
+                # since we default values we set up during the current operator might helped
+                UI_OT_i18n_updatetranslation_init_settings.execute_static(context, ui_translate_settings)
+                if not i18n_settings.is_init:
+                    raise Exception(
+                        "UI Translation settings are not initalized. Make sure the following directories exist:\n"
+                        f" - {ui_translate_settings.WORK_DIR}\n"
+                        f" - {ui_translate_settings.BLENDER_I18N_PO_DIR}\n"
+                    )
 
-        # we monkey patch `bl_i18n_utils.bl_extract_messages.dump_py_messages`
-        # as it's doesn't support ignoring folders
-        # and we need it, otherwise translation addon will try to parse strings
-        # from all BlenderBIM dependencies :O
-        bl_i18n_utils.bl_extract_messages.dump_py_messages = dump_py_messages_monkey_patch
-        bl_i18n_utils.bl_extract_messages.dump_addon_messages = dump_addon_messages
+            # we monkey patch `bl_i18n_utils.bl_extract_messages.dump_py_messages`
+            # as it's doesn't support ignoring folders
+            # and we need it, otherwise translation addon will try to parse strings
+            # from all BlenderBIM dependencies :O
+            bl_i18n_utils.bl_extract_messages.dump_py_messages = dump_py_messages_monkey_patch
+            bl_i18n_utils.bl_extract_messages.dump_addon_messages = dump_addon_messages
 
-        # setup selected languages
-        for lang in i18n_settings.langs:
-            lang.use = lang.uid == context.preferences.view.language
+            # setup selected languages
+            for lang in i18n_settings.langs:
+                lang.use = lang.uid == context.preferences.view.language
 
-        global TRANSLATION_UI_IS_LOADED
-        TRANSLATION_UI_IS_LOADED = True
+            global TRANSLATION_UI_IS_LOADED
+            TRANSLATION_UI_IS_LOADED = True
 
-        return {"FINISHED"}
-
-
-class ReloadPyTranslations(bpy.types.Operator):
-    bl_idname = "bim.reload_py_translations"
-    bl_label = "Reload Py Translations"
-    bl_description = "Parse strings from Blender objects of the addon to `translations.py`"
-    bl_options = set()
-    use_bbim_parser: bpy.props.BoolProperty(
-        name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
-    )
-
-    def execute(self, context):
-        if self.use_bbim_parser:
-            blenderbim_strings_parse()
-        else:
-            if is_addon_loaded(ADDON_NAME):
-                # ref: https://projects.blender.org/blender/blender/issues/116579
-                raise Exception(
-                    f"'{ADDON_NAME}' addon is enabled.\n"
-                    "Need to disable it, restart Blender and start reloading translations again.\n"
-                    "Otherwise some strings to translate might get lost due Blender bug."
-                )
-
-            bpy.ops.ui.i18n_addon_translation_update("INVOKE_DEFAULT", module_name=ADDON_NAME)
-        self.report({"INFO"}, "Translations py data is saved.")
-        return {"FINISHED"}
-
-
-class ConvertTranslationsToPo(bpy.types.Operator):
-    bl_idname = "bim.convert_translations_to_po"
-    bl_label = "Convert Translations To .po"
-    bl_description = (
-        "Extract current translation strings from translation.py to .po files and saves them to I18n Branches directory"
-    )
-    bl_options = set()
-
-    def execute(self, context):
-        temp_po_dir = tempfile.TemporaryDirectory()
-        branches_dir = get_branches_directory()
-
-        bpy.ops.ui.i18n_addon_translation_export(
-            module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=True
-        )
-
-        # NOTE: we use I18n branches directory
-        # because it is the directory that later will be used to edit translation from UI.
-        # I18n directory also has a bit different format then `ui_translate.export/import`,
-        # every .po file has a parent folder with the same name
-        # so we rearrange the exported data that way
-        for file in Path(temp_po_dir.name).iterdir():
-            branches_subdir = branches_dir / file.stem
-            branches_subdir.mkdir(exist_ok=True)
-            file.replace(branches_subdir / file.name)
-
-        temp_po_dir.cleanup()
-        self.report({"INFO"}, f"Translations .po files are saved to {branches_dir}.")
-        return {"FINISHED"}
-
-
-class UpdateTranslationsFromPo(bpy.types.Operator):
-    bl_idname = "bim.update_translations_from_po"
-    bl_label = "Update Translations From .po"
-    bl_description = (
-        "Load translation strings from po files at I18n Branches\n"
-        "back to translations.py (they also get copied to `locale` directory of the addon)"
-    )
-    use_bbim_parser: bpy.props.BoolProperty(
-        name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
-    )
-    bl_options = set()
-
-    def execute(self, context):
-        branches_dir = get_branches_directory()
-        if self.use_bbim_parser:
-            update_translations_from_po(branches_dir, get_addon_directory())
-        else:
-            temp_po_dir = tempfile.TemporaryDirectory()
-            rearrange_files_for_po_import(branches_dir, temp_po_dir)
-
-            bpy.ops.ui.i18n_addon_translation_import(
-                module_name=ADDON_NAME,
-                directory=temp_po_dir.name,
-            )
-
-            # update translations in current Blender session
-            if is_addon_loaded(ADDON_NAME):
-                bpy.app.translations.unregister(ADDON_NAME)
-                addon_module = importlib.import_module(ADDON_NAME)
-                translations_module = getattr(addon_module, "translations")
-                importlib.reload(translations_module)
-                bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
-        self.report({"INFO"}, f"Addon's translation updated from .po in {branches_dir}")
-        return {"FINISHED"}
-
-
-class DisableEnableAddon(bpy.types.Operator):
-    bl_idname = "bim.disable_enable_addon"
-    bl_label = "Disable/Enable addon"
-    bl_description = "Will enable addon if it's disabled, will disable it and restart Blender otherwise"
-    bl_options = set()
-
-    def execute(self, context):
-        if not is_addon_loaded(ADDON_NAME):
-            addon_utils.enable("blenderbim", default_set=True)
             return {"FINISHED"}
 
-        import os
-        import subprocess
 
-        addon_utils.disable("blenderbim", default_set=True)
-
-        blender_exe = bpy.app.binary_path
-        head, tail = os.path.split(blender_exe)
-        blender_launcher = os.path.join(head, "blender-launcher.exe")
-        subprocess.run([blender_launcher, "-con", "--python-expr", "import bpy; bpy.ops.wm.recover_last_session()"])
-        bpy.ops.wm.quit_blender()
-        return {"FINISHED"}
-
-
-class BBIM_PT_translations(bpy.types.Panel):
-    bl_label = "BlenderBIM Translations"
-    bl_idname = "BBIM_PT_translations"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "render"
-
-    def draw(self, context):
-        layout = self.layout
-        layout.prop(context.preferences.view, "language")
-
-        if not TRANSLATION_UI_IS_LOADED:
-            layout.operator("bim.setup_translation_ui")
-            layout.prop(context.preferences.filepaths, "i18n_branches_directory", text="I18n branches directory")
-            return
-
-        layout.label(text="Developer UI:")
-        layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
-
-        # blender restart is disabled as we'll parse strings with BBIM parser
-        addon_enabled = is_addon_loaded(ADDON_NAME)
-        row = layout.row()
-        row.operator(
-            "bim.disable_enable_addon",
-            icon="QUIT" if addon_enabled else "PLUGIN",
-            text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon",
+    class ReloadPyTranslations(bpy.types.Operator):
+        bl_idname = "bim.reload_py_translations"
+        bl_label = "Reload Py Translations"
+        bl_description = "Parse strings from Blender objects of the addon to `translations.py`"
+        bl_options = set()
+        use_bbim_parser: bpy.props.BoolProperty(
+            name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
         )
-        row.enabled = False
 
-        layout.operator("bim.convert_translations_to_po", icon="EXPORT")
-        layout.separator(factor=3)
-        layout.label(text="Translator UI:")
-        layout.prop(context.preferences.filepaths, "i18n_branches_directory")
-        layout.operator("bim.update_translations_from_po", icon="IMPORT")
+        def execute(self, context):
+            if self.use_bbim_parser:
+                blenderbim_strings_parse()
+            else:
+                if is_addon_loaded(ADDON_NAME):
+                    # ref: https://projects.blender.org/blender/blender/issues/116579
+                    raise Exception(
+                        f"'{ADDON_NAME}' addon is enabled.\n"
+                        "Need to disable it, restart Blender and start reloading translations again.\n"
+                        "Otherwise some strings to translate might get lost due Blender bug."
+                    )
 
-
-classes = (
-    ReloadPyTranslations,
-    ConvertTranslationsToPo,
-    UpdateTranslationsFromPo,
-    SetupTranslationUI,
-    DisableEnableAddon,
-    BBIM_PT_translations,
-)
-
-
-def register():
-    for cls in classes:
-        bpy.utils.register_class(cls)
+                bpy.ops.ui.i18n_addon_translation_update("INVOKE_DEFAULT", module_name=ADDON_NAME)
+            self.report({"INFO"}, "Translations py data is saved.")
+            return {"FINISHED"}
 
 
-def unregister():
-    for cls in classes:
-        bpy.utils.unregister_class(cls)
+    class ConvertTranslationsToPo(bpy.types.Operator):
+        bl_idname = "bim.convert_translations_to_po"
+        bl_label = "Convert Translations To .po"
+        bl_description = (
+            "Extract current translation strings from translation.py to .po files and saves them to I18n Branches directory"
+        )
+        bl_options = set()
+
+        def execute(self, context):
+            temp_po_dir = tempfile.TemporaryDirectory()
+            branches_dir = get_branches_directory()
+
+            bpy.ops.ui.i18n_addon_translation_export(
+                module_name=ADDON_NAME, directory=temp_po_dir.name, use_export_pot=True
+            )
+
+            # NOTE: we use I18n branches directory
+            # because it is the directory that later will be used to edit translation from UI.
+            # I18n directory also has a bit different format then `ui_translate.export/import`,
+            # every .po file has a parent folder with the same name
+            # so we rearrange the exported data that way
+            for file in Path(temp_po_dir.name).iterdir():
+                branches_subdir = branches_dir / file.stem
+                branches_subdir.mkdir(exist_ok=True)
+                file.replace(branches_subdir / file.name)
+
+            temp_po_dir.cleanup()
+            self.report({"INFO"}, f"Translations .po files are saved to {branches_dir}.")
+            return {"FINISHED"}
+
+
+    class UpdateTranslationsFromPo(bpy.types.Operator):
+        bl_idname = "bim.update_translations_from_po"
+        bl_label = "Update Translations From .po"
+        bl_description = (
+            "Load translation strings from po files at I18n Branches\n"
+            "back to translations.py (they also get copied to `locale` directory of the addon)"
+        )
+        use_bbim_parser: bpy.props.BoolProperty(
+            name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
+        )
+        bl_options = set()
+
+        def execute(self, context):
+            branches_dir = get_branches_directory()
+            if self.use_bbim_parser:
+                update_translations_from_po(branches_dir, get_addon_directory())
+            else:
+                temp_po_dir = tempfile.TemporaryDirectory()
+                rearrange_files_for_po_import(branches_dir, temp_po_dir)
+
+                bpy.ops.ui.i18n_addon_translation_import(
+                    module_name=ADDON_NAME,
+                    directory=temp_po_dir.name,
+                )
+
+                # update translations in current Blender session
+                if is_addon_loaded(ADDON_NAME):
+                    bpy.app.translations.unregister(ADDON_NAME)
+                    addon_module = importlib.import_module(ADDON_NAME)
+                    translations_module = getattr(addon_module, "translations")
+                    importlib.reload(translations_module)
+                    bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
+            self.report({"INFO"}, f"Addon's translation updated from .po in {branches_dir}")
+            return {"FINISHED"}
+
+
+    class DisableEnableAddon(bpy.types.Operator):
+        bl_idname = "bim.disable_enable_addon"
+        bl_label = "Disable/Enable addon"
+        bl_description = "Will enable addon if it's disabled, will disable it and restart Blender otherwise"
+        bl_options = set()
+
+        def execute(self, context):
+            if not is_addon_loaded(ADDON_NAME):
+                addon_utils.enable("blenderbim", default_set=True)
+                return {"FINISHED"}
+
+            import os
+            import subprocess
+
+            addon_utils.disable("blenderbim", default_set=True)
+
+            blender_exe = bpy.app.binary_path
+            head, tail = os.path.split(blender_exe)
+            blender_launcher = os.path.join(head, "blender-launcher.exe")
+            subprocess.run([blender_launcher, "-con", "--python-expr", "import bpy; bpy.ops.wm.recover_last_session()"])
+            bpy.ops.wm.quit_blender()
+            return {"FINISHED"}
+
+
+    class BBIM_PT_translations(bpy.types.Panel):
+        bl_label = "BlenderBIM Translations"
+        bl_idname = "BBIM_PT_translations"
+        bl_space_type = "PROPERTIES"
+        bl_region_type = "WINDOW"
+        bl_context = "render"
+
+        def draw(self, context):
+            layout = self.layout
+            layout.prop(context.preferences.view, "language")
+
+            if not TRANSLATION_UI_IS_LOADED:
+                layout.operator("bim.setup_translation_ui")
+                layout.prop(context.preferences.filepaths, "i18n_branches_directory", text="I18n branches directory")
+                return
+
+            layout.label(text="Developer UI:")
+            layout.operator("bim.reload_py_translations", icon="FILE_REFRESH")
+
+            # blender restart is disabled as we'll parse strings with BBIM parser
+            addon_enabled = is_addon_loaded(ADDON_NAME)
+            row = layout.row()
+            row.operator(
+                "bim.disable_enable_addon",
+                icon="QUIT" if addon_enabled else "PLUGIN",
+                text="Disable Addon And Restart Blender" if addon_enabled else "Enable Addon",
+            )
+            row.enabled = False
+
+            layout.operator("bim.convert_translations_to_po", icon="EXPORT")
+            layout.separator(factor=3)
+            layout.label(text="Translator UI:")
+            layout.prop(context.preferences.filepaths, "i18n_branches_directory")
+            layout.operator("bim.update_translations_from_po", icon="IMPORT")
+
+
+    classes = (
+        ReloadPyTranslations,
+        ConvertTranslationsToPo,
+        UpdateTranslationsFromPo,
+        SetupTranslationUI,
+        DisableEnableAddon,
+        BBIM_PT_translations,
+    )
+
+
+    def register():
+        for cls in classes:
+            bpy.utils.register_class(cls)
+
+
+    def unregister():
+        for cls in classes:
+            bpy.utils.unregister_class(cls)
 
 
 def bpy_update_translations_from_po(po_directory: Path, translations_module: Path):
