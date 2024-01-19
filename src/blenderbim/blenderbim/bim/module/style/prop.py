@@ -32,6 +32,10 @@ from bpy.props import (
     CollectionProperty,
 )
 
+import gettext
+
+_ = gettext.gettext
+
 
 def get_style_types(self, context):
     if not StylesData.is_loaded:
@@ -88,9 +92,9 @@ def update_shader_graph(self, context):
 
 
 UV_MODES = [
-    ("UV", "UV", "Actual UV data presented on the geometry"),
-    ("Generated", "Generated", "Automatically-generated UV from the vertex positions of the mesh"),
-    ("Camera", "Camera", "UV from position coordinate in camera space"),
+    ("UV", "UV", _("Actual UV data presented on the geometry")),
+    ("Generated", "Generated", _("Automatically-generated UV from the vertex positions of the mesh")),
+    ("Camera", "Camera", _("UV from position coordinate in camera space")),
 ]
 
 

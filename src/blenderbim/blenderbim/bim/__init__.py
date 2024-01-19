@@ -24,6 +24,10 @@ import blenderbim
 import importlib
 from . import handler, ui, prop, operator, helper
 
+try:
+    from blenderbim.translations import translations_dict
+except ImportError:
+    translations_dict = {}
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 modules = {
@@ -250,6 +254,8 @@ def register():
     except:
         pass
 
+    bpy.app.translations.register("blenderbim", translations_dict)
+
 
 def unregister():
     global icons
@@ -292,3 +298,5 @@ def unregister():
         bpy.utils.unregister_class(override_panel)
         bpy.utils.register_class(original_panel)
         del overridden_scene_panels[panel]
+
+    bpy.app.translations.unregister("blenderbim")
