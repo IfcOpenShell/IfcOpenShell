@@ -4,7 +4,11 @@ This folder contains the setup to build the IfcOpenShell C++ API documentation f
 
 ## Generating the documentation
 
-Prerequisites: make sure to have [Doxygen](https://www.doxygen.nl) and [Graphviz](https://graphviz.org) installed into your `$PATH` variable.
+> Prerequisites:
+> 
+> Make sure to have [Doxygen](https://www.doxygen.nl) and [Graphviz](https://graphviz.org) installed into your `$PATH` variable.
+> 
+> The documentation also use the [doxygen-awesome](https://jothepro.github.io/doxygen-awesome-css) theme as a git submodule.
 
 Build with the command (from within the `/docs/cpp-api` folder):
 
