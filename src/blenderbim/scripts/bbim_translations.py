@@ -39,6 +39,11 @@ def get_branches_directory():
     return Path(context.preferences.filepaths.i18n_branches_directory)
 
 
+def get_addon_directory() -> Path:
+    addon_module = importlib.import_module(ADDON_NAME)
+    return Path(addon_module.__file__).parent
+
+
 def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.TemporaryDirectory):
     """I18n directory also has a bit different format then `ui_translate.export/import`,
     every .po file has a parent folder with the same name.
@@ -55,9 +60,11 @@ def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.Te
 
 @dataclass
 class Message:
-    msg_id: str
-    context: str | None
+    msgid: str
+    msgctxt: str | None
     sources: list[str]
+    # mapping languages to translated strings
+    translations: Dict[str, str]
 
 
 def blenderbim_strings_parse(addon_directory=None, po_directory=None):
@@ -67,8 +74,7 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
     # ref: https://projects.blender.org/blender/blender/issues/116579
 
     if addon_directory is None:
-        addon_module = importlib.import_module(ADDON_NAME)
-        addon_directory = Path(addon_module.__file__).parent
+        addon_directory = get_addon_directory()
     directory = addon_directory / "bim"
 
     if po_directory is None:
@@ -81,7 +87,7 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
         r'Property\(.*?name\s*=\s*"(.*?)"',  # property names
         r'report\(\{.*?\}\s*,\s*"(.*?)"',  # operator reports
         r'info\(\{.*?\}\s*,\s*"(.*?)"',  # operator info
-        r'\b_\("(.*?)"\)' # gettext called with `_`
+        r'\b_\("(.*?)"\)',  # gettext called with `_`
     ]
     regexes = [re.compile(pattern) for pattern in patterns]
     matched_dict: Dict[str, Message] = dict()
@@ -114,7 +120,7 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
                         if message is None:
                             message = Message(string, ctx, [])
                             matched_dict[string] = message
-                        elif ctx != message.context and False:
+                        elif ctx != message.msgctxt and False:
                             print(
                                 f'WARNING. Message "{string}" was already registered with different context {message.context}. '
                                 f"Current context: {ctx}. File: {source_rel_path}"
@@ -128,11 +134,110 @@ def blenderbim_strings_parse(addon_directory=None, po_directory=None):
             sources = list(dict.fromkeys(msg.sources))
             for source in sources:
                 fo.write(f"#: {source}\n")
-            if msg.context != None:
-                fo.write(f'msgctxt "{msg.context}"\n')
-            fo.write(f'msgid "{msg.msg_id}"\n')
+            if msg.msgctxt != None:
+                fo.write(f'msgctxt "{msg.msgctxt}"\n')
+            fo.write(f'msgid "{msg.msgid}"\n')
             fo.write('msgstr ""\n')
             fo.write("\n")
+
+
+def update_translations_from_po(po_directory: Path, translations_module: Path):
+    translation_data: Dict[str, Message] = dict()
+
+    def process_po_entry(language, current_chunk: list[str]):
+        sources = []
+        msgid = None
+        msgstr = None
+        msgctxt = None
+        parse_message_attr = lambda line, attr_name: line.removeprefix(f'{attr_name} "').removesuffix('"')
+
+        for line in current_chunk:
+            line = line.strip()
+            if line.startswith('msgid "'):
+                msgid = parse_message_attr(line, "msgid")
+            elif line.startswith('msgstr "'):
+                msgstr = parse_message_attr(line, "msgstr")
+            elif line.startswith('msgctxt "'):
+                msgctxt = parse_message_attr(line, "msgctxt")
+            elif line.startswith("#:"):
+                sources.append(line.removeprefix("# ").strip())
+
+        msg = translation_data.get(msgid)
+        if msg is None:
+            msg = Message(msgid, msgctxt, sources, {language: msgstr})
+            translation_data[msgid] = msg
+        else:
+            msg.sources.extend(sources)
+            msg.translations[language] = msgstr
+
+    # load data from .po files
+    for po_file_path in po_directory.glob("**/*.po"):
+        lang = po_file_path.stem
+        with open(po_file_path, "r") as po_file:
+            current_chunk = []
+            for line in po_file:
+                current_chunk.append(line)
+                if line.startswith("msgstr"):
+                    process_po_entry(lang, current_chunk)
+                    current_chunk = []
+
+    # generate translations.py file
+    # code originating from Blender's bl_i18n_utils/utils.py
+    # https://projects.blender.org/blender/blender/src/branch/main/scripts/modules/bl_i18n_utils/utils.py
+    ret = [
+        "# Tuple of tuples:",
+        "# ((msgctxt, msgid), (sources, gen_comments), (lang, translation, (is_fuzzy, comments)), ...)",
+        "translations_tuple = (",
+    ]
+    tab = "    "
+    default_context = "*"
+    for msgid, msg in translation_data.items():
+        # Key (context + msgid).
+        msgctxt = msg.msgctxt
+        if not msgctxt:
+            msgctxt = default_context
+        ret.append(tab + '(({}, "{}"),'.format(f'"{msgctxt}"' if msgctxt else "None", msgid))
+        # Common comments (mostly sources!).
+        sources = []
+        if not (sources):
+            ret.append(tab + " ((), ()),")
+        else:
+            if len(sources) > 1:
+                # make sure sources are unique but keep the order
+                sources = list(dict.fromkeys(msg.sources))
+                ret.append(tab + f' (("{sources[0]}",')
+                ret += [tab + f'   "{s}",' for s in sources[1:-1]]
+                ret.append(tab + f'   "{sources[-1]}"),')
+            else:
+                ret.append(tab + " ((" + (f'"{sources[0]}",' if sources else "") + "),")
+
+        # All languages
+        for lang, msgstr in msg.translations.items():
+            is_fuzzy = False
+            # Language code and translation.
+            ret.append(tab + ' ("' + lang + f'", "{msgstr}",')
+            # User comments and fuzzy.
+            comments = []
+            lngspaces = " " * (len(lang) + 6)
+            ret.append(tab + lngspaces + "(" + ("True" if is_fuzzy else "False") + ",")
+            ret[-1] = ret[-1] + " (" + ((f'"{comments[0]}",') if comments else "") + "))),"
+
+        ret.append(tab + "),")
+
+    ret += [
+        ")",
+        "",
+        "translations_dict = {}",
+        "for msg in translations_tuple:",
+        tab + "key = msg[0]",
+        tab + "for lang, trans, (is_fuzzy, comments) in msg[2:]:",
+        tab * 2 + "if trans and not is_fuzzy:",
+        tab * 3 + "translations_dict.setdefault(lang, {})[key] = trans",
+        "",
+    ]
+
+    with open(translations_module / "translations.py", "w") as fo:
+        fo.write("\n".join(ret))
 
 
 def dump_py_messages_monkey_patch(msgs, reports, addons, settings, addons_only=False):
@@ -409,25 +514,31 @@ class UpdateTranslationsFromPo(bpy.types.Operator):
         "Load translation strings from po files at I18n Branches\n"
         "back to translations.py (they also get copied to `locale` directory of the addon)"
     )
+    use_bbim_parser: bpy.props.BoolProperty(
+        name="Use BlenderBIM Parser", description="As oppose to Blender parser", default=True
+    )
     bl_options = set()
 
     def execute(self, context):
-        temp_po_dir = tempfile.TemporaryDirectory()
         branches_dir = get_branches_directory()
-        rearrange_files_for_po_import(branches_dir, temp_po_dir)
+        if self.use_bbim_parser:
+            update_translations_from_po(branches_dir, get_addon_directory())
+        else:
+            temp_po_dir = tempfile.TemporaryDirectory()
+            rearrange_files_for_po_import(branches_dir, temp_po_dir)
 
-        bpy.ops.ui.i18n_addon_translation_import(
-            module_name=ADDON_NAME,
-            directory=temp_po_dir.name,
-        )
+            bpy.ops.ui.i18n_addon_translation_import(
+                module_name=ADDON_NAME,
+                directory=temp_po_dir.name,
+            )
 
-        # update translations in current Blender session
-        if is_addon_loaded(ADDON_NAME):
-            bpy.app.translations.unregister(ADDON_NAME)
-            addon_module = importlib.import_module(ADDON_NAME)
-            translations_module = getattr(addon_module, "translations")
-            importlib.reload(translations_module)
-            bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
+            # update translations in current Blender session
+            if is_addon_loaded(ADDON_NAME):
+                bpy.app.translations.unregister(ADDON_NAME)
+                addon_module = importlib.import_module(ADDON_NAME)
+                translations_module = getattr(addon_module, "translations")
+                importlib.reload(translations_module)
+                bpy.app.translations.register(ADDON_NAME, translations_module.translations_dict)
         self.report({"INFO"}, f"Addon's translation updated from .po in {branches_dir}")
         return {"FINISHED"}
 
@@ -512,7 +623,7 @@ def unregister():
         bpy.utils.unregister_class(cls)
 
 
-def update_translations_from_po(po_directory: Path, translations_module: Path):
+def bpy_update_translations_from_po(po_directory: Path, translations_module: Path):
     from bl_i18n_utils.settings import I18nSettings
     import bl_i18n_utils.utils as utils_i18n
 
