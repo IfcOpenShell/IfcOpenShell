@@ -34,7 +34,7 @@ from bpy.props import (
 
 import gettext
 
-_ = gettext
+_ = gettext.gettext
 
 
 def get_style_types(self, context):
