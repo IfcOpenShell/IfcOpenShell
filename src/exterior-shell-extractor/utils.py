@@ -42,7 +42,7 @@ def to_tuple(eq):
     return tuple(eq)
 
 
-to_double = lambda n: tuple(to_tuple(n)[i].to_double() for i in range(3))
+to_double = lambda n: tuple(v.to_double() for v in to_tuple(n))
 
 
 def oc_len(tup):
@@ -63,7 +63,7 @@ def negate(sign):
         return tup
 
     def neg(tup):
-        return tuple(-v for v in tup)
+        return tuple(-v for v in to_tuple(tup))
 
     return neg if sign == -1 else iden
 

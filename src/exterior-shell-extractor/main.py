@@ -70,10 +70,12 @@ class model_geometry:
 
 class context:
     
-    def __init__(self, fn):
+    def __init__(self, fn, debug=False, existing_mapping=False):
         self.fn = fn
         self.bfn = os.path.basename(fn)
         self.is_substituted = False
+        self.debug = debug
+        self.existing_mapping = existing_mapping
         substituted_fn = self.bfn + ".substituted.ifc"
 
         if os.path.exists(substituted_fn):
@@ -92,11 +94,20 @@ class context:
         openings = self.extract_geometry(include=self.opening_elems)
         data = self.extract_geometry(include=self.elems)
 
+        self.remove_narrow(openings)
+        self.remove_narrow(data)
+
         all_geom = openings + data
 
-        my_mapping = self.create_mapping(all_geom)
-
-        self.apply_mapping(all_geom, my_mapping)
+        if existing_mapping:
+            my_mapping = json.load(open('epeck_mapping.json'))
+            def deser(strs):
+                return tuple(utils.to_opaque(tuple(map(utils.create_epeck, st.split(' ')))) for st in strs)
+            my_mapping = {k: list(map(list, zip(*map(deser, vs)))) for k, vs in my_mapping.items()}
+        else:
+            my_mapping = self.create_mapping(all_geom)
+        
+        self.apply_mapping(all_geom, my_mapping, from_disk=existing_mapping)
 
         del my_mapping
 
@@ -137,12 +148,25 @@ class context:
                 yield pqr
 
         tri_norms = numpy.array(list(_()))
+
+        def _():
+            for f in fs:
+                p, q, r = vs[f]
+                pq = q - p
+                pr = r - p
+                pqr = numpy.cross(pq, pr)
+                yield numpy.linalg.norm(pqr) / 2.
+
+        tri_areas = numpy.array(list(_()))
+
         _, inv, cnts = numpy.unique(numpy.int_(tri_norms * 1000), return_counts=True, return_inverse=True, axis=0)
         di = utils.make_default(sorted((j, i) for i, j in enumerate(inv)))
-        V = numpy.average(tri_norms[di[numpy.argsort(cnts)[-1]]], axis=0)
+        summed_area = [v[1] for v in sorted((k, sum(tri_areas[v])) for k, v in di.items())]
+        sorted_summed_areas = numpy.argsort(summed_area)
+        V = numpy.average(tri_norms[di[sorted_summed_areas[-1]]], axis=0)
         candidates = []
         for i in range(1, min(10, len(cnts))):
-            ref = numpy.average(tri_norms[di[numpy.argsort(cnts)[-i]]], axis=0)
+            ref = numpy.average(tri_norms[di[sorted_summed_areas[-i]]], axis=0)
             candidates.append((abs(ref @ V), ref))
         if not candidates:
             refs = [(0, 0, 1), (1, 0, 0)]
@@ -229,7 +253,7 @@ class context:
         json.dump([i.id() for i in result], open(self.bfn + ".elements.json", "w"))
         return result
 
-    def substitute_detailed_elements(self, force=False, **kwargs):
+    def substitute_detailed_elements(self, file=None, force=False, **kwargs):
         """Substitute elements with a high vertex count with an
         oriented bounding box.
 
@@ -245,6 +269,7 @@ class context:
             ITERATOR_OUTPUT=ifcopenshell.ifcopenshell_wrapper.TRIANGULATED,
             DISABLE_OPENING_SUBTRACTIONS=True,
         )
+        f = file or self.f
         it = ifcopenshell.geom.iterator(s, f, geometry_library="cgal", **kwargs)
         if not it.initialize():
             return
@@ -260,7 +285,6 @@ class context:
             if not it.next():
                 break
 
-        f = self.f
         for elid, m3, mi, ma in substitutions:
             elem = f[elid]
             elem.ObjectPlacement = f.createIfcLocalPlacement(
@@ -343,7 +367,7 @@ class context:
                             while body.Items[0].is_a("IfcMappedItem"):
                                 body = body.Items[0].MappingSource.MappedRepresentation
                             body.Items = [body.Items[i]]
-                            self.substitute_detailed_elements(ff, force=True)
+                            self.substitute_detailed_elements(file=ff, force=True)
                             ff.write("temp.ifc")
                             fff = ifcopenshell.open("temp.ifc")
                             its.append(ifcopenshell.geom.iterator(s, fff, geometry_library="cgal"))
@@ -438,6 +462,60 @@ class context:
                 break
 
         return data
+
+    @utils.trace
+    def remove_narrow(self, data):
+        negate = lambda x: utils.to_opaque(utils.negate(-1)(x))
+
+        trees = [(k, i, v) for i, (k, v) in enumerate(data.convex_halfspace_trees)]
+        trees = [(k, list(vs)) for k, vs in itertools.groupby(sorted(trees, key=operator.itemgetter(0)), key=operator.itemgetter(0))]
+
+        internal_mapping = []
+        to_remove = []
+
+        for elem, decomps in trees:
+            # only tested on align inner
+            assert all(len(parts) == 1 for _, __, parts in decomps)
+            
+            for _, original_index, parts in decomps:
+
+                hs = parts[0]
+                epecks = [h.plane_equation() for h in hs.facets()]
+
+                # print('I', original_index)
+                # for eq in epecks:
+                #     print('eq', *(x.to_string() for x in utils.to_tuple(eq)))
+
+                rounded_negated = [tuple(-int(round(v * 10000)) for v in utils.to_double(eq)) for eq in epecks]
+                # for v in rounded_negated:
+                #     print('ap', *v)
+                
+                for eq in epecks:
+                    try:
+                        abcd_idx = rounded_negated.index(tuple(int(round(v * 10000)) for v in utils.to_double(eq)))
+                    except ValueError as e:
+                        continue
+                    
+                    internal_mapping.append((eq, negate(epecks[abcd_idx])))
+                    internal_mapping.append((negate(eq), epecks[abcd_idx]))
+                    
+                    to_remove.append(original_index)
+                    # print('removing', original_index)
+                    break
+
+        new_decomps = []
+        for elem, decomps in trees:
+            for _, original_index, parts in decomps:
+                if original_index in to_remove:
+                    continue
+                    
+                hs = parts[0]
+                for ab in internal_mapping:
+                    hs.map(*ab)
+                
+                new_decomps.append((elem, [hs]))
+
+        data.convex_halfspace_trees = new_decomps
 
     @utils.trace
     def create_mapping(self, data):
@@ -572,27 +650,78 @@ class context:
         return mapping
 
     @utils.trace
-    def apply_mapping(self, data, mapping):
-        by_id = defaultdict(lambda: (list(), list()))
-        for a, b, idxs in mapping:
-            for idx in idxs:
-                by_id[idx][0].append(a)
-                by_id[idx][1].append(b)
+    def apply_mapping(self, data, mapping, from_disk=False):
+        if from_disk:
+            by_id = mapping
+        else:
+            by_id = defaultdict(lambda: (list(), list()))
+            for a, b, idxs in mapping:
+                fr, to = (" ".join(map(lambda n: n.to_string(), utils.to_tuple(x))) for x in (a,b))
+                if fr == to:
+                    continue
+                for idx in idxs:
+                    by_id[idx][0].append(a)
+                    by_id[idx][1].append(b)
+
+            """
+            # can be used to store global mapping and apply to individually extracted elements
+            mapping = defaultdict(list)
+            for k, vs in by_id.items():
+                guid = data.convex_halfspace_trees[k][0].GlobalId
+                for ab in zip(*vs):
+                    from_to = tuple(" ".join(map(lambda n: n.to_string(), utils.to_tuple(x))) for x in ab)
+                    mapping[guid].append(from_to)
+            json.dump(mapping, open('epeck_mapping.json', 'w'))
+            """
 
         for i, (elem, ps) in enumerate(data.convex_halfspace_trees):
-            for p in ps:
-                p.map(*by_id[i])
+            if from_disk:
+                maps = by_id[elem.GlobalId]
+            else:
+                maps = by_id[i]
+            for j, p in enumerate(ps):
+                # pps = p.solid()
+                # old_area = pps.area().to_double()
+                # old_volume = pps.volume().to_double()
+                # open(f'{i}_{j}_before.obj', 'w').write(pps.serialize_obj())
+                p.map(*maps)
+                # pps = p.solid()
+                # new_area = pps.area().to_double()
+                # new_volume = pps.volume().to_double()
+                # open(f'{i}_{j}_after.obj', 'w').write(pps.serialize_obj())
+                # if new_area:
+                #     print(i, j, new_area / old_area, old_area, new_area, old_volume, new_volume)
+
+    @staticmethod
+    def write_obj(ofn, *, elem=None, item=None):
+        s = ifcopenshell.geom.settings(USE_WORLD_COORDS=True, WELD_VERTICES=False)
+        if item:
+            geom = item.Triangulate(s)
+        else:
+            geom = elem.geometry
+
+        vs_fs = geom.verts, geom.faces
+        vs, fs = map(lambda tup: numpy.array(tup).reshape((-1, 3)), vs_fs)
+
+        with open(ofn, "w") as obj:
+            for v in vs:
+                print('v', *v, file=obj)
+            for f in fs + 1:
+                print('f', *f, file=obj)
 
     @utils.trace
     def evaluate(self, data):
         def inner():
-            for elem, ps in data.convex_halfspace_trees:
+            for i, (elem, ps) in enumerate(data.convex_halfspace_trees):
                 print("Evaluating", elem)
                 solids = [p.solid() for p in ps]
                 # @todo use union()
                 v = solids[0]
                 for p in solids[1:]:
                     v = v.add(p)
+
+                if self.debug:
+                    self.write_obj(f"adjusted_{elem.GlobalId}_{i}.obj", item=v)
 
                 yield elem, v
 
@@ -619,4 +748,6 @@ class context:
 
 if __name__ == "__main__":      
     fn = sys.argv[1]
-    context(fn)
+    debug = "-d" in sys.argv
+    existing_mapping = "-m" in sys.argv
+    context(fn, debug=debug, existing_mapping=existing_mapping)
