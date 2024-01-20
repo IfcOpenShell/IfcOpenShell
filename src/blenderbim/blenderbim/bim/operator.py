@@ -142,23 +142,6 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         return {"RUNNING_MODAL"}
 
 
-class ReloadSelectedIfcFile(bpy.types.Operator):
-    bl_idname = "bim.reload_selected_ifc_file"
-    bl_label = "Reload selected IFC File"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload currently selected IFC file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        filepath = context.scene.BIMProperties.ifc_file
-        valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
-        if not valid_file:
-            self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
-            return {"CANCELLED"}
-        context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
-        return {"FINISHED"}
-
-
 class SelectDataDir(bpy.types.Operator):
     bl_idname = "bim.select_data_dir"
     bl_label = "Select Data Directory"
