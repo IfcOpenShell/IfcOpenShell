@@ -37,13 +37,15 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
-        row.operator("bim.reload_selected_ifc_file", icon="FILE_REFRESH", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
         row.prop(props, "express_file", text="")
         row.operator("bim.parse_express", icon="IMPORT", text="")
         row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
 
         row = layout.row()
         row.operator("bim.print_ifc_file")
