@@ -167,6 +167,13 @@ class Blender(blenderbim.core.tool.Blender):
         bpy.context.window_manager.popup_menu(message_ui, title=message_type.capitalize(), icon=message_type)
 
     @classmethod
+    def get_view3d_area(cls):
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "VIEW_3D":
+                    return area
+
+    @classmethod
     def get_blender_prop_default_value(cls, props, prop_name):
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
@@ -184,7 +191,7 @@ class Blender(blenderbim.core.tool.Blender):
         It's a bit naive since it's just taking the first available `VIEW_3D` area
         when in real life you can have a couple of those but should work for the most cases.
         """
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = cls.get_view3d_area()
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         context_override = {"area": area, "region": region, "space_data": space}
