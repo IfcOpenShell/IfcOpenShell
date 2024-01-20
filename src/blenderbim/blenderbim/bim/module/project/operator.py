@@ -683,7 +683,7 @@ class RevertProject(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.revert_project"
     bl_label = "Revert IFC Project"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload currently opened IFC project discarding all unsaved changes"
+    bl_description = "Revert to a fresh session discarding all unsaved changes"
 
     @classmethod
     def poll(cls, context):

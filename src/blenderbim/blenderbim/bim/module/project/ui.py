@@ -211,7 +211,6 @@ class BIM_PT_project(Panel):
 
             row = self.layout.row(align=True)
             row.prop(props, "ifc_file", text="")
-            row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
             row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
             row.operator("bim.unload_project", text="", icon="CANCEL")
         else:
