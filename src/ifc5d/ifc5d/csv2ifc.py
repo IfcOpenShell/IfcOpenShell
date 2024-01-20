@@ -134,7 +134,7 @@ class Csv2Ifc:
                         category = category.replace("Rate", "")
                         category = category.strip()
                     cost_value.Category = category
-        else:
+        elif cost_item["CostValues"]:
             cost_value = ifcopenshell.api.run("cost.add_cost_value", self.file, parent=cost_item["ifc"])
             cost_value.AppliedValue = self.file.createIfcMonetaryMeasure(cost_item["CostValues"])
             if self.is_schedule_of_rates:
