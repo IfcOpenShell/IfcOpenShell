@@ -494,6 +494,11 @@ class CreateDrawing(bpy.types.Operator):
                         geom_settings = ifcopenshell.geom.settings(
                             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
                         )
+                        if ifc.by_id(body_context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
+                            offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+                            # A 2mm Z offset to combat Z-fighting in plan or RCPs
+                            offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                            geom_settings.offset = offset
                         geom_settings.set_context_ids(body_context)
                         it = ifcopenshell.geom.iterator(
                             geom_settings, ifc, multiprocessing.cpu_count(), include=elements
@@ -513,6 +518,11 @@ class CreateDrawing(bpy.types.Operator):
                         geom_settings = ifcopenshell.geom.settings(
                             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
                         )
+                        if ifc.by_id(annotation_context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
+                            offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+                            # A 2mm Z offset to combat Z-fighting in plan or RCPs
+                            offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                            geom_settings.offset = offset
                         geom_settings.set_context_ids(annotation_context)
                         it = ifcopenshell.geom.iterator(
                             geom_settings, ifc, multiprocessing.cpu_count(), include=elements
