@@ -1592,12 +1592,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def is_drawing_active(cls):
         camera = bpy.context.scene.camera
-        return (
-            camera
-            and camera.type == "CAMERA"
-            and camera.BIMObjectProperties.ifc_definition_id
-            and any(a.type == "VIEW_3D" for a in bpy.context.screen.areas)
-        )
+        area = tool.Blender.get_view3d_area()
+        return camera and camera.type == "CAMERA" and camera.BIMObjectProperties.ifc_definition_id and area
 
     @classmethod
     def is_camera_orthographic(cls):
@@ -1614,7 +1610,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def activate_drawing(cls, camera):
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
             bpy.ops.view3d.localview()
@@ -1742,8 +1738,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         local_x = [v.x for v in local_bbox]
         local_y = [v.y for v in local_bbox]
         local_z = [v.z for v in local_bbox]
-        aabb1_min = (-x/2, -y/2, -clip_end)
-        aabb1_max = (x/2, y/2, -clip_start)
+        aabb1_min = (-x / 2, -y / 2, -clip_end)
+        aabb1_max = (x / 2, y / 2, -clip_start)
         aabb2_min = (min(local_x), min(local_y), min(local_z))
         aabb2_max = (max(local_x), max(local_y), max(local_z))
         for i in range(3):
