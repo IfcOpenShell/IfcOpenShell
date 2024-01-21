@@ -50,5 +50,18 @@ class Usecase:
     def execute(self):
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["product"], name, value)
+        if hasattr(self.settings["product"], "PredefinedType"):
+            if hasattr(self.settings["product"], "ElementType"):
+                if (
+                    not self.settings["product"].ElementType
+                    and self.settings["product"].PredefinedType == "USERDEFINED"
+                ):
+                    self.settings["product"].PredefinedType = "NOTDEFINED"
+            elif hasattr(self.settings["product"], "ObjectType"):
+                if (
+                    not self.settings["product"].ObjectType
+                    and self.settings["product"].PredefinedType == "USERDEFINED"
+                ):
+                    self.settings["product"].PredefinedType = "NOTDEFINED"
         if hasattr(self.settings["product"], "OwnerHistory"):
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
