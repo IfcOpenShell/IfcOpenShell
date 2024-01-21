@@ -321,7 +321,7 @@ class Usecase:
         )
         half_space = self.file.createIfcHalfSpaceSolid(surface, False)
 
-        clipping_result = self.file.create_entity("IfcBooleanClippingResult", "DIFFERENCE", pyramid, half_space)
+        clipping_result = self.file.create_entity("IfcBooleanResult", "DIFFERENCE", pyramid, half_space)
 
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
