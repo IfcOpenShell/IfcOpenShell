@@ -74,7 +74,12 @@ class Usecase:
             outer_curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(outer_points))
             inner_curves = []
             for inner_point in inner_points:
-                inner_curves.append(self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(inner_point)))
+                dimensions = len(inner_point[0])
+                if dimensions == 2:
+                    ifc_points = self.file.createIfcCartesianPointList2D(inner_point)
+                elif dimensions == 3:
+                    ifc_points = self.file.createIfcCartesianPointList3D(inner_point)
+                inner_curves.append(self.file.createIfcIndexedPolyCurve(ifc_points))
         return self.file.createIfcArbitraryProfileDefWithVoids("AREA", self.settings["name"], outer_curve, inner_curves)
 
     def convert_si_to_unit(self, co):
