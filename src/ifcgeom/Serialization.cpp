@@ -600,6 +600,7 @@ IfcUtil::IfcBaseClass* IfcGeom::MAKE_TYPE_NAME(serialise_)(const TopoDS_Shape& s
 				return 0;
 			}
 			/// @todo Are shells always in this order or does Orientation() needs to be checked?
+			/// > #4216, no, consider using BRepClass3d::OuterShell()
 			if (outer) {
 				inner->push(shell);
 			} else {
