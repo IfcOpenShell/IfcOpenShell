@@ -872,6 +872,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     def remove_old_connections(old_to_new):
         for new in old_to_new.values():
+            if not hasattr(new[0], "ConnectedTo"):
+                continue
             for connection in new[0].ConnectedTo:
                 entity = connection.RelatedElement
                 if entity in old_to_new.keys():
