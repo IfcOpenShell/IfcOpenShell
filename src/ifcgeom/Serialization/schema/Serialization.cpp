@@ -614,6 +614,7 @@ IfcUtil::IfcBaseClass* POSTFIX_SCHEMA(serialise)(const TopoDS_Shape& shape, bool
 				return 0;
 			}
 			/// @todo Are shells always in this order or does Orientation() needs to be checked?
+			/// > #4216, no, consider using BRepClass3d::OuterShell()
 			if (outer) {
 				inner->push(shell);
 			} else {
