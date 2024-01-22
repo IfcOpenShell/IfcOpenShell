@@ -31,6 +31,10 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
+from typing import TypeVar
+
+T = TypeVar("T")
+
 
 def wrap_shape_creation(settings, shape):
     return shape
@@ -253,7 +257,7 @@ serialise = make_shape_function(ifcopenshell_wrapper.serialise)
 tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
 
 
-def wrap_buffer_creation(fn):
+def wrap_buffer_creation(fn: T):
     """
     Python does not have automatic casts. The C++ serializers accept a stream_or_filename
     which in C++ can be automatically constructed from a filename string. In Python we
@@ -266,28 +270,25 @@ def wrap_buffer_creation(fn):
         else:
             return v
 
-    def inner(*args):
+    def inner(*args) -> T:
         return fn(*map(transform_string, args))
 
     return inner
 
 
-# Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
-# so no wrap_buffer_creation() for these serializers
-serializer_dict = {}
-serializer_dict["obj"] = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
-serializer_dict["svg"] = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
-serializer_dict["xml"] = ifcopenshell_wrapper.XmlSerializer
-serializer_dict["buffer"] = ifcopenshell_wrapper.buffer
-
-# gltf and hdf5 availability depend on IfcOpenShell configuration settings
-try:
-    serializer_dict["gltf"] = ifcopenshell_wrapper.GltfSerializer
-except: pass
-
-try:
-    serializer_dict["hdf5"] = ifcopenshell_wrapper.HdfSerializer
-except:
-    pass
-
-serializers = type("serializers", (), serializer_dict)
+class serializers:
+    obj = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
+    svg = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+    # Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
+    # so no wrap_buffer_creation() for these serializers
+    xml = ifcopenshell_wrapper.XmlSerializer
+    buffer = ifcopenshell_wrapper.buffer
+    # gltf and hdf5 availability depend on IfcOpenShell configuration settings
+    try:
+        gtlf = ifcopenshell_wrapper.GltfSerializer
+    except:
+        pass
+    try:
+        hdf5 = ifcopenshell_wrapper.HdfSerializer
+    except:
+        pass
