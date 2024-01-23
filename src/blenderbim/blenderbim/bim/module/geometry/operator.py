@@ -1272,7 +1272,12 @@ class OverridePasteBuffer(bpy.types.Operator):
         bpy.ops.view3d.pastebuffer()
         if IfcStore.get_file():
             for obj in context.selected_objects:
-                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+                # Pasted objects may come from another Blender session, or even
+                # from the same session where the original object has since
+                # been deleted. As the source element may not exist, paste will
+                # always unlink the element. If you want to duplicate an
+                # element, use the duplicate commands.
+                tool.Root.unlink_object(obj)
         return {"FINISHED"}
 
 
