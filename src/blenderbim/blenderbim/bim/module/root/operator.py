@@ -177,48 +177,45 @@ class UnlinkObject(bpy.types.Operator):
     bl_label = "Unlink Object"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    should_delete: bpy.props.BoolProperty(name="Should Delete", default=True)
+    should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
         if self.obj:
             objects = [bpy.data.objects.get(self.obj)]
         else:
             objects = context.selected_objects
+
         for obj in objects:
             was_active_object = obj == context.active_object
-            object_name = obj.name
+
+            if obj in IfcStore.edited_objs:
+                IfcStore.edited_objs.remove(obj)
+
             element = tool.Ifc.get_entity(obj)
-            if element:
-                if self.should_delete:
-                    obj_copy = obj.copy()
+            if element and self.should_delete:
+                object_name = obj.name
 
-                    # copy object data, so it won't be removed by `delete_ifc_object`
-                    if obj.data:
-                        obj_copy.data = obj.data.copy()
-                        if obj.type == "MESH":
-                            obj_copy.data.BIMMeshProperties.ifc_definition_id = 0
+                # Copy object, so it won't be removed by `delete_ifc_object`
+                obj_copy = obj.copy()
+                if obj.data:
+                    obj_copy.data = obj.data.copy()
 
-                    for collection in obj.users_collection:
-                        collection.objects.link(obj_copy)
-                    tool.Geometry.delete_ifc_object(obj)
-                    obj = obj_copy
-                if obj in IfcStore.edited_objs:
-                    IfcStore.edited_objs.remove(obj)
-                tool.Ifc.unlink(obj=obj)
+                tool.Geometry.delete_ifc_object(obj)
 
-            for material_slot in obj.material_slots:
-                if material_slot.material:
-                    material_slot.material = material_slot.material.copy()
-                    blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
-                    blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
-            if "Ifc" in object_name and "/" in object_name:
-                obj.name = object_name.split("/", 1)[1]
-                if was_active_object:
-                    tool.Blender.set_active_object(obj)
+                obj = obj_copy
+                obj.name = object_name
+
+            tool.Root.unlink_object(obj)
+            for collection in obj.users_collection:
+                # Reset collection because its original collection may be removed too.
+                collection.objects.unlink(obj)
+            bpy.context.scene.collection.objects.link(obj)
+
+            if was_active_object:
+                tool.Blender.set_active_object(obj)
         return {"FINISHED"}
 
     def draw(self, context):
