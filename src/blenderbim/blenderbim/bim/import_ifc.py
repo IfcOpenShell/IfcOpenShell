@@ -1343,7 +1343,7 @@ class IfcImporter:
             element_type = ifcopenshell.util.element.get_type(element)
             if not element_type:
                 continue
-            merge_key = str(element_type.id()) + "-" + element_type.Name or "Unnamed"
+            merge_key = str(element_type.id()) + "-" + (element_type.Name or "Unnamed")
             merge_set.setdefault(merge_key, []).append(obj)
             id_set.setdefault(merge_key, []).append(ifc_definition_id)
         self.merge_objects(merge_set, id_set)
