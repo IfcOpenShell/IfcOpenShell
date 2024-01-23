@@ -351,6 +351,7 @@ class BIMTabProperties(PropertyGroup):
 
 
 class BIMProperties(PropertyGroup):
+    is_dirty: BoolProperty(name="Is Dirty", default=False)
     schema_dir: StringProperty(
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )

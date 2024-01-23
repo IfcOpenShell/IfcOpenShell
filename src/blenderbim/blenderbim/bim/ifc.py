@@ -321,6 +321,7 @@ class IfcStore:
 
     @staticmethod
     def execute_ifc_operator(operator, context, is_invoke=False):
+        bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
         if is_top_level_operator:
