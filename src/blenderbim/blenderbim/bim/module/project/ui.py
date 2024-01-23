@@ -206,7 +206,10 @@ class BIM_PT_project(Panel):
 
         if props.ifc_file:
             row = self.layout.row(align=True)
-            row.label(text="Saved", icon="EXPORT")
+            if context.scene.BIMProperties.is_dirty:
+                row.label(text="Saved*", icon="EXPORT")
+            else:
+                row.label(text="Saved", icon="EXPORT")
             row.label(text=ProjectData.data["last_saved"])
 
             row = self.layout.row(align=True)
