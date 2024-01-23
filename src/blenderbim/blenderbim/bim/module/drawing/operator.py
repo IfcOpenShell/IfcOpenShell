@@ -966,17 +966,21 @@ class CreateDrawing(bpy.types.Operator):
             # alone (e.g. dangles, cuts, invalids). See #3421.
             line_strings = []
             old_paths = []
+            has_open_paths = False
             for path in el.findall("{http://www.w3.org/2000/svg}path"):
                 for subpath in path.attrib["d"].split("M")[1:]:
                     subpath = "M" + subpath.strip()
                     coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    if coords[0] != coords[-1]:
+                        has_open_paths = True
                     line_strings.append(shapely.LineString(coords))
                 old_paths.append(path)
-            unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
-            if hasattr(unioned_line_strings, "geoms"):
-                results = shapely.polygonize_full(unioned_line_strings.geoms)
-            else:
-                results = []
+
+            results = []
+            if has_open_paths:
+                unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
+                if hasattr(unioned_line_strings, "geoms"):
+                    results = shapely.polygonize_full(unioned_line_strings.geoms)
 
             # If we succeeded in generating new path geometry, remove all the
             # old paths and add new ones.
