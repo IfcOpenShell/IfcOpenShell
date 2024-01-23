@@ -1556,10 +1556,10 @@ class IfcImporter:
                     rel_aggregates.add(element.IsDecomposedBy[0])
                 elif element.Decomposes:
                     rel_aggregates.add(element.Decomposes[0])
-                elif element.IsNestedBy:
+                elif getattr(element, "IsNestedBy", []): # IFC2X3 does not have IsNestedBy
                     if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
                         rel_aggregates.add(element.IsNestedBy[0])
-                elif element.Nests:
+                elif getattr(element, "Nests", []):
                     rel_aggregates.add(element.Nests[0])
         else:
             rel_aggregates = [
