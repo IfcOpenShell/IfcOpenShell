@@ -765,8 +765,11 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
-            if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+            if element:
+                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                    continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+                elif element.is_a("IfcProject"):
+                    continue  # Only one IfcProject is allowed.
 
             linked_non_ifc_object = linked and not element
 
