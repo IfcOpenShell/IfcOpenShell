@@ -52,22 +52,23 @@ class ShapeBuilder:
 
     def polyline(
         self, points: List[Vector], closed: bool = False, position_offset: Vector = None, arc_points: List[int] = []
-    ):
+    ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcIndexedPolyCurve based on the provided points.
 
-        :param points: List of points formatted as ( (x0, y0), (x1, y1) )
-        :type: List[Vector]
-        :param closed: Whether polyline should be closed. Default is False.
-        :type: bool, optional
-        :param position_offset: Optional offset to be applied to all points.
-        :type: Optional[Vector]
+        :param points: List of 2d or 3d points
+        :param type: List[Vector]
+        :param closed: Whether polyline should be closed. Default is `False`
+        :param type: bool, optional
+        :param position_offset: offset to be applied to all points
+        :param type: Vector, optional
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
-        provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
-        point's index to this list.
-        :type: List[int]
+            provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
+            point's index to this list
+        :param type: List[int]
 
         :return: IfcIndexedPolyCurve
+        :rtype: ifcopenshell.entity_instance
         """
 
         if arc_points and self.file.schema == "IFC2X3":
@@ -150,17 +151,20 @@ class ShapeBuilder:
         ]
         return points
 
-    def rectangle(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
+    def rectangle(
+        self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None
+    ) -> ifcopenshell.entity_instance:
         """
-        Generate a rectangle polyline, method supports both 2d and 3d rectangle sizes.
+        Generate a rectangle polyline.
 
-        :param size: rectangle size
-        :param type: Vector
+        :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
+        :param type: Vector, optional
         :param size: rectangle position, default to `None`.
-        if `position` not specified zero-vector will be used
+            if `position` not specified zero-vector will be used
         :param type: Vector, optional
 
         :return: IfcIndexedPolyCurve
+        :rtype: ifcopenshell.entity_instance
         """
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
@@ -642,16 +646,17 @@ class ShapeBuilder:
         disk_solid = self.file.createIfcSweptDiskSolid(Directrix=path_curve, Radius=radius)
         return disk_solid
 
-    def get_representation(self, context, items, representation_type: str = None):
+    def get_representation(self, context, items, representation_type: str = None) -> ifcopenshell.entity_instance:
         """Create IFC representation for the specified context and items.
 
         :param context: IfcGeometricRepresentationSubContext
         :param items: could be a list or single curve/IfcExtrudedAreaSolid
         :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
-        If not provided it will be guessed from the items types.
+            If not provided it will be guessed from the items types
         :type representation_type: str, optional
 
         :return: IfcRepresentation
+        :rtype: ifcopenshell.entity_instance
         """
         if not isinstance(items, collections.abc.Iterable):
             items = [items]
@@ -752,7 +757,7 @@ class ShapeBuilder:
         > coords:        list of 2d coords. Example: ((x0,y0), (x1,y1), (x2, y2))
         > fillets:       list of points from `coords` to base fillet on. Example: (1,)
         > fillet_radius: list of fillet radius for each of corresponding point form `fillets`. Example: (5.,)
-                            Note: filler_radius could be just 1 float value if it's the same for all fillets.
+        Note: filler_radius could be just 1 float value if it's the same for all fillets.
 
         Optional arguments:
         > closed:           boolean whether curve should be closed (whether last point connected to first one). Default: True
@@ -1361,12 +1366,12 @@ class ShapeBuilder:
         radius: float,
         bend_vector: Vector,
         flip_z_axis: bool,
-    ):
+    ) -> ifcopenshell.entity_instance:
         """
 
         :param segment: IfcFlowSegment for a bend.
-        Note that for a bend start and end segments types should match.
-
+            Note that for a bend start and end segments types should match.
+        :param type: ifcopenshell.entity_instance
         :param angle: bend angle, in radians
         :param type: float
         :param radius: bend radius
@@ -1376,7 +1381,7 @@ class ShapeBuilder:
             the actual magnitude of the vector is not important (though near zero values will be ignored).
         :param type: Vector
         :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
-        there is an option to flip it if bend is going by start segment Z- axis.
+            there is an option to flip it if bend is going by start segment Z- axis.
         :param type: bool
 
         :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
