@@ -54,7 +54,7 @@ class Usecase:
             the work performed.
         :type resource: ifcopenshell.entity_instance.entity_instance
         :return None:
-        :rtype None:
+        :rtype: None:
         """
         self.file = file
         self.settings = {"resource": resource}
