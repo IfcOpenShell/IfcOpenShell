@@ -338,7 +338,7 @@ def get_type(element):
     :param element: The element occurrence
     :type: ifcopenshell.entity_instance.entity_instance
     :return: The related type element
-    :rtype ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance.entity_instance
 
     Example:
 
@@ -817,8 +817,9 @@ def get_aggregate(element):
     Example:
 
     .. code:: python
-    element = file.by_type("IfcBeam")[0]
-    aggregate = ifcopenshell.util.element.get_aggregate(element)
+
+        element = file.by_type("IfcBeam")[0]
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
     if hasattr(element, "Decomposes") and element.Decomposes:
         if element.Decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
@@ -835,8 +836,9 @@ def get_nest(element):
     Example:
 
     .. code:: python
-    element = file.by_type("IfcBeam")[0]
-    aggregate = ifcopenshell.util.element.get_nest(element)
+
+        element = file.by_type("IfcBeam")[0]
+        aggregate = ifcopenshell.util.element.get_nest(element)
     """
     if hasattr(element, "Nests"):
         if element.Nests:
@@ -856,9 +858,9 @@ def get_parts(element):
     Example:
 
     .. code:: python
-    element = file.by_type("IfcElementAssembly")[0]
-    parts = ifcopenshell.util.element.get_parts(element)
 
+        element = file.by_type("IfcElementAssembly")[0]
+        parts = ifcopenshell.util.element.get_parts(element)
     """
     if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
         if element.IsDecomposedBy[0].is_a("IfcRelAggregates"):
@@ -879,9 +881,9 @@ def get_components(element, include_ports=False):
     Example:
 
     .. code:: python
-    element = file.by_type("IfcElementAssembly")[0]
-    components = ifcopenshell.util.element.get_components(element)
 
+        element = file.by_type("IfcElementAssembly")[0]
+        components = ifcopenshell.util.element.get_components(element)
     """
     if hasattr(element, "IsNestedBy"):
         if element.IsNestedBy:
