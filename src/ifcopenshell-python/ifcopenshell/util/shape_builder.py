@@ -47,7 +47,7 @@ round_vector_to_precision = lambda v, si_conversion: Vector([round_to_precision(
 
 
 class ShapeBuilder:
-    def __init__(self, ifc_file):
+    def __init__(self, ifc_file: ifcopenshell.file):
         self.file = ifc_file
 
     def polyline(
@@ -164,8 +164,16 @@ class ShapeBuilder:
         """
         return self.polyline(self.get_rectangle_coords(size, position), closed=True)
 
-    def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius=1.0):
-        # < returns IfcCircle
+    def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius: float = 1.0) -> ifcopenshell.entity_instance:
+        """
+        :param center: circle 2D position, defaults to zero-vector
+        :param type: Vector, optional
+        :param radius: radius of the circle, defaults to 1.0
+        :param type: float
+
+        :return: IfcCircle
+        :rtype: ifcopenshell.entity_instance
+        """
         ifc_center = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint(center))
         ifc_curve = self.file.createIfcCircle(ifc_center, radius)
 
@@ -555,6 +563,24 @@ class ShapeBuilder:
                 processed_objects.append(c)
 
         return processed_objects if (multiple_objects or multiple_transformations) else processed_objects[0]
+
+    def sphere(self, radius: float = 1.0, center: Vector = Vector((0, 0, 0)).freeze()) -> ifcopenshell.entity_instance:
+        """
+        :param radius: radius of the sphere, defaults to 1.0
+        :param type: float, optional
+        :param center: sphere position, defaults to zero-vector
+        :param type: Vector, optional
+
+        :return: IfcSphere
+        :rtype: ifcopenshell.entity_instance
+        """
+
+        ifc_position = self.file.createIfcAxis2Placement3D(
+            self.file.createIfcCartesianPoint(center),  # position
+            self.file.createIfcDirection((0.0, 0.0, 1.0)),  # Z-axis / Axis
+            self.file.createIfcDirection((1.0, 0.0, 0.0)),  # X-axis / RefDirection
+        )
+        return self.file.createIfcSphere(Radius=radius, Position=ifc_position)
 
     def extrude(
         self,
