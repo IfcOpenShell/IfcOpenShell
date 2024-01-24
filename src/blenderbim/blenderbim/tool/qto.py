@@ -181,7 +181,7 @@ class Qto(blenderbim.core.tool.Qto):
         "quantity_value" : XX,
         "quantity_type" : XX
         }]
-        :rtype list
+        :rtype: list
 
         Example:
 
