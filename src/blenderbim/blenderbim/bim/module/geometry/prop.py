@@ -47,6 +47,15 @@ def update_mode(self, context):
         bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
 
 
+def get_styles(self, context):
+    # postponed import to avoid circular import
+    from blenderbim.bim.module.material.data import MaterialsData
+
+    if not MaterialsData.is_loaded:
+        MaterialsData.load()
+    return MaterialsData.data["styles"]
+
+
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
@@ -59,6 +68,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     items: CollectionProperty(name="Representation Items", type=RepresentationItem)
     active_item_index: IntProperty(name="Active Representation Item Index")
+    is_editing_item_style: BoolProperty(name="Is Editing Item's Style", default=False)
+    representation_item_style: EnumProperty(items=get_styles, name="Representation Item Style")
 
 
 class BIMGeometryProperties(PropertyGroup):

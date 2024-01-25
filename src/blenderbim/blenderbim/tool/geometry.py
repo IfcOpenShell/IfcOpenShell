@@ -716,3 +716,17 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.matrix_world.translation += original_min_point - new_max_point
 
         bpy.context.view_layer.update()
+
+    @classmethod
+    def reload_representation(cls, obj):
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+            apply_openings=True,
+        )

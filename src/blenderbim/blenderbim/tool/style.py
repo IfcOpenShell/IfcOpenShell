@@ -550,5 +550,26 @@ class Style(blenderbim.core.tool.Style):
         tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
 
     @classmethod
+    def assign_style_to_representation_item(cls, representation_item, style=None):
+        ifc_file = tool.Ifc.get()
+        if not representation_item.StyledByItem:
+            if style is None:
+                return
+            ifc_file.createIfcStyledItem(representation_item, (style,))
+
+        styled_item = representation_item.StyledByItem[0]
+        if style is None:
+            ifc_file.remove(styled_item)
+            return
+        styled_item.Styles = (style,)
+
+    @classmethod
+    def get_representation_item_style(cls, representation_item):
+        for inverse in tool.Ifc.get().get_inverse(representation_item):
+            if inverse.is_a("IfcStyledItem"):
+                for style in inverse.Styles:
+                    return style
+
+    @classmethod
     def reload_material_from_ifc(cls, blender_material):
         blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type
