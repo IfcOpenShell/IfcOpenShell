@@ -78,11 +78,27 @@ with pd.ExcelWriter(file_name, engine='openpyxl') as writer:
 Read Excel
 -------------------
 
-Read excel 
+Read excel
+
 ```python
 file_name = "result.xlsx"
 df = pd.read_excel(file_name, sheet_name=None)
 print(list(df.keys()))
+```
+
+Visualize data with seaborn library and matplotlib
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme(style="darkgrid")
+# visualize data df dictionary, y is class name, x is number of objects
+sns.barplot(y=list(df.keys()), x=[len(df[key]) for key in df.keys()])
+plt.xticks(rotation=90)
+plt.ylabel("Class name")
+plt.xlabel("Number of objects")
+plt.title("Visualization by Class")
+plt.show()
 ```
 
 This documentation provides clear and organized instructions for using the IfcExcel library to export and read IFC data in Excel. Adjustments can be made based on your specific documentation requirements.
