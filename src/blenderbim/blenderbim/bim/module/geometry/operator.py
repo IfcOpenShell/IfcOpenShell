@@ -1600,3 +1600,77 @@ class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
     def _execute(self, context):
         obj = context.active_object
         obj.BIMGeometryProperties.is_editing = False
+
+
+class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_item_style"
+    bl_label = "Enable Editing Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_style = True
+        ifc_file = tool.Ifc.get()
+
+        # set dropdown to currently active style
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+        style = tool.Style.get_representation_item_style(representation_item)
+        if style:
+            props.representation_item_style = str(style.id())
+
+
+class EditRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_representation_item_style"
+    bl_label = "Edit Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_style = False
+        ifc_file = tool.Ifc.get()
+
+        surface_style = ifc_file.by_id(int(props.representation_item_style))
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+
+        tool.Style.assign_style_to_representation_item(representation_item, surface_style)
+        tool.Geometry.reload_representation(obj)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class DisableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_item_style"
+    bl_label = "Disable Editing Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_style = False
+
+
+class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_representation_item_style"
+    bl_label = "Unassign Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_style = False
+
+        # get active representation item
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = tool.Ifc.get_entity_by_id(representation_item_id)
+        if not representation_item:
+            self.report({"ERROR"}, f"Couldn't find representation item by id {representation_item_id}.")
+            return {"CANCELLED"}
+
+        tool.Style.assign_style_to_representation_item(representation_item, None)
+        tool.Geometry.reload_representation(obj)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()

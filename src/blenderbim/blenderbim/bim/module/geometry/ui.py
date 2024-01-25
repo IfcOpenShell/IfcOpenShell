@@ -187,17 +187,27 @@ class BIM_PT_representation_items(Panel):
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
         item_is_active = props.active_item_index < len(props.items)
-        if item_is_active:
-            surface_style = props.items[props.active_item_index].surface_style
-            presentation_layer = props.items[props.active_item_index].layer
-        else:
-            surface_style, presentation_layer = None, None
+        if not item_is_active:
+            return
 
-        row = self.layout.row()
-        if surface_style:
-            row.label(text=surface_style, icon="SHADING_RENDERED")
+        surface_style = props.items[props.active_item_index].surface_style
+        presentation_layer = props.items[props.active_item_index].layer
+
+        row = self.layout.row(align=True)
+        if props.is_editing_item_style:
+            # NOTE: we currently support 1 item having just 1 style
+            # when IfcStyledItem can actually have multiple styles
+            row.prop(props, "representation_item_style", icon="SHADING_RENDERED", text="")
+            row.operator("bim.edit_representation_item_style", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_representation_item_style", icon="CANCEL", text="")
         else:
-            row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+            if surface_style:
+                row.label(text=surface_style, icon="SHADING_RENDERED")
+            else:
+                row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+            row.operator("bim.enable_editing_representation_item_style", icon="GREASEPENCIL", text="")
+            if surface_style:
+                row.operator("bim.unassign_representation_item_style", icon="X", text="")
 
         row = self.layout.row()
         row.label(text=presentation_layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
