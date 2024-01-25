@@ -415,24 +415,25 @@ class IfcGit:
     @classmethod
     def config_ifcmerge(cls):
         config_reader = IfcGitRepo.repo.config_reader()
-        config_writer = IfcGitRepo.repo.config_writer()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
-            config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
-            config_writer.set_value(section, "trustExitCode", True)
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
+                config_writer.set_value(section, "trustExitCode", True)
         section = 'mergetool "ifcmerge-forward"'
         if not config_reader.has_section(section):
-            config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
-            config_writer.set_value(section, "trustExitCode", True)
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
+                config_writer.set_value(section, "trustExitCode", True)
 
     @classmethod
     def config_push(cls, repo):
         """Set push.autoSetupRemote"""
         config_reader = repo.config_reader()
-        config_writer = repo.config_writer()
         if not config_reader.has_section("push"):
-            config_writer.set_value("push", "default", "current")
-            config_writer.set_value("push", "autoSetupRemote", True)
+            with repo.config_writer() as config_writer:
+                config_writer.set_value("push", "default", "current")
+                config_writer.set_value("push", "autoSetupRemote", True)
 
     @classmethod
     def config_info_attributes(cls, repo):
