@@ -86,3 +86,5 @@ print(list(df.keys()))
 ```
 
 This documentation provides clear and organized instructions for using the IfcExcel library to export and read IFC data in Excel. Adjustments can be made based on your specific documentation requirements.
+
+To custom more detail, please refer to the repo [Ifc-to-excel](https://github.com/chuongmep/Ifc-to-excel)
