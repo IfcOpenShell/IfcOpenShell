@@ -57,15 +57,15 @@ class ShapeBuilder:
         Generate an IfcIndexedPolyCurve based on the provided points.
 
         :param points: List of 2d or 3d points
-        :param type: List[Vector]
+        :type points: List[Vector]
         :param closed: Whether polyline should be closed. Default is `False`
-        :param type: bool, optional
+        :type closed: bool, optional
         :param position_offset: offset to be applied to all points
-        :param type: Vector, optional
+        :type position_offset: Vector, optional
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
             provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
             point's index to `arc_points`
-        :param type: List[int]
+        :type arc_points: List[int], optional
 
         :return: IfcIndexedPolyCurve
         :rtype: ifcopenshell.entity_instance
@@ -147,9 +147,24 @@ class ShapeBuilder:
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
-    def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None):
-        """get rectangle coords in counter-clockwise order
-        starting from the bottom left corner"""
+    def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None) -> List[Vector]:
+        """
+        Get rectangle coords arranged as below:
+
+        ::
+
+            3 2
+            0 1
+
+        :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
+        :type size: Vector, optional
+        :param position: rectangle position, default to `None`.
+            if `position` not specified zero-vector will be used
+        :type position: Vector, optional
+
+        :return: list of rectangle coords
+        :rtype: List[Vector]
+        """
         dimensions = len(size)
 
         if not position:
@@ -174,10 +189,10 @@ class ShapeBuilder:
         Generate a rectangle polyline.
 
         :param size: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
-        :param type: Vector, optional
-        :param size: rectangle position, default to `None`.
+        :type size: Vector, optional
+        :param position: rectangle position, default to `None`.
             if `position` not specified zero-vector will be used
-        :param type: Vector, optional
+        :type position: Vector, optional
 
         :return: IfcIndexedPolyCurve
         :rtype: ifcopenshell.entity_instance
@@ -187,9 +202,9 @@ class ShapeBuilder:
     def circle(self, center: Vector = Vector((0.0, 0.0)).freeze(), radius: float = 1.0) -> ifcopenshell.entity_instance:
         """
         :param center: circle 2D position, defaults to zero-vector
-        :param type: Vector, optional
+        :type center: Vector, optional
         :param radius: radius of the circle, defaults to 1.0
-        :param type: float
+        :type radius: float, optional
 
         :return: IfcCircle
         :rtype: ifcopenshell.entity_instance
@@ -587,9 +602,9 @@ class ShapeBuilder:
     def sphere(self, radius: float = 1.0, center: Vector = Vector((0, 0, 0)).freeze()) -> ifcopenshell.entity_instance:
         """
         :param radius: radius of the sphere, defaults to 1.0
-        :param type: float, optional
+        :type radius: float, optional
         :param center: sphere position, defaults to zero-vector
-        :param type: Vector, optional
+        :type center: Vector, optional
 
         :return: IfcSphere
         :rtype: ifcopenshell.entity_instance
@@ -1387,18 +1402,18 @@ class ShapeBuilder:
 
         :param segment: IfcFlowSegment for a bend.
             Note that for a bend start and end segments types should match.
-        :param type: ifcopenshell.entity_instance
+        :type segment: ifcopenshell.entity_instance
         :param angle: bend angle, in radians
-        :param type: float
+        :type angle: float
         :param radius: bend radius
-        :param type: float
+        :type radius: float
         :param bend_vector: offset between start and end segments in local space of start segment
             used mainly to determine the second bend axis and it's direction (positive or negative),
             the actual magnitude of the vector is not important (though near zero values will be ignored).
-        :param type: Vector
+        :type bend_vector: Vector
         :param flip_z_axis: since we cannot determine z axis direction from the profile offset,
             there is an option to flip it if bend is going by start segment Z- axis.
-        :param type: bool
+        :type flip_z_axis: bool
 
         :return: tuple of Model/Body/MODEL_VIEW IfcRepresentation and transition shape data
         """
