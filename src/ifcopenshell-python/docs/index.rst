@@ -29,6 +29,7 @@ Let's learn IfcOpenShell!
    ifccityjson
    ifcclash
    ifccsv
+   ifcexcel
    ifcdiff
    ifcfm
    ifcmax
