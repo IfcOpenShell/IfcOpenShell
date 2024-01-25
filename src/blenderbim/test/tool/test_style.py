@@ -23,6 +23,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.style import Style as subject
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestImplementsTool(NewFile):
@@ -460,3 +461,37 @@ class TestIsEditingStyles(NewFile):
         subject.is_editing_styles() is False
         bpy.context.scene.BIMStylesProperties.is_editing = True
         subject.is_editing_styles() is True
+
+
+class TestGetRepresentationStyleItem(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        builder = ShapeBuilder(ifc)
+        rectangle = builder.rectangle()
+
+        assert subject.get_representation_item_style(rectangle) == None
+        style = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style)
+        assert subject.get_representation_item_style(rectangle) == style
+
+
+class TestAssignStyleToRepresentationItem(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        builder = ShapeBuilder(ifc)
+        rectangle = builder.rectangle()
+
+        # assigning new style
+        style1 = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style1)
+        assert subject.get_representation_item_style(rectangle) == style1
+
+        # changing style
+        style2 = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style2)
+        assert subject.get_representation_item_style(rectangle) == style2
+
+        # unassigning styles
+        subject.assign_style_to_representation_item(rectangle, None)
+        assert subject.get_representation_item_style(rectangle) == None
+
