@@ -19,9 +19,48 @@
 import pytest
 import test.bootstrap
 import ifcopenshell.api
+import numpy as np
 from ifcopenshell.util.shape_builder import ShapeBuilder, V, is_x
 from math import degrees, radians, tan
 from mathutils import Vector
+
+
+class TestCreatePolyline(test.bootstrap.IFC4):
+    def test_simple_polyline(self):
+        builder = ShapeBuilder(self.file)
+
+        # rectangle
+        points = Vector((0, 0)), Vector((1, 0)), Vector((1, 1)), Vector((0, 1))
+        position = Vector((2, 0))
+        polyline = builder.polyline(points, closed=True, position_offset=position)
+
+        points = [p + position for p in points]
+        assert np.allclose(np.array(points), np.array(polyline.Points.CoordList))
+        # use 1 line index if there are no arcs
+        assert len(polyline.Segments) == 1
+        segment = polyline.Segments[0]
+        assert segment.is_a("IfcLineIndex")
+        assert segment.wrappedValue == (1, 2, 3, 4, 1)
+
+    def test_polyline_with_arc(self):
+        builder = ShapeBuilder(self.file)
+
+        points = Vector((1, 0)), Vector((0.707, 0.707)), Vector((0, 1)), Vector((0, 2))
+        position = Vector((2, 0))
+        arc_points = (1,)
+        # 4=IfcIndexedPolyCurve(#3,(IfcArcIndex((1,2,3)),IfcLineIndex((3,4,1))),$)
+        polyline = builder.polyline(points, closed=False, position_offset=position, arc_points=arc_points)
+        points = [p + position for p in points]
+        assert np.allclose(np.array(points), np.array(polyline.Points.CoordList))
+        assert len(polyline.Segments) == 2
+
+        segment = polyline.Segments[0]
+        assert segment.is_a("IfcArcIndex")
+        assert segment.wrappedValue == (1, 2, 3)
+
+        segment = polyline.Segments[1]
+        assert segment.is_a("IfcLineIndex")
+        assert segment.wrappedValue == (3, 4)
 
 
 class TestCalculateTransitions(test.bootstrap.IFC4):

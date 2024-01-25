@@ -63,12 +63,28 @@ class ShapeBuilder:
         :param position_offset: offset to be applied to all points
         :param type: Vector, optional
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
-            provide 3 points: `arc_start`, `arc_middle` and `arc_end` and add the `arc_middle`
-            point's index to this list
+            provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
+            point's index to `arc_points`
         :param type: List[int]
 
         :return: IfcIndexedPolyCurve
         :rtype: ifcopenshell.entity_instance
+
+        Example:
+
+        .. code:: python
+
+            # rectangle
+            points = Vector((0, 0)), Vector((1, 0)), Vector((1, 1)), Vector((0, 1))
+            position = Vector((2, 0))
+            # #2=IfcIndexedPolyCurve(#1,(IfcLineIndex((1,2,3,4,1))),$)
+            polyline = builder.polyline(points, closed=True, position_offset=position)
+
+            # arc between points (1,0) and (0,1). Second point in the arc should be it's middle
+            points = Vector((1, 0)), Vector((0.707, 0.707)), Vector((0, 1)), Vector((0,2))
+            arc_points = (1,) # point with index 1 is a middle of the arc
+            # 4=IfcIndexedPolyCurve(#3,(IfcArcIndex((1,2,3)),IfcLineIndex((3,4,1))),$)
+            curved_polyline = builder.polyline(points, closed=False, position_offset=position, arc_points=arc_points)
         """
 
         if arc_points and self.file.schema == "IFC2X3":
