@@ -53,6 +53,7 @@ classes = (
     operator.EditRepresentationItemStyle,
     operator.DisableEditingRepresentationItemStyle,
     operator.UnassignRepresentationItemStyle,
+    operator.RemoveRepresentationItemFromShapeAspect,
     prop.RepresentationItem,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
