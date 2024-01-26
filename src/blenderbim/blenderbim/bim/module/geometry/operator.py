@@ -1596,6 +1596,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
                             if inverse.OfShapeAspect:
                                 shape_aspect = inverse.OfShapeAspect[0]
                                 new.shape_aspect = shape_aspect.Name
+                                new.shape_aspect_id = shape_aspect.id()
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
@@ -1677,6 +1678,26 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
 
         tool.Style.assign_style_to_representation_item(representation_item, None)
         tool.Geometry.reload_representation(obj)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_representation_item_from_shape_aspect"
+    bl_label = "Remove Representation Item From Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
+
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+        shape_aspect = ifc_file.by_id(props.items[props.active_item_index].shape_aspect_id)
+
+        tool.Geometry.remove_representation_item_from_shape_aspect(representation_item, shape_aspect)
         # reload style ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()

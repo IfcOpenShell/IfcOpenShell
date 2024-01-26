@@ -62,6 +62,7 @@ class RepresentationItem(PropertyGroup):
     layer: StringProperty(name="Layer")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")
+    shape_aspect_id: IntProperty(name="Shape Aspect IFC ID")
 
 
 class BIMObjectGeometryProperties(PropertyGroup):
