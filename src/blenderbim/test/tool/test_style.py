@@ -167,7 +167,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
-    
+
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -198,7 +198,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
-        
+
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -494,4 +494,3 @@ class TestAssignStyleToRepresentationItem(NewFile):
         # unassigning styles
         subject.assign_style_to_representation_item(rectangle, None)
         assert subject.get_representation_item_style(rectangle) == None
-
