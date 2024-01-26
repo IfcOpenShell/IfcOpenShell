@@ -213,10 +213,16 @@ class BIM_PT_representation_items(Panel):
         row = self.layout.row()
         row.label(text=active_item.layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
 
-        row = self.layout.row()
-        row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
-        if shape_aspect:
-            row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
+        row = self.layout.row(align=True)
+        if props.is_editing_item_shape_aspect:
+            row.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
+            row.operator("bim.edit_representation_item_shape_aspect", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
+        else:
+            row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
+            row.operator("bim.enable_editing_representation_item_shape_aspect", icon="GREASEPENCIL", text="")
+            if shape_aspect:
+                row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
 
 
 class BIM_PT_connections(Panel):
