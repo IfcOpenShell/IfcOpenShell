@@ -441,7 +441,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             return styles
 
         usage_count = [0] * len(obj.material_slots)
-        if not usage_count: # if there are no materials, polygons will still use index 0
+        if not usage_count:  # if there are no materials, polygons will still use index 0
             return []
         for poly in obj.data.polygons:
             usage_count[poly.material_index] += 1

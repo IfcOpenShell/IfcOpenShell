@@ -97,7 +97,9 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        kmi = km.keymap_items.new(
+            "bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
+        )
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
