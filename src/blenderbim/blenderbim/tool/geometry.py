@@ -730,3 +730,24 @@ class Geometry(blenderbim.core.tool.Geometry):
             should_sync_changes_first=False,
             apply_openings=True,
         )
+
+    @classmethod
+    def remove_representation_item_from_shape_aspect(cls, representation_item, shape_aspect):
+        ifc_file = tool.Ifc.get()
+        # as shape aspect might have multiple representations
+        # it's easier to find it from the item
+        for inverse in ifc_file.get_inverse(representation_item):
+            if inverse.is_a("IfcShapeRepresentation") and shape_aspect in inverse.OfShapeAspect:
+                representation = inverse
+                break
+
+        # removing last item would make representation invalid
+        if len(representation.Items) == 1:
+            # removing last representation would make shape aspect invalid.
+            # remove shape aspect first otherwise remove_representation won't remove it because of the inverse
+            if len(shape_aspect.ShapeRepresentations) == 1:
+                ifc_file.remove(shape_aspect)
+            tool.Ifc.run("geometry.remove_representation", representation=representation)
+        else:
+            items = set(representation.Items) - {representation_item}
+            representation.Items = tuple(items)
