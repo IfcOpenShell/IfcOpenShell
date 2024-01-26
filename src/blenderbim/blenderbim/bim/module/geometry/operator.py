@@ -1683,6 +1683,52 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
+class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_item_shape_aspect"
+    bl_label = "Enable Editing Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = True
+
+        # set dropdown to currently active style
+        shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+        if shape_aspect_id != 0:
+            props.representation_item_shape_aspect = str(shape_aspect_id)
+
+
+class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_representation_item_shape_aspect"
+    bl_label = "Edit Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = False
+        ifc_file = tool.Ifc.get()
+
+        shape_aspect = ifc_file.by_id(int(props.representation_item_shape_aspect))
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+
+        tool.Geometry.add_representation_item_to_shape_aspect(representation_item, shape_aspect)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_item_shape_aspect"
+    bl_label = "Disable Editing Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = False
+
+
 class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
     bl_idname = "bim.remove_representation_item_from_shape_aspect"
     bl_label = "Remove Representation Item From Shape Aspect"
