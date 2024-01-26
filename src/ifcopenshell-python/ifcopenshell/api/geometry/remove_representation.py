@@ -21,6 +21,19 @@ import ifcopenshell.util.element
 
 class Usecase:
     def __init__(self, file, **settings):
+        """Remove a representation.
+
+        Also purges representation items and their related elements
+        like IfcStyledItem, tessellated facesets colours and UV map.
+
+        :param representation: IfcRepresentation to remove.
+            Note that it's expected that IfcRepresentation won't be in use
+            before calling this method (in such elements as IfcProductRepresentation, IfcShapeAspect)
+            otherwise representation won't be removed.
+        :type representation: ifcopenshell.entity_instance
+        :return: None
+        :rtype: None
+        """
         self.file = file
         self.settings = {"representation": None}
         for key, value in settings.items():
@@ -34,7 +47,7 @@ class Usecase:
         for subelement in self.file.traverse(self.settings["representation"]):
             if subelement.is_a("IfcRepresentationItem"):
                 [styled_items.add(s) for s in subelement.StyledByItem or []]
-                # IfcTesselatedFaceSet inverses
+                # IfcTessellatedFaceSet inverses
                 [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
                 [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
             elif subelement.is_a("IfcRepresentation"):
