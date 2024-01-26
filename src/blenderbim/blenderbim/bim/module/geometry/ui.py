@@ -215,6 +215,8 @@ class BIM_PT_representation_items(Panel):
 
         row = self.layout.row()
         row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
+        if shape_aspect:
+            row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
 
 
 class BIM_PT_connections(Panel):
