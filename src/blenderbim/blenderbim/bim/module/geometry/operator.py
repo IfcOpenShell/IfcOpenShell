@@ -767,11 +767,13 @@ class OverrideDuplicateMove(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                    self.report({'INFO'}, "Did not duplicate. Duplicate drawings through the Drawings and Documents UI.")
+                    self.report(
+                        {"INFO"}, "Did not duplicate. Duplicate drawings through the Drawings and Documents UI."
+                    )
                     obj.select_set(False)
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif element.is_a("IfcProject"):
-                    self.report({'INFO'}, "Did not duplicate. IFC can only have one project.")
+                    self.report({"INFO"}, "Did not duplicate. IFC can only have one project.")
                     obj.select_set(False)
                     continue  # Only one IfcProject is allowed.
 
