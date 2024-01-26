@@ -56,6 +56,12 @@ def get_styles(self, context):
     return MaterialsData.data["styles"]
 
 
+def get_shape_aspects(self, context):
+    if not RepresentationsData.is_loaded:
+        RepresentationsData.load()
+    return RepresentationsData.data["shape_aspects"]
+
+
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
@@ -72,6 +78,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
     active_item_index: IntProperty(name="Active Representation Item Index")
     is_editing_item_style: BoolProperty(name="Is Editing Item's Style", default=False)
     representation_item_style: EnumProperty(items=get_styles, name="Representation Item Style")
+    is_editing_item_shape_aspect: BoolProperty(name="Is Editing Item's Shape Aspect", default=False)
+    representation_item_shape_aspect: EnumProperty(items=get_shape_aspects, name="Representation Item Shape Aspect")
 
 
 class BIMGeometryProperties(PropertyGroup):
