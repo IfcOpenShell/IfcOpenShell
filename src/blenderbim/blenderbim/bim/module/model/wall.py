@@ -1120,11 +1120,11 @@ class DumbWallJoiner:
                 other = tool.Ifc.get_object(rel.RelatedElement)
                 if connection not in ["ATPATH", "NOTDEFINED"]:
                     self.join(
-                        obj, 
-                        other, 
-                        connection, 
-                        rel.RelatedConnectionType, 
-                        is_relating=True, 
+                        obj,
+                        other,
+                        connection,
+                        rel.RelatedConnectionType,
+                        is_relating=True,
                         description=rel.Description
                   )
         for rel in element.ConnectedFrom:
@@ -1226,6 +1226,7 @@ class DumbWallJoiner:
         # If opening has filling then stick to the filling's position
         # We're applying new openings position only after wall position is applied
         for opening in [r.RelatedOpeningElement for r in element.HasOpenings if r.RelatedOpeningElement.HasFillings]:
+            similar_openings = blenderbim.core.geometry.get_similar_openings(tool.Ifc, opening)
             filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
             filling_moved = tool.Ifc.is_moved(filling_obj)
             if filling_moved:
@@ -1234,6 +1235,7 @@ class DumbWallJoiner:
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
                 )
+                blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
 
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
