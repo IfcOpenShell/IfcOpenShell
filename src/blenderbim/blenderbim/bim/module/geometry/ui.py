@@ -496,3 +496,4 @@ class BIM_UL_representation_items(UIList):
             row.label(text=item.name, icon=icon)
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")
+            row.operator("bim.remove_representation_item", icon="X", text="")
