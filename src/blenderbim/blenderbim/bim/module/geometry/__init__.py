@@ -49,6 +49,7 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    operator.RemoveRepresentationItem,
     operator.EnableEditingRepresentationItemStyle,
     operator.EditRepresentationItemStyle,
     operator.DisableEditingRepresentationItemStyle,

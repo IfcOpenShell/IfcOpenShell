@@ -733,6 +733,45 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
+    def remove_representation_item(cls, representation_item):
+        # NOTE: we assume it's not the last representation item
+        # otherwise we probably would need to remove representation too
+        # NOTE: a lot of shared code with `geometry.remove_representation`
+        ifc_file = tool.Ifc.get()
+        shape_aspects = []
+
+        consider_inverses = []
+        styled_item, colour, texture, layer = None, None, None, None
+        [consider_inverses.append(styled_item := t) for t in representation_item.StyledByItem]
+        [consider_inverses.append(layer := t) for t in representation_item.LayerAssignment]
+        # IfcTessellatedFaceSet
+        [consider_inverses.append(colour := t) for t in getattr(representation_item, "HasColours", [])]
+        [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
+
+        for inverse in ifc_file.get_inverse(representation_item):
+            if inverse.is_a("IfcShapeRepresentation"):
+                if inverse.OfShapeAspect:
+                    shape_aspects.append(inverse.OfShapeAspect[0])
+                else:
+                    representation = inverse
+
+        if styled_item:
+            ifc_file.remove(styled_item)
+        if layer and len(layer.Items) == 1:
+            ifc_file.remove(styled_item)
+        if colour:
+            ifcopenshell.util.element.remove_deep2(ifc_file, colour)
+        if texture:
+            ifcopenshell.util.element.remove_deep2(ifc_file, texture)
+
+        for shape_aspect in shape_aspects:
+            cls.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
+
+        representation.Items = tuple(set(representation.Items) - {representation_item})
+        also_consider = list(consider_inverses)
+        ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
+
+    @classmethod
     def get_shape_aspects(cls, element):
         # IfcProduct
         if hasattr(element, "Representation"):
@@ -836,4 +875,3 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
         shape_aspect.ShapeRepresentations = shape_aspect.ShapeRepresentations + (shape_aspect_representation,)
         return shape_aspect_representation
-
