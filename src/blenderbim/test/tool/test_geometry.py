@@ -577,6 +577,27 @@ class TestGetIfcRepresentationClass(NewFile):
         assert subject.get_ifc_representation_class(ifc.createIfcColumn(), ifc.createIfcShapeRepresentation()) is None
 
 
+class TestRemoveRepresentationItem(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+        product_shape = element.Representation
+        shape_aspect = subject.create_shape_aspect(product_shape, representation, items[:1], None)
+        shape_aspect_id = shape_aspect.id()
+
+        subject.remove_representation_item(items[0])
+        assert tool.Ifc.get_entity_by_id(shape_aspect_id) is None
+        assert set(representation.Items) == {items[1]}
+
+
 class TestCreateShapeAspect(NewFile):
     def test_run(self):
         self.create_shape_aspect(use_element_type=False)
