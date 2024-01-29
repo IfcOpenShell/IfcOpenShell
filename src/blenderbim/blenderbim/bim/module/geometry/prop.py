@@ -72,9 +72,13 @@ def update_shape_aspect(self, context):
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
 
-    shape_aspect = tool.Ifc.get().by_id(int(shape_aspect_id))
-    attrs.name = shape_aspect.Name or ""
-    attrs.description = shape_aspect.Description or ""
+    if shape_aspect_id == "NEW":  # new shape aspect
+        attrs.name = tool.Blender.get_blender_prop_default_value(attrs, "name")
+        attrs.description = tool.Blender.get_blender_prop_default_value(attrs, "description")
+    else:
+        shape_aspect = tool.Ifc.get().by_id(int(shape_aspect_id))
+        attrs.name = shape_aspect.Name or ""
+        attrs.description = shape_aspect.Description or ""
 
 
 class RepresentationItem(PropertyGroup):
