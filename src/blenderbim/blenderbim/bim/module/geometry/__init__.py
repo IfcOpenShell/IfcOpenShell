@@ -58,6 +58,7 @@ classes = (
     operator.DisableEditingRepresentationItemShapeAspect,
     operator.RemoveRepresentationItemFromShapeAspect,
     prop.RepresentationItem,
+    prop.ShapeAspect,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
     ui.BIM_PT_placement,
