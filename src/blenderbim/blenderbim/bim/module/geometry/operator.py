@@ -1715,6 +1715,12 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
         ifc_file = tool.Ifc.get()
 
         shape_aspect = ifc_file.by_id(int(props.representation_item_shape_aspect))
+
+        # set attributes from UI
+        shape_aspect_attrs = props.shape_aspect_attrs
+        shape_aspect.Name = shape_aspect_attrs.name
+        shape_aspect.Description = shape_aspect_attrs.description
+
         representation_item_id = props.items[props.active_item_index].ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
