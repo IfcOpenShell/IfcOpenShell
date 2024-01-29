@@ -735,7 +735,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     def get_shape_aspects(cls, element):
         # IfcProduct
         if hasattr(element, "Representation"):
-            return element.Representation.ShapeOfProduct
+            return element.Representation.HasShapeAspects
 
         # IfcTypeProduct
         shape_aspects = []
