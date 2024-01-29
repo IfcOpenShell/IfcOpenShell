@@ -1609,6 +1609,35 @@ class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
         obj.BIMGeometryProperties.is_editing = False
 
 
+class RemoveRepresentationItem(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_representation_item"
+    bl_label = "Remove Representation Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if context.active_object is None or len(context.active_object.BIMGeometryProperties.items) <= 1:
+            cls.poll_message_set(
+                "Active object need to have more than 1 representation items to keep representation valid"
+            )
+            return False
+        return True
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
+
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+        tool.Geometry.remove_representation_item(representation_item)
+        tool.Geometry.reload_representation(obj)
+
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
 class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_representation_item_style"
     bl_label = "Enable Editing Representation Item Style"
@@ -1725,7 +1754,9 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
             previous_shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
-            shape_aspect = tool.Geometry.create_shape_aspect(product_shape, active_representation, [representation_item], previous_shape_aspect)
+            shape_aspect = tool.Geometry.create_shape_aspect(
+                product_shape, active_representation, [representation_item], previous_shape_aspect
+            )
         else:
             shape_aspect = ifc_file.by_id(int(props.representation_item_shape_aspect))
             tool.Geometry.add_representation_item_to_shape_aspect([representation_item], shape_aspect)
