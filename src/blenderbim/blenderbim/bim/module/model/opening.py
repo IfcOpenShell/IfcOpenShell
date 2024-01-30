@@ -521,6 +521,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
+            element1, element2 = element2, element1
         if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
