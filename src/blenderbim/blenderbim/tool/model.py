@@ -478,7 +478,7 @@ class Model(blenderbim.core.tool.Model):
         return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
 
     @classmethod
-    def get_booleans(cls, element=None, representation=None):
+    def get_booleans(cls, element=None, representation=None) -> list[ifcopenshell.entity_instance]:
         if representation is None:
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
@@ -493,7 +493,7 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
-    def get_manual_booleans(cls, element, representation=None):
+    def get_manual_booleans(cls, element, representation=None) -> list[ifcopenshell.entity_instance]:
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
@@ -502,7 +502,7 @@ class Model(blenderbim.core.tool.Model):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
-        booleans = [b for b in cls.get_booleans(element) if b.id() in boolean_ids]
+        booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
         return booleans
 
     @classmethod
