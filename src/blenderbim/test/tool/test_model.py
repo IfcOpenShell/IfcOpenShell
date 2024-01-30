@@ -21,6 +21,7 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import numpy as np
+import json
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.model import Model as subject
 from ifcopenshell.util.shape_builder import V
@@ -106,6 +107,37 @@ class TestGetManualBooleans(NewFile):
         assert len(subject.get_manual_booleans(element)) == 0
         subject.mark_manual_booleans(element, booleans)
         assert len(subject.get_manual_booleans(element)) == 2
+
+
+class TestMarkManualBooleans(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        element = ifc.createIfcWall()
+        boolean = ifc.createIfcBooleanClippingResult()
+        subject.mark_manual_booleans(element, [boolean])
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        assert pset
+        value = json.loads(pset["Data"])
+        assert set(value) == {boolean.id()}
+
+
+class TestUnmarkManualBooleans(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        element = ifc.createIfcWall()
+        boolean = ifc.createIfcBooleanClippingResult()
+        boolean2 = ifc.createIfcBooleanClippingResult()
+        subject.mark_manual_booleans(element, [boolean, boolean2])
+        subject.unmark_manual_booleans(element, [boolean.id()])
+
+        pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
+        assert pset
+        value = json.loads(pset["Data"])
+        assert set(value) == {boolean2.id()}
 
 
 class TestStairCalculatedParams(NewFile):
