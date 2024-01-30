@@ -55,58 +55,44 @@ class TestGenerateOccurrenceName(NewFile):
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
 
 
-class TestGetManualBooleans(NewFile):
-    def test_get_manual_booleans(self):
-        clippings = [
-            {
-                "type": "IfcBooleanClippingResult",
-                "operand_type": "IfcHalfSpaceSolid",
-                "matrix": np.eye(4).tolist(),
-            },
-            {
-                "type": "IfcBooleanResult",
-                "operand_type": "IfcHalfSpaceSolid",
-                "matrix": np.eye(4).tolist(),
-            },
-        ]
-
+class TestGetBooleans(NewFile):
+    def test_run(self):
         ifc = ifcopenshell.file()
-        self.ifc = ifc
         tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        length = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT")
-        ifcopenshell.api.run("unit.assign_unit", ifc, units=[length])
-        ifcopenshell.api.run("unit.assign_unit", ifc)
-        element = ifc.createIfcColumn()
-        hea100 = ifc.create_entity(
-            "IfcIShapeProfileDef",
-            ProfileName="HEA100",
-            ProfileType="AREA",
-            OverallWidth=100,
-            OverallDepth=96,
-            WebThickness=5,
-            FlangeThickness=8,
-            FilletRadius=12,
-        )
-        model3d = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        body = ifcopenshell.api.run(
-            "context.add_context",
-            ifc,
-            context_type="Model",
-            context_identifier="Body",
-            target_view="MODEL_VIEW",
-            parent=model3d,
-        )
-        representation = ifcopenshell.api.run(
-            "geometry.add_profile_representation", ifc, context=body, profile=hea100, depth=5, clippings=clippings
-        )
-        ifcopenshell.api.run("geometry.assign_representation", ifc, product=element, representation=representation)
 
-        booleans = subject.get_booleans(element)
-        assert len(booleans) == 2
-        assert len(subject.get_manual_booleans(element)) == 0
-        subject.mark_manual_booleans(element, booleans)
-        assert len(subject.get_manual_booleans(element)) == 2
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+
+        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+
+
+class TestGetManualBooleans(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+
+        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+        assert len(subject.get_manual_booleans(element, representation)) == 0
+
+        subject.mark_manual_booleans(element, bool1)
+        assert set(subject.get_manual_booleans(element, representation)) == bool1
 
 
 class TestMarkManualBooleans(NewFile):
