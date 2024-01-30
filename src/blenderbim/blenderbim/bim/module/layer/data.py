@@ -40,6 +40,8 @@ class LayersData:
 
     @classmethod
     def active_layers(cls):
+        if not bpy.context.active_object:
+            return []
         data = bpy.context.active_object.data
         if not data:
             return []

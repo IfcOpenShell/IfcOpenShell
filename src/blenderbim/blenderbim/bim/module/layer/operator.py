@@ -137,6 +137,7 @@ class RemovePresentationLayer(bpy.types.Operator):
 class AssignPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.assign_presentation_layer"
     bl_label = "Assign Presentation Layer"
+    bl_description = "Assign presentation layer to the active representation of the active object"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
@@ -158,6 +159,7 @@ class AssignPresentationLayer(bpy.types.Operator):
 class UnassignPresentationLayer(bpy.types.Operator):
     bl_idname = "bim.unassign_presentation_layer"
     bl_label = "Unassign Presentation Layer"
+    bl_description = "Unassign presentation layer from the active representation of the active object"
     bl_options = {"REGISTER", "UNDO"}
     item: bpy.props.StringProperty()
     layer: bpy.props.IntProperty()
