@@ -521,11 +521,12 @@ class Model(blenderbim.core.tool.Model):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
-    def unmark_manual_booleans(cls, element, booleans):
+    def unmark_manual_booleans(cls, element, boolean_ids):
+        # NOTE: we use use boolean_ids instead of boolean entities
+        # so it will be possible to unmark manual booleans after they already was deleted
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return
-        boolean_ids = [b.id() for b in booleans]
         data = set(json.loads(pset["Data"]))
         data -= set(boolean_ids)
         data = list(data)
