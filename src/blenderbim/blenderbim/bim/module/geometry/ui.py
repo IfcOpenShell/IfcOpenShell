@@ -159,11 +159,11 @@ class BIM_PT_representations(Panel):
         if not LayersData.is_loaded:
             LayersData.load()
         if LayersData.data["active_layers"]:
-            layout.label(text="Active Representation Presentation Layers:")
+            layout.label(text="Representation Presentation Layers:")
             for layer_name in LayersData.data["active_layers"].values():
                 layout.label(text=layer_name, icon="STICKY_UVS_LOC")
         else:
-            layout.label(text="Active Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
+            layout.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_representation_items(Panel):
