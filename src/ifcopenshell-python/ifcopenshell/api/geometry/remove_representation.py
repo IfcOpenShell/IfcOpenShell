@@ -51,9 +51,8 @@ class Usecase:
                 [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
                 [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
             elif subelement.is_a("IfcRepresentation"):
-                for inverse in self.file.get_inverse(subelement):
-                    if inverse.is_a("IfcPresentationLayerAssignment"):
-                        presentation_layer_assignments.add(inverse)
+                for layer in subelement.LayerAssignments:
+                    presentation_layer_assignments.add(layer)
 
         ifcopenshell.util.element.remove_deep2(
             self.file,

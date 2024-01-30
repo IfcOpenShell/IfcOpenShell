@@ -47,7 +47,6 @@ class LayersData:
             return []
         results = []
         shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
-        for inverse in tool.Ifc.get().get_inverse(shape):
-            if inverse.is_a("IfcPresentationLayerAssignment"):
-                results.append(inverse.id())
+        for inverse in shape.LayerAssignments:
+            results.append(inverse.id())
         return results
