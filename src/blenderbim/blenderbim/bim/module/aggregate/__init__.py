@@ -28,6 +28,8 @@ classes = (
     operator.BIM_OT_select_aggregate,
     operator.BIM_OT_select_parts,
     operator.BIM_OT_aggregate_unassign_object,
+    operator.BIM_OT_break_link_to_other_aggregates,
+    operator.BIM_OT_select_linked_aggregates,
     prop.BIMObjectAggregateProperties,
     ui.BIM_PT_aggregate,
     ui.BIM_PT_linked_aggregate,

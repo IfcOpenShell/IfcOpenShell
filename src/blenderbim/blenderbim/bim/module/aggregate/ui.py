@@ -25,10 +25,10 @@ from blenderbim.bim.ifc import IfcStore
 class BIM_PT_aggregate(Panel):
     bl_label = "Aggregates"
     bl_idname = "BIM_PT_aggregate"
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "object"
-    bl_order = 2
     bl_parent_id = "BIM_PT_tab_object_metadata"
 
     @classmethod
@@ -128,16 +128,18 @@ class BIM_PT_linked_aggregate(Panel):
             AggregateData.load()
 
         props = context.active_object.BIMObjectAggregateProperties
-        print(props)
-
         row = layout.row(align=True)
-        if AggregateData.data['total_linked_aggregate'] > 0:
-            row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
+        row.label(text="Advanced Users Only", icon="ERROR")
+        row = layout.row(align=True)
+        
+        if type(AggregateData.data['total_linked_aggregate']) is int:
+            if AggregateData.data['total_linked_aggregate'] > 0:
+                row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
+                row.operator("bim.select_linked_aggregates", text="", icon="RESTRICT_SELECT_OFF")
+                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+                op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
         else:
             row.label(text="No Linked Aggregates")
             
-        row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
         
 
-        # TODO Unlink Aggregate
-        # TODO Remove PSET from object when unassigned from aggregate

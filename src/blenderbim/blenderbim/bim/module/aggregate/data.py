@@ -78,7 +78,6 @@ class AggregateData:
     def total_linked_aggregate(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         aggregate = ifcopenshell.util.element.get_aggregate(element)
-        print("AGG", aggregate)
         if not aggregate:
             return []
         if not element:
@@ -95,6 +94,5 @@ class AggregateData:
             return []
         
         total = len(product_linked_agg_group[0].RelatedObjects)
-        print("TOTAL", total)
         return total
         
