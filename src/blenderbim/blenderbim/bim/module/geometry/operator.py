@@ -1166,7 +1166,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
         blenderbim.bim.handler.refresh_ui_data()
 
         operator_time = time() - refresh_start_time
-        print(operator_time)
         if operator_time > 10:
             self.report({"INFO"}, "Refresh Aggregate was finished in {:.2f} seconds".format(operator_time))
         return {"FINISHED"}
