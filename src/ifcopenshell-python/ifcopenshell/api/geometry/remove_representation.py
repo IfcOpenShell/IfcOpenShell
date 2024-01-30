@@ -47,6 +47,7 @@ class Usecase:
         for subelement in self.file.traverse(self.settings["representation"]):
             if subelement.is_a("IfcRepresentationItem"):
                 [styled_items.add(s) for s in subelement.StyledByItem or []]
+                [presentation_layer_assignments.add(s) for s in subelement.LayerAssignment]
                 # IfcTessellatedFaceSet inverses
                 [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
                 [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
