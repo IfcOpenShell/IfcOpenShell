@@ -29,6 +29,7 @@ from blenderbim.bim.module.geometry.data import (
     PlacementData,
     DerivedCoordinatesData,
 )
+from blenderbim.bim.module.layer.data import LayersData
 
 
 def mode_menu(self, context):
@@ -133,6 +134,7 @@ class BIM_PT_representations(Panel):
 
         if not RepresentationsData.data["representations"]:
             layout.label(text="No Representations Found")
+            return
 
         for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
@@ -150,6 +152,18 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+            if representation["is_active"]:
+                active_representation = representation
+
+        layout.separator()
+        if not LayersData.is_loaded:
+            LayersData.load()
+        if LayersData.data["active_layers"]:
+            layout.label(text="Active Representation Presentation Layers:")
+            for layer_name in LayersData.data["active_layers"].values():
+                layout.label(text=layer_name, icon="STICKY_UVS_LOC")
+        else:
+            layout.label(text="Active Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_representation_items(Panel):

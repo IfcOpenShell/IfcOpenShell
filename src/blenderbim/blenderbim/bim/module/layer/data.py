@@ -47,8 +47,8 @@ class LayersData:
             return []
         if not isinstance(data, bpy.types.Mesh) or not data.BIMMeshProperties.ifc_definition_id:
             return []
-        results = []
+        results = dict()
         shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
         for inverse in shape.LayerAssignments:
-            results.append(inverse.id())
+            results[inverse.id()] = inverse.Name or "Unnamed"
         return results
