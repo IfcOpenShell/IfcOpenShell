@@ -979,8 +979,8 @@ class Model(blenderbim.core.tool.Model):
         if nosing_length < 0:  # tread gaps
             length += abs(nosing_length) * number_of_treads
         calculated_params["Length"] = round(length, 5)
-        pitch = height/length
-        pitch_formatted = str(round(pitch*100, 1)) + ' % / ' + str(round(degrees(atan(pitch)), 1)) + ' deg'
+        pitch = height / length
+        pitch_formatted = str(round(pitch * 100, 1)) + " % / " + str(round(degrees(atan(pitch)), 1)) + " deg"
         calculated_params["Pitch"] = str(pitch_formatted)
 
         return calculated_params
