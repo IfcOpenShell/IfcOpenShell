@@ -259,8 +259,10 @@ class BooleansMarkAsManual(bpy.types.Operator):
         if self.mark_as_manual:
             tool.Model.mark_manual_booleans(element, booleans)
         else:
-            tool.Model.unmark_manual_booleans(element, booleans)
+            tool.Model.unmark_manual_booleans(element, [b.id() for b in booleans])
 
-        self.report({"INFO"}, f"{len(booleans)} were marked as {'manual' if self.mark_as_manual else 'automatic'}")
+        self.report(
+            {"INFO"}, f"{len(booleans)} booleans were marked as {'manual' if self.mark_as_manual else 'automatic'}"
+        )
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

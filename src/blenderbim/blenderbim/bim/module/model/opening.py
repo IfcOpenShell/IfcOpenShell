@@ -668,17 +668,17 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             except:
                 continue
 
-            boolean = None
+            boolean_id = None
             for inverse in tool.Ifc.get().get_inverse(item):
                 if inverse.is_a("IfcBooleanResult"):
-                    boolean = inverse
+                    boolean_id = inverse.id()
                     break
             ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
 
             if obj.data.BIMMeshProperties.obj:
                 upstream_obj = obj.data.BIMMeshProperties.obj
                 element = tool.Ifc.get_entity(upstream_obj)
-                bbim_boolean_updates.setdefault(element, []).append(boolean)
+                bbim_boolean_updates.setdefault(element, []).append(boolean_id)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
@@ -692,8 +692,8 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     )
             bpy.data.objects.remove(obj)
 
-        for element, booleans in bbim_boolean_updates.items():
-            tool.Model.unmark_manual_booleans(element, booleans)
+        for element, boolean_ids in bbim_boolean_updates.items():
+            tool.Model.unmark_manual_booleans(element, boolean_ids)
 
         tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}
