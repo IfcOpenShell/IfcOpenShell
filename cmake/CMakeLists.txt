@@ -72,6 +72,7 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
 option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." ON)
+option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
@@ -187,9 +188,11 @@ if(WASM_BUILD)
 endif()
 
 if(WITH_CGAL)
+    add_definitions(-DIFOPSH_WITH_CGAL)
+    set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+
     if(CITYJSON_SUPPORT)
-        add_definitions(-DIFOPSH_WITH_CGAL)
-        set(SWIG_DEFINES ${SWIG_DEFINES} -DIFOPSH_WITH_CGAL)
+		add_definitions(-DIFOPSH_WITH_CITYJSON)
     endif()
 
     list(APPEND GEOMETRY_KERNELS cgal)
@@ -983,12 +986,20 @@ if(BUILD_CONVERT)
     endif()
 
     # IfcConvert
-    file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
-    file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+	if (WITH_RELATIONSHIP_VALIDATION)
+		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/*.cpp)
+		file(GLOB IFCCONVERT_H_FILES ../src/ifcconvert/*.h)
+	else()
+		file(GLOB IFCCONVERT_CPP_FILES ../src/ifcconvert/IfcConvert.cpp)
+		file(GLOB IFCCONVERT_H_FILES)
+	endif()
     set(IFCCONVERT_FILES ${IFCCONVERT_CPP_FILES} ${IFCCONVERT_H_FILES})
     add_executable(IfcConvert ${IFCCONVERT_FILES})
 
     target_link_libraries(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+	if (WITH_RELATIONSHIP_VALIDATION)
+        set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "-DWITH_RELATIONSHIP_VALIDATION")
+    endif()
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
         # Only set RPATHs when building shared libraries (i.e. IfcParse and
