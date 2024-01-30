@@ -34,6 +34,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.classification
 import ifcopenshell.util.representation
 from deepdiff import DeepDiff
+from ordered_set import OrderedSet
 
 
 class IfcDiff:
@@ -234,6 +235,12 @@ class IfcDiff:
             settings.set_context_ids(body_contexts)
         return settings
 
+    def json_dump_default(self, obj):
+        # result of DeepDiff may contain ordered sets
+        if isinstance(obj, (OrderedSet, set)):
+            return list(obj)
+        return json.JSONEncoder.default(None, obj)
+
     def export(self, path):
         with open(path, "w", encoding="utf-8") as diff_file:
             json.dump(
@@ -244,6 +251,7 @@ class IfcDiff:
                 },
                 diff_file,
                 indent=4,
+                default=self.json_dump_default,
             )
 
     def get_precision(self):
