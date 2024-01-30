@@ -29,8 +29,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
     bl_label = "Add Opening"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Adds an opening to an element.\n" \
-        "Need to select two elements, order of selection is not important"
+    bl_description = (
+        "Adds an opening to an element.\n" "Need to select two elements, order of selection is not important"
+    )
 
     @classmethod
     def poll(cls, context):
@@ -41,11 +42,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMModelProperties
         selected_objects = context.selected_objects
-        target_object = selected_objects[0] 
-
+        target_object = selected_objects[0]
 
         opening_objects = [obj for obj in selected_objects if obj != target_object]
-
 
         for opening_obj in opening_objects:
             element1 = tool.Ifc.get_entity(target_object)
@@ -58,7 +57,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
             if element1 and element2:
                 if element1.is_a("IfcOpeningElement") and element2.is_a("IfcOpeningElement"):
-                    self.report({'INFO'}, "You can't add an opening to another opening.")
+                    self.report({"INFO"}, "You can't add an opening to another opening.")
                     continue
                 elif not element1.is_a("IfcOpeningElement") and not element2.is_a("IfcOpeningElement"):
                     if element1.is_a("IfcWindow") or element1.is_a("IfcDoor"):  # Add a fill to an element.
@@ -75,7 +74,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 element1, element2 = element2, element1
 
             if element1.is_a("IfcOpeningElement"):
-                self.report({'INFO'}, "You can't add an opening to another opening.")
+                self.report({"INFO"}, "You can't add an opening to another opening.")
                 continue
 
             if tool.Ifc.is_moved(obj1):
