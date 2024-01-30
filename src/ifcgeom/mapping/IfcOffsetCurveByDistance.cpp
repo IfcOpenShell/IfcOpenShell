@@ -12,12 +12,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
  * Lesser GNU General Public License for more details.                          *
  *                                                                              *
- * You should have received a copz of the Lesser GNU General Public License     *
+ * You should have received a copy of the Lesser GNU General Public License     *
  * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
  *                                                                              *
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../profile_helper.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -34,17 +35,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
         Logger::Error("IfcOffsetCurveByDistances must have at least one offset value");
     }
 
-    auto basis_curve = inst->BasisCurve();
-
     auto first_offset_value = *(offset_values->begin());
 
-    // todo@ rb - basis_curve might not be piecewise - other valid types are IfcOffsetCurveByDistances, IfcPolyline and IfcIndexedPolyCurve
-    // Is there a more generic type that can be evaluated at "u"?
-   auto basis = taxonomy::cast<taxonomy::piecewise_function>(map(basis_curve));
-   double basis_curve_length = 0;
-   for (auto& s : basis->spans) {
-       basis_curve_length += s.first;
-   }
+    auto basis_curve = inst->BasisCurve();
+    //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(map(basis_curve));
+    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
+    double basis_curve_length = pw_curve->length();
 
     auto offsets = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 
@@ -95,7 +91,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
 #endif
         if ((dp < 0.0 || basis_curve_length < dp) 
              or 
-            (dn < 0.0 || basis_curve_length < dn))
+            (dn < 0.0 || basis_curve_length < dn)
+           or
+            (dn < dp)
+           )
         {
             Logger::Warning("IfcOffsetCurveByDistance offset value is out of bounds.");
             continue;
@@ -144,14 +143,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
          offsets->spans.push_back({l, fn});
     }
 
-	auto composition = [basis, offsets](double u)->Eigen::Matrix4d {
-		auto p = basis->evaluate(u);
+	auto composition = [pw_curve, offsets](double u) -> Eigen::Matrix4d {
+      auto p = pw_curve->evaluate(u);
 		auto offset = offsets->evaluate(u);
       Eigen::Matrix4d m = p * offset;
       return m;
 	};
 
-   // current implementation assumes that offsets is equal to the full length of basis curve
+   // current implementation assumes that composition is equal to the full length of basis curve
    // this may change depending on decisions in the bSI-IF
 	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 	pwf->spans.emplace_back( basis_curve_length, composition );

@@ -18,6 +18,8 @@
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../profile_helper.h"
+
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -25,9 +27,11 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* inst) {
    auto u = (*inst->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>()) * length_unit_;
-   // @todo: rb - is it safe to assume the basis curve is a piecewise_function?
-	auto curve = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::piecewise_function>(map(inst->BasisCurve()));
-   auto m = curve->evaluate(u);
+   //auto basis_curve = inst->BasisCurve();
+   //auto item = map(basis_curve);
+   //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(item);
+   auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(inst->BasisCurve()));
+   auto m = pw_curve->evaluate(u);
 
    auto o = m.col(3).head<3>();
    auto z = m.col(2).head<3>();

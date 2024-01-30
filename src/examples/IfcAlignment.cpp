@@ -37,6 +37,46 @@ double to_radian(double deg) { return PI * deg / 180; }
 
 #define Schema Ifc4x3_add2
 
+// performs basic project setup including created the IfcProject object
+// and initializing the project units to FEET
+Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
+    std::vector<std::string> file_description;
+    file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
+    file.header().file_description().description(file_description);
+
+    auto project = file.addProject();
+    project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
+
+    // set up project units for feet
+    // the call to file.addProject() sets up length units as millimeter.
+    auto units_in_context = project->UnitsInContext();
+    auto units = units_in_context->Units();
+    auto begin = units->begin();
+    auto iter = begin;
+    auto end = units->end();
+    for (; iter != end; iter++) {
+        auto unit = *iter;
+        if (unit->as<Schema::IfcSIUnit>() && unit->as<Schema::IfcSIUnit>()->UnitType() == Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
+            auto dimensions = new Schema::IfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0);
+            file.addEntity(dimensions);
+
+            auto conversion_factor = new Schema::IfcMeasureWithUnit(new Schema::IfcLengthMeasure(304.80), unit->as<Schema::IfcSIUnit>());
+            file.addEntity(conversion_factor);
+
+            auto conversion_based_unit = new Schema::IfcConversionBasedUnit(dimensions, Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, "FEET", conversion_factor);
+            file.addEntity(conversion_based_unit);
+
+            units->remove(unit);                // remove the millimeter unit
+            units->push(conversion_based_unit); // add the feet unit
+            units_in_context->setUnits(units);  // update the UnitsInContext
+
+            break; // Done!, the length unit was found, so break out of the loop
+        }
+    }
+
+    return project;
+}
+
 // creates geometry and business logic segments for horizontal alignment tangent runs
 std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_tangent(typename Schema::IfcCartesianPoint* p, double dir, double length) {
     // geometry
@@ -161,39 +201,7 @@ void create_segment_representations(IfcHierarchyHelper<Schema>& file, Schema::If
 int main() {
     IfcHierarchyHelper<Schema> file;
 
-    std::vector<std::string> file_description;
-    file_description.push_back("ViewDefinition[Alignment-basedReferenceView]");
-    file.header().file_description().description(file_description);
-
-    auto project = file.addProject();
-    project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
-
-    // set up project units for feet
-    // the call to file.addProject() sets up length units as millimeter.
-    auto units_in_context = project->UnitsInContext();
-    auto units = units_in_context->Units();
-    auto begin = units->begin();
-    auto iter = begin;
-    auto end = units->end();
-    for (; iter != end; iter++) {
-        auto unit = *iter;
-        if (unit->as<Schema::IfcSIUnit>() && unit->as<Schema::IfcSIUnit>()->UnitType() == Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT) {
-            auto dimensions = new Schema::IfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0);
-            file.addEntity(dimensions);
-
-            auto conversion_factor = new Schema::IfcMeasureWithUnit(new Schema::IfcLengthMeasure(304.80), unit->as<Schema::IfcSIUnit>());
-            file.addEntity(conversion_factor);
-
-            auto conversion_based_unit = new Schema::IfcConversionBasedUnit(dimensions, Schema::IfcUnitEnum::IfcUnit_LENGTHUNIT, "FEET", conversion_factor);
-            file.addEntity(conversion_based_unit);
-
-            units->remove(unit);                // remove the millimeter unit
-            units->push(conversion_based_unit); // add the feet unit
-            units_in_context->setUnits(units);  // update the UnitsInContext
-
-            break; // Done!, the length unit was found, so break out of the loop
-        }
-    }
+    auto project = setup_project(file);
 
     auto geometric_representation_context = file.getRepresentationContext(std::string("Model")); // creates the representation context if it doesn't already exist
 
