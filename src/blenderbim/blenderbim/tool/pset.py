@@ -48,7 +48,8 @@ class Pset(blenderbim.core.tool.Pset):
             return bpy.context.scene.ProfilePsetProperties
         elif obj_type == "WorkSchedule":
             return bpy.context.scene.WorkSchedulePsetProperties
-
+        elif obj_type == "Group":
+            return bpy.context.scene.GroupPsetProperties
     @classmethod
     def get_pset_name(cls, obj, obj_type):
         pset = cls.get_pset_props(obj, obj_type)
