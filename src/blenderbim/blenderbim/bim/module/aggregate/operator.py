@@ -242,7 +242,7 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
     bl_label = "Break link to other aggregates"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if not aggregate:
@@ -272,7 +272,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         element = tool.Ifc.get_entity(bpy.context.active_object)
         aggregate = ifcopenshell.util.element.get_aggregate(element)
         if not aggregate:
