@@ -106,6 +106,14 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
+	aggregate_of_instance::ptr clash_intersection(IfcUtil::IfcBaseClass* e, double tolerance = 0.002) const {
+		if (!e->declaration().is("IfcProduct")) {
+			throw IfcParse::IfcException("Instance should be an IfcProduct");
+		}
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_intersection((IfcUtil::IfcBaseEntity*)e, tolerance);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
 	aggregate_of_instance::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
