@@ -93,9 +93,11 @@ class Collector(blenderbim.core.tool.Collector):
         else:
             object_collection = cls._get_collection(element, obj)
 
+        ifc_collections = tool.Blender.Collection.get_ifc_collections()
         if obj.users_collection != (object_collection,):
             for collection in obj.users_collection:
-                collection.objects.unlink(obj)
+                if collection in ifc_collections or collection == bpy.context.scene.collection:
+                    collection.objects.unlink(obj)
             if object_collection is not None:
                 object_collection.objects.link(obj)
 
