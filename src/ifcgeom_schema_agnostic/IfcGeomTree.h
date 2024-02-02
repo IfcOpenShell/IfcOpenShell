@@ -42,6 +42,7 @@
 
 #include <stack>
 #include <unordered_map>
+#include <unordered_set>
 #include <BRepExtrema_TriangleSet.hxx>
 #include <BRepLProp_SLProps.hxx>
 #include <BVH_BinaryTree.hxx>
@@ -54,6 +55,7 @@
 #include <Geom_Plane.hxx>
 #include <IntTools_FaceFace.hxx>
 #include "triangleintersects.hpp"
+#include <STEPConstruct_PointHasher.hxx>
 #include <boost/stacktrace.hpp>
 
 
@@ -127,6 +129,24 @@ namespace IfcGeom {
             struct box {
                 float corners[2][3];
             };
+
+            struct PointHasher {
+                std::size_t operator()(const gp_Pnt& p) const {
+                    // Assuming theUpperBound is somewhat arbitrary, but should be large enough
+                    // and suitable for the size of the container.
+                    // Note: std::unordered_set expects hash values starting from 0, but OpenCASCADE
+                    // produces hash codes in the range [1, theUpperBound]. So, we adjust by subtracting 1.
+                    return static_cast<std::size_t>(STEPConstruct_PointHasher::HashCode(p, std::numeric_limits<Standard_Integer>::max())) - 1;
+                }
+            };
+
+            // Functor for comparing two gp_Pnt objects for equality
+            struct PointEqual {
+                bool operator()(const gp_Pnt& p1, const gp_Pnt& p2) const {
+                    return STEPConstruct_PointHasher::IsEqual(p1, p2);
+                }
+            };
+
 
             // Branchless slab method. Note that this can still be optimised further by batching boxes.
             // https://tavianator.com/2022/ray_box_boundary.html
@@ -333,7 +353,7 @@ namespace IfcGeom {
                 return std::array<gp_Pnt, 3> {moveTowards(v1), moveTowards(v2), moveTowards(v3)};
             }
 
-			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B) const {
+			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance) const {
                 // Attempt 3:
                 //  1. For each vert of A that is inside shape B, find the shortest distance to the closest face
                 //  2. Of those verts, find the innermost vert (i.e. the vert that has the longest distance)
@@ -410,6 +430,12 @@ namespace IfcGeom {
 
                 BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
                 BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
+                std::unordered_map<int, TopoDS_Face> faces_a = faces_.find(tA)->second;
+                std::unordered_map<int, TopoDS_Face> faces_b = faces_.find(tB)->second;
+
+                // ~10% faster?
+                std::unordered_set<gp_Pnt, PointHasher, PointEqual> points_in_b_cache;
+                std::unordered_set<gp_Pnt, PointHasher, PointEqual> points_not_in_b_cache;
 
                 double protrusion = -std::numeric_limits<double>::infinity();
                 std::array<double, 3> protrusion_point;
@@ -422,7 +448,12 @@ namespace IfcGeom {
                         std::vector<gp_Vec> ray_vectors;
 
                         BVH_Vec3d v1, v2, v3;
-                        triangle_set_a.GetVertices(i, v1, v2, v3);
+
+                        if (faces_a[triangle_set_a.GetFaceID(i)].Orientation() == TopAbs_REVERSED) {
+                            triangle_set_a.GetVertices(i, v1, v3, v2);
+                        } else {
+                            triangle_set_a.GetVertices(i, v1, v2, v3);
+                        }
 
                         gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
                         gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
@@ -438,10 +469,11 @@ namespace IfcGeom {
                         std::array<double, 3> t1b = {v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z()};
                         std::array<double, 3> t1c = {v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z()};
 
+                        gp_Vec normal_a;
                         try {
                             gp_Vec dir1_a(v1_a_pnt, v2_a_pnt);
                             gp_Vec dir2_a(v1_a_pnt, v3_a_pnt);
-                            gp_Vec normal_a = dir1_a.Crossed(dir2_a).Normalized();
+                            normal_a = dir1_a.Crossed(dir2_a).Normalized();
                         } catch (...) {
                             continue;
                         }
@@ -450,9 +482,18 @@ namespace IfcGeom {
                         std::vector<gp_Pnt> points_in_b;
 
                         for (const auto& v : points_a) {
-                            if (is_point_in_shape(v, bvh_b, triangle_set_b)
-                                    && is_point_in_shape(v, bvh_b, triangle_set_b, true)) {
+                            if (points_not_in_b_cache.find(v) != points_not_in_b_cache.end()) {
+                                continue;
+                            } else if (points_in_b_cache.find(v) != points_in_b_cache.end()) {
                                 points_in_b.push_back(v);
+                            } else {
+                                if (is_point_in_shape(v, bvh_b, triangle_set_b)
+                                        && is_point_in_shape(v, bvh_b, triangle_set_b, true)) {
+                                    points_in_b.push_back(v);
+                                    points_in_b_cache.insert(v);
+                                } else {
+                                    points_not_in_b_cache.insert(v);
+                                }
                             }
                         }
 
@@ -466,15 +507,14 @@ namespace IfcGeom {
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
                                 BVH_Vec3d v1_b, v2_b, v3_b;
-                                triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
-                                tri_count_++;
 
-                                /*
-                                std::cout << "This tri is a potential prim" << std::endl;
-                                std::cout << "->tri " << v1_b[0] << " " << v1_b[1] << " " << v1_b[2] << std::endl;
-                                std::cout << "->tri " << v2_b[0] << " " << v2_b[1] << " " << v2_b[2] << std::endl;
-                                std::cout << "->tri " << v3_b[0] << " " << v3_b[1] << " " << v3_b[2] << std::endl;
-                                */
+                                if (faces_b[triangle_set_b.GetFaceID(j)].Orientation() == TopAbs_REVERSED) {
+                                    triangle_set_b.GetVertices(j, v1_b, v3_b, v2_b);
+                                } else {
+                                    triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
+                                }
+
+                                tri_count_++;
 
                                 gp_Pnt v1_b_pnt(v1_b[0], v1_b[1], v1_b[2]);
                                 gp_Pnt v2_b_pnt(v2_b[0], v2_b[1], v2_b[2]);
@@ -488,13 +528,18 @@ namespace IfcGeom {
 
                                 gp_Vec normal_b;
                                 try {
-                                    // It seems as though normal_b may be arbitrarily flipped.
-                                    // Maybe can use GetFaceID to check face orientation
                                     gp_Vec dir1_b(v1_b_pnt, v2_b_pnt);
-                                    gp_Vec dir2_b(v3_b_pnt, v1_b_pnt);
+                                    gp_Vec dir2_b(v1_b_pnt, v3_b_pnt);
                                     normal_b = dir1_b.Crossed(dir2_b).Normalized();
                                     ray_vectors.push_back(normal_b);
                                 } catch (...) {
+                                    continue;
+                                }
+
+                                // We're penetrating _into_ a shape, so don't
+                                // compare distances to faces with roughly the
+                                // same normal as the penetration.
+                                if (normal_a.Dot(normal_b) >= 0.9f) {
                                     continue;
                                 }
 
@@ -514,10 +559,17 @@ namespace IfcGeom {
                                     std::cout << "->tri " << v3_b[0] << " " << v3_b[1] << " " << v3_b[2] << std::endl;
                                     */
 
-                                    // Do (cheaper) line check because normals may be flipped.
+                                    // Do (cheaper) line check.
                                     if (is_intersect_ray_tri(ray_origin, normal_b, ta, tb, tc, point_on_b, true)) {
                                         gp_Pnt pnt_on_b(point_on_b.X(), point_on_b.Y(), point_on_b.Z());
                                         double current_v_protrusion = v.Distance(pnt_on_b);
+
+                                        /*
+                                        // What happens now?
+                                        if (current_v_protrusion > max_protrusion) {
+                                            continue;
+                                        }
+                                        */
 
                                         // std::cout << "We got a current protrusion " << current_v_protrusion << std::endl;
                                         if (current_v_protrusion < v_protrusion) {
@@ -540,7 +592,7 @@ namespace IfcGeom {
                     }
                 }
 
-                if (protrusion > 0.001) {
+                if (protrusion > tolerance) {
                     protrusion_distances_.push_back(protrusion);
                     protrusion_points_.push_back(protrusion_point);
                     return true;
@@ -599,13 +651,20 @@ namespace IfcGeom {
 			}
 
 			void add(const T& t, const TopoDS_Shape& s) {
-                // Note that this function is also used elsewhere (e.g. boolean_utils.cpp)
-                // We have to triangulate it to make clash detection faster
+				Bnd_Box b;
+				BRepBndLib::AddClose(s, b);
+				add(t, b);
+				shapes_[t] = s;
+			}
+
+			void add_triangulated(const T& t, const TopoDS_Shape& s) {
+                // Note that the original add function is also used elsewhere (e.g. boolean_utils.cpp)
+                // We don't want to randomly add triangulated voids in our
+                // tree, so for now this is a separate function.
                 BRepMesh_IncrementalMesh(s, 1.e-3, false, 0.5);
 
 				Bnd_Box b;
 				BRepBndLib::AddClose(s, b);
-				//add(t, b);
 				tree_.Add(t, b);
 				shapes_[t] = s;
 
@@ -613,7 +672,7 @@ namespace IfcGeom {
                 BRepBndLib::AddOBB(s, obb);
                 obbs_[t] = obb;
 
-                max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) / 2;
+                max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
 
                 BVH_BoxSet<double, 3>* boxset = new BVH_BoxSet<double, 3>();
                 BRepExtrema_ShapeList shape_list;
@@ -659,10 +718,16 @@ namespace IfcGeom {
                 for (int i=0; i<triangle_set.Size(); ++i) {
                     BVH_Vec3d v1, v2, v3;
                     triangle_set.GetVertices(i, v1, v2, v3);
+                    int face_id = triangle_set.GetFaceID(i);
                     std::cout << "Triangle in triangle set:" << std::endl;
                     std::cout << v1[0] << " " << v1[1] << " " << v1[2] << std::endl;
-                    std::cout << v2[0] << " " << v2[1] << " " << v2[2] << std::endl;
-                    std::cout << v3[0] << " " << v3[1] << " " << v3[2] << std::endl;
+                    if (faces[face_id].Orientation() == TopAbs_REVERSED) {
+                        std::cout << v3[0] << " " << v3[1] << " " << v3[2] << std::endl;
+                        std::cout << v2[0] << " " << v2[1] << " " << v2[2] << std::endl;
+                    } else {
+                        std::cout << v2[0] << " " << v2[1] << " " << v2[2] << std::endl;
+                        std::cout << v3[0] << " " << v3[1] << " " << v3[2] << std::endl;
+                    }
                 }
                 */
 
@@ -755,7 +820,7 @@ namespace IfcGeom {
                     i++;
                     std::cout << "Currently doing" << i << std::endl;
 
-					if (test_intersection(t, *it, A, B)) {
+					if (test_intersection(t, *it, A, B, tolerance)) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -954,13 +1019,17 @@ namespace IfcGeom {
 			}
 		}
 
-		void add_element(IfcGeom::BRepElement* elem) {
+		void add_element(IfcGeom::BRepElement* elem, bool should_triangulate=false) {
 			if (!elem) {
 				return;
 			}
 			auto compound = elem->geometry().as_compound();
 			compound.Move(elem->transformation().data());
-			add(elem->product(), compound);
+            if (should_triangulate) {
+                add_triangulated(elem->product(), compound);
+            } else {
+                add(elem->product(), compound);
+            }
 			auto git = elem->geometry().begin();
 
 			if (enable_face_styles_) {
