@@ -44,6 +44,7 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
+from typing import NamedTuple, List
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
@@ -75,6 +76,11 @@ class Operator:
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
+
+
+class LineworkContexts(NamedTuple):
+    body: List[List[int]]
+    annotation: List[List[int]]
 
 
 class AddAnnotationType(bpy.types.Operator, Operator):
@@ -367,6 +373,105 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_writer.create_blank_svg(svg_path).draw_underlay(context.scene.render.filepath).save()
         return svg_path
 
+    def get_linework_contexts(self, ifc, target_view) -> LineworkContexts:
+        plan_body_target_contexts = []
+        plan_body_model_contexts = []
+        model_body_target_contexts = []
+        model_body_model_contexts = []
+
+        plan_annotation_target_contexts = []
+        plan_annotation_model_contexts = []
+        model_annotation_target_contexts = []
+        model_annotation_model_contexts = []
+
+        for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
+            if rep_context.is_a("IfcGeometricRepresentationSubContext"):
+                if rep_context.ContextType == "Plan":
+                    if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                        if rep_context.TargetView == target_view:
+                            plan_body_target_contexts.append(rep_context.id())
+                        elif rep_context.TargetView == "MODEL_VIEW":
+                            plan_body_model_contexts.append(rep_context.id())
+                    elif rep_context.ContextIdentifier == "Annotation":
+                        if rep_context.TargetView == target_view:
+                            plan_annotation_target_contexts.append(rep_context.id())
+                        elif rep_context.TargetView == "MODEL_VIEW":
+                            plan_annotation_model_contexts.append(rep_context.id())
+                elif rep_context.ContextType == "Model":
+                    if rep_context.ContextIdentifier in ["Body", "Facetation"]:
+                        if rep_context.TargetView == target_view:
+                            model_body_target_contexts.append(rep_context.id())
+                        elif rep_context.TargetView == "MODEL_VIEW":
+                            model_body_model_contexts.append(rep_context.id())
+                    elif rep_context.ContextIdentifier == "Annotation":
+                        if rep_context.TargetView == target_view:
+                            model_annotation_target_contexts.append(rep_context.id())
+                        elif rep_context.TargetView == "MODEL_VIEW":
+                            model_annotation_model_contexts.append(rep_context.id())
+            elif rep_context.ContextType == "Model":
+                # You should never purely assign to a "Model" context, but
+                # if you do, this is what we assume your intention is.
+                model_body_model_contexts.append(rep_context.id())
+                continue
+
+        body_contexts = (
+            [
+                plan_body_target_contexts,
+                plan_body_model_contexts,
+                model_body_target_contexts,
+                model_body_model_contexts,
+            ]
+            if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+            else [
+                model_body_target_contexts,
+                model_body_model_contexts,
+            ]
+        )
+
+        annotation_contexts = (
+            [
+                plan_annotation_target_contexts,
+                plan_annotation_model_contexts,
+                model_annotation_target_contexts,
+                model_annotation_model_contexts,
+            ]
+            if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
+            else [
+                model_annotation_target_contexts,
+                model_annotation_model_contexts,
+            ]
+        )
+
+        return LineworkContexts(body_contexts, annotation_contexts)
+
+    def serialize_contexts_elements(
+        self, ifc, tree: ifcopenshell.geom.tree, contexts: LineworkContexts, context_type, drawing_elements, target_view
+    ):
+        drawing_elements = drawing_elements.copy()
+        contexts = getattr(contexts, context_type)
+        for context in contexts:
+            with profile(f"Processing {context_type} context"):
+                if not context or not drawing_elements:
+                    continue
+                geom_settings = ifcopenshell.geom.settings(
+                    DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                )
+                if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
+                    offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+                    # A 2mm Z offset to combat Z-fighting in plan or RCPs
+                    offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
+                    geom_settings.offset = offset
+                geom_settings.set_context_ids(context)
+                it = ifcopenshell.geom.iterator(
+                    geom_settings, ifc, multiprocessing.cpu_count(), include=drawing_elements
+                )
+                processed = set()
+                for elem in it:
+                    processed.add(ifc.by_id(elem.id))
+                    self.serialiser.write(elem)
+                    tree.add_element(elem)
+                drawing_elements -= processed
+
     def generate_linework(self, context):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
@@ -408,77 +513,8 @@ class CreateDrawing(bpy.types.Operator):
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
-
-            plan_body_target_contexts = []
-            plan_body_model_contexts = []
-            model_body_target_contexts = []
-            model_body_model_contexts = []
-
-            plan_annotation_target_contexts = []
-            plan_annotation_model_contexts = []
-            model_annotation_target_contexts = []
-            model_annotation_model_contexts = []
-
             target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
-
-            for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
-                if rep_context.is_a("IfcGeometricRepresentationSubContext"):
-                    if rep_context.ContextType == "Plan":
-                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
-                            if rep_context.TargetView == target_view:
-                                plan_body_target_contexts.append(rep_context.id())
-                            elif rep_context.TargetView == "MODEL_VIEW":
-                                plan_body_model_contexts.append(rep_context.id())
-                        elif rep_context.ContextIdentifier == "Annotation":
-                            if rep_context.TargetView == target_view:
-                                plan_annotation_target_contexts.append(rep_context.id())
-                            elif rep_context.TargetView == "MODEL_VIEW":
-                                plan_annotation_model_contexts.append(rep_context.id())
-                    elif rep_context.ContextType == "Model":
-                        if rep_context.ContextIdentifier in ["Body", "Facetation"]:
-                            if rep_context.TargetView == target_view:
-                                model_body_target_contexts.append(rep_context.id())
-                            elif rep_context.TargetView == "MODEL_VIEW":
-                                model_body_model_contexts.append(rep_context.id())
-                        elif rep_context.ContextIdentifier == "Annotation":
-                            if rep_context.TargetView == target_view:
-                                model_annotation_target_contexts.append(rep_context.id())
-                            elif rep_context.TargetView == "MODEL_VIEW":
-                                model_annotation_model_contexts.append(rep_context.id())
-                elif rep_context.ContextType == "Model":
-                    # You should never purely assign to a "Model" context, but
-                    # if you do, this is what we assume your intention is.
-                    model_body_model_contexts.append(rep_context.id())
-                    continue
-
-            body_contexts = (
-                [
-                    plan_body_target_contexts,
-                    plan_body_model_contexts,
-                    model_body_target_contexts,
-                    model_body_model_contexts,
-                ]
-                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
-                else [
-                    model_body_target_contexts,
-                    model_body_model_contexts,
-                ]
-            )
-
-            annotation_contexts = (
-                [
-                    plan_annotation_target_contexts,
-                    plan_annotation_model_contexts,
-                    model_annotation_target_contexts,
-                    model_annotation_model_contexts,
-                ]
-                if target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]
-                else [
-                    model_annotation_target_contexts,
-                    model_annotation_model_contexts,
-                ]
-            )
-
+            contexts = self.get_linework_contexts(ifc, target_view)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc, target_view)
@@ -487,60 +523,15 @@ class CreateDrawing(bpy.types.Operator):
             tree = ifcopenshell.geom.tree()
             tree.enable_face_styles(True)
 
-            elements = drawing_elements.copy()
-            for body_context in body_contexts:
-                with profile("Processing body context"):
-                    if body_context and elements:
-                        geom_settings = ifcopenshell.geom.settings(
-                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
-                        )
-                        if ifc.by_id(body_context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
-                            offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
-                            # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                            offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
-                            geom_settings.offset = offset
-                        geom_settings.set_context_ids(body_context)
-                        it = ifcopenshell.geom.iterator(
-                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
-                        )
-                        it.set_cache(cache)
-                        processed = set()
-                        for elem in self.yield_from_iterator(it):
-                            processed.add(ifc.by_id(elem.id))
-                            self.serialiser.write(elem)
-                            tree.add_element(elem)
-                        elements -= processed
-
-            elements = drawing_elements.copy()
-            for annotation_context in annotation_contexts:
-                with profile("Processing annotation context"):
-                    if annotation_context and elements:
-                        geom_settings = ifcopenshell.geom.settings(
-                            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
-                        )
-                        if ifc.by_id(annotation_context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
-                            offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
-                            # A 2mm Z offset to combat Z-fighting in plan or RCPs
-                            offset[2] = 0.002 if target_view == "PLAN_VIEW" else -0.002
-                            geom_settings.offset = offset
-                        geom_settings.set_context_ids(annotation_context)
-                        it = ifcopenshell.geom.iterator(
-                            geom_settings, ifc, multiprocessing.cpu_count(), include=elements
-                        )
-                        it.set_cache(cache)
-                        processed = set()
-                        for elem in self.yield_from_iterator(it):
-                            processed.add(ifc.by_id(elem.id))
-                            self.serialiser.write(elem)
-                            tree.add_element(elem)
-                        elements -= processed
+            self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view)
+            self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
 
             if self.camera_element not in drawing_elements:
                 with profile("Camera element"):
                     # The camera must always be included, regardless of any include/exclude filters.
                     geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
                     it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
-                    for elem in self.yield_from_iterator(it):
+                    for elem in it:
                         self.serialiser.write(elem)
 
         with profile("Finalizing"):
@@ -883,13 +874,6 @@ class CreateDrawing(bpy.types.Operator):
         # This instructs the tree to explode BReps into faces and return
         # the style of the face when running tree.select_ray()
         # tree.enable_face_styles(True)
-
-    def yield_from_iterator(self, it):
-        if it.initialize():
-            while True:
-                yield it.get()
-                if not it.next():
-                    break
 
     def get_svg_classes(self, element):
         classes = [element.is_a()]
