@@ -1614,6 +1614,8 @@ class RemoveRepresentationItem(bpy.types.Operator, Operator):
     bl_label = "Remove Representation Item"
     bl_options = {"REGISTER", "UNDO"}
 
+    representation_item_id: bpy.props.IntProperty()
+
     @classmethod
     def poll(cls, context):
         if context.active_object is None or len(context.active_object.BIMGeometryProperties.items) <= 1:
@@ -1628,8 +1630,7 @@ class RemoveRepresentationItem(bpy.types.Operator, Operator):
         props = obj.BIMGeometryProperties
         ifc_file = tool.Ifc.get()
 
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
-        representation_item = ifc_file.by_id(representation_item_id)
+        representation_item = ifc_file.by_id(self.representation_item_id)
         tool.Geometry.remove_representation_item(representation_item)
         tool.Geometry.reload_representation(obj)
 
