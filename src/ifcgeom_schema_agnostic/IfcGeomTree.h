@@ -328,45 +328,20 @@ namespace IfcGeom {
                 return total_intersections % 2 != 0;
             }
 
-            std::array<gp_Pnt, 3> shrink_triangle(
-                    const gp_Pnt& v1,
-                    const gp_Pnt& v2,
-                    const gp_Pnt& v3,
-                    double insetDistance
-            ) const {
-                gp_Pnt centroid((v1.X() + v2.X() + v3.X()) / 3.0,
-                                (v1.Y() + v2.Y() + v3.Y()) / 3.0,
-                                (v1.Z() + v2.Z() + v3.Z()) / 3.0);
-
-                if (v1.Distance(centroid) < insetDistance
-                        || v2.Distance(centroid) < insetDistance
-                        || v3.Distance(centroid) < insetDistance) {
-                    return std::array<gp_Pnt, 3> {v1, v2, v3};
-                }
-
-                auto moveTowards = [&](const gp_Pnt& vertex) -> gp_Pnt {
-                    gp_Vec direction(vertex, centroid);
-                    direction.Normalize();
-                    return gp_Pnt(vertex.XYZ() + direction.XYZ() * insetDistance);
-                };
-
-                return std::array<gp_Pnt, 3> {moveTowards(v1), moveTowards(v2), moveTowards(v3)};
-            }
-
 			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance) const {
                 // Attempt 3:
                 //  1. For each vert of A that is inside shape B, find the shortest distance to the closest face
                 //  2. Of those verts, find the innermost vert (i.e. the vert that has the longest distance)
 
                 // OBB check
-                auto a_larger = obbs_.find(tA)->second;
-                auto b_larger = obbs_.find(tB)->second;
-                // Maybe for clashing we should shrink in order to prevent touches.
-                // a_larger.Enlarge(extend);
-                if (a_larger.IsOut(b_larger)) {
+                auto obb_a = obbs_.find(tA)->second;
+                auto obb_b = obbs_.find(tB)->second;
+                obb_b.Enlarge(-tolerance);
+                if (obb_a.IsOut(obb_b)) {
                     return false;
                 }
 
+                // No need to search beyond the distance of the max protrusion.
                 double max_protrusion = max_protrusions_.find(tB)->second;
 
                 // Collide BVH trees of shape A vs B
@@ -439,6 +414,7 @@ namespace IfcGeom {
 
                 double protrusion = -std::numeric_limits<double>::infinity();
                 std::array<double, 3> protrusion_point;
+                std::array<double, 3> surface_point;
 
                 for (const auto& pair : bvh_clashes) {
                     int bvh_a_i = pair.first;
@@ -459,12 +435,6 @@ namespace IfcGeom {
                         gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
                         gp_Pnt v3_a_pnt(v3[0], v3[1], v3[2]);
 
-                        // Shrink triangle slightly to prevent getting "touching" clashes
-                        std::array<gp_Pnt, 3> shrunk_verts = shrink_triangle(v1_a_pnt, v2_a_pnt, v3_a_pnt, 0.002);
-                        v1_a_pnt = shrunk_verts[0];
-                        v2_a_pnt = shrunk_verts[1];
-                        v3_a_pnt = shrunk_verts[2];
-
                         std::array<double, 3> t1a = {v1_a_pnt.X(), v1_a_pnt.Y(), v1_a_pnt.Z()};
                         std::array<double, 3> t1b = {v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z()};
                         std::array<double, 3> t1c = {v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z()};
@@ -484,16 +454,24 @@ namespace IfcGeom {
                         for (const auto& v : points_a) {
                             if (points_not_in_b_cache.find(v) != points_not_in_b_cache.end()) {
                                 continue;
-                            } else if (points_in_b_cache.find(v) != points_in_b_cache.end()) {
+                            }
+
+                            if (points_in_b_cache.find(v) != points_in_b_cache.end()) {
                                 points_in_b.push_back(v);
+                                continue;
+                            }
+
+                            if (obb_b.IsOut(v)) {
+                                points_not_in_b_cache.insert(v);
+                                continue;
+                            }
+
+                            if (is_point_in_shape(v, bvh_b, triangle_set_b)
+                                    && is_point_in_shape(v, bvh_b, triangle_set_b, true)) {
+                                points_in_b.push_back(v);
+                                points_in_b_cache.insert(v);
                             } else {
-                                if (is_point_in_shape(v, bvh_b, triangle_set_b)
-                                        && is_point_in_shape(v, bvh_b, triangle_set_b, true)) {
-                                    points_in_b.push_back(v);
-                                    points_in_b_cache.insert(v);
-                                } else {
-                                    points_not_in_b_cache.insert(v);
-                                }
+                                points_not_in_b_cache.insert(v);
                             }
                         }
 
@@ -503,6 +481,7 @@ namespace IfcGeom {
 
                         double v_protrusion = std::numeric_limits<double>::infinity();
                         std::array<double, 3> v_protrusion_point;
+                        std::array<double, 3> v_surface_point;
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
@@ -576,6 +555,7 @@ namespace IfcGeom {
                                             // std::cout << "New v_protrusion winner of " << current_v_protrusion << std::endl;
                                             v_protrusion = current_v_protrusion;
                                             v_protrusion_point = {v.X(), v.Y(), v.Z()};
+                                            v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
                                         }
                                     }
                                 }
@@ -587,6 +567,7 @@ namespace IfcGeom {
                                 std::cout << "New actual protrusion winner of " << v_protrusion << std::endl;
                                 protrusion = v_protrusion;
                                 protrusion_point = v_protrusion_point;
+                                surface_point = v_surface_point;
                             }
                         }
                     }
@@ -595,6 +576,7 @@ namespace IfcGeom {
                 if (protrusion > tolerance) {
                     protrusion_distances_.push_back(protrusion);
                     protrusion_points_.push_back(protrusion_point);
+                    surface_points_.push_back(surface_point);
                     return true;
                 }
                 return false;
@@ -642,6 +624,7 @@ namespace IfcGeom {
 			mutable std::vector<double> distances_;
 			mutable std::vector<double> protrusion_distances_;
 			mutable std::vector<std::array<double, 3>> protrusion_points_;
+			mutable std::vector<std::array<double, 3>> surface_points_;
             mutable long long tri_count_ = 0;
 
 		public:
@@ -669,7 +652,7 @@ namespace IfcGeom {
 				shapes_[t] = s;
 
                 Bnd_OBB obb;
-                BRepBndLib::AddOBB(s, obb);
+                BRepBndLib::AddOBB(s, obb, true, true, false);
                 obbs_[t] = obb;
 
                 max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
@@ -795,6 +778,7 @@ namespace IfcGeom {
 			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002) const {
 				protrusion_distances_.clear();
 				protrusion_points_.clear();
+				surface_points_.clear();
 
 				std::vector<T> ts = select_box(t, true, 1e-5);
 				if (ts.empty()) {
@@ -858,7 +842,6 @@ namespace IfcGeom {
 			std::vector<T> select(const TopoDS_Shape& s, bool completely_within = false, double extend = -1.e-5) const {
 				distances_.clear();
 				protrusion_distances_.clear();
-				protrusion_points_.clear();
 
 				Bnd_Box bb;
 				BRepBndLib::AddClose(s, bb);
@@ -896,7 +879,6 @@ namespace IfcGeom {
 			std::vector<T> select(const gp_Pnt& p, double extend=0.0) const {
 				distances_.clear();
 				protrusion_distances_.clear();
-				protrusion_points_.clear();
 
 				std::vector<T> ts = select_box(p, extend);
 				if (ts.empty()) {
@@ -1070,6 +1052,10 @@ namespace IfcGeom {
 
 		const std::vector<std::array<double, 3>>& protrusion_points() const {
 			return protrusion_points_;
+		}
+
+		const std::vector<std::array<double, 3>>& surface_points() const {
+			return surface_points_;
 		}
 
 		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {
