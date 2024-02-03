@@ -1,0 +1,99 @@
+# docker-compose up --build --force-recreate --detach
+# docker-compose up = Create and start containers.
+# --build = Build images before starting containers.
+# --force-recreate = Recreate containers even if their configuration and image haven’t changed.
+# --detach = Detached mode: Run containers in the background.
+
+version: '3.7'
+
+networks:
+  kontroll_network:
+    driver: bridge
+
+services:
+
+# HTTP: 27474 on server matches 7474 in neo4j container.
+# HTTPS: 27473 on server matches 7473 in neo4j container.
+# Bolt: 27687 on server matches 7687 in neo4j container.
+
+# Environment variables are read from the .env file.
+# The .env file should be placed at the root of the project directory next to your docker-compose.yml file.
+
+# APOC core and extended must be loaded from /neo4j/plugins folder.
+
+  neo4j:
+    container_name: kontroll_neo4j
+    image: library/neo4j:5.7.0-community
+    restart: unless-stopped
+    ports:
+      - "27474:7474"
+      - "27473:7473"
+      - "27687:7687"
+    networks:
+      - kontroll_network
+    volumes:
+      - ./neo4j/data:/data
+      - ./neo4j/logs:/logs
+      - ./neo4j/conf:/conf
+      - ./neo4j/import:/import
+      - ./neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=${NEO4J_USER}/${NEO4J_INITIAL_PASSWORD}
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+      - NEO4J_dbms_security_auth__minimum__password__length=4
+      - NEO4J_server_http_enabled
+      - NEO4J_server_http_listen__address=0.0.0.0:7474
+      - NEO4J_server_https_enabled
+      - NEO4J_server_https_listen__address=0.0.0.0:7473
+      - NEO4J_server_bolt_enabled
+      - NEO4J_server_bolt_listen__address=0.0.0.0:7687
+    secrets:
+      - neo4j_password
+
+# depends_on: Dependency services must be started before starting a dependent service.
+# HTTPS: 24443 on server matches 8000 in kontroll_fastapi container.
+# ./etc/letsencrypt contains HTTPS keys and certificates.
+
+  fastapi:
+    container_name: kontroll_fastapi
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+      target: server
+    depends_on:
+      - neo4j
+    restart: unless-stopped
+    ports:
+      - "24443:8000"
+    networks:
+      - kontroll_network
+    volumes:
+      - ./etc/letsencrypt:/etc/letsencrypt
+      - ./api/app/logs:/code/app/logs
+      - ./api/app/data:/code/app/data
+    environment:
+      - NEO4J_USER=${NEO4J_USER}
+      - NEO4J_INITIAL_PASSWORD=${NEO4J_INITIAL_PASSWORD}
+      - NEO4J_URI=${NEO4J_URI}
+      - KONTROLL_BASE_URL=${KONTROLL_BASE_URL}
+      - KONTROLL_CLIENT_ID=${KONTROLL_CLIENT_ID}
+      - KONTROLL_CLIENT_NAME=${KONTROLL_CLIENT_NAME}
+      - SECURITY_AUTHORIZATION_CODE_EXPIRE_SECONDS=${SECURITY_AUTHORIZATION_CODE_EXPIRE_SECONDS}
+      - SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS=${SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS}
+      - SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS=${SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS}
+      - SECURITY_ALGORITHM=${SECURITY_ALGORITHM}
+      - SESSION_URL_VALIDITY_SECONDS=${SESSION_URL_VALIDITY_SECONDS}
+      - SESSION_MAX_FILE_SIZE_BYTES=${SESSION_MAX_FILE_SIZE_BYTES}
+    secrets:
+      - neo4j_password
+      - kontroll_client_secret
+      - security_secret_key
+
+secrets:
+  neo4j_password:
+    file: ./secrets/neo4j_password.txt
+  kontroll_client_secret:
+    file: ./secrets/kontroll_client_secret.txt
+  security_secret_key:
+    file: ./secrets/security_secret_key.txt
