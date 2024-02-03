@@ -1,7 +1,0 @@
-{
-    "title": "component list",
-    "type": ["array", "null"],
-    "items": {
-        "$ref": "component.json"
-    }
-}
