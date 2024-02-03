@@ -1,0 +1,12 @@
+/api/app/logs/*
+/api/app/favicon.ico
+/data/
+/etc/
+/neo4j/data/*
+/neo4j/import/*
+/neo4j/logs/*
+/secrets/*
+/TODO.txt
+/venv/
+/.idea/
+/secrets/

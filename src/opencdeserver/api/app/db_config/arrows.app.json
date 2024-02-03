@@ -1,0 +1,655 @@
+{
+  "style": {
+    "font-family": "sans-serif",
+    "background-color": "#ffffff",
+    "background-image": "",
+    "background-size": "100%",
+    "node-color": "#ffffff",
+    "border-width": 4,
+    "border-color": "#000000",
+    "radius": 50,
+    "node-padding": 5,
+    "node-margin": 2,
+    "outside-position": "auto",
+    "node-icon-image": "",
+    "node-background-image": "",
+    "icon-position": "inside",
+    "icon-size": 64,
+    "caption-position": "inside",
+    "caption-max-width": 200,
+    "caption-color": "#000000",
+    "caption-font-size": 50,
+    "caption-font-weight": "normal",
+    "label-position": "inside",
+    "label-display": "pill",
+    "label-color": "#000000",
+    "label-background-color": "#ffffff",
+    "label-border-color": "#000000",
+    "label-border-width": 4,
+    "label-font-size": 40,
+    "label-padding": 5,
+    "label-margin": 4,
+    "directionality": "directed",
+    "detail-position": "inline",
+    "detail-orientation": "parallel",
+    "arrow-width": 5,
+    "arrow-color": "#000000",
+    "margin-start": 5,
+    "margin-end": 5,
+    "margin-peer": 20,
+    "attachment-start": "normal",
+    "attachment-end": "normal",
+    "relationship-icon-image": "",
+    "type-color": "#000000",
+    "type-background-color": "#ffffff",
+    "type-border-color": "#000000",
+    "type-border-width": 0,
+    "type-font-size": 16,
+    "type-padding": 5,
+    "property-position": "outside",
+    "property-alignment": "colon",
+    "property-color": "#000000",
+    "property-font-size": 16,
+    "property-font-weight": "normal"
+  },
+  "nodes": [
+    {
+      "id": "n0",
+      "position": {
+        "x": -289.1004788300022,
+        "y": 479.89101705018163
+      },
+      "caption": "Topic",
+      "style": {},
+      "labels": [
+        "Topic"
+      ],
+      "properties": {
+        "guid": "STRING",
+        "creation_date": "",
+        "modified_date": "",
+        "creation_author": "",
+        "modified_author": "",
+        "topic_type": "",
+        "topic_status": "",
+        "title": "",
+        "priority": "",
+        "index": "",
+        "assigned_to": "",
+        "stage": "",
+        "description": "",
+        "due_date": ""
+      }
+    },
+    {
+      "id": "n1",
+      "position": {
+        "x": -333.1242108163427,
+        "y": 63.328364869784195
+      },
+      "caption": "Project",
+      "style": {},
+      "labels": [
+        "Project"
+      ],
+      "properties": {
+        "project_id": "STRING",
+        "name": "STRING"
+      }
+    },
+    {
+      "id": "n2",
+      "position": {
+        "x": 16.812745060861175,
+        "y": -286.6085910074197
+      },
+      "caption": "Extensions",
+      "style": {},
+      "labels": [
+        "Extensions"
+      ],
+      "properties": {
+        "topic_type": "",
+        "topic_status": "",
+        "topic_label": "",
+        "snippet_type": "",
+        "priority": "",
+        "users": "",
+        "stage": "",
+        "project_actions": "",
+        "topic_actions": "",
+        "comment_actions": ""
+      }
+    },
+    {
+      "id": "n3",
+      "position": {
+        "x": 226.07663507128208,
+        "y": 479.89101705018163
+      },
+      "caption": "Viewpoint",
+      "style": {},
+      "labels": [
+        "Viewpoint"
+      ],
+      "properties": {
+        "guid": "",
+        "snapshot": "",
+        "snapshot_type": "",
+        "index": "",
+        "camera_definition": "",
+        "camera_view_point": "",
+        "camera_direction": "",
+        "camera_up_vector": "",
+        "view_tws_or_fo_view": "",
+        "aspect_ratio": "",
+        "default_visibility": "",
+        "spaces_visible": "",
+        "space_boundaries_visible": "",
+        "openings_visible": ""
+      }
+    },
+    {
+      "id": "n4",
+      "position": {
+        "x": -1063.7571554834985,
+        "y": -259.5570287821265
+      },
+      "caption": "User",
+      "style": {},
+      "labels": [
+        "User"
+      ],
+      "properties": {
+        "UUID": "",
+        "username": "STRING",
+        "full_name": "",
+        "email": "",
+        "hashed_password": "",
+        "disabled": ""
+      }
+    },
+    {
+      "id": "n5",
+      "position": {
+        "x": 529.1987482469625,
+        "y": 63.328364869784195
+      },
+      "caption": "Component",
+      "style": {},
+      "labels": [
+        "Component"
+      ],
+      "properties": {
+        "ifc_guid": "",
+        "selected": "",
+        "originating_system": "",
+        "authoring_tool_id": "",
+        "color": "",
+        "visibility_exception": "",
+        "GTIN": ""
+      }
+    },
+    {
+      "id": "n6",
+      "position": {
+        "x": 264.11970819463727,
+        "y": -73.26061694118164
+      },
+      "caption": "Comment",
+      "style": {},
+      "labels": [
+        "Comment"
+      ],
+      "properties": {
+        "guid": "",
+        "reply_to_comment_guid": "",
+        "date": "",
+        "modified_date": "",
+        "author": "",
+        "modified_author": "",
+        "comment": ""
+      }
+    },
+    {
+      "id": "n7",
+      "position": {
+        "x": -651.5332260698573,
+        "y": -497.5546253954978
+      },
+      "caption": "Token:AcessToken",
+      "style": {},
+      "labels": [
+        "Token:AcessToken"
+      ],
+      "properties": {
+        "code": "",
+        "scope": "",
+        "value": "",
+        "hash": ""
+      }
+    },
+    {
+      "id": "n8",
+      "position": {
+        "x": -485.20568785423296,
+        "y": -367.1506322968085
+      },
+      "caption": "Token:RefreshToken",
+      "style": {},
+      "labels": [
+        "Token:RefreshToken"
+      ],
+      "properties": {
+        "code": "",
+        "scope": "",
+        "value": "",
+        "hash": ""
+      }
+    },
+    {
+      "id": "n9",
+      "position": {
+        "x": -192.7032908251408,
+        "y": -331.31640881713093
+      },
+      "caption": "Process",
+      "style": {},
+      "labels": [
+        "Process"
+      ],
+      "properties": {}
+    },
+    {
+      "id": "n10",
+      "position": {
+        "x": -1507.6552365118007,
+        "y": -73.26061694118164
+      },
+      "caption": "Session:Upload",
+      "style": {},
+      "labels": [
+        "Session:Upload"
+      ],
+      "properties": {
+        "server_context": "",
+        "upload_session": "",
+        "callback": "",
+        "session_url_timedelta": "",
+        "session_callback_timedelta": ""
+      }
+    },
+    {
+      "id": "n11",
+      "position": {
+        "x": -1063.7571554834985,
+        "y": 370.6374640871204
+      },
+      "caption": "Document:Model:Temporary",
+      "style": {},
+      "labels": [
+        "Document:Model"
+      ],
+      "properties": {
+        "document_id": "",
+        "version_index": "",
+        "ifc_project": "",
+        "name": "",
+        "title": "",
+        "guid": "",
+        "url": "",
+        "description": "",
+        "session_file_id": "",
+        "version_number": "",
+        "creation_date": "",
+        "original_file_name": "",
+        "file_ending": "",
+        "mime_type": "",
+        "file_type": "",
+        "size_in_bytes": "",
+        "project": "",
+        "reference": "",
+        "date": "",
+        "ifc_spatial_structure_element": "",
+        "filename": ""
+      }
+    },
+    {
+      "id": "n12",
+      "position": {
+        "x": -1352.4885415635456,
+        "y": 659.3688501671675
+      },
+      "caption": "Part",
+      "style": {},
+      "labels": [
+        "Part"
+      ],
+      "properties": {
+        "uuid": "",
+        "number": "",
+        "content_range_start": "",
+        "content_range_end": "",
+        "content_length": "",
+        "uploaded": "Boolean"
+      }
+    },
+    {
+      "id": "n13",
+      "position": {
+        "x": -954.4308563764228,
+        "y": 63.328364869784195
+      },
+      "caption": "Session:Select",
+      "style": {},
+      "labels": [
+        "Session:Select"
+      ],
+      "properties": {
+        "server_context": "",
+        "selection_session": "",
+        "callback": "",
+        "session_url_timedelta": "",
+        "session_callback_timedelta": ""
+      }
+    },
+    {
+      "id": "n14",
+      "position": {
+        "x": -1217.4300471311708,
+        "y": -21.114959701631534
+      },
+      "caption": "Link",
+      "style": {},
+      "labels": [
+        "Link"
+      ],
+      "properties": {}
+    },
+    {
+      "id": "n15",
+      "position": {
+        "x": 570.3648741605024,
+        "y": 533.5911545751243
+      },
+      "caption": "Line",
+      "style": {},
+      "labels": [
+        "Line"
+      ],
+      "properties": {
+        "start_point": "",
+        "end_point": ""
+      }
+    },
+    {
+      "id": "n16",
+      "position": {
+        "x": 645.5935574267153,
+        "y": 299.3814975504374
+      },
+      "caption": "ClippingPlane",
+      "style": {},
+      "labels": [
+        "CilppingPlane"
+      ],
+      "properties": {
+        "location": "",
+        "direction": ""
+      }
+    },
+    {
+      "id": "n17",
+      "position": {
+        "x": 425.3162762641219,
+        "y": 765.7610254853134
+      },
+      "caption": "Bitmap",
+      "style": {},
+      "labels": [
+        "Bitmap"
+      ],
+      "properties": {
+        "type": "",
+        "location": "",
+        "normal": "",
+        "up": "",
+        "height": ""
+      }
+    },
+    {
+      "id": "n18",
+      "position": {
+        "x": 645.5935574267153,
+        "y": -331.31640881713093
+      },
+      "caption": "IfcProduct",
+      "style": {},
+      "labels": [
+        "IfcProduct"
+      ],
+      "properties": {
+        "GlobalId": ""
+      }
+    },
+    {
+      "id": "n19",
+      "position": {
+        "x": -988.4895851499441,
+        "y": -536.5949869348817
+      },
+      "caption": "AuthorizationCode",
+      "style": {},
+      "labels": [],
+      "properties": {
+        "code": ""
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "id": "n0",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n1",
+      "toId": "n0"
+    },
+    {
+      "id": "n1",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n1",
+      "toId": "n2"
+    },
+    {
+      "id": "n2",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n0",
+      "toId": "n3"
+    },
+    {
+      "id": "n3",
+      "type": "HAS_ACTIONS_ON",
+      "style": {},
+      "properties": {
+        "read": "BOOLEAN",
+        "update": "BOOLEAN",
+        "createTopic": "BOOLEAN",
+        "createDocument": "BOOLEAN",
+        "createViewpoint": "BOOLEAN",
+        "createComment": "BOOLEAN",
+        "updateDocumentReferences": "BOOLEAN",
+        "updateFiles": "BOOLEAN",
+        "updateRelatedTopics": "BOOLEAN"
+      },
+      "fromId": "n4",
+      "toId": "n1"
+    },
+    {
+      "id": "n4",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n3",
+      "toId": "n5"
+    },
+    {
+      "id": "n5",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n0",
+      "toId": "n6"
+    },
+    {
+      "id": "n6",
+      "type": "RELATED_TO",
+      "style": {},
+      "properties": {},
+      "fromId": "n6",
+      "toId": "n3"
+    },
+    {
+      "id": "n7",
+      "type": "CAN_USE",
+      "style": {},
+      "properties": {},
+      "fromId": "n4",
+      "toId": "n7"
+    },
+    {
+      "id": "n8",
+      "type": "CAN_USE",
+      "style": {},
+      "properties": {},
+      "fromId": "n4",
+      "toId": "n8"
+    },
+    {
+      "id": "n9",
+      "type": "CONTAINS",
+      "style": {},
+      "properties": {},
+      "fromId": "n9",
+      "toId": "n1"
+    },
+    {
+      "id": "n10",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n4",
+      "toId": "n10"
+    },
+    {
+      "id": "n11",
+      "type": "CONTAINS",
+      "style": {},
+      "properties": {},
+      "fromId": "n10",
+      "toId": "n11"
+    },
+    {
+      "id": "n12",
+      "type": "REFERS_TO",
+      "style": {},
+      "properties": {
+        "guid": ""
+      },
+      "fromId": "n0",
+      "toId": "n11"
+    },
+    {
+      "id": "n13",
+      "type": "CONTAINS",
+      "style": {},
+      "properties": {},
+      "fromId": "n1",
+      "toId": "n11"
+    },
+    {
+      "id": "n14",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n11",
+      "toId": "n12"
+    },
+    {
+      "id": "n15",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n4",
+      "toId": "n13"
+    },
+    {
+      "id": "n16",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n10",
+      "toId": "n14"
+    },
+    {
+      "id": "n17",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n13",
+      "toId": "n14"
+    },
+    {
+      "id": "n18",
+      "type": "SELECTED",
+      "style": {},
+      "properties": {},
+      "fromId": "n13",
+      "toId": "n11"
+    },
+    {
+      "id": "n19",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n3",
+      "toId": "n15"
+    },
+    {
+      "id": "n20",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n3",
+      "toId": "n16"
+    },
+    {
+      "id": "n21",
+      "type": "HAS",
+      "style": {},
+      "properties": {},
+      "fromId": "n3",
+      "toId": "n17"
+    },
+    {
+      "id": "n22",
+      "type": "SAME_AS",
+      "style": {},
+      "properties": {},
+      "fromId": "n5",
+      "toId": "n18"
+    },
+    {
+      "id": "n23",
+      "type": "CAN_USE",
+      "style": {},
+      "properties": {},
+      "fromId": "n4",
+      "toId": "n19"
+    }
+  ]
+}
