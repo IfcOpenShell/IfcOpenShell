@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kontroll.digital</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.3.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            // Text format functions
+
+            $('.size_in_bytes').each(function(i, obj) {
+                $(this).text(formatBytes($(this).text()));
+                console.log($(this).text());
+            });
+
+            $('.date_in_iso').each(function(i, obj) {
+                $(this).text(formatDate($(this).text()));
+                console.log($(this).text());
+            });
+
+            // Event functions
+
+            {% for project in projects %}
+
+            $('#button_{{project.project_id}}').on('click', function (event) {
+                let form_data = new FormData();
+                let files = $('#file_{{project.project_id}}')[0].files;
+                if(files.length > 0) {
+                    form_data.append('file', files[0]);
+                    form_data.append('project', '{{project.project_id}}');
+                    form_data.append('selection_session', $('#selection_session').val());
+                    $.ajax({
+                        url: './upload_file_to_project',
+                        type: 'POST',
+                        data: form_data,
+                        dataType: 'json',
+                        contentType: false,
+                        processData: false,
+                        success:function (response) {
+                            if (response.document_id) {
+                                $('#span_{{project.project_id}}').text(response.document_id);
+                            } else {
+                                $('#span_{{project.project_id}}').text('Not uploaded');
+                            }
+                        }
+                    });
+                } else {
+                    $('#span_{{project.project_id}}').text('Please select a file.')
+                }
+                event.preventDefault();
+            });
+
+            {% endfor %}
+
+            $('#select_documents_button').on('click', function (event) {
+                select_documents();
+            })
+
+        });
+
+        // Download functions
+
+        function select_documents () {
+            event.preventDefault();
+            let form_values = $('#select_documents_form').serialize();
+            console.log('Form values: ' + form_values);
+            $.ajax ({
+                type: 'POST',
+                url: './mark-documents-as-selected',
+                data: form_values,
+                dataType: 'json',
+                success: function (msg) {
+                    if (msg) {
+                        console.log('Result of mark-some-documents-as-selected: ' + msg);
+                        callback(msg)
+                    }
+                },
+                error: function () {
+                    let errors = ['An unknown error occured.'];
+                    console.log(errors);
+                }
+            });
+            return false;
+        }
+
+        function callback (msg) {
+            let callback_url = $('#callback_url').val();
+            let session_id = $('#selection_session').val();
+            let server_context = $('#server_context').val();
+            let selected_documents_url = 'https://api.kontroll.digital/documents/1.0/download-instructions'
+                + '?session_id=' + session_id
+                + '&server_context=' + server_context
+
+            callback_url = callback_url + '?selected_documents_url=' + encodeURIComponent(selected_documents_url)
+
+            console.log('Selected documents url: ' + selected_documents_url);
+            console.log('Callback url: ' + callback_url);
+
+            $.get ({
+                url: callback_url,
+                crossDomain: true,
+                dataType: 'html',
+                success: function (msg) {
+                    if (msg) {
+                        console.log('Result text: ' + msg);
+                        $('#result_message').text('You may now close this window.');
+                    }
+                },
+                error: function () {
+                    let errors = ['An unknown error occured.'];
+                    console.log(errors);
+                }
+            });
+        }
+
+        // Helper functions
+
+        function formatBytes(bytes, decimals = 2) {
+            bytes = parseInt(bytes)
+            const k = 1024
+            if (!+bytes) return '0 Bytes'
+            const dm = decimals < 0 ? 0 : decimals
+            const sizes = ['Bytes', 'Kb', 'Mb', 'Gb', 'Tb', 'Pb', 'Eb', 'Zb', 'Yb']
+            const i = Math.floor(Math.log(bytes) / Math.log(k))
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
+        }
+
+        function formatDate(iso_date) {
+            let d = new Date(iso_date)
+            let curr_date = d.getDate();
+            let curr_month = d.getMonth() + 1;
+            let curr_year = d.getFullYear();
+            return curr_year + "-" + curr_month + "-" + curr_date
+        }
+
+    </script>
+    <style>
+        body {
+            align-content: center;
+            justify-content: center;
+            padding-top: 40px;
+            padding-bottom: 40px;
+            background-color: #f5f5f5;
+        }
+        .page_layout {
+            width: 100%;
+            max-width: 780px;
+            padding: 15px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+<div id="page_layout" class="page_layout">
+    <form action="" id="select_documents_form" name="select_documents_form">
+        <h1 class="h3 mb-3">kontroll.digital</h1>
+        <div id="select_documents_div">
+
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col"></th>
+                    <th scope="col">ID</th>
+                    <th scope="col">Title</th>
+                    <th scope="col">Version</th>
+                    <th scope="col">File type</th>
+                    <th scope="col">Size</th>
+                    <th scope="col">Created</th>
+                </tr>
+                </thead>
+                <tbody>
+
+            {% for project in projects %}
+
+                <tr>
+                    <td colspan="7" class="project_upload">
+
+                        <h2>{{project.name}}</h2>
+
+                        <span>
+                            <input type="file" id="file_{{project.project_id}}" name="file_{{project.project_id}}" />
+                            <input type="button" id="button_{{project.project_id}}" name="button_{{project.project_id}}" value="Upload">
+                        </span>
+
+                        <span id="span_{{project.project_id}}"></span>
+
+                    </td>
+                <tr>
+
+                {% for document in project.documents %}
+
+                    <tr>
+                        <td><input type="checkbox" id="document_{{document.document_id}}" name="document_{{document.document_id}}"></td>
+                        <td><span>{{document.document_id}}</span></td>
+                        <td><span>{{document.title}}</span></td>
+                        <td><span>{{document.version_number}}</span></td>
+                        <td><span>{{document.file_type}}</span></td>
+                        <td><span class="size_in_bytes">{{document.file_description.size_in_bytes}}</span></td>
+                        <td><span>{{document.creation_date}}</span></td>
+                    <tr>
+
+                {% endfor %}
+
+            {% endfor %}
+
+                </tbody>
+            </table>
+
+            <input type="hidden" id="username" name="username" value="{{current_user}}">
+            <input type="hidden" id="selection_session" name="selection_session" value="{{selection_session}}">
+            <input type="hidden" id="server_context" name="server_context" value="{{server_context}}">
+            <input type="hidden" id="callback_url" name="callback_url" value="{{callback_url}}">
+            <input type="hidden" id="callback_expires_in" name="callback_expires_in" value="{{callback_expires_in}}">
+
+            <button class="btn btn-lg btn-primary btn-block" id="select_documents_button" type="button">Select documents</button>
+
+        </div>
+    </form>
+</div>
+</body>
+</html>
