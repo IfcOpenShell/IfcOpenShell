@@ -328,8 +328,21 @@ namespace IfcGeom {
                 return total_intersections % 2 != 0;
             }
 
+            bool is_point_on_line(const gp_Pnt& point, const gp_Pnt& lineStart, const gp_Pnt& lineEnd) const {
+                // Create vectors
+                gp_Vec startToPoint(point.XYZ() - lineStart.XYZ());
+                gp_Vec startToEnd(lineEnd.XYZ() - lineStart.XYZ());
+
+                // Check if the point is on the line defined by start and end
+                // by checking if the cross product is (near) zero vector, indicating collinearity.
+                gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
+                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                    return false; // Not collinear, hence not on the line segment
+                }
+                return true; // The point is on the line segment
+            }
+
 			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance) const {
-                // Attempt 3:
                 //  1. For each vert of A that is inside shape B, find the shortest distance to the closest face
                 //  2. Of those verts, find the innermost vert (i.e. the vert that has the longest distance)
 
@@ -421,8 +434,6 @@ namespace IfcGeom {
                     std::vector<int> bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        std::vector<gp_Vec> ray_vectors;
-
                         BVH_Vec3d v1, v2, v3;
 
                         if (faces_a[triangle_set_a.GetFaceID(i)].Orientation() == TopAbs_REVERSED) {
@@ -434,10 +445,6 @@ namespace IfcGeom {
                         gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
                         gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
                         gp_Pnt v3_a_pnt(v3[0], v3[1], v3[2]);
-
-                        std::array<double, 3> t1a = {v1_a_pnt.X(), v1_a_pnt.Y(), v1_a_pnt.Z()};
-                        std::array<double, 3> t1b = {v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z()};
-                        std::array<double, 3> t1c = {v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z()};
 
                         gp_Vec normal_a;
                         try {
@@ -510,7 +517,6 @@ namespace IfcGeom {
                                     gp_Vec dir1_b(v1_b_pnt, v2_b_pnt);
                                     gp_Vec dir2_b(v1_b_pnt, v3_b_pnt);
                                     normal_b = dir1_b.Crossed(dir2_b).Normalized();
-                                    ray_vectors.push_back(normal_b);
                                 } catch (...) {
                                     continue;
                                 }
@@ -581,6 +587,223 @@ namespace IfcGeom {
                 }
                 return false;
             }
+
+			bool test_collision(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, bool allow_touching) const {
+                // OBB check
+                auto obb_a = obbs_.find(tA)->second;
+                auto obb_b = obbs_.find(tB)->second;
+                obb_b.Enlarge(-0.001); // Within 1mm is touching
+                if (obb_a.IsOut(obb_b)) {
+                    return false;
+                }
+
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+                std::unordered_map<int, std::vector<int>> bvh_clashes;
+
+                for (int i=0; i<bvh_a->Length(); ++i) {
+                    if ( ! bvh_a->IsOuter(i)) {
+                        continue;
+                    }
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_min = bvh_a->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_max = bvh_a->MaxPoint(i);
+                    bvh_a_min[0] -= 1e-3;
+                    bvh_a_min[1] -= 1e-3;
+                    bvh_a_min[2] -= 1e-3;
+                    bvh_a_max[0] += 1e-3;
+                    bvh_a_max[1] += 1e-3;
+                    bvh_a_max[2] += 1e-3;
+
+                    BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
+                    //BVH_Box<Standard_Real, 3> box_a(bvh_a->MinPoint(i), bvh_a->MaxPoint(i));
+
+                    std::stack<int> stack;
+                    stack.push(0);
+
+                    while ( ! stack.empty()) {
+                        int j = stack.top();
+                        stack.pop();
+
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
+                        bvh_b_min[0] -= 1e-3;
+                        bvh_b_min[1] -= 1e-3;
+                        bvh_b_min[2] -= 1e-3;
+                        bvh_b_max[0] += 1e-3;
+                        bvh_b_max[1] += 1e-3;
+                        bvh_b_max[2] += 1e-3;
+
+                        //if (box_a.IsOut(bvh_b->MinPoint(j), bvh_b->MaxPoint(j))) {
+                        if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
+                            continue;
+                        }
+                        if (bvh_b->IsOuter(j)) {
+                            if (bvh_clashes.find(i) != bvh_clashes.end()) {
+                                bvh_clashes[i].push_back(j);
+                            } else {
+                                bvh_clashes[i] = {j};
+                            }
+                        } else {
+                            stack.push(bvh_b->Child<0>(j));
+                            stack.push(bvh_b->Child<1>(j));
+                        }
+                    }
+                }
+
+                if (bvh_clashes.empty()) {
+                    return false;
+                }
+
+                BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
+                BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
+
+                for (const auto& pair : bvh_clashes) {
+                    int bvh_a_i = pair.first;
+                    std::vector<int> bvh_b_is = pair.second;
+
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        BVH_Vec3d v1, v2, v3;
+                        triangle_set_a.GetVertices(i, v1, v2, v3);
+
+                        gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
+                        gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
+                        gp_Pnt v3_a_pnt(v3[0], v3[1], v3[2]);
+
+                        std::array<double, 3> t1a = {v1[0], v1[1], v1[2]};
+                        std::array<double, 3> t1b = {v2[0], v2[1], v2[2]};
+                        std::array<double, 3> t1c = {v3[0], v3[1], v3[2]};
+
+                        gp_Vec normal_a;
+                        try {
+                            gp_Vec dir1_a(v1_a_pnt, v2_a_pnt);
+                            gp_Vec dir2_a(v1_a_pnt, v3_a_pnt);
+                            normal_a = dir1_a.Crossed(dir2_a).Normalized();
+                        } catch (...) {
+                            continue;
+                        }
+
+                        std::array<gp_Pnt, 3> points_a = {v1_a_pnt, v2_a_pnt, v3_a_pnt};
+
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                BVH_Vec3d v1_b, v2_b, v3_b;
+                                triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
+
+                                tri_count_++;
+
+                                gp_Pnt v1_b_pnt(v1_b[0], v1_b[1], v1_b[2]);
+                                gp_Pnt v2_b_pnt(v2_b[0], v2_b[1], v2_b[2]);
+                                gp_Pnt v3_b_pnt(v3_b[0], v3_b[1], v3_b[2]);
+
+                                std::array<double, 3> t2a = {v1_b[0], v1_b[1], v1_b[2]};
+                                std::array<double, 3> t2b = {v2_b[0], v2_b[1], v2_b[2]};
+                                std::array<double, 3> t2c = {v3_b[0], v3_b[1], v3_b[2]};
+
+                                gp_Vec normal_b;
+                                try {
+                                    gp_Vec dir1_b(v1_b_pnt, v2_b_pnt);
+                                    gp_Vec dir2_b(v1_b_pnt, v3_b_pnt);
+                                    normal_b = dir1_b.Crossed(dir2_b).Normalized();
+                                } catch (...) {
+                                    continue;
+                                }
+
+                                // Allow a deviation of 0.25 degrees in coplanarity check
+                                if (std::abs(normal_a.Dot(normal_b)) >= 0.99999f) {
+                                    continue;
+                                }
+
+                                std::array<double, 3> int1, int2;
+                                bool is_coplanar;
+
+                                if (threeyd::moeller::TriangleIntersects<std::array<double, 3>>::triangle(t1a, t1b, t1c, t2a, t2b, t2c, int1, int2, is_coplanar)) {
+                                    if (is_coplanar) {
+                                        continue; // Touching, but not intersecting.
+                                    }
+
+                                    if (allow_touching) {
+                                        protrusion_points_.push_back(int1);
+                                        return true;
+                                    }
+
+                                    // A non-touching collision is defined as two triangles that:
+                                    //  1. Are not coplanar
+                                    //  2. The point of intersection is not along the edge of triangle A.
+                                    //  3. The point of intersection is not a vertex of triangle B.
+
+                                    gp_Pnt int1_pnt(int1[0], int1[1], int1[2]);
+                                    gp_Pnt int2_pnt(int2[0], int2[1], int2[2]);
+
+                                    if (
+                                        ! is_point_on_line(int1_pnt, v1_a_pnt, v2_a_pnt)
+                                        && ! is_point_on_line(int1_pnt, v1_a_pnt, v3_a_pnt)
+                                        && ! is_point_on_line(int1_pnt, v2_a_pnt, v3_a_pnt)
+                                    ) {
+                                        if (
+                                            int1_pnt.Distance(v1_b_pnt) > 1e-4
+                                            && int1_pnt.Distance(v2_b_pnt) > 1e-4
+                                            && int1_pnt.Distance(v3_b_pnt) > 1e-4
+                                        ) {
+                                            protrusion_points_.push_back(int1);
+                                            return true;
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int1_pnt, v1_b_pnt, v2_b_pnt)
+                                        && ! is_point_on_line(int1_pnt, v1_b_pnt, v3_b_pnt)
+                                        && ! is_point_on_line(int1_pnt, v2_b_pnt, v3_b_pnt)
+                                    ) {
+                                        if (
+                                            int1_pnt.Distance(v1_a_pnt) > 1e-4
+                                            && int1_pnt.Distance(v2_a_pnt) > 1e-4
+                                            && int1_pnt.Distance(v3_a_pnt) > 1e-4
+                                        ) {
+                                            protrusion_points_.push_back(int1);
+                                            return true;
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int2_pnt, v1_a_pnt, v2_a_pnt)
+                                        && ! is_point_on_line(int2_pnt, v1_a_pnt, v3_a_pnt)
+                                        && ! is_point_on_line(int2_pnt, v2_a_pnt, v3_a_pnt)
+                                    ) {
+                                        if (
+                                            int2_pnt.Distance(v1_b_pnt) > 1e-4
+                                            && int2_pnt.Distance(v2_b_pnt) > 1e-4
+                                            && int2_pnt.Distance(v3_b_pnt) > 1e-4
+                                        ) {
+                                            protrusion_points_.push_back(int2);
+                                            return true;
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int2_pnt, v1_b_pnt, v2_b_pnt)
+                                        && ! is_point_on_line(int2_pnt, v1_b_pnt, v3_b_pnt)
+                                        && ! is_point_on_line(int2_pnt, v2_b_pnt, v3_b_pnt)
+                                    ) {
+                                        if (
+                                            int2_pnt.Distance(v1_a_pnt) > 1e-4
+                                            && int2_pnt.Distance(v2_a_pnt) > 1e-4
+                                            && int2_pnt.Distance(v3_a_pnt) > 1e-4
+                                        ) {
+                                            protrusion_points_.push_back(int2);
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return false;
+            }
+
 
 			bool test(const TopoDS_Shape& A, const TopoDS_Shape& B, bool completely_within, double extend) const {
 				if (extend > 0.) {
@@ -734,7 +957,6 @@ namespace IfcGeom {
 				// Gap should work as well.
 				b.SetGap(b.GetGap() + extend); 
 				
-                // Should this filter itself? (i.e. t)
 				return select_box(b, completely_within);
 			}
 
@@ -797,9 +1019,8 @@ namespace IfcGeom {
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
-                    // Don't clash against itself.
                     if (t == *it) {
-                        continue;
+                        continue; // Don't clash against itself.
                     }
                     i++;
                     std::cout << "Currently doing" << i << std::endl;
@@ -812,6 +1033,43 @@ namespace IfcGeom {
 
 				return ts_filtered;
 			}
+
+
+			std::vector<T> clash_collision(const T& t, bool allow_touching = false) const {
+				protrusion_points_.clear();
+
+				std::vector<T> ts = select_box(t, true, 1e-5);
+				if (ts.empty()) {
+					return ts;
+				}
+                std::cout << "Passes box check" << std::endl;
+
+				const TopoDS_Shape& A = shapes_.find(t)->second;
+
+				std::vector<T> ts_filtered;
+				ts_filtered.reserve(ts.size());
+                std::cout << "We have to check X box results " << ts.size() << std::endl;
+
+                int i = 0;
+
+				typename std::vector<T>::const_iterator it = ts.begin();
+				for (it = ts.begin(); it != ts.end(); ++it) {
+					const TopoDS_Shape& B = shapes_.find(*it)->second;
+                    if (t == *it) {
+                        continue; // Don't clash against itself.
+                    }
+                    i++;
+                    std::cout << "Currently doing" << i << std::endl;
+
+					if (test_collision(t, *it, A, B, allow_touching)) {
+						ts_filtered.push_back(*it);
+					}
+				}
+                std::cout << "Tri count " << tri_count_ << std::endl;
+
+				return ts_filtered;
+
+            }
 
 			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
 				distances_.clear();
