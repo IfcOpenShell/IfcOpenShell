@@ -14,7 +14,7 @@ This is server software. To run or test this code you need to set up your server
 This server was developed and tested using Solibri as a client. To use a client with this server you need to configure
 a client id and a client key.
 
-You also need to configure encrypted communication and authentication using HTTP and OAuth2.
+You also need to configure encrypted communication and authentication using HTTPS and OAuth2.
 And then you need an SSL-certificate. To get an SSL-certificate you need your own domain name.
 Solibri can only connect to preconfigured domains.
 
