@@ -2283,8 +2283,18 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
 
     def execute(self, context):
         objs = context.selected_objects[:]
-        objs.remove(context.active_object)
-        other_selected_object = next(obj for obj in context.selected_objects if obj != context.active_object)
+        obj1 = objs[0]
+        element1 = tool.Ifc.get_entity(obj1)
+        obj2 = objs[1]
+        element2 = tool.Ifc.get_entity(obj2)
+        if element1.is_a("IfcAnnotation"):
+            other_selected_object = obj2
+            annotation_obj = obj1
+            bpy.context.view_layer.objects.active = obj1
+        elif element2.is_a("IfcAnnotation"):
+            other_selected_object = obj1
+            annotation_obj = obj2
+            bpy.context.view_layer.objects.active = obj2
         context.active_object.BIMAssignedProductProperties.relating_product = other_selected_object
         bpy.ops.bim.edit_assigned_product()
         return {"FINISHED"}
