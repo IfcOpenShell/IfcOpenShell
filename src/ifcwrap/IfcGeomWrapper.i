@@ -114,6 +114,22 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
+	aggregate_of_instance::ptr clash_collision(IfcUtil::IfcBaseClass* e, bool allow_touching = false) const {
+		if (!e->declaration().is("IfcProduct")) {
+			throw IfcParse::IfcException("Instance should be an IfcProduct");
+		}
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_collision((IfcUtil::IfcBaseEntity*)e, allow_touching);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+	aggregate_of_instance::ptr clash_clearance(IfcUtil::IfcBaseClass* e, double clearance = 0.05) const {
+		if (!e->declaration().is("IfcProduct")) {
+			throw IfcParse::IfcException("Instance should be an IfcProduct");
+		}
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_clearance((IfcUtil::IfcBaseEntity*)e, clearance);
+		return IfcGeom_tree_vector_to_list(ps);
+	}
+
 	aggregate_of_instance::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");

@@ -54,9 +54,9 @@
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom_Plane.hxx>
 #include <IntTools_FaceFace.hxx>
-#include "triangleintersects.hpp"
 #include <STEPConstruct_PointHasher.hxx>
 #include <boost/stacktrace.hpp>
+#include "triangleintersects.hpp"
 
 
 namespace IfcGeom {
@@ -149,6 +149,7 @@ namespace IfcGeom {
 
 
             // Branchless slab method. Note that this can still be optimised further by batching boxes.
+            // From Tavian Barnes - MIT License
             // https://tavianator.com/2022/ray_box_boundary.html
             bool is_intersect_ray_box(const struct ray *ray, const struct box *box) const {
                 float tmin = 0.0, tmax = INFINITY;
@@ -169,6 +170,7 @@ namespace IfcGeom {
             }
 
             // Modified slightly to use gp_Vec and allow line-tri intersection
+            // From Wikipedia under CC-BY-SA 4.0 which is likely incompatible with LGPL. Do not merge.
             // https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
             bool is_intersect_ray_tri(
                     const gp_Vec& ray_origin,
@@ -340,6 +342,242 @@ namespace IfcGeom {
                     return false; // Not collinear, hence not on the line segment
                 }
                 return true; // The point is on the line segment
+            }
+
+            // Why can't I use std::clamp?
+            template<typename TC>
+            const TC& ios_clamp(const TC& v, const TC& lo, const TC& hi) const {
+                assert(!(hi < lo));
+                return (v < lo) ? lo : (hi < v) ? hi : v;
+            }
+
+            // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/561a0df858d7e48879cdf7eeb54cfe208f660f18/physx/source/geomutils/src/sweep/GuSweepCapsuleCapsule.cpp#L43
+            // With minor modifications to use gp_Vec type.
+            void edgeEdgeDist(gp_Vec& x, gp_Vec& y,				// closest points
+                             const gp_Vec& p, const gp_Vec& a,	// seg 1 origin, vector
+                             const gp_Vec& q, const gp_Vec& b)	// seg 2 origin, vector
+            const {
+                const gp_Vec Tx = q - p;
+                const double ADotA = a.Dot(a);
+                const double BDotB = b.Dot(b);
+                const double ADotB = a.Dot(b);
+                const double ADotT = a.Dot(Tx);
+                const double BDotT = b.Dot(Tx);
+
+                // t parameterizes ray (p, a)
+                // u parameterizes ray (q, b)
+
+                // Compute t for the closest point on ray (p, a) to ray (q, b)
+                const Standard_Real Denom = ADotA*BDotB - ADotB*ADotB;
+
+                Standard_Real t;	// We will clamp result so t is on the segment (p, a)
+                if(Denom!=0.0f)	
+                    t = ios_clamp((ADotT*BDotB - BDotT*ADotB) / Denom, 0.0, 1.0);
+                else
+                    t = 0.0f;
+
+                // find u for point on ray (q, b) closest to point at t
+                Standard_Real u;
+                if(BDotB!=0.0f)
+                {
+                    u = (t*ADotB - BDotT) / BDotB;
+
+                    // if u is on segment (q, b), t and u correspond to closest points, otherwise, clamp u, recompute and clamp t
+                    if(u<0.0f)
+                    {
+                        u = 0.0f;
+                        if(ADotA!=0.0f)
+                            t = ios_clamp(ADotT / ADotA, 0.0, 1.0);
+                        else
+                            t = 0.0f;
+                    }
+                    else if(u > 1.0f)
+                    {
+                        u = 1.0f;
+                        if(ADotA!=0.0f)
+                            t = ios_clamp((ADotB + ADotT) / ADotA, 0.0, 1.0);
+                        else
+                            t = 0.0f;
+                    }
+                }
+                else
+                {
+                    u = 0.0f;
+                    if(ADotA!=0.0f)
+                        t = ios_clamp(ADotT / ADotA, 0.0, 1.0);
+                    else
+                        t = 0.0f;
+                }
+
+                x = p + a * t;
+                y = q + b * u;
+            }
+
+#define PX_MAX_F32 3.4028234663852885981170418348452e+38F
+
+            // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/a2af52eb6a2532bd2bc583ef8ead9c81c9222af1/physx/source/geomutils/src/distance/GuDistanceTriangleTriangle.cpp#L38
+            // With minor modifications to use gp_Vec type.
+            float distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<gp_Vec, 3> p, const std::array<gp_Vec, 3> q) const
+            {
+                std::array<gp_Vec, 3> Sv;
+                Sv[0] = p[1] - p[0];
+                Sv[1] = p[2] - p[1];
+                Sv[2] = p[0] - p[2];
+
+                std::array<gp_Vec, 3> Tv;
+                Tv[0] = q[1] - q[0];
+                Tv[1] = q[2] - q[1];
+                Tv[2] = q[0] - q[2];
+
+                gp_Vec minP, minQ;
+                bool shown_disjoint = false;
+
+                float mindd = PX_MAX_F32;
+
+                for(int i=0;i<3;i++)
+                {
+                    for(int j=0;j<3;j++)
+                    {
+                        edgeEdgeDist(cp, cq, p[i], Sv[i], q[j], Tv[j]);
+                        const gp_Vec V = cq - cp;
+                        const float dd = V.Dot(V);
+
+                        if(dd<=mindd)
+                        {
+                            minP = cp;
+                            minQ = cq;
+                            mindd = dd;
+
+                            int id = i+2;
+                            if(id>=3)
+                                id-=3;
+                            gp_Vec Z = p[id] - cp;
+                            float a = Z.Dot(V);
+                            id = j+2;
+                            if(id>=3)
+                                id-=3;
+                            Z = q[id] - cq;
+                            float b = Z.Dot(V);
+
+                            if((a<=0.0f) && (b>=0.0f))
+                                return V.Dot(V);
+
+                                    if(a<=0.0f)	a = 0.0f;
+                            else	if(b>0.0f)	b = 0.0f;
+
+                            if((mindd - a + b) > 0.0f)
+                                shown_disjoint = true;
+                        }
+                    }
+                }
+
+                gp_Vec Sn = Sv[0].Crossed(Sv[1]);
+                float Snl = Sn.Dot(Sn);
+
+                if(Snl>1e-15f)
+                {
+                    const std::array<double, 3> Tp = {(p[0] - q[0]).Dot(Sn),
+                                    (p[0] - q[1]).Dot(Sn),
+                                    (p[0] - q[2]).Dot(Sn)};
+
+                    int index = -1;
+                    if((Tp[0]>0.0f) && (Tp[1]>0.0f) && (Tp[2]>0.0f))
+                    {
+                        if(Tp[0]<Tp[1])		index = 0; else index = 1;
+                        if(Tp[2]<Tp[index])	index = 2;
+                    }
+                    else if((Tp[0]<0.0f) && (Tp[1]<0.0f) && (Tp[2]<0.0f))
+                    {
+                        if(Tp[0]>Tp[1])		index = 0; else index = 1;
+                        if(Tp[2]>Tp[index])	index = 2;
+                    }
+
+                    if(index >= 0) 
+                    {
+                        shown_disjoint = true;
+
+                        const gp_Vec& qIndex = q[index];
+
+                        gp_Vec V = qIndex - p[0];
+                        gp_Vec Z = Sn.Crossed(Sv[0]);
+                        if(V.Dot(Z)>0.0f)
+                        {
+                            V = qIndex - p[1];
+                            Z = Sn.Crossed(Sv[1]);
+                            if(V.Dot(Z)>0.0f)
+                            {
+                                V = qIndex - p[2];
+                                Z = Sn.Crossed(Sv[2]);
+                                if(V.Dot(Z)>0.0f)
+                                {
+                                    cp = qIndex + Sn * Tp[index]/Snl;
+                                    cq = qIndex;
+                                    return (cp - cq).SquareMagnitude();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                gp_Vec Tn = Tv[0].Crossed(Tv[1]);
+                float Tnl = Tn.Dot(Tn);
+              
+                if(Tnl>1e-15f)
+                {
+                    const std::array<double, 3> Sp = {(q[0] - p[0]).Dot(Tn),
+                                    (q[0] - p[1]).Dot(Tn),
+                                    (q[0] - p[2]).Dot(Tn)};
+
+                    int index = -1;
+                    if((Sp[0]>0.0f) && (Sp[1]>0.0f) && (Sp[2]>0.0f))
+                    {
+                        if(Sp[0]<Sp[1])		index = 0; else index = 1;
+                        if(Sp[2]<Sp[index])	index = 2;
+                    }
+                    else if((Sp[0]<0.0f) && (Sp[1]<0.0f) && (Sp[2]<0.0f))
+                    {
+                        if(Sp[0]>Sp[1])		index = 0; else index = 1;
+                        if(Sp[2]>Sp[index])	index = 2;
+                    }
+
+                    if(index >= 0)
+                    { 
+                        shown_disjoint = true;
+
+                        const gp_Vec& pIndex = p[index];
+
+                        gp_Vec V = pIndex - q[0];
+                        gp_Vec Z = Tn.Crossed(Tv[0]);
+                        if(V.Dot(Z)>0.0f)
+                        {
+                            V = pIndex - q[1];
+                            Z = Tn.Crossed(Tv[1]);
+                            if(V.Dot(Z)>0.0f)
+                            {
+                                V = pIndex - q[2];
+                                Z = Tn.Crossed(Tv[2]);
+                                if(V.Dot(Z)>0.0f)
+                                {
+                                    cp = pIndex;
+                                    cq = pIndex + Tn * Sp[index]/Tnl;
+                                    return (cp - cq).SquareMagnitude();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if(shown_disjoint)
+                {
+                    cp = minP;
+                    cq = minQ;
+                    return mindd;
+                }
+                else return 0.0f;
             }
 
 			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance) const {
@@ -800,10 +1038,128 @@ namespace IfcGeom {
                         }
                     }
                 }
-
                 return false;
             }
 
+			bool test_clearance(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double clearance) const {
+                // OBB check
+                auto obb_a = obbs_.find(tA)->second;
+                auto obb_b = obbs_.find(tB)->second;
+                obb_b.Enlarge(clearance);
+                if (obb_a.IsOut(obb_b)) {
+                    return false;
+                }
+
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+                std::unordered_map<int, std::vector<int>> bvh_clashes;
+
+                for (int i=0; i<bvh_a->Length(); ++i) {
+                    if ( ! bvh_a->IsOuter(i)) {
+                        continue;
+                    }
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_min = bvh_a->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_max = bvh_a->MaxPoint(i);
+                    bvh_a_min[0] -= 1e-3;
+                    bvh_a_min[1] -= 1e-3;
+                    bvh_a_min[2] -= 1e-3;
+                    bvh_a_max[0] += 1e-3;
+                    bvh_a_max[1] += 1e-3;
+                    bvh_a_max[2] += 1e-3;
+
+                    BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
+                    //BVH_Box<Standard_Real, 3> box_a(bvh_a->MinPoint(i), bvh_a->MaxPoint(i));
+
+                    std::stack<int> stack;
+                    stack.push(0);
+
+                    while ( ! stack.empty()) {
+                        int j = stack.top();
+                        stack.pop();
+
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
+                        bvh_b_min[0] -= clearance + 1e-3;
+                        bvh_b_min[1] -= clearance + 1e-3;
+                        bvh_b_min[2] -= clearance + 1e-3;
+                        bvh_b_max[0] += clearance + 1e-3;
+                        bvh_b_max[1] += clearance + 1e-3;
+                        bvh_b_max[2] += clearance + 1e-3;
+
+                        //if (box_a.IsOut(bvh_b->MinPoint(j), bvh_b->MaxPoint(j))) {
+                        if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
+                            continue;
+                        }
+                        if (bvh_b->IsOuter(j)) {
+                            if (bvh_clashes.find(i) != bvh_clashes.end()) {
+                                bvh_clashes[i].push_back(j);
+                            } else {
+                                bvh_clashes[i] = {j};
+                            }
+                        } else {
+                            stack.push(bvh_b->Child<0>(j));
+                            stack.push(bvh_b->Child<1>(j));
+                        }
+                    }
+                }
+
+                if (bvh_clashes.empty()) {
+                    return false;
+                }
+
+                BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
+                BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
+
+                for (const auto& pair : bvh_clashes) {
+                    int bvh_a_i = pair.first;
+                    std::vector<int> bvh_b_is = pair.second;
+
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        BVH_Vec3d v1, v2, v3;
+                        triangle_set_a.GetVertices(i, v1, v2, v3);
+
+                        gp_Vec v1_a_vec(v1[0], v1[1], v1[2]);
+                        gp_Vec v2_a_vec(v2[0], v2[1], v2[2]);
+                        gp_Vec v3_a_vec(v3[0], v3[1], v3[2]);
+
+                        std::array<gp_Vec, 3> p = {v1_a_vec, v2_a_vec, v3_a_vec};
+
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                BVH_Vec3d v1_b, v2_b, v3_b;
+                                triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
+
+                                tri_count_++;
+
+                                gp_Vec v1_b_vec(v1_b[0], v1_b[1], v1_b[2]);
+                                gp_Vec v2_b_vec(v2_b[0], v2_b[1], v2_b[2]);
+                                gp_Vec v3_b_vec(v3_b[0], v3_b[1], v3_b[2]);
+
+                                std::array<gp_Vec, 3> q = {v1_b_vec, v2_b_vec, v3_b_vec};
+
+                                gp_Vec cp;
+                                gp_Vec cq;
+
+                                // https://stackoverflow.com/questions/53602907/algorithm-to-find-minimum-distance-between-two-triangles
+                                distanceTriangleTriangleSquared(cp, cq, p, q);
+
+                                double distance = (cq - cp).Magnitude();
+                                if (distance < clearance) {
+                                    std::array<double, 3> cp_arr3 = {cp.X(), cp.Y(), cp.Z()};
+                                    std::array<double, 3> cq_arr3 = {cq.X(), cq.Y(), cq.Z()};
+                                    protrusion_distances_.push_back(distance);
+                                    protrusion_points_.push_back(cp_arr3);
+                                    surface_points_.push_back(cq_arr3);
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+                return false;
+            }
 
 			bool test(const TopoDS_Shape& A, const TopoDS_Shape& B, bool completely_within, double extend) const {
 				if (extend > 0.) {
@@ -1068,7 +1424,43 @@ namespace IfcGeom {
                 std::cout << "Tri count " << tri_count_ << std::endl;
 
 				return ts_filtered;
+            }
 
+			std::vector<T> clash_clearance(const T& t, double clearance) const {
+				protrusion_distances_.clear();
+				protrusion_points_.clear();
+				surface_points_.clear();
+
+				std::vector<T> ts = select_box(t, true, 1e-5);
+				if (ts.empty()) {
+					return ts;
+				}
+                std::cout << "Passes box check" << std::endl;
+
+				const TopoDS_Shape& A = shapes_.find(t)->second;
+
+				std::vector<T> ts_filtered;
+				ts_filtered.reserve(ts.size());
+                std::cout << "We have to check X box results " << ts.size() << std::endl;
+
+                int i = 0;
+
+				typename std::vector<T>::const_iterator it = ts.begin();
+				for (it = ts.begin(); it != ts.end(); ++it) {
+					const TopoDS_Shape& B = shapes_.find(*it)->second;
+                    if (t == *it) {
+                        continue; // Don't clash against itself.
+                    }
+                    i++;
+                    std::cout << "Currently doing" << i << std::endl;
+
+					if (test_clearance(t, *it, A, B, clearance)) {
+						ts_filtered.push_back(*it);
+					}
+				}
+                std::cout << "Tri count " << tri_count_ << std::endl;
+
+				return ts_filtered;
             }
 
 			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
