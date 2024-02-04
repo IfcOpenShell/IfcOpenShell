@@ -169,57 +169,95 @@ namespace IfcGeom {
                 return tmin < tmax;
             }
 
-            // Modified slightly to use gp_Vec and allow line-tri intersection
-            // From Wikipedia under CC-BY-SA 4.0 which is likely incompatible with LGPL. Do not merge.
-            // https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-            bool is_intersect_ray_tri(
-                    const gp_Vec& ray_origin,
-                    const gp_Vec& ray_vector,
-                    const gp_Vec& ta,
-                    const gp_Vec& tb,
-                    const gp_Vec& tc,
-                    gp_Vec& out_intersection_point,
-                    const bool is_line = false
-                    ) const {
-                constexpr float epsilon = std::numeric_limits<float>::epsilon();
+#define GU_CULLING_EPSILON_RAY_TRIANGLE FLT_EPSILON*FLT_EPSILON
 
-                gp_Vec edge1 = tb - ta;
-                gp_Vec edge2 = tc - ta;
-                gp_Vec ray_cross_e2 = ray_vector.Crossed(edge2);
-                float det = edge1.Dot(ray_cross_e2);
+            // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionRayTriangle.h
+            // With minor modifications to use gp_Vec type.
+            // More reading: https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+            bool intersectRayTriangle(	const gp_Vec& orig, const gp_Vec& dir, 
+                                                            const gp_Vec& vert0, const gp_Vec& vert1, const gp_Vec& vert2, 
+                                                            Standard_Real& at, Standard_Real& au, Standard_Real& av,
+                                                            bool cull, float enlarge=0.0f) const
+                {
+                    // Find vectors for two edges sharing vert0
+                    const gp_Vec edge1 = vert1 - vert0;
+                    const gp_Vec edge2 = vert2 - vert0;
 
-                if (det > -epsilon && det < epsilon)
-                    return false;    // This ray is parallel to this triangle.
+                    // Begin calculating determinant - also used to calculate U parameter
+                    const gp_Vec pvec = dir.Crossed(edge2); // error ~ |v2-v0|
 
-                float inv_det = 1.0 / det;
-                gp_Vec s = ray_origin - ta;
-                float u = inv_det * s.Dot(ray_cross_e2);
+                    // If determinant is near zero, ray lies in plane of triangle
+                    const Standard_Real det = edge1.Dot(pvec); // error ~ |v2-v0|*|v1-v0|
 
-                if (u < 0 || u > 1)
-                    return false;
-
-                gp_Vec s_cross_e1 = s.Crossed(edge1);
-                float v = inv_det * ray_vector.Dot(s_cross_e1);
-
-                if (v < 0 || u + v > 1)
-                    return false;
-
-                // At this stage we can compute t to find out where the intersection point is on the line.
-                float t = inv_det * edge2.Dot(s_cross_e1);
-
-                if (is_line) {
-                    out_intersection_point = ray_origin + ray_vector * t;
-                    return true;
-                } else {
-                    if (t > epsilon) // ray intersection
+                    if(cull)
                     {
-                        out_intersection_point = ray_origin + ray_vector * t;
-                        return true;
+                        if(det<GU_CULLING_EPSILON_RAY_TRIANGLE)
+                            return false;
+
+                        // Calculate distance from vert0 to ray origin
+                        const gp_Vec tvec = orig - vert0;
+
+                        // Calculate U parameter and test bounds
+                        const Standard_Real u = tvec.Dot(pvec);
+
+                        const Standard_Real enlargeCoeff = enlarge*det;
+                        const Standard_Real uvlimit = -enlargeCoeff;
+                        const Standard_Real uvlimit2 = det + enlargeCoeff;
+
+                        if(u<uvlimit || u>uvlimit2)
+                            return false;
+
+                        // Prepare to test V parameter
+                        const gp_Vec qvec = tvec.Crossed(edge1);
+
+                        // Calculate V parameter and test bounds
+                        const Standard_Real v = dir.Dot(qvec);
+                        if(v<uvlimit || (u+v)>uvlimit2)
+                            return false;
+
+                        // Calculate t, scale parameters, ray intersects triangle
+                        const Standard_Real t = edge2.Dot(qvec);
+
+                        const Standard_Real inv_det = 1.0f / det;
+                        at = t*inv_det;
+                        au = u*inv_det;
+                        av = v*inv_det;
                     }
-                    else // This means that there is a line intersection but not a ray intersection.
-                        return false;
+                    else
+                    {
+                        // the non-culling branch
+                        if(std::abs(det)<GU_CULLING_EPSILON_RAY_TRIANGLE)
+                            return false;
+
+                        const Standard_Real inv_det = 1.0f / det;
+
+                        // Calculate distance from vert0 to ray origin
+                        const gp_Vec tvec = orig - vert0; // error ~ |orig-v0|
+
+                        // Calculate U parameter and test bounds
+                        const Standard_Real u = tvec.Dot(pvec) * inv_det;
+                        if(u<-enlarge || u>1.0f+enlarge)
+                            return false;
+
+                        // prepare to test V parameter
+                        const gp_Vec qvec = tvec.Crossed(edge1);
+
+                        // Calculate V parameter and test bounds
+                        const Standard_Real v = dir.Dot(qvec) * inv_det;
+                        if(v<-enlarge || (u+v)>1.0f+enlarge)
+                            return false;
+
+                        // Calculate t, ray intersects triangle
+                        const Standard_Real t = edge2.Dot(qvec) * inv_det;
+
+                        at = t;
+                        au = u;
+                        av = v;
+                    }
+                    return true;
                 }
-            }
 
             bool is_point_in_shape(
                     gp_Pnt v,
@@ -316,9 +354,12 @@ namespace IfcGeom {
                             std::cout << "inside-tri " << tb.X() << " " << tb.Y() << " " << tb.Z() << std::endl;
                             std::cout << "inside-tri " << tc.X() << " " << tc.Y() << " " << tc.Z() << std::endl;
                             */
-                            if (is_intersect_ray_tri(ray_origin, ray_vector, ta, tb, tc, intersection_point)) {
-                                // std::cout << " intersected " << intersection_point.X() << " " << intersection_point.Y() << " " << intersection_point.Z() << std::endl;
-                                total_intersections++;
+                            double at, au, av;
+                            if (intersectRayTriangle(ray_origin, ray_vector, ta, tb, tc, at, au, av, false)) {
+                                // At is a signed intersection distance (positive is along +ray_vector)
+                                if (at > -1e-5) {
+                                    total_intersections++;
+                                }
                             }
                         }
                     } else {
@@ -353,7 +394,7 @@ namespace IfcGeom {
 
             // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
             // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
-            // https://github.com/NVIDIA-Omniverse/PhysX/blob/561a0df858d7e48879cdf7eeb54cfe208f660f18/physx/source/geomutils/src/sweep/GuSweepCapsuleCapsule.cpp#L43
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/sweep/GuSweepCapsuleCapsule.cpp
             // With minor modifications to use gp_Vec type.
             void edgeEdgeDist(gp_Vec& x, gp_Vec& y,				// closest points
                              const gp_Vec& p, const gp_Vec& a,	// seg 1 origin, vector
@@ -419,7 +460,7 @@ namespace IfcGeom {
 
             // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
             // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
-            // https://github.com/NVIDIA-Omniverse/PhysX/blob/a2af52eb6a2532bd2bc583ef8ead9c81c9222af1/physx/source/geomutils/src/distance/GuDistanceTriangleTriangle.cpp#L38
+            // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/distance/GuDistanceTriangleTriangle.cpp
             // With minor modifications to use gp_Vec type.
             float distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<gp_Vec, 3> p, const std::array<gp_Vec, 3> q) const
             {
@@ -783,9 +824,9 @@ namespace IfcGeom {
                                     */
 
                                     // Do (cheaper) line check.
-                                    if (is_intersect_ray_tri(ray_origin, normal_b, ta, tb, tc, point_on_b, true)) {
-                                        gp_Pnt pnt_on_b(point_on_b.X(), point_on_b.Y(), point_on_b.Z());
-                                        double current_v_protrusion = v.Distance(pnt_on_b);
+                                    double at, au, av;
+                                    if (intersectRayTriangle(ray_origin, normal_b, ta, tb, tc, at, au, av, false)) {
+                                        double current_v_protrusion = at;
 
                                         /*
                                         // What happens now?
@@ -796,6 +837,8 @@ namespace IfcGeom {
 
                                         // std::cout << "We got a current protrusion " << current_v_protrusion << std::endl;
                                         if (current_v_protrusion < v_protrusion) {
+                                            double aw = 1.0f - au - av; // Barycentric coordinate for ta
+                                            gp_Vec point_on_b = aw * ta + au * tb + av * tc; // Intersection point
                                             // std::cout << "New v_protrusion winner of " << current_v_protrusion << std::endl;
                                             v_protrusion = current_v_protrusion;
                                             v_protrusion_point = {v.X(), v.Y(), v.Z()};
@@ -956,6 +999,10 @@ namespace IfcGeom {
                                 std::array<double, 3> int1, int2;
                                 bool is_coplanar;
 
+                                // From 3YOURMIND / 3YDMoeller - MIT license
+                                // https://github.com/3YOURMIND/3YDMoeller
+                                // Perhaps this can be replaced with NVIDIA's method?
+                                // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
                                 if (threeyd::moeller::TriangleIntersects<std::array<double, 3>>::triangle(t1a, t1b, t1c, t2a, t2b, t2c, int1, int2, is_coplanar)) {
                                     if (is_coplanar) {
                                         continue; // Touching, but not intersecting.
