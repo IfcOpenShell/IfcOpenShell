@@ -2289,11 +2289,9 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         element2 = tool.Ifc.get_entity(obj2)
         if element1.is_a("IfcAnnotation"):
             other_selected_object = obj2
-            annotation_obj = obj1
             bpy.context.view_layer.objects.active = obj1
         elif element2.is_a("IfcAnnotation"):
             other_selected_object = obj1
-            annotation_obj = obj2
             bpy.context.view_layer.objects.active = obj2
         context.active_object.BIMAssignedProductProperties.relating_product = other_selected_object
         bpy.ops.bim.edit_assigned_product()
