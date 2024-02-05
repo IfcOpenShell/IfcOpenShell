@@ -170,15 +170,15 @@ cd "%DEPS_DIR%"
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
 set OCCT_VERSION=7.5.3
-:: TODO Update to 3.5 when it's released as it will have an option to install debug libraries.
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
-set PYTHON_VERSION=3.4.3
+set PYTHON_VERSION=3.11.7
 
 :: VERSION DERIVATIONS
 set OCC_INCLUDE_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\inc>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
-set PY_VER_MAJOR_MINOR=%PYTHON_VERSION:~0,3%
-set PY_VER_MAJOR_MINOR=%PY_VER_MAJOR_MINOR:.=%
+for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
+    set PY_VER_MAJOR_MINOR=%%a%%b
+)
 set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
 
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
@@ -445,11 +445,9 @@ del "%INSTALL_DIR%\opencascade-%OCCT_VERSION%\*.bat"
 :Python
 set DEPENDENCY_NAME=Python %PYTHON_VERSION%
 set DEPENDENCY_DIR=N/A
-set PYTHON_AMD64_POSTFIX=.amd64
-:: NOTE/TODO Beginning from 3.5.0: set PYTHON_AMD64_POSTFIX=-amd64
+set PYTHON_AMD64_POSTFIX=-amd64
 IF NOT %TARGET_ARCH%==x64 set PYTHON_AMD64_POSTFIX=
-:: NOTE/TODO 3.5.0 doesn't use MSI any longer, but exe: set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
-set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.msi
+set PYTHON_INSTALLER=python-%PYTHON_VERSION%%PYTHON_AMD64_POSTFIX%.exe
 
 IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     cd "%DEPS_DIR%"
@@ -458,12 +456,12 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     REM Uninstall if build Rebuild/Clean used
     IF NOT %BUILD_TYPE%==Build (
         call cecho.cmd 0 13 "Uninstalling %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /x %PYTHON_INSTALLER% /qn
+        start /w %PYTHON_INSTALLER% /quiet /uninstall
     )
 
     IF NOT EXIST "%PYTHONHOME%". (
         call cecho.cmd 0 13 "Installing %DEPENDENCY_NAME%. Please be patient, this will take a while."
-        msiexec /qn /i %PYTHON_INSTALLER% TARGETDIR="%PYTHONHOME%"
+        start /w  %PYTHON_INSTALLER% /quiet TargetDir="%PYTHONHOME%"
     ) ELSE (
         call cecho.cmd 0 13 "%DEPENDENCY_NAME% already installed. Skipping."
     )
