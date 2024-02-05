@@ -260,9 +260,9 @@ namespace IfcGeom {
                 }
 
             bool is_point_in_shape(
-                    gp_Pnt v,
-                    opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh,
-                    BRepExtrema_TriangleSet triangle_set,
+                    const gp_Pnt& v,
+                    const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
+                    const BRepExtrema_TriangleSet& triangle_set,
                     // In the case of "touching" rays, let's check again!
                     bool should_check_again = false
                     ) const {
@@ -621,7 +621,7 @@ namespace IfcGeom {
                 else return 0.0f;
             }
 
-			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance) const {
+			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance, bool check_all = true) const {
                 //  1. For each vert of A that is inside shape B, find the shortest distance to the closest face
                 //  2. Of those verts, find the innermost vert (i.e. the vert that has the longest distance)
 
@@ -843,6 +843,13 @@ namespace IfcGeom {
                                             v_protrusion = current_v_protrusion;
                                             v_protrusion_point = {v.X(), v.Y(), v.Z()};
                                             v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
+
+                                            if ( ! check_all && v_protrusion > tolerance) {
+                                                protrusion_distances_.push_back(v_protrusion);
+                                                protrusion_points_.push_back(v_protrusion_point);
+                                                surface_points_.push_back(v_surface_point);
+                                                return true;
+                                            }
                                         }
                                     }
                                 }
@@ -1400,7 +1407,7 @@ namespace IfcGeom {
 				}
 			}
 
-			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002) const {
+			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002, bool check_all = true) const {
 				protrusion_distances_.clear();
 				protrusion_points_.clear();
 				surface_points_.clear();
@@ -1428,7 +1435,7 @@ namespace IfcGeom {
                     i++;
                     std::cout << "Currently doing" << i << std::endl;
 
-					if (test_intersection(t, *it, A, B, tolerance)) {
+					if (test_intersection(t, *it, A, B, tolerance, check_all)) {
 						ts_filtered.push_back(*it);
 					}
 				}
