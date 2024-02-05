@@ -69,13 +69,12 @@ def execute(args):
     if "log" in args:
         logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
     logger = logging.getLogger("IFCPatch")
-    ifc_file = args["input"]
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
     if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args["input"], args["file"], logger, *args["arguments"])
+        patcher = recipe.Patcher(args.get("input"), args["file"], logger, *args["arguments"])
     else:
-        patcher = recipe.Patcher(args["input"], args["file"], logger, args["arguments"])
+        patcher = recipe.Patcher(args.get("input"), args["file"], logger, args["arguments"])
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
