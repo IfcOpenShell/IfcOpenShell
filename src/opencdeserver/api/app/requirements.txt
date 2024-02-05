@@ -1,4 +1,4 @@
-fastapi==0.101.0
+fastapi==0.109.1
 httpx==0.24.1
 jose==1.0.0
 jsonpickle==3.0.1
