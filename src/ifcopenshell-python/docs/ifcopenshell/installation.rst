@@ -13,7 +13,7 @@ you how to compile and install IfcOpenShell.
 You will need:
 
 - `Git <https://git-scm.com/>`__
-- `CMake <https://cmake.org/>`__ (3.1.3 or newer)
+- `CMake <https://cmake.org/>`__ (3.5 or newer)
 
 IfcOpenShell depends on:
 
