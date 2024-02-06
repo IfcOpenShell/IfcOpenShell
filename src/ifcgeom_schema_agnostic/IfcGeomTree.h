@@ -757,7 +757,7 @@ namespace IfcGeom {
                 else return 0.0f;
             }
 
-			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance, bool check_all = true) const {
+			bool test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
                 // If there are verts of A inside shape B (protrusion):
                 //  1. For each vert, find the shortest distance to the closest face
                 //  2. Find the innermost vert (i.e. the vert that has the longest distance)
@@ -796,7 +796,6 @@ namespace IfcGeom {
                     bvh_a_max[2] += 1e-3;
 
                     BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
-                    //BVH_Box<Standard_Real, 3> box_a(bvh_a->MinPoint(i), bvh_a->MaxPoint(i));
 
                     std::stack<int> stack;
                     stack.push(0);
@@ -814,7 +813,6 @@ namespace IfcGeom {
                         bvh_b_max[1] += max_protrusion + 1e-3;
                         bvh_b_max[2] += max_protrusion + 1e-3;
 
-                        //if (box_a.IsOut(bvh_b->MinPoint(j), bvh_b->MaxPoint(j))) {
                         if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
                             continue;
                         }
@@ -950,6 +948,7 @@ namespace IfcGeom {
                                 if ( ! valid_tris_b.at(j)) {
                                     continue;
                                 }
+
                                 const std::array<BVH_Vec3d, 3>& verts = verts_b.at(j);
                                 const BVH_Vec3d& v1_b = verts[0];
                                 const BVH_Vec3d& v2_b = verts[1];
@@ -1050,7 +1049,7 @@ namespace IfcGeom {
                 return false;
             }
 
-			bool test_collision(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, bool allow_touching) const {
+			bool test_collision(const T& tA, const T& tB, bool allow_touching) const {
                 // OBB check
                 auto obb_a = obbs_.find(tA)->second;
                 auto obb_b = obbs_.find(tB)->second;
@@ -1079,7 +1078,6 @@ namespace IfcGeom {
                     bvh_a_max[2] += 1e-3;
 
                     BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
-                    //BVH_Box<Standard_Real, 3> box_a(bvh_a->MinPoint(i), bvh_a->MaxPoint(i));
 
                     std::stack<int> stack;
                     stack.push(0);
@@ -1097,7 +1095,6 @@ namespace IfcGeom {
                         bvh_b_max[1] += 1e-3;
                         bvh_b_max[2] += 1e-3;
 
-                        //if (box_a.IsOut(bvh_b->MinPoint(j), bvh_b->MaxPoint(j))) {
                         if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
                             continue;
                         }
@@ -1118,16 +1115,27 @@ namespace IfcGeom {
                     return false;
                 }
 
-                BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
-                BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
+                const std::unordered_map<int, bool>& valid_tris_a = valid_tris_.find(tA)->second;
+                const std::unordered_map<int, bool>& valid_tris_b = valid_tris_.find(tB)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_a = verts_.find(tA)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_b = verts_.find(tB)->second;
+                const std::unordered_map<int, gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::unordered_map<int, gp_Vec>& normals_b = normals_.find(tB)->second;
 
                 for (const auto& pair : bvh_clashes) {
-                    int bvh_a_i = pair.first;
-                    std::vector<int> bvh_b_is = pair.second;
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        BVH_Vec3d v1, v2, v3;
-                        triangle_set_a.GetVertices(i, v1, v2, v3);
+                        if ( ! valid_tris_a.at(i)) {
+                            continue;
+                        }
+
+                        const std::array<BVH_Vec3d, 3>& verts = verts_a.at(i);
+                        const BVH_Vec3d& v1 = verts[0];
+                        const BVH_Vec3d& v2 = verts[1];
+                        const BVH_Vec3d& v3 = verts[2];
+                        const gp_Vec& normal_a = normals_a.at(i);
 
                         gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
                         gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
@@ -1137,21 +1145,17 @@ namespace IfcGeom {
                         std::array<double, 3> t1b = {v2[0], v2[1], v2[2]};
                         std::array<double, 3> t1c = {v3[0], v3[1], v3[2]};
 
-                        gp_Vec normal_a;
-                        try {
-                            gp_Vec dir1_a(v1_a_pnt, v2_a_pnt);
-                            gp_Vec dir2_a(v1_a_pnt, v3_a_pnt);
-                            normal_a = dir1_a.Crossed(dir2_a).Normalized();
-                        } catch (...) {
-                            continue;
-                        }
-
-                        std::array<gp_Pnt, 3> points_a = {v1_a_pnt, v2_a_pnt, v3_a_pnt};
-
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                BVH_Vec3d v1_b, v2_b, v3_b;
-                                triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
+                                if ( ! valid_tris_b.at(j)) {
+                                    continue;
+                                }
+
+                                const std::array<BVH_Vec3d, 3>& verts = verts_b.at(j);
+                                const BVH_Vec3d& v1_b = verts[0];
+                                const BVH_Vec3d& v2_b = verts[1];
+                                const BVH_Vec3d& v3_b = verts[2];
+                                const gp_Vec& normal_b = normals_b.at(j);
 
                                 tri_count_++;
 
@@ -1162,15 +1166,6 @@ namespace IfcGeom {
                                 std::array<double, 3> t2a = {v1_b[0], v1_b[1], v1_b[2]};
                                 std::array<double, 3> t2b = {v2_b[0], v2_b[1], v2_b[2]};
                                 std::array<double, 3> t2c = {v3_b[0], v3_b[1], v3_b[2]};
-
-                                gp_Vec normal_b;
-                                try {
-                                    gp_Vec dir1_b(v1_b_pnt, v2_b_pnt);
-                                    gp_Vec dir2_b(v1_b_pnt, v3_b_pnt);
-                                    normal_b = dir1_b.Crossed(dir2_b).Normalized();
-                                } catch (...) {
-                                    continue;
-                                }
 
                                 // Allow a deviation of 0.25 degrees in coplanarity check
                                 if (std::abs(normal_a.Dot(normal_b)) >= 0.99999f) {
@@ -1269,9 +1264,9 @@ namespace IfcGeom {
                 return false;
             }
 
-			bool test_clearance(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double clearance) const {
+			bool test_clearance(const T& tA, const T& tB, double clearance, bool check_all) const {
                 // OBB check
-                auto obb_a = obbs_.find(tA)->second;
+                const auto& obb_a = obbs_.find(tA)->second;
                 auto obb_b = obbs_.find(tB)->second;
                 obb_b.Enlarge(clearance);
                 if (obb_a.IsOut(obb_b)) {
@@ -1298,7 +1293,6 @@ namespace IfcGeom {
                     bvh_a_max[2] += 1e-3;
 
                     BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
-                    //BVH_Box<Standard_Real, 3> box_a(bvh_a->MinPoint(i), bvh_a->MaxPoint(i));
 
                     std::stack<int> stack;
                     stack.push(0);
@@ -1316,7 +1310,6 @@ namespace IfcGeom {
                         bvh_b_max[1] += clearance + 1e-3;
                         bvh_b_max[2] += clearance + 1e-3;
 
-                        //if (box_a.IsOut(bvh_b->MinPoint(j), bvh_b->MaxPoint(j))) {
                         if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
                             continue;
                         }
@@ -1337,35 +1330,43 @@ namespace IfcGeom {
                     return false;
                 }
 
-                BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
-                BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_a = verts_.find(tA)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_b = verts_.find(tB)->second;
+
+                double min_clearance = std::numeric_limits<double>::infinity();
+                std::array<double, 3> clearance_point1;
+                std::array<double, 3> clearance_point2;
 
                 for (const auto& pair : bvh_clashes) {
-                    int bvh_a_i = pair.first;
-                    std::vector<int> bvh_b_is = pair.second;
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        BVH_Vec3d v1, v2, v3;
-                        triangle_set_a.GetVertices(i, v1, v2, v3);
+                        const std::array<BVH_Vec3d, 3>& verts = verts_a.at(i);
+                        const BVH_Vec3d& v1 = verts[0];
+                        const BVH_Vec3d& v2 = verts[1];
+                        const BVH_Vec3d& v3 = verts[2];
 
-                        gp_Vec v1_a_vec(v1[0], v1[1], v1[2]);
-                        gp_Vec v2_a_vec(v2[0], v2[1], v2[2]);
-                        gp_Vec v3_a_vec(v3[0], v3[1], v3[2]);
+                        const gp_Vec v1_a_vec(v1[0], v1[1], v1[2]);
+                        const gp_Vec v2_a_vec(v2[0], v2[1], v2[2]);
+                        const gp_Vec v3_a_vec(v3[0], v3[1], v3[2]);
 
-                        std::array<gp_Vec, 3> p = {v1_a_vec, v2_a_vec, v3_a_vec};
+                        const std::array<gp_Vec, 3> p = {v1_a_vec, v2_a_vec, v3_a_vec};
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                BVH_Vec3d v1_b, v2_b, v3_b;
-                                triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
+                                const std::array<BVH_Vec3d, 3>& verts = verts_b.at(j);
+                                const BVH_Vec3d& v1_b = verts[0];
+                                const BVH_Vec3d& v2_b = verts[1];
+                                const BVH_Vec3d& v3_b = verts[2];
 
                                 tri_count_++;
 
-                                gp_Vec v1_b_vec(v1_b[0], v1_b[1], v1_b[2]);
-                                gp_Vec v2_b_vec(v2_b[0], v2_b[1], v2_b[2]);
-                                gp_Vec v3_b_vec(v3_b[0], v3_b[1], v3_b[2]);
+                                const gp_Vec v1_b_vec(v1_b[0], v1_b[1], v1_b[2]);
+                                const gp_Vec v2_b_vec(v2_b[0], v2_b[1], v2_b[2]);
+                                const gp_Vec v3_b_vec(v3_b[0], v3_b[1], v3_b[2]);
 
-                                std::array<gp_Vec, 3> q = {v1_b_vec, v2_b_vec, v3_b_vec};
+                                const std::array<gp_Vec, 3> q = {v1_b_vec, v2_b_vec, v3_b_vec};
 
                                 gp_Vec cp;
                                 gp_Vec cq;
@@ -1374,18 +1375,29 @@ namespace IfcGeom {
                                 distanceTriangleTriangleSquared(cp, cq, p, q);
 
                                 double distance = (cq - cp).Magnitude();
-                                if (distance < clearance) {
-                                    std::array<double, 3> cp_arr3 = {cp.X(), cp.Y(), cp.Z()};
-                                    std::array<double, 3> cq_arr3 = {cq.X(), cq.Y(), cq.Z()};
-                                    protrusion_distances_.push_back(distance);
-                                    protrusion_points_.push_back(cp_arr3);
-                                    surface_points_.push_back(cq_arr3);
-                                    return true;
+                                if (distance < clearance && distance < min_clearance) {
+                                    min_clearance = distance;
+                                    clearance_point1 = {cp.X(), cp.Y(), cp.Z()};
+                                    clearance_point2 = {cq.X(), cq.Y(), cq.Z()};
+                                    if ( ! check_all || min_clearance < 1e-4) {
+                                        protrusion_distances_.push_back(min_clearance);
+                                        protrusion_points_.push_back(clearance_point1);
+                                        surface_points_.push_back(clearance_point2);
+                                        return true;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
+                if (min_clearance < clearance) {
+                    protrusion_distances_.push_back(min_clearance);
+                    protrusion_points_.push_back(clearance_point1);
+                    surface_points_.push_back(clearance_point2);
+                    return true;
+                }
+
                 return false;
             }
 
@@ -1522,11 +1534,11 @@ namespace IfcGeom {
                     gp_Pnt v3_pnt(v3[0], v3[1], v3[2]);
                     gp_Vec normal;
                     try {
+                        verts[i] = {v1, v2, v3};
                         gp_Vec dir1(v1_pnt, v2_pnt);
                         gp_Vec dir2(v1_pnt, v3_pnt);
                         normal = dir1.Crossed(dir2).Normalized();
                         normals[i] = normal;
-                        verts[i] = {v1, v2, v3};
                         valid_tris[i] = true;
                     } catch (...) {
                         valid_tris[i] = false;
@@ -1625,26 +1637,17 @@ namespace IfcGeom {
 				if (ts.empty()) {
 					return ts;
 				}
-                std::cout << "Passes box check" << std::endl;
-
-				const TopoDS_Shape& A = shapes_.find(t)->second;
 
 				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
-                std::cout << "We have to check X box results " << ts.size() << std::endl;
-
-                int i = 0;
 
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
-					const TopoDS_Shape& B = shapes_.find(*it)->second;
                     if (t == *it) {
                         continue; // Don't clash against itself.
                     }
-                    i++;
-                    std::cout << "Currently doing" << i << std::endl;
 
-					if (test_intersection(t, *it, A, B, tolerance, check_all)) {
+					if (test_intersection(t, *it, tolerance, check_all)) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -1661,26 +1664,17 @@ namespace IfcGeom {
 				if (ts.empty()) {
 					return ts;
 				}
-                std::cout << "Passes box check" << std::endl;
-
-				const TopoDS_Shape& A = shapes_.find(t)->second;
 
 				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
-                std::cout << "We have to check X box results " << ts.size() << std::endl;
-
-                int i = 0;
 
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
-					const TopoDS_Shape& B = shapes_.find(*it)->second;
                     if (t == *it) {
                         continue; // Don't clash against itself.
                     }
-                    i++;
-                    std::cout << "Currently doing" << i << std::endl;
 
-					if (test_collision(t, *it, A, B, allow_touching)) {
+					if (test_collision(t, *it, allow_touching)) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -1689,35 +1683,26 @@ namespace IfcGeom {
 				return ts_filtered;
             }
 
-			std::vector<T> clash_clearance(const T& t, double clearance) const {
+			std::vector<T> clash_clearance(const T& t, double clearance, bool check_all) const {
 				protrusion_distances_.clear();
 				protrusion_points_.clear();
 				surface_points_.clear();
 
-				std::vector<T> ts = select_box(t, true, 1e-5);
+				std::vector<T> ts = select_box(t, true, clearance);
 				if (ts.empty()) {
 					return ts;
 				}
-                std::cout << "Passes box check" << std::endl;
-
-				const TopoDS_Shape& A = shapes_.find(t)->second;
 
 				std::vector<T> ts_filtered;
 				ts_filtered.reserve(ts.size());
-                std::cout << "We have to check X box results " << ts.size() << std::endl;
-
-                int i = 0;
 
 				typename std::vector<T>::const_iterator it = ts.begin();
 				for (it = ts.begin(); it != ts.end(); ++it) {
-					const TopoDS_Shape& B = shapes_.find(*it)->second;
                     if (t == *it) {
                         continue; // Don't clash against itself.
                     }
-                    i++;
-                    std::cout << "Currently doing" << i << std::endl;
 
-					if (test_clearance(t, *it, A, B, clearance)) {
+					if (test_clearance(t, *it, clearance, check_all)) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -1773,11 +1758,9 @@ namespace IfcGeom {
 				for (it = ts.begin(); it != ts.end(); ++it) {
 					const TopoDS_Shape& B = shapes_.find(*it)->second;
 
-                    /*
 					if (test(s, B, completely_within, extend)) {
 						ts_filtered.push_back(*it);
 					}
-                    */
 				}
 
 				return ts_filtered;
