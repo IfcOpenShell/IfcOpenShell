@@ -756,6 +756,8 @@ if(NOT SCHEMA_VERSIONS)
     endif()
 endif()
 
+message(STATUS "IFC SCHEMA_VERSIONS that will be used for the build: ${SCHEMA_VERSIONS}.")
+
 foreach(schema ${SCHEMA_VERSIONS})
     add_definitions(-DHAS_SCHEMA_${schema})
 endforeach()
