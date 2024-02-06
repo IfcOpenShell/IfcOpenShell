@@ -187,7 +187,7 @@ if(GLTF_SUPPORT AND BUILD_CONVERT)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
 
-# Add USD support to serializers 
+# Add USD support to serializers
 if(USD_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(USD_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(USD_LIBRARY_DIR)
@@ -210,13 +210,13 @@ if(USD_SUPPORT)
     endif()
 
     set(USD_LIBRARIES
-            usd_usd 
+            usd_usd
             usd_usdGeom
-            usd_usdShade 
-            usd_usdLux 
-            usd_vt 
-            usd_sdf 
-            usd_tf 
+            usd_usdShade
+            usd_usdLux
+            usd_vt
+            usd_sdf
+            usd_tf
             usd_gf
         )
 
@@ -436,7 +436,7 @@ if(BUILD_IFCGEOM)
 
     if(OCCT_STATIC)
         find_package(Threads)
-        
+
         if(WASM_BUILD)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
         else()
@@ -448,7 +448,7 @@ if(BUILD_IFCGEOM)
                 set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
             endif()
         endif()
-        
+
         if (NOT APPLE AND NOT WIN32)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
         endif()
@@ -838,7 +838,7 @@ if (BUILD_IFCGEOM)
 	if (WASM_BUILD)
 	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 	else()
-	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 	endif()
 endif()
 
@@ -901,7 +901,7 @@ if(BUILD_IFCGEOM)
         add_library(IfcGeom_ifc${schema} STATIC ${IFCGEOM_FILES})
         set_target_properties(IfcGeom_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
         if (NOT WASM_BUILD)
-            target_link_libraries(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})	    
+            target_link_libraries(IfcGeom_ifc${schema} IfcParse ${OPENCASCADE_LIBRARIES})
         endif()
     endforeach()
 
@@ -937,7 +937,7 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     foreach(schema ${SCHEMA_VERSIONS})
         add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
         set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        
+
         if (WASM_BUILD)
             target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
         else()
