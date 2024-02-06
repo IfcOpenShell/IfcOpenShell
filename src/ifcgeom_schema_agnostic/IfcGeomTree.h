@@ -262,7 +262,7 @@ namespace IfcGeom {
             bool is_point_in_shape(
                     const gp_Pnt& v,
                     const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
-                    const BRepExtrema_TriangleSet& triangle_set,
+                    const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts,
                     // In the case of "touching" rays, let's check again!
                     bool should_check_again = false
                     ) const {
@@ -340,13 +340,14 @@ namespace IfcGeom {
                         //std::cout << "Ray hits leaf" << std::endl;
                         // Do ray triangle check.
                         for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
-                            BVH_Vec3d v1, v2, v3;
-                            triangle_set.GetVertices(j, v1, v2, v3);
+                            const std::array<BVH_Vec3d, 3>& v123 = verts.at(j);
+                            const BVH_Vec3d& v1 = v123[0];
+                            const BVH_Vec3d& v2 = v123[1];
+                            const BVH_Vec3d& v3 = v123[2];
 
                             gp_Vec ta(v1[0], v1[1], v1[2]);
                             gp_Vec tb(v2[0], v2[1], v2[2]);
                             gp_Vec tc(v3[0], v3[1], v3[2]);
-                            gp_Vec intersection_point;
 
                             /*
                             std::cout << "ray origin " << ray_origin.X() << " " << ray_origin.Y() << " " << ray_origin.Z() << std::endl;
@@ -371,10 +372,145 @@ namespace IfcGeom {
                 return total_intersections % 2 != 0;
             }
 
+            std::tuple<
+                double,
+                std::array<double, 3>,
+                std::array<double, 3>
+                > pierce_shape(
+                    const gp_Vec& e1,
+                    const gp_Vec& e2,
+                    const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
+                    const std::unordered_map<int, bool>& valid_tris,
+                    const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts,
+                    const std::unordered_map<int, gp_Vec>& normals
+                    ) const {
+                const gp_Vec& ray_origin = e1;
+                gp_Vec ray_vector = e2 - e1;
+                double edge_length = ray_vector.Magnitude();
+
+                std::array<double, 3> min_int;
+                std::array<double, 3> max_int;
+
+                ray_vector.Normalize();
+
+                ray v_ray;
+                v_ray.origin[0] = ray_origin.X();
+                v_ray.origin[1] = ray_origin.Y();
+                v_ray.origin[2] = ray_origin.Z();
+
+                v_ray.dir[0] = ray_vector.X();
+                v_ray.dir[1] = ray_vector.Y();
+                v_ray.dir[2] = ray_vector.Z();
+                v_ray.dir_inv[0] = 1.0f / ray_vector.X();
+                v_ray.dir_inv[1] = 1.0f / ray_vector.Y();
+                v_ray.dir_inv[2] = 1.0f / ray_vector.Z();
+
+                double min_distance = std::numeric_limits<double>::infinity();
+                double max_distance = -std::numeric_limits<double>::infinity();
+
+                std::stack<int> stack;
+                stack.push(0);
+
+                while ( ! stack.empty()) {
+                    int i = stack.top();
+                    stack.pop();
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt min_point = bvh->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt max_point = bvh->MaxPoint(i);
+
+                    box box;
+                    // + 1e-5 for tolerance
+                    box.corners[0][0] = min_point[0] - 1e-5;
+                    box.corners[0][1] = min_point[1] - 1e-5;
+                    box.corners[0][2] = min_point[2] - 1e-5;
+                    box.corners[1][0] = max_point[0] + 1e-5;
+                    box.corners[1][1] = max_point[1] + 1e-5;
+                    box.corners[1][2] = max_point[2] + 1e-5;
+
+                    if ( ! is_intersect_ray_box(&v_ray, &box)) {
+                        continue;
+                    }
+                    if (bvh->IsOuter(i)) {
+                        // Do ray triangle check.
+                        for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
+                            if ( ! valid_tris.at(j)) {
+                                continue;
+                            }
+                            const std::array<BVH_Vec3d, 3>& v123 = verts.at(j);
+                            const BVH_Vec3d& v1 = v123[0];
+                            const BVH_Vec3d& v2 = v123[1];
+                            const BVH_Vec3d& v3 = v123[2];
+                            const gp_Vec& normal = normals.at(j);
+
+                            if (std::abs(normal.Dot(ray_vector)) < 1e-3) {
+                                continue; // This ray is coplanar to the triangle
+                            }
+
+                            gp_Vec ta(v1[0], v1[1], v1[2]);
+                            gp_Vec tb(v2[0], v2[1], v2[2]);
+                            gp_Vec tc(v3[0], v3[1], v3[2]);
+
+                            double at, au, av;
+                            // Do box check first?
+                            if (intersectRayTriangle(ray_origin, ray_vector, ta, tb, tc, at, au, av, false)) {
+                                // At is a signed intersection distance (positive is along +ray_vector)
+                                if (at > 0 && at < edge_length) {
+                                    double aw = 1.0f - au - av; // Barycentric coordinate for ta
+                                    gp_Vec int_vec = aw * ta + au * tb + av * tc; // Intersection point
+
+                                    if (
+                                        is_point_on_line(int_vec, ta, tb)
+                                        || is_point_on_line(int_vec, ta, tc)
+                                        || is_point_on_line(int_vec, tb, tc)
+                                        || (ta - int_vec).Magnitude() < 1e-4
+                                        || (tb - int_vec).Magnitude() < 1e-4
+                                        || (tc - int_vec).Magnitude() < 1e-4
+                                    ) {
+                                        continue;
+                                    }
+
+                                    if (at < min_distance) {
+                                        min_distance = at;
+                                        min_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
+                                    }
+                                    if (at > max_distance) {
+                                        max_distance = at;
+                                        max_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        stack.push(bvh->Child<0>(i));
+                        stack.push(bvh->Child<1>(i));
+                    }
+                }
+
+                if (min_distance == std::numeric_limits<double>::infinity()) {
+                    return std::make_tuple(-1, min_int, max_int);
+                }
+                return std::make_tuple(max_distance - min_distance, min_int, max_int);
+            }
+
             bool is_point_on_line(const gp_Pnt& point, const gp_Pnt& lineStart, const gp_Pnt& lineEnd) const {
                 // Create vectors
                 gp_Vec startToPoint(point.XYZ() - lineStart.XYZ());
                 gp_Vec startToEnd(lineEnd.XYZ() - lineStart.XYZ());
+
+                // Check if the point is on the line defined by start and end
+                // by checking if the cross product is (near) zero vector, indicating collinearity.
+                gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
+                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                    return false; // Not collinear, hence not on the line segment
+                }
+                return true; // The point is on the line segment
+            }
+
+            // Vec variant? This _Pnt and _Vec difference is annoying.
+            bool is_point_on_line(const gp_Vec& point, const gp_Vec& lineStart, const gp_Vec& lineEnd) const {
+                // Create vectors
+                gp_Vec startToPoint = point - lineStart;
+                gp_Vec startToEnd = lineEnd - lineStart;
 
                 // Check if the point is on the line defined by start and end
                 // by checking if the cross product is (near) zero vector, indicating collinearity.
@@ -622,11 +758,15 @@ namespace IfcGeom {
             }
 
 			bool test_intersection(const T& tA, const T& tB, const TopoDS_Shape& A, const TopoDS_Shape& B, double tolerance, bool check_all = true) const {
-                //  1. For each vert of A that is inside shape B, find the shortest distance to the closest face
-                //  2. Of those verts, find the innermost vert (i.e. the vert that has the longest distance)
+                // If there are verts of A inside shape B (protrusion):
+                //  1. For each vert, find the shortest distance to the closest face
+                //  2. Find the innermost vert (i.e. the vert that has the longest distance)
+                // Otherwise (piercing):
+                //  1. Intersect each edge with shape B
+                //  2. Find the longest distance between intersections
 
                 // OBB check
-                auto obb_a = obbs_.find(tA)->second;
+                const auto& obb_a = obbs_.find(tA)->second;
                 auto obb_b = obbs_.find(tB)->second;
                 obb_b.Enlarge(-tolerance);
                 if (obb_a.IsOut(obb_b)) {
@@ -634,7 +774,7 @@ namespace IfcGeom {
                 }
 
                 // No need to search beyond the distance of the max protrusion.
-                double max_protrusion = max_protrusions_.find(tB)->second;
+                const double max_protrusion = max_protrusions_.find(tB)->second;
 
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
@@ -695,10 +835,12 @@ namespace IfcGeom {
                     return false;
                 }
 
-                BRepExtrema_TriangleSet triangle_set_a = triangle_sets_.find(tA)->second;
-                BRepExtrema_TriangleSet triangle_set_b = triangle_sets_.find(tB)->second;
-                std::unordered_map<int, TopoDS_Face> faces_a = faces_.find(tA)->second;
-                std::unordered_map<int, TopoDS_Face> faces_b = faces_.find(tB)->second;
+                const std::unordered_map<int, bool>& valid_tris_a = valid_tris_.find(tA)->second;
+                const std::unordered_map<int, bool>& valid_tris_b = valid_tris_.find(tB)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_a = verts_.find(tA)->second;
+                const std::unordered_map<int, std::array<BVH_Vec3d, 3>>& verts_b = verts_.find(tB)->second;
+                const std::unordered_map<int, gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::unordered_map<int, gp_Vec>& normals_b = normals_.find(tB)->second;
 
                 // ~10% faster?
                 std::unordered_set<gp_Pnt, PointHasher, PointEqual> points_in_b_cache;
@@ -708,33 +850,30 @@ namespace IfcGeom {
                 std::array<double, 3> protrusion_point;
                 std::array<double, 3> surface_point;
 
+                double pierce = -std::numeric_limits<double>::infinity();
+                std::array<double, 3> pierce_point1;
+                std::array<double, 3> pierce_point2;
+
                 for (const auto& pair : bvh_clashes) {
-                    int bvh_a_i = pair.first;
-                    std::vector<int> bvh_b_is = pair.second;
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        BVH_Vec3d v1, v2, v3;
-
-                        if (faces_a[triangle_set_a.GetFaceID(i)].Orientation() == TopAbs_REVERSED) {
-                            triangle_set_a.GetVertices(i, v1, v3, v2);
-                        } else {
-                            triangle_set_a.GetVertices(i, v1, v2, v3);
-                        }
-
-                        gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
-                        gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
-                        gp_Pnt v3_a_pnt(v3[0], v3[1], v3[2]);
-
-                        gp_Vec normal_a;
-                        try {
-                            gp_Vec dir1_a(v1_a_pnt, v2_a_pnt);
-                            gp_Vec dir2_a(v1_a_pnt, v3_a_pnt);
-                            normal_a = dir1_a.Crossed(dir2_a).Normalized();
-                        } catch (...) {
+                        if ( ! valid_tris_a.at(i)) {
                             continue;
                         }
 
-                        std::array<gp_Pnt, 3> points_a = {v1_a_pnt, v2_a_pnt, v3_a_pnt};
+                        const std::array<BVH_Vec3d, 3>& verts = verts_a.at(i);
+                        const BVH_Vec3d& v1 = verts[0];
+                        const BVH_Vec3d& v2 = verts[1];
+                        const BVH_Vec3d& v3 = verts[2];
+                        const gp_Vec& normal_a = normals_a.at(i);
+
+                        const gp_Pnt v1_a_pnt(v1[0], v1[1], v1[2]);
+                        const gp_Pnt v2_a_pnt(v2[0], v2[1], v2[2]);
+                        const gp_Pnt v3_a_pnt(v3[0], v3[1], v3[2]);
+
+                        const std::array<gp_Pnt, 3> points_a = {v1_a_pnt, v2_a_pnt, v3_a_pnt};
                         std::vector<gp_Pnt> points_in_b;
 
                         for (const auto& v : points_a) {
@@ -752,8 +891,8 @@ namespace IfcGeom {
                                 continue;
                             }
 
-                            if (is_point_in_shape(v, bvh_b, triangle_set_b)
-                                    && is_point_in_shape(v, bvh_b, triangle_set_b, true)) {
+                            if (is_point_in_shape(v, bvh_b, verts_b)
+                                    && is_point_in_shape(v, bvh_b, verts_b, true)) {
                                 points_in_b.push_back(v);
                                 points_in_b_cache.insert(v);
                             } else {
@@ -761,44 +900,67 @@ namespace IfcGeom {
                             }
                         }
 
-                        if (points_in_b.empty()) {
-                            continue;
-                        }
+                        gp_Vec v1_a_vec(v1_a_pnt.X(), v1_a_pnt.Y(), v1_a_pnt.Z());
+                        gp_Vec v2_a_vec(v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z());
+                        gp_Vec v3_a_vec(v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z());
 
                         double v_protrusion = std::numeric_limits<double>::infinity();
                         std::array<double, 3> v_protrusion_point;
                         std::array<double, 3> v_surface_point;
 
+                        // If there are no points in b, this may be a "piercing" triangle.
+                        if (points_in_b.empty()) {
+                            // Protrusions take priority over piercings. We only check for piercings if:
+                            //  - This is a piercing triangle (e.g. no points in b)
+                            //  - No protrusion was already found
+                            //  - We haven't yet found a piercing at the max protrusion limit
+                            if (protrusion == -std::numeric_limits<double>::infinity() && pierce != max_protrusion) {
+                                std::array<
+                                    std::tuple<double, std::array<double, 3>, std::array<double, 3>>, 3
+                                > pierce_results = {
+                                    pierce_shape(v1_a_vec, v2_a_vec, bvh_b, valid_tris_b, verts_b, normals_b),
+                                    pierce_shape(v1_a_vec, v3_a_vec, bvh_b, valid_tris_b, verts_b, normals_b),
+                                    pierce_shape(v2_a_vec, v3_a_vec, bvh_b, valid_tris_b, verts_b, normals_b)
+                                };
+
+                                for (const auto& [p_dist, p_min, p_max] : pierce_results) {
+                                    if (p_dist > tolerance && p_dist > pierce) {
+                                        // Piercings are capped at max_protrusion for intuitive results
+                                        pierce = std::min(p_dist, max_protrusion);
+                                        pierce_point1 = p_min;
+                                        pierce_point2 = p_max;
+                                        if ( ! check_all) {
+                                            clash_types_.push_back(1);
+                                            protrusion_distances_.push_back(pierce);
+                                            protrusion_points_.push_back(pierce_point1);
+                                            surface_points_.push_back(pierce_point2);
+                                            return true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Since there were no points in b, we don't need to check for protrusions.
+                            continue;
+                        }
+
+                        // Check for protrusions.
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                BVH_Vec3d v1_b, v2_b, v3_b;
-
-                                if (faces_b[triangle_set_b.GetFaceID(j)].Orientation() == TopAbs_REVERSED) {
-                                    triangle_set_b.GetVertices(j, v1_b, v3_b, v2_b);
-                                } else {
-                                    triangle_set_b.GetVertices(j, v1_b, v2_b, v3_b);
-                                }
-
-                                tri_count_++;
-
-                                gp_Pnt v1_b_pnt(v1_b[0], v1_b[1], v1_b[2]);
-                                gp_Pnt v2_b_pnt(v2_b[0], v2_b[1], v2_b[2]);
-                                gp_Pnt v3_b_pnt(v3_b[0], v3_b[1], v3_b[2]);
-
-                                /*
-                                std::cout << "->cont " << v1_b[0] << " " << v1_b[1] << " " << v1_b[2] << std::endl;
-                                std::cout << "->cont " << v2_b[0] << " " << v2_b[1] << " " << v2_b[2] << std::endl;
-                                std::cout << "->cont " << v3_b[0] << " " << v3_b[1] << " " << v3_b[2] << std::endl;
-                                */
-
-                                gp_Vec normal_b;
-                                try {
-                                    gp_Vec dir1_b(v1_b_pnt, v2_b_pnt);
-                                    gp_Vec dir2_b(v1_b_pnt, v3_b_pnt);
-                                    normal_b = dir1_b.Crossed(dir2_b).Normalized();
-                                } catch (...) {
+                                if ( ! valid_tris_b.at(j)) {
                                     continue;
                                 }
+                                const std::array<BVH_Vec3d, 3>& verts = verts_b.at(j);
+                                const BVH_Vec3d& v1_b = verts[0];
+                                const BVH_Vec3d& v2_b = verts[1];
+                                const BVH_Vec3d& v3_b = verts[2];
+                                const gp_Vec& normal_b = normals_b.at(j);
+
+                                const gp_Pnt v1_b_pnt(v1_b[0], v1_b[1], v1_b[2]);
+                                const gp_Pnt v2_b_pnt(v2_b[0], v2_b[1], v2_b[2]);
+                                const gp_Pnt v3_b_pnt(v3_b[0], v3_b[1], v3_b[2]);
+
+                                tri_count_++;
 
                                 // We're penetrating _into_ a shape, so don't
                                 // compare distances to faces with roughly the
@@ -845,6 +1007,7 @@ namespace IfcGeom {
                                             v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
 
                                             if ( ! check_all && v_protrusion > tolerance) {
+                                                clash_types_.push_back(0);
                                                 protrusion_distances_.push_back(v_protrusion);
                                                 protrusion_points_.push_back(v_protrusion_point);
                                                 surface_points_.push_back(v_surface_point);
@@ -868,11 +1031,22 @@ namespace IfcGeom {
                 }
 
                 if (protrusion > tolerance) {
+                    clash_types_.push_back(0);
                     protrusion_distances_.push_back(protrusion);
                     protrusion_points_.push_back(protrusion_point);
                     surface_points_.push_back(surface_point);
                     return true;
                 }
+
+                if (pierce > tolerance) {
+                    // Don't like this inaccurate reuse of variables.
+                    clash_types_.push_back(1);
+                    protrusion_distances_.push_back(pierce);
+                    protrusion_points_.push_back(pierce_point1);
+                    surface_points_.push_back(pierce_point2);
+                    return true;
+                }
+
                 return false;
             }
 
@@ -1255,6 +1429,8 @@ namespace IfcGeom {
 
 			// @todo this is ugly, embed this in the return type
 			mutable std::vector<double> distances_;
+            // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
+			mutable std::vector<int> clash_types_;
 			mutable std::vector<double> protrusion_distances_;
 			mutable std::vector<std::array<double, 3>> protrusion_points_;
 			mutable std::vector<std::array<double, 3>> surface_points_;
@@ -1294,6 +1470,7 @@ namespace IfcGeom {
                 BRepExtrema_ShapeList shape_list;
 
                 std::unordered_map<int, TopoDS_Face> faces;
+                std::unordered_map<int, bool> is_reversed;
 
                 TopExp_Explorer exp_f;
                 int i = 0;
@@ -1309,7 +1486,9 @@ namespace IfcGeom {
                     BVH_Box<Standard_Real, 3> bvhBox(min, max);
                     boxset->Add(i, bvhBox);
 
-                    faces[i] = TopoDS::Face(exp_f.Current());
+                    TopoDS_Face f = TopoDS::Face(exp_f.Current());
+                    faces[i] = f;
+                    is_reversed[i] = f.Orientation() == TopAbs_REVERSED;
                     i++;
                 }
 
@@ -1327,6 +1506,32 @@ namespace IfcGeom {
                 // Option 3: Triangle set - down to 96 million pairs
                 BRepExtrema_TriangleSet triangle_set(shape_list);
                 const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh = triangle_set.BVH();
+
+                std::unordered_map<int, bool> valid_tris;
+                std::unordered_map<int, std::array<BVH_Vec3d, 3>> verts;
+                std::unordered_map<int, gp_Vec> normals;
+                for (int i=0; i<triangle_set.Size(); ++i) {
+                    BVH_Vec3d v1, v2, v3;
+                    if (is_reversed[triangle_set.GetFaceID(i)]) {
+                        triangle_set.GetVertices(i, v1, v3, v2);
+                    } else {
+                        triangle_set.GetVertices(i, v1, v2, v3);
+                    }
+                    gp_Pnt v1_pnt(v1[0], v1[1], v1[2]);
+                    gp_Pnt v2_pnt(v2[0], v2[1], v2[2]);
+                    gp_Pnt v3_pnt(v3[0], v3[1], v3[2]);
+                    gp_Vec normal;
+                    try {
+                        gp_Vec dir1(v1_pnt, v2_pnt);
+                        gp_Vec dir2(v1_pnt, v3_pnt);
+                        normal = dir1.Crossed(dir2).Normalized();
+                        normals[i] = normal;
+                        verts[i] = {v1, v2, v3};
+                        valid_tris[i] = true;
+                    } catch (...) {
+                        valid_tris[i] = false;
+                    }
+                }
 
                 // Debug
                 /*
@@ -1351,6 +1556,9 @@ namespace IfcGeom {
                 boxsets_[t] = boxset;
                 bvhs_[t] = bvh;
                 faces_[t] = faces;
+                verts_[t] = verts;
+                normals_[t] = normals;
+                valid_tris_[t] = valid_tris;
 			}
 
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
@@ -1408,6 +1616,7 @@ namespace IfcGeom {
 			}
 
 			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002, bool check_all = true) const {
+				clash_types_.clear();
 				protrusion_distances_.clear();
 				protrusion_points_.clear();
 				surface_points_.clear();
@@ -1637,6 +1846,9 @@ namespace IfcGeom {
             std::map<T, BVH_BoxSet<double, 3>*> boxsets_; 
             std::map<T, BRepExtrema_TriangleSet> triangle_sets_; 
             std::unordered_map<T, std::unordered_map<int, TopoDS_Face>> faces_;
+            std::unordered_map<T, std::unordered_map<int, bool>> valid_tris_;
+            std::unordered_map<T, std::unordered_map<int, std::array<BVH_Vec3d, 3>>> verts_;
+            std::unordered_map<T, std::unordered_map<int, gp_Vec>> normals_;
 			
 			bool enable_face_styles_ = false;
 
@@ -1748,6 +1960,10 @@ namespace IfcGeom {
 
 		const std::vector<double>& distances() const {
 			return distances_;
+		}
+
+		const std::vector<int>& clash_types() const {
+			return clash_types_;
 		}
 
 		const std::vector<double>& protrusion_distances() const {
