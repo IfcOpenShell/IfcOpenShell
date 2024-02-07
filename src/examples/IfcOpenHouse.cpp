@@ -411,6 +411,8 @@ int main() {
 
 	IfcSchema::IfcDoorStyle* door_style = new IfcSchema::IfcDoorStyle(guid(), file.getSingle<IfcSchema::IfcOwnerHistory>(), "Door type"s, null, null, null, null, null,
 		IfcSchema::IfcDoorStyleOperationEnum::IfcDoorStyleOperation_SINGLE_SWING_LEFT, IfcSchema::IfcDoorStyleConstructionEnum::IfcDoorStyleConstruction_WOOD, false, false);
+	// NOTE: typing by IfcDoorStyle will cause validation errors in IFC4+ but it's allowed for backwards compatibility
+	// better to use IfcDoorType in the actual use case
 	file.addRelatedObject<IfcSchema::IfcRelDefinesByType>(door_style, door);
 
 	// Surface styles are assigned to representation items, hence there is no real limitation to
