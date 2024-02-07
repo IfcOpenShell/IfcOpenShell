@@ -392,30 +392,12 @@ namespace IfcGeom {
                 return true; // The point is on the line segment
             }
 
-			bool test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
-                // If there are verts of A inside shape B (protrusion):
-                //  1. For each vert, find the shortest distance to the closest face
-                //  2. Find the innermost vert (i.e. the vert that has the longest distance)
-                // Otherwise (piercing):
-                //  1. Intersect each edge with shape B
-                //  2. Find the longest distance between intersections
-
-                // OBB check
-                const auto& obb_a = obbs_.find(tA)->second;
-                auto obb_b = obbs_.find(tB)->second;
-                obb_b.Enlarge(-tolerance);
-                if (obb_a.IsOut(obb_b)) {
-                    return false;
-                }
-
-                // No need to search beyond the distance of the max protrusion.
-                const double max_protrusion = max_protrusions_.find(tB)->second;
-
-                // Collide BVH trees of shape A vs B
-                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
-                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+            std::unordered_map<int, std::vector<int>> clash_bvh(
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a,
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b,
+                double extend = 0.0
+                    ) const {
                 std::unordered_map<int, std::vector<int>> bvh_clashes;
-
                 for (int i=0; i<bvh_a->Length(); ++i) {
                     if ( ! bvh_a->IsOuter(i)) {
                         continue;
@@ -441,12 +423,12 @@ namespace IfcGeom {
 
                         BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
                         BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
-                        bvh_b_min[0] -= max_protrusion + 1e-3;
-                        bvh_b_min[1] -= max_protrusion + 1e-3;
-                        bvh_b_min[2] -= max_protrusion + 1e-3;
-                        bvh_b_max[0] += max_protrusion + 1e-3;
-                        bvh_b_max[1] += max_protrusion + 1e-3;
-                        bvh_b_max[2] += max_protrusion + 1e-3;
+                        bvh_b_min[0] -= extend + 1e-3;
+                        bvh_b_min[1] -= extend + 1e-3;
+                        bvh_b_min[2] -= extend + 1e-3;
+                        bvh_b_max[0] += extend + 1e-3;
+                        bvh_b_max[1] += extend + 1e-3;
+                        bvh_b_max[2] += extend + 1e-3;
 
                         if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
                             continue;
@@ -463,7 +445,33 @@ namespace IfcGeom {
                         }
                     }
                 }
+                return bvh_clashes;
+            }
 
+			bool test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
+                // If there are verts of A inside shape B (protrusion):
+                //  1. For each vert, find the shortest distance to the closest face
+                //  2. Find the innermost vert (i.e. the vert that has the longest distance)
+                // Otherwise (piercing):
+                //  1. Intersect each edge with shape B
+                //  2. Find the longest distance between intersections
+
+                // OBB check
+                const auto& obb_a = obbs_.find(tA)->second;
+                auto obb_b = obbs_.find(tB)->second;
+                obb_b.Enlarge(-tolerance);
+                if (obb_a.IsOut(obb_b)) {
+                    return false;
+                }
+
+                // No need to search beyond the distance of the max protrusion.
+                const double max_protrusion = max_protrusions_.find(tB)->second;
+
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, max_protrusion);
                 if (bvh_clashes.empty()) {
                     return false;
                 }
@@ -678,56 +686,8 @@ namespace IfcGeom {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
-                std::unordered_map<int, std::vector<int>> bvh_clashes;
 
-                for (int i=0; i<bvh_a->Length(); ++i) {
-                    if ( ! bvh_a->IsOuter(i)) {
-                        continue;
-                    }
-
-                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_min = bvh_a->MinPoint(i);
-                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_max = bvh_a->MaxPoint(i);
-                    bvh_a_min[0] -= 1e-3;
-                    bvh_a_min[1] -= 1e-3;
-                    bvh_a_min[2] -= 1e-3;
-                    bvh_a_max[0] += 1e-3;
-                    bvh_a_max[1] += 1e-3;
-                    bvh_a_max[2] += 1e-3;
-
-                    BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
-
-                    std::stack<int> stack;
-                    stack.push(0);
-
-                    while ( ! stack.empty()) {
-                        int j = stack.top();
-                        stack.pop();
-
-                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
-                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
-                        bvh_b_min[0] -= 1e-3;
-                        bvh_b_min[1] -= 1e-3;
-                        bvh_b_min[2] -= 1e-3;
-                        bvh_b_max[0] += 1e-3;
-                        bvh_b_max[1] += 1e-3;
-                        bvh_b_max[2] += 1e-3;
-
-                        if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
-                            continue;
-                        }
-                        if (bvh_b->IsOuter(j)) {
-                            if (bvh_clashes.find(i) != bvh_clashes.end()) {
-                                bvh_clashes[i].push_back(j);
-                            } else {
-                                bvh_clashes[i] = {j};
-                            }
-                        } else {
-                            stack.push(bvh_b->Child<0>(j));
-                            stack.push(bvh_b->Child<1>(j));
-                        }
-                    }
-                }
-
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b);
                 if (bvh_clashes.empty()) {
                     return false;
                 }
@@ -872,56 +832,8 @@ namespace IfcGeom {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
-                std::unordered_map<int, std::vector<int>> bvh_clashes;
 
-                for (int i=0; i<bvh_a->Length(); ++i) {
-                    if ( ! bvh_a->IsOuter(i)) {
-                        continue;
-                    }
-
-                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_min = bvh_a->MinPoint(i);
-                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_max = bvh_a->MaxPoint(i);
-                    bvh_a_min[0] -= 1e-3;
-                    bvh_a_min[1] -= 1e-3;
-                    bvh_a_min[2] -= 1e-3;
-                    bvh_a_max[0] += 1e-3;
-                    bvh_a_max[1] += 1e-3;
-                    bvh_a_max[2] += 1e-3;
-
-                    BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
-
-                    std::stack<int> stack;
-                    stack.push(0);
-
-                    while ( ! stack.empty()) {
-                        int j = stack.top();
-                        stack.pop();
-
-                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
-                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
-                        bvh_b_min[0] -= clearance + 1e-3;
-                        bvh_b_min[1] -= clearance + 1e-3;
-                        bvh_b_min[2] -= clearance + 1e-3;
-                        bvh_b_max[0] += clearance + 1e-3;
-                        bvh_b_max[1] += clearance + 1e-3;
-                        bvh_b_max[2] += clearance + 1e-3;
-
-                        if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
-                            continue;
-                        }
-                        if (bvh_b->IsOuter(j)) {
-                            if (bvh_clashes.find(i) != bvh_clashes.end()) {
-                                bvh_clashes[i].push_back(j);
-                            } else {
-                                bvh_clashes[i] = {j};
-                            }
-                        } else {
-                            stack.push(bvh_b->Child<0>(j));
-                            stack.push(bvh_b->Child<1>(j));
-                        }
-                    }
-                }
-
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, clearance);
                 if (bvh_clashes.empty()) {
                     return false;
                 }
