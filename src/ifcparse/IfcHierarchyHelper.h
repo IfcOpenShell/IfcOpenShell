@@ -453,8 +453,8 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             }
             int relating_index = 4;
             int related_index = 5;
-            if (T::Class().name() == "IfcRelContainedInSpatialStructure") {
-                // IfcRelContainedInSpatialStructure has attributes reversed.
+            if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<Schema::IfcRelDefines, T>::value) {
+                // some classes have attributes reversed.
                 std::swap(relating_index, related_index);
             }
             {
