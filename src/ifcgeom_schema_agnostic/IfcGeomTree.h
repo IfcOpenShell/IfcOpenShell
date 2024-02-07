@@ -55,7 +55,6 @@
 #include <IntTools_FaceFace.hxx>
 #include <STEPConstruct_PointHasher.hxx>
 #include <boost/stacktrace.hpp>
-#include "triangleintersects.hpp"
 #include "clash_utils.h"
 
 
@@ -755,9 +754,9 @@ namespace IfcGeom {
                         const gp_Pnt& v3_a_pnt = verts[2];
                         const gp_Vec& normal_a = normals_a.at(i);
 
-                        std::array<double, 3> t1a = {v1_a_pnt.X(), v1_a_pnt.Y(), v1_a_pnt.Z()};
-                        std::array<double, 3> t1b = {v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z()};
-                        std::array<double, 3> t1c = {v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z()};
+                        const gp_Vec v1_a_vec(v1_a_pnt.XYZ());
+                        const gp_Vec v2_a_vec(v2_a_pnt.XYZ());
+                        const gp_Vec v3_a_vec(v3_a_pnt.XYZ());
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
@@ -773,29 +772,19 @@ namespace IfcGeom {
 
                                 tri_count_++;
 
-                                std::array<double, 3> t2a = {v1_b_pnt.X(), v1_b_pnt.Y(), v1_b_pnt.Z()};
-                                std::array<double, 3> t2b = {v2_b_pnt.X(), v2_b_pnt.Y(), v2_b_pnt.Z()};
-                                std::array<double, 3> t2c = {v3_b_pnt.X(), v3_b_pnt.Y(), v3_b_pnt.Z()};
+                                const gp_Vec v1_b_vec(v1_b_pnt.XYZ());
+                                const gp_Vec v2_b_vec(v2_b_pnt.XYZ());
+                                const gp_Vec v3_b_vec(v3_b_pnt.XYZ());
 
                                 // Allow a deviation of 0.25 degrees in coplanarity check
                                 if (std::abs(normal_a.Dot(normal_b)) >= 0.99999f) {
                                     continue;
                                 }
 
-                                std::array<double, 3> int1, int2;
-                                bool is_coplanar;
-
-                                // From 3YOURMIND / 3YDMoeller - MIT license
-                                // https://github.com/3YOURMIND/3YDMoeller
-                                // Perhaps this can be replaced with NVIDIA's method?
-                                // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/physx/source/geomutils/src/intersection/GuIntersectionTriangleTriangle.cpp
-                                if (threeyd::moeller::TriangleIntersects<std::array<double, 3>>::triangle(t1a, t1b, t1c, t2a, t2b, t2c, int1, int2, is_coplanar)) {
-                                    if (is_coplanar) {
-                                        continue; // Touching, but not intersecting.
-                                    }
-
+                                gp_Vec int1, int2;
+                                if (trianglesIntersect(v1_a_vec, v2_a_vec, v3_a_vec, v1_b_vec, v2_b_vec, v3_b_vec, int1, int2, ! allow_touching)) {
                                     if (allow_touching) {
-                                        protrusion_points_.push_back(int1);
+                                        protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
                                         return true;
                                     }
 
@@ -804,65 +793,62 @@ namespace IfcGeom {
                                     //  2. The point of intersection is not along the edge of triangle A.
                                     //  3. The point of intersection is not a vertex of triangle B.
 
-                                    gp_Pnt int1_pnt(int1[0], int1[1], int1[2]);
-                                    gp_Pnt int2_pnt(int2[0], int2[1], int2[2]);
-
                                     if (
-                                        ! is_point_on_line(int1_pnt, v1_a_pnt, v2_a_pnt)
-                                        && ! is_point_on_line(int1_pnt, v1_a_pnt, v3_a_pnt)
-                                        && ! is_point_on_line(int1_pnt, v2_a_pnt, v3_a_pnt)
+                                        ! is_point_on_line(int1, v1_a_vec, v2_a_vec)
+                                        && ! is_point_on_line(int1, v1_a_vec, v3_a_vec)
+                                        && ! is_point_on_line(int1, v2_a_vec, v3_a_vec)
                                     ) {
                                         if (
-                                            int1_pnt.Distance(v1_b_pnt) > 1e-4
-                                            && int1_pnt.Distance(v2_b_pnt) > 1e-4
-                                            && int1_pnt.Distance(v3_b_pnt) > 1e-4
+                                            (v1_b_vec - int1).Magnitude() > 1e-4
+                                            && (v2_b_vec - int1).Magnitude() > 1e-4
+                                            && (v3_b_vec - int1).Magnitude() > 1e-4
                                         ) {
-                                            protrusion_points_.push_back(int1);
+                                            protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
                                             return true;
                                         }
                                     }
 
                                     if (
-                                        ! is_point_on_line(int1_pnt, v1_b_pnt, v2_b_pnt)
-                                        && ! is_point_on_line(int1_pnt, v1_b_pnt, v3_b_pnt)
-                                        && ! is_point_on_line(int1_pnt, v2_b_pnt, v3_b_pnt)
+                                        ! is_point_on_line(int1, v1_b_vec, v2_b_vec)
+                                        && ! is_point_on_line(int1, v1_b_vec, v3_b_vec)
+                                        && ! is_point_on_line(int1, v2_b_vec, v3_b_vec)
                                     ) {
                                         if (
-                                            int1_pnt.Distance(v1_a_pnt) > 1e-4
-                                            && int1_pnt.Distance(v2_a_pnt) > 1e-4
-                                            && int1_pnt.Distance(v3_a_pnt) > 1e-4
+                                            (v1_a_vec - int1).Magnitude() > 1e-4
+                                            && (v2_a_vec - int1).Magnitude() > 1e-4
+                                            && (v3_a_vec - int1).Magnitude() > 1e-4
                                         ) {
-                                            protrusion_points_.push_back(int1);
+                                            protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
                                             return true;
                                         }
                                     }
 
                                     if (
-                                        ! is_point_on_line(int2_pnt, v1_a_pnt, v2_a_pnt)
-                                        && ! is_point_on_line(int2_pnt, v1_a_pnt, v3_a_pnt)
-                                        && ! is_point_on_line(int2_pnt, v2_a_pnt, v3_a_pnt)
+                                        ! is_point_on_line(int2, v1_a_vec, v2_a_vec)
+                                        && ! is_point_on_line(int2, v1_a_vec, v3_a_vec)
+                                        && ! is_point_on_line(int2, v2_a_vec, v3_a_vec)
                                     ) {
                                         if (
-                                            int2_pnt.Distance(v1_b_pnt) > 1e-4
-                                            && int2_pnt.Distance(v2_b_pnt) > 1e-4
-                                            && int2_pnt.Distance(v3_b_pnt) > 1e-4
+                                            (v1_b_vec - int2).Magnitude() > 1e-4
+                                            && (v2_b_vec - int2).Magnitude() > 1e-4
+                                            && (v3_b_vec - int2).Magnitude() > 1e-4
                                         ) {
-                                            protrusion_points_.push_back(int2);
+                                            protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
                                             return true;
                                         }
                                     }
 
                                     if (
-                                        ! is_point_on_line(int2_pnt, v1_b_pnt, v2_b_pnt)
-                                        && ! is_point_on_line(int2_pnt, v1_b_pnt, v3_b_pnt)
-                                        && ! is_point_on_line(int2_pnt, v2_b_pnt, v3_b_pnt)
+                                        ! is_point_on_line(int2, v1_b_vec, v2_b_vec)
+                                        && ! is_point_on_line(int2, v1_b_vec, v3_b_vec)
+                                        && ! is_point_on_line(int2, v2_b_vec, v3_b_vec)
                                     ) {
                                         if (
-                                            int2_pnt.Distance(v1_a_pnt) > 1e-4
-                                            && int2_pnt.Distance(v2_a_pnt) > 1e-4
-                                            && int2_pnt.Distance(v3_a_pnt) > 1e-4
+                                            (v1_a_vec - int2).Magnitude() > 1e-4
+                                            && (v2_a_vec - int2).Magnitude() > 1e-4
+                                            && (v3_a_vec - int2).Magnitude() > 1e-4
                                         ) {
-                                            protrusion_points_.push_back(int2);
+                                            protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
                                             return true;
                                         }
                                     }
@@ -957,9 +943,9 @@ namespace IfcGeom {
                         const gp_Pnt& v2_a_pnt = verts[1];
                         const gp_Pnt& v3_a_pnt = verts[2];
 
-                        const gp_Vec v1_a_vec(v1_a_pnt.X(), v1_a_pnt.Y(), v1_a_pnt.Z());
-                        const gp_Vec v2_a_vec(v2_a_pnt.X(), v2_a_pnt.Y(), v2_a_pnt.Z());
-                        const gp_Vec v3_a_vec(v3_a_pnt.X(), v3_a_pnt.Y(), v3_a_pnt.Z());
+                        const gp_Vec v1_a_vec(v1_a_pnt.XYZ());
+                        const gp_Vec v2_a_vec(v2_a_pnt.XYZ());
+                        const gp_Vec v3_a_vec(v3_a_pnt.XYZ());
 
                         const std::array<gp_Vec, 3> p = {v1_a_vec, v2_a_vec, v3_a_vec};
 
@@ -972,9 +958,9 @@ namespace IfcGeom {
 
                                 tri_count_++;
 
-                                const gp_Vec v1_b_vec(v1_b_pnt.X(), v1_b_pnt.Y(), v1_b_pnt.Z());
-                                const gp_Vec v2_b_vec(v2_b_pnt.X(), v2_b_pnt.Y(), v2_b_pnt.Z());
-                                const gp_Vec v3_b_vec(v3_b_pnt.X(), v3_b_pnt.Y(), v3_b_pnt.Z());
+                                const gp_Vec v1_b_vec(v1_b_pnt.XYZ());
+                                const gp_Vec v2_b_vec(v2_b_pnt.XYZ());
+                                const gp_Vec v3_b_vec(v3_b_pnt.XYZ());
 
                                 const std::array<gp_Vec, 3> q = {v1_b_vec, v2_b_vec, v3_b_vec};
 
