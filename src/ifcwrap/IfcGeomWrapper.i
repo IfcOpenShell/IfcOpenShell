@@ -106,11 +106,11 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	aggregate_of_instance::ptr clash_intersection(IfcUtil::IfcBaseClass* e, double tolerance = 0.002) const {
+	aggregate_of_instance::ptr clash_intersection(IfcUtil::IfcBaseClass* e, double tolerance = 0.002, bool check_all = true) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_intersection((IfcUtil::IfcBaseEntity*)e, tolerance);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_intersection((IfcUtil::IfcBaseEntity*)e, tolerance, check_all);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
@@ -122,11 +122,11 @@
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 
-	aggregate_of_instance::ptr clash_clearance(IfcUtil::IfcBaseClass* e, double clearance = 0.05) const {
+	aggregate_of_instance::ptr clash_clearance(IfcUtil::IfcBaseClass* e, double clearance = 0.05, bool check_all = false) const {
 		if (!e->declaration().is("IfcProduct")) {
 			throw IfcParse::IfcException("Instance should be an IfcProduct");
 		}
-		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_clearance((IfcUtil::IfcBaseEntity*)e, clearance);
+		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->clash_clearance((IfcUtil::IfcBaseEntity*)e, clearance, check_all);
 		return IfcGeom_tree_vector_to_list(ps);
 	}
 

@@ -633,8 +633,7 @@ namespace IfcGeom {
                                             v_protrusion_point = {v.X(), v.Y(), v.Z()};
                                             v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
 
-                                            if (( ! check_all && v_protrusion > tolerance)
-                                                    || v_protrusion > (max_protrusion - 1e-3)) {
+                                            if ( ! check_all && v_protrusion > tolerance) {
                                                 clash_types_.push_back(0);
                                                 protrusion_distances_.push_back(v_protrusion);
                                                 protrusion_points_.push_back(v_protrusion_point);
@@ -653,6 +652,13 @@ namespace IfcGeom {
                                 protrusion = v_protrusion;
                                 protrusion_point = v_protrusion_point;
                                 surface_point = v_surface_point;
+                                if (protrusion > (max_protrusion - 1e-3)) {
+                                    clash_types_.push_back(0);
+                                    protrusion_distances_.push_back(protrusion);
+                                    protrusion_points_.push_back(protrusion_point);
+                                    surface_points_.push_back(surface_point);
+                                    return true;
+                                }
                             }
                         }
                     }
