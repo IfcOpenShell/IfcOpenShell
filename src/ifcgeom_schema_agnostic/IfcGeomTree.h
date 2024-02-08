@@ -119,22 +119,25 @@ namespace IfcGeom {
 	namespace impl {
 		template <typename T>
 		class tree {
-            struct PointHasher {
-                std::size_t operator()(const gp_Pnt& p) const {
-                    // Assuming theUpperBound is somewhat arbitrary, but should be large enough
-                    // and suitable for the size of the container.
-                    // Note: std::unordered_set expects hash values starting from 0, but OpenCASCADE
-                    // produces hash codes in the range [1, theUpperBound]. So, we adjust by subtracting 1.
-                    return static_cast<std::size_t>(STEPConstruct_PointHasher::HashCode(p, std::numeric_limits<Standard_Integer>::max())) - 1;
-                }
-            };
+            bool is_shape_manifold(const TopoDS_Shape& s) {
+                TopExp_Explorer exp(s, TopAbs_SHELL);
+                bool is_closed = false;
+                while (exp.More()) {
+                    is_closed = true;
+                    TopoDS_Shell shell = TopoDS::Shell(exp.Current());
+                    TopTools_IndexedDataMapOfShapeListOfShape edgeFaceMap;
+                    TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, edgeFaceMap);
 
-            // Functor for comparing two gp_Pnt objects for equality
-            struct PointEqual {
-                bool operator()(const gp_Pnt& p1, const gp_Pnt& p2) const {
-                    return STEPConstruct_PointHasher::IsEqual(p1, p2);
+                    for (int i = 1; i <= edgeFaceMap.Extent(); ++i) {
+                        if (edgeFaceMap(i).Extent() < 2) {
+                            // This edge is not shared by two faces, indicating a potential opening
+                            return false;
+                        }
+                    }
+                    exp.Next();
                 }
-            };
+                return is_closed;
+            }
 
             bool is_point_in_shape(
                     const gp_Pnt& v,
@@ -747,7 +750,10 @@ namespace IfcGeom {
                                 gp_Vec int1, int2;
                                 if (trianglesIntersect(v1_a_vec, v2_a_vec, v3_a_vec, v1_b_vec, v2_b_vec, v3_b_vec, int1, int2, ! allow_touching)) {
                                     if (allow_touching) {
+                                        clash_types_.push_back(2);
+                                        protrusion_distances_.push_back(0);
                                         protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
+                                        surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
                                         return true;
                                     }
 
@@ -766,7 +772,10 @@ namespace IfcGeom {
                                             && (v2_b_vec - int1).Magnitude() > 1e-4
                                             && (v3_b_vec - int1).Magnitude() > 1e-4
                                         ) {
+                                            clash_types_.push_back(2);
+                                            protrusion_distances_.push_back(0);
                                             protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
+                                            surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
                                             return true;
                                         }
                                     }
@@ -781,7 +790,10 @@ namespace IfcGeom {
                                             && (v2_a_vec - int1).Magnitude() > 1e-4
                                             && (v3_a_vec - int1).Magnitude() > 1e-4
                                         ) {
+                                            clash_types_.push_back(2);
+                                            protrusion_distances_.push_back(0);
                                             protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
+                                            surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
                                             return true;
                                         }
                                     }
@@ -796,7 +808,10 @@ namespace IfcGeom {
                                             && (v2_b_vec - int2).Magnitude() > 1e-4
                                             && (v3_b_vec - int2).Magnitude() > 1e-4
                                         ) {
+                                            clash_types_.push_back(2);
+                                            protrusion_distances_.push_back(0);
                                             protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
+                                            surface_points_.push_back({int1.X(), int1.Y(), int1.Z()});
                                             return true;
                                         }
                                     }
@@ -811,7 +826,10 @@ namespace IfcGeom {
                                             && (v2_a_vec - int2).Magnitude() > 1e-4
                                             && (v3_a_vec - int2).Magnitude() > 1e-4
                                         ) {
+                                            clash_types_.push_back(2);
+                                            protrusion_distances_.push_back(0);
                                             protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
+                                            surface_points_.push_back({int1.X(), int1.Y(), int1.Z()});
                                             return true;
                                         }
                                     }
@@ -1060,6 +1078,7 @@ namespace IfcGeom {
                 */
 
                 bvhs_[t] = bvh;
+                is_manifold_[t] = is_shape_manifold(s);
                 tris_[t] = std::move(tris);
                 verts_[t] = std::move(verts);
                 normals_[t] = std::move(normals);
@@ -1140,9 +1159,15 @@ namespace IfcGeom {
                         continue; // Don't clash against itself.
                     }
 
-					if (test_intersection(t, *it, tolerance, check_all)) {
-						ts_filtered.push_back(*it);
-					}
+                    if (is_manifold_.find(*it)->second) {
+                        if (test_intersection(t, *it, tolerance, check_all)) {
+                            ts_filtered.push_back(*it);
+                        }
+                    } else {
+                        if (test_collision(t, *it, false)) {
+                            ts_filtered.push_back(*it);
+                        }
+                    }
 				}
                 std::cout << "Tri count " << tri_count_ << std::endl;
 
@@ -1318,6 +1343,7 @@ namespace IfcGeom {
             std::map<T, Bnd_OBB> obbs_; 
             std::map<T, double> max_protrusions_; 
             std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
+            std::unordered_map<T, bool> is_manifold_;
             std::unordered_map<T, std::vector<bool>> valid_tris_;
             std::unordered_map<T, std::vector<std::array<int, 3>>> tris_;
             std::unordered_map<T, std::vector<gp_Pnt>> verts_;
