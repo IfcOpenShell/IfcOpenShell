@@ -139,7 +139,7 @@ namespace IfcGeom {
             bool is_point_in_shape(
                     const gp_Pnt& v,
                     const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
-                    const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts,
+                    const std::vector<std::array<gp_Pnt, 3>>& verts,
                     // In the case of "touching" rays, let's check again!
                     bool should_check_again = false
                     ) const {
@@ -217,7 +217,7 @@ namespace IfcGeom {
                         //std::cout << "Ray hits leaf" << std::endl;
                         // Do ray triangle check.
                         for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
-                            const std::array<gp_Pnt, 3>& v123 = verts.at(j);
+                            const std::array<gp_Pnt, 3>& v123 = verts[j];
 
                             gp_Vec ta(v123[0].X(), v123[0].Y(), v123[0].Z());
                             gp_Vec tb(v123[1].X(), v123[1].Y(), v123[2].Z());
@@ -254,9 +254,9 @@ namespace IfcGeom {
                     const gp_Vec& e1,
                     const gp_Vec& e2,
                     const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
-                    const std::unordered_map<int, bool>& valid_tris,
-                    const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts,
-                    const std::unordered_map<int, gp_Vec>& normals
+                    const std::vector<bool>& valid_tris,
+                    const std::vector<std::array<gp_Pnt, 3>>& verts,
+                    const std::vector<gp_Vec>& normals
                     ) const {
                 const gp_Vec& ray_origin = e1;
                 gp_Vec ray_vector = e2 - e1;
@@ -307,11 +307,11 @@ namespace IfcGeom {
                     if (bvh->IsOuter(i)) {
                         // Do ray triangle check.
                         for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
-                            if ( ! valid_tris.at(j)) {
+                            if ( ! valid_tris[j]) {
                                 continue;
                             }
-                            const std::array<gp_Pnt, 3>& v123 = verts.at(j);
-                            const gp_Vec& normal = normals.at(j);
+                            const std::array<gp_Pnt, 3>& v123 = verts[j];
+                            const gp_Vec& normal = normals[j];
 
                             if (std::abs(normal.Dot(ray_vector)) < 1e-3) {
                                 continue; // This ray is coplanar to the triangle
@@ -476,12 +476,12 @@ namespace IfcGeom {
                     return false;
                 }
 
-                const std::unordered_map<int, bool>& valid_tris_a = valid_tris_.find(tA)->second;
-                const std::unordered_map<int, bool>& valid_tris_b = valid_tris_.find(tB)->second;
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
-                const std::unordered_map<int, gp_Vec>& normals_a = normals_.find(tA)->second;
-                const std::unordered_map<int, gp_Vec>& normals_b = normals_.find(tB)->second;
+                const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
+                const std::vector<bool>& valid_tris_b = valid_tris_.find(tB)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
+                const std::vector<gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::vector<gp_Vec>& normals_b = normals_.find(tB)->second;
 
                 // ~10% faster?
                 std::unordered_set<gp_Pnt, PointHasher, PointEqual> points_in_b_cache;
@@ -500,15 +500,15 @@ namespace IfcGeom {
                     const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        if ( ! valid_tris_a.at(i)) {
+                        if ( ! valid_tris_a[i]) {
                             continue;
                         }
 
-                        const std::array<gp_Pnt, 3>& verts = verts_a.at(i);
+                        const std::array<gp_Pnt, 3>& verts = verts_a[i];
                         const gp_Pnt& v1_a_pnt = verts[0];
                         const gp_Pnt& v2_a_pnt = verts[1];
                         const gp_Pnt& v3_a_pnt = verts[2];
-                        const gp_Vec& normal_a = normals_a.at(i);
+                        const gp_Vec& normal_a = normals_a[i];
 
                         const std::array<gp_Pnt, 3> points_a = {v1_a_pnt, v2_a_pnt, v3_a_pnt};
                         std::vector<gp_Pnt> points_in_b;
@@ -584,12 +584,12 @@ namespace IfcGeom {
                         // Check for protrusions.
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                if ( ! valid_tris_b.at(j)) {
+                                if ( ! valid_tris_b[j]) {
                                     continue;
                                 }
 
-                                const std::array<gp_Pnt, 3>& verts = verts_b.at(j);
-                                const gp_Vec& normal_b = normals_b.at(j);
+                                const std::array<gp_Pnt, 3>& verts = verts_b[j];
+                                const gp_Vec& normal_b = normals_b[j];
 
                                 tri_count_++;
 
@@ -692,27 +692,27 @@ namespace IfcGeom {
                     return false;
                 }
 
-                const std::unordered_map<int, bool>& valid_tris_a = valid_tris_.find(tA)->second;
-                const std::unordered_map<int, bool>& valid_tris_b = valid_tris_.find(tB)->second;
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
-                const std::unordered_map<int, gp_Vec>& normals_a = normals_.find(tA)->second;
-                const std::unordered_map<int, gp_Vec>& normals_b = normals_.find(tB)->second;
+                const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
+                const std::vector<bool>& valid_tris_b = valid_tris_.find(tB)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
+                const std::vector<gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::vector<gp_Vec>& normals_b = normals_.find(tB)->second;
 
                 for (const auto& pair : bvh_clashes) {
                     const int bvh_a_i = pair.first;
                     const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        if ( ! valid_tris_a.at(i)) {
+                        if ( ! valid_tris_a[i]) {
                             continue;
                         }
 
-                        const std::array<gp_Pnt, 3>& verts = verts_a.at(i);
+                        const std::array<gp_Pnt, 3>& verts = verts_a[i];
                         const gp_Pnt& v1_a_pnt = verts[0];
                         const gp_Pnt& v2_a_pnt = verts[1];
                         const gp_Pnt& v3_a_pnt = verts[2];
-                        const gp_Vec& normal_a = normals_a.at(i);
+                        const gp_Vec& normal_a = normals_a[i];
 
                         const gp_Vec v1_a_vec(v1_a_pnt.XYZ());
                         const gp_Vec v2_a_vec(v2_a_pnt.XYZ());
@@ -720,15 +720,15 @@ namespace IfcGeom {
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                if ( ! valid_tris_b.at(j)) {
+                                if ( ! valid_tris_b[j]) {
                                     continue;
                                 }
 
-                                const std::array<gp_Pnt, 3>& verts = verts_b.at(j);
+                                const std::array<gp_Pnt, 3>& verts = verts_b[j];
                                 const gp_Pnt& v1_b_pnt = verts[0];
                                 const gp_Pnt& v2_b_pnt = verts[1];
                                 const gp_Pnt& v3_b_pnt = verts[2];
-                                const gp_Vec& normal_b = normals_b.at(j);
+                                const gp_Vec& normal_b = normals_b[j];
 
                                 tri_count_++;
 
@@ -838,8 +838,8 @@ namespace IfcGeom {
                     return false;
                 }
 
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
-                const std::unordered_map<int, std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_a = verts_.find(tA)->second;
+                const std::vector<std::array<gp_Pnt, 3>>& verts_b = verts_.find(tB)->second;
 
                 double min_clearance = std::numeric_limits<double>::infinity();
                 std::array<double, 3> clearance_point1;
@@ -850,7 +850,7 @@ namespace IfcGeom {
                     const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        const std::array<gp_Pnt, 3>& verts = verts_a.at(i);
+                        const std::array<gp_Pnt, 3>& verts = verts_a[i];
                         const gp_Pnt& v1_a_pnt = verts[0];
                         const gp_Pnt& v2_a_pnt = verts[1];
                         const gp_Pnt& v3_a_pnt = verts[2];
@@ -863,7 +863,7 @@ namespace IfcGeom {
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                const std::array<gp_Pnt, 3>& verts = verts_b.at(j);
+                                const std::array<gp_Pnt, 3>& verts = verts_b[j];
                                 const gp_Pnt& v1_b_pnt = verts[0];
                                 const gp_Pnt& v2_b_pnt = verts[1];
                                 const gp_Pnt& v3_b_pnt = verts[2];
@@ -989,28 +989,22 @@ namespace IfcGeom {
 
                 BRepExtrema_ShapeList shape_list;
 
-                std::unordered_map<int, bool> is_reversed;
+                std::vector<bool> is_reversed;
 
                 TopExp_Explorer exp_f;
-                int i = 0;
                 for (exp_f.Init(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
                     shape_list.Append(exp_f.Current());
 
                     TopoDS_Face f = TopoDS::Face(exp_f.Current());
-                    is_reversed[i] = f.Orientation() == TopAbs_REVERSED;
-                    i++;
+                    is_reversed.push_back(f.Orientation() == TopAbs_REVERSED);
                 }
 
                 BRepExtrema_TriangleSet triangle_set(shape_list);
                 const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh = triangle_set.BVH();
 
-                std::unordered_map<int, bool> valid_tris;
-                std::unordered_map<int, std::array<gp_Pnt, 3>> verts;
-                std::unordered_map<int, gp_Vec> normals;
-
-                valid_tris.reserve(triangle_set.Size());
-                verts.reserve(triangle_set.Size());
-                normals.reserve(triangle_set.Size());
+                std::vector<bool> valid_tris(triangle_set.Size(), true);
+                std::vector<std::array<gp_Pnt, 3>> verts(triangle_set.Size());
+                std::vector<gp_Vec> normals(triangle_set.Size());
 
                 for (int i=0; i<triangle_set.Size(); ++i) {
                     BVH_Vec3d v1, v2, v3;
@@ -1028,7 +1022,6 @@ namespace IfcGeom {
                     gp_Vec cross_product = dir1.Crossed(dir2);
                     if (cross_product.Magnitude() > Precision::Confusion()) {
                         normals[i] = cross_product.Normalized();
-                        valid_tris[i] = true;
                     } else {
                         valid_tris[i] = false;
                     }
@@ -1311,9 +1304,9 @@ namespace IfcGeom {
             std::map<T, Bnd_OBB> obbs_; 
             std::map<T, double> max_protrusions_; 
             std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
-            std::unordered_map<T, std::unordered_map<int, bool>> valid_tris_;
-            std::unordered_map<T, std::unordered_map<int, std::array<gp_Pnt, 3>>> verts_;
-            std::unordered_map<T, std::unordered_map<int, gp_Vec>> normals_;
+            std::unordered_map<T, std::vector<bool>> valid_tris_;
+            std::unordered_map<T, std::vector<std::array<gp_Pnt, 3>>> verts_;
+            std::unordered_map<T, std::vector<gp_Vec>> normals_;
 			
 			bool enable_face_styles_ = false;
 
