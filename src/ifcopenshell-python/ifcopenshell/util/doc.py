@@ -98,11 +98,14 @@ def get_db(version):
 
                 with open(schema_path, "r") as fi:
                     db[ifc_version][data_type] = json.load(fi)
+
+    version = ifcopenshell.util.schema.get_fallback_schema(version)
     return db.get(version)
 
 
 def get_schema_by_name(version):
     global schema_by_name
+    version = ifcopenshell.util.schema.get_fallback_schema(version)
     if not schema_by_name[version]:
         schema_by_name[version] = ifcopenshell.ifcopenshell_wrapper.schema_by_name(version)
     return schema_by_name[version]
