@@ -28,6 +28,16 @@ import ifcopenshell.util.attribute
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 
+def get_fallback_schema(version):
+    """fallback to the schema version we do have docs and mapping for,
+    needed to support IFC versions like 4X3_RC1, 4X1 etc"""
+    if version.startswith("IFC4X3"):
+        version = "IFC4X3"
+    elif version.startswith("IFC4"):
+        version = "IFC4"
+    return version
+
+
 def is_a(entity, ifc_class):
     ifc_class = ifc_class.upper()
     if entity.name_uc() == ifc_class:
