@@ -18,6 +18,7 @@
 
 import os
 import json
+import ifcopenshell.util.schema
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,8 +52,10 @@ for schema in mapped_schemas:
 
 
 def get_applicable_types(ifc_class, schema="IFC4"):
-    return entity_to_type_map[schema.upper()].get(ifc_class, [])
+    schema = ifcopenshell.util.schema.get_fallback_schema(schema.upper())
+    return entity_to_type_map[schema].get(ifc_class, [])
 
 
 def get_applicable_entities(ifc_type_class, schema="IFC4"):
-    return type_to_entity_map[schema.upper()].get(ifc_type_class, [])
+    schema = ifcopenshell.util.schema.get_fallback_schema(schema.upper())
+    return type_to_entity_map[schema].get(ifc_type_class, [])
