@@ -158,6 +158,9 @@ class AssignClass(bpy.types.Operator, Operator):
             ifc_context = tool.Ifc.get().by_id(ifc_context)
         active_object = context.active_object
         for obj in objects:
+            if obj.mode != "OBJECT":
+                self.report({"ERROR"}, "Object must be in OBJECT mode to assign class")
+                continue
             core.assign_class(
                 tool.Ifc,
                 tool.Collector,
