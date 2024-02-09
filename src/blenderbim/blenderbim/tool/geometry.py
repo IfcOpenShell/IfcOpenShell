@@ -299,6 +299,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def get_active_representation(cls, obj):
+        """< IfcShapeRepresentation or None"""
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 
@@ -441,7 +442,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             return styles
 
         usage_count = [0] * len(obj.material_slots)
-        if not usage_count: # if there are no materials, polygons will still use index 0
+        if not usage_count:  # if there are no materials, polygons will still use index 0
             return []
         for poly in obj.data.polygons:
             usage_count[poly.material_index] += 1
@@ -716,3 +717,161 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.matrix_world.translation += original_min_point - new_max_point
 
         bpy.context.view_layer.update()
+
+    @classmethod
+    def reload_representation(cls, obj):
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+            apply_openings=True,
+        )
+
+    @classmethod
+    def remove_representation_item(cls, representation_item):
+        # NOTE: we assume it's not the last representation item
+        # otherwise we probably would need to remove representation too
+        # NOTE: a lot of shared code with `geometry.remove_representation`
+        ifc_file = tool.Ifc.get()
+        shape_aspects = []
+
+        consider_inverses = []
+        styled_item, colour, texture, layer = None, None, None, None
+        [consider_inverses.append(styled_item := t) for t in representation_item.StyledByItem]
+        [consider_inverses.append(layer := t) for t in representation_item.LayerAssignment]
+        # IfcTessellatedFaceSet
+        [consider_inverses.append(colour := t) for t in getattr(representation_item, "HasColours", [])]
+        [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
+
+        for inverse in ifc_file.get_inverse(representation_item):
+            if inverse.is_a("IfcShapeRepresentation"):
+                if inverse.OfShapeAspect:
+                    shape_aspects.append(inverse.OfShapeAspect[0])
+                else:
+                    representation = inverse
+
+        if styled_item:
+            ifc_file.remove(styled_item)
+        if layer and len(layer.Items) == 1:
+            ifc_file.remove(styled_item)
+        if colour:
+            ifcopenshell.util.element.remove_deep2(ifc_file, colour)
+        if texture:
+            ifcopenshell.util.element.remove_deep2(ifc_file, texture)
+
+        for shape_aspect in shape_aspects:
+            cls.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
+
+        representation.Items = tuple(set(representation.Items) - {representation_item})
+        also_consider = list(consider_inverses)
+        ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
+
+    @classmethod
+    def get_shape_aspects(cls, element):
+        # IfcProduct
+        if hasattr(element, "Representation"):
+            return element.Representation.HasShapeAspects
+
+        # IfcTypeProduct
+        shape_aspects = []
+        for repersentation_map in element.RepresentationMaps:
+            shape_aspects += repersentation_map.HasShapeAspects
+        return shape_aspects
+
+    @classmethod
+    def create_shape_aspect(cls, product_shape, base_representation, items, previous_shape_aspect=None):
+        """
+        > `product_shape` - IfcProductDefinitionShape or IfcRepresentationMap\n
+        > `base_representation` - base representation to get context attributes from\n
+        > `items` - representation items\n
+        > `previous_shape_aspect` - (optional) previous shape aspect, if provided\n
+        items will be removed the previous shape aspect first\n
+
+        < IfcShapeAspect
+        """
+
+        if previous_shape_aspect is not None:
+            cls.remove_representation_items_from_shape_aspect(items, previous_shape_aspect)
+
+        shape_aspect = tool.Ifc.get().createIfcShapeAspect(
+            PartOfProductDefinitionShape=product_shape, ShapeRepresentations=()
+        )
+        # keep IfcShapeAspect and IfcShapeRepresentation valid
+        rep = tool.Geometry.add_shape_aspect_representation(shape_aspect, base_representation)
+        rep.Items = items
+
+        return shape_aspect
+
+    @classmethod
+    def remove_representation_items_from_shape_aspect(cls, representation_items, shape_aspect):
+        ifc_file = tool.Ifc.get()
+        # as shape aspect might have multiple representations
+        # it's easier to find it from the item
+        for inverse in ifc_file.get_inverse(representation_items[0]):
+            if inverse.is_a("IfcShapeRepresentation") and shape_aspect in inverse.OfShapeAspect:
+                representation = inverse
+                break
+
+        # removing last item would make representation invalid
+        if len(representation.Items) == len(representation_items):
+            # removing last representation would make shape aspect invalid.
+            # remove shape aspect first otherwise remove_representation won't remove it because of the inverse
+            if len(shape_aspect.ShapeRepresentations) == 1:
+                ifc_file.remove(shape_aspect)
+            tool.Ifc.run("geometry.remove_representation", representation=representation)
+        else:
+            items = set(representation.Items) - set(representation_items)
+            representation.Items = tuple(items)
+
+    @classmethod
+    def add_representation_item_to_shape_aspect(cls, representation_items, shape_aspect):
+        """NOTE: we assume that all items belonged to the same representation and to the same shape aspect"""
+        ifc_file = tool.Ifc.get()
+        previous_shape_aspect = None
+        for inverse in ifc_file.get_inverse(representation_items[0]):
+            if inverse.is_a("IfcShapeRepresentation"):
+                if inverse.OfShapeAspect:
+                    # item is already added to the shape aspect
+                    if inverse.OfShapeAspect[0] == shape_aspect:
+                        return
+                    previous_shape_aspect = inverse.OfShapeAspect[0]
+                else:
+                    base_representation = inverse
+
+        # remove item from previous shape aspect
+        if previous_shape_aspect:
+            cls.remove_representation_items_from_shape_aspect(representation_items, previous_shape_aspect)
+        shape_aspect_representation = cls.get_shape_aspect_representation(
+            shape_aspect, base_representation, create_new=True
+        )
+        shape_aspect_representation.Items = shape_aspect_representation.Items + tuple(representation_items)
+
+    @classmethod
+    def get_shape_aspect_representation(cls, shape_aspect, base_representation, create_new=False):
+        for representation in shape_aspect.ShapeRepresentations:
+            if (
+                representation.ContextOfItems == base_representation.ContextOfItems
+                and representation.RepresentationIdentifier == base_representation.RepresentationIdentifier
+                and representation.RepresentationType == base_representation.RepresentationType
+            ):
+                return representation
+
+        if not create_new:
+            return None
+
+        return cls.add_shape_aspect_representation(shape_aspect, base_representation)
+
+    @classmethod
+    def add_shape_aspect_representation(cls, shape_aspect, base_representation):
+        shape_aspect_representation = tool.Ifc.get().createIfcShapeRepresentation(
+            ContextOfItems=base_representation.ContextOfItems,
+            RepresentationIdentifier=base_representation.RepresentationIdentifier,
+            RepresentationType=base_representation.RepresentationType,
+        )
+        shape_aspect.ShapeRepresentations = shape_aspect.ShapeRepresentations + (shape_aspect_representation,)
+        return shape_aspect_representation

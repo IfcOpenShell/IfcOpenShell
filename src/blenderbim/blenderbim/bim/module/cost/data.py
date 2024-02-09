@@ -256,7 +256,7 @@ class CostSchedulesData:
         for cost_value in cost_item.CostValues or []:
             label = "{0:.2f}".format(ifcopenshell.util.cost.calculate_applied_value(cost_item, cost_value))
             label += " = {}".format(ifcopenshell.util.cost.serialise_cost_value(cost_value))
-            results.append({"id": cost_value.id(), "label": label})
+            results.append({"id": cost_value.id(), "label": label, "name": cost_value.Name})
         return results
 
     @classmethod

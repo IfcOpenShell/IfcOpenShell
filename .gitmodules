@@ -11,3 +11,6 @@
 [submodule "src/ifcopenshell-python/test/Sample-BIM-Files"]
 	path = src/ifcopenshell-python/test/Sample-BIM-Files
 	url = https://github.com/IfcOpenShell/ids-test-files
+[submodule "docs/cpp-api/assets/doxygen-awesome-css"]
+	path = docs/cpp-api/assets/doxygen-awesome-css
+	url = https://github.com/jothepro/doxygen-awesome-css.git

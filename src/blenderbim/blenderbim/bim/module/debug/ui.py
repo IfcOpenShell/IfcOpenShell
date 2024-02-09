@@ -37,13 +37,15 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
-        row.operator("bim.reload_selected_ifc_file", icon="FILE_REFRESH", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
         row.prop(props, "express_file", text="")
         row.operator("bim.parse_express", icon="IMPORT", text="")
         row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
 
         row = layout.row()
         row.operator("bim.print_ifc_file")
@@ -86,6 +88,13 @@ class BIM_PT_debug(Panel):
         row = layout.split(factor=0.5, align=True)
         row.prop(props, "display_type", text="")
         row.operator("bim.override_display_type").display = context.scene.BIMDebugProperties.display_type
+
+        layout.operator("bim.purge_unused_representations")
+
+        row = layout.row(align=True)
+        row.prop(context.scene.BIMDebugProperties, "ifc_class_purge", text="")
+        row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
+        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")
 
         if context.active_object and context.active_object.data:
             mprops = context.active_object.data.BIMMeshProperties

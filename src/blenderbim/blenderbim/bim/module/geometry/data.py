@@ -38,6 +38,7 @@ class RepresentationsData:
     def load(cls):
         cls.data = {"representations": cls.representations()}
         cls.data["contexts"] = cls.contexts()
+        cls.data["shape_aspects"] = cls.shape_aspects()
         cls.is_loaded = True
 
     @classmethod
@@ -91,6 +92,24 @@ class RepresentationsData:
                 )
             )
         return results
+
+    @classmethod
+    def shape_aspects(cls):
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+        active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
+        base_representation = tool.Ifc.get().by_id(active_representation_id)
+
+        # shape aspects matching context of the active representation
+        matching_shape_aspects = []
+        for shape_aspect in tool.Geometry.get_shape_aspects(element):
+            matching_representation = tool.Geometry.get_shape_aspect_representation(shape_aspect, base_representation)
+            if matching_representation:
+                matching_shape_aspects.append(shape_aspect)
+
+        # blender enum items
+        new_shape_aspect = [("NEW", "Create A New Shape Aspect", "")]
+        return new_shape_aspect + [(str(s.id()), s.Name or "Unnamed", "") for s in matching_shape_aspects]
 
 
 class RepresentationItemsData:

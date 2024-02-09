@@ -84,6 +84,7 @@ class BIM_UL_layers(UIList):
                     op = row.operator("bim.assign_presentation_layer", text="", icon="KEYFRAME", emboss=False)
                     op.layer = item.ifc_definition_id
 
+            # TODO: replace placeholder UI for hiding presentation layers
             row.operator("bim.disable_editing_layer", text="", icon="HIDE_OFF", emboss=False)
             row.operator("bim.disable_editing_layer", text="", icon="FREEZE", emboss=False)
 

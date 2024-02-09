@@ -1,18 +1,17 @@
 import os
 import re
-
-# allows git import even if git executable isn't found
-os.environ["GIT_PYTHON_REFRESH"] = "quiet"
-try:
-    import git
-except:
-    print("Warning: GitPython not available.")
 import bpy
 import logging
 from blenderbim.bim import import_ifc
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
 
+# allows git import even if git executable isn't found
+os.environ["GIT_PYTHON_REFRESH"] = "quiet"
+try:
+    import git
+except ImportError:
+    print("Warning: GitPython not available.")
 
 class IfcGit:
     @classmethod
@@ -54,17 +53,19 @@ class IfcGit:
         else:
             return None
 
-        if IfcGitRepo.repo != None and IfcGitRepo.repo.working_dir == path_dir:
+        if IfcGitRepo.repo is not None and IfcGitRepo.repo.working_dir == path_dir:
             return IfcGitRepo.repo
 
         try:
             repo = git.Repo(path_dir)
-        except:
+        except git.exc.InvalidGitRepositoryError:
             parentdir_path = os.path.abspath(os.path.join(path_dir, os.pardir))
             if parentdir_path == path_dir:
                 # root folder
                 return None
             return cls.repo_from_path(parentdir_path)
+        except git.exc.NoSuchPathError:
+            return None
         if repo:
             IfcGitRepo.repo = repo
         return repo
@@ -132,6 +133,7 @@ class IfcGit:
 
     @classmethod
     def push(cls, repo, remote_name, branch_name):
+        cls.config_push(repo)
         remote = repo.remotes[remote_name]
         try:
             remote.push(tags=True, refspec=branch_name).raise_if_error()
@@ -180,9 +182,9 @@ class IfcGit:
 
         for commit in commits:
 
-            if props.ifcgit_filter == "tagged" and not commit.hexsha in lookup:
+            if props.ifcgit_filter == "tagged" and commit.hexsha not in lookup:
                 continue
-            elif props.ifcgit_filter == "relevant" and not commit in commits_relevant:
+            elif props.ifcgit_filter == "relevant" and commit not in commits_relevant:
                 continue
 
             props.ifcgit_commits.add()
@@ -413,15 +415,25 @@ class IfcGit:
     @classmethod
     def config_ifcmerge(cls):
         config_reader = IfcGitRepo.repo.config_reader()
-        config_writer = IfcGitRepo.repo.config_writer()
         section = 'mergetool "ifcmerge"'
         if not config_reader.has_section(section):
-            config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
-            config_writer.set_value(section, "trustExitCode", True)
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", "ifcmerge $BASE $LOCAL $REMOTE $MERGED")
+                config_writer.set_value(section, "trustExitCode", True)
         section = 'mergetool "ifcmerge-forward"'
         if not config_reader.has_section(section):
-            config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
-            config_writer.set_value(section, "trustExitCode", True)
+            with IfcGitRepo.repo.config_writer() as config_writer:
+                config_writer.set_value(section, "cmd", "ifcmerge $BASE $REMOTE $LOCAL $MERGED")
+                config_writer.set_value(section, "trustExitCode", True)
+
+    @classmethod
+    def config_push(cls, repo):
+        """Set push.autoSetupRemote"""
+        config_reader = repo.config_reader()
+        if not config_reader.has_section("push"):
+            with repo.config_writer() as config_writer:
+                config_writer.set_value("push", "default", "current")
+                config_writer.set_value("push", "autoSetupRemote", True)
 
     @classmethod
     def config_info_attributes(cls, repo):
@@ -475,8 +487,7 @@ class IfcGit:
                                 cls.dos2unix(path_ifc)
                             repo.index.add(path_ifc)
                             repo.git.commit("--no-edit")
-                    except:
-
+                    except git.exc.GitError:
                         operator.report({"ERROR"}, "Unknown IFC Merge failure")
                         return False
 
@@ -496,7 +507,7 @@ class IfcGit:
         query = "/^#" + str(step_id) + "[ =]/,/;/:" + relpath_ifc
         try:
             logtext = repo.git.log("-L", query, "-s")
-        except:
+        except git.exc.CommandError:
             logtext = "No Git history found :("
         return logtext
 

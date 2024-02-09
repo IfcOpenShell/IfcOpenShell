@@ -188,6 +188,7 @@ class IfcImporter:
         self.diff = None
         self.file = None
         self.context_settings = []
+        self.gross_context_settings = []
         self.contexts = []
         self.project = None
         self.has_existing_project = False
@@ -375,6 +376,15 @@ class IfcImporter:
             settings.set_context_ids([context.id()])
             self.context_settings.append(settings)
 
+            settings = ifcopenshell.geom.settings()
+            settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
+            settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
+            settings.set(settings.STRICT_TOLERANCE, True)
+            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            settings.set_context_ids([context.id()])
+            self.gross_context_settings.append(settings)
+
     def process_element_filter(self):
         offset = self.ifc_import_settings.element_offset
         offset_limit = offset + self.ifc_import_settings.element_limit
@@ -417,6 +427,17 @@ class IfcImporter:
                 self.spatial_elements = set(self.file.by_type("IfcSpatialStructureElement"))
             else:
                 self.spatial_elements = set(self.file.by_type("IfcSpatialElement"))
+
+        # Detect excessive voids
+        self.gross_elements = set(
+            filter(lambda e: len(getattr(e, "HasOpenings", [])) > self.ifc_import_settings.void_limit, self.elements)
+        )
+        self.elements = self.elements.difference(self.gross_elements)
+
+        if self.gross_elements:
+            print("Warning! Excessive voids were found and skipped for the following elements:")
+            for element in self.gross_elements:
+                print(element)
 
     def get_spatial_elements_filtered_by_elements(self, elements):
         leaf_spatial_elements = set([ifcopenshell.util.element.get_container(e) for e in elements])
@@ -816,6 +837,10 @@ class IfcImporter:
 
     def create_elements(self):
         self.create_generic_elements(self.elements)
+        tmp = self.context_settings
+        self.context_settings = self.gross_context_settings
+        self.create_generic_elements(self.gross_elements)
+        self.context_settings = tmp
 
     def create_generic_shape(self, element):
         for settings in self.context_settings:
@@ -1343,7 +1368,7 @@ class IfcImporter:
             element_type = ifcopenshell.util.element.get_type(element)
             if not element_type:
                 continue
-            merge_key = str(element_type.id()) + "-" + element_type.Name or "Unnamed"
+            merge_key = str(element_type.id()) + "-" + (element_type.Name or "Unnamed")
             merge_set.setdefault(merge_key, []).append(obj)
             id_set.setdefault(merge_key, []).append(ifc_definition_id)
         self.merge_objects(merge_set, id_set)
@@ -1556,10 +1581,10 @@ class IfcImporter:
                     rel_aggregates.add(element.IsDecomposedBy[0])
                 elif element.Decomposes:
                     rel_aggregates.add(element.Decomposes[0])
-                elif element.IsNestedBy:
+                elif getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
                     if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
                         rel_aggregates.add(element.IsNestedBy[0])
-                elif element.Nests:
+                elif getattr(element, "Nests", []):
                     rel_aggregates.add(element.Nests[0])
         else:
             rel_aggregates = [
@@ -1675,7 +1700,7 @@ class IfcImporter:
         elif getattr(element, "Decomposes", None):
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             return self.collections[aggregate.GlobalId].objects.link(obj)
-        elif getattr(element, "Nests", None):
+        elif getattr(element, "Nests", None) and not element.is_a("IfcPort"):
             nest = ifcopenshell.util.element.get_nest(element)
             return self.collections[nest.GlobalId].objects.link(obj)
         else:
@@ -1955,6 +1980,7 @@ class IfcImportSettings:
         self.is_coordinating = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
+        self.void_limit = 30
         self.distance_limit = 1000
         self.false_origin = None
         self.element_offset = 0
@@ -1986,6 +2012,7 @@ class IfcImportSettings:
         settings.is_coordinating = props.is_coordinating
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
+        settings.void_limit = props.void_limit
         settings.distance_limit = props.distance_limit
         settings.false_origin = [float(o) for o in props.false_origin.split(",")] if props.false_origin else None
         if settings.false_origin == [0, 0, 0]:

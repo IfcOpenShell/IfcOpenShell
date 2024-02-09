@@ -32,6 +32,10 @@ from bpy.props import (
     CollectionProperty,
 )
 
+import gettext
+
+_ = gettext.gettext
+
 
 def get_style_types(self, context):
     if not StylesData.is_loaded:
@@ -88,9 +92,9 @@ def update_shader_graph(self, context):
 
 
 UV_MODES = [
-    ("UV", "UV", "Actual UV data presented on the geometry"),
-    ("Generated", "Generated", "Automatically-generated UV from the vertex positions of the mesh"),
-    ("Camera", "Camera", "UV from position coordinate in camera space"),
+    ("UV", "UV", _("Actual UV data presented on the geometry")),
+    ("Generated", "Generated", _("Automatically-generated UV from the vertex positions of the mesh")),
+    ("Camera", "Camera", _("UV from position coordinate in camera space")),
 ]
 
 
@@ -252,7 +256,12 @@ def update_shading_style(self, context):
     style_elements = tool.Style.get_style_elements(blender_material)
     if self.active_style_type == "External":
         if tool.Style.has_blender_external_style(style_elements):
-            bpy.ops.bim.activate_external_style(material_name=blender_material.name)
+            try:
+                bpy.ops.bim.activate_external_style(material_name=blender_material.name)
+            except RuntimeError as error:
+                if str(error).startswith("Error: Error loading external style - "):
+                    return
+                raise error
 
     elif self.active_style_type == "Shading":
         style_elements = tool.Style.get_style_elements(blender_material)

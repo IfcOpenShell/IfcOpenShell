@@ -64,14 +64,18 @@ class Search(blenderbim.core.tool.Search):
                         continue
                     pset = cls.wrap_value(ifc_filter, ifc_filter.pset)
                     name = cls.wrap_value(ifc_filter, ifc_filter.name)
-                    comparison, value = cls.get_comparison_and_value(ifc_filter)
-                    filter_group_query.append(f"{pset}.{name}{comparison}{value}")
+                    comparison = ifc_filter.comparison
+                    value = cls.wrap_value(ifc_filter, ifc_filter.value)
+                    filter_group_query.append(f"{pset}.{name} {comparison} {value}")
                 elif ifc_filter.type == "classification":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"classification{comparison}{value}")
                 elif ifc_filter.type == "location":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"location{comparison}{value}")
+                elif ifc_filter.type == "group":
+                    comparison, value = cls.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"group{comparison}{value}")
                 elif ifc_filter.type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
@@ -138,6 +142,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
                 new2.name = arg["name"]
             if "pset" in arg:
                 new2.pset = arg["pset"]
+            if "comparison" in arg:
+                new2.comparison = arg["comparison"]
 
     def facet(self, args):
         return args[0]
@@ -163,7 +169,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def property(self, args):
         pset, prop, comparison, value = args
-        return {"type": "property", "pset": pset, "name": prop, "value": f"{comparison}{value}"}
+        return {"type": "property", "pset": pset, "name": prop, "comparison": comparison, "value": f"{value}"}
 
     def classification(self, args):
         comparison, value = args
@@ -173,12 +179,33 @@ class ImportFilterQueryTransformer(lark.Transformer):
         comparison, value = args
         return {"type": "location", "value": f"{comparison}{value}"}
 
+    def group(self, args):
+        comparison, value = args
+        return {"type": "group", "value": f"{comparison}{value}"}
+
     def query(self, args):
         keys, comparison, value = args
         return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
 
     def comparison(self, args):
-        return "" if args[0].data == "equals" else "!="
+        if args[0].data == "not":
+            comparison = args[1].data
+            is_not = "!"
+        else:
+            comparison = args[0].data
+            is_not = ""
+
+        return (
+            is_not
+            + {
+                "equals": "=",
+                "morethanequalto": ">=",
+                "lessthanequalto": "<=",
+                "morethan": ">",
+                "lessthan": "<",
+                "contains": "*=",
+            }[comparison]
+        )
 
     def keys(self, args):
         return self.value(args)

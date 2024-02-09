@@ -683,7 +683,7 @@ class RevertProject(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.revert_project"
     bl_label = "Revert IFC Project"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload currently opened IFC project discarding all unsaved changes"
+    bl_description = "Revert to a fresh session discarding all unsaved changes"
 
     @classmethod
     def poll(cls, context):
@@ -1105,6 +1105,7 @@ class ExportIFC(bpy.types.Operator):
         save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
+        bpy.context.scene.BIMProperties.is_dirty = False
         blenderbim.bim.handler.refresh_ui_data()
         self.report(
             {"INFO"},

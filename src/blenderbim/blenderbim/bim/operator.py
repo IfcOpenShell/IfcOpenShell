@@ -55,7 +55,8 @@ class SetTab(bpy.types.Operator):
     def execute(self, context):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        tool.Blender.setup_tabs()
+        aprops = tool.Blender.get_area_props(context)
         aprops.tab = self.tab
         return {"FINISHED"}
 
@@ -69,7 +70,8 @@ class SwitchTab(bpy.types.Operator):
     def execute(self, context):
         if context.area.spaces.active.search_filter:
             return {"FINISHED"}
-        aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        tool.Blender.setup_tabs()
+        aprops = tool.Blender.get_area_props(context)
         aprops.tab = aprops.alt_tab
         return {"FINISHED"}
 
@@ -138,23 +140,6 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
-
-
-class ReloadSelectedIfcFile(bpy.types.Operator):
-    bl_idname = "bim.reload_selected_ifc_file"
-    bl_label = "Reload selected IFC File"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Reload currently selected IFC file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        filepath = context.scene.BIMProperties.ifc_file
-        valid_file = os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
-        if not valid_file:
-            self.report({"ERROR"}, f"Couldn't find .ifc file by the path '{filepath}'")
-            return {"CANCELLED"}
-        context.scene.BIMProperties.ifc_file = context.scene.BIMProperties.ifc_file
-        return {"FINISHED"}
 
 
 class SelectDataDir(bpy.types.Operator):

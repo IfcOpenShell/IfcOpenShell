@@ -65,16 +65,20 @@ class IFCFileSelector:
                     split = box.split()
                     split.label(text=key.title().replace("_", " "))
                     split.label(text=str(value))
-                    if (
-                        key.lower() == "schema_name"
-                        and str(value).lower() == "ifc2x3"
-                        and filepath[-4:].lower() == ".ifc"
-                    ):
-                        row = box.row()
-                        op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
-                        op.infile = filepath
-                        op.outfile = filepath[0:-4] + "-IFC4.ifc"
-                        op.schema = "IFC4"
+                    if key.lower() == "schema_name" and filepath[-4:].lower() == ".ifc":
+                        schema_lower = str(value).lower()
+                        if schema_lower == "ifc2x3":
+                            row = box.row()
+                            op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4")
+                            op.infile = filepath
+                            op.outfile = filepath[0:-4] + "-IFC4.ifc"
+                            op.schema = "IFC4"
+                        elif schema_lower == "ifc4":
+                            row = box.row()
+                            op = row.operator("bim.run_migrate_patch", text="Upgrade to IFC4X3")
+                            op.infile = filepath
+                            op.outfile = filepath[0:-4] + "-IFC4X3.ifc"
+                            op.schema = "IFC4X3"
 
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")
@@ -138,7 +142,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
     should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
-    should_setup_toolbar: BoolProperty(name="Always Show Toolbar In 3D Viewport", default=True, description="If disabled, the toolbar will only load when an IFC model is active")
+    should_setup_toolbar: BoolProperty(
+        name="Always Show Toolbar In 3D Viewport",
+        default=True,
+        description="If disabled, the toolbar will only load when an IFC model is active",
+    )
     should_play_chaching_sound: BoolProperty(
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
@@ -288,7 +296,10 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         try:
             is_ifc_project = bool(tool.Ifc.get())
-            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+            aprops = tool.Blender.get_area_props(context)
+            if not aprops:
+                # Fallback in case areas aren't setup yet.
+                aprops = context.screen.BIMTabProperties
 
             row = self.layout.row()
             row.operator(
@@ -330,7 +341,6 @@ class BIM_PT_tabs(Panel):
                 else:
                     row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
-            aprops = context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
         except:

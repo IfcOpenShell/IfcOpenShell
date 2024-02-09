@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import blenderbim.tool as tool
+import math
 from blenderbim.bim.prop import ObjProperty
 from blenderbim.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
@@ -132,6 +133,15 @@ class BIMModelProperties(PropertyGroup):
     x: bpy.props.FloatProperty(name="X", default=0.5, subtype="DISTANCE", description="Size by X axis for the opening")
     y: bpy.props.FloatProperty(name="Y", default=0.5, subtype="DISTANCE", description="Size by Y axis for the opening")
     z: bpy.props.FloatProperty(name="Z", default=0.5, subtype="DISTANCE", description="Size by Z axis for the opening")
+    rl_mode: bpy.props.EnumProperty(
+        items=(
+            ("BOTTOM", "Bottom", "Snaps the element's lowest geometry to the container's Z value."),
+            ("CONTAINER", "Container", "Positions the element's placement origin at the container's Z value."),
+            ("CURSOR", "Cursor", "Places the object placement at the 3D cursor's Z value."),
+        ),
+        name="RL Mode",
+        default="BOTTOM",
+    )
     # Used for things like walls, doors, flooring, skirting, etc
     rl1: bpy.props.FloatProperty(name="RL", default=1, subtype="DISTANCE", description="Z offset for walls")
     # Used for things like windows, other hosted furniture, and MEP
@@ -683,6 +693,7 @@ class BIMRoofProperties(PropertyGroup):
         "roof_type",
         "generation_method",
         "angle",
+        "percentage",
         "rafter_edge_angle",
     )
     roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
@@ -701,7 +712,8 @@ class BIMRoofProperties(PropertyGroup):
     height: bpy.props.FloatProperty(
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
-    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE")
+    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage())
+    percentage: bpy.props.FloatProperty(name="Slope %", default=17.63269754733197, subtype="PERCENTAGE", update=lambda self, context: self.update_angle())
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
 
@@ -718,6 +730,7 @@ class BIMRoofProperties(PropertyGroup):
             kwargs["height"] = self.height
         else:
             kwargs["angle"] = self.angle
+            kwargs["percentage"] = self.percentage
 
         if not convert_to_project_units:
             return kwargs
@@ -727,3 +740,9 @@ class BIMRoofProperties(PropertyGroup):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])
+
+    def update_angle(self):
+        self.angle = math.atan(self.percentage / 100)
+
+    def update_percentage(self):
+        self.percentage = math.tan(self.angle)*100

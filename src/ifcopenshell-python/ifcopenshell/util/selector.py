@@ -33,7 +33,7 @@ filter_elements_grammar = lark.Lark(
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
-    facet: instance | entity | attribute | type | material | query | classification | location | property
+    facet: instance | entity | attribute | type | material | query | classification | location | property | group
 
     instance: not? globalid
     globalid: /[0-3][a-zA-Z0-9_$]{21}/
@@ -44,6 +44,7 @@ filter_elements_grammar = lark.Lark(
     property: pset "." prop comparison value
     classification: "classification" comparison value
     location: "location" comparison value
+    group: "group" comparison value
     query: "query:" keys comparison value
 
     pset: quoted_string | regex_string | unquoted_string
@@ -54,15 +55,20 @@ filter_elements_grammar = lark.Lark(
     ifc_class: /Ifc\\w+/
 
     value: special | quoted_string | regex_string | unquoted_string
-    unquoted_string: /[^,.=\\s]+/
+    unquoted_string: /[^,.=><*!\\s]+/
     regex_string: "/" /[^\\/]+/ "/"
     quoted_string: ESCAPED_STRING
 
     special: null | true | false
 
-    comparison: not? equals
+    comparison: not? equals | morethanequalto | lessthanequalto | morethan | lessthan | not? contains
     not: "!"
     equals: "="
+    morethanequalto: ">="
+    lessthanequalto: "<="
+    morethan: ">"
+    lessthan: "<"
+    contains: "*="
     null: "NULL"
     true: "TRUE"
     false: "FALSE"
@@ -194,7 +200,7 @@ class FormatTransformer(lark.Transformer):
             return str(args[0])[int(args[1]) :]
 
     def round(self, args):
-        value = Decimal(args[0] or 0.0)
+        value = Decimal(0.0 if args[0] == "None" else args[0] or 0.0)
         nearest = Decimal(args[1])
         result = round(value / nearest) * nearest
         if nearest % 1 == 0:
@@ -512,6 +518,19 @@ class FacetTransformer(lark.Transformer):
 
         self.elements = set(filter(filter_function, self.elements))
 
+    def group(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            result = False
+            for rel in getattr(element, "HasAssignments", []):
+                if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
+                    if self.compare(rel.RelatingGroup.Name, comparison, value):
+                        result = True
+            return result if comparison == "=" else not result
+
+        self.elements = set(filter(filter_function, self.elements))
+
     def query(self, args):
         keys, comparison, value = args
 
@@ -539,7 +558,24 @@ class FacetTransformer(lark.Transformer):
         return tree
 
     def comparison(self, args):
-        return "=" if args[0].data == "equals" else "!="
+        if args[0].data == "not":
+            comparison = args[1].data
+            is_not = "!"
+        else:
+            comparison = args[0].data
+            is_not = ""
+
+        return (
+            is_not
+            + {
+                "equals": "=",
+                "morethanequalto": ">=",
+                "lessthanequalto": "<=",
+                "morethan": ">",
+                "lessthan": "<",
+                "contains": "*=",
+            }[comparison]
+        )
 
     def keys(self, args):
         return self.value(args)
@@ -573,12 +609,35 @@ class FacetTransformer(lark.Transformer):
                 value = int(value)
             elif isinstance(element_value, float):
                 value = float(value)
-            result = element_value == value
+
+            if isinstance(element_value, (int, float)):
+                operator = comparison.lstrip("!")
+                if operator == ">=":
+                    result = element_value >= value
+                elif operator == "<=":
+                    result = element_value <= value
+                elif operator == ">":
+                    result = element_value > value
+                elif operator == "<":
+                    result = element_value < value
+                else:
+                    result = element_value == value  # Tolerance?
+            elif isinstance(element_value, str):
+                operator = comparison.lstrip("!")
+                if operator == "*=":
+                    result = value in element_value
+                else:
+                    result = element_value == value
+            else:
+                result = element_value == value
         elif isinstance(value, re.Pattern):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
             result = element_value is value
-        return result if comparison == "=" else not result
+
+        if comparison.startswith("!"):
+            return not result
+        return result
 
 
 class Selector:

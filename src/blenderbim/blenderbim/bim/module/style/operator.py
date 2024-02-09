@@ -353,6 +353,9 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
         allowed_prop_groups = ("grease_pencil", "lineart", "cycles")
 
         def set_prop(prop_name):
+            # temporary workaround for Blender bug https://projects.blender.org/blender/blender/issues/116325
+            if prop_name == "paint_active_slot":
+                return
             setattr(target, prop_name, getattr(source, prop_name))
 
         def set_prop_group(prop_group):

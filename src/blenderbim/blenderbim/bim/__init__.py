@@ -24,6 +24,10 @@ import blenderbim
 import importlib
 from . import handler, ui, prop, operator, helper
 
+try:
+    from blenderbim.translations import translations_dict
+except ImportError:
+    translations_dict = {}
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 modules = {
@@ -68,7 +72,6 @@ modules = {
     "document": None,
     "pset_template": None,
     "clash": None,
-    "lca": None,
     "csv": None,
     "tester": None,
     "bimtester": None,
@@ -93,28 +96,28 @@ for name in modules.keys():
 classes = [
     operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
+    operator.BIM_OT_open_webbrowser,
     operator.BIM_OT_remove_section_plane,
+    operator.BIM_OT_show_description,
+    operator.EditBlenderCollection,
+    operator.FileAssociate,
+    operator.FileUnassociate,
     operator.OpenUpstream,
     operator.OpenUri,
-    operator.SwitchTab,
-    operator.SetTab,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.SelectDataDir,
     operator.SelectIfcFile,
-    operator.ReloadSelectedIfcFile,
     operator.SelectSchemaDir,
-    operator.FileAssociate,
-    operator.FileUnassociate,
     operator.SelectURIAttribute,
-    operator.EditBlenderCollection,
-    operator.BIM_OT_open_webbrowser,
-    operator.BIM_OT_show_description,
+    operator.SetTab,
+    operator.SwitchTab,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
     prop.Attribute,
     prop.BIMAreaProperties,
+    prop.BIMTabProperties,
     prop.BIMProperties,
     prop.IfcParameter,
     prop.PsetQto,
@@ -206,6 +209,7 @@ def register():
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
+    bpy.types.Screen.BIMTabProperties = bpy.props.PointerProperty(type=prop.BIMTabProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
     bpy.types.Material.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
@@ -249,6 +253,8 @@ def register():
     except:
         pass
 
+    bpy.app.translations.register("blenderbim", translations_dict)
+
 
 def unregister():
     global icons
@@ -291,3 +297,5 @@ def unregister():
         bpy.utils.unregister_class(override_panel)
         bpy.utils.register_class(original_panel)
         del overridden_scene_panels[panel]
+
+    bpy.app.translations.unregister("blenderbim")

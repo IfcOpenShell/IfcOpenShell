@@ -557,6 +557,45 @@ bar.
 For more information, consult the :doc:`shape builder documentation
 <autoapi/ifcopenshell/util/shape_builder/index>`.
 
+OpenCASCADE representations
+---------------------------
+
+If you are familiar with OpenCASCADE's Python bindings, you may also use
+OpenCASCADE directly to create geometry. Since both OpenCASCADE and IFC are
+inspired by STEP, the majority of OpenCASCADE shapes will be able to be
+converted into IFC. For example:
+
+.. code-block:: python
+
+    import ifcopenshell
+    import ifcopenshell.geom
+    from OCC.Core.gp import gp_Pnt
+    from OCC.Core.BRepPrimAPI import BRepPrimAPI_MakeBox
+    from OCC.Core.BRepAlgoAPI import BRepAlgoAPI_Cut
+
+    outer   = BRepPrimAPI_MakeBox(gp_Pnt(-5000., -180., -2000.), gp_Pnt(5000., 5180., 3000.)).Shape()
+    inner   = BRepPrimAPI_MakeBox(gp_Pnt(-4640.,  180.,     0.), gp_Pnt(4640., 4820., 3000.)).Shape()
+    window1 = BRepPrimAPI_MakeBox(gp_Pnt(-5000., -180.,   400.), gp_Pnt( 500., 1180., 2000.)).Shape()
+    window2 = BRepPrimAPI_MakeBox(gp_Pnt( 2070., -180.,   400.), gp_Pnt(3930.,  180., 2000.)).Shape()
+    building_shell = BRepAlgoAPI_Cut(
+            BRepAlgoAPI_Cut(
+                BRepAlgoAPI_Cut(outer, inner).Shape(),
+                window1
+                ).Shape(),
+            window2
+        ).Shape()
+
+    model = ifcopenshell.file(schema="IFC2X3")
+    product_definition = ifcopenshell.geom.serialise("IFC2X3", building_shell, False)
+    product_definition = model.add(product_definition)
+
+.. warning::
+
+    The schema version is significant. IFC2X3 is very limited with regard to
+    curved surfaces, so generally non-planar surfaces will fail to serialise in
+    IFC2X3. Newer versions such as IFC4 can support more serialisations. If a
+    serialisation fails, ``ifcopenshell.geom.serialise`` will return ``None``.
+
 Manual representations
 ----------------------
 

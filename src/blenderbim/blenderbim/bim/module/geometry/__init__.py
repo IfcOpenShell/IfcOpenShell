@@ -49,7 +49,17 @@ classes = (
     operator.SwitchRepresentation,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    operator.RemoveRepresentationItem,
+    operator.EnableEditingRepresentationItemStyle,
+    operator.EditRepresentationItemStyle,
+    operator.DisableEditingRepresentationItemStyle,
+    operator.UnassignRepresentationItemStyle,
+    operator.EnableEditingRepresentationItemShapeAspect,
+    operator.EditRepresentationItemShapeAspect,
+    operator.DisableEditingRepresentationItemShapeAspect,
+    operator.RemoveRepresentationItemFromShapeAspect,
     prop.RepresentationItem,
+    prop.ShapeAspect,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
     ui.BIM_PT_placement,
@@ -83,6 +93,7 @@ def register():
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
     bpy.types.VIEW3D_MT_edit_mesh.append(ui.edit_mesh_menu)
+    bpy.types.VIEW3D_HT_header.append(ui.mode_menu)
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
@@ -92,7 +103,9 @@ def register():
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_object_duplicate_move_linked_macro", "D", "PRESS", alt=True)
         addon_keymaps.append((km, kmi))
-        kmi = km.keymap_items.new("bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True)
+        kmi = km.keymap_items.new(
+            "bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
+        )
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
@@ -129,6 +142,7 @@ def unregister():
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_edit_mesh.remove(ui.edit_mesh_menu)
+    bpy.types.VIEW3D_HT_header.remove(ui.mode_menu)
     del bpy.types.Scene.BIMGeometryProperties
     del bpy.types.Object.BIMGeometryProperties
     wm = bpy.context.window_manager

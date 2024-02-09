@@ -43,25 +43,40 @@ class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
 
     @classmethod
+    def get_area_props(cls, context):
+        try:
+            if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
+                screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
+                # The original area object has its type changed to "EMPTY" apparently
+                index = [a.type for a in screen.areas].index("EMPTY")
+                return screen.BIMAreaProperties[index]
+            return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
+        except:
+            return
+
+    @classmethod
     def set_active_object(cls, obj):
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
     @classmethod
+    def setup_tabs(cls):
+        # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
+        for screen in bpy.data.screens:
+            if len(screen.BIMAreaProperties) == 20:
+                continue
+            screen.BIMAreaProperties.clear()
+            for i in range(20):  # 20 is an arbitrary value of split areas
+                screen.BIMAreaProperties.add()
+
+    @classmethod
     def is_tab(cls, context, tab):
-        if not len(context.screen.BIMAreaProperties):
-            return None
+        aprops = cls.get_area_props(context)
+        if not aprops:
+            return context.screen.BIMTabProperties.tab == tab
         if context.area.spaces.active.search_filter:
             return True
-        screen_areas = context.screen.areas[:]
-        current_area = context.area
-        # If the user is using the properties panel "Display Filter" search it
-        # will create a new area that's not present in context.screen.areas for
-        # all property tabs except for the active property tab.
-        if current_area not in screen_areas:
-            current_area = next(a for a in context.screen.areas if a.x == current_area.x and a.y == current_area.y)
-        area_index = screen_areas.index(current_area)
-        return context.screen.BIMAreaProperties[area_index].tab == tab
+        return aprops.tab == tab
 
     @classmethod
     def is_default_scene(cls):
@@ -124,6 +139,9 @@ class Blender(blenderbim.core.tool.Blender):
             ].ifc_definition_id
         elif obj_type == "WorkSchedule":
             return bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+        elif obj_type == "Group":
+            prop = bpy.context.scene.BIMGroupProperties
+            return prop.groups[prop.active_group_index].ifc_definition_id
 
     @classmethod
     def is_ifc_object(cls, obj):
@@ -149,6 +167,13 @@ class Blender(blenderbim.core.tool.Blender):
         bpy.context.window_manager.popup_menu(message_ui, title=message_type.capitalize(), icon=message_type)
 
     @classmethod
+    def get_view3d_area(cls):
+        for window in bpy.context.window_manager.windows:
+            for area in window.screen.areas:
+                if area.type == "VIEW_3D":
+                    return area
+
+    @classmethod
     def get_blender_prop_default_value(cls, props, prop_name):
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
@@ -166,7 +191,7 @@ class Blender(blenderbim.core.tool.Blender):
         It's a bit naive since it's just taking the first available `VIEW_3D` area
         when in real life you can have a couple of those but should work for the most cases.
         """
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = cls.get_view3d_area()
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         context_override = {"area": area, "region": region, "space_data": space}
@@ -203,12 +228,14 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def copy_node_graph(cls, material_to, material_from):
         # https://projects.blender.org/blender/blender/issues/108763
-        if bpy.app.version >= (4, 0):
+        if bpy.app.version[:2] == (4, 0):
             print(
-                "WARNING. Copying node graph is not yet supported on Blender 4.0+ due Blender bug, "
+                "WARNING. Copying node graph is not supported on Blender 4.0.x due Blender bug, "
                 f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
             )
             return
+
+        use_temp_override = bpy.app.version >= (4, 0, 0)
 
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
@@ -225,11 +252,19 @@ class Blender(blenderbim.core.tool.Blender):
         # select all nodes and copy them to clipboard
         for node in material_from.node_tree.nodes:
             node.select = True
-        bpy.ops.node.clipboard_copy(temp_override)
+        if use_temp_override:
+            with bpy.context.temp_override(**temp_override):
+                bpy.ops.node.clipboard_copy()
+        else:
+            bpy.ops.node.clipboard_copy(temp_override)
 
         # back to original material
         shader_editor.node_tree = material_to.node_tree
-        bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+        if use_temp_override:
+            with bpy.context.temp_override(**temp_override):
+                bpy.ops.node.clipboard_paste(offset=(0, 0))
+        else:
+            bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting
@@ -669,7 +704,9 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.register_tool(
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )
-            bpy.utils.register_tool(ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(
+                ws_covering.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False
+            )
         except:
             pass
 

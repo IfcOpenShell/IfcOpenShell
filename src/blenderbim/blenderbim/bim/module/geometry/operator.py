@@ -766,8 +766,17 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
-            if element and element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+            if element:
+                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                    self.report(
+                        {"INFO"}, "Did not duplicate. Duplicate drawings through the Drawings and Documents UI."
+                    )
+                    obj.select_set(False)
+                    continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+                elif element.is_a("IfcProject"):
+                    self.report({"INFO"}, "Did not duplicate. IFC can only have one project.")
+                    obj.select_set(False)
+                    continue  # Only one IfcProject is allowed.
 
             linked_non_ifc_object = linked and not element
 
@@ -823,7 +832,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         # Recreate aggregate relationship
         for old in old_to_new.keys():
-            if old.is_a("IfcElementAssembly"):            
+            if old.is_a("IfcElementAssembly"):
                 tool.Root.recreate_aggregate(old_to_new)
 
         # Remove connections with old objects and recreates paths
@@ -872,14 +881,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         return arrays_to_create, array_children
 
-
     def remove_old_connections(old_to_new):
         for new in old_to_new.values():
-            try:
-                new[0].ConnectedTo
-            except:
+            if not hasattr(new[0], "ConnectedTo"):
                 continue
-            
             for connection in new[0].ConnectedTo:
                 entity = connection.RelatedElement
                 if entity in old_to_new.keys():
@@ -908,9 +913,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
                             pset=pset,
                             properties={"Index": index},
                         )
-                
-
-        
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -964,7 +966,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         self.pset_name = "BBIM_Linked_Aggregate"
         old_to_new = {}
 
-        def select_objects_and_add_data(element): 
+        def select_objects_and_add_data(element):
             add_linked_aggregate_group(element)
             obj = tool.Ifc.get_object(element)
             obj.select_set(True)
@@ -1012,11 +1014,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             ]
             if self.group_name in product_groups_name:
                 return
-                            
+
             linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.group_name)
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
-            )
+            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group)
 
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
@@ -1066,9 +1066,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         
         # Recreate aggregate relationship
         for old in old_to_new.keys():
-            if old.is_a("IfcElementAssembly"):            
+            if old.is_a("IfcElementAssembly"):
                 tool.Root.recreate_aggregate(old_to_new)
-
 
         blenderbim.bim.handler.refresh_ui_data()
 
@@ -1106,7 +1105,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
     def _execute(self, context):
         self.new_active_obj = None
-        self.group_name = 'BBIM_Linked_Aggregate'
+        self.group_name = "BBIM_Linked_Aggregate"
         self.pset_name = "BBIM_Linked_Aggregate"
         refresh_start_time = time()
         old_to_new = {}
@@ -1118,9 +1117,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         delete_objects(part)
-                        
+
                     tool.Geometry.delete_ifc_object(tool.Ifc.get_object(part))
-                    
+
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
         def get_original_names(element):
@@ -1216,14 +1215,14 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 except:
                     self.report({"INFO"}, "Object is not part of a Linked Aggregate.")
                     return None, None
-                
+
             return list(set(linked_aggregate_groups)), selected_parents
 
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
             return {"FINISHED"}
-            
+
         active_element = get_element_assembly(active_element)
         selected_objs = context.selected_objects
         linked_aggregate_groups, selected_parents = handle_selection(selected_objs)
@@ -1232,7 +1231,10 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
         if len(linked_aggregate_groups) > 1:
             if len(selected_parents) != len(linked_aggregate_groups):
-                self.report({"INFO"}, "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.")
+                self.report(
+                    {"INFO"},
+                    "Select only one object from each Linked Aggregate or multiple objects from the same Linked Aggregate.",
+                )
                 return {"FINISHED"}
 
         for group in linked_aggregate_groups:
@@ -1240,15 +1242,15 @@ class RefreshLinkedAggregate(bpy.types.Operator):
             if len(linked_aggregate_groups) > 1:
                 base_instance = [e for e in elements if e in selected_parents][0]
                 instances_to_refresh = elements
-                
+
             elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):
                 base_instance = active_element
                 instances_to_refresh = [element for element in elements if element in selected_parents]
-                
+
             else:
                 base_instance = active_element
                 instances_to_refresh = elements
-        
+
             for element in instances_to_refresh:
                 if element.GlobalId == base_instance.GlobalId:
                     continue
@@ -1261,25 +1263,26 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 duplicate_matrix = object_duplicate.matrix_world.decompose()
                 
                 original_names = get_original_names(element)
+                
                 delete_objects(element)
-            
+
                 for obj in context.selected_objects:
                     obj.select_set(False)
-                
+
                 tool.Ifc.get_object(base_instance).select_set(True)
-            
+
                 old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
                 for old, new in old_to_new.items():
                     new_obj = tool.Ifc.get_object(new[0])
                     new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world 
+                    matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
                     new_obj_matrix = new_base_matrix @ matrix_diff
                     new_obj.matrix_world = new_obj_matrix
                     
                 for old, new in old_to_new.items():
                     if element_aggregate and new[0].is_a("IfcElementAssembly"):
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                        
+
                         if not new_aggregate:
                             blenderbim.core.aggregate.assign_object(
                                                         tool.Ifc,
@@ -1406,7 +1409,12 @@ class OverridePasteBuffer(bpy.types.Operator):
         bpy.ops.view3d.pastebuffer()
         if IfcStore.get_file():
             for obj in context.selected_objects:
-                blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+                # Pasted objects may come from another Blender session, or even
+                # from the same session where the original object has since
+                # been deleted. As the source element may not exist, paste will
+                # always unlink the element. If you want to duplicate an
+                # element, use the duplicate commands.
+                tool.Root.unlink_object(obj)
         return {"FINISHED"}
 
 
@@ -1518,7 +1526,12 @@ class OverrideModeSetEdit(bpy.types.Operator):
             # The active object is non-mesh-like. Set a valid object (or None) as active
             context.view_layer.objects.active = context.selected_objects[0] if context.selected_objects else None
         if context.active_object:
-            return tool.Blender.toggle_edit_mode(context)
+            tool.Blender.toggle_edit_mode(context)
+            context.scene.BIMGeometryProperties.is_changing_mode = True
+            if context.scene.BIMGeometryProperties.mode != "EDIT":
+                context.scene.BIMGeometryProperties.mode = "EDIT"
+            context.scene.BIMGeometryProperties.is_changing_mode = False
+            return {"FINISHED"}
 
         # Restore the selection if nothing worked
         for obj in selected_objs:
@@ -1588,6 +1601,11 @@ class OverrideModeSetObject(bpy.types.Operator):
         self.should_save = True
 
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
+
+        context.scene.BIMGeometryProperties.is_changing_mode = True
+        if context.scene.BIMGeometryProperties.mode != "OBJECT":
+            context.scene.BIMGeometryProperties.mode = "OBJECT"
+        context.scene.BIMGeometryProperties.is_changing_mode = False
 
         if not tool.Ifc.get():
             return {"FINISHED"}
@@ -1702,6 +1720,11 @@ class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
                                     new.surface_style = style.Name or "Unnamed"
                         elif inverse.is_a("IfcPresentationLayerAssignment"):
                             new.layer = inverse.Name or "Unnamed"
+                        elif inverse.is_a("IfcShapeRepresentation"):
+                            if inverse.OfShapeAspect:
+                                shape_aspect = inverse.OfShapeAspect[0]
+                                new.shape_aspect = shape_aspect.Name
+                                new.shape_aspect_id = shape_aspect.id()
 
 
 class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
@@ -1712,3 +1735,196 @@ class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
     def _execute(self, context):
         obj = context.active_object
         obj.BIMGeometryProperties.is_editing = False
+
+
+class RemoveRepresentationItem(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_representation_item"
+    bl_label = "Remove Representation Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    representation_item_id: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        if context.active_object is None or len(context.active_object.BIMGeometryProperties.items) <= 1:
+            cls.poll_message_set(
+                "Active object need to have more than 1 representation items to keep representation valid"
+            )
+            return False
+        return True
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
+
+        representation_item = ifc_file.by_id(self.representation_item_id)
+        tool.Geometry.remove_representation_item(representation_item)
+        tool.Geometry.reload_representation(obj)
+
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_item_style"
+    bl_label = "Enable Editing Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_style = True
+        ifc_file = tool.Ifc.get()
+
+        # set dropdown to currently active style
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+        style = tool.Style.get_representation_item_style(representation_item)
+        if style:
+            props.representation_item_style = str(style.id())
+
+
+class EditRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_representation_item_style"
+    bl_label = "Edit Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_style = False
+        ifc_file = tool.Ifc.get()
+
+        surface_style = ifc_file.by_id(int(props.representation_item_style))
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+
+        tool.Style.assign_style_to_representation_item(representation_item, surface_style)
+        tool.Geometry.reload_representation(obj)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class DisableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_item_style"
+    bl_label = "Disable Editing Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_style = False
+
+
+class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
+    bl_idname = "bim.unassign_representation_item_style"
+    bl_label = "Unassign Representation Item Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_style = False
+
+        # get active representation item
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = tool.Ifc.get_entity_by_id(representation_item_id)
+        if not representation_item:
+            self.report({"ERROR"}, f"Couldn't find representation item by id {representation_item_id}.")
+            return {"CANCELLED"}
+
+        tool.Style.assign_style_to_representation_item(representation_item, None)
+        tool.Geometry.reload_representation(obj)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.enable_editing_representation_item_shape_aspect"
+    bl_label = "Enable Editing Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = True
+
+        # set dropdown to currently active shape aspect
+        shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+        if shape_aspect_id != 0:
+            props.representation_item_shape_aspect = str(shape_aspect_id)
+
+
+class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.edit_representation_item_shape_aspect"
+    bl_label = "Edit Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        props = obj.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = False
+        ifc_file = tool.Ifc.get()
+
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+
+        if props.representation_item_shape_aspect == "NEW":
+            active_representation = tool.Geometry.get_active_representation(obj)
+            # find IfcProductRepresentationSelect based on current representation
+            if hasattr(element, "Representation"):  # IfcProduct
+                product_shape = element.Representation
+            else:  # IfcTypeProduct
+                for representation_map in element.RepresentationMaps:
+                    if representation_map.MappedRepresentation == active_representation:
+                        product_shape = representation_map
+            previous_shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+            # will be None if item didn't had a shape aspect
+            previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
+            shape_aspect = tool.Geometry.create_shape_aspect(
+                product_shape, active_representation, [representation_item], previous_shape_aspect
+            )
+        else:
+            shape_aspect = ifc_file.by_id(int(props.representation_item_shape_aspect))
+            tool.Geometry.add_representation_item_to_shape_aspect([representation_item], shape_aspect)
+
+        # set attributes from UI
+        shape_aspect_attrs = props.shape_aspect_attrs
+        shape_aspect.Name = shape_aspect_attrs.name
+        shape_aspect.Description = shape_aspect_attrs.description
+
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()
+
+
+class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.disable_editing_representation_item_shape_aspect"
+    bl_label = "Disable Editing Representation Item Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.active_object.BIMGeometryProperties
+        props.is_editing_item_shape_aspect = False
+
+
+class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
+    bl_idname = "bim.remove_representation_item_from_shape_aspect"
+    bl_label = "Remove Representation Item From Shape Aspect"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        obj = context.active_object
+        props = obj.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
+
+        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item = ifc_file.by_id(representation_item_id)
+        shape_aspect = ifc_file.by_id(props.items[props.active_item_index].shape_aspect_id)
+
+        tool.Geometry.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
+        # reload style ui
+        bpy.ops.bim.disable_editing_representation_items()
+        bpy.ops.bim.enable_editing_representation_items()

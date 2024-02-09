@@ -29,6 +29,12 @@ from blenderbim.bim.module.geometry.data import (
     PlacementData,
     DerivedCoordinatesData,
 )
+from blenderbim.bim.module.layer.data import LayersData
+
+
+def mode_menu(self, context):
+    row = self.layout.row(align=True)
+    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=blenderbim.bim.icons["IFC"].icon_id)
 
 
 def object_menu(self, context):
@@ -128,6 +134,7 @@ class BIM_PT_representations(Panel):
 
         if not RepresentationsData.data["representations"]:
             layout.label(text="No Representations Found")
+            return
 
         for representation in RepresentationsData.data["representations"]:
             row = self.layout.row(align=True)
@@ -145,6 +152,18 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
+            if representation["is_active"]:
+                active_representation = representation
+
+        layout.separator()
+        if not LayersData.is_loaded:
+            LayersData.load()
+        if LayersData.data["active_layers"]:
+            layout.label(text="Representation Presentation Layers:")
+            for layer_name in LayersData.data["active_layers"].values():
+                layout.label(text=layer_name, icon="STICKY_UVS_LOC")
+        else:
+            layout.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_representation_items(Panel):
@@ -182,20 +201,47 @@ class BIM_PT_representation_items(Panel):
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
         item_is_active = props.active_item_index < len(props.items)
-        if item_is_active:
-            surface_style = props.items[props.active_item_index].surface_style
-            presentation_layer = props.items[props.active_item_index].layer
+        if not item_is_active:
+            return
+
+        active_item = props.items[props.active_item_index]
+        surface_style = active_item.surface_style
+        shape_aspect = active_item.shape_aspect
+
+        row = self.layout.row(align=True)
+        if props.is_editing_item_style:
+            # NOTE: we currently support 1 item having just 1 style
+            # when IfcStyledItem can actually have multiple styles
+            row.prop(props, "representation_item_style", icon="SHADING_RENDERED", text="")
+            row.operator("bim.edit_representation_item_style", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_representation_item_style", icon="CANCEL", text="")
         else:
-            surface_style, presentation_layer = None, None
+            if surface_style:
+                row.label(text=surface_style, icon="SHADING_RENDERED")
+            else:
+                row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+            row.operator("bim.enable_editing_representation_item_style", icon="GREASEPENCIL", text="")
+            if surface_style:
+                row.operator("bim.unassign_representation_item_style", icon="X", text="")
 
         row = self.layout.row()
-        if surface_style:
-            row.label(text=surface_style, icon="SHADING_RENDERED")
-        else:
-            row.label(text="No Surface Style", icon="MESH_UVSPHERE")
+        row.label(text=active_item.layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
 
-        row = self.layout.row()
-        row.label(text=presentation_layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
+        row = self.layout.row(align=True)
+        if props.is_editing_item_shape_aspect:
+            row.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
+            row.operator("bim.edit_representation_item_shape_aspect", icon="CHECKMARK", text="")
+            row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
+
+            shape_aspect_attrs = props.shape_aspect_attrs
+            self.layout.label(text="Shape Aspect Attributes:")
+            self.layout.prop(shape_aspect_attrs, "name")
+            self.layout.prop(shape_aspect_attrs, "description")
+        else:
+            row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
+            row.operator("bim.enable_editing_representation_item_shape_aspect", icon="GREASEPENCIL", text="")
+            if shape_aspect:
+                row.operator("bim.remove_representation_item_from_shape_aspect", icon="X", text="")
 
 
 class BIM_PT_connections(Panel):
@@ -464,3 +510,5 @@ class BIM_UL_representation_items(UIList):
             row.label(text=item.name, icon=icon)
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")
+            op = row.operator("bim.remove_representation_item", icon="X", text="")
+            op.representation_item_id = item.ifc_definition_id

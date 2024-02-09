@@ -245,7 +245,9 @@ def get_obj_ifc_definition_id(context, obj, obj_type):
         ].ifc_definition_id
     elif obj_type == "WorkSchedule":
         return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
-
+    elif obj_type == "Group":
+        prop = context.scene.BIMGroupProperties
+        return prop.groups[prop.active_group_index].ifc_definition_id
 
 # hack to close popup
 # https://blender.stackexchange.com/a/202576/130742
@@ -321,6 +323,7 @@ def draw_filter(layout, filter_groups, data, module):
                 row = box.row(align=True)
                 row.prop(ifc_filter, "pset", text="", icon="PROPERTIES")
                 row.prop(ifc_filter, "name", text="")
+                row.prop(ifc_filter, "comparison", text="")
                 row.prop(ifc_filter, "value", text="")
             elif ifc_filter.type == "classification":
                 row = box.row(align=True)
@@ -328,6 +331,9 @@ def draw_filter(layout, filter_groups, data, module):
             elif ifc_filter.type == "location":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="PACKAGE")
+            elif ifc_filter.type == "group":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")

@@ -28,6 +28,7 @@ import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
+from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -477,7 +478,7 @@ class Model(blenderbim.core.tool.Model):
         return {"thickness": thickness, "offset": offset, "direction_sense": direction_sense}
 
     @classmethod
-    def get_booleans(cls, element=None, representation=None):
+    def get_booleans(cls, element=None, representation=None) -> list[ifcopenshell.entity_instance]:
         if representation is None:
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
@@ -492,7 +493,7 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
-    def get_manual_booleans(cls, element, representation=None):
+    def get_manual_booleans(cls, element, representation=None) -> list[ifcopenshell.entity_instance]:
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
@@ -501,7 +502,7 @@ class Model(blenderbim.core.tool.Model):
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
-        booleans = [b for b in cls.get_booleans(element) if b.id() in boolean_ids]
+        booleans = [b for b in cls.get_booleans(element, representation) if b.id() in boolean_ids]
         return booleans
 
     @classmethod
@@ -520,11 +521,12 @@ class Model(blenderbim.core.tool.Model):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
-    def unmark_manual_booleans(cls, element, booleans):
+    def unmark_manual_booleans(cls, element, boolean_ids):
+        # NOTE: we use use boolean_ids instead of boolean entities
+        # so it will be possible to unmark manual booleans after they already was deleted
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return
-        boolean_ids = [b.id() for b in booleans]
         data = set(json.loads(pset["Data"]))
         data -= set(boolean_ids)
         data = list(data)
@@ -977,6 +979,9 @@ class Model(blenderbim.core.tool.Model):
         if nosing_length < 0:  # tread gaps
             length += abs(nosing_length) * number_of_treads
         calculated_params["Length"] = round(length, 5)
+        pitch = height / length
+        pitch_formatted = str(round(pitch * 100, 1)) + " % / " + str(round(degrees(atan(pitch)), 1)) + " deg"
+        calculated_params["Pitch"] = str(pitch_formatted)
 
         return calculated_params
 

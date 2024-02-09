@@ -575,3 +575,100 @@ class TestGetIfcRepresentationClass(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         assert subject.get_ifc_representation_class(ifc.createIfcColumn(), ifc.createIfcShapeRepresentation()) is None
+
+
+class TestRemoveRepresentationItem(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+        product_shape = element.Representation
+        shape_aspect = subject.create_shape_aspect(product_shape, representation, items[:1], None)
+        shape_aspect_id = shape_aspect.id()
+
+        subject.remove_representation_item(items[0])
+        assert tool.Ifc.get_entity_by_id(shape_aspect_id) is None
+        assert set(representation.Items) == {items[1]}
+
+
+class TestCreateShapeAspect(NewFile):
+    def test_run(self):
+        self.create_shape_aspect(use_element_type=False)
+        self.create_shape_aspect(use_element_type=True)
+
+    def create_shape_aspect(self, use_element_type):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWallType() if use_element_type else ifc.createIfcWall()
+
+        item = ifc.createIfcExtrudedAreaSolid()
+        items = [item]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+
+        product_shape = element.RepresentationMaps[0] if use_element_type else element.Representation
+        subject.create_shape_aspect(product_shape, representation, items, None)
+        assert len(product_shape.HasShapeAspects) == 1
+        representation = product_shape.HasShapeAspects[0].ShapeRepresentations[0]
+        assert set(representation.Items) == set(items)
+
+
+class TestAddRepresentationItemToShapeAspect(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        product_shape = element.Representation
+        shape_aspect0 = subject.create_shape_aspect(product_shape, representation, [items[0]], None)
+        previous_shape_aspect_id = shape_aspect0.id()
+        shape_aspect1 = subject.create_shape_aspect(product_shape, representation, [items[1]], None)
+
+        subject.add_representation_item_to_shape_aspect([items[0]], shape_aspect1)
+        # previous shape aspect removed as there won't be any items in it
+        assert tool.Ifc.get_entity_by_id(previous_shape_aspect_id) is None
+        representation = shape_aspect1.ShapeRepresentations[0]
+        assert set(representation.Items) == set(items)
+
+
+class TestRemoveRepresentationItemFromShapeAspect(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        context = ifc.createIfcGeometricRepresentationContext()
+        element = ifc.createIfcWall()
+
+        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
+        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        product_shape = element.Representation
+        shape_aspect0 = subject.create_shape_aspect(product_shape, representation, [items[0]], None)
+        previous_shape_aspect_id = shape_aspect0.id()
+        previous_shape_aspect_rep_id = shape_aspect0.ShapeRepresentations[0].id()
+        shape_aspect1 = subject.create_shape_aspect(product_shape, representation, [items[1]], None)
+
+        subject.remove_representation_items_from_shape_aspect([items[0]], shape_aspect0)
+        # previous shape aspect and representation are removed as there won't be any items in them
+        assert tool.Ifc.get_entity_by_id(previous_shape_aspect_id) is None
+        assert tool.Ifc.get_entity_by_id(previous_shape_aspect_rep_id) is None
+
+        # items is removed from the representaiton
+        subject.add_representation_item_to_shape_aspect([items[0]], shape_aspect1)
+        subject.remove_representation_items_from_shape_aspect([items[1]], shape_aspect1)
+        representation = shape_aspect1.ShapeRepresentations[0]
+        assert set(representation.Items) == {items[0]}

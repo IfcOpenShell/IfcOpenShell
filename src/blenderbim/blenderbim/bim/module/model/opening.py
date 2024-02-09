@@ -181,7 +181,7 @@ class FilledOpeningGenerator:
             return
 
         opening = filling.FillsVoids[0].RelatingOpeningElement
-        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+        voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
         ifcopenshell.api.run(
@@ -217,16 +217,22 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
 
-        representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=voided_obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
+        # update voided object representation or all it's parts if it's an aggregate
+        voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
+        for voided_element in voided_elements:
+            voided_obj = tool.Ifc.get_object(voided_element)
+            if not voided_obj.data:
+                continue
+            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=voided_obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
 
     def generate_opening_from_filling(self, filling, filling_obj):
         # Since openings are reused later, we give a default thickness of 1.2m
@@ -515,6 +521,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             return {"FINISHED"}
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
+            element1, element2 = element2, element1
         if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
             return {"FINISHED"}
         representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
@@ -662,17 +669,17 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
             except:
                 continue
 
-            boolean = None
+            boolean_id = None
             for inverse in tool.Ifc.get().get_inverse(item):
                 if inverse.is_a("IfcBooleanResult"):
-                    boolean = inverse
+                    boolean_id = inverse.id()
                     break
             ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
 
             if obj.data.BIMMeshProperties.obj:
                 upstream_obj = obj.data.BIMMeshProperties.obj
                 element = tool.Ifc.get_entity(upstream_obj)
-                bbim_boolean_updates.setdefault(element, []).append(boolean)
+                bbim_boolean_updates.setdefault(element, []).append(boolean_id)
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body:
                     blenderbim.core.geometry.switch_representation(
@@ -686,8 +693,8 @@ class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
                     )
             bpy.data.objects.remove(obj)
 
-        for element, booleans in bbim_boolean_updates.items():
-            tool.Model.unmark_manual_booleans(element, booleans)
+        for element, boolean_ids in bbim_boolean_updates.items():
+            tool.Model.unmark_manual_booleans(element, boolean_ids)
 
         tool.Blender.set_active_object(upstream_obj)
         return {"FINISHED"}

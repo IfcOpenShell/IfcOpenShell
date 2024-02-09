@@ -17,6 +17,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
@@ -53,10 +54,10 @@ class Patcher:
         .. code:: python
 
             # Default behaviour of merging by Tag attribute
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeDuplicateTypes", "arguments": []})
+            ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": []})
 
             # Explicitly say we want to merge based on the Name attribute
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
+            ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
         """
         self.src = src
         self.file = file

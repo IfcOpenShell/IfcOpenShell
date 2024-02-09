@@ -501,7 +501,7 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def has_blender_external_style(cls, style_elements):
         external_style = style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
-        return bool(external_style and external_style.Location.endswith(".blend"))
+        return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
     def is_editing_styles(cls):
@@ -548,6 +548,27 @@ class Style(blenderbim.core.tool.Style):
         """assigns `style` to `object` current representation"""
         representation = tool.Geometry.get_active_representation(obj)
         tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
+
+    @classmethod
+    def assign_style_to_representation_item(cls, representation_item, style=None):
+        ifc_file = tool.Ifc.get()
+        if not representation_item.StyledByItem:
+            if style is None:
+                return
+            ifc_file.createIfcStyledItem(representation_item, (style,))
+
+        styled_item = representation_item.StyledByItem[0]
+        if style is None:
+            ifc_file.remove(styled_item)
+            return
+        styled_item.Styles = (style,)
+
+    @classmethod
+    def get_representation_item_style(cls, representation_item):
+        for inverse in tool.Ifc.get().get_inverse(representation_item):
+            if inverse.is_a("IfcStyledItem"):
+                for style in inverse.Styles:
+                    return style
 
     @classmethod
     def reload_material_from_ifc(cls, blender_material):

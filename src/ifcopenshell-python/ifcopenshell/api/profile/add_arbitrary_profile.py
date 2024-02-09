@@ -58,7 +58,12 @@ class Usecase:
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
-            curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(points))
+            dimensions = len(points[0])
+            if dimensions == 2:
+                ifc_points = self.file.createIfcCartesianPointList2D(points)
+            elif dimensions == 3:
+                ifc_points = self.file.createIfcCartesianPointList3D(points)
+            curve = self.file.createIfcIndexedPolyCurve(ifc_points)
         return self.file.createIfcArbitraryClosedProfileDef("AREA", self.settings["name"], curve)
 
     def convert_si_to_unit(self, co):

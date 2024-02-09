@@ -50,24 +50,31 @@ PYLIBDIR:=python3.10
 PYNUMBER:=310
 PYPI_VERSION:=3.10
 endif
+ifeq ($(PYVERSION), py311)
+PYLIBDIR:=python3.11
+PYNUMBER:=311
+PYPI_VERSION:=3.11
+endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
+LXML_ARCH:=manylinux_2_28_x86_64
+SHAPELY_ARCH:=manylinux_2_17_x86_64.manylinux2014_x86_64
+PILLOW_ARCH:=manylinux_2_28_x86_64
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/linux-64/hpp-fcl-2.3.4-py39h40a70d0_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/linux-64/eigenpy-3.1.0-py39hdfdd6bb_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py39h359ec1e_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py39hb1babde_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py39h7c9e3ff_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/19/d9/a69c6aff5673554df48120565a14a50eaa41d29ae03b02faa0b023666318/lxml-4.6.3-cp39-cp39-manylinux2014_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/2d/f2/8ec281d357e8bb7d08dc8d727f0e4c8ef3dae7d3fa75c69c8e452bb82d50/shapely-2.0.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/01/61/3ff85fb4bb596ce3d223c8fcf93c8df5c12bc8899dfb4fb3cb1c5b20dd5f/Pillow-9.2.0-cp39-cp39-manylinux_2_28_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/linux-64/hpp-fcl-2.3.4-py310h995690b_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/linux-64/eigenpy-3.1.0-py310hf02b7e0_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py310hd002f03_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py310hcfe0b05_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py310hc4a4660_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/25/1e/19b46d8e8881fe0df2e20945d51919eeb1817836d62a90efa8506530e45c/lxml-4.8.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.manylinux_2_24_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/a8/a5/403728b5614b28083f6424dfdefec5fcf58068495fb03bb08532671c642f/shapely-2.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/f6/51/320986ebd6d46a0e95c2240468ced73153b691ce07617078bcdf30c609ec/Pillow-9.2.0-cp310-cp310-manylinux_2_28_x86_64.whl
+endif
+ifeq ($(PYVERSION), py311)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py311h04f086a_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py311h995a085_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py311h59ea3da_3.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
@@ -78,21 +85,25 @@ endif
 
 ifeq ($(PLATFORM), macos)
 PYPI_PLATFORM:=--platform macosx_10_9_x86_64
+SHAPELY_ARCH:=macosx_10_9_x86_64
+PILLOW_ARCH:=macosx_10_10_x86_64
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-64/hpp-fcl-2.3.4-py39hd85b194_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-64/eigenpy-3.1.0-py39hc4d6e28_0.conda
+LXML_ARCH:=macosx_11_0_x86_64
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py39h26350b9_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py39h3323527_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py39h953a6b8_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/b8/74/a71f7ad72e8db54ce899efab84507b801660750cbbfa6a39e6717557d36a/lxml-4.6.3-cp39-cp39-macosx_10_9_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/36/a4/7e542a209f862f967d7cb8e939eff155f4294a27d17e16441fb8bdd51a2c/shapely-2.0.1-cp39-cp39-macosx_10_9_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/88/7a/ddfe28b485b623361457d4783007c1f9ba83a87f93e7fec32f64793efb6c/Pillow-9.2.0-cp39-cp39-macosx_10_10_x86_64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-64/hpp-fcl-2.3.4-py310h1db6f5f_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-64/eigenpy-3.1.0-py310h43da829_0.conda
+LXML_ARCH:=macosx_11_0_x86_64
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py310ha216469_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py310h33a8c9b_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py310h3e792ce_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/a1/44/17b7dac7a18807d30e2fe10c3328c152808f5464565e230bfd0e77f178c6/lxml-4.8.0-cp310-cp310-macosx_10_15_x86_64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/1f/2a/dc3353c2431cf53e8d04bb8fba27e584410ca3435c9c85f76d71bf0c0e80/shapely-2.0.1-cp310-cp310-macosx_10_9_x86_64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/d8/60/b13c00d403f34110e96c1b5c0afa73ce461efe3fe960c3a7e3e7fe190d82/Pillow-9.2.0-cp310-cp310-macosx_10_10_x86_64.whl
+endif
+ifeq ($(PYVERSION), py311)
+LXML_ARCH:=macosx_11_0_universal2
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py311hebdd1a2_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py311h62e90b6_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py311h349b758_4.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
@@ -103,21 +114,23 @@ endif
 
 ifeq ($(PLATFORM), macosm1)
 PYPI_PLATFORM:=--platform macosx_11_0_arm64
+LXML_ARCH:=macosx_11_0_universal2
+SHAPELY_ARCH:=macosx_11_0_arm64
+PILLOW_ARCH:=macosx_11_0_arm64
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-arm64/hpp-fcl-2.3.4-py39hc34188a_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-arm64/eigenpy-3.1.0-py39h13cfc01_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py39h82b2ff2_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py39h3a9e884_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h99de9ae_4.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h9eb174b_0.tar.bz2
-SHAPELY_URL:=https://files.pythonhosted.org/packages/ea/aa/45fbd031edf3149cb767d8b9f9db45d5faf0324d743c6b8fb0298cc022d0/shapely-2.0.1-cp39-cp39-macosx_11_0_arm64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/aa/bc/21097cd891dd2fa02f2b3d767e02e883e026482e59d29975d1bc30024aa3/Pillow-9.2.0-cp39-cp39-macosx_11_0_arm64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/osx-arm64/hpp-fcl-2.3.4-py310h46fc4cd_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/osx-arm64/eigenpy-3.1.0-py310ha2643af_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py310hdb6c3eb_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py310h96e9823_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h629746b_4.tar.bz2
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
-SHAPELY_URL:=https://files.pythonhosted.org/packages/ec/41/d59208743e737184e1b403e95a937aebb022b8459e99efbcd5208fc8be46/shapely-2.0.1-cp310-cp310-macosx_11_0_arm64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/0c/5f/117b653cad585f3aedfe0de996c292e67d4b020ed77f652e5a6c8c24f908/Pillow-9.2.0-cp310-cp310-macosx_11_0_arm64.whl
+endif
+ifeq ($(PYVERSION), py311)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py311hc0c29b9_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py311h24fa84d_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py311h5c64717_4.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-arm64/qhull-2020.2-hc021e02_2.tar.bz2
@@ -128,21 +141,23 @@ endif
 
 ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
+LXML_ARCH:=win_amd64
+SHAPELY_ARCH:=win_amd64
+PILLOW_ARCH:=win_amd64
 ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/win-64/hpp-fcl-2.3.4-py39h39b25cb_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/win-64/eigenpy-3.1.0-py39hb6c915b_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py39hf3ebc58_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py39ha1f6a47_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py39hea4d8d1_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/72/d4/426ecb8849c47c3e370c87aa0ac05d85768df917ffea27fcd6686a5e6495/lxml-4.6.3-cp39-cp39-win_amd64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/a7/ae/eab645c4075093584b7a65ab71cb8ff4563a015bd935c9b55dba14b2c1eb/shapely-2.0.1-cp39-cp39-win_amd64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/19/3f/b4d4bcf05dbcbe07f2e9613a8f4180c297395e73a91d8ad22c32c6624f8c/Pillow-9.2.0-cp39-cp39-win_amd64.whl
 endif
 ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.3.4/download/win-64/hpp-fcl-2.3.4-py310heb59267_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.1.0/download/win-64/eigenpy-3.1.0-py310hd146abe_0.conda
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py310h1bf3f0a_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py310h7fb871d_0.conda
 BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py310h220cb41_4.tar.bz2
-LXML_URL:=https://files.pythonhosted.org/packages/f6/71/65c80a4caa1617a4c6e8fe1500cebb179db96232e2f623bfe6a1f4294e39/lxml-4.8.0-cp310-cp310-win_amd64.whl
-SHAPELY_URL:=https://files.pythonhosted.org/packages/81/8a/7ac076a86b2632f1872284c5e60ed5f2fc26094875a85b35d9fa17b52504/shapely-2.0.1-cp310-cp310-win_amd64.whl
-PILLOW_URL:=https://files.pythonhosted.org/packages/02/55/67a3c17b9e7d972ed8c246f104da99ca4f3ea42fba566697e479011b84b6/Pillow-9.2.0-cp310-cp310-win_amd64.whl
+endif
+ifeq ($(PYVERSION), py311)
+HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py311hd263b2c_0.conda
+EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py311hd354db1_0.conda
+BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py311h12feb9d_3.tar.bz2
 endif
 ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.2.5/download/win-64/assimp-5.2.5-h4dcb625_0.tar.bz2
 QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/win-64/qhull-2020.2-h70d2c02_2.tar.bz2
@@ -150,6 +165,33 @@ OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/win-64/octo
 BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/win-64/boost-cpp-1.78.0-h9f4b32c_3.conda
 ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
+
+LXML_NAME:=lxml
+LXML_VER:=4.9.4
+SHAPELY_NAME:=shapely
+SHAPELY_VER:=2.0.2
+PILLOW_NAME:=pillow
+PILLOW_PKG_NAME:=Pillow
+PILLOW_VER:=9.5.0
+SHAPELY_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/s/$(SHAPELY_NAME)/$(SHAPELY_NAME)-$(SHAPELY_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(SHAPELY_ARCH).whl
+PILLOW_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/p/$(PILLOW_NAME)/$(PILLOW_PKG_NAME)-$(PILLOW_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(PILLOW_ARCH).whl
+
+ifeq ($(PLATFORM), macosm1)
+ifeq ($(PYVERSION), py39)
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h0520ce3_1.tar.bz2
+endif
+ifeq ($(PYVERSION), py310)
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
+endif
+ifeq ($(PYVERSION), py311)
+LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py311h246f609_1.tar.bz2
+endif
+else
+LXML_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/l/$(LXML_NAME)/$(LXML_NAME)-$(LXML_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(LXML_ARCH).whl
+endif
+$(info $$LXML_URL is [${LXML_URL}])
+$(info $$SHAPELY_URL is [${SHAPELY_URL}])
+$(info $$PILLOW_URL is [${PILLOW_URL}])
 
 .PHONY: bump
 bump:
@@ -629,13 +671,6 @@ endif
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides OpenLCA functionality
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/85/33/f91b96e9e8608ff65a003b692e8a9cdd60f2178f60617e5b1d21334c009c/olca-ipc-0.0.10.tar.gz
-	cd dist/working && tar -xzvf olca-ipc*
-	cd dist/working/olca-ipc-0.0.10/ && cp -r olca ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Provides Brickschema functionality
 	mkdir dist/working
 	# For now lets bundle the latest nightly schema
@@ -660,6 +695,11 @@ endif
 
 	# Required for Desktop icon and file association
 	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
+
+	# generate translations module for BBIM build
+	git clone https://github.com/IfcOpenShell/blenderbim-translations.git dist/working
+	python scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
+	rm -rf dist/working
 
 	# Remove dependencies also bundled with Blender
 	rm -rf dist/blenderbim/libs/site/packages/numpy

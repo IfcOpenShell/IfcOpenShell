@@ -40,14 +40,15 @@ class LayersData:
 
     @classmethod
     def active_layers(cls):
+        if not bpy.context.active_object:
+            return []
         data = bpy.context.active_object.data
         if not data:
             return []
         if not isinstance(data, bpy.types.Mesh) or not data.BIMMeshProperties.ifc_definition_id:
             return []
-        results = []
+        results = dict()
         shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
-        for inverse in tool.Ifc.get().get_inverse(shape):
-            if inverse.is_a("IfcPresentationLayerAssignment"):
-                results.append(inverse.id())
+        for inverse in shape.LayerAssignments:
+            results[inverse.id()] = inverse.Name or "Unnamed"
         return results

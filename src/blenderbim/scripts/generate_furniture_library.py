@@ -25,18 +25,16 @@ from ifcopenshell.util.shape_builder import ShapeBuilder, V
 
 
 class LibraryGenerator:
-    def generate(self, output_filename="IFC4 EU Steel.ifc"):
+    def generate(self, library_name, output_filename="IFC4 EU Steel.ifc"):
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
 
         self.materials = {}
 
         self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProject", name=f"Non-structural assets library"
-        )
+        self.project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name=library_name)
         self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=f"Non-structural assets library"
+            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=library_name
         )
         ifcopenshell.api.run(
             "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
@@ -1876,4 +1874,6 @@ class LibraryGenerator:
 
 if __name__ == "__main__":
     path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
-    LibraryGenerator().generate(output_filename=str(path / "IFC4 Furniture Library.ifc"))
+    LibraryGenerator().generate(
+        "Non-structural assets library", output_filename=str(path / "IFC4 Furniture Library.ifc")
+    )

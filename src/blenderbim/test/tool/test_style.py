@@ -23,6 +23,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.style import Style as subject
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestImplementsTool(NewFile):
@@ -166,7 +167,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
-    
+
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -197,7 +198,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
         obj.node_tree.nodes.remove(node)
-        
+
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
         node.inputs["Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -460,3 +461,36 @@ class TestIsEditingStyles(NewFile):
         subject.is_editing_styles() is False
         bpy.context.scene.BIMStylesProperties.is_editing = True
         subject.is_editing_styles() is True
+
+
+class TestGetRepresentationStyleItem(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        builder = ShapeBuilder(ifc)
+        rectangle = builder.rectangle()
+
+        assert subject.get_representation_item_style(rectangle) == None
+        style = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style)
+        assert subject.get_representation_item_style(rectangle) == style
+
+
+class TestAssignStyleToRepresentationItem(NewFile):
+    def test_run(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        builder = ShapeBuilder(ifc)
+        rectangle = builder.rectangle()
+
+        # assigning new style
+        style1 = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style1)
+        assert subject.get_representation_item_style(rectangle) == style1
+
+        # changing style
+        style2 = ifc.createIfcSurfaceStyle()
+        subject.assign_style_to_representation_item(rectangle, style2)
+        assert subject.get_representation_item_style(rectangle) == style2
+
+        # unassigning styles
+        subject.assign_style_to_representation_item(rectangle, None)
+        assert subject.get_representation_item_style(rectangle) == None

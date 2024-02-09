@@ -10,10 +10,13 @@ you how to compile and install IfcOpenShell.
     IfcOpenShell-Python, IfcConvert, or the other utilities such as IfcClash or
     IfcDiff. Compilation is only necessary for C++ developers.
 
+    By default, it will compile all available IFC schemas. To reduce compilation time you can specify
+    only the schemas you need in `CMakeLists.txt` with `set(SCHEMA_VERSIONS "2x3" "4")`.
+
 You will need:
 
 - `Git <https://git-scm.com/>`__
-- `CMake <https://cmake.org/>`__ (3.1.3 or newer)
+- `CMake <https://cmake.org/>`__ (3.5 or newer)
 
 IfcOpenShell depends on:
 

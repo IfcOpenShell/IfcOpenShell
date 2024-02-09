@@ -12,6 +12,14 @@ The simplest way to process any geometry in a standardised fashion is to use the
 IfcOpenShell ``create_shape()`` function. This will provide a list of vertices,
 edges, and faces, or alternatively an OpenCASCADE BRep.
 
+.. warning::
+
+   This section describes individual processing only. This is useful for
+   learning how geometry processing works, but is not recommended for practical
+   applications. See the `Geometry iterator`_ section below after reading this
+   to see how to process geometry with multiple threads.
+
+
 Here is a simple example of processing a single wall into a list of vertices and
 faces. In this example, a ``shape`` variable is returned, which holds geometry
 related information in ``shape.geometry``:
@@ -157,6 +165,37 @@ In these scenarios, a ``geometry`` is returned directly, equivalent to
     # Process a profile
     geometry = geom.create_shape(settings, ifc_file.by_type("IfcProfileDef")[0])
 
+
+When an element contains multiple shape representations with the same
+identifier or when you want more explicit control over which representation is
+processed (e.g ``Body`` or ``Tessellation``), you can use the third parameter of
+``create_shape()`` to nominate a specific shape representation to be processed
+in the context of a product.  The element in your ifc file might look like
+this.
+
+.. code-block:: ifc
+
+    #1=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617476));
+    #2=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617583));
+    #3=IFCSHAPEREPRESENTATION(#4,'Body','BRep',(#1617630));
+    #5=IFCPRODUCTDEFINITIONSHAPE($,$,(#1,#2,#3));
+    #6=IFCWINDOW('0Rrp2csNr07QrVCrEBJezu',#9,'test','test',$,#7,#5,'test',$,$,$,$,$);
+
+In order to get the geometry data (e.g. vertices) for this ``IfcWindow``, we can use the Python code below:
+
+.. code-block:: python
+
+    representations = window.Representation.Representations
+    for representation in representations:
+        # ... code that filters which representation you want ...
+        shape = ifcopenshell.geom.create_shape(settings, window, representation)
+
+.. seealso::
+
+    You may find the ``ifcopenshell.util.representation`` module useful to
+    filter out specific representations.
+
+
 Geometry iterator
 -----------------
 
@@ -173,11 +212,6 @@ always recommended to use the iterator.
 By default, the geometry iterator processes all 3D geometry in a model from all
 elements, and returns a list of X Y Z vertex ordinates in a flattened list, as
 well as a flattened list of triangulated faces denoted by vertex indices.
-
-There are a variety of configuration settings to get different output. For
-example, you may filter elements from processing, extract 2D data, or return
-non-triangulated OpenCASCADE BReps. For more information on the various
-settings, see :doc:`Geometry Settings<../ifcopenshell/geometry_settings>`.
 
 Here is a simple example in Python:
 
@@ -203,6 +237,21 @@ Here is a simple example in Python:
             # ... write code to process geometry here ...
             if not iterator.next():
                 break
+
+
+There are a variety of configuration settings to get different output. For
+example, you may filter elements from processing, extract 2D data, or return
+non-triangulated OpenCASCADE BReps. For more information on the various
+settings, see :doc:`Geometry Settings<../ifcopenshell/geometry_settings>`.
+
+One of the more common settings used is the ``include`` setting, which
+specifies only to process certain geometry. For example, this iterator will
+only process wall elements.
+
+.. code-block:: python
+
+    walls = ifc.by_type('IfcWall')
+    iterator = ifcopenshell.geom.iterator(settings, ifc, multiprocessing.cpu_count(), include=walls)
 
 .. note::
 
@@ -237,3 +286,43 @@ specifically pinpoint the Radius parameter.
 
 Given the advanced nature of manual processing, it is generally not recommended
 except in specific tasks.
+
+Geometry serialisation
+----------------------
+
+Geometry may be serialised into many different formats using
+:doc:`IfcConvert<../ifcconvert>`. Alternatively, you may also access the
+serialiser with Python to customise the conversion, such as by writing a script
+the modifies the IFC on the fly before converting it, or writing complex
+include and exclude filters.
+
+Here is a typical example to serialising to glTF / glb.
+
+.. code-block:: python
+
+    import ifcopenshell
+    import ifcopenshell.geom
+    import multiprocessing
+
+    settings = ifcopenshell.geom.settings()
+    settings.set(settings.STRICT_TOLERANCE, True)
+    settings.set(settings.INCLUDE_CURVES, True)
+    # Setting element GUIDs is optional, but useful to uniquely identify objects in non-semantic formats.
+    settings.set(settings.USE_ELEMENT_GUIDS, True)
+    # Note that applying default materials is required in glTF serialisation.
+    settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
+
+    serialiser = ifcopenshell.geom.serializers.gltf("output.glb", settings)
+    # Alternatively, this is an example for OBJ
+    # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings)
+    serialiser.setFile(self.file)
+    serialiser.setUnitNameAndMagnitude("METER", 1.0)
+    serialiser.writeHeader()
+
+    iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count())
+    if iterator.initialize():
+        while True:
+            serialiser.write(iterator.get())
+            if not iterator.next():
+                break
+    serialiser.finalize()

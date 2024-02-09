@@ -157,6 +157,7 @@ class BIMProjectProperties(PropertyGroup):
     is_coordinating: BoolProperty(name="For Coordination Only", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
+    void_limit: IntProperty(name="Void Limit", default=30)
     distance_limit: FloatProperty(name="Distance Limit", default=1000)
     false_origin: StringProperty(name="False Origin", default="0,0,0")
     element_offset: IntProperty(name="Element Offset", default=0)

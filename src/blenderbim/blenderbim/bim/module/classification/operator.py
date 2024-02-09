@@ -107,13 +107,13 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMBSDDProperties
         domain = [d for d in props.domains if d.name == props.active_domain][0]
         for element in tool.Ifc.get().by_type("IfcClassification"):
-            if element.Name == props.active_domain or element.Location == domain.namespace_uri:
+            if element.Name == props.active_domain or element.Location == domain.uri:
                 return
         classification = ifcopenshell.api.run(
             "classification.add_classification", tool.Ifc.get(), classification=props.active_domain
         )
         classification.Source = domain.organization_name_owner
-        classification.Location = domain.namespace_uri
+        classification.Location = domain.uri
         classification.Edition = domain.version
 
 
@@ -289,21 +289,23 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         else:
             objects = [self.obj]
 
-        identification = tool.Ifc.get().by_id(self.reference)[0]
+        active_reference = tool.Ifc.get().by_id(self.reference)
+        identification = active_reference[1]
 
         for obj in objects:
             ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
             element = tool.Ifc.get().by_id(ifc_definition_id)
             references = ifcopenshell.util.classification.get_references(element, should_inherit=False)
             for reference in references:
-                if reference[0] == identification:
+                if (identification and reference[1] == identification) or (
+                    not identification and reference == active_reference
+                ):
                     ifcopenshell.api.run(
                         "classification.remove_reference",
                         tool.Ifc.get(),
                         reference=reference,
                         product=element,
                     )
-                    break
 
 
 class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
@@ -416,7 +418,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 identification=bsdd_classification.reference_code,
                 name=bsdd_classification.name,
             )
-            reference.Location = bsdd_classification.namespace_uri
+            reference.Location = bsdd_classification.uri
 
             for classification_pset in bprops.classification_psets:
                 is_pset = not classification_pset.name.startswith("Qto_")

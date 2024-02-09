@@ -146,6 +146,8 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
+        row.prop(pprops, "void_limit")
+        row = self.layout.row()
         row.prop(pprops, "distance_limit")
         row = self.layout.row()
         row.prop(pprops, "false_origin")
@@ -206,12 +208,14 @@ class BIM_PT_project(Panel):
 
         if props.ifc_file:
             row = self.layout.row(align=True)
-            row.label(text="Saved", icon="EXPORT")
+            if context.scene.BIMProperties.is_dirty:
+                row.label(text="Saved*", icon="EXPORT")
+            else:
+                row.label(text="Saved", icon="EXPORT")
             row.label(text=ProjectData.data["last_saved"])
 
             row = self.layout.row(align=True)
             row.prop(props, "ifc_file", text="")
-            row.operator("bim.reload_ifc_file", icon="FILE_REFRESH", text="")
             row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
             row.operator("bim.unload_project", text="", icon="CANCEL")
         else:
@@ -399,11 +403,3 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_profiles")
         layout.operator("bim.purge_unused_types")
-        layout.operator("bim.purge_unused_representations")
-        layout.separator()
-
-        layout.label(text="Purge unused elements by class:")
-        row = layout.row(align=True)
-        row.prop(context.scene.BIMDebugProperties, "ifc_class_purge", text="")
-        row.operator("bim.purge_unused_elements_by_class", text="", icon="TRASH")
-        row.operator("bim.print_unused_elements_stats", text="", icon="INFO")

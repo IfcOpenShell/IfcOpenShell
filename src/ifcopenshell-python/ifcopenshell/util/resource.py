@@ -119,22 +119,26 @@ def get_nested_resources(resource):
 
 
 def get_cost(resource):
-    total = 0
-    for cost_value in resource.BaseCosts or []:
-        total += cost_value.AppliedValue.wrappedValue if cost_value.AppliedValue else 0
-    return total
-
+    base_costs = getattr(resource, "BaseCosts", [])
+    costs = [
+        ifcopenshell.util.cost.calculate_applied_value(resource, cost_value)
+        for cost_value in base_costs
+    ] if base_costs else []
+    cost = sum(costs)
+    unit_basis = next(
+        (cost_value.UnitBasis for cost_value in base_costs if cost_value.UnitBasis),
+        None
+    ) if base_costs else None
+    unit = unit_basis.UnitComponent.Name if unit_basis and unit_basis.UnitComponent.is_a("IfcConversionBasedUnit") else None
+    return cost, unit
 
 def get_quantity(resource):
     total = 0
     if resource.BaseQuantity:
         return resource.BaseQuantity[3]
     if resource.Usage and resource.Usage.ScheduleWork:
-        # For now we assume either hourly or daily depending on how duration is stored
         duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
-        if duration.days:
-            return duration.days
-        return duration.seconds / 60 / 60
+        return duration.total_seconds() / 3600
 
 def get_parent_cost(resource):
     if not resource.Nests:

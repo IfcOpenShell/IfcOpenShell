@@ -88,7 +88,7 @@ class IfcGitData:
         try:
             if tool.IfcGitRepo.repo.branches:
                 return tool.IfcGit.branches_by_hexsha(tool.IfcGitRepo.repo)
-        except:
+        except AttributeError:
             return {}
 
     @classmethod

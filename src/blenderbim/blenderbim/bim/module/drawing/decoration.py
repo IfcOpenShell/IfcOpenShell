@@ -1949,9 +1949,10 @@ class DecorationsHandler:
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?
         results = []
+        viewport = bpy.context.space_data
 
         for obj in collection.all_objects:
-            if obj.hide_get():
+            if not obj.visible_get(viewport=viewport):
                 continue
 
             element = tool.Ifc.get_entity(obj)

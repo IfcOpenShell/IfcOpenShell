@@ -252,8 +252,11 @@ class file(object):
         self.future = []
         self.transaction = None
 
-        # Temporarily commented out until bot builds are available and tested to prevent user bugs.
-        # file_dict[self.file_pointer()] = self
+        import weakref
+        file_dict[self.file_pointer()] = weakref.ref(self)
+        
+    def __del__(self):
+        del file_dict[self.file_pointer()]
 
     def set_history_size(self, size):
         self.history_size = size
@@ -358,7 +361,19 @@ class file(object):
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         elif attr == "schema":
-            return {"IFC4X3_ADD1": "IFC4X3"}.get(self.wrapped_data.schema, self.wrapped_data.schema)
+            prefixes = ("IFC", "X", "_ADD", "_TC")
+            reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
+            match = re.match(reg, self.wrapped_data.schema)
+            version_tuple = tuple(
+                map(
+                    lambda pp: int(pp[1][len(pp[0]):]) if pp[1] else None,
+                    ((p, match.group(p)) for p in prefixes),
+                )
+            )
+            return "".join(
+                "".join(map(str, t)) if t[1] else ""
+                for t in zip(prefixes, version_tuple[0:2])
+            )
         elif attr == "schema_identifier":
             return self.wrapped_data.schema
         elif attr == "schema_version":
@@ -563,4 +578,4 @@ class file(object):
 
     @staticmethod
     def from_pointer(v):
-        return file_dict.get(v)
+        return file_dict.get(v)()

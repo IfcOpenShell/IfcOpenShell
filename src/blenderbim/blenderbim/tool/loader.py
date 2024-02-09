@@ -173,7 +173,7 @@ class Loader(blenderbim.core.tool.Loader):
                 if color_type == "IfcColourRgb":
                     bsdf.inputs["Base Color"].default_value = color_value + (1,)
                 else:  # "IfcNormalisedRatioMeasure"
-                    color_value = [v * color_value for v in surface_style["SurfaceColour"]]
+                    color_value = tuple(v * color_value for v in surface_style["SurfaceColour"])
                     bsdf.inputs["Base Color"].default_value = color_value + (1,)
 
             if surface_style["SpecularColour"]:
@@ -241,10 +241,6 @@ class Loader(blenderbim.core.tool.Loader):
             mode = texture.get("Mode", None)
             node = None
 
-            if texture["type"] == "IfcPixelTexture":
-                print(f"WARNING. Texture of type {texture['type']} is not currently supported, it will be skipped.")
-                continue
-
             image_url = None
 
             def get_image():
@@ -277,16 +273,45 @@ class Loader(blenderbim.core.tool.Loader):
                     value = texture["RasterCode"]
                     image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
                     pil_image = Image.open(io.BytesIO(image_bytes))
+                    pil_image.save("test_image.png")
                     byte_to_normalized = 1.0 / 255.0
                     bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
-                    bpy_image.pixels[:] = (
-                        np.asarray(pil_image.convert("RGBA"), dtype=np.float32) * byte_to_normalized
-                    ).ravel()
+                    # PIL returns rows ordered from top to bottom, blender from bottom to top
+                    pil_pixel_data = np.asarray(pil_image.convert("RGBA"), dtype=np.float32)
+                    bpy_image.pixels[:] = (pil_pixel_data * byte_to_normalized)[::-1].ravel()
+                    bpy_image.pack()
                     return bpy_image
 
-                # TODO: IfcPixelTexture
-                print(f"WARNING. Texture of type {texture['type']} is not yet supported.")
-                return
+                # IfcPixelTexture
+                n_components = texture["ColourComponents"]
+                width, height = texture["Width"], texture["Height"]
+                blender_pixel_data = np.ones(width * height * 4, dtype=np.float32)
+
+                # according to https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPixelTexture.htm
+                # 1 component - grey scale intensity value
+                # 2 components - grey scale + alpha
+                # 3 components - RGB
+                # 4 components - RGBA
+                for i, pixel_str in enumerate(iterable=texture["Pixel"]):
+                    pixel_bytes = int(pixel_str, 2).to_bytes(len(pixel_str) // 8, "big")
+                    pixel_values = np.array(list(pixel_bytes)) / 255
+                    cur_pos = i * 4
+
+                    if n_components in (1, 2):
+                        blender_pixel_data[cur_pos : cur_pos + 3] = pixel_values[0]
+                        if n_components == 2:
+                            blender_pixel_data[cur_pos + 3] = pixel_values[1]
+                        continue
+
+                    # 3, 4 components
+                    blender_pixel_data[cur_pos : cur_pos + 3] = pixel_values[:3]
+                    if n_components == 4:
+                        blender_pixel_data[cur_pos + 3] = pixel_values[3]
+
+                bpy_image = bpy.data.images.new("pixel_texture", width=width, height=height)
+                bpy_image.pixels[:] = blender_pixel_data
+                bpy_image.pack()
+                return bpy_image
 
             if reflectance_method in ["PHYSICAL", "NOTDEFINED"]:
                 bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")

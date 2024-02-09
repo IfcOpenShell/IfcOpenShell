@@ -354,10 +354,4 @@ def load_post(scene):
             bpy.utils.register_class(override_panel)
             bpy.utils.unregister_class(original_panel)
             blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
-    # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
-    for screen in bpy.data.screens:
-        if len(screen.BIMAreaProperties) == 20:
-            continue
-        screen.BIMAreaProperties.clear()
-        for i in range(20):  # 20 is an arbitrary value of split areas
-            screen.BIMAreaProperties.add()
+    tool.Blender.setup_tabs()

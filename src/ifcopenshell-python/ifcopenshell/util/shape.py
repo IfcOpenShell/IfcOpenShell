@@ -217,7 +217,8 @@ def get_edges(geometry):
 def get_faces(geometry):
     """Get all the faces as a numpy array
 
-    Faces are always triangulated.
+    Faces are always triangulated. If the shape is a BRep and you want to get
+    the original untriangulated output, refer to ``get_edges``.
 
     Results are a nested numpy array e.g. [[f1v1, f1v2, f1v3], [f2v1, f2v2, f2v3], ...]
 
@@ -247,7 +248,7 @@ def get_shape_vertices(shape, geometry):
     """
     verts = get_vertices(geometry)
     mat = get_shape_matrix(shape)
-    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
 def get_element_vertices(element, geometry):
@@ -269,7 +270,7 @@ def get_element_vertices(element, geometry):
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
         return verts
     mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-    return np.array([mat @ np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
+    return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
 def get_bottom_elevation(geometry):

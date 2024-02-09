@@ -194,6 +194,7 @@ class PipeTool(BimTool):
 def add_layout_hotkey_operator(layout, text, hotkey, description):
     modifiers = {
         "A": "EVENT_ALT",
+        "C": "EVENT_CTRL",
         "S": "EVENT_SHIFT",
     }
     modifier, key = hotkey.split("_")
@@ -283,6 +284,9 @@ class BimToolUI:
             row.prop(data=cls.props, property="rl2", text="RL")
         elif cls.props.ifc_class in ("IfcSpaceType"):
             add_layout_hotkey_operator(cls.layout, "Generate", "S_G", bpy.ops.bim.generate_space.__doc__)
+        else:
+            row = cls.layout.row(align=True)
+            row.prop(data=cls.props, property="rl_mode", text="RL")
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -414,7 +418,7 @@ class BimToolUI:
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_O")
 
-        if len(context.selected_objects) == 2:
+        if len(context.selected_objects) > 1:
             row.operator("bim.add_opening", text="Apply Void")
         else:
             row.operator("bim.add_potential_opening", text="Add Void")
@@ -444,6 +448,10 @@ class BimToolUI:
         cls.layout.row(align=True).label(text="Mode")
         add_layout_hotkey_operator(cls.layout, "Void", "A_O", "Toggle openings")
         add_layout_hotkey_operator(cls.layout, "Decomposition", "A_D", "Select decomposition")
+
+        cls.layout.row(align=True).label(text="Aggregation")
+        add_layout_hotkey_operator(cls.layout, "Assign", "C_P", bpy.ops.bim.aggregate_assign_object.__doc__)
+        add_layout_hotkey_operator(cls.layout, "Unassign", "A_P", bpy.ops.bim.aggregate_unassign_object.__doc__)
 
         cls.layout.separator()
         add_layout_hotkey_operator(
@@ -580,12 +588,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_C_P(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.assign_object()
+        bpy.ops.bim.aggregate_assign_object()
 
     def hotkey_A_P(self):
         if not bpy.context.selected_objects:
             return
-        bpy.ops.bim.unassign_object()
+        bpy.ops.bim.aggregate_unassign_object()
 
     def hotkey_S_C(self):
         if not bpy.context.selected_objects:

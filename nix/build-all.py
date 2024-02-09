@@ -892,8 +892,9 @@ if "IfcOpenShell-Python" in targets:
             module_dir = os.path.dirname(run([python_executable, "-c", "import inspect, ifcopenshell; print(inspect.getfile(ifcopenshell))"]))
 
             if platform.system() != "Darwin":
-                # TODO: This symbol name depends on the Python version?
-                run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
+                if BUILD_CFG == "Release":
+                    # TODO: This symbol name depends on the Python version?
+                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", "_ifcopenshell_wrapper.so"], cwd=module_dir)
 
             return module_dir
 

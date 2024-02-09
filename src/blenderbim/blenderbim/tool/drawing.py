@@ -889,13 +889,34 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def update_text_value(cls, obj):
-        props = obj.BIMTextProperties
+        element = tool.Ifc.get_entity(obj)
+        if element.is_a("IfcTypeProduct"):
+            objs = [obj]
+            for occurrence in ifcopenshell.util.element.get_types(element):
+                obj = tool.Ifc.get_object(occurrence)
+                if obj:
+                    objs.append(obj)
+        else:
+            objs = []
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type and element_type.RepresentationMaps:
+                obj = tool.Ifc.get_object(element_type)
+                if obj:
+                    objs.append(obj)
+                for occurrence in ifcopenshell.util.element.get_types(element_type):
+                    obj = tool.Ifc.get_object(occurrence)
+                    if obj:
+                        objs.append(obj)
+            else:
+                objs = [obj]
 
-        literals = cls.get_text_literal(obj, return_list=True)
-        cls.import_text_attributes(obj)
-        for i, literal in enumerate(literals):
-            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
-            props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
+        for obj in objs:
+            props = obj.BIMTextProperties
+            literals = cls.get_text_literal(obj, return_list=True)
+            cls.import_text_attributes(obj)
+            for i, literal in enumerate(literals):
+                product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
+                props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
     def update_text_size_pset(cls, obj):
@@ -1571,12 +1592,8 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def is_drawing_active(cls):
         camera = bpy.context.scene.camera
-        return (
-            camera
-            and camera.type == "CAMERA"
-            and camera.BIMObjectProperties.ifc_definition_id
-            and any(a.type == "VIEW_3D" for a in bpy.context.screen.areas)
-        )
+        area = tool.Blender.get_view3d_area()
+        return camera and camera.type == "CAMERA" and camera.BIMObjectProperties.ifc_definition_id and area
 
     @classmethod
     def is_camera_orthographic(cls):
@@ -1593,7 +1610,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def activate_drawing(cls, camera):
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
             bpy.ops.view3d.localview()
@@ -1721,8 +1738,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         local_x = [v.x for v in local_bbox]
         local_y = [v.y for v in local_bbox]
         local_z = [v.z for v in local_bbox]
-        aabb1_min = (-x/2, -y/2, -clip_end)
-        aabb1_max = (x/2, y/2, -clip_start)
+        aabb1_min = (-x / 2, -y / 2, -clip_end)
+        aabb1_max = (x / 2, y / 2, -clip_start)
         aabb2_min = (min(local_x), min(local_y), min(local_z))
         aabb2_max = (max(local_x), max(local_y), max(local_z))
         for i in range(3):

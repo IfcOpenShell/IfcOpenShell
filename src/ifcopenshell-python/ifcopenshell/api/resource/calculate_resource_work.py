@@ -54,7 +54,7 @@ class Usecase:
             the work performed.
         :type resource: ifcopenshell.entity_instance.entity_instance
         :return None:
-        :rtype None:
+        :rtype: None:
         """
         self.file = file
         self.settings = {"resource": resource}
@@ -62,9 +62,7 @@ class Usecase:
     def execute(self):
         if ifcopenshell.util.constraint.is_attribute_locked(self.settings["resource"], "Usage.ScheduleWork"):
             return
-        amount_worked = ifcopenshell.util.resource.get_resource_required_work(
-            self.settings["resource"]
-        )
+        amount_worked = ifcopenshell.util.resource.get_resource_required_work(self.settings["resource"])
         if not amount_worked:
             return
         if not self.settings["resource"].Usage:
