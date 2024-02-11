@@ -47,6 +47,7 @@
 #include <BRepLProp_SLProps.hxx>
 #include <BVH_BinaryTree.hxx>
 #include <BVH_Box.hxx>
+#include <BVH_BoxSet.hxx>
 #include <BVH_LinearBuilder.hxx>
 #include <BVH_Tree.hxx>
 #include <Bnd_OBB.hxx>
@@ -68,6 +69,15 @@ namespace IfcGeom {
 		std::array<double, 3> normal;
 		double ray_distance;
 		double dot_product;
+	};
+
+	struct clash {
+        int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
+		IfcUtil::IfcBaseClass* a;
+		IfcUtil::IfcBaseClass* b;
+		double distance;
+		std::array<double, 3> p1;
+		std::array<double, 3> p2;
 	};
 
 	namespace {
@@ -453,7 +463,7 @@ namespace IfcGeom {
                 return bvh_clashes;
             }
 
-			bool test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
+			clash test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
                 // If there are verts of A inside shape B (protrusion):
                 //  1. For each vert, find the shortest distance to the closest face
                 //  2. Find the innermost vert (i.e. the vert that has the longest distance)
@@ -461,13 +471,8 @@ namespace IfcGeom {
                 //  1. Intersect each edge with shape B
                 //  2. Find the longest distance between intersections
 
-                // OBB check
-                const auto& obb_a = obbs_.find(tA)->second;
                 auto obb_b = obbs_.find(tB)->second;
                 obb_b.Enlarge(-tolerance);
-                if (obb_a.IsOut(obb_b)) {
-                    return false;
-                }
 
                 // No need to search beyond the distance of the max protrusion.
                 const double max_protrusion = max_protrusions_.find(tB)->second;
@@ -478,7 +483,7 @@ namespace IfcGeom {
 
                 std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, max_protrusion);
                 if (bvh_clashes.empty()) {
-                    return false;
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
                 }
 
                 const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
@@ -566,11 +571,7 @@ namespace IfcGeom {
                                         pierce_point1 = p_min;
                                         pierce_point2 = p_max;
                                         if ( ! check_all) {
-                                            clash_types_.push_back(1);
-                                            protrusion_distances_.push_back(pierce);
-                                            protrusion_points_.push_back(pierce_point1);
-                                            surface_points_.push_back(pierce_point2);
-                                            return true;
+                                            return {1, tA, tB, pierce, pierce_point1, pierce_point2};
                                         }
                                     }
                                 }
@@ -634,11 +635,7 @@ namespace IfcGeom {
                                             v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
 
                                             if ( ! check_all && v_protrusion > tolerance) {
-                                                clash_types_.push_back(0);
-                                                protrusion_distances_.push_back(v_protrusion);
-                                                protrusion_points_.push_back(v_protrusion_point);
-                                                surface_points_.push_back(v_surface_point);
-                                                return true;
+                                                return {0, tA, tB, v_protrusion, v_protrusion_point, v_surface_point};
                                             }
                                         }
                                     }
@@ -653,11 +650,7 @@ namespace IfcGeom {
                                 protrusion_point = v_protrusion_point;
                                 surface_point = v_surface_point;
                                 if (protrusion > (max_protrusion - 1e-3)) {
-                                    clash_types_.push_back(0);
-                                    protrusion_distances_.push_back(protrusion);
-                                    protrusion_points_.push_back(protrusion_point);
-                                    surface_points_.push_back(surface_point);
-                                    return true;
+                                    return {0, tA, tB, protrusion, protrusion_point, surface_point};
                                 }
                             }
                         }
@@ -665,41 +658,24 @@ namespace IfcGeom {
                 }
 
                 if (protrusion > tolerance) {
-                    clash_types_.push_back(0);
-                    protrusion_distances_.push_back(protrusion);
-                    protrusion_points_.push_back(protrusion_point);
-                    surface_points_.push_back(surface_point);
-                    return true;
+                    return {0, tA, tB, protrusion, protrusion_point, surface_point};
                 }
 
                 if (pierce > tolerance) {
-                    // Don't like this inaccurate reuse of variables.
-                    clash_types_.push_back(1);
-                    protrusion_distances_.push_back(pierce);
-                    protrusion_points_.push_back(pierce_point1);
-                    surface_points_.push_back(pierce_point2);
-                    return true;
+                    return {1, tA, tB, pierce, pierce_point1, pierce_point2};
                 }
 
-                return false;
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
             }
 
-			bool test_collision(const T& tA, const T& tB, bool allow_touching) const {
-                // OBB check
-                auto obb_a = obbs_.find(tA)->second;
-                auto obb_b = obbs_.find(tB)->second;
-                obb_b.Enlarge(-0.001); // Within 1mm is touching
-                if (obb_a.IsOut(obb_b)) {
-                    return false;
-                }
-
+			clash test_collision(const T& tA, const T& tB, bool allow_touching) const {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
 
                 std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b);
                 if (bvh_clashes.empty()) {
-                    return false;
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
                 }
 
                 const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
@@ -756,11 +732,7 @@ namespace IfcGeom {
                                 gp_Vec int1, int2;
                                 if (trianglesIntersect(v1_a_vec, v2_a_vec, v3_a_vec, v1_b_vec, v2_b_vec, v3_b_vec, int1, int2, ! allow_touching)) {
                                     if (allow_touching) {
-                                        clash_types_.push_back(2);
-                                        protrusion_distances_.push_back(0);
-                                        protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
-                                        surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
-                                        return true;
+                                        return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
                                     }
 
                                     // A non-touching collision is defined as two triangles that:
@@ -778,11 +750,7 @@ namespace IfcGeom {
                                             && (v2_b_vec - int1).Magnitude() > 1e-4
                                             && (v3_b_vec - int1).Magnitude() > 1e-4
                                         ) {
-                                            clash_types_.push_back(2);
-                                            protrusion_distances_.push_back(0);
-                                            protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
-                                            surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
-                                            return true;
+                                            return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
                                         }
                                     }
 
@@ -796,11 +764,7 @@ namespace IfcGeom {
                                             && (v2_a_vec - int1).Magnitude() > 1e-4
                                             && (v3_a_vec - int1).Magnitude() > 1e-4
                                         ) {
-                                            clash_types_.push_back(2);
-                                            protrusion_distances_.push_back(0);
-                                            protrusion_points_.push_back({int1.X(), int1.Y(), int1.Z()});
-                                            surface_points_.push_back({int2.X(), int2.Y(), int2.Z()});
-                                            return true;
+                                            return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
                                         }
                                     }
 
@@ -814,11 +778,7 @@ namespace IfcGeom {
                                             && (v2_b_vec - int2).Magnitude() > 1e-4
                                             && (v3_b_vec - int2).Magnitude() > 1e-4
                                         ) {
-                                            clash_types_.push_back(2);
-                                            protrusion_distances_.push_back(0);
-                                            protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
-                                            surface_points_.push_back({int1.X(), int1.Y(), int1.Z()});
-                                            return true;
+                                            return {2, tA, tB, 0, {int2.X(), int2.Y(), int2.Z()}, {int1.X(), int1.Y(), int1.Z()}};
                                         }
                                     }
 
@@ -832,11 +792,7 @@ namespace IfcGeom {
                                             && (v2_a_vec - int2).Magnitude() > 1e-4
                                             && (v3_a_vec - int2).Magnitude() > 1e-4
                                         ) {
-                                            clash_types_.push_back(2);
-                                            protrusion_distances_.push_back(0);
-                                            protrusion_points_.push_back({int2.X(), int2.Y(), int2.Z()});
-                                            surface_points_.push_back({int1.X(), int1.Y(), int1.Z()});
-                                            return true;
+                                            return {2, tA, tB, 0, {int2.X(), int2.Y(), int2.Z()}, {int1.X(), int1.Y(), int1.Z()}};
                                         }
                                     }
                                 }
@@ -844,25 +800,17 @@ namespace IfcGeom {
                         }
                     }
                 }
-                return false;
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
             }
 
-			bool test_clearance(const T& tA, const T& tB, double clearance, bool check_all) const {
-                // OBB check
-                const auto& obb_a = obbs_.find(tA)->second;
-                auto obb_b = obbs_.find(tB)->second;
-                obb_b.Enlarge(clearance);
-                if (obb_a.IsOut(obb_b)) {
-                    return false;
-                }
-
+			clash test_clearance(const T& tA, const T& tB, double clearance, bool check_all) const {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
 
                 std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, clearance);
                 if (bvh_clashes.empty()) {
-                    return false;
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
                 }
 
                 const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
@@ -917,10 +865,7 @@ namespace IfcGeom {
                                     clearance_point1 = {cp.X(), cp.Y(), cp.Z()};
                                     clearance_point2 = {cq.X(), cq.Y(), cq.Z()};
                                     if ( ! check_all || min_clearance < 1e-4) {
-                                        protrusion_distances_.push_back(min_clearance);
-                                        protrusion_points_.push_back(clearance_point1);
-                                        surface_points_.push_back(clearance_point2);
-                                        return true;
+                                        return {3, tA, tB, min_clearance, clearance_point1, clearance_point2};
                                     }
                                 }
                             }
@@ -929,13 +874,11 @@ namespace IfcGeom {
                 }
 
                 if (min_clearance < clearance) {
-                    protrusion_distances_.push_back(min_clearance);
-                    protrusion_points_.push_back(clearance_point1);
-                    surface_points_.push_back(clearance_point2);
-                    return true;
+                    return {3, tA, tB, min_clearance, clearance_point1, clearance_point2};
+
                 }
 
-                return false;
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
             }
 
 			bool test(const TopoDS_Shape& A, const TopoDS_Shape& B, bool completely_within, double extend) const {
@@ -978,11 +921,7 @@ namespace IfcGeom {
 
 			// @todo this is ugly, embed this in the return type
 			mutable std::vector<double> distances_;
-            // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
-			mutable std::vector<int> clash_types_;
 			mutable std::vector<double> protrusion_distances_;
-			mutable std::vector<std::array<double, 3>> protrusion_points_;
-			mutable std::vector<std::array<double, 3>> surface_points_;
             mutable long long tri_count_ = 0;
 
 		public:
@@ -1002,12 +941,10 @@ namespace IfcGeom {
                 // Note that the original add function is also used elsewhere (e.g. boolean_utils.cpp)
                 // We don't want to randomly add triangulated voids in our
                 // tree, so for now this is a separate function.
-                // BRepMesh_IncrementalMesh(s, 1.e-3, false, 0.5);
 
 				Bnd_Box b;
 				BRepBndLib::AddClose(s, b);
-				tree_.Add(t, b);
-				shapes_[t] = s;
+                aabbs_[t] = b;
 
                 Bnd_OBB obb;
                 // If IsOptimal = True it doubles the execution time.
@@ -1145,12 +1082,241 @@ namespace IfcGeom {
 				}
 			}
 
-			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002, bool check_all = true) const {
-				clash_types_.clear();
-				protrusion_distances_.clear();
-				protrusion_points_.clear();
-				surface_points_.clear();
+            std::unique_ptr<BVH_BoxSet<double, 3>> build_box_set(const std::vector<T>& elements) const {
+                double x, y, z, X, Y, Z;
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set = std::make_unique<BVH_BoxSet<double, 3>>();
+                for (int i=0; i<elements.size(); ++i) {
+                    auto it = aabbs_.find(elements[i]);
+                    if (it == aabbs_.end()) {
+                        continue;
+                    }
+                    const auto& aabb = it->second;
+                    aabb.Get(x, y, z, X, Y, Z);
+                    const BVH_Box<Standard_Real, 3>::BVH_VecNt min(x, y, z);
+                    const BVH_Box<Standard_Real, 3>::BVH_VecNt max(X, Y, Z);
+                    BVH_Box<Standard_Real, 3> bvh_box(min, max);
+                    box_set->Add(i, bvh_box);
+                }
+                return box_set;
+            }
 
+            std::vector<clash> clash_intersection_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b,
+                    double tolerance = 0.002, bool check_all = true
+                ) const {
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, 0.0);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                const auto& obb_a = obbs_.find(t_a)->second;
+                                auto obb_b = obbs_.find(t_b)->second;
+                                obb_b.Enlarge(-tolerance);
+                                if (obb_a.IsOut(obb_b)) {
+                                    continue;
+                                }
+
+                                bool has_clash = false;
+                                bool is_manifold = false;
+                                clash result;
+
+                                if (is_manifold_.find(t_b)->second) {
+                                    is_manifold = true;
+                                    clash intersection = test_intersection(t_a, t_b, tolerance, check_all);
+                                    if (intersection.clash_type != -1) {
+                                        has_clash = true;
+                                        result = intersection;
+                                        if ( ! check_all) {
+                                            results.push_back(result);
+                                            continue;
+                                        }
+                                    }
+                                }
+
+                                if (is_manifold_.find(t_a)->second) {
+                                    is_manifold = true;
+                                    clash intersection = test_intersection(t_b, t_a, tolerance, check_all);
+                                    if (intersection.clash_type != -1) {
+                                        has_clash = true;
+                                        // Replace the clash result if any of these criteria apply:
+                                        // - We don't have a clash yet
+                                        // - Our previous clash is piercing, and our new one is a protrusion
+                                        // - We have the same clash type, but our clash is more severe
+                                        if (
+                                            ! has_clash
+                                            || (result.clash_type == 1 && intersection.clash_type == 0)
+                                            || (
+                                                   result.clash_type == intersection.clash_type
+                                                   && intersection.distance > result.distance
+                                               )
+                                        ) {
+                                            result = intersection;
+                                        }
+                                    }
+                                }
+
+                                if ( ! is_manifold) {
+                                    clash collision = test_collision(t_a, t_b, false);
+                                    if (collision.clash_type != -1) {
+                                        has_clash = true;
+                                        result = collision;
+                                    }
+                                }
+
+                                if (has_clash) {
+                                    results.push_back(result);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            std::vector<clash> clash_collision_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b, bool allow_touching = false
+                ) const {
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, 0.0);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                const auto& obb_a = obbs_.find(t_a)->second;
+                                auto obb_b = obbs_.find(t_b)->second;
+                                obb_b.Enlarge(-0.001);
+                                if (obb_a.IsOut(obb_b)) {
+                                    continue;
+                                }
+
+                                clash result = test_collision(t_a, t_b, allow_touching);
+                                if (result.clash_type != -1) {
+                                    results.push_back(result);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+            std::vector<clash> clash_clearance_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b,
+                    double clearance = 0.05, bool check_all = false
+                ) const {
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, clearance);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                const auto& obb_a = obbs_.find(t_a)->second;
+                                auto obb_b = obbs_.find(t_b)->second;
+                                obb_b.Enlarge(clearance);
+                                if (obb_a.IsOut(obb_b)) {
+                                    continue;
+                                }
+
+                                clash result = test_clearance(t_a, t_b, clearance, check_all);
+                                if (result.clash_type != -1) {
+                                    results.push_back(result);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                return results;
+            }
+
+			std::vector<T> clash_intersection(const T& t, double tolerance = 0.002, bool check_all = true) const {
 				std::vector<T> ts = select_box(t, true, 1e-5);
 				if (ts.empty()) {
 					return ts;
@@ -1166,11 +1332,11 @@ namespace IfcGeom {
                     }
 
                     if (is_manifold_.find(*it)->second) {
-                        if (test_intersection(t, *it, tolerance, check_all)) {
+                        if (test_intersection(t, *it, tolerance, check_all).clash_type != -1) {
                             ts_filtered.push_back(*it);
                         }
                     } else {
-                        if (test_collision(t, *it, false)) {
+                        if (test_collision(t, *it, false).clash_type != -1) {
                             ts_filtered.push_back(*it);
                         }
                     }
@@ -1182,8 +1348,6 @@ namespace IfcGeom {
 
 
 			std::vector<T> clash_collision(const T& t, bool allow_touching = false) const {
-				protrusion_points_.clear();
-
 				std::vector<T> ts = select_box(t, true, 1e-5);
 				if (ts.empty()) {
 					return ts;
@@ -1198,7 +1362,7 @@ namespace IfcGeom {
                         continue; // Don't clash against itself.
                     }
 
-					if (test_collision(t, *it, allow_touching)) {
+					if (test_collision(t, *it, allow_touching).clash_type != -1) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -1208,10 +1372,6 @@ namespace IfcGeom {
             }
 
 			std::vector<T> clash_clearance(const T& t, double clearance, bool check_all) const {
-				protrusion_distances_.clear();
-				protrusion_points_.clear();
-				surface_points_.clear();
-
 				std::vector<T> ts = select_box(t, true, clearance);
 				if (ts.empty()) {
 					return ts;
@@ -1226,7 +1386,7 @@ namespace IfcGeom {
                         continue; // Don't clash against itself.
                     }
 
-					if (test_clearance(t, *it, clearance, check_all)) {
+					if (test_clearance(t, *it, clearance, check_all).clash_type != -1) {
 						ts_filtered.push_back(*it);
 					}
 				}
@@ -1346,6 +1506,7 @@ namespace IfcGeom {
 
 			tree_t tree_;
 			map_t shapes_;
+            std::map<T, Bnd_Box> aabbs_;
             std::map<T, Bnd_OBB> obbs_; 
             std::map<T, double> max_protrusions_; 
             std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
@@ -1467,20 +1628,8 @@ namespace IfcGeom {
 			return distances_;
 		}
 
-		const std::vector<int>& clash_types() const {
-			return clash_types_;
-		}
-
 		const std::vector<double>& protrusion_distances() const {
 			return protrusion_distances_;
-		}
-
-		const std::vector<std::array<double, 3>>& protrusion_points() const {
-			return protrusion_points_;
-		}
-
-		const std::vector<std::array<double, 3>>& surface_points() const {
-			return surface_points_;
 		}
 
 		std::vector<IfcGeom::ray_intersection_result> select_ray(const gp_Pnt& p0, const gp_Dir& d, double length = 1000.) const {

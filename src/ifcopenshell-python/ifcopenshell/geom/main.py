@@ -181,6 +181,18 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("extend", -1.0e-5))
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
+    def clash_intersection_many(self, set_a, set_b, tolerance=0.002, check_all=True):
+        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
+        return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
+
+    def clash_collision_many(self, set_a, set_b, allow_touching=False):
+        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
+        return ifcopenshell_wrapper.tree.clash_collision_many(*args)
+
+    def clash_clearance_many(self, set_a, set_b, clearance=0.05, check_all=False):
+        args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
+        return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
     def clash_intersection(self, value, tolerance=0.002, check_all=True):
         def unwrap(value):
             if isinstance(value, entity_instance):

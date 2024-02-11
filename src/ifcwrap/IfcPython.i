@@ -206,5 +206,4 @@
 	
 namespace std {
   %template(float_array_3) array<double, 3>;
-  %template(vector_float_array_3) vector<array<double, 3>>;
 }
