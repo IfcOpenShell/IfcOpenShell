@@ -1613,9 +1613,14 @@ class Drawing(blenderbim.core.tool.Drawing):
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
-            bpy.ops.view3d.localview()
+            #turn off local view before activating drawing, and then turn it on again.
+            for a in bpy.context.screen.areas:
+                if a.type == 'VIEW_3D':
+                    override = bpy.context.copy()
+                    override['area'] = a
+                    bpy.ops.view3d.localview(override)
             bpy.context.scene.camera = camera
-            bpy.ops.view3d.localview()
+            bpy.ops.view3d.localview(override)
         else:
             bpy.context.scene.camera = camera
         area.spaces[0].region_3d.view_perspective = "CAMERA"
