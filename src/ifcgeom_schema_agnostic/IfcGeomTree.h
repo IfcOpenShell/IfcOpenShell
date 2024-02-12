@@ -40,6 +40,9 @@
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepExtrema_ExtPF.hxx>
 
+#include <vector>
+#include <future>
+#include <mutex>
 #include <stack>
 #include <unordered_map>
 #include <unordered_set>
@@ -1100,10 +1103,29 @@ namespace IfcGeom {
                 return box_set;
             }
 
+            struct clash_task {
+                T a, b;
+            };
+
+            std::vector<std::vector<clash_task>> allocate_tasks_to_threads(
+                    std::vector<clash_task>& task_queue) const {
+                int num_threads = std::thread::hardware_concurrency();
+                std::vector<std::vector<clash_task>> threaded_tasks(num_threads);
+
+                size_t tasks_per_thread = task_queue.size() / num_threads;
+                for (int i = 0; i < num_threads; ++i) {
+                    auto startIter = std::next(task_queue.begin(), i * tasks_per_thread);
+                    auto endIter = (i == num_threads - 1) ? task_queue.end() : std::next(startIter, tasks_per_thread);
+                    threaded_tasks[i] = std::vector<clash_task>(startIter, endIter);
+                }
+                return threaded_tasks;
+            }
+
             std::vector<clash> clash_intersection_many(
                     const std::vector<T>& set_a, const std::vector<T>& set_b,
                     double tolerance = 0.002, bool check_all = true
                 ) const {
+                std::vector<clash_task> task_queue;
                 std::vector<clash> results;
 
                 std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
@@ -1138,65 +1160,89 @@ namespace IfcGeom {
                                     continue;
                                 }
 
-                                const auto& obb_a = obbs_.find(t_a)->second;
-                                auto obb_b = obbs_.find(t_b)->second;
-                                obb_b.Enlarge(-tolerance);
-                                if (obb_a.IsOut(obb_b)) {
-                                    continue;
-                                }
-
-                                bool has_clash = false;
-                                bool is_manifold = false;
-                                clash result;
-
-                                if (is_manifold_.find(t_b)->second) {
-                                    is_manifold = true;
-                                    clash intersection = test_intersection(t_a, t_b, tolerance, check_all);
-                                    if (intersection.clash_type != -1) {
-                                        has_clash = true;
-                                        result = intersection;
-                                        if ( ! check_all) {
-                                            results.push_back(result);
-                                            continue;
-                                        }
-                                    }
-                                }
-
-                                if (is_manifold_.find(t_a)->second) {
-                                    is_manifold = true;
-                                    clash intersection = test_intersection(t_b, t_a, tolerance, check_all);
-                                    if (intersection.clash_type != -1) {
-                                        has_clash = true;
-                                        // Replace the clash result if any of these criteria apply:
-                                        // - We don't have a clash yet
-                                        // - Our previous clash is piercing, and our new one is a protrusion
-                                        // - We have the same clash type, but our clash is more severe
-                                        if (
-                                            ! has_clash
-                                            || (result.clash_type == 1 && intersection.clash_type == 0)
-                                            || (
-                                                   result.clash_type == intersection.clash_type
-                                                   && intersection.distance > result.distance
-                                               )
-                                        ) {
-                                            result = intersection;
-                                        }
-                                    }
-                                }
-
-                                if ( ! is_manifold) {
-                                    clash collision = test_collision(t_a, t_b, false);
-                                    if (collision.clash_type != -1) {
-                                        has_clash = true;
-                                        result = collision;
-                                    }
-                                }
-
-                                if (has_clash) {
-                                    results.push_back(result);
-                                }
+                                task_queue.emplace_back(clash_task{t_a, t_b});
                             }
                         }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, tolerance, check_all] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(-tolerance);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            bool has_clash = false;
+                            bool is_manifold = false;
+                            clash result;
+
+                            if (is_manifold_.find(task.b)->second) {
+                                is_manifold = true;
+                                clash intersection = test_intersection(task.a, task.b, tolerance, check_all);
+                                if (intersection.clash_type != -1) {
+                                    has_clash = true;
+                                    result = intersection;
+                                    if ( ! check_all) {
+                                        thread_results.push_back(result);
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            if (is_manifold_.find(task.a)->second) {
+                                is_manifold = true;
+                                clash intersection = test_intersection(task.b, task.a, tolerance, check_all);
+                                if (intersection.clash_type != -1) {
+                                    // Replace the clash result if any of these criteria apply:
+                                    // - We don't have a clash yet
+                                    // - Our previous clash is piercing, and our new one is a protrusion
+                                    // - We have the same clash type, but our clash is more severe
+                                    if (
+                                        ! has_clash
+                                        || (result.clash_type == 1 && intersection.clash_type == 0)
+                                        || (
+                                               result.clash_type == intersection.clash_type
+                                               && intersection.distance > result.distance
+                                           )
+                                    ) {
+                                        has_clash = true;
+                                        result = intersection;
+                                    }
+                                }
+                            }
+
+                            if ( ! is_manifold) {
+                                clash collision = test_collision(task.a, task.b, false);
+                                if (collision.clash_type != -1) {
+                                    has_clash = true;
+                                    result = collision;
+                                }
+                            }
+
+                            if (has_clash) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
                     }
                 }
 
@@ -1206,6 +1252,7 @@ namespace IfcGeom {
             std::vector<clash> clash_collision_many(
                     const std::vector<T>& set_a, const std::vector<T>& set_b, bool allow_touching = false
                 ) const {
+                std::vector<clash_task> task_queue;
                 std::vector<clash> results;
 
                 std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
@@ -1240,19 +1287,43 @@ namespace IfcGeom {
                                     continue;
                                 }
 
-                                const auto& obb_a = obbs_.find(t_a)->second;
-                                auto obb_b = obbs_.find(t_b)->second;
-                                obb_b.Enlarge(-0.001);
-                                if (obb_a.IsOut(obb_b)) {
-                                    continue;
-                                }
-
-                                clash result = test_collision(t_a, t_b, allow_touching);
-                                if (result.clash_type != -1) {
-                                    results.push_back(result);
-                                }
+                                task_queue.emplace_back(clash_task{t_a, t_b});
                             }
                         }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, allow_touching] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(-0.001);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            clash result = test_collision(task.a, task.b, allow_touching);
+                            if (result.clash_type != -1) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
                     }
                 }
 
@@ -1263,6 +1334,7 @@ namespace IfcGeom {
                     const std::vector<T>& set_a, const std::vector<T>& set_b,
                     double clearance = 0.05, bool check_all = false
                 ) const {
+                std::vector<clash_task> task_queue;
                 std::vector<clash> results;
 
                 std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
@@ -1297,19 +1369,43 @@ namespace IfcGeom {
                                     continue;
                                 }
 
-                                const auto& obb_a = obbs_.find(t_a)->second;
-                                auto obb_b = obbs_.find(t_b)->second;
-                                obb_b.Enlarge(clearance);
-                                if (obb_a.IsOut(obb_b)) {
-                                    continue;
-                                }
-
-                                clash result = test_clearance(t_a, t_b, clearance, check_all);
-                                if (result.clash_type != -1) {
-                                    results.push_back(result);
-                                }
+                                task_queue.emplace_back(clash_task{t_a, t_b});
                             }
                         }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, clearance, check_all] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(clearance);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            clash result = test_clearance(task.a, task.b, clearance, check_all);
+                            if (result.clash_type != -1) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
                     }
                 }
 
