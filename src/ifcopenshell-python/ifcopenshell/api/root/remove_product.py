@@ -104,6 +104,13 @@ class Usecase:
             ):
                 ifcopenshell.api.run("grid.remove_grid_axis", self.file, axis=axis)
 
+        def element_exists(element_id):
+            try:
+                self.file.by_id(element_id)
+                return True
+            except RuntimeError:
+                return False
+
         # TODO: remove object placement and other relationships
         for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["product"])]:
             try:
@@ -144,14 +151,21 @@ class Usecase:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelNests"):
                 if inverse.RelatingObject == self.settings["product"]:
+                    inverse_id = inverse.id()
                     for subelement in inverse.RelatedObjects:
                         if subelement.is_a("IfcDistributionPort"):
                             ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
-                    if not inverse.RelatedObjects:
+                    # IfcRelNests could have been already deleted after removing one of the products
+                    if element_exists(inverse_id):
                         history = inverse.OwnerHistory
                         self.file.remove(inverse)
                         if history:
                             ifcopenshell.util.element.remove_deep2(self.file, history)
+                elif inverse.RelatedObjects == (self.settings["product"],):
+                    history = inverse.OwnerHistory
+                    self.file.remove(inverse)
+                    if history:
+                        ifcopenshell.util.element.remove_deep2(self.file, history)
             elif inverse.is_a("IfcRelAggregates"):
                 if inverse.RelatingObject == self.settings["product"] or len(inverse.RelatedObjects) == 1:
                     history = inverse.OwnerHistory

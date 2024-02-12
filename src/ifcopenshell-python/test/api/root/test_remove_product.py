@@ -187,6 +187,28 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelNests")) == 0
         assert len(self.file.by_type("IfcDistributionPort")) == 0
 
+    def test_removing_all_nesting_relationships_of_a_whole(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=element)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelNests")) == 0
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcBeam")) == 1
+
+    def test_removing_all_nesting_relationships_of_a_part(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
+        ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
+        total_entities = len(list(self.file))
+        ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
+        assert len(list(self.file)) == total_entities - 2
+        assert len(self.file.by_type("IfcRelNests")) == 0
+        assert len(self.file.by_type("IfcWall")) == 1
+        assert len(self.file.by_type("IfcBeam")) == 0
+
     def test_removing_all_aggregate_relationships_of_a_whole(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
