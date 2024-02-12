@@ -101,6 +101,8 @@ class Geometry(blenderbim.core.tool.Geometry):
                     parent_collection = parent_obj.BIMObjectProperties.collection
                     for child in collection.children:
                         parent_collection.children.link(child)
+                    for child_object in collection.objects:
+                        parent_collection.objects.link(child_object)
             bpy.data.collections.remove(collection)
         if getattr(element, "FillsVoids", None):
             bpy.ops.bim.remove_filling(filling=element.id())
