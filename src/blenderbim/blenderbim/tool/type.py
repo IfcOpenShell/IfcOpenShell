@@ -63,8 +63,9 @@ class Type(blenderbim.core.tool.Type):
         types = ifc_file.by_type("IfcElementType")
         # exclude IfcSpatialElementType
         types += ifc_file.by_type("IfcTypeProduct", include_subtypes=False)
-        types += ifc_file.by_type("IfcWindowStyle")
-        types += ifc_file.by_type("IfcDoorStyle")
+        if not tool.Ifc.get_schema().startswith("IFC4X3"):
+            types += ifc_file.by_type("IfcWindowStyle")
+            types += ifc_file.by_type("IfcDoorStyle")
         return types
 
     @classmethod
