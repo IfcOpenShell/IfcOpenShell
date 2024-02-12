@@ -629,6 +629,13 @@ if(ENABLE_BUILD_OPTIMIZATIONS)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELEASE} -O3")
     endif()
+else()
+    # @tfk I commented this out as this kind of defeats the purpose of RelWithDebInfo. For the
+    # best debugging experience simply use Debug. Note that in MSVC you can selectively toggle
+    # optimization on a specific file if you're investigating a specific issue.
+    # if(MSVC)
+    #     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Od")
+    # endif()
 endif(ENABLE_BUILD_OPTIMIZATIONS)
 
 if(MSVC)
