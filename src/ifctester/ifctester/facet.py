@@ -224,7 +224,7 @@ class Attribute(Facet):
         for entity in schema.entities():
             for attribute in entity.attributes():
                 if attribute.name() == self.name:
-                    results.extend(ifc_file.by_type(entity.name(), include_subtypes=False))
+                    results.extend(ifc_file.by_type(entity.name(), include_subtypes=True))
 
         # TODO: perhaps we should consider value in the filter
 
