@@ -73,7 +73,7 @@ int main() {
 
 	// Lateron changing the name of the IfcProject can be done by obtaining a reference to the 
 	// project, which has been created automatically.
-	file.getSingle<IfcSchema::IfcProject>()->setName("IfcOpenHouse"s);
+	file.getSingle<IfcSchema::IfcProject>()->setName("IfcAdvancedHouse"s);
 
 	// To demonstrate the ability to serialize arbitrary opencascade solids a building envelope is
 	// constructed by applying boolean operations. Naturally, in IFC, building elements should be 
