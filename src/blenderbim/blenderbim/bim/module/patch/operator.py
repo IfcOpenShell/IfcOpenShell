@@ -100,6 +100,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
             }
         )
         ifcpatch.write(output, ifc_patch_output)
+        self.report({"INFO"}, f"{props.ifc_patch_recipes} patch executed successfully")
         return {"FINISHED"}
 
 
