@@ -221,10 +221,22 @@ class Attribute(Facet):
 
         results = []
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
-        for entity in schema.entities():
+        entities = {entity.name(): entity for entity in schema.entities()}
+
+        def ignore_subtypes(entity_name):
+            entity = entities[entity_name]
+            for entity in entity.subtypes():
+                del entities[entity_name]
+                ignore_subtypes(entity)
+
+        while entities:
+            entity_name, entity = entities.popitem()
             for attribute in entity.attributes():
                 if attribute.name() == self.name:
-                    results.extend(ifc_file.by_type(entity.name(), include_subtypes=True))
+                    results.extend(ifc_file.by_type(entity_name, include_subtypes=True))
+                    # e.g. if IfcRoot already has .Name, it's safe not to check all it's subtypes attributes
+                    ignore_subtypes(entity_name)
+            del entities[entity_name]
 
         # TODO: perhaps we should consider value in the filter
 
