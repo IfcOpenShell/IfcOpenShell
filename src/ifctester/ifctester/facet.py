@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from functools import lru_cache
 from xmlschema.validators import identities
-from typing import List
+from typing import List, Union
 
 
 def cast_to_value(from_value, to_value):
@@ -86,7 +86,9 @@ class Facet:
                 setattr(self, name, value)
         return self
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: List[ifcopenshell.entity_instance]
+    ) -> List[ifcopenshell.entity_instance]:
         return [e for e in elements if self(e)]
 
     def to_string(self, clause_type, specification=None, requirement=None):
@@ -211,7 +213,9 @@ class Attribute(Facet):
         ]
         super().__init__(name, value, minOccurs, maxOccurs, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
+    ) -> List[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
 
@@ -337,7 +341,9 @@ class Classification(Facet):
 
         super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
+    ) -> List[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
@@ -400,7 +406,9 @@ class PartOf(Facet):
         ]
         super().__init__(name, predefinedType, relation, minOccurs, maxOccurs, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
+    ) -> List[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
@@ -618,7 +626,9 @@ class Property(Facet):
         ]
         super().__init__(propertySet, name, value, datatype, uri, minOccurs, maxOccurs, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
+    ) -> List[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
@@ -883,7 +893,9 @@ class Material(Facet):
         ]
         super().__init__(value, uri, minOccurs, maxOccurs, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
+    ) -> List[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
