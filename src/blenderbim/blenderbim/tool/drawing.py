@@ -837,7 +837,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             if platform.system() == "Darwin":
                 subprocess.call(("open", path))
             elif platform.system() == "Windows":
-                os.startfile(path)
+                os.startfile(os.path.normpath(path))
             else:
                 subprocess.call(("xdg-open", path))
 
