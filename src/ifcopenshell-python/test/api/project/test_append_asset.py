@@ -62,6 +62,25 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.Name == "Material"
 
+    def test_append_a_type_product_where_its_inverse_material_relationship_refers_to_products_not_in_scope(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element_type, material=material)
+        ifcopenshell.api.run("material.assign_material", library, product=element_type2, material=material)
+
+        # appending another type not connected to IfcWall directly
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element_type2)
+        assert set(self.file.by_type("IfcWall")) == set()
+
+        # appending type of IfcWall
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element_type2)
+        assert set(self.file.by_type("IfcWall")) == set()
+
     def test_append_two_type_products_sharing_the_same_material_with_properties(self):
         library = ifcopenshell.api.run("project.create_file")
         element1 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")

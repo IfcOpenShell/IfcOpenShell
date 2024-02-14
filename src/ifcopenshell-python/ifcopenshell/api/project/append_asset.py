@@ -261,6 +261,8 @@ class Usecase:
             return True
         elif self.target_class == "IfcProduct" and element.is_a("IfcTypeProduct"):
             return True
+        elif self.target_class == "IfcTypeProduct" and element.is_a("IfcProduct"):
+            return True
         return False
 
     def reuse_existing_contexts(self):
