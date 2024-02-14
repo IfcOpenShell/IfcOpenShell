@@ -468,6 +468,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
         mix_decorator = group.nodes.new(type="ShaderNodeMixShader")
         mix_decorator.name = "Line Decorator Mix"
+        mix_decorator.inputs[0].default_value = 0  # Directly pass input shader when there is no cutaway
         mix_decorator.location = group_output.location - Vector((200, 0))
 
         mix_section = group.nodes.new(type="ShaderNodeMixShader")
@@ -532,8 +533,15 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         cut_obj.object = obj
         cut_obj.location = last_section_node.location - Vector((400, 150)) - offset
 
-        group.links.new(section_compare.outputs["Value"], last_section_node.inputs["Value"])
-        group.links.new(section_compare.outputs["Line Decorator"], last_section_node.inputs["Line Decorator"])
+        group.links.new(section_compare.outputs["Value"], last_section_node.inputs[0])
+        group.links.new(
+            section_compare.outputs["Line Decorator"],
+            (
+                last_section_node.inputs["Line Decorator"]
+                if "Line Decorator" in last_section_node.inputs
+                else group.nodes.get("Line Decorator Mix").inputs[0]
+            ),
+        )
         group.links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
 
         section_compare.name = "Last Section Compare"
@@ -608,7 +616,14 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
                 previous_section_compare = section_compare.inputs[0].links[0].from_node
                 next_section_compare = section_compare.outputs[0].links[0].to_node
                 section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
-                section_override.links.new(previous_section_compare.outputs[1], next_section_compare.inputs[0])
+                section_override.links.new(
+                    previous_section_compare.outputs[1],
+                    (
+                        next_section_compare.inputs["Line Decorator"]
+                        if "Line Decorator" in next_section_compare.inputs
+                        else next_section_compare.inputs[0]
+                    ),
+                )
                 self.offset_previous_nodes(section_compare, offset_x=200)
             section_override.nodes.remove(section_compare)
             section_override.nodes.remove(tex_coords)
