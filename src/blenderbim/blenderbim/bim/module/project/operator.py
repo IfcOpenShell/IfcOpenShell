@@ -37,6 +37,7 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
 from bpy.app.handlers import persistent
+import numpy as np
 
 
 class NewProject(bpy.types.Operator):
@@ -1130,3 +1131,323 @@ class ImportIFC(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}
+
+
+class xxx(bpy.types.Operator):
+    bl_idname = "bim.xxx"
+    bl_label = "xxx"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import time
+        import multiprocessing
+        import ifcopenshell
+        import ifcopenshell.geom
+        import numpy as np
+        from mathutils import Matrix
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        start = time.time()
+
+        collection = bpy.data.collections.new("Project")
+        # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
+        ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
+        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+
+        settings = ifcopenshell.geom.settings()
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
+        meshes = {}
+        blender_mats = {}
+        if iterator.initialize():
+            while True:
+                shape = iterator.get()
+                element = ifc_file.by_id(shape.id)
+                matrix = shape.transformation.matrix.data
+                faces = shape.geometry.faces
+                verts = shape.geometry.verts
+                materials = shape.geometry.materials
+                material_ids = shape.geometry.material_ids
+
+                m = shape.transformation.matrix.data
+                mat = np.array(
+                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+                )
+
+                mesh = meshes.get(shape.geometry.id, None)
+                if not mesh:
+                    mesh = bpy.data.meshes.new("Mesh")
+
+                    material_to_slot = {}
+                    max_slot_index = 0
+
+                    for i, material in enumerate(materials):
+                        alpha = 1.0
+                        if material.has_transparency and material.transparency > 0:
+                            alpha = 1.0 - material.transparency
+                        diffuse = material.diffuse + (alpha,)
+                        material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+                        blender_mat = blender_mats.get(material_name, None)
+                        if not blender_mat:
+                            blender_mat = bpy.data.materials.new(material_name)
+                            blender_mat.diffuse_color = diffuse
+                            blender_mats[material_name] = blender_mat
+                        slot_index = mesh.materials.find(material.name)
+                        if slot_index == -1:
+                            mesh.materials.append(blender_mat)
+                            slot_index = max_slot_index
+                            max_slot_index += 1
+                        material_to_slot[i] = slot_index
+
+                    material_index = [(material_to_slot[i] if i != -1 else 0) for i in material_ids]
+
+                    num_vertices = len(verts) // 3
+                    total_faces = len(faces)
+                    loop_start = range(0, total_faces, 3)
+                    num_loops = total_faces // 3
+                    loop_total = [3] * num_loops
+                    num_vertex_indices = len(faces)
+
+                    mesh.vertices.add(num_vertices)
+                    mesh.vertices.foreach_set("co", verts)
+                    mesh.loops.add(num_vertex_indices)
+                    mesh.loops.foreach_set("vertex_index", faces)
+                    mesh.polygons.add(num_loops)
+                    mesh.polygons.foreach_set("loop_start", loop_start)
+                    mesh.polygons.foreach_set("loop_total", loop_total)
+                    mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+                    mesh.polygons.foreach_set("material_index", material_index)
+                    mesh.update()
+
+                obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
+                obj.matrix_world = Matrix(mat.tolist())
+                collection.objects.link(obj)
+
+                if not iterator.next():
+                    break
+
+        bpy.context.scene.collection.children.link(collection)
+        print('Finished', time.time() - start)
+        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print("Mem", newmem-mem)
+        return {"FINISHED"}
+
+
+class zzz(bpy.types.Operator):
+    bl_idname = "bim.zzz"
+    bl_label = "zzz"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import uuid
+        import h5py
+        import multiprocessing
+        import ifcopenshell
+        import ifcopenshell.geom
+        import numpy as np
+        import time
+        from mathutils import Matrix
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        start = time.time()
+
+        collection = bpy.data.collections.new("Project")
+        # model = h5py.File('/home/dion/test3.h5', 'r')
+        model = h5py.File('/home/dion/test4.h5', 'r')
+
+        materials = {}
+        for i, rgb in enumerate(model["materials"]):
+            blender_mat = bpy.data.materials.new(str(i))
+            blender_mat.diffuse_color = rgb[()].tolist()
+            materials[i] = blender_mat
+
+        meshes = {}
+        for shape_id, shape in model["shapes"].items():
+            mesh = bpy.data.meshes.new(shape_id)
+            meshes[int(shape_id)] = mesh
+
+            for material in shape["materials"]:
+                mesh.materials.append(materials[material])
+
+            verts = shape["verts"][()].tolist()
+            faces = shape["faces"][()].tolist()
+
+            num_vertices = len(verts) // 3
+            total_faces = len(faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(faces)
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", faces)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+            if "material_ids" in shape:
+                mesh.polygons.foreach_set("material_index", shape["material_ids"][()].tolist())
+
+            mesh.update()
+
+        for i, global_id in enumerate(model["element_global_ids"]):
+            global_id = str(uuid.UUID(bytes=bytes(global_id)))
+            obj = bpy.data.objects.new(global_id, meshes[model["element_shape_ids"][i]])
+            m = model["element_matrices"][i]
+            mat = np.array(
+                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+            )
+            obj.matrix_world = Matrix(mat.tolist())
+            collection.objects.link(obj)
+
+        bpy.context.scene.collection.children.link(collection)
+        print('Finished', time.time() - start)
+        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print("Mem", newmem-mem)
+        return {"FINISHED"}
+
+
+class zxc(bpy.types.Operator):
+    bl_idname = "bim.zxc"
+    bl_label = "zxc"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import uuid
+        import h5py
+        import multiprocessing
+        import ifcopenshell
+        import ifcopenshell.geom
+        import time
+        from mathutils import Matrix
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        start = time.time()
+
+        self.collection = bpy.data.collections.new("Project")
+        # model = h5py.File('/home/dion/test3.h5', 'r')
+        model = h5py.File('/home/dion/test5.h5', 'r')
+        print('Opened', time.time() - start)
+
+        materials = {}
+        for i, rgb in enumerate(model["materials"]):
+            blender_mat = bpy.data.materials.new(str(i))
+            blender_mat.diffuse_color = rgb[()].tolist()
+            materials[i] = blender_mat
+
+        print('Materials', time.time() - start)
+
+        shapes = {}
+        for shape_id, shape in model["shapes"].items():
+            verts = np.array(shape["verts"][()].tolist())
+            faces = shape["faces"][()].tolist()
+
+            shapes[int(shape_id)] = {
+                "verts": verts,
+                "faces": faces,
+                "materials": [materials[m] for m in shape["materials"]],
+                "material_ids": shape["material_ids"][()].tolist() if "material_ids" in shape else None,
+            }
+
+        print('Shapes', time.time() - start)
+
+        chunk_size = 10000
+
+        offset = 0
+        material_offset = 0
+        chunked_verts = []
+        chunked_faces = []
+        chunked_materials = []
+        chunked_material_ids = []
+
+        for i, global_id in enumerate(model["element_global_ids"]):
+            global_id = str(uuid.UUID(bytes=bytes(global_id)))
+            m = model["element_matrices"][i]
+            mat = np.array(
+                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+            )
+
+            shape = shapes[model["element_shape_ids"][i]]
+            verts = self.apply_matrix_to_flat_list(shape["verts"], mat)
+            faces = [f + offset for f in shape["faces"]]
+
+            chunked_verts.extend(verts)
+            chunked_faces.extend(faces)
+
+            material_map = {}
+            for material_index, material in enumerate(shape["materials"]):
+                try:
+                    chunked_index = chunked_materials.index(material)
+                except:
+                    chunked_index = len(chunked_materials)
+                    chunked_materials.append(material)
+                material_map[material_index] = chunked_index
+
+            if shape["material_ids"] is None:
+                chunked_material_ids.extend([list(material_map.values())[0]] * (len(faces) // 3))
+            else:
+                chunked_material_ids.extend([material_map[m] for m in shape["material_ids"]])
+
+            offset += len(verts) // 3
+            material_offset += len(shape["materials"])
+
+            if offset > chunk_size:
+                print("Chunk at", i)
+                self.create_object(chunked_verts, chunked_faces, chunked_materials, chunked_material_ids)
+                chunked_verts = []
+                chunked_faces = []
+                chunked_materials = []
+                chunked_material_ids = []
+                offset = 0
+                material_offset = 0
+
+        if offset:
+            self.create_object(chunked_verts, chunked_faces, chunked_materials, chunked_material_ids)
+
+        bpy.context.scene.collection.children.link(self.collection)
+        print('Finished', time.time() - start)
+        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print("Mem", newmem-mem)
+        return {"FINISHED"}
+
+    def apply_matrix_to_flat_list(self, flat_list, matrix):
+        # Convert the flat list to a 2D array with 3 columns (x, y, z)
+        vertices = np.array(flat_list).reshape(-1, 3)
+        # Add a column of ones for homogeneous coordinates (x, y, z, 1)
+        vertices = np.hstack([vertices, np.ones((vertices.shape[0], 1))])
+        # Apply the matrix transformation
+        transformed_vertices = np.dot(vertices, matrix.T)
+        # Discard the homogeneous coordinate and flatten the array
+        return transformed_vertices[:, :3].flatten()
+
+    def create_object(self, verts, faces, materials, material_ids):
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        for material in materials:
+            mesh.materials.append(material)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        if material_ids:
+            mesh.polygons.foreach_set("material_index", material_ids)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Blah", mesh)
+        self.collection.objects.link(obj)
