@@ -436,7 +436,7 @@ public:
 			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set<std::string>(IfcParse::IfcGlobalId()); data->setArgument(0, attr); }
 			{ IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(owner_hist); data->setArgument(1, attr); }
 			int relating_index = 4, related_index = 5;
-			if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<Schema::IfcRelDefines, T>::value) {
+			if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<typename Schema::IfcRelDefines, T>::value) {
 				// some classes have attributes reversed.
 				std::swap(relating_index, related_index);
 			}
