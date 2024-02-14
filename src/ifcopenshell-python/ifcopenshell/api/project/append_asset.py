@@ -88,7 +88,8 @@ class Usecase:
         self.settings = {"library": library, "element": element}
 
     def execute(self):
-        self.added_elements = {}
+        # mapping of old element ids to new elements
+        self.added_elements:dict[int, ifcopenshell.entity_instance] = {}
         self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
