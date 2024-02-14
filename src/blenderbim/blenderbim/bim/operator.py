@@ -404,11 +404,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
-        group.inputs.new("NodeSocketFloat", "Value")
-        group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
-        group.inputs.new("NodeSocketVector", "Vector")
-        group.outputs.new("NodeSocketFloat", "Value")
-        group.outputs.new("NodeSocketFloat", "Line Decorator")
+        input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
+        input_value.default_value = 1.0  # Mandatory multiplier for the last node group
+        group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
+        group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
 
@@ -431,8 +432,16 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         multiply.inputs[0].default_value = 1
         multiply.location = 600, 150
 
+        add_line_decorator = group.nodes.new(type="ShaderNodeMath")
+        add_line_decorator.operation = "ADD"
+        add_line_decorator.location = 600, -200
+
+        multiply_line_decorator = group.nodes.new(type="ShaderNodeMath")
+        multiply_line_decorator.operation = "MULTIPLY"
+        multiply_line_decorator.location = 800, -200
+
         group_output = group.nodes.new(type="NodeGroupOutput")
-        group_output.location = 800, 0
+        group_output.location = 1000, 0
 
         group.links.new(group_input.outputs["Value"], multiply.inputs[0])
         group.links.new(group_input.outputs["Vector"], separate_xyz.inputs[0])
@@ -440,12 +449,16 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         group.links.new(greater.outputs[0], multiply.inputs[1])
         group.links.new(multiply.outputs[0], group_output.inputs["Value"])
         group.links.new(separate_xyz.outputs[2], compare.inputs[0])
-        group.links.new(compare.outputs[0], group_output.inputs["Line Decorator"])
+        group.links.new(compare.outputs[0], add_line_decorator.inputs[0])
+        group.links.new(group_input.outputs["Line Decorator"], add_line_decorator.inputs[1])
+        group.links.new(multiply.outputs[0], multiply_line_decorator.inputs[0])
+        group.links.new(add_line_decorator.outputs[0], multiply_line_decorator.inputs[1])
+        group.links.new(multiply_line_decorator.outputs[0], group_output.inputs["Line Decorator"])
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
-        group.inputs.new("NodeSocketShader", "Shader")
-        group.outputs.new("NodeSocketShader", "Shader")
+        group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
+        group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
         links = group.links
         nodes = group.nodes
 
@@ -519,7 +532,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         cut_obj.object = obj
         cut_obj.location = last_section_node.location - Vector((400, 150)) - offset
 
-        group.links.new(section_compare.outputs[0], last_section_node.inputs[0])
+        group.links.new(section_compare.outputs["Value"], last_section_node.inputs["Value"])
+        group.links.new(section_compare.outputs["Line Decorator"], last_section_node.inputs["Line Decorator"])
         group.links.new(cut_obj.outputs["Object"], section_compare.inputs[1])
 
         section_compare.name = "Last Section Compare"
@@ -594,6 +608,7 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
                 previous_section_compare = section_compare.inputs[0].links[0].from_node
                 next_section_compare = section_compare.outputs[0].links[0].to_node
                 section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
+                section_override.links.new(previous_section_compare.outputs[1], next_section_compare.inputs[0])
                 self.offset_previous_nodes(section_compare, offset_x=200)
             section_override.nodes.remove(section_compare)
             section_override.nodes.remove(tex_coords)
@@ -605,8 +620,8 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
         if section_compare.inputs[0].links:
             previous_section_compare = section_compare.inputs[0].links[0].from_node
             previous_section_compare.location += Vector((offset_x, offset_y))
-            if previous_section_compare.inputs[1].links:
-                previous_section_compare.inputs[1].links[0].from_node.location += Vector((offset_x, offset_y))
+            if previous_section_compare.inputs["Vector"].links:
+                previous_section_compare.inputs["Vector"].links[0].from_node.location += Vector((offset_x, offset_y))
             self.offset_previous_nodes(previous_section_compare, offset_x, offset_y)
 
     def purge_all_section_data(self, context):
