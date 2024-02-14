@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.selector
+from typing import Union
 
 
 class Patcher:
@@ -64,7 +65,7 @@ class Patcher:
         self.create_spatial_tree()
         self.file = self.new
 
-    def add_element(self, element):
+    def add_element(self, element) -> None:
         new_element = self.append_asset(element)
         if not new_element:
             return
@@ -75,7 +76,7 @@ class Patcher:
             self.add_decomposition_parents(spatial_element, new_spatial_element)
         self.add_decomposition_parents(element, new_element)
 
-    def append_asset(self, element):
+    def append_asset(self, element) -> Union[ifcopenshell.entity_instance, None]:
         try:
             return self.new.by_guid(element.GlobalId)
         except:
@@ -84,14 +85,14 @@ class Patcher:
             return self.new.add(element)
         return ifcopenshell.api.run("project.append_asset", self.new, library=self.file, element=element)
 
-    def add_decomposition_parents(self, element, new_element):
+    def add_decomposition_parents(self, element, new_element) -> None:
         for rel in element.Decomposes:
             parent = rel.RelatingObject
             new_parent = self.append_asset(parent)
             self.aggregates.setdefault(parent.GlobalId, set()).add(new_element)
             self.add_decomposition_parents(parent, new_parent)
 
-    def create_spatial_tree(self):
+    def create_spatial_tree(self) -> None:
         for relating_structure, related_elements in self.contained_ins.items():
             self.new.createIfcRelContainedInSpatialStructure(
                 ifcopenshell.guid.new(),
