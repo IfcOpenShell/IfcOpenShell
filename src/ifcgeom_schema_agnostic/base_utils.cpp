@@ -11,6 +11,7 @@
 #include <gp_GTrsf2d.hxx>
 
 #include <Geom_Plane.hxx>
+#include <Geom_Circle.hxx>
 #include <Geom_OffsetSurface.hxx>
 
 #include <ShapeAnalysis_Curve.hxx>
@@ -106,10 +107,17 @@ bool IfcGeom::util::is_manifold(const TopoDS_Shape& a) {
 
 			TopoDS_Vertex v0, v1;
 			TopExp::Vertices(e, v0, v1);
-			const bool degenerate = !v0.IsNull() && !v1.IsNull() && v0.IsSame(v1);
 
-			if (degenerate) {
-				continue;
+			// consider degenerate edges as manifold
+			if (!v0.IsNull() && !v1.IsNull()) {
+				if (v0.IsSame(v1)) {
+					// full circle curves have both verts match but still may be non-manifold
+					double dF, dL;
+					Handle(Geom_Curve) curve = BRep_Tool::Curve(TopoDS::Edge(e), dF, dL);
+					if (curve.IsNull() || dynamic_cast<Geom_Circle*>(curve.get()) == nullptr) {
+						continue;
+					}
+				}
 			}
 
 			if (map.FindFromIndex(i).Extent() != 2) {
