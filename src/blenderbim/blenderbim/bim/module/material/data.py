@@ -152,6 +152,7 @@ class ObjectMaterialData:
         cls.data["materials"] = cls.materials()
         cls.data["type_material"] = cls.type_material()
         cls.data["material_type"] = cls.material_type()
+        cls.data["active_material_constituents"] = cls.active_material_constituents()
         cls.is_loaded = True
 
     @classmethod
@@ -318,3 +319,10 @@ class ObjectMaterialData:
         if version == "IFC2X3":
             material_types = ["IfcMaterial", "IfcMaterialLayerSet", "IfcMaterialList"]
         return [(m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types]
+
+    @classmethod
+    def active_material_constituents(cls):
+        material = cls.material
+        if not material.is_a("IfcMaterialConstituentSet"):
+            return []
+        return [m.Name for m in material.MaterialConstituents if m.Name]
