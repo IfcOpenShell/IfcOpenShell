@@ -507,7 +507,10 @@ class BIM_UL_representation_items(UIList):
         if item:
             icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)
-            row.label(text=item.name, icon=icon)
+            item_name = item.name
+            if item.shape_aspect:
+                item_name = f"{item.shape_aspect} {item_name}"
+            row.label(text=item_name, icon=icon)
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")
             op = row.operator("bim.remove_representation_item", icon="X", text="")
