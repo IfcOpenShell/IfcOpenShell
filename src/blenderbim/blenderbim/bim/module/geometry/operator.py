@@ -1598,6 +1598,11 @@ class EnableEditingRepresentationItems(bpy.types.Operator, Operator):
                                 new.shape_aspect = shape_aspect.Name
                                 new.shape_aspect_id = shape_aspect.id()
 
+            # sort created items
+            sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
+            for i, item in enumerate(sorted_items[:-1]):  # last item is sorted automatically
+                props.items.move(props.items[:].index(item), i)
+
 
 class DisableEditingRepresentationItems(bpy.types.Operator, Operator):
     bl_idname = "bim.disable_editing_representation_items"
