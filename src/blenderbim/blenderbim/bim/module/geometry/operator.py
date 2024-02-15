@@ -1644,10 +1644,42 @@ class RemoveRepresentationItem(bpy.types.Operator, Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
+def poll_editing_representaiton_item_style(cls, context):
+    if not (obj := getattr(context, "active_object", None)):
+        return False
+    props = obj.BIMGeometryProperties
+    if not props.is_editing:
+        return False
+    if not 0 <= props.active_item_index < len(props.items):
+        return False
+    item = props.items[props.active_item_index]
+    shape_aspect = item.shape_aspect
+    if shape_aspect == "":
+        return True
+
+    from blenderbim.bim.module.material.data import ObjectMaterialData
+
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    constituents = ObjectMaterialData.data["active_material_constituents"]
+    if any(c for c in constituents if c == shape_aspect):
+        cls.poll_message_set(
+            "Style comes from item's shape aspect related to the material constituent "
+            "with the same name and cannot be edited on representation item directly - "
+            "you can change it from the material constituent"
+        )
+        return False
+    return True
+
+
 class EnableEditingRepresentationItemStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.enable_editing_representation_item_style"
     bl_label = "Enable Editing Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return poll_editing_representaiton_item_style(cls, context)
 
     def _execute(self, context):
         props = context.active_object.BIMGeometryProperties
@@ -1698,6 +1730,10 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
     bl_idname = "bim.unassign_representation_item_style"
     bl_label = "Unassign Representation Item Style"
     bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return poll_editing_representaiton_item_style(cls, context)
 
     def _execute(self, context):
         obj = context.active_object
