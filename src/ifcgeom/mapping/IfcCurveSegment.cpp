@@ -30,6 +30,7 @@ using namespace ifcopenshell::geometry;
 #include <boost/mpl/vector.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
+#include <boost/math/tools/roots.hpp>
 
 namespace {
 // @todo: rb is there a common math library these functions can be moved to?
@@ -356,8 +357,6 @@ class curve_segment_evaluator {
           length_unit_(length_unit),
           segment_type_(segment_type),
           curve_(inst->ParentCurve()) {
-        // @todo in IFC4X3_ADD2 this needs to be length measure
-
 
         if (!inst->SegmentStart()->as<IfcSchema::IfcLengthMeasure>() || !inst->SegmentLength()->as<IfcSchema::IfcLengthMeasure>()) {
             // @nb Parameter values are forbidden in the specification until parametrization is provided for all spirals
@@ -469,28 +468,96 @@ class curve_segment_evaluator {
 	}
 #endif
 
+    void polynomial_spiral(const IfcSchema::IfcSpiral* c, boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
+      auto theta = [A0, A1, A2, A3, A4, A5, A6, A7](double t) {
+          auto a0 = A0.has_value() ? t / A0.value() : 0.0;
+          auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
+          auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
+          auto a3 = A3.has_value() ? A3.value() * std::pow(t, 4) / (4 * fabs(std::pow(A3.value(), 5))) : 0.0;
+          auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value(), 5)) : 0.0;
+          auto a5 = A5.has_value() ? A5.value() * std::pow(t, 6) / (6 * fabs(std::pow(A5.value(), 7))) : 0.0;
+          auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value(), 7)) : 0.0;
+          auto a7 = A7.has_value() ? A7.value() * std::pow(t, 8) / (8 * fabs(std::pow(A7.value(), 9))) : 0.0;
+          return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
+      };
+
+      // find the curve length when u = 1.0 (there doesn't seem to be a closed form equation for this so do it numerically).
+      // u = 1.0 when theta = PI/2... do a root finding for theta-PI/2 = 0
+      boost::uintmax_t max_iter = 500;
+      auto iter = max_iter;
+      double eps = 0.000001;
+      auto tol = [eps](const auto& a, const auto& b) { return std::fabs(b - a) < eps; };
+      // guess the solution by using the highest order term in the theta equation.
+      // the term is in the form k*t^n
+      // solve k*t^n = PI/2
+      // t = nth root of (PI/(2*k)) = std::pow((PI/(2*fabs(k)), 1.0/n);
+      // use abs(k) because depending on the direction of the curve we seek t when theta = PI/2 or -PI/2
+      double k = fabs(length());
+      double n = 1.0;
+      if (A7.has_value()) {
+            auto a7 = A7.value();
+            k = a7 / (8 * std::abs(std::pow(a7, 9)));
+            n = 8;
+      } else if (A6.has_value()) {
+            auto a6 = A6.value();
+            k = 1 / (7 * std::pow(a6, 7));
+            n = 7;
+      } else if (A5.has_value()) {
+            auto a5 = A5.value();
+            k = a5 / (6 * std::fabs(std::pow(a5, 7)));
+            n = 6;
+      } else if (A4.has_value()) {
+            auto a4 = A4.value();
+            k = 1. / (5 * std::pow(a4, 5));
+            n = 5;
+      } else if (A3.has_value()) {
+            auto a3 = A3.value();
+            k = a3 / (4 * std::fabs(std::pow(a3, 5)));
+            n = 4;
+      } else if (A2.has_value()) {
+            auto a2 = A2.value();
+            k = 1. / (3 * std::pow(a2, 3));
+            n = 3;
+      } else if (A1.has_value()) {
+            auto a1 = A1.value();
+            k = a1 / (2 * std::fabs(std::pow(a1, 3)));
+            n = 2;
+      } else if (A0.has_value()) {
+            auto a0 = A0.value();
+            k = 1 / a0;
+            n = 1;
+      }
+      auto guess = std::pow(PI / (2 * fabs(k)), 1. / n);
+
+      std::pair<double, double> result;
+      try {
+            auto sign_of_k = sign(k);
+            result = boost::math::tools::bracket_and_solve_root([sign_of_k,theta](double x) { return (sign_of_k*theta(x) - PI / 2.0); }, guess, 2.0, true, tol, iter);
+      } catch (const std::exception& e) {
+            Logger::Warning(std::string(e.what()));
+      }
+
+      if (iter == max_iter) {
+            Logger::Warning(std::string("bracket_and_solve_root did not converge"));
+      }
+
+      double s = result.first;
+
+      auto fn_x = [s, theta](double t) -> double { return s*cos(theta(s*t)); };
+      auto fn_y = [s, theta](double t) -> double { return s*sin(theta(s*t)); };
+
+      set_spiral_function(mapping_, c, s, fn_x, fn_y);
+    }
+
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
 	void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral* c)
 	{
 		auto A0 = c->ConstantTerm();
 		auto A1 = c->LinearTerm();
 		auto A2 = c->QuadraticTerm();
-
-		auto theta = [A0, A1, A2](double t)
-			{
-				auto a0 = A0.has_value() ? t / A0.value() : 0.0;
-				auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
-				auto a2 = std::pow(t, 3) / (3 * std::pow(A2, 3));
-				return a0 + a1 + a2;
-			};
-
-		auto fn_x = [theta](double t)->double {return cos(theta(t)); };
-		auto fn_y = [theta](double t)->double {return sin(theta(t)); };
-
-		double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-      Logger::Warning(std::string("IfcSecondOrderPolynomialSpiral - the implementation has a bug"));
-		set_spiral_function(mapping_, c, s, fn_x, fn_y);
-	}
+      boost::optional<double> A3, A4, A5, A6, A7;
+      polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
+    }
 #endif
 
 #ifdef SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
@@ -499,21 +566,8 @@ class curve_segment_evaluator {
         auto A1 = c->LinearTerm();
         auto A2 = c->QuadraticTerm();
         auto A3 = c->CubicTerm();
-
-        auto theta = [A0, A1, A2, A3](double t) {
-            auto a0 = A0.has_value() ? t / A0.value() : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
-            auto a3 = A3 * std::pow(t, 4) / (4 * fabs(std::pow(A3, 5)));
-            return a0 + a1 + a2 + a3;
-        };
-
-        auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
-        auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
-
-        double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-        Logger::Warning(std::string("IfcThirdOrderPolynomialSpiral - the implementation has a bug"));
-        set_spiral_function(mapping_, c, s, fn_x, fn_y);
+        boost::optional<double> A4, A5, A6, A7;
+        polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
     }
 #endif
 
@@ -528,24 +582,7 @@ class curve_segment_evaluator {
         auto A6 = c->SexticTerm();
         auto A7 = c->SepticTerm();
 
-        auto theta = [A0, A1, A2, A3, A4, A5, A6, A7](double t) {
-            auto a0 = A0.has_value() ? t / A0.value() : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
-            auto a3 = A3.has_value() ? A3.value() * std::pow(t, 4) / (4 * fabs(std::pow(A3.value(), 5))) : 0.0;
-            auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value(), 5)) : 0.0;
-            auto a5 = A5.has_value() ? A5.value() * std::pow(t, 6) / (6 * fabs(std::pow(A5.value(), 7))) : 0.0;
-            auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value(), 7)) : 0.0;
-            auto a7 = A7 * std::pow(t, 8) / (8 * fabs(std::pow(A7, 9)));
-            return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
-        };
-
-        auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
-        auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
-
-        double s = 100.0; // @todo: rb - this is supposed to be the curve length when the parametric value u = 1.0
-        Logger::Warning(std::string("IfcSeventhOrderPolynomialSpiral - the implementation has a bug"));
-        set_spiral_function(mapping_, c, s, fn_x, fn_y);
+        polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
     }
 #endif
 
