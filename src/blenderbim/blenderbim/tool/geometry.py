@@ -745,7 +745,13 @@ class Geometry(blenderbim.core.tool.Geometry):
         consider_inverses = []
         styled_item, colour, texture, layer = None, None, None, None
         [consider_inverses.append(styled_item := t) for t in representation_item.StyledByItem]
-        [consider_inverses.append(layer := t) for t in representation_item.LayerAssignment]
+        # IFC2X3 is using LayerAssignments
+        for t in (
+            representation_item.LayerAssignment
+            if hasattr(representation_item, "LayerAssignment")
+            else representation_item.LayerAssignments
+        ):
+            consider_inverses.append(layer := t)
         # IfcTessellatedFaceSet
         [consider_inverses.append(colour := t) for t in getattr(representation_item, "HasColours", [])]
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
