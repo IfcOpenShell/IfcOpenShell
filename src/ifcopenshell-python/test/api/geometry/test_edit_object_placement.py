@@ -134,6 +134,39 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix2)
         assert element.ObjectPlacement != element2.ObjectPlacement
 
+    def test_changing_an_object_placement_partially_used_by_other_products(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        matrix1 = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 1.0),
+                (0.0, 1.0, 0.0, 2.0),
+                (0.0, 0.0, 1.0, 3.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        matrix2 = numpy.array(
+            (
+                (1.0, 0.0, 0.0, 4.0),
+                (0.0, 1.0, 0.0, 5.0),
+                (0.0, 0.0, 1.0, 6.0),
+                (0.0, 0.0, 0.0, 1.0),
+            )
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix1.copy(), is_si=False
+        )
+        element2.ObjectPlacement = self.file.createIfcLocalPlacement(
+            RelativePlacement=element.ObjectPlacement.RelativePlacement
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement", self.file, product=element, matrix=matrix2.copy(), is_si=False
+        )
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix2)
+        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element2.ObjectPlacement), matrix1)
+
     def test_changing_an_object_placement_shared_by_its_parent(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
