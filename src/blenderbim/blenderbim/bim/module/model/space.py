@@ -35,7 +35,9 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
-        return tool.Ifc.get_entity(collection_obj)
+        active_obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(active_obj)
+        return tool.Ifc.get_entity(collection_obj) and not element.is_a("IfcWall")
 
     def _execute(self, context):
         # This works as a 2.5 extruded polygon based on a cutting plane. Note
