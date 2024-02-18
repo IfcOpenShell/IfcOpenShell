@@ -155,6 +155,7 @@ static std::basic_stringstream<path_t::value_type> log_stream;
 void write_log(bool);
 void fix_quantities(IfcParse::IfcFile&, bool, bool, bool);
 std::string format_duration(time_t start, time_t end);
+void remove_boundingboxes(IfcParse::IfcFile& f);
 
 /// @todo make the filters non-global
 IfcGeom::entity_filter entity_filter; // Entity filter is used always by default.
@@ -347,6 +348,9 @@ int main(int argc, char** argv) {
 			"Disables computation of normals. Saves time and file size and is useful "
 			"in instances where you're going to recompute normals for the exported "
 			"model in other modelling application in any case.")
+		("keep-bounding-boxes",
+			"Default is to removes IfcBoundingBox from model prior to converting geometry."
+			"Setting this option disables that behaviour")
 		("deflection-tolerance", po::value<double>(&deflection_tolerance)->default_value(1e-3),
 			"Sets the deflection tolerance of the mesher, 1e-3 by default if not specified.")
 		("force-space-transparency", po::value<double>(&force_space_transparency),
@@ -1009,6 +1013,10 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 
+	if (!vmap.count("keep-bounding-boxes")) {
+		remove_boundingboxes(*ifc_file);
+	}
+
 	IfcGeom::Iterator context_iterator(settings, ifc_file, filter_funcs, num_threads);
 
 #ifdef WITH_HDF5
@@ -1509,6 +1517,64 @@ namespace latebound_access {
 			latebound_access::set(inst, "GlobalId", (std::string) guid);
 		}
 		return f.addEntity(inst);
+	}
+}
+
+void remove_boundingboxes(IfcParse::IfcFile& f) {
+	auto delete_reversed = [&f](const aggregate_of_instance::ptr& insts) {
+		if (!insts) {
+			return;
+		}
+		// Lists are traversed back to front as the list may be mutated when
+		// instances are removed from the grouping by type.
+		for (auto it = insts->end() - 1; it >= insts->begin(); --it) {
+			IfcUtil::IfcBaseClass* const inst = *it;
+			f.removeEntity(inst);
+		}
+	};
+
+	auto boxes = f.instances_by_type("IfcBoundingBox");
+	// This is a set, because a box could be referenced by multiple representations.
+	std::set<IfcUtil::IfcBaseClass*> reps_collected;
+
+	// First iterate over the boxes and find representations referencing such boxes.
+	if (boxes) {
+		for (auto& b : *boxes) {
+			auto reps = f.getInverse(
+				b->data().id(),
+				f.schema()->declaration_by_name("IfcRepresentation"),
+				-1
+			);
+			if (reps) {
+				for (auto& r : *reps) {
+					reps_collected.insert(r);
+				}
+			}
+		}
+	}
+
+	// With the representations stored, we can now delete the boxes.
+	delete_reversed(boxes);
+
+	for (auto& r_ : reps_collected) {
+		auto r = r_->as<IfcUtil::IfcBaseEntity>();
+		auto items_val = r->get("Items");
+		bool to_remove = true;
+		if (!items_val->isNull()) {
+			try {
+				aggregate_of_instance::ptr items = *items_val;
+				// Representation.Items will have been updated with the box
+				// removal, setting the number of items to zero in case the
+				// representation consisted only of boxes in which case the
+				// representation itself should also be deleted to prevent
+				// error messages.
+				to_remove = items->size() == 0;
+			} catch (IfcParse::IfcException&) {
+			}
+		}
+		if (to_remove) {
+			f.removeEntity(r);
+		}
 	}
 }
 
