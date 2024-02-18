@@ -205,3 +205,10 @@ def toggle_space_visibility(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_spaces_visibility_wired_and_textured(spaces)
+
+def toggle_hide_spaces(ifc, spatial):
+    model = ifc.get()
+    spaces = model.by_type("IfcSpace")
+    if not spaces:
+        return
+    spatial.toggle_hide_spaces(spaces)

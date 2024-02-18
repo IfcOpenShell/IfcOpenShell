@@ -112,3 +112,12 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
         core.toggle_space_visibility(tool.Ifc, tool.Spatial)
         return {"FINISHED"}
 
+class ToggleHideSpaces(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.toggle_hide_spaces"
+    bl_label = "Toggle Hide Spaces"
+    bl_options = {"REGISTER"}
+    bl_description = "Hide or Unhide all spaces"
+
+    def execute(cls, context):
+        core.toggle_hide_spaces(tool.Ifc, tool.Spatial)
+        return {"FINISHED"}
