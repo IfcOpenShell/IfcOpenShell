@@ -204,7 +204,7 @@ if(WITH_OPENCASCADE)
     list(APPEND GEOMETRY_KERNELS opencascade)
 endif()
 
-if(GLTF_SUPPORT AND BUILD_CONVERT)
+if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
     find_file(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
 
@@ -889,7 +889,7 @@ if(BUILD_IFCGEOM)
         set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
         
         add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES})
-        set_target_properties(geometry_kernel_${kernel} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
+        set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
         # needed?
         # if(NOT WASM_BUILD)
         # endif()
@@ -897,8 +897,10 @@ if(BUILD_IFCGEOM)
         list(APPEND kernel_libraries geometry_kernel_${kernel})
         
         if(${kernel} STREQUAL "cgal")
+            set_property(TARGET geometry_kernel_${kernel} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
+
             add_library(geometry_kernel_${kernel}_simple ${IFCGEOM_FILES})
-            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL")
+            set_target_properties(geometry_kernel_${kernel}_simple PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIFOPSH_SIMPLE_KERNEL -DCGAL_HAS_THREADS")
             # needed?
             # if(NOT WASM_BUILD)
             # endif()
@@ -983,6 +985,11 @@ if(BUILD_CONVERT)
         add_library(cityjson_converter ${CITYJSON_CONVERT_FILES})
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
+
+        add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
+        set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
+        target_include_directories(cityjson_converter_exe PRIVATE ../src)
+        target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
     endif()
 
     # IfcConvert
