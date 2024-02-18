@@ -98,10 +98,11 @@ class SpatialToolUI:
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_A")
-        if context.selected_objects:
-            row.operator("bim.generate_spaces_from_walls")
-        else:
-            row.operator("bim.generate_space")
+        row.operator("bim.generate_spaces_from_walls")
+        row = cls.layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="", icon="EVENT_A")
+        row.operator("bim.generate_space")
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="", icon="EVENT_T")
