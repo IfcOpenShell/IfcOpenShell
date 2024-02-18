@@ -177,16 +177,18 @@ namespace ifcopenshell { namespace geometry {
 
 	class CgalShape : public IfcGeom::ConversionResultShape {
 	private:
+		bool convex_tag_ = false;
 		mutable boost::optional<cgal_shape_t> shape_;
 #ifndef IFOPSH_SIMPLE_KERNEL
 		mutable boost::optional<CGAL::Nef_polyhedron_3<Kernel_>> nef_;
 #endif
     public:
-		CgalShape(const cgal_shape_t& shape);
+		CgalShape(const cgal_shape_t& shape, bool convex = false);
 
 #ifndef IFOPSH_SIMPLE_KERNEL
-		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape) {
+		CgalShape(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool convex = false) {
 			nef_ = shape;
+			convex_tag_ = convex;
 		}
 #endif
 
@@ -252,6 +254,9 @@ namespace ifcopenshell { namespace geometry {
 		virtual void map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to);
 		virtual void map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to);
 		virtual ConversionResultShape* moved(ifcopenshell::geometry::taxonomy::matrix4::ptr) const;
+
+		bool convex_tag() const { return convex_tag_; }
+		bool& convex_tag() { return convex_tag_; }
 	};
 
 #ifndef IFOPSH_SIMPLE_KERNEL
@@ -261,9 +266,12 @@ namespace ifcopenshell { namespace geometry {
 		std::list<CGAL::Plane_3<Kernel_>> planes_;
 
 	public:
-		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape) {
-			auto shape_copy = shape;
-			shape_ = std::move(build_halfspace_tree_decomposed(shape_copy, planes_));
+		CgalShapeHalfSpaceDecomposition(const CGAL::Nef_polyhedron_3<Kernel_>& shape, bool is_convex) {
+			if (is_convex) {
+				shape_ = std::move(build_halfspace_tree_is_decomposed(shape, planes_));
+			} else {
+				shape_ = std::move(build_halfspace_tree_decomposed(shape, planes_));
+			}
 		}
 
 		CgalShapeHalfSpaceDecomposition(const CGAL::Plane_3<Kernel_>& shape) {
