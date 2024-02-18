@@ -325,6 +325,8 @@ namespace IfcGeom {
 
 			finished_ = true;
 
+			Logger::SetProduct(boost::none);
+
 			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
 				" objects)                                ");
 		}
@@ -439,8 +441,6 @@ namespace IfcGeom {
 			geometry_conversion_result* task = nullptr;
 			for (; task_iterator_ < tasks_.end();) {
 				task = &*task_iterator_++;
-				// @todo where can we still set logger?
-				// Logger::SetProduct(product);
 				create_element_(converter_, settings_, task);
 				if (task->elements.empty()) {
 					task = nullptr;
@@ -590,6 +590,7 @@ namespace IfcGeom {
 				// shape representation
 				if (task_result_iterator_ == --all_processed_elements_.end()) {
 					if (!create()) {
+						Logger::SetProduct(boost::none);
 						return nullptr;
 					}
 				}
