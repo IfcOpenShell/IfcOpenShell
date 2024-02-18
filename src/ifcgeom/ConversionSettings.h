@@ -306,6 +306,14 @@ namespace ifcopenshell {
 				static constexpr int defaultvalue = 16;
 			};
 
+			struct KeepBoundingBoxes : public SettingBase<KeepBoundingBoxes, bool> {
+				static constexpr const char* const name = "keep-bounding-boxes";
+				static constexpr const char* const description =
+					"Default is to removes IfcBoundingBox from model prior to converting geometry."
+					"Setting this option disables that behaviour";
+				static constexpr bool defaultvalue = false;
+			};
+
 			enum PiecewiseStepMethod  {
 				MAXSTEPSIZE,
 				MINSTEPS };
@@ -408,7 +416,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, PiecewiseStepType, PiecewiseStepParam>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
 		>
 		{};
 }
