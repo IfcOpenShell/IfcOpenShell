@@ -460,7 +460,7 @@ public:
 			// auto two_halfspaces = full_nef - plane_nef;
 			// @todo
 		} else {
-			static auto almost_complete = []() {
+			/*static*/ auto almost_complete = []() {
 				CGAL::Polyhedron_3<Kernel> P;
 				createCube(P, 10000);
 				return CGAL::Nef_polyhedron_3<Kernel>(P);
@@ -1161,7 +1161,7 @@ public:
 };
 
 template <typename Kernel, typename TreeKernel = Kernel>
-std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL::Nef_polyhedron_3<Kernel>& poly_, std::list<CGAL::Plane_3<Kernel>>& planes) {
+std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(const CGAL::Nef_polyhedron_3<Kernel>& poly_, std::list<CGAL::Plane_3<Kernel>>& planes) {
 	std::unique_ptr<halfspace_tree<TreeKernel>> tree;
 	std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> root_expression;
 
@@ -1237,6 +1237,35 @@ std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_decomposed(CGAL
 	}
 
 	tree.reset(new halfspace_tree_nary_branch<TreeKernel>(OP_UNION, std::move(root_expression)));
+	return tree;
+}
+
+template <typename Kernel, typename TreeKernel = Kernel>
+std::unique_ptr<halfspace_tree<TreeKernel>> build_halfspace_tree_is_decomposed(const CGAL::Nef_polyhedron_3<Kernel>& poly_, std::list<CGAL::Plane_3<Kernel>>& planes) {
+	std::unique_ptr<halfspace_tree<TreeKernel>> tree;
+	std::list<std::unique_ptr<halfspace_tree<TreeKernel>>> root_expression;
+
+	// Don't add intermediate facets created by decomposition
+	for (auto it = poly_.halffacets_begin(); it != poly_.halffacets_end(); ++it) {
+		// but below is converted to and from vanilla polyhedron, which recomputes planes (but is still exact).
+		// Therefore, we do need to have some uniformization step, which in this case is divide by larged a,b or c
+		// component.
+		if (it->incident_volume()->mark()) {
+			std::array<typename Kernel::FT, 3> abc{ it->plane().a(), it->plane().b(), it->plane().c() };
+			auto minel = std::min_element(abc.begin(), abc.end());
+			auto maxel = std::max_element(abc.begin(), abc.end());
+			auto maxval = ((-*minel) > *maxel) ? (-*minel) : *maxel;
+			typename Kernel::Plane_3 pln(
+				it->plane().a() / maxval,
+				it->plane().b() / maxval,
+				it->plane().c() / maxval,
+				it->plane().d() / maxval
+			);
+			planes.push_back(pln);
+			root_expression.emplace_back(new halfspace_tree_plane<TreeKernel>(pln));
+		}
+	}
+	tree.reset(new halfspace_tree_nary_branch<TreeKernel>(OP_INTERSECTION, std::move(root_expression)));
 	return tree;
 }
 
