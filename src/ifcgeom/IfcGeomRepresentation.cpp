@@ -423,3 +423,11 @@ const IfcGeom::ConversionResultShape* IfcGeom::Representation::BRep::item(int i)
 		return nullptr;
 	}
 }
+
+int IfcGeom::Representation::BRep::item_id(int i) const {
+	if (i >= 0 && i < shapes_.size()) {
+		return shapes_[i].ItemId();
+	} else {
+		return 0;
+	}
+}

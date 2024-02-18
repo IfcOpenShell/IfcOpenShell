@@ -72,6 +72,7 @@ namespace IfcGeom {
 
 			int size() const { return shapes_.size(); }
 			const IfcGeom::ConversionResultShape* item(int i) const;
+			int item_id(int i) const;
 		};
 
 		class IFC_GEOM_API Serialization : public Representation  {
