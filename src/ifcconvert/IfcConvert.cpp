@@ -682,7 +682,7 @@ int main(int argc, char** argv) {
 		return exit_code;
 	}
 #ifdef IFOPSH_WITH_CGAL
-	else if ((output_extension == CITY_JSON || output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
+	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
 
 		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
 		boost::to_lower(exterior_only_algo);
@@ -694,6 +694,8 @@ int main(int argc, char** argv) {
 		} else if (exterior_only_algo == "minkowski-triangles") {
 			// 
 		} else if (exterior_only_algo == "convex-decomposition") {
+			// 
+		} else if (exterior_only_algo == "none") {
 			// 
 		} else {
 			cerr_ << "[Error] --exterior-only should be convex-decomposition|minkowski-triangles|halfspace-snapping" << std::endl;
