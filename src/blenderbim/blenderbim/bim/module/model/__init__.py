@@ -113,6 +113,7 @@ classes = (
     covering.AddInstanceCeilingCoveringFromCursor,
     covering.RegenSelectedCoveringObject,
     space.ToggleSpaceVisibility,
+    space.ToggleHideSpaces,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,
     prop.BIMModelProperties,
