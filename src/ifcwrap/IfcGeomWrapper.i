@@ -673,7 +673,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 %inline %{
 	IfcGeom::ConversionResultShape* nary_union(PyObject* sequence) {
-		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<CGAL::Epeck> > accum;
+		std::vector<const CGAL::Nef_polyhedron_3<CGAL::Epeck>*> nefs;
 		for(Py_ssize_t i = 0; i < PySequence_Size(sequence); ++i) {
 			PyObject* element = PySequence_GetItem(sequence, i);
 			void* argp1 = nullptr;
@@ -682,22 +682,37 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 				auto arg1 = reinterpret_cast<IfcGeom::ConversionResultShape*>(argp1);
 				auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(arg1);
 				if (cgs) {
-					accum.add_polyhedron(cgs->nef());
+					nefs.push_back(&cgs->nef());
 				}
 			}
 		}
-		return new ifcopenshell::geometry::CgalShape(accum.get_union());
+		ifcopenshell::geometry::CgalShape* shp;
+		Py_BEGIN_ALLOW_THREADS;
+		CGAL::Nef_nary_union_3< CGAL::Nef_polyhedron_3<CGAL::Epeck> > accum;
+		for (auto& n : nefs) {
+			accum.add_polyhedron(*n);
+		}
+		shp = new ifcopenshell::geometry::CgalShape(accum.get_union());
+		Py_END_ALLOW_THREADS;
+		return shp;
 	}
 %}
 
 %extend IfcGeom::ConversionResultShape {
 	std::string serialize_obj() {
 		std::ostringstream result;
-		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>(self);
+		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
 		if (cgs) {
 			write_to_obj(cgs->nef(), result, std::numeric_limits<size_t>::max());
 		}		
 		return result.str();
+	}
+
+	void convex_tag(bool b) {
+		auto cgs = dynamic_cast<ifcopenshell::geometry::CgalShape*>($self);
+		if (cgs) {
+			cgs->convex_tag() = b;
+		}		
 	}
 
 	std::string serialize() {
@@ -705,6 +720,14 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		ifcopenshell::geometry::taxonomy::matrix4 iden;
 		$self->Serialize(iden, result);
 		return result;
+	}
+
+	ConversionResultShape* solid_mt() {
+		IfcGeom::ConversionResultShape* r;
+		Py_BEGIN_ALLOW_THREADS;
+		r = $self->solid();
+		Py_END_ALLOW_THREADS;
+		return r;
 	}
 }
 
