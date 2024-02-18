@@ -733,3 +733,17 @@ class Spatial(blenderbim.core.tool.Spatial):
                 bpy.data.objects[obj.name].show_wire = False
                 bpy.data.objects[obj.name].display_type = "TEXTURED"
             return
+
+    @classmethod
+    def toggle_hide_spaces(cls, spaces):
+        first_obj = tool.Ifc.get_object(spaces[0])
+        if first_obj.hide_get() == False:
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.hide_set(True)
+            return
+
+        elif first_obj.hide_get() == True:
+            for space in spaces:
+                obj = tool.Ifc.get_object(space)
+                obj.hide_set(False)

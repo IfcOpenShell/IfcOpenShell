@@ -877,6 +877,7 @@ class Spatial:
     def assign_relating_type_to_element(cls, ifc, Type, element, relating_type): pass
     def regen_obj_representation(cls, ifc, geometry, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
+    def toggle_hide_spaces(cls, spaces): pass
 
 @interface
 class Covering:
