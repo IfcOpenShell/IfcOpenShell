@@ -19,8 +19,9 @@ using ifcopenshell::geometry::NumberEpeck;
 #define NumberType NumberEpeck
 #endif
 
-ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape) {
+ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t & shape, bool convex) {
 	shape_ = shape;
+	convex_tag_ = convex;
 	if (shape.size_of_facets() != 1) {
 		// this is for handling the specical case of storing a single point in a polyhedron,
 		// @todo come up with a proper variant for storing lower dimensional entities
@@ -35,8 +36,10 @@ void ifcopenshell::geometry::CgalShape::to_poly() const {
 		shape_.emplace();
 
 		convert_to_polyhedron(*nef_, *shape_);
-		// @todo why is this necessary? we have the mark of the volumes?
-		CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(*shape_);
+		if (shape_->size_of_vertices() > 0) {
+			// @todo why is this necessary? we have the mark of the volumes?
+			CGAL::Polygon_mesh_processing::orient_to_bound_a_volume(*shape_);
+		}
 		
 		// nef_->convert_to_polyhedron(*shape_);
 	}
@@ -44,8 +47,10 @@ void ifcopenshell::geometry::CgalShape::to_poly() const {
 
 void ifcopenshell::geometry::CgalShape::to_nef() const {
 	if (!nef_) {
-		if (CGAL::Polygon_mesh_processing::does_self_intersect(*shape_)) {
-			throw std::runtime_error("Self-intersections detected, unable to proceed");
+		if (!convex_tag_) {
+			if (CGAL::Polygon_mesh_processing::does_self_intersect(*shape_)) {
+				throw std::runtime_error("Self-intersections detected, unable to proceed");
+			}
 		}
 		nef_ = utils::create_nef_polyhedron(*shape_);
 	}
@@ -382,7 +387,7 @@ std::vector<ConversionResultShape*> ifcopenshell::geometry::CgalShape::convex_de
 			// directly, so for now we need to isolate the individual volumes.
 			CGAL::Polyhedron_3<Kernel_> P;
 			copy.convert_inner_shell_to_polyhedron(ci->shells_begin(), P);
-			result.push_back(new CgalShape(P));
+			result.push_back(new CgalShape(P, /*convex=*/ true));
 		}
 	}
 	return result;
@@ -394,7 +399,7 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::halfspaces()
 #ifdef IFOPSH_SIMPLE_KERNEL
 	throw std::runtime_error("Not implemented");
 #else
-	return new CgalShapeHalfSpaceDecomposition(nef());
+	return new CgalShapeHalfSpaceDecomposition(nef(), convex_tag_);
 #endif
 }
 
@@ -529,7 +534,7 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 		}
 	}
 
-	return new CgalShape(s);
+	return new CgalShape(s, convex_tag_);
 }
 
 void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
