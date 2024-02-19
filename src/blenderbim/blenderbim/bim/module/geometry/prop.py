@@ -64,8 +64,11 @@ def get_shape_aspects(self, context):
 
 
 def get_material_constituents(self, context, edit_text):
-    # TODO: cache in data.py
-    return [m.Name for m in tool.Ifc.get().by_type("IfcMaterialConstituent") if m.Name]
+    from blenderbim.bim.module.material.data import ObjectMaterialData
+
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    return ObjectMaterialData.data["active_material_constituents"]
 
 
 def update_shape_aspect(self, context):
