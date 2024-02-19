@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import ifcopenshell
+from typing import List
 
 
 def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
@@ -377,6 +379,33 @@ def get_types(type):
     for rel in getattr(type, "ObjectTypeOf", []):
         return rel.RelatedObjects
     return []
+
+
+def get_shape_aspects(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+    """Gets element shape aspects
+
+    :param element: The element to get the shape aspects of.
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :return: The associated shape aspects of the element.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.by_type("IfcWall")[0]
+        shape_aspect = ifcopenshell.util.element.get_shape_aspects(element)
+    """
+
+    # IfcProduct
+    if hasattr(element, "Representation"):
+        return element.Representation.HasShapeAspects
+
+    # IfcTypeProduct
+    shape_aspects = []
+    for repersentation_map in element.RepresentationMaps:
+        shape_aspects += repersentation_map.HasShapeAspects
+    return shape_aspects
 
 
 def get_material(element, should_skip_usage=False, should_inherit=True):
