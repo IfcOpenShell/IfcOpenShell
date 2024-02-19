@@ -780,18 +780,6 @@ class Geometry(blenderbim.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
     @classmethod
-    def get_shape_aspects(cls, element):
-        # IfcProduct
-        if hasattr(element, "Representation"):
-            return element.Representation.HasShapeAspects
-
-        # IfcTypeProduct
-        shape_aspects = []
-        for repersentation_map in element.RepresentationMaps:
-            shape_aspects += repersentation_map.HasShapeAspects
-        return shape_aspects
-
-    @classmethod
     def create_shape_aspect(cls, product_shape, base_representation, items, previous_shape_aspect=None):
         """
         > `product_shape` - IfcProductDefinitionShape or IfcRepresentationMap\n
