@@ -60,7 +60,6 @@
 #include <Geom_Plane.hxx>
 #include <IntTools_FaceFace.hxx>
 #include <STEPConstruct_PointHasher.hxx>
-#include <boost/stacktrace.hpp>
 #include "clash_utils.h"
 
 
@@ -273,7 +272,6 @@ namespace IfcGeom {
                     const gp_Vec& e1,
                     const gp_Vec& e2,
                     const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
-                    const std::vector<bool>& valid_tris,
                     const std::vector<std::array<int, 3>>& tris,
                     const std::vector<gp_Pnt>& verts,
                     const std::vector<gp_Vec>& normals
@@ -327,9 +325,6 @@ namespace IfcGeom {
                     if (bvh->IsOuter(i)) {
                         // Do ray triangle check.
                         for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
-                            if ( ! valid_tris[j]) {
-                                continue;
-                            }
                             const std::array<int, 3>& tri = tris[j];
                             const gp_Vec& normal = normals[j];
 
@@ -491,8 +486,6 @@ namespace IfcGeom {
                     return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
                 }
 
-                const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
-                const std::vector<bool>& valid_tris_b = valid_tris_.find(tB)->second;
                 const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
                 const std::vector<std::array<int, 3>>& tris_b = tris_.find(tB)->second;
                 const std::vector<gp_Pnt>& verts_a = verts_.find(tA)->second;
@@ -517,10 +510,6 @@ namespace IfcGeom {
                     const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        if ( ! valid_tris_a[i]) {
-                            continue;
-                        }
-
                         const std::array<int, 3>& tri = tris_a[i];
                         std::vector<gp_Pnt> points_in_b;
 
@@ -564,12 +553,15 @@ namespace IfcGeom {
                                 std::array<
                                     std::tuple<double, std::array<double, 3>, std::array<double, 3>>, 3
                                 > pierce_results = {
-                                    pierce_shape(v1_a_vec, v2_a_vec, bvh_b, valid_tris_b, tris_b, verts_b, normals_b),
-                                    pierce_shape(v1_a_vec, v3_a_vec, bvh_b, valid_tris_b, tris_b, verts_b, normals_b),
-                                    pierce_shape(v2_a_vec, v3_a_vec, bvh_b, valid_tris_b, tris_b, verts_b, normals_b)
+                                    pierce_shape(v1_a_vec, v2_a_vec, bvh_b, tris_b, verts_b, normals_b),
+                                    pierce_shape(v1_a_vec, v3_a_vec, bvh_b, tris_b, verts_b, normals_b),
+                                    pierce_shape(v2_a_vec, v3_a_vec, bvh_b, tris_b, verts_b, normals_b)
                                 };
 
-                                for (const auto& [p_dist, p_min, p_max] : pierce_results) {
+                                for (const auto& pr : pierce_results) {
+                                    auto& p_dist = std::get<0>(pr);
+                                    auto& p_min = std::get<1>(pr);
+                                    auto& p_max = std::get<2>(pr);
                                     if (p_dist > tolerance && p_dist > pierce) {
                                         // Piercings are capped at max_protrusion for intuitive results
                                         pierce = std::min(p_dist, max_protrusion);
@@ -594,10 +586,6 @@ namespace IfcGeom {
                         // Check for protrusions.
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                if ( ! valid_tris_b[j]) {
-                                    continue;
-                                }
-
                                 const std::array<int, 3>& tri = tris_b[j];
                                 const gp_Vec& normal_b = normals_b[j];
 
@@ -683,8 +671,6 @@ namespace IfcGeom {
                     return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
                 }
 
-                const std::vector<bool>& valid_tris_a = valid_tris_.find(tA)->second;
-                const std::vector<bool>& valid_tris_b = valid_tris_.find(tB)->second;
                 const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
                 const std::vector<std::array<int, 3>>& tris_b = tris_.find(tB)->second;
                 const std::vector<gp_Pnt>& verts_a = verts_.find(tA)->second;
@@ -697,12 +683,6 @@ namespace IfcGeom {
                     const std::vector<int>& bvh_b_is = pair.second;
 
                     for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
-                        // Uncomment this to get old behaviour
-                        /*
-                        if ( ! valid_tris_a[i]) {
-                            continue;
-                        }
-                        */
                         const std::array<int, 3>& tri = tris_a[i];
                         const gp_Pnt& v1_a_pnt = verts_a[tri[0]];
                         const gp_Pnt& v2_a_pnt = verts_a[tri[1]];
@@ -715,12 +695,6 @@ namespace IfcGeom {
 
                         for (const auto& bvh_b_i : bvh_b_is) {
                             for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
-                                // Uncomment this to get old behaviour
-                                /*
-                                if ( ! valid_tris_b[j]) {
-                                    continue;
-                                }
-                                */
                                 const std::array<int, 3>& tri = tris_b[j];
                                 const gp_Pnt& v1_b_pnt = verts_b[tri[0]];
                                 const gp_Pnt& v2_b_pnt = verts_b[tri[1]];
@@ -962,176 +936,125 @@ namespace IfcGeom {
 
                 max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
 
-                std::vector<std::array<int, 3>> tris;
+                int original_tris_index = 0;
+                std::vector<std::array<int, 3>> original_tris;
                 std::vector<gp_Pnt> verts;
-                std::vector<gp_Vec> normals;
+                std::vector<gp_Vec> original_normals;
 
-                // DM: changed initialisation to get it to compile and actually have a BVH
+                // Attempt to copy exactly what BRepExtrema_TriangleSet is doing under the hood.
                 const auto builder = new BVH_LinearBuilder<Standard_Real, 3> (BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
                 BVH_Triangulation<Standard_Real, 3> triangulation(builder);
 
-                // std::list<TopoDS_Shape> shapes;
-                /*
-                {
-                    TopExp_Explorer solids(s, TopAbs_SOLID);
-                    for (; solids.More(); solids.Next()) {
-                        shapes.push_back(solids.Current());
-                    }
-                }
-                {
-                    TopExp_Explorer loose_shells(s, TopAbs_SHELL, TopAbs_SOLID);
-                    for (; loose_shells.More(); loose_shells.Next()) {
-                        shapes.push_back(loose_shells.Current());
-                    }
-                }
-                {
-                    TopExp_Explorer loose_faces(s, TopAbs_FACE, TopAbs_SHELL);
-                    for (; loose_faces.More(); loose_faces.Next()) {
-                        shapes.push_back(loose_faces.Current());
-                    }
-                }
-                */
+                BRepExtrema_ShapeList shape_list;
+                std::vector<bool> is_reversed;
+                TopExp_Explorer exp_f;
+                for (exp_f.Init(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
+                    shape_list.Append(TopoDS::Face(exp_f.Current()));
 
-                //for (auto& s : shapes) {
-                    //for (TopExp_Explorer exp_f(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
-                    TopExp_Explorer exp_f;
-                    for (exp_f.Init(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
-                        auto& face = TopoDS::Face(exp_f.Current());
-                        BRepGProp_Face prop(face);
-                        bool is_reversed = face.Orientation() == TopAbs_REVERSED;
+                    TopoDS_Face f = TopoDS::Face(exp_f.Current());
+                    is_reversed.push_back(f.Orientation() == TopAbs_REVERSED);
+                }
 
-                        TopLoc_Location loc;
-                        Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
-                        if (tri.IsNull()) {
-                            Logger::Message(Logger::LOG_ERROR, "Triangulation missing for face");
-                            continue;
+                // Standard_Boolean BRepExtrema_TriangleSet::Init (const BRepExtrema_ShapeList& theShapes)
+                Standard_Boolean isOK = Standard_True;
+                for (Standard_Integer aShapeIdx = 0; aShapeIdx < shape_list.Size() && isOK; ++aShapeIdx)
+                {
+                    if (shape_list (aShapeIdx).ShapeType() == TopAbs_FACE) {
+                        // isOK = initFace (TopoDS::Face (shape_list(aShapeIdx)), aShapeIdx);
+                        // Standard_Boolean BRepExtrema_TriangleSet::initFace (const TopoDS_Face& theFace, const Standard_Integer theIndex)
+
+                        TopoDS_Face theFace = TopoDS::Face (shape_list(aShapeIdx));
+                        Standard_Integer theIndex = aShapeIdx;
+                        TopLoc_Location aLocation;
+
+                        bool is_reversed = theFace.Orientation() == TopAbs_REVERSED;
+
+                        Handle(Poly_Triangulation) aTriangulation = BRep_Tool::Triangulation (theFace, aLocation);
+                        if (aTriangulation.IsNull())
+                        {
+                            isOK = false;
                         }
-                        size_t vertex_offset = triangulation.Vertices.size() - 1;
 
-                        auto theNodes = tri->MapNodeArray()->ChangeArray1();
-                        auto theTrsf = loc.Transformation();
+                        const Standard_Integer aVertOffset = static_cast<Standard_Integer> (verts.size()) - 1;
+
+                        // initNodes (aTriangulation->MapNodeArray()->ChangeArray1(), aLocation.Transformation(), theIndex);
+                        // void BRepExtrema_TriangleSet::initNodes (const TColgp_Array1OfPnt& theNodes, const gp_Trsf& theTrsf, const Standard_Integer theIndex)
+                        TColgp_Array1OfPnt theNodes = aTriangulation->MapNodeArray()->ChangeArray1();
+                        gp_Trsf theTrsf = aLocation.Transformation();
+
                         for (Standard_Integer aVertIdx = 1; aVertIdx <= theNodes.Size(); ++aVertIdx)
-                          {
-                            gp_Pnt n_pnt = theNodes.Value (aVertIdx);
-                            n_pnt.Transform (theTrsf);
-                            triangulation.Vertices.push_back (BVH_Vec3d (n_pnt.X(), n_pnt.Y(), n_pnt.Z()));
-                            verts.push_back(n_pnt);
-                          }
-
-                        /*
-                        for (int i = 1; i <= tri->NbNodes(); ++i) {
-                            // DM: modified to pass in NCollection_Vec3<double> not gp_XYZ
-                            gp_Pnt n_pnt(tri->Node(i).Transformed(loc).XYZ());
-                            NCollection_Vec3<double> vec(n_pnt.X(), n_pnt.Y(), n_pnt.Z());
-                            triangulation.Vertices.push_back(vec);
-                            verts.push_back(n_pnt);
+                        {
+                            gp_Pnt aVertex = theNodes.Value (aVertIdx);
+                            aVertex.Transform (theTrsf);
+                            triangulation.Vertices.push_back (BVH_Vec3d (aVertex.X(), aVertex.Y(), aVertex.Z()));
+                            verts.push_back(aVertex);
+                            // myShapeIdxOfVtxVec.Append (theIndex);
                         }
-                        */
 
-                        const Poly_Array1OfTriangle& triangles = tri->Triangles();
-                        for (int i = 1; i <= triangles.Length(); ++i) {
-                            int n1, n2, n3; // These indices start from 1
+                        // myNumVtxInShapeVec.SetValue (theIndex, theNodes.Size());
+
+                        for (Standard_Integer aTriIdx = 1; aTriIdx <= aTriangulation->NbTriangles(); ++aTriIdx)
+                        {
+                            Standard_Integer aVertex1;
+                            Standard_Integer aVertex2;
+                            Standard_Integer aVertex3;
+
                             if (is_reversed) {
-                                triangles(i).Get(n3, n2, n1);
+                                aTriangulation->Triangle (aTriIdx).Get (aVertex3, aVertex2, aVertex1);
                             } else {
-                                triangles(i).Get(n1, n2, n3);
+                                aTriangulation->Triangle (aTriIdx).Get (aVertex1, aVertex2, aVertex3);
                             }
 
-                            // DM: calculate per-triangle normal here and only push back valid triangles
-                            n1 += vertex_offset;
-                            n2 += vertex_offset;
-                            n3 += vertex_offset;
-
-                            const auto& v1_pnt = verts[n1];
-                            const auto& v2_pnt = verts[n2];
-                            const auto& v3_pnt = verts[n3];
-
+                            const auto& v1_pnt = verts[aVertex1 + aVertOffset];
+                            const auto& v2_pnt = verts[aVertex2 + aVertOffset];
+                            const auto& v3_pnt = verts[aVertex3 + aVertOffset];
                             gp_Vec dir1(v1_pnt, v2_pnt);
                             gp_Vec dir2(v1_pnt, v3_pnt);
                             gp_Vec cross_product = dir1.Crossed(dir2);
                             if (cross_product.Magnitude() > Precision::Confusion()) {
-                                // The 0 at the end is an arbitrary reference to anything we want.
-                                NCollection_Vec4<int> element(n1, n2, n3, 0);
-                                triangulation.Elements.push_back(element);
-                                tris.push_back({n1, n2, n3});
-                                normals.push_back(cross_product.Normalized());
+                                triangulation.Elements.push_back (BVH_Vec4i (
+                                    aVertex1 + aVertOffset,
+                                    aVertex2 + aVertOffset,
+                                    aVertex3 + aVertOffset,
+                                    original_tris_index));
+                                    //theIndex));
+                                original_tris_index++;
+                                original_tris.push_back({
+                                    aVertex1 + aVertOffset,
+                                    aVertex2 + aVertOffset,
+                                    aVertex3 + aVertOffset
+                                });
+                                original_normals.push_back(cross_product.Normalized());
                             }
                         }
+
+                        // myNumTrgInShapeVec.SetValue (theIndex, aTriangulation->NbTriangles());
+
+                        isOK = true;
+                    } else if (shape_list (aShapeIdx).ShapeType() == TopAbs_EDGE) {
+                        // isOK = initEdge (TopoDS::Edge (shape_list(aShapeIdx)), aShapeIdx);
+                        // Should never occur, we don't pass in edges.
                     }
-                //}
+                }
 
-                // DM: moved out of the shape loop.
                 triangulation.MarkDirty();
-
                 const auto bvh = triangulation.BVH();
+
+                // After BVH is constructed, triangles are reordered
+                std::vector<std::array<int, 3>> tris(triangulation.Size());
+                std::vector<gp_Vec> normals(triangulation.Size());
+
+                for (int i=0; i<triangulation.Size(); ++i) {
+                    const auto& el = triangulation.Elements[i];
+                    tris[i] = original_tris[el[3]];
+                    normals[i] = original_normals[el[3]];
+                }
+
                 bvhs_[t] = bvh;
                 is_manifold_[t] = is_shape_manifold(s);
                 tris_[t] = std::move(tris);
                 verts_[t] = std::move(verts);
                 normals_[t] = std::move(normals);
-
-
-
-// This is the old method of bvh generation
-BRepExtrema_ShapeList shape_list;
-std::vector<bool> is_reversed2;
-TopExp_Explorer exp_f2;
-for (exp_f2.Init(s, TopAbs_FACE); exp_f2.More(); exp_f2.Next()) {
-    shape_list.Append(exp_f2.Current());
-
-    TopoDS_Face f = TopoDS::Face(exp_f2.Current());
-    is_reversed2.push_back(f.Orientation() == TopAbs_REVERSED);
-}
-BRepExtrema_TriangleSet triangle_set(shape_list);
-const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh2 = triangle_set.BVH();
-std::vector<bool> valid_tris(triangle_set.Size(), true);
-std::vector<std::array<int, 3>> tris2(triangle_set.Size());
-std::vector<gp_Vec> normals2(triangle_set.Size());
-const BVH_Array3d& vertices = triangle_set.GetVertices();
-std::vector<gp_Pnt> verts2(vertices.size());
-int i = 0;
-for (const auto& v : vertices) {
-    verts2[i] = gp_Pnt(v[0], v[1], v[2]);
-    i++;
-}
-for (int i=0; i<triangle_set.Size(); ++i) {
-    NCollection_Array1<int> indices;
-    triangle_set.GetVtxIndices(i, indices);
-    if (is_reversed2[triangle_set.GetFaceID(i)]) {
-        std::swap(indices[0], indices[2]);
-    }
-    gp_Pnt& v1_pnt = verts2[indices[0]];
-    gp_Pnt& v2_pnt = verts2[indices[1]];
-    gp_Pnt& v3_pnt = verts2[indices[2]];
-    gp_Vec dir1(v1_pnt, v2_pnt);
-    gp_Vec dir2(v1_pnt, v3_pnt);
-    gp_Vec cross_product = dir1.Crossed(dir2);
-    if (cross_product.Magnitude() > Precision::Confusion()) {
-        normals2[i] = cross_product.Normalized();
-        tris2[i] = {indices[0], indices[1], indices[2]};
-    } else {
-        valid_tris[i] = false;
-    }
-}
-
-// Uncomment this to get old behaviour
-// bvhs_[t] = bvh2;
-// tris_[t] = std::move(tris2);
-// verts_[t] = std::move(verts2);
-// normals_[t] = std::move(normals2);
-// valid_tris_[t] = std::move(valid_tris);
-
-                /*
-                std::cout << "DEBUGG:" << std::endl;
-                for (int i=0; i<triangulation.Size(); ++i) {
-                    std::cout << "Triangle in triangle set:" << std::endl;
-                    const auto& tri = triangulation.Elements[i];
-                    for (int j=0; j<3; ++j) {
-                        const auto& v = triangulation.Vertices[tri[j] - 1]; // tri[j] indices start from 1
-                        std::cout << v[0] << " " << v[1] << " " << v[2] << std::endl;
-                    }
-                }
-                */
 			}
 
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
@@ -1631,7 +1554,6 @@ for (int i=0; i<triangle_set.Size(); ++i) {
             std::map<T, double> max_protrusions_; 
             std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
             std::unordered_map<T, bool> is_manifold_;
-            std::unordered_map<T, std::vector<bool>> valid_tris_;
             std::unordered_map<T, std::vector<std::array<int, 3>>> tris_;
             std::unordered_map<T, std::vector<gp_Pnt>> verts_;
             std::unordered_map<T, std::vector<gp_Vec>> normals_;
