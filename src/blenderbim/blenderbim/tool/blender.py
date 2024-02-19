@@ -551,6 +551,18 @@ class Blender(blenderbim.core.tool.Blender):
             for axis_idx in range(3):
                 attr[axis_idx] = lock_state
 
+    class Collection:
+        @classmethod
+        def get_ifc_collections(cls):
+            ifc_collections = []
+            project_collection = next(col for col in bpy.data.collections if col.name.startswith("IfcProject/"))
+            collections = [project_collection]
+            while collections:
+                ifc_collection = collections.pop(0)
+                ifc_collections.append(ifc_collection)
+                collections.extend(ifc_collection.children)
+            return ifc_collections
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
