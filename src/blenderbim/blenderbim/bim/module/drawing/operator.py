@@ -959,7 +959,7 @@ class CreateDrawing(bpy.types.Operator):
             for path in el.findall("{http://www.w3.org/2000/svg}path"):
                 for subpath in path.attrib["d"].split("M")[1:]:
                     subpath = "M" + subpath.strip()
-                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    coords = [[o for o in co[1:].split(",")] for co in subpath.split()]
                     line_strings.append(shapely.LineString(coords))
                 old_paths.append(path)
             unioned_line_strings = shapely.union_all(shapely.GeometryCollection(line_strings))
@@ -1020,7 +1020,7 @@ class CreateDrawing(bpy.types.Operator):
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
                         subpath_co = "M" + subpath.strip(" Z")
-                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        coords = [[o for o in co[1:].split(",")] for co in subpath_co.split()]
                         if subpath.strip().lower().endswith("z"):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
