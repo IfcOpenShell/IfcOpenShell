@@ -102,7 +102,7 @@ class RepresentationsData:
 
         # shape aspects matching context of the active representation
         matching_shape_aspects = []
-        for shape_aspect in tool.Geometry.get_shape_aspects(element):
+        for shape_aspect in ifcopenshell.util.element.get_shape_aspects(element):
             matching_representation = tool.Geometry.get_shape_aspect_representation(shape_aspect, base_representation)
             if matching_representation:
                 matching_shape_aspects.append(shape_aspect)
