@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+
 
 class Usecase:
     def __init__(self, file, material=None, style=None, context=None, should_use_presentation_style_assignment=False):
@@ -111,6 +113,27 @@ class Usecase:
             self.modify_existing_definition_representation()
         else:
             self.create_new_definition_representation()
+
+        material_constituents_names = []
+        for inverse in self.file.get_inverse(self.settings["material"]):
+            if inverse.is_a("IfcMaterialConstituent") and inverse.Name:
+                material_constituents_names.append(inverse.Name)
+        if not material_constituents_names:
+            return
+
+        elements = ifcopenshell.util.element.get_elements_by_material(self.file, self.settings["material"])
+        shape_aspects = []
+        for element in elements:
+            shape_aspects += ifcopenshell.util.element.get_shape_aspects(element)
+
+        for shape_aspect in shape_aspects:
+            if shape_aspect.Name not in material_constituents_names:
+                continue
+
+            for rep in shape_aspect.ShapeRepresentations:
+                ifcopenshell.api.run(
+                    "style.assign_representation_styles", self.file, shape_representation=rep, styles=[self.style]
+                )
 
     def modify_existing_definition_representation(self):
         definition_representation = self.settings["material"].HasRepresentation[0]
