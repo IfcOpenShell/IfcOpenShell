@@ -163,10 +163,10 @@ class Usecase:
             definition_representation.Representations = representations
 
     def has_proposed_style(self, styled_item):
-        return bool([s for s in styled_item.Styles if s == self.settings["style"]])
+        return any(s == self.settings["style"] for s in styled_item.Styles)
 
     def has_same_style_type(self, styled_item):
-        return bool([s for s in styled_item.Styles if s.is_a() == self.settings["style"].is_a()])
+        return any(s.is_a() == self.settings["style"].is_a() for s in styled_item.Styles)
 
     def create_new_definition_representation(self):
         representation = self.create_styled_representation()
