@@ -106,16 +106,26 @@ class Usecase:
         application = ifcopenshell.api.owner.settings.get_application(self.file)
         if self.file.schema != "IFC2X3" and not application:
             return
-        return self.file.create_entity(
-            "IfcOwnerHistory",
-            **{
-                "OwningUser": user,
-                "OwningApplication": application,
-                "State": "READWRITE",
-                "ChangeAction": "ADDED",
-                "LastModifiedDate": int(time.time()),
-                "LastModifyingUser": user,
-                "LastModifyingApplication": application,
-                "CreationDate": int(time.time()),
-            },
-        )
+        try:
+            return self.file.create_entity(
+                "IfcOwnerHistory",
+                **{
+                    "OwningUser": user,
+                    "OwningApplication": application,
+                    "State": "READWRITE",
+                    "ChangeAction": "ADDED",
+                    "LastModifiedDate": int(time.time()),
+                    "LastModifyingUser": user,
+                    "LastModifyingApplication": application,
+                    "CreationDate": int(time.time()),
+                },
+            )
+        except Exception as e:
+            # clarification message because error may come out of blue for users
+            # first time they try to create_entity in IFC2X3
+            if self.file.schema == "IFC2X3" and (application is None or user is None):
+                raise Exception(
+                    "In IFC2X3 setting up owner history mandatory but it cannot be setup because either user or application is not set. "
+                    "See an example in the owner.create_owner_history documentation."
+                )
+            raise e
