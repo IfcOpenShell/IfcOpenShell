@@ -62,6 +62,8 @@
 #include <STEPConstruct_PointHasher.hxx>
 #include "clash_utils.h"
 
+#include "H5Cpp.h"
+
 
 namespace IfcGeom {
 
@@ -920,7 +922,7 @@ namespace IfcGeom {
 				shapes_[t] = s;
 			}
 
-			void add_triangulated(const T& t, const TopoDS_Shape& s) {
+			void add_triangulation(const T& t, const TopoDS_Shape& s) {
                 // Note that the original add function is also used elsewhere (e.g. boolean_utils.cpp)
                 // We don't want to randomly add triangulated voids in our
                 // tree, so for now this is a separate function.
@@ -1557,6 +1559,16 @@ namespace IfcGeom {
             std::unordered_map<T, std::vector<std::array<int, 3>>> tris_;
             std::unordered_map<T, std::vector<gp_Pnt>> verts_;
             std::unordered_map<T, std::vector<gp_Vec>> normals_;
+
+            // Temporary structures for H5
+            std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
+            std::map<IfcUtil::IfcBaseClass*, std::string> global_ids_;
+            std::map<IfcUtil::IfcBaseClass*, std::string> names_;
+            std::map<IfcUtil::IfcBaseClass*, std::vector<double>> placements_;
+            std::map<std::string, std::vector<double>> local_verts_;
+            std::map<std::string, std::vector<int>> local_faces_;
+            std::map<std::string, std::vector<IfcGeom::Material>> local_materials_;
+            std::map<std::string, std::vector<int>> local_material_ids_;
 			
 			bool enable_face_styles_ = false;
 
@@ -1625,6 +1637,240 @@ namespace IfcGeom {
 			}
 		}
 
+        uint8_t hexStringToByte(const std::string& hexStr) {
+            uint8_t byte;
+            std::stringstream ss;
+            ss << std::hex << hexStr;
+            ss >> byte;
+            return byte;
+        }
+
+        void write_h5() {
+            H5::H5File file("filename.h5", H5F_ACC_TRUNC);
+            H5::Group shapes = file.createGroup("/shapes");
+
+            std::set<std::string> processed_geometry_ids;
+            std::vector<int> element_shape_ids;
+            std::unordered_map<std::string, int> geometry_id_to_shape_id;
+            int geometry_index = 0;
+
+            std::vector<std::vector<float>> matrices;
+            std::vector<std::array<float, 4>> colours;
+            std::vector<std::string> names;
+            std::vector<std::string> global_ids;
+
+            const float tolerance = 0.01f; // Tolerance value for comparison
+
+            for (const auto& elem : triangulation_elements_) {
+                const auto geometry_id = elem->geometry().id();
+
+                const auto& placement = placements_[elem->product()];
+                matrices.emplace_back(placement.begin(), placement.end());
+
+                names.push_back(names_[elem->product()]);
+                global_ids.push_back(global_ids_[elem->product()]);
+
+                if (processed_geometry_ids.find(geometry_id) != processed_geometry_ids.end()) {
+                    element_shape_ids.push_back(geometry_id_to_shape_id[geometry_id]);
+                    continue;
+                }
+
+                processed_geometry_ids.insert(geometry_id);
+                H5::Group group = shapes.createGroup(std::to_string(geometry_index));
+                geometry_id_to_shape_id[geometry_id] = geometry_index;
+                element_shape_ids.push_back(geometry_index);
+
+                geometry_index++;
+
+                const auto& faces = local_faces_[geometry_id];
+                const auto& verts = local_verts_[geometry_id];
+                const auto& materials = local_materials_[geometry_id];
+                const auto& material_ids = local_material_ids_[geometry_id];
+
+                std::vector<float> verts_float(verts.size());
+                std::transform(verts.begin(), verts.end(), verts_float.begin(),
+                   [](double val) { return static_cast<float>(val); });
+
+                // Write faces
+                size_t total_verts = verts.size() / 3;
+                hsize_t faces_dims[1] = {faces.size()};
+                H5::DataSpace faces_dataspace(1, faces_dims);
+                H5::DSetCreatPropList faces_propList;
+                faces_propList.setChunk(1, faces_dims);
+                faces_propList.setDeflate(9);
+                if (total_verts < (1 << 8)) {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    std::vector<uint8_t> faces_dtype(faces.begin(), faces.end());
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces_dtype.data(), dtype);
+                } else if (total_verts < (1 << 16)) {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT16;
+                    std::vector<uint16_t> faces_dtype(faces.begin(), faces.end());
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces_dtype.data(), dtype);
+                } else {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT32;
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces.data(), dtype);
+                }
+
+                // Write verts
+                H5::DataType dtype = H5::PredType::NATIVE_FLOAT;
+                hsize_t dims[1] = {verts.size()};
+                H5::DataSpace dataspace(1, dims);
+                H5::DSetCreatPropList propList;
+                propList.setChunk(1, dims);
+                propList.setDeflate(9);
+                H5::DataSet dataset = group.createDataSet("verts", dtype, dataspace, propList);
+                dataset.write(verts_float.data(), H5::PredType::NATIVE_FLOAT);
+
+                // Write materials
+                std::vector<uint8_t> material_keys;
+                for (const auto& material : materials) {
+                    float alpha = 1.0;
+                    if (material.hasTransparency() && material.transparency() > 0) {
+                        alpha = 1.0 - material.transparency();
+                    }
+
+                    int i = 0;
+                    bool is_existing_colour = false;
+                    for (const auto& colour : colours) {
+                        if (std::abs(colour[0] - static_cast<float>(material.diffuse()[0])) < tolerance
+                                && std::abs(colour[1] - static_cast<float>(material.diffuse()[1])) < tolerance
+                                && std::abs(colour[2] - static_cast<float>(material.diffuse()[2])) < tolerance
+                                && std::abs(colour[3] - alpha) < tolerance) {
+                            is_existing_colour = true;
+                            break;
+                        }
+                        i++;
+                    }
+
+                    if ( ! is_existing_colour) {
+                        colours.push_back({material.diffuse()[0], material.diffuse()[1], material.diffuse()[2], alpha});
+                    }
+                    material_keys.push_back(i);
+                }
+
+                size_t total_material_keys = material_keys.size();
+                if (total_material_keys) {
+                    hsize_t dims[1] = {material_keys.size()};
+                    H5::DataSpace dataspace(1, dims);
+                    H5::DSetCreatPropList propList;
+                    propList.setChunk(1, dims);
+                    propList.setDeflate(9);
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    H5::DataSet dataset = group.createDataSet("materials", dtype, dataspace, propList);
+                    dataset.write(material_keys.data(), dtype);
+                }
+
+                if (total_material_keys > 1) {
+                    hsize_t dims[1] = {material_ids.size()};
+                    H5::DataSpace dataspace(1, dims);
+                    H5::DSetCreatPropList propList;
+                    propList.setChunk(1, dims);
+                    propList.setDeflate(9);
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    H5::DataSet dataset = group.createDataSet("material_ids", dtype, dataspace, propList);
+                    std::vector<uint8_t> data_dtype(material_ids.begin(), material_ids.end());
+                    dataset.write(data_dtype.data(), dtype);
+                }
+            }
+
+            // Write GlobalIds
+            std::vector<uint8_t> uuids_array;
+            for (const auto& id_str : global_ids) {
+                for (size_t i = 0; i < id_str.length(); i += 2) {
+                    std::string byteStr = id_str.substr(i, 2);
+                    uint8_t byte = hexStringToByte(byteStr);
+                    uuids_array.push_back(byte);
+                }
+            }
+            hsize_t global_ids_dims[2] = {global_ids.size(), 16};  // 16 bytes per UUID
+            H5::DataSpace global_ids_dataspace(2, global_ids_dims);
+            H5::DataSet global_ids_dataset = file.createDataSet("element_global_ids", H5::PredType::NATIVE_UINT8, global_ids_dataspace);
+            global_ids_dataset.write(uuids_array.data(), H5::PredType::NATIVE_UINT8);
+
+            // Write names
+            H5::StrType strType(H5::PredType::C_S1, H5T_VARIABLE);
+            hsize_t names_dims[1] = {names.size()};
+            H5::DataSpace names_dataspace(1, names_dims);
+            H5::DataSet names_dataset = file.createDataSet("element_names", strType, names_dataspace);
+            std::vector<const char*> cstr_names;
+            for (const auto& name : names) {
+                cstr_names.push_back(name.c_str());
+            }
+            names_dataset.write(&cstr_names[0], strType);
+
+            // Write matrices
+            std::vector<float> flat_matrices;
+            for (const auto& matrix : matrices) {
+                flat_matrices.insert(flat_matrices.end(), matrix.begin(), matrix.end());
+            }
+            hsize_t dims[2] = {matrices.size(), matrices[0].size()};
+            H5::DataSpace dataspace(2, dims);
+            H5::DSetCreatPropList propList;
+            propList.setChunk(2, dims);
+            propList.setDeflate(9);
+            H5::DataSet dataset = file.createDataSet("element_matrices", H5::PredType::NATIVE_FLOAT, dataspace, propList);
+            dataset.write(flat_matrices.data(), H5::PredType::NATIVE_FLOAT);
+
+            // Write element_shape_ids
+            size_t total_shapes = element_shape_ids.size();
+            hsize_t element_shape_ids_dims[1] = {element_shape_ids.size()};
+            H5::DataSpace element_shape_ids_dataspace(1, element_shape_ids_dims);
+            H5::DSetCreatPropList element_shape_ids_propList;
+            element_shape_ids_propList.setChunk(1, element_shape_ids_dims);
+            element_shape_ids_propList.setDeflate(9);
+            if (total_shapes < (1 << 8)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                std::vector<uint8_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
+            } else if (total_shapes < (1 << 16)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT16;
+                std::vector<uint16_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
+            } else if (total_shapes < (1 << 32)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT32;
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids.data(), dtype);
+            }
+
+            // Write colours
+            if (colours.size()) {
+                std::vector<float> flat_colours;
+                for (const auto& colour : colours) {
+                    flat_colours.insert(flat_colours.end(), colour.begin(), colour.end());
+                }
+                hsize_t colours_dims[2] = {colours.size(), colours[0].size()};
+                H5::DataSpace colours_dataspace(2, colours_dims);
+                H5::DSetCreatPropList colours_propList;
+                colours_propList.setChunk(2, colours_dims);
+                colours_propList.setDeflate(9);
+                H5::DataSet colours_dataset = file.createDataSet("materials", H5::PredType::NATIVE_FLOAT, colours_dataspace, colours_propList);
+                colours_dataset.write(flat_colours.data(), H5::PredType::NATIVE_FLOAT);
+            }
+        }
+
+		void add_triangulation_element(IfcGeom::TriangulationElement* elem, std::string name, std::string global_id) {
+            triangulation_elements_.push_back(elem);
+            const auto& t = elem->product();
+            const auto geometry_id = elem->geometry().id();
+            placements_[t] = elem->transformation().matrix().data();
+            names_[t] = name;
+            global_ids_[t] = global_id;
+
+            if (local_verts_.find(geometry_id) != local_verts_.end()) {
+                return;
+            }
+
+            local_verts_[geometry_id] = elem->geometry().verts();
+            local_faces_[geometry_id] = elem->geometry().faces();
+            local_materials_[geometry_id] = elem->geometry().materials();
+            local_material_ids_[geometry_id] = elem->geometry().material_ids();
+        }
+
 		void add_element(IfcGeom::BRepElement* elem, bool should_triangulate=false) {
 			if (!elem) {
 				return;
@@ -1632,7 +1878,7 @@ namespace IfcGeom {
 			auto compound = elem->geometry().as_compound();
 			compound.Move(elem->transformation().data());
             if (should_triangulate) {
-                add_triangulated(elem->product(), compound);
+                add_triangulation(elem->product(), compound);
             } else {
                 add(elem->product(), compound);
             }
