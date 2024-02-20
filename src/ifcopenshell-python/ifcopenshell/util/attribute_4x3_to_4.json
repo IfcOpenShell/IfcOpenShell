@@ -19,5 +19,9 @@
     },
     "IfcComplexProperty": {
         "Specification": "Description"
+    },
+    "IfcWorkTime": {
+        "StartDate": "Start",
+        "FinishDate": "Finish"
     }
 }

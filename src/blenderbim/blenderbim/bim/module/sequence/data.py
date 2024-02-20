@@ -128,8 +128,12 @@ class SequenceData:
         cls.data["work_times"] = {}
         for work_time in tool.Ifc.get().by_type("IfcWorkTime"):
             data = work_time.get_info()
-            data["Start"] = ifcopenshell.util.date.ifc2datetime(data["Start"]) if data["Start"] else None
-            data["Finish"] = ifcopenshell.util.date.ifc2datetime(data["Finish"]) if data["Finish"] else None
+            if tool.Ifc.get_schema() == "IFC4X3":
+                start_date, finish_date = data["StartDate"], data["FinishDate"]
+            else:
+                start_date, finish_date = data["Start"], data["Finish"]
+            data["Start"] = ifcopenshell.util.date.ifc2datetime(start_date) if start_date else None
+            data["Finish"] = ifcopenshell.util.date.ifc2datetime(finish_date) if finish_date else None
             data["RecurrencePattern"] = work_time.RecurrencePattern.id() if work_time.RecurrencePattern else None
             cls.data["work_times"][work_time.id()] = data
 
