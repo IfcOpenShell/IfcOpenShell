@@ -264,7 +264,7 @@ class Migrator:
                 equivalent = attributes_mapping[new_element.is_a()][attribute.name()]
             if hasattr(element, equivalent):
                 # print("Equivalent found", equivalent)
-                value = getattr(element, equivalent)
+                return getattr(element, equivalent)
             else:
                 return
         except Exception as e:
@@ -275,9 +275,7 @@ class Migrator:
             )
             raise e
 
-    def migrate_attribute(
-        self, attribute, element, new_file: ifcopenshell.file, new_element, new_element_schema
-    ):
+    def migrate_attribute(self, attribute, element, new_file: ifcopenshell.file, new_element, new_element_schema):
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.wrapped_data.file
@@ -307,6 +305,14 @@ class Migrator:
             try:
                 value = self.find_equivalent_attribute(
                     new_element, attribute, element, self.attributes_mapping[("IFC4X3", "IFC4")]
+                )
+            except:  # We tried our best
+                return
+
+        elif new_file.schema == "IFC4" and old_file.schema == "IFC4X3":
+            try:
+                value = self.find_equivalent_attribute(
+                    new_element, attribute, element, self.attributes_mapping[("IFC4X3", "IFC4")], reverse_mapping=True
                 )
             except:  # We tried our best
                 return
