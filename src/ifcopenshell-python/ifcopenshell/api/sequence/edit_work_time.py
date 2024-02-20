@@ -55,8 +55,8 @@ class Usecase:
 
     def execute(self):
         for name, value in self.settings["attributes"].items():
-            if value and name in ["Start", "Finish"]:
+            if value and name in ("Start", "Finish", "StartDate", "FinishDate"):
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
-                if self.file.schema == "IFC4X3":
+                if self.file.schema == "IFC4X3" and name in ("Start", "Finish"):
                     name += "Date"
             setattr(self.settings["work_time"], name, value)
