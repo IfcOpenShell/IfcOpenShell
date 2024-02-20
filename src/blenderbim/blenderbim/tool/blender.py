@@ -551,6 +551,50 @@ class Blender(blenderbim.core.tool.Blender):
             for axis_idx in range(3):
                 attr[axis_idx] = lock_state
 
+    operator_invoke_filepath_hotkeys_description = "Hold Shift to open the file, Alt to browse containing directory"
+
+    @classmethod
+    def operator_invoke_filepath_hotkeys(cls, operator, context, event, filepath: Path):
+        if not event.alt and not event.shift:
+            return
+
+        import platform
+        import os
+        import subprocess
+
+        def open_file_or_folder(path):
+            if platform.system() == "Windows":
+                os.startfile(path)
+            elif platform.system() == "Darwin":
+                subprocess.Popen(["open", path])
+            else:
+                subprocess.Popen(["xdg-open", path])
+
+        # resolve relative filepaths with .blend path by default
+        if not filepath.is_absolute():
+            if bpy.data.filepath:
+                filepath = Path(bpy.data.filepath).parent / filepath
+            else:
+                operator.report({"ERROR"}, f'Couldn\'t resolve relative filepath "{filepath.as_posix()}"')
+                return {"CANCELLED"}
+
+        # holding ALT - open file directory
+        if event.alt == True:
+            # open directory
+            filepath = filepath.parent
+            if not filepath.exists():
+                operator.report({"ERROR"}, f'Cannot open non-existing directory: "{filepath.as_posix()}"')
+                return {"CANCELLED"}
+            open_file_or_folder(filepath.as_posix())
+            return {"PASS_THROUGH"}
+
+        # holding sHIFT - open file
+        if not filepath.exists():
+            operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
+            return {"CANCELLED"}
+        open_file_or_folder(filepath.as_posix())
+        return {"PASS_THROUGH"}
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
