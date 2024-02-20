@@ -728,6 +728,20 @@ class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.active_material_id = self.material
         props.editing_material_type = "STYLE"
 
+        # set already applied style and context if possible
+        if not 0 <= props.active_material_index < len(props.materials):
+            return
+
+        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        if not material.HasRepresentation:
+            return
+
+        rep = material.HasRepresentation[0].Representations[0]  # IfcStyledRepresentation
+        props.contexts = str(rep.ContextOfItems.id())
+        style = rep.Items[0].Styles[0]
+        if style.Name:  # props.styles only has named styles
+            props.styles = str(rep.Items[0].Styles[0].id())
+
 
 class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_material_style"
