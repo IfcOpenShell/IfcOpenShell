@@ -81,6 +81,8 @@ class BIM_PT_materials(Panel):
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
+        # TODO: data.py is not updated on changing active_material_index
+        # so the active material styles go out of sync with the active material
         for style in MaterialsData.data["active_styles"]:
             row = self.layout.row(align=True)
             row.label(text="", icon="SHADING_RENDERED")
