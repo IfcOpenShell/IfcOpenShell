@@ -129,6 +129,10 @@ BIND(IfcArbitraryOpenProfileDef);
 BIND(IfcIndexedPolyCurve);
 #endif
 
+#ifdef SCHEMA_HAS_IfcFixedReferenceSweptAreaSolid
+BIND(IfcFixedReferenceSweptAreaSolid)
+#endif
+
 BIND(IfcCircle);
 BIND(IfcEllipse);
 BIND(IfcLine);
