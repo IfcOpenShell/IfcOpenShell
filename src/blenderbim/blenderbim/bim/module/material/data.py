@@ -323,6 +323,6 @@ class ObjectMaterialData:
     @classmethod
     def active_material_constituents(cls):
         material = cls.material
-        if not material.is_a("IfcMaterialConstituentSet"):
+        if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []
         return [m.Name for m in material.MaterialConstituents if m.Name]
