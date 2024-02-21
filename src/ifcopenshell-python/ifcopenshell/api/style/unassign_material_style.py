@@ -49,7 +49,6 @@ class Usecase:
         }
 
     def execute(self):
-        to_delete = set()
         for definition in self.settings["material"].HasRepresentation:
             for representation in definition.Representations:
                 if not representation.is_a("IfcStyledRepresentation"):
