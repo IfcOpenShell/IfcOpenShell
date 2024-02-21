@@ -24,6 +24,10 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
 	auto it = map(inst->ParentProfile());
 	taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Operator()));
+	if (!taxonomy::cast<taxonomy::geom_item>(it)->matrix) {
+		// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
+		taxonomy::cast<taxonomy::geom_item>(it)->matrix = taxonomy::make<taxonomy::matrix4>();
+	}
 	taxonomy::cast<taxonomy::geom_item>(it)->matrix->components() *= m->ccomponents();
 	return it;
 }

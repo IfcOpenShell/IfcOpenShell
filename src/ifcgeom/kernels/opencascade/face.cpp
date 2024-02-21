@@ -41,6 +41,7 @@
 #include "OpenCascadeKernel.h"
 #include "face_definition.h"
 #include "wire_utils.h"
+#include "base_utils.h"
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -295,6 +296,10 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		result = compound;
 	} else {
 		result = face_list.First();
+	}
+
+	if (face->matrix) {
+		result = apply_transformation(result, *face->matrix);
 	}
 
 	return true;
