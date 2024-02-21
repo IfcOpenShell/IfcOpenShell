@@ -17,6 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell
+
+
 class Usecase:
     def __init__(self, file, material=None, style=None, context=None):
         """Unassigns a style to a material
@@ -67,3 +70,28 @@ class Usecase:
                     self.file.remove(representation)
             if not definition.Representations:
                 self.file.remove(definition)
+
+        # handle material constituents and shape aspects
+        material_constituents_names = []
+        for inverse in self.file.get_inverse(self.settings["material"]):
+            if inverse.is_a("IfcMaterialConstituent") and inverse.Name:
+                material_constituents_names.append(inverse.Name)
+        if not material_constituents_names:
+            return
+
+        elements = ifcopenshell.util.element.get_elements_by_material(self.file, self.settings["material"])
+        shape_aspects = []
+        for element in elements:
+            shape_aspects += ifcopenshell.util.element.get_shape_aspects(element)
+
+        for shape_aspect in shape_aspects:
+            if shape_aspect.Name not in material_constituents_names:
+                continue
+
+            for rep in shape_aspect.ShapeRepresentations:
+                ifcopenshell.api.run(
+                    "style.unassign_representation_styles",
+                    self.file,
+                    shape_representation=rep,
+                    styles=[self.settings["style"]],
+                )
