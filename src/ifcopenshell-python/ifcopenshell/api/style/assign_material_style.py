@@ -114,6 +114,7 @@ class Usecase:
         else:
             self.create_new_definition_representation()
 
+        # handle material constituents and shape aspects
         material_constituents_names = []
         for inverse in self.file.get_inverse(self.settings["material"]):
             if inverse.is_a("IfcMaterialConstituent") and inverse.Name:
@@ -136,25 +137,28 @@ class Usecase:
                 )
 
     def modify_existing_definition_representation(self):
+        # NOTE: while it's theoritically possible to have multiple styles per 1 material
+        # (either with multiple styled items or multiple styles in 1 item)
+        # we use an implicit convention that
         definition_representation = self.settings["material"].HasRepresentation[0]
         representation = self.get_styled_representation(definition_representation)
         if representation:
-            potential_orphans = []
             items = list(representation.Items)
             new_items = []
-            removed_items = []
+            same_style_items = []
             for item in items:
                 if not item.is_a("IfcStyledItem"):
                     continue
                 if self.has_proposed_style(item):
                     return
                 if self.has_same_style_type(item):
-                    removed_items.append(item)
+                    same_style_items.append(item)
                 else:
                     new_items.append(item)
-            new_items.append(self.create_styled_item())
+            item_to_reuse = same_style_items.pop(0) if same_style_items else None
+            new_items.append(self.create_styled_item(item_to_reuse))
             representation.Items = new_items
-            for item in removed_items:
+            for item in same_style_items:
                 if len(self.file.get_inverse(item)) == 0:
                     self.file.remove(item)
         else:
@@ -172,7 +176,7 @@ class Usecase:
         representation = self.create_styled_representation()
         definition_representation = self.file.create_entity(
             "IfcMaterialDefinitionRepresentation",
-            **{"Representations": [representation], "RepresentedMaterial": self.settings["material"]}
+            **{"Representations": [representation], "RepresentedMaterial": self.settings["material"]},
         )
 
     def get_styled_representation(self, definition_representation):
@@ -191,8 +195,14 @@ class Usecase:
                 "ContextOfItems": self.settings["context"],
                 "RepresentationIdentifier": self.settings["context"].ContextIdentifier,
                 "Items": [self.create_styled_item()],
-            }
+            },
         )
 
-    def create_styled_item(self):
-        return self.file.create_entity("IfcStyledItem", **{"Styles": [self.style], "Name": self.settings["style"].Name})
+    def create_styled_item(self, reuse_item=None):
+        if reuse_item is None:
+            return self.file.create_entity(
+                "IfcStyledItem", **{"Styles": [self.style], "Name": self.settings["style"].Name}
+            )
+        reuse_item.Styles = (self.style,)
+        reuse_item.Name = self.settings["style"].Name
+        return reuse_item
