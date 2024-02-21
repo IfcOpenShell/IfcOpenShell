@@ -102,6 +102,9 @@ with basic features to save and unload the project.
 Advanced mode
 -------------
 
+The advanced mode will not load the model right away, but preload it and
+provide additional loading possibilities like :ref:`users/dealing_with_large_models:Filtered model loading`.
+
 .. image:: images/ifc-project-load.png
 
 .. |FILE| image:: /images/icon-FILE.svg
