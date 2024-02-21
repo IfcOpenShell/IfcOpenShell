@@ -750,14 +750,14 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = bpy.context.scene.BIMMaterialProperties
-        material = tool.Ifc.get().by_id(props.active_material_id)
-        style = tool.Ifc.get().by_id(int(props.styles))
-        context = tool.Ifc.get().by_id(int(props.contexts))
-        ifcopenshell.api.run(
-            "style.assign_material_style", tool.Ifc.get(), material=material, style=style, context=context
-        )
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(props.active_material_id)
+        style = ifc_file.by_id(int(props.styles))
+        context = ifc_file.by_id(int(props.contexts))
+        ifcopenshell.api.run("style.assign_material_style", ifc_file, material=material, style=style, context=context)
         tool.Material.disable_editing_material()
         core.load_materials(tool.Material, props.material_type)
+        tool.Material.update_elements_using_material(material)
 
 
 class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -776,3 +776,4 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
             "style.unassign_material_style", tool.Ifc.get(), material=material, style=style, context=context
         )
         core.load_materials(tool.Material, props.material_type)
+        tool.Material.update_elements_using_material(material)
