@@ -22,9 +22,35 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-# TODO: test assigning styles without material constituents
 class TestAssignMaterialStyle(test.bootstrap.IFC4):
-    def test_update_shape_aspect_representaitons_items_styles_if_material_is_part_of_matching_material_constituents(
+    def test_run(self):
+        material = ifcopenshell.api.run("material.add_material", self.file)
+        context = self.file.createIfcGeometricRepresentationContext()
+        style = self.file.createIfcSurfaceStyle()
+        ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=context)
+
+        assert len(material.HasRepresentation) == 1
+        definition = material.HasRepresentation[0]
+        assert len(definition.Representations) == 1
+        representation = definition.Representations[0]
+        assert representation.is_a("IfcStyledRepresentation")
+        assert representation.ContextOfItems == context
+        assert len(representation.Items) == 1
+        item = representation.Items[0]
+        assert item.is_a("IfcStyledItem")
+        assert item.Styles == (style,)
+
+        style2 = self.file.createIfcSurfaceStyle()
+        ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style2, context=context)
+
+        # reuse existing elements and reassign the style
+        assert material.HasRepresentation == (definition,)
+        assert definition.Representations == (representation,)
+        assert len(representation.Items) == 1
+        assert representation.Items[0] == item
+        assert representation.Items[0].Styles == (style2,)
+
+    def test_update_shape_aspect_representations_items_styles_if_material_is_part_of_matching_material_constituents(
         self,
     ):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
