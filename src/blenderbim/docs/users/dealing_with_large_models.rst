@@ -61,8 +61,8 @@ include:
 Filtered model loading
 ----------------------
 
-You may filter elements and only load a portion of the model. Click on **Enable
-Advanced Mode** when loading a model.
+You may filter elements and only load a portion of the model. Click on 
+:ref:`users/general_usage/ifc_project:Advanced mode` when loading a model.
 
 .. image:: images/advanced-mode.png
 
