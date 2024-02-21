@@ -151,7 +151,10 @@ class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_material(tool.Ifc, tool.Material, tool.Style, material=tool.Ifc.get().by_id(self.material))
+        res = core.remove_material(tool.Ifc, tool.Material, tool.Style, material=tool.Ifc.get().by_id(self.material))
+        if not res:
+            self.report({"ERROR"}, "Material is used in material sets and cannot be removed.")
+            return {"CANCELLED"}
 
 
 class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
