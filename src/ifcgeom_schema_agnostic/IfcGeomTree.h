@@ -86,6 +86,18 @@ namespace IfcGeom {
 		std::array<double, 3> p2;
 	};
 
+    struct h5_shape {
+        std::vector<float> verts;
+        std::vector<int> faces;
+        std::vector<int> materials;
+        std::vector<int> material_ids;
+    };
+
+    struct chunked_model {
+        std::vector<std::vector<float>> materials;
+        std::vector<h5_shape> elements;
+    };
+
 	namespace {
 
 		// Approximates the distance `other` protrudes into `volume` by finding the
@@ -1851,6 +1863,177 @@ namespace IfcGeom {
                 H5::DataSet colours_dataset = file.createDataSet("materials", H5::PredType::NATIVE_FLOAT, colours_dataspace, colours_propList);
                 colours_dataset.write(flat_colours.data(), H5::PredType::NATIVE_FLOAT);
             }
+        }
+
+        void apply_matrix_to_flat_verts(const std::vector<float>& flat_list, const std::vector<float>& matrix, std::vector<float>& result) {
+            result.clear();
+            result.reserve(flat_list.size());
+
+            for (size_t i = 0; i < flat_list.size(); i += 3) {
+                float x = flat_list[i];
+                float y = flat_list[i + 1];
+                float z = flat_list[i + 2];
+                result.push_back(x * matrix[0] + y * matrix[3] + z * matrix[6] + matrix[9]);
+                result.push_back(x * matrix[1] + y * matrix[4] + z * matrix[7] + matrix[10]);
+                result.push_back(x * matrix[2] + y * matrix[5] + z * matrix[8] + matrix[11]);
+            }
+        }
+
+        chunked_model load_h5() {
+            H5::H5File file("/home/dion/cpp.h5", H5F_ACC_RDONLY);
+
+            H5::DataSet materials_ds = file.openDataSet("materials");
+            H5::DataSpace materials_s = materials_ds.getSpace();
+            hsize_t dims[2];
+            materials_s.getSimpleExtentDims(dims);
+            size_t total_materials = dims[0];
+            std::vector<float> buffer(total_materials * 4); // Buffer to hold all materials
+
+            std::cout << "Total mats " << total_materials << std::endl;
+            std::vector<std::vector<float>> materials(total_materials);
+            materials_ds.read(buffer.data(), H5::PredType::NATIVE_FLOAT);
+            for (size_t i = 0; i < total_materials; ++i) {
+                materials[i] = std::vector<float>(buffer.begin() + i * 4, buffer.begin() + (i + 1) * 4);
+            }
+
+            H5::Group shapes_g = file.openGroup("shapes");
+
+            hsize_t total_shapes = shapes_g.getNumObjs();
+            std::vector<h5_shape> shapes(total_shapes);
+
+            for (hsize_t i = 0; i < total_shapes; ++i) {
+                // WARNING: getObjnameByIdx is extremely slow! It makes the entire operation take 5X the time.
+                //std::string shapeName = shapes_g.getObjnameByIdx(i);
+                std::string shapeName = std::to_string(i);
+                H5::Group shapeGroup = shapes_g.openGroup(shapeName);
+
+                // Read "verts" dataset
+                H5::DataSet vertsDataset = shapeGroup.openDataSet("verts");
+                std::vector<float> verts(vertsDataset.getSpace().getSimpleExtentNpoints());
+                vertsDataset.read(verts.data(), H5::PredType::NATIVE_FLOAT);
+
+                // Read "faces" dataset
+                H5::DataSet facesDataset = shapeGroup.openDataSet("faces");
+                std::vector<int> faces(facesDataset.getSpace().getSimpleExtentNpoints());
+                facesDataset.read(faces.data(), H5::PredType::NATIVE_INT);
+
+                // Read "materials" dataset (if it exists)
+                std::vector<int> materials;
+                if (shapeGroup.exists("materials")) {
+                    H5::DataSet materialsDataset = shapeGroup.openDataSet("materials");
+                    materials.resize(materialsDataset.getSpace().getSimpleExtentNpoints());
+                    materialsDataset.read(materials.data(), H5::PredType::NATIVE_INT);
+                }
+
+                // Read "material_ids" dataset (if it exists)
+                std::vector<int> material_ids;
+                if (shapeGroup.exists("material_ids")) {
+                    H5::DataSet materialIdsDataset = shapeGroup.openDataSet("material_ids");
+                    material_ids.resize(materialIdsDataset.getSpace().getSimpleExtentNpoints());
+                    materialIdsDataset.read(material_ids.data(), H5::PredType::NATIVE_INT);
+                }
+
+                // Store the shape data
+                shapes[std::stoi(shapeName)] = {std::move(verts), std::move(faces), std::move(materials), std::move(material_ids)};
+            }
+
+            const int chunk_size = 10000;
+            std::vector<h5_shape> elements;
+
+            int offset = 0;
+            int material_offset = 0;
+            std::vector<float> chunked_verts;
+            std::vector<int> chunked_faces;
+            std::vector<int> chunked_materials;
+            std::vector<int> chunked_material_ids;
+
+            chunked_verts.reserve(chunk_size * 3);
+
+            int i = 0;
+
+            H5::DataSet element_shape_ids_ds = file.openDataSet("element_shape_ids");
+            std::vector<int> element_shape_ids(element_shape_ids_ds.getSpace().getSimpleExtentNpoints());
+            element_shape_ids_ds.read(element_shape_ids.data(), H5::PredType::NATIVE_INT);
+
+            H5::DataSet matrices_ds = file.openDataSet("element_matrices");
+            H5::DataSpace matrices_s = matrices_ds.getSpace();
+            hsize_t matrices_d[2];
+            matrices_s.getSimpleExtentDims(matrices_d);
+            size_t total_matrices = matrices_d[0];
+            size_t matrix_size = 12;
+            std::vector<float> matrices_b(total_matrices * matrix_size);
+            matrices_ds.read(matrices_b.data(), H5::PredType::NATIVE_FLOAT);
+
+            std::unordered_map<int, int> material_map;
+            for (size_t i = 0; i < total_matrices; ++i) {
+                material_map.clear();
+
+                std::vector<float> matrix(matrices_b.begin() + i * matrix_size, matrices_b.begin() + (i + 1) * matrix_size);
+                h5_shape& shape = shapes[element_shape_ids[i]];
+
+                std::vector<float> verts;
+                apply_matrix_to_flat_verts(shape.verts, matrix, verts);
+
+                std::vector<int> faces = shape.faces;
+                for (size_t i = 0; i < faces.size(); ++i) {
+                    faces[i] += offset;
+                }
+
+                chunked_verts.insert(chunked_verts.end(), verts.begin(), verts.end());
+                chunked_faces.insert(chunked_faces.end(), faces.begin(), faces.end());
+
+                int material_index = 0;
+                for (const auto material : shape.materials) {
+                    auto it = std::find(chunked_materials.begin(), chunked_materials.end(), material);
+                    int chunked_index = -1;
+                    if (it == chunked_materials.end()) {
+                        chunked_index = chunked_materials.size();
+                        chunked_materials.push_back(material);
+                    } else {
+                        chunked_index = std::distance(chunked_materials.begin(), it);
+                    }
+                    material_map[material_index] = chunked_index;
+                    material_index++;
+                }
+
+                if (shape.material_ids.size() > 0) {
+                    std::vector<int> material_ids(shape.material_ids.size());
+                    for (int i = 0; i<shape.material_ids.size(); ++i) {
+                        material_ids[i] = material_map[shape.material_ids[i]];
+                    }
+                    chunked_material_ids.insert(chunked_material_ids.end(), material_ids.begin(), material_ids.end());
+                } else {
+                    std::vector<int> material_ids(shape.faces.size() / 3, material_map.begin()->second);
+                    chunked_material_ids.insert(chunked_material_ids.end(), material_ids.begin(), material_ids.end());
+                }
+
+                offset += verts.size() / 3;
+                material_offset += shape.materials.size();
+
+                if (offset > chunk_size) {
+                    elements.push_back({
+                        std::move(chunked_verts),
+                        std::move(chunked_faces),
+                        std::move(chunked_materials),
+                        std::move(chunked_material_ids)});
+                    chunked_verts.clear();
+                    chunked_faces.clear();
+                    chunked_materials.clear();
+                    chunked_material_ids.clear();
+                    offset = 0;
+                    material_offset = 0;
+                }
+            }
+
+            if (offset > 0) {
+                elements.push_back({
+                    std::move(chunked_verts),
+                    std::move(chunked_faces),
+                    std::move(chunked_materials),
+                    std::move(chunked_material_ids)});
+            }
+
+            return { materials, elements };
         }
 
 		void add_triangulation_element(IfcGeom::TriangulationElement* elem, std::string name, std::string global_id) {

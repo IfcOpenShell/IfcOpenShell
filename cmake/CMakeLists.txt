@@ -909,6 +909,8 @@ if(BUILD_IFCGEOM)
     file(GLOB SCHEMA_AGNOSTIC_CPP_FILES ../src/ifcgeom_schema_agnostic/*.cpp)
     set(SCHEMA_AGNOSTIC_FILES ${SCHEMA_AGNOSTIC_H_FILES} ${SCHEMA_AGNOSTIC_CPP_FILES})
 
+    include_directories(/home/dion/.config/blender/4.0/scripts/addons/blenderbim/libs/site/packages/numpy/core/include)
+
     add_library(IfcGeom ${SCHEMA_AGNOSTIC_FILES})
     set_target_properties(IfcGeom PROPERTIES COMPILE_FLAGS -DIFC_GEOM_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
