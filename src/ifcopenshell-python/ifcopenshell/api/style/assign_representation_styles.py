@@ -47,8 +47,8 @@ class Usecase:
             showing up in Revit. In that case, set it to True, but keep in mind
             that this is no longer a valid IFC. Blame Autodesk.
         :type should_use_presentation_style_assignment: bool
-        :return: None
-        :rtype: None
+        :return: List of created IfcStyledItems
+        :rtype: ifcopenshell.entity_instance.entity_instance
 
         Example:
 
@@ -101,7 +101,10 @@ class Usecase:
     def execute(self):
         if not self.settings["styles"]:
             return []
+        self.settings["styles"] = self.settings["styles"].copy()
         self.results = []
+        use_style_assignment = self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]
+
         for element in self.file.traverse(self.settings["shape_representation"]):
             if not element.is_a("IfcShapeRepresentation"):
                 continue
@@ -112,7 +115,34 @@ class Usecase:
                     # If there are more items than styles, fallback to using the last style
                     style = self.settings["styles"].pop(0)
                 name = style.Name
-                if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:
+
+                # item may had previous styled item
+                prev_styled_item = next((i for i in item.StyledByItem), None)
+                if prev_styled_item is not None:
+                    # collect previously assigned styles
+                    assigned_styles = []
+                    style_assignment = None  # try to find some style assignment to reuse
+                    for style_ in prev_styled_item.Styles:
+                        if style_.is_a("IfcPresentationStyleAssignment"):
+                            if style_assignment is None:
+                                style_assignment = style_
+                            assigned_styles.extend(style_.Styles)
+                        else:  # IfcPresentationStyle
+                            assigned_styles.append(style_)
+
+                    if style not in assigned_styles:
+                        if use_style_assignment:
+                            if style_assignment is not None:
+                                style_assignment.Styles = style_assignment.Styles + (style,)
+                            else:
+                                style_assignment = self.file.createIfcPresentationStyleAssignment([style])
+                                prev_styled_item.Styles = prev_styled_item.Styles + (style_assignment,)
+                        else:
+                            prev_styled_item.Styles = prev_styled_item.Styles + (style,)
+                    # if style is in previous styles we also continue
+                    continue
+
+                if use_style_assignment:
                     style_assignment = self.file.createIfcPresentationStyleAssignment([style])
                     self.results.append(self.file.createIfcStyledItem(item, [style_assignment], name))
                 else:
