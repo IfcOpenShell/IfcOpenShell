@@ -40,13 +40,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 		// IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
 		// from optional IfcParamValue to optional IfcCurveMeasureSelect.
 		// Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
-		if (inst->StartParam()) { // && inst->StartParam()->as<IfcSchema::IfcLengthMeasure>()) {
+		if (inst->StartParam() && inst->StartParam()->as<IfcSchema::IfcLengthMeasure>()) {
 			double s = *inst->StartParam()->as<IfcSchema::IfcLengthMeasure>();
 			if (s > start) {
 				start = s;
 			}
 		}
-		if (inst->EndParam()) { // && inst->EndParam()->as<IfcSchema::IfcLengthMeasure>()) {
+		if (inst->EndParam() && inst->EndParam()->as<IfcSchema::IfcLengthMeasure>()) {
 			double e = *inst->EndParam()->as<IfcSchema::IfcLengthMeasure>();
 			if (e < end) {
 				end = e;
@@ -57,10 +57,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 		auto nsteps = (size_t)ceil(len);
 		for (size_t i = 0; i <= nsteps; ++i) {
 			auto m4 = pwf->evaluate(start + len / nsteps * i);
+			
+			/*
 			std::stringstream ss;
 			ss << m4;
 			auto s = ss.str();
 			std::wcout << s.c_str() << std::endl;
+			*/
 
 			Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
 			Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
