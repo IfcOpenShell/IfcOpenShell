@@ -25,12 +25,13 @@
 // Sections and page number for this document are cited in the code comments.
 
 // Disable warnings coming from IfcOpenShell
-#pragma warning(disable:4018 4267 4250 4984 4985)
+#pragma warning(disable : 4018 4267 4250 4984 4985)
 
-#include "../ifcparse/IfcHierarchyHelper.h"
 #include "../ifcparse/Ifc4x3_add2.h"
+#include "../ifcparse/IfcHierarchyHelper.h"
 
 #include <boost/math/constants/constants.hpp>
+#include <fstream>
 
 const double PI = boost::math::constants::pi<double>();
 double to_radian(double deg) { return PI * deg / 180; }
