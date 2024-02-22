@@ -57,7 +57,7 @@ class IFC_PARSE_API Logger {
 
     static Severity verbosity_;
     static Format format_;
-    static boost::optional<IfcUtil::IfcBaseClass*> current_product_;
+    static boost::optional<const IfcUtil::IfcBaseClass*> current_product_;
     static Severity max_severity_;
 
     static boost::optional<long long> first_timepoint_;
