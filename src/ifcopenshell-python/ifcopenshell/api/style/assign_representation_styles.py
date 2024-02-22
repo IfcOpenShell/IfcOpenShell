@@ -18,7 +18,14 @@
 
 
 class Usecase:
-    def __init__(self, file, shape_representation=None, styles=None, should_use_presentation_style_assignment=False):
+    def __init__(
+        self,
+        file,
+        shape_representation=None,
+        styles=None,
+        replace_previous_same_type_style=True,
+        should_use_presentation_style_assignment=False,
+    ):
         """Assigns a style directly to an object representation
 
         A style may either be assigned directly to an object's representation,
@@ -41,6 +48,9 @@ class Usecase:
             items in the shape_representation's Items attribute. If you have
             more items than styles, the last style is used.
         :type styles: list[ifcopenshell.entity_instance.entity_instance]
+        :param replace_previous_same_type_style: Remove previously assigned styles
+            of the same type as currently assign style`. Defaults to `True`.
+        :type replace_previous_same_type_style: bool
         :param should_use_presentation_style_assignment: This is a technical
             detail to accomodate a bug in Revit. This should always be left as
             the default of False, unless you are finding that colours aren't
@@ -95,6 +105,7 @@ class Usecase:
         self.settings = {
             "shape_representation": shape_representation,
             "styles": styles or [],
+            "replace_previous_same_type_style": replace_previous_same_type_style,
             "should_use_presentation_style_assignment": should_use_presentation_style_assignment,
         }
 
@@ -104,6 +115,7 @@ class Usecase:
         self.settings["styles"] = self.settings["styles"].copy()
         self.results = []
         use_style_assignment = self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]
+        replace_previous_same_type_style = self.settings["replace_previous_same_type_style"]
 
         for element in self.file.traverse(self.settings["shape_representation"]):
             if not element.is_a("IfcShapeRepresentation"):
@@ -115,36 +127,67 @@ class Usecase:
                     # If there are more items than styles, fallback to using the last style
                     style = self.settings["styles"].pop(0)
                 name = style.Name
+                current_style_type = style.is_a()
 
                 # item may had previous styled item
                 prev_styled_item = next((i for i in item.StyledByItem), None)
-                if prev_styled_item is not None:
-                    # collect previously assigned styles
-                    assigned_styles = []
-                    style_assignment = None  # try to find some style assignment to reuse
+                style_assignment = None  # try to find some style assignment to reuse
+
+                if prev_styled_item is None:
+                    if use_style_assignment:
+                        style_assignment = self.file.createIfcPresentationStyleAssignment([style])
+                        self.results.append(self.file.createIfcStyledItem(item, [style_assignment], name))
+                    else:
+                        self.results.append(self.file.createIfcStyledItem(item, [style], name))
+                    continue
+
+                if replace_previous_same_type_style:
+                    self.remove_same_type_styles(prev_styled_item, current_style_type, remove_item=False)
                     for style_ in prev_styled_item.Styles:
                         if style_.is_a("IfcPresentationStyleAssignment"):
-                            if style_assignment is None:
+                            if use_style_assignment and style_assignment is None:
                                 style_assignment = style_
-                            assigned_styles.extend(style_.Styles)
-                        else:  # IfcPresentationStyle
-                            assigned_styles.append(style_)
-
-                    if style not in assigned_styles:
-                        if use_style_assignment:
-                            if style_assignment is not None:
-                                style_assignment.Styles = style_assignment.Styles + (style,)
+                                self.remove_same_type_styles(style_assignment, current_style_type, remove_item=False)
                             else:
-                                style_assignment = self.file.createIfcPresentationStyleAssignment([style])
-                                prev_styled_item.Styles = prev_styled_item.Styles + (style_assignment,)
+                                self.remove_same_type_styles(style_assignment, current_style_type, remove_item=True)
+
+                    if use_style_assignment:
+                        if style_assignment:
+                            style_assignment.Styles = style_assignment.Styles + (style,)
                         else:
-                            prev_styled_item.Styles = prev_styled_item.Styles + (style,)
-                    # if style is in previous styles we also continue
+                            style_assignment = self.file.createIfcPresentationStyleAssignment([style])
+                            prev_styled_item.Styles = prev_styled_item.Styles + (style_assignment,)
+                    else:
+                        prev_styled_item.Styles = prev_styled_item.Styles + (style,)
+                    continue
+
+                # collect previously assigned styles
+                assigned_styles = []
+                for style_ in prev_styled_item.Styles:
+                    if style_.is_a("IfcPresentationStyleAssignment"):
+                        if style_assignment is None:
+                            style_assignment = style_
+                        assigned_styles.extend(style_.Styles)
+                    else:  # IfcPresentationStyle
+                        assigned_styles.append(style_)
+
+                if style in assigned_styles:
                     continue
 
                 if use_style_assignment:
-                    style_assignment = self.file.createIfcPresentationStyleAssignment([style])
-                    self.results.append(self.file.createIfcStyledItem(item, [style_assignment], name))
+                    if style_assignment is not None:
+                        style_assignment.Styles = style_assignment.Styles + (style,)
+                    else:
+                        style_assignment = self.file.createIfcPresentationStyleAssignment([style])
+                        prev_styled_item.Styles = prev_styled_item.Styles + (style_assignment,)
                 else:
-                    self.results.append(self.file.createIfcStyledItem(item, [style], name))
+                    prev_styled_item.Styles = prev_styled_item.Styles + (style,)
+
         return self.results
+
+    def remove_same_type_styles(self, style_item, current_style_type: str, remove_item: bool) -> None:
+        styles = [s for s in style_item.Styles if s.is_a() != current_style_type]
+        if remove_item and not styles:
+            self.file.remove(style_item)
+        else:
+            style_item.Styles = styles
