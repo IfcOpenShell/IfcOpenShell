@@ -52,6 +52,8 @@ classes = (
     operator.xxx,
     operator.zzz,
     operator.zxc,
+    operator.aaa,
+    operator.asdfasdf,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,

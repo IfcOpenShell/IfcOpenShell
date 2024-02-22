@@ -1135,7 +1135,7 @@ class ImportIFC(bpy.types.Operator):
 
 class xxx(bpy.types.Operator):
     bl_idname = "bim.xxx"
-    bl_label = "xxx"
+    bl_label = "Regular IFC iterator and mesh loading"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1151,8 +1151,8 @@ class xxx(bpy.types.Operator):
 
         collection = bpy.data.collections.new("Project")
         # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
-        ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
-        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
+        ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
 
         settings = ifcopenshell.geom.settings()
         iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
@@ -1234,7 +1234,7 @@ class xxx(bpy.types.Operator):
 
 class zzz(bpy.types.Operator):
     bl_idname = "bim.zzz"
-    bl_label = "zzz"
+    bl_label = "Load from H5 with no chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1251,8 +1251,11 @@ class zzz(bpy.types.Operator):
         start = time.time()
 
         collection = bpy.data.collections.new("Project")
-        # model = h5py.File('/home/dion/test3.h5', 'r')
-        model = h5py.File('/home/dion/test4.h5', 'r')
+        model = h5py.File('/home/dion/test3.h5', 'r')
+        # model = h5py.File('/home/dion/cpp.h5', 'r')
+        # model = h5py.File('/home/dion/test5.h5', 'r')
+        # model = h5py.File('/home/dion/test4.h5', 'r')
+        # model = h5py.File('/home/dion/filename.h5', 'r')
 
         materials = {}
         for i, rgb in enumerate(model["materials"]):
@@ -1311,7 +1314,7 @@ class zzz(bpy.types.Operator):
 
 class zxc(bpy.types.Operator):
     bl_idname = "bim.zxc"
-    bl_label = "zxc"
+    bl_label = "Load from H5 using Python chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1327,8 +1330,8 @@ class zxc(bpy.types.Operator):
         start = time.time()
 
         self.collection = bpy.data.collections.new("Project")
-        # model = h5py.File('/home/dion/test3.h5', 'r')
-        model = h5py.File('/home/dion/test5.h5', 'r')
+        model = h5py.File('/home/dion/test3.h5', 'r')
+        # model = h5py.File('/home/dion/test5.h5', 'r')
         print('Opened', time.time() - start)
 
         materials = {}
@@ -1445,6 +1448,170 @@ class zxc(bpy.types.Operator):
         mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
 
         if material_ids:
+            mesh.polygons.foreach_set("material_index", material_ids)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Blah", mesh)
+        self.collection.objects.link(obj)
+
+
+class aaa(bpy.types.Operator):
+    bl_idname = "bim.aaa"
+    bl_label = "Load from H5 with C++ chunking"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import uuid
+        import h5py
+        import multiprocessing
+        import ifcopenshell
+        import ifcopenshell.geom
+        import time
+        from mathutils import Matrix
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        start = time.time()
+
+        tree = ifcopenshell.geom.tree()
+        x = tree.load_h5()
+        self.materials = {}
+        for i, m in enumerate(x.materials):
+            blender_mat = bpy.data.materials.new(str(i))
+            blender_mat.diffuse_color = m
+            self.materials[i] = blender_mat
+
+        self.collection = bpy.data.collections.new("Project")
+
+        for e in x.elements:
+            # <ifcopenshell.ifcopenshell_wrapper.FloatVector; proxy of <Swig Object of type 'std::vector< float > *' at 0x7f0f871a8ff1> >
+            # <class 'ifcopenshell.ifcopenshell_wrapper.FloatVector'>
+            # e.get_verts()
+            # e.get_verts()
+            # e.get_faces()
+            # self.create_object(e.verts, e.faces, e.get_materials(), e.get_material_ids()) # 14.7
+            # self.create_object(list(e.verts), list(e.faces), e.get_materials(), e.get_material_ids()) # 8.9
+            self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids()) # 6.5
+
+        bpy.context.scene.collection.children.link(self.collection)
+        print('Finished', time.time() - start)
+        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print("Mem", newmem-mem)
+        return {"FINISHED"}
+
+    def create_object(self, verts, faces, materials, material_ids):
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        for material in materials:
+            mesh.materials.append(self.materials[material])
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        if material_ids.size > 0:
+            mesh.polygons.foreach_set("material_index", material_ids)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Blah", mesh)
+        self.collection.objects.link(obj)
+
+
+class asdfasdf(bpy.types.Operator):
+    bl_idname = "bim.asdfasdf"
+    bl_label = "Regular IFC iterator with C++ chunking"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import time
+        import multiprocessing
+        import ifcopenshell
+        import ifcopenshell.geom
+        import numpy as np
+        from mathutils import Matrix
+        import resource
+        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        start = time.time()
+
+        self.collection = bpy.data.collections.new("Project")
+        # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
+        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
+        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        ifc_file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
+        print("Finished opening")
+
+        settings = ifcopenshell.geom.settings()
+        settings.set_context_ids([ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW").id()])
+        els = set(ifc_file.by_type("IfcElement"))
+        els |= set(ifc_file.by_type("IfcSite"))
+        els -= set(ifc_file.by_type("IfcFeatureElement"))
+        els = list(els)
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=els)
+        meshes = {}
+        blender_mats = {}
+
+        total_materials = 0
+        self.materials = []
+
+        ci = 0
+        if iterator.initialize():
+            while True:
+                if iterator.process_chunk():
+                    ci += 1
+                    print("Doing chunk", ci)
+                    e = iterator.get_chunk()
+
+                    for c in e.colours:
+                        blender_mat = bpy.data.materials.new(str(total_materials))
+                        blender_mat.diffuse_color = list(c)
+                        self.materials.append(blender_mat)
+                        total_materials += 1
+                    self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
+                if not iterator.next():
+                    break
+
+        bpy.context.scene.collection.children.link(self.collection)
+        print('Finished', time.time() - start)
+        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
+        print("Mem", newmem-mem)
+        return {"FINISHED"}
+
+    def create_object(self, verts, faces, materials, material_ids):
+        num_vertices = len(verts) // 3
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        for material in materials:
+            mesh.materials.append(self.materials[material])
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        if material_ids.size > 0:
             mesh.polygons.foreach_set("material_index", material_ids)
 
         mesh.update()
