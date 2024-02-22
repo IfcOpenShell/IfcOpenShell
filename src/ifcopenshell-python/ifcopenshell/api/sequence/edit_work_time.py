@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.date
+from ifcopenshell.util.data import WorkTimeDatesInterface
 
 
 class Usecase:
@@ -54,9 +55,10 @@ class Usecase:
         self.settings = {"work_time": work_time, "attributes": attributes or {}}
 
     def execute(self):
+        work_time_dates = WorkTimeDatesInterface(self.settings["work_time"])
         for name, value in self.settings["attributes"].items():
-            if value and name in ("Start", "Finish", "StartDate", "FinishDate"):
+            if name in ("Start", "Finish", "StartDate", "FinishDate"):
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
-                if self.file.schema == "IFC4X3" and name in ("Start", "Finish"):
-                    name += "Date"
-            setattr(self.settings["work_time"], name, value)
+                setattr(work_time_dates, name, value)
+            else:
+                setattr(self.settings["work_time"], name, value)

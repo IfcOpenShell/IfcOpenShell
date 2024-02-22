@@ -18,8 +18,10 @@
 
 import datetime
 import ifcopenshell.util.date
+from ifcopenshell.util.data import WorkTimeDatesInterface
 from math import floor
 from functools import lru_cache
+from collections import namedtuple
 
 
 def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=False):
@@ -180,14 +182,15 @@ def is_day_in_work_time(day, work_time):
     is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-    if work_time.Start:
-        start = ifcopenshell.util.date.ifc2datetime(work_time.Start)
+    work_time_dates = WorkTimeDatesInterface(work_time)
+    if work_time_dates.Start:
+        start = ifcopenshell.util.date.ifc2datetime(work_time_dates.Start)
         if day > start:
             is_day_in_work_time = True
         else:
             is_day_in_work_time = False
-    if work_time.Finish:
-        finish = ifcopenshell.util.date.ifc2datetime(work_time.Finish)
+    if work_time_dates.Finish:
+        finish = ifcopenshell.util.date.ifc2datetime(work_time_dates.Finish)
         if day < finish:
             is_day_in_work_time = True
         else:
@@ -204,16 +207,17 @@ def is_work_time_applicable_to_day(work_time, day):
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
     recurrence = work_time.RecurrencePattern
+    work_time_dates = WorkTimeDatesInterface(work_time)
     if recurrence.RecurrenceType == "DAILY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return True
-        if not work_time.Start:
+        if not work_time_dates.Start:
             return False
         return False  # TODO
     elif recurrence.RecurrenceType == "WEEKLY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent
-        if not work_time.Start:
+        if not work_time_dates.Start:
             return False
         return False  # TODO
     elif recurrence.RecurrenceType == "MONTHLY_BY_DAY_OF_MONTH":
