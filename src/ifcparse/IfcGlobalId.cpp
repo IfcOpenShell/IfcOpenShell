@@ -20,6 +20,7 @@
 #include "IfcGlobalId.h"
 
 #include "IfcException.h"
+#include "IfcLogger.h"
 
 #include <algorithm>
 #include <boost/lexical_cast.hpp>
@@ -102,10 +103,10 @@ IfcParse::IfcGlobalId::IfcGlobalId() {
 
 #ifndef NDEBUG
     std::vector<unsigned char> test_vector;
-    expand(string_data, test_vector);
+    expand(string_data_, test_vector);
     boost::uuids::uuid test_uuid;
     std::copy(test_vector.begin(), test_vector.end(), test_uuid.begin());
-    if (uuid_data != test_uuid) {
+    if (uuid_data_ != test_uuid) {
         Logger::Message(Logger::LOG_ERROR, "Internal error generating GlobalId");
     }
 #endif
