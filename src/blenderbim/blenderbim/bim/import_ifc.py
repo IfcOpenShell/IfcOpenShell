@@ -36,14 +36,15 @@ import blenderbim.tool as tool
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
+from typing import Dict
 
 
 class MaterialCreator:
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
         self.mesh = None
         self.obj = None
-        self.materials = {}
-        self.styles = {}
+        self.materials: Dict[int, bpy.types.Material] = {}
+        self.styles: Dict[int, bpy.types.Material] = {}
         self.parsed_meshes = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
@@ -156,8 +157,8 @@ class MaterialCreator:
         material_to_slot = {}
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
-            for i, material in enumerate(self.mesh["ios_materials"]):
-                slot_index = self.mesh.materials.find(self.styles[material].name)
+            for i, style_id in enumerate(self.mesh["ios_materials"]):
+                slot_index = self.mesh.materials.find(self.styles[style_id].name)
                 material_to_slot[i] = slot_index
 
             material_index = [
