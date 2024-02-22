@@ -31,6 +31,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
+from typing import List
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -871,6 +872,52 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
         shape_aspect.ShapeRepresentations = shape_aspect.ShapeRepresentations + (shape_aspect_representation,)
         return shape_aspect_representation
+
+    @classmethod
+    def get_shape_aspect_representation_for_item(cls, shape_aspect, representation_item):
+        ifc_file = tool.Ifc.get()
+        for inverse in ifc_file.get_inverse(representation_item):
+            if inverse.is_a("IfcShapeRepresentation"):
+                if inverse.OfShapeAspect:
+                    if inverse.OfShapeAspect[0] == shape_aspect:
+                        return inverse
+
+    @classmethod
+    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> List[ifcopenshell.entity_instance]:
+        """update `representation_item` style based on styles connected to the `shape_aspect`
+        through material constituents with the same name
+        """
+        if not shape_aspect.Name:
+            return []
+
+        # get material connected to the shape aspect with material constituent name
+        material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+        if not material or not material.is_a("IfcMaterialConstituentSet") or not material.MaterialConstituents:
+            return []
+
+        matching_constituent = next((c for c in material.MaterialConstituents if c.Name == shape_aspect.Name), None)
+        if matching_constituent is None:
+            return []
+
+        constituent_material = matching_constituent.Material
+        if not constituent_material.HasRepresentation:
+            return []
+
+        # get shape aspect representation for item
+        shape_aspect_representation = cls.get_shape_aspect_representation_for_item(shape_aspect, representation_item)
+
+        # get the styles for this context
+        material_representation = None
+        for r in constituent_material.HasRepresentation[0].Representations:
+            if r.ContextOfItems == shape_aspect_representation.ContextOfItems:
+                material_representation = r
+                break
+
+        if material_representation is None:
+            return []
+
+        styles = [s for s in tool.Ifc.get().traverse(material_representation) if s.is_a("IfcPresentationStyle")]
+        return styles
 
     @classmethod
     def delete_opening_object_placement(cls, placement):
