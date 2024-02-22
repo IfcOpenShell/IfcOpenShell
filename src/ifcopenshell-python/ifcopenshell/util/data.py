@@ -93,3 +93,37 @@ class Clipping:
 
         second_operand = ifc_file.createIfcHalfSpaceSolid(plane, False)
         return ifc_file.createIfcBooleanClippingResult("DIFFERENCE", first_operand, second_operand)
+
+
+class WorkTimeDatesInterface:
+    def __init__(self, work_time: ifcopenshell.entity_instance):
+        """Utility class for IfcWorkTime dates allowing refer
+        to it's dates as `.Start`/`.Finish` or `.StartDate`/`.FinishDate`
+        regardless of the schema version
+        """
+        if hasattr(work_time, "StartDate"):  # since IFC4X3
+            self.start_attr, self.finish_attr = "StartDate", "FinishDate"
+        else:
+            self.start_attr, self.finish_attr = "Start", "Finish"
+
+        self.work_time = work_time
+
+    @property
+    def Start(self):
+        return getattr(self.work_time, self.start_attr)
+
+    @Start.setter
+    def Start(self, value):
+        return setattr(self.work_time, self.start_attr, value)
+
+    StartDate = Start
+
+    @property
+    def Finish(self):
+        return getattr(self.work_time, self.finish_attr)
+
+    @Finish.setter
+    def Finish(self, value):
+        return setattr(self.work_time, self.finish_attr, value)
+
+    FinishDate = Finish
