@@ -61,7 +61,7 @@ template <>
 const std::array<std::basic_string<wchar_t>, 5> severity_strings<wchar_t>::value = {L"Performance", L"Debug", L"Notice", L"Warning", L"Error"};
 
 template <typename T>
-void plain_text_message(T& out, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void plain_text_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
@@ -86,7 +86,7 @@ std::basic_string<T> string_as(const std::string& string) {
 }
 
 template <typename T>
-void json_message(T& out, const boost::optional<IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& current_product, Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
     boost::property_tree::basic_ptree<std::basic_string<typename T::char_type>, std::basic_string<typename T::char_type>> property_tree;
 
     // @todo this is crazy
@@ -245,7 +245,7 @@ std::stringstream Logger::log_stream_;
 Logger::Severity Logger::verbosity_ = Logger::LOG_NOTICE;
 Logger::Severity Logger::max_severity_ = Logger::LOG_NOTICE;
 Logger::Format Logger::format_ = Logger::FMT_PLAIN;
-boost::optional<IfcUtil::IfcBaseClass*> Logger::current_product_;
+boost::optional<const IfcUtil::IfcBaseClass*> Logger::current_product_;
 boost::optional<long long> Logger::first_timepoint_;
 std::map<std::string, double> Logger::performance_statistics_;
 std::map<std::string, double> Logger::performance_signal_start_;
