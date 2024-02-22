@@ -1639,7 +1639,7 @@ class RemoveRepresentationItem(bpy.types.Operator, Operator):
         tool.Geometry.remove_representation_item(representation_item)
         tool.Geometry.reload_representation(obj)
 
-        # reload style ui
+        # reload items ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
 
@@ -1711,7 +1711,7 @@ class EditRepresentationItemStyle(bpy.types.Operator, Operator):
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
         tool.Geometry.reload_representation(obj)
-        # reload style ui
+        # reload items ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
 
@@ -1749,7 +1749,7 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, Operator):
 
         tool.Style.assign_style_to_representation_item(representation_item, None)
         tool.Geometry.reload_representation(obj)
-        # reload style ui
+        # reload items ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
 
@@ -1808,7 +1808,19 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, Operator):
         shape_aspect.Name = shape_aspect_attrs.name
         shape_aspect.Description = shape_aspect_attrs.description
 
-        # reload style ui
+        shape_aspect_representation = tool.Geometry.get_shape_aspect_representation_for_item(
+            shape_aspect, representation_item
+        )
+        styles = tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
+        tool.Ifc.run(
+            "style.assign_representation_styles",
+            shape_representation=shape_aspect_representation,
+            styles=styles,
+        )
+        tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
+        tool.Geometry.reload_representation(obj)
+
+        # reload items ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
 
@@ -1830,6 +1842,7 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
         props = obj.BIMGeometryProperties
         ifc_file = tool.Ifc.get()
 
@@ -1837,7 +1850,32 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, Operator):
         representation_item = ifc_file.by_id(representation_item_id)
         shape_aspect = ifc_file.by_id(props.items[props.active_item_index].shape_aspect_id)
 
+        # unassign items before removing items as removing items
+        # might remove shape aspect
+        if representation_item.StyledByItem:
+            styles = tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
+            self.remove_styles_from_item(representation_item, styles)
+            tool.Geometry.reload_representation(obj)
+
         tool.Geometry.remove_representation_items_from_shape_aspect([representation_item], shape_aspect)
-        # reload style ui
+
+        # reload items ui
         bpy.ops.bim.disable_editing_representation_items()
         bpy.ops.bim.enable_editing_representation_items()
+
+    def remove_styles_from_item(self, representation_item, styles):
+        ifc_file = tool.Ifc.get()
+        styled_item = representation_item.StyledByItem[0]
+        new_styles = [s for s in styled_item.Styles if s not in styles]
+        styled_item.Styles = new_styles
+
+        for style_ in new_styles:
+            if style_.is_a("IfcPresentationStyleAssignment"):
+                new_assignment_styles = [s for s in styled_item.Styles if s not in styles]
+                if not new_assignment_styles:
+                    ifc_file.remove(style_)
+                else:
+                    style_.Styles = new_assignment_styles
+
+        if not styled_item.Styles:
+            ifc_file.remove(styled_item)
