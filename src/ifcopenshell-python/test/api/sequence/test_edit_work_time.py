@@ -19,6 +19,7 @@
 import datetime
 import test.bootstrap
 import ifcopenshell.api
+from ifcopenshell.util.data import WorkTimeDatesInterface
 
 
 class TestEditWorkTime(test.bootstrap.IFC4):
@@ -34,12 +35,13 @@ class TestEditWorkTime(test.bootstrap.IFC4):
             "Finish": datetime.datetime(2020, 2, 1),
         }
         ifcopenshell.api.run("sequence.edit_work_time", self.file, work_time=work_time, attributes=attributes)
+        worktime_dates = WorkTimeDatesInterface(work_time)
         assert work_time.Name == attributes["Name"]
         assert work_time.DataOrigin == attributes["DataOrigin"]
         assert work_time.UserDefinedDataOrigin == attributes["UserDefinedDataOrigin"]
         assert work_time.RecurrencePattern == attributes["RecurrencePattern"]
-        assert work_time.Start == "2020-01-01"
-        assert work_time.Finish == "2020-02-01"
+        assert worktime_dates.Start == "2020-01-01"
+        assert worktime_dates.Finish == "2020-02-01"
 
 
 class TestEditWorkTimeIFC4X3(test.bootstrap.IFC4X3):
@@ -63,20 +65,4 @@ class TestEditWorkTimeIFC4X3(test.bootstrap.IFC4X3):
         assert work_time.FinishDate == "2020-02-01"
 
     def test_ifc4_code_to_work_in_ifc4x3(self):
-        work_time = self.file.createIfcWorkTime()
-        recurrence_pattern = self.file.createIfcRecurrencePattern()
-        attributes = {
-            "Name": "Test",
-            "DataOrigin": "USERDEFINED",
-            "UserDefinedDataOrigin": "Custom",
-            "RecurrencePattern": recurrence_pattern,
-            "Start": datetime.datetime(2020, 1, 1),
-            "Finish": datetime.datetime(2020, 2, 1),
-        }
-        ifcopenshell.api.run("sequence.edit_work_time", self.file, work_time=work_time, attributes=attributes)
-        assert work_time.Name == attributes["Name"]
-        assert work_time.DataOrigin == attributes["DataOrigin"]
-        assert work_time.UserDefinedDataOrigin == attributes["UserDefinedDataOrigin"]
-        assert work_time.RecurrencePattern == attributes["RecurrencePattern"]
-        assert work_time.StartDate == "2020-01-01"
-        assert work_time.FinishDate == "2020-02-01"
+        TestEditWorkTime.test_run(self)
