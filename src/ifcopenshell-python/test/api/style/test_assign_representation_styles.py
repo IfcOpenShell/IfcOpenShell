@@ -38,12 +38,20 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         )
         assert item.StyledByItem[0].Styles == (style,)
 
-        # reusing existing styled item
-        style2 = self.file.createIfcSurfaceStyle()
+        # reusing existing styled item for different style type
+        style2 = self.file.createIfcFillAreaStyle()
         ifcopenshell.api.run(
             "style.assign_representation_styles", self.file, styles=[style2], shape_representation=representation
         )
         assert item.StyledByItem[0].Styles == (style, style2)
+        assert len(self.file.by_type("IfcStyledItem")) == 1
+
+        # replacing existing style of the same type
+        style3 = self.file.createIfcSurfaceStyle()
+        ifcopenshell.api.run(
+            "style.assign_representation_styles", self.file, styles=[style3], shape_representation=representation
+        )
+        assert item.StyledByItem[0].Styles == (style2, style3)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
     def test_assign_using_style_assignment(self):
@@ -68,8 +76,8 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         assert style_assignment.Styles == (style,)
         assert item.StyledByItem[0].Styles == (style_assignment,)
 
-        # reusing existing styled item and style assignment
-        style2 = self.file.createIfcSurfaceStyle()
+        # reusing existing styled item for different style type
+        style2 = self.file.createIfcFillAreaStyle()
         ifcopenshell.api.run(
             "style.assign_representation_styles",
             self.file,
@@ -81,6 +89,21 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcPresentationStyleAssignment")) == 1
         assert item.StyledByItem[0].Styles == (style_assignment,)
         assert item.StyledByItem[0].Styles[0].Styles == (style, style2)
+        assert len(self.file.by_type("IfcStyledItem")) == 1
+
+        # replacing existing style of the same type
+        style3 = self.file.createIfcSurfaceStyle()
+        ifcopenshell.api.run(
+            "style.assign_representation_styles",
+            self.file,
+            styles=[style3],
+            shape_representation=representation,
+            should_use_presentation_style_assignment=True,
+        )
+
+        assert len(self.file.by_type("IfcPresentationStyleAssignment")) == 1
+        assert item.StyledByItem[0].Styles == (style_assignment,)
+        assert item.StyledByItem[0].Styles[0].Styles == (style2, style3)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
 
