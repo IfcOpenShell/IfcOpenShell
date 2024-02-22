@@ -1649,14 +1649,6 @@ namespace IfcGeom {
 			}
 		}
 
-        uint8_t hexStringToByte(const std::string& hexStr) {
-            uint8_t byte;
-            std::stringstream ss;
-            ss << std::hex << hexStr;
-            ss >> byte;
-            return byte;
-        }
-
         void write_h5() {
             H5::H5File file("filename.h5", H5F_ACC_TRUNC);
             H5::Group shapes = file.createGroup("/shapes");
@@ -1792,11 +1784,10 @@ namespace IfcGeom {
             std::vector<uint8_t> uuids_array;
             for (const auto& id_str : global_ids) {
                 for (size_t i = 0; i < id_str.length(); i += 2) {
-                    std::string byteStr = id_str.substr(i, 2);
-                    uint8_t byte = hexStringToByte(byteStr);
-                    uuids_array.push_back(byte);
+                    uuids_array.push_back(std::stoi(id_str.substr(i, 2), 0, 16));
                 }
             }
+
             hsize_t global_ids_dims[2] = {global_ids.size(), 16};  // 16 bytes per UUID
             H5::DataSpace global_ids_dataspace(2, global_ids_dims);
             H5::DataSet global_ids_dataset = file.createDataSet("element_global_ids", H5::PredType::NATIVE_UINT8, global_ids_dataspace);
@@ -1827,26 +1818,26 @@ namespace IfcGeom {
             dataset.write(flat_matrices.data(), H5::PredType::NATIVE_FLOAT);
 
             // Write element_shape_ids
-            size_t total_shapes = element_shape_ids.size();
             hsize_t element_shape_ids_dims[1] = {element_shape_ids.size()};
             H5::DataSpace element_shape_ids_dataspace(1, element_shape_ids_dims);
             H5::DSetCreatPropList element_shape_ids_propList;
             element_shape_ids_propList.setChunk(1, element_shape_ids_dims);
             element_shape_ids_propList.setDeflate(9);
-            if (total_shapes < (1 << 8)) {
+            if (geometry_index < (1 << 8)) {
                 H5::DataType dtype = H5::PredType::NATIVE_UINT8;
                 std::vector<uint8_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
                 H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
                 element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
-            } else if (total_shapes < (1 << 16)) {
+            } else if (geometry_index < (1 << 16)) {
                 H5::DataType dtype = H5::PredType::NATIVE_UINT16;
                 std::vector<uint16_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
                 H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
                 element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
-            } else if (total_shapes < (1 << 32)) {
+            } else if (geometry_index < (1UL << 32)) {
                 H5::DataType dtype = H5::PredType::NATIVE_UINT32;
+                std::vector<uint32_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
                 H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
-                element_shape_ids_dataset.write(element_shape_ids.data(), dtype);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
             }
 
             // Write colours
@@ -1941,7 +1932,6 @@ namespace IfcGeom {
             std::vector<h5_shape> elements;
 
             int offset = 0;
-            int material_offset = 0;
             std::vector<float> chunked_verts;
             std::vector<int> chunked_faces;
             std::vector<int> chunked_materials;
@@ -2008,7 +1998,6 @@ namespace IfcGeom {
                 }
 
                 offset += verts.size() / 3;
-                material_offset += shape.materials.size();
 
                 if (offset > chunk_size) {
                     elements.push_back({
@@ -2021,7 +2010,6 @@ namespace IfcGeom {
                     chunked_materials.clear();
                     chunked_material_ids.clear();
                     offset = 0;
-                    material_offset = 0;
                 }
             }
 
