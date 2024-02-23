@@ -156,6 +156,8 @@ namespace IfcGeom {
         // Structures for chunking
         int offset = 0;
         int colour_offset = 0;
+        std::vector<std::string> chunked_guids;
+        std::vector<int> chunked_guid_ids;
         std::vector<double> chunked_verts;
         std::vector<int> chunked_faces;
         std::vector<int> chunked_materials;
@@ -984,6 +986,14 @@ namespace IfcGeom {
             const auto& materials = ret->geometry().materials();
             const auto& material_ids = ret->geometry().material_ids();
 
+            chunked_guids.push_back(ret->guid());
+            int guid_ids_size = chunked_guid_ids.size();
+            if (guid_ids_size > 0) {
+                chunked_guid_ids.push_back(chunked_guid_ids[guid_ids_size - 1] + geometry_faces.size() / 3);
+            } else {
+                chunked_guid_ids.push_back(geometry_faces.size() / 3);
+            }
+
             std::vector<double> verts;
             apply_matrix_to_flat_verts(geometry_verts, matrix, verts);
 
@@ -1057,6 +1067,8 @@ namespace IfcGeom {
         chunk get_chunk()
         {
             chunk result = {
+                std::move(chunked_guids),
+                std::move(chunked_guid_ids),
                 std::move(chunked_verts),
                 std::move(chunked_faces),
                 std::move(chunked_materials),

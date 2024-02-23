@@ -6,6 +6,8 @@
 
 namespace IfcGeom {
     struct chunk {
+        std::vector<std::string> guids;
+        std::vector<int> guid_ids;
         std::vector<double> verts;
         std::vector<int> faces;
         std::vector<int> materials;

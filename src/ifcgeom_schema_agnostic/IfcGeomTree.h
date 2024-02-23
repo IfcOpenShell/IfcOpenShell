@@ -91,6 +91,9 @@ namespace IfcGeom {
         std::vector<int> faces;
         std::vector<int> materials;
         std::vector<int> material_ids;
+        // Guids only used in chunked results
+        std::vector<std::string> guids;
+        std::vector<int> guid_ids;
     };
 
     struct chunked_model {
@@ -1870,6 +1873,17 @@ namespace IfcGeom {
             }
         }
 
+        std::string uint8_to_b64(const std::vector<uint8_t>& uuids_array) {
+            std::string hex_str;
+            for (auto byte : uuids_array) {
+                // Convert each byte to a two-digit hexadecimal string and append it to the result
+                char hex[3]; // Two characters for the hex value and one for the null terminator
+                snprintf(hex, sizeof(hex), "%02x", byte);
+                hex_str.append(hex);
+            }
+            return hex_str;
+        }
+
         chunked_model load_h5() {
             H5::H5File file("/home/dion/cpp.h5", H5F_ACC_RDONLY);
 
@@ -1932,6 +1946,8 @@ namespace IfcGeom {
             std::vector<h5_shape> elements;
 
             int offset = 0;
+            std::vector<std::string> chunked_guids;
+            std::vector<int> chunked_guid_ids;
             std::vector<float> chunked_verts;
             std::vector<int> chunked_faces;
             std::vector<int> chunked_materials;
@@ -1944,6 +1960,15 @@ namespace IfcGeom {
             H5::DataSet element_shape_ids_ds = file.openDataSet("element_shape_ids");
             std::vector<int> element_shape_ids(element_shape_ids_ds.getSpace().getSimpleExtentNpoints());
             element_shape_ids_ds.read(element_shape_ids.data(), H5::PredType::NATIVE_INT);
+
+            H5::DataSet element_global_ids_ds = file.openDataSet("element_global_ids");
+            H5::DataSpace element_global_ids_s = element_global_ids_ds.getSpace();
+            hsize_t element_global_ids_d[16];
+            element_global_ids_s.getSimpleExtentDims(element_global_ids_d);
+            size_t total_element_global_ids = element_global_ids_d[0];
+            size_t element_global_ids_size = 16;
+            std::vector<uint8_t> element_global_ids_b(total_element_global_ids * element_global_ids_size);
+            element_global_ids_ds.read(element_global_ids_b.data(), H5::PredType::NATIVE_UINT8);
 
             H5::DataSet matrices_ds = file.openDataSet("element_matrices");
             H5::DataSpace matrices_s = matrices_ds.getSpace();
@@ -1958,8 +1983,23 @@ namespace IfcGeom {
             for (size_t i = 0; i < total_matrices; ++i) {
                 material_map.clear();
 
-                std::vector<float> matrix(matrices_b.begin() + i * matrix_size, matrices_b.begin() + (i + 1) * matrix_size);
                 h5_shape& shape = shapes[element_shape_ids[i]];
+
+                std::vector<uint8_t> element_global_id(
+                    element_global_ids_b.begin() + i * element_global_ids_size,
+                    element_global_ids_b.begin() + (i + 1) * element_global_ids_size);
+
+                chunked_guids.push_back(uint8_to_b64(element_global_id));
+                int guid_ids_size = chunked_guid_ids.size();
+                if (guid_ids_size > 0) {
+                    chunked_guid_ids.push_back(chunked_guid_ids[guid_ids_size - 1] + shape.faces.size() / 3);
+                } else {
+                    chunked_guid_ids.push_back(shape.faces.size() / 3);
+                }
+
+                std::vector<float> matrix(
+                    matrices_b.begin() + i * matrix_size,
+                    matrices_b.begin() + (i + 1) * matrix_size);
 
                 std::vector<float> verts;
                 apply_matrix_to_flat_verts(shape.verts, matrix, verts);
@@ -2004,7 +2044,10 @@ namespace IfcGeom {
                         std::move(chunked_verts),
                         std::move(chunked_faces),
                         std::move(chunked_materials),
-                        std::move(chunked_material_ids)});
+                        std::move(chunked_material_ids),
+                        std::move(chunked_guids),
+                        std::move(chunked_guid_ids)
+                    });
                     chunked_verts.clear();
                     chunked_faces.clear();
                     chunked_materials.clear();
@@ -2018,7 +2061,10 @@ namespace IfcGeom {
                     std::move(chunked_verts),
                     std::move(chunked_faces),
                     std::move(chunked_materials),
-                    std::move(chunked_material_ids)});
+                    std::move(chunked_material_ids),
+                    std::move(chunked_guids),
+                    std::move(chunked_guid_ids)
+                });
             }
 
             return { materials, elements };
