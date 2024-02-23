@@ -18,6 +18,7 @@
 
 from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
+from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -96,3 +97,49 @@ class BIM_PT_aggregate(Panel):
             op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
             op.part_class = part_class
             op.obj = context.active_object.name
+            
+            
+class BIM_PT_linked_aggregate(Panel):
+    bl_label = "Linked Aggregates"
+    bl_idname = "BIM_PT_linked_aggregate"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "object"
+    bl_order = 2
+    bl_parent_id = "BIM_PT_aggregate"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object:
+            return False
+        props = context.active_object.BIMObjectProperties
+        if not props.ifc_definition_id:
+            return False
+        if not IfcStore.get_element(props.ifc_definition_id):
+            return False
+        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
+            return False
+        return True
+
+    def draw(self, context):
+        layout = self.layout
+        if not AggregateData.is_loaded:
+            AggregateData.load()
+
+        props = context.active_object.BIMObjectAggregateProperties
+        row = layout.row(align=True)
+        row.label(text="Advanced Users Only", icon="ERROR")
+        row = layout.row(align=True)
+        
+        if type(AggregateData.data['total_linked_aggregate']) is int:
+            if AggregateData.data['total_linked_aggregate'] > 0:
+                row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
+                row.operator("bim.select_linked_aggregates", text="", icon="RESTRICT_SELECT_OFF")
+                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+                op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
+        else:
+            row.label(text="No Linked Aggregates")
+            
+        
+
