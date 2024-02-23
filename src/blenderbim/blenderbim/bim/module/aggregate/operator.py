@@ -89,6 +89,12 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
                 relating_obj=tool.Ifc.get_object(aggregate),
                 related_obj=tool.Ifc.get_object(element),
             )
+            
+            # Removes Pset related to Linked Aggregates
+            pset = ifcopenshell.util.element.get_pset(element, 'BBIM_Linked_Aggregate')
+            if pset:
+                pset = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
 
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
@@ -230,3 +236,63 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
             part_class=self.part_class,
             part_name=self.part_name,
         )
+
+class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
+    bl_idname = "bim.break_link_to_other_aggregates"
+    bl_label = "Break link to other aggregates"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        if not aggregate:
+            return []
+        if not element:
+            return []
+
+        parts = ifcopenshell.util.element.get_parts(aggregate)
+        
+        for part in parts:
+            pset = ifcopenshell.util.element.get_pset(part, 'BBIM_Linked_Aggregate')
+            pset = tool.Ifc.get().by_id(pset["id"])
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        
+        linked_aggregate_group = [
+            r.RelatingGroup
+            for r in getattr(aggregate, "HasAssignments", []) or []
+            if r.is_a("IfcRelAssignsToGroup")
+            if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+        ]
+        tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], product=aggregate)
+        
+        return {"FINISHED"}
+
+class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
+    bl_idname = "bim.select_linked_aggregates"
+    bl_label = "Select linked aggregates"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        if not aggregate:
+            return []
+        if not element:
+            return []
+        
+        linked_aggregate_group = [
+            r.RelatingGroup
+            for r in getattr(aggregate, "HasAssignments", []) or []
+            if r.is_a("IfcRelAssignsToGroup")
+            if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+        ]
+        
+        for obj in context.selected_objects:
+            obj.select_set(False)
+            
+        for rel in linked_aggregate_group[0].IsGroupedBy or []:
+            for element in rel.RelatedObjects:
+                obj = tool.Ifc.get_object(element)
+                obj.select_set(True)
+
+        return {"FINISHED"}
