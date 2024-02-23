@@ -166,15 +166,17 @@ class SelectSimilarType(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        related_object = bpy.data.objects.get(self.related_object) if self.related_object else context.active_object
-        relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
-        if not relating_type:
-            return {"FINISHED"}
-        related_objects = ifcopenshell.util.element.get_types(relating_type)
-        for obj in context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element and element in related_objects:
-                obj.select_set(True)
+        objects = bpy.context.selected_objects
+        for related_object in objects:
+            relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
+            if not relating_type:
+                related_object.select_set(False)
+                continue
+            related_objects = ifcopenshell.util.element.get_types(relating_type)
+            for obj in context.visible_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element and element in related_objects:
+                    obj.select_set(True)
         return {"FINISHED"}
 
 
