@@ -552,3 +552,58 @@ Scenario: Override paste buffer - with active IFC data
     And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+
+Scenario: Duplicate linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    And the object "IfcElementAssembly/Assembly_02" exists
+    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_02" belong to the same Linked Aggregate Group
+
+Scenario: Refresh linked aggregate
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01.001" is selected
+    When the object layer length is set to "3"
+    Then the object "IfcWall/Wall_01.001" dimensions are "3,0.1,3"
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01" exists
+    And the object "IfcWall/Wall_01" dimensions are "3,0.1,3"
+
+Scenario: Refresh linked aggregate - after deleting an object
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01.001" is selected
+    And I delete the selected objects
+    When I deselect all objects
+    And the object "IfcWall/Wall_02.001" is selected
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01" does not exist
+    And the object "IfcWall/Wall_02" exists
+    
+Scenario: Refresh linked aggregate - after duplicating an object
+    Given I load the IFC test file "/test/files/linked-aggregates.ifc"
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate linked aggregate the selected objects
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    When I deselect all objects
+    And the object "IfcWall/Wall_01" is selected
+    When I duplicate the selected objects
+    Then the object "IfcWall/Wall_01.002" exists
+    When I rename the object "IfcWall/Wall_01.002" to "IfcWall/Wall_03"
+    And I deselect all objects
+    And the object "IfcWall/Wall_03" is selected
+    When I refresh linked aggregate the selected object
+    Then the object "IfcWall/Wall_01.001" exists
+    And the object "IfcWall/Wall_02.001" exists
+    And the object "IfcWall/Wall_03.001" exists
+    
