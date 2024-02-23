@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator
+from . import ui, prop, operator, workspace
 
 classes = (
     operator.AppendEntireLibrary,
@@ -54,6 +54,7 @@ classes = (
     operator.zxc,
     operator.aaa,
     operator.asdfasdf,
+    operator.QueryLinkedElement,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
@@ -74,6 +75,8 @@ addon_keymaps = []
 
 
 def register():
+    if not bpy.app.background:
+        bpy.utils.register_tool(workspace.QueryTool, after={"builtin.select"}, separator=True, group=False)
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
@@ -93,6 +96,8 @@ def register():
 
 
 def unregister():
+    if not bpy.app.background:
+        bpy.utils.unregister_tool(workspace.QueryTool)
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)
     del bpy.types.Scene.BIMProjectProperties

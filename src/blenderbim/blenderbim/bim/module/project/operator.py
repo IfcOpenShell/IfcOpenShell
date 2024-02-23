@@ -21,6 +21,7 @@ import bpy
 import time
 import logging
 import tempfile
+import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.selector
@@ -37,7 +38,8 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
 from bpy.app.handlers import persistent
-import numpy as np
+from blenderbim.bim.module.project.data import LinksData
+from blenderbim.bim.module.project.decorator import ProjectDecorator
 
 
 class NewProject(bpy.types.Operator):
@@ -1146,13 +1148,14 @@ class xxx(bpy.types.Operator):
         import numpy as np
         from mathutils import Matrix
         import resource
+
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
         collection = bpy.data.collections.new("Project")
         # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
         # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
-        ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        ifc_file = ifcopenshell.open("/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc")
 
         settings = ifcopenshell.geom.settings()
         iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
@@ -1226,9 +1229,9 @@ class xxx(bpy.types.Operator):
                     break
 
         bpy.context.scene.collection.children.link(collection)
-        print('Finished', time.time() - start)
+        print("Finished", time.time() - start)
         newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem-mem)
+        print("Mem", newmem - mem)
         return {"FINISHED"}
 
 
@@ -1247,11 +1250,12 @@ class zzz(bpy.types.Operator):
         import time
         from mathutils import Matrix
         import resource
+
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
         collection = bpy.data.collections.new("Project")
-        model = h5py.File('/home/dion/test3.h5', 'r')
+        model = h5py.File("/home/dion/test3.h5", "r")
         # model = h5py.File('/home/dion/cpp.h5', 'r')
         # model = h5py.File('/home/dion/test5.h5', 'r')
         # model = h5py.File('/home/dion/test4.h5', 'r')
@@ -1306,9 +1310,9 @@ class zzz(bpy.types.Operator):
             collection.objects.link(obj)
 
         bpy.context.scene.collection.children.link(collection)
-        print('Finished', time.time() - start)
+        print("Finished", time.time() - start)
         newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem-mem)
+        print("Mem", newmem - mem)
         return {"FINISHED"}
 
 
@@ -1326,13 +1330,14 @@ class zxc(bpy.types.Operator):
         import time
         from mathutils import Matrix
         import resource
+
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
         self.collection = bpy.data.collections.new("Project")
-        model = h5py.File('/home/dion/test3.h5', 'r')
+        model = h5py.File("/home/dion/test3.h5", "r")
         # model = h5py.File('/home/dion/test5.h5', 'r')
-        print('Opened', time.time() - start)
+        print("Opened", time.time() - start)
 
         materials = {}
         for i, rgb in enumerate(model["materials"]):
@@ -1340,7 +1345,7 @@ class zxc(bpy.types.Operator):
             blender_mat.diffuse_color = rgb[()].tolist()
             materials[i] = blender_mat
 
-        print('Materials', time.time() - start)
+        print("Materials", time.time() - start)
 
         shapes = {}
         for shape_id, shape in model["shapes"].items():
@@ -1354,7 +1359,7 @@ class zxc(bpy.types.Operator):
                 "material_ids": shape["material_ids"][()].tolist() if "material_ids" in shape else None,
             }
 
-        print('Shapes', time.time() - start)
+        print("Shapes", time.time() - start)
 
         chunk_size = 10000
 
@@ -1410,9 +1415,9 @@ class zxc(bpy.types.Operator):
             self.create_object(chunked_verts, chunked_faces, chunked_materials, chunked_material_ids)
 
         bpy.context.scene.collection.children.link(self.collection)
-        print('Finished', time.time() - start)
+        print("Finished", time.time() - start)
         newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem-mem)
+        print("Mem", newmem - mem)
         return {"FINISHED"}
 
     def apply_matrix_to_flat_list(self, flat_list, matrix):
@@ -1470,6 +1475,7 @@ class aaa(bpy.types.Operator):
         import time
         from mathutils import Matrix
         import resource
+
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
@@ -1491,12 +1497,14 @@ class aaa(bpy.types.Operator):
             # e.get_faces()
             # self.create_object(e.verts, e.faces, e.get_materials(), e.get_material_ids()) # 14.7
             # self.create_object(list(e.verts), list(e.faces), e.get_materials(), e.get_material_ids()) # 8.9
-            self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids()) # 6.5
+            o = self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())  # 6.5
+            o["guids"] = [ifcopenshell.guid.compress(g) for g in list(e.guids)]
+            o["guid_ids"] = list(e.guid_ids)
 
         bpy.context.scene.collection.children.link(self.collection)
-        print('Finished', time.time() - start)
+        print("Finished", time.time() - start)
         newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem-mem)
+        print("Mem", newmem - mem)
         return {"FINISHED"}
 
     def create_object(self, verts, faces, materials, material_ids):
@@ -1528,6 +1536,8 @@ class aaa(bpy.types.Operator):
 
         obj = bpy.data.objects.new("Blah", mesh)
         self.collection.objects.link(obj)
+
+        return obj
 
 
 class asdfasdf(bpy.types.Operator):
@@ -1543,18 +1553,19 @@ class asdfasdf(bpy.types.Operator):
         import numpy as np
         from mathutils import Matrix
         import resource
+
         mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
         self.collection = bpy.data.collections.new("Project")
         # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
-        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/racbasicsampleproject.ifc')
+        ifc_file = ifcopenshell.open("/home/dion/drive/ifcs/racbasicsampleproject.ifc")
         # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
-        ifc_file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
+        # ifc_file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
         print("Finished opening")
 
         settings = ifcopenshell.geom.settings()
-        settings.set_context_ids([ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW").id()])
+        # settings.set_context_ids([ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW").id()])
         els = set(ifc_file.by_type("IfcElement"))
         els |= set(ifc_file.by_type("IfcSite"))
         els -= set(ifc_file.by_type("IfcFeatureElement"))
@@ -1569,7 +1580,9 @@ class asdfasdf(bpy.types.Operator):
         ci = 0
         if iterator.initialize():
             while True:
+                has_processed_chunk = False
                 if iterator.process_chunk():
+                    has_processed_chunk = True
                     ci += 1
                     print("Doing chunk", ci)
                     e = iterator.get_chunk()
@@ -1579,18 +1592,34 @@ class asdfasdf(bpy.types.Operator):
                         blender_mat.diffuse_color = list(c)
                         self.materials.append(blender_mat)
                         total_materials += 1
-                    self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
+                    o = self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
+                    o["guids"] = list(e.guids)
+                    o["guid_ids"] = list(e.guid_ids)
                 if not iterator.next():
+                    if not has_processed_chunk:
+                        # The left over chunk
+                        e = iterator.get_chunk()
+                        for c in e.colours:
+                            blender_mat = bpy.data.materials.new(str(total_materials))
+                            blender_mat.diffuse_color = list(c)
+                            self.materials.append(blender_mat)
+                            total_materials += 1
+
+                        o = self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
+                        o["guids"] = list(e.guids)
+                        o["guid_ids"] = list(e.guid_ids)
                     break
 
         bpy.context.scene.collection.children.link(self.collection)
-        print('Finished', time.time() - start)
+        print("Finished", time.time() - start)
         newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem-mem)
+        print("Mem", newmem - mem)
         return {"FINISHED"}
 
     def create_object(self, verts, faces, materials, material_ids):
         num_vertices = len(verts) // 3
+        if not num_vertices:
+            return
         total_faces = len(faces)
         loop_start = range(0, total_faces, 3)
         num_loops = total_faces // 3
@@ -1618,3 +1647,105 @@ class asdfasdf(bpy.types.Operator):
 
         obj = bpy.data.objects.new("Blah", mesh)
         self.collection.objects.link(obj)
+        return obj
+
+
+class QueryLinkedElement(bpy.types.Operator):
+    bl_idname = "bim.query_linked_element"
+    bl_label = "Query Linked Element"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == "VIEW_3D"
+
+    def execute(self, context):
+        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+
+        bpy.context.scene.BIMProjectProperties.queried_obj = None
+
+        region = context.region
+        rv3d = context.region_data
+        coord = (self.mouse_x, self.mouse_y)
+        origin = region_2d_to_origin_3d(region, rv3d, coord)
+        direction = region_2d_to_vector_3d(region, rv3d, coord)
+        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+        if not hit:
+            self.report({"INFO"}, "No object found.")
+            return {"FINISHED"}
+
+        if "guids" not in obj:
+            self.report({"INFO"}, "Object is not a linked IFC element.")
+            return {"FINISHED"}
+
+        guid = None
+        guid_start_index = 0
+        for i, guid_end_index in enumerate(obj["guid_ids"]):
+            if face_index < guid_end_index:
+                guid = obj["guids"][i]
+                bpy.context.scene.BIMProjectProperties.queried_obj = obj
+
+                selected_tris = []
+                selected_edges = []
+                vert_indices = set()
+                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
+                    vert_indices.update(polygon.vertices)
+                vert_indices = list(vert_indices)
+                vert_map = {k: v for v, k in enumerate(vert_indices)}
+                selected_vertices = [tuple(obj.data.vertices[vi].co) for vi in vert_indices]
+                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
+                    selected_tris.append(tuple(vert_map[v] for v in polygon.vertices))
+                    selected_edges.extend(tuple([vert_map[vi] for vi in e] for e in polygon.edge_keys))
+
+                obj["selected_vertices"] = selected_vertices
+                obj["selected_edges"] = selected_edges
+                obj["selected_tris"] = selected_tris
+
+                break
+            guid_start_index = guid_end_index
+
+        import sqlite3
+
+        self.db = sqlite3.connect("/home/dion/Projects/ifcopenshell/src/ifcclash/foo.sqlite")
+        self.c = self.db.cursor()
+
+        self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
+        element = self.c.fetchone()
+
+        attributes = {}
+        for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
+            if element[i + 1] is not None:
+                attributes[attr] = element[i + 1]
+
+        self.c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
+        rows = self.c.fetchall()
+
+        properties = {}
+        for row in rows:
+            properties.setdefault(row[1], {})[row[2]] = row[3]
+
+        sorted_properties = [(k, properties[k]) for k in sorted(properties.keys())]
+
+        LinksData.linked_data = {"attributes": attributes, "properties": sorted_properties}
+
+        for area in bpy.context.screen.areas:
+            if area.type == "PROPERTIES":
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        region.tag_redraw()
+            elif area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        self.report({"INFO"}, f"Loaded data for {guid}")
+        ProjectDecorator.install(bpy.context)
+        return {"FINISHED"}
+
+    def ray_cast(self, context, origin, direction):
+        depsgraph = context.evaluated_depsgraph_get()
+        result = context.scene.ray_cast(depsgraph, origin, direction)
+        return result
+
+    def invoke(self, context, event):
+        self.mouse_x = event.mouse_region_x
+        self.mouse_y = event.mouse_region_y
+        return self.execute(context)

@@ -21,7 +21,7 @@ import blenderbim.bim
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.project.data import ProjectData
+from blenderbim.bim.module.project.data import ProjectData, LinksData
 
 
 class BIM_MT_project(Menu):
@@ -306,6 +306,23 @@ class BIM_PT_links(Panel):
                 self.props,
                 "active_link_index",
             )
+
+        if not LinksData.linked_data:
+            return
+
+        for name, value in LinksData.linked_data["attributes"].items():
+            row = self.layout.row(align=True)
+            row.label(text=name)
+            row.label(text=value)
+
+        for pset in LinksData.linked_data["properties"]:
+            box = self.layout.box()
+            row = box.row(align=True)
+            row.label(text=pset[0], icon="COPY_ID")
+            for name, value in pset[1].items():
+                row = box.row(align=True)
+                row.label(text=name)
+                row.label(text=value)
 
 
 class BIM_UL_library(UIList):
