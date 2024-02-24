@@ -324,6 +324,18 @@ class BIM_PT_links(Panel):
                 row.label(text=name)
                 row.label(text=value)
 
+        if LinksData.linked_data["type_properties"]:
+            row = self.layout.row()
+            row.label(icon="LINKED", text="Type Properties")
+            for pset in LinksData.linked_data["type_properties"]:
+                box = self.layout.box()
+                row = box.row(align=True)
+                row.label(text=pset[0], icon="COPY_ID")
+                for name, value in pset[1].items():
+                    row = box.row(align=True)
+                    row.label(text=name)
+                    row.label(text=value)
+
 
 class BIM_UL_library(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):

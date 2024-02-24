@@ -117,8 +117,12 @@ class Patcher:
             psets = ifcopenshell.util.element.get_psets(element, should_inherit=False)
             for pset_name, pset_data in psets.items():
                 for prop_name, value in pset_data.items():
-                    if prop_name == "id":
+                    if prop_name == "id" or value is None or value == "":
                         continue
+                    if isinstance(value, bool):
+                        value = "True" if value else "False"
+                    elif not isinstance(value, str):
+                        value = str(value)
                     properties.append([i, pset_name, prop_name, value])
             relating_type = ifcopenshell.util.element.get_type(element)
             if relating_type and relating_type != element:

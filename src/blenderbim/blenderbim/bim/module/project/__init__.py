@@ -53,7 +53,7 @@ classes = (
     operator.zzz,
     operator.zxc,
     operator.aaa,
-    operator.asdfasdf,
+    operator.LoadLinkedProject,
     operator.QueryLinkedElement,
     prop.LibraryElement,
     prop.FilterCategory,

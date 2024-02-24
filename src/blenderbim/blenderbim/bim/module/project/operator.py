@@ -21,6 +21,7 @@ import bpy
 import time
 import logging
 import tempfile
+import subprocess
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
@@ -814,16 +815,17 @@ class ToggleFilterCategories(bpy.types.Operator):
 
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
-    bl_label = "Link Blend/IFC File"
+    bl_label = "Link IFC"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "This will link the Blender file that is synced with the IFC file"
+    bl_description = "Reference in a read-only IFC model in the background"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
+        start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
@@ -835,6 +837,7 @@ class LinkIfc(bpy.types.Operator):
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
             new.name = filepath
             bpy.ops.bim.load_link(filepath=filepath)
+        print(f"Finished linking {len(files)} IFCs", time.time() - start)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -890,6 +893,13 @@ class LoadLink(bpy.types.Operator):
         filepath = self.filepath
         if not os.path.isabs(filepath):
             filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+        if self.filepath.lower().endswith(".blend"):
+            self.link_blend(filepath)
+        elif self.filepath.lower().endswith(".ifc"):
+            self.link_ifc()
+        return {"FINISHED"}
+
+    def link_blend(self, filepath):
         with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
@@ -899,9 +909,36 @@ class LoadLink(bpy.types.Operator):
                 if "IfcProject" not in child.name:
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
-        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = True
-        return {"FINISHED"}
+
+    def link_ifc(self):
+        blend_filepath = self.filepath + ".cache.blend"
+        h5_filepath = self.filepath + ".cache.h5"
+
+        if not os.path.exists(blend_filepath):
+            code = f"""
+import bpy
+
+def run():
+    bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
+    bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
+
+try:
+    run()
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+    exit(1)
+            """
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
+                temp_file.write(code)
+            run = subprocess.run([bpy.app.binary_path, "-b", "--python", temp_file.name, "--python-exit-code", "1"])
+            if run.returncode == 1:
+                print("An error occurred while processing your IFC.")
+
+        self.link_blend(blend_filepath)
 
 
 class ReloadLink(bpy.types.Operator):
@@ -1143,7 +1180,6 @@ class xxx(bpy.types.Operator):
     def execute(self, context):
         import time
         import multiprocessing
-        import ifcopenshell
         import ifcopenshell.geom
         import numpy as np
         from mathutils import Matrix
@@ -1540,83 +1576,99 @@ class aaa(bpy.types.Operator):
         return obj
 
 
-class asdfasdf(bpy.types.Operator):
-    bl_idname = "bim.asdfasdf"
-    bl_label = "Regular IFC iterator with C++ chunking"
+class LoadLinkedProject(bpy.types.Operator):
+    bl_idname = "bim.load_linked_project"
+    bl_label = "Load a project for viewing only."
     bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty()
 
     def execute(self, context):
-        import time
+        import ifcpatch
         import multiprocessing
-        import ifcopenshell
         import ifcopenshell.geom
-        import numpy as np
-        from mathutils import Matrix
-        import resource
 
-        mem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
         start = time.time()
 
-        self.collection = bpy.data.collections.new("Project")
-        # ifc_file = ifcopenshell.open('/home/dion/test.ifc')
-        ifc_file = ifcopenshell.open("/home/dion/drive/ifcs/racbasicsampleproject.ifc")
-        # ifc_file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
-        # ifc_file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
+        self.filepath = self.filepath or "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+
+        self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
+        self.file = ifcopenshell.open(self.filepath)
+        # self.file = ifcopenshell.open('/home/dion/test.ifc')
+        # self.file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        # self.file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
         print("Finished opening")
 
-        settings = ifcopenshell.geom.settings()
-        # settings.set_context_ids([ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW").id()])
-        els = set(ifc_file.by_type("IfcElement"))
-        els |= set(ifc_file.by_type("IfcSite"))
-        els -= set(ifc_file.by_type("IfcFeatureElement"))
-        els = list(els)
-        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=els)
-        meshes = {}
-        blender_mats = {}
+        self.db_filepath = self.filepath + ".cache.sqlite"
+        db = ifcpatch.execute(
+            {"input": self.filepath, "file": self.file, "recipe": "ExtractPropertiesToSQLite", "arguments": []}
+        )
+        ifcpatch.write(db, self.db_filepath)
+        print("Finished writing property database")
 
-        total_materials = 0
-        self.materials = []
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.process_context_filter()
 
-        ci = 0
-        if iterator.initialize():
-            while True:
-                has_processed_chunk = False
-                if iterator.process_chunk():
-                    has_processed_chunk = True
-                    ci += 1
-                    print("Doing chunk", ci)
-                    e = iterator.get_chunk()
+        self.elements = set(self.file.by_type("IfcElement"))
+        if self.file.schema in ("IFC2X3", "IFC4"):
+            self.elements |= set(self.file.by_type("IfcProxy"))
+        self.elements |= set(self.file.by_type("IfcSite"))
+        self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        self.elements = list(self.elements)
 
-                    for c in e.colours:
-                        blender_mat = bpy.data.materials.new(str(total_materials))
-                        blender_mat.diffuse_color = list(c)
-                        self.materials.append(blender_mat)
-                        total_materials += 1
-                    o = self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
-                    o["guids"] = list(e.guids)
-                    o["guid_ids"] = list(e.guid_ids)
-                if not iterator.next():
-                    if not has_processed_chunk:
-                        # The left over chunk
-                        e = iterator.get_chunk()
-                        for c in e.colours:
+        for settings in ifc_importer.context_settings:
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, multiprocessing.cpu_count(), include=self.elements
+            )
+            meshes = {}
+            blender_mats = {}
+
+            total_materials = 0
+            self.materials = []
+
+            ci = 0
+            if iterator.initialize():
+                while True:
+                    has_processed_chunk = False
+                    if iterator.process_chunk():
+                        has_processed_chunk = True
+                        ci += 1
+                        if ci % 50 == 0:
+                            print("Doing chunk", ci)
+                        chunk = iterator.get_chunk()
+
+                        for colour in chunk.colours:
                             blender_mat = bpy.data.materials.new(str(total_materials))
-                            blender_mat.diffuse_color = list(c)
+                            blender_mat.diffuse_color = list(colour)
                             self.materials.append(blender_mat)
                             total_materials += 1
+                        self.create_object(chunk)
 
-                        o = self.create_object(e.get_verts(), e.get_faces(), e.get_materials(), e.get_material_ids())
-                        o["guids"] = list(e.guids)
-                        o["guid_ids"] = list(e.guid_ids)
-                    break
+                    if not iterator.next():
+                        if not has_processed_chunk:
+                            # The left over chunk
+                            chunk = iterator.get_chunk()
+                            for colour in chunk.colours:
+                                blender_mat = bpy.data.materials.new(str(total_materials))
+                                blender_mat.diffuse_color = list(colour)
+                                self.materials.append(blender_mat)
+                                total_materials += 1
+                            self.create_object(chunk)
+                        break
 
-        bpy.context.scene.collection.children.link(self.collection)
-        print("Finished", time.time() - start)
-        newmem = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1000
-        print("Mem", newmem - mem)
+            bpy.context.scene.collection.children.link(self.collection)
+            print("Finished", time.time() - start)
+            break
         return {"FINISHED"}
 
-    def create_object(self, verts, faces, materials, material_ids):
+    def create_object(self, chunk):
+        verts = chunk.get_verts()
+        faces = chunk.get_faces()
+        materials = chunk.get_materials()
+        material_ids = chunk.get_material_ids()
+
         num_vertices = len(verts) // 3
         if not num_vertices:
             return
@@ -1645,9 +1697,12 @@ class asdfasdf(bpy.types.Operator):
 
         mesh.update()
 
-        obj = bpy.data.objects.new("Blah", mesh)
+        obj = bpy.data.objects.new("Chunk", mesh)
+        obj["guids"] = list(chunk.guids)
+        obj["guid_ids"] = list(chunk.guid_ids)
+        obj["db"] = self.db_filepath
+
         self.collection.objects.link(obj)
-        return obj
 
 
 class QueryLinkedElement(bpy.types.Operator):
@@ -1660,9 +1715,19 @@ class QueryLinkedElement(bpy.types.Operator):
         return context.area.type == "VIEW_3D"
 
     def execute(self, context):
+        import sqlite3
         from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 
+        LinksData.linked_data = {}
         bpy.context.scene.BIMProjectProperties.queried_obj = None
+
+        for area in bpy.context.screen.areas:
+            if area.type == "PROPERTIES":
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        region.tag_redraw()
+            elif area.type == "VIEW_3D":
+                area.tag_redraw()
 
         region = context.region
         rv3d = context.region_data
@@ -1704,9 +1769,7 @@ class QueryLinkedElement(bpy.types.Operator):
                 break
             guid_start_index = guid_end_index
 
-        import sqlite3
-
-        self.db = sqlite3.connect("/home/dion/Projects/ifcopenshell/src/ifcclash/foo.sqlite")
+        self.db = sqlite3.connect(obj["db"])
         self.c = self.db.cursor()
 
         self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
@@ -1724,9 +1787,27 @@ class QueryLinkedElement(bpy.types.Operator):
         for row in rows:
             properties.setdefault(row[1], {})[row[2]] = row[3]
 
-        sorted_properties = [(k, properties[k]) for k in sorted(properties.keys())]
+        self.c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
+        relationships = self.c.fetchall()
 
-        LinksData.linked_data = {"attributes": attributes, "properties": sorted_properties}
+        relating_type_id = None
+
+        for relationship in relationships:
+            if relationship[1] == "IfcRelDefinesByType":
+                relating_type_id = relationship[2]
+
+        type_properties = {}
+        if relating_type_id is not None:
+            self.c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
+            rows = self.c.fetchall()
+            for row in rows:
+                type_properties.setdefault(row[1], {})[row[2]] = row[3]
+
+        LinksData.linked_data = {
+            "attributes": attributes,
+            "properties": [(k, properties[k]) for k in sorted(properties.keys())],
+            "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
+        }
 
         for area in bpy.context.screen.areas:
             if area.type == "PROPERTIES":
