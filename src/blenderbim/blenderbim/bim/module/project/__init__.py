@@ -55,6 +55,8 @@ classes = (
     operator.aaa,
     operator.LoadLinkedProject,
     operator.QueryLinkedElement,
+    operator.EnableCulling,
+    operator.DisableCulling,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,

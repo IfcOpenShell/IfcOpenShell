@@ -18,6 +18,7 @@
 
 import bpy
 from bpy.types import WorkSpaceTool
+from blenderbim.bim.module.project.data import LinksData
 
 
 class QueryTool(bpy.types.WorkSpaceTool):
@@ -30,4 +31,12 @@ class QueryTool(bpy.types.WorkSpaceTool):
     bl_widget = None
     bl_keymap = (
         ("bim.query_linked_element", {"type": 'LEFTMOUSE', "value": 'PRESS'}, None),
+        # ("bim.project_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
     )
+
+    def draw_settings(context, layout, ws_tool):
+        row = layout.row(align=True)
+        row.label(text="Query Object", icon="MOUSE_LMB")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_ALT")
+        row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")

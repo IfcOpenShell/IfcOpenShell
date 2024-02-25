@@ -38,6 +38,7 @@ from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
+from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from blenderbim.bim.module.project.data import LinksData
 from blenderbim.bim.module.project.decorator import ProjectDecorator
@@ -1913,3 +1914,109 @@ class QueryLinkedElement(bpy.types.Operator):
         self.mouse_x = event.mouse_region_x
         self.mouse_y = event.mouse_region_y
         return self.execute(context)
+
+
+class EnableCulling(bpy.types.Operator):
+    bl_idname = "bim.enable_culling"
+    bl_label = "Enable Culling"
+    bl_options = {"REGISTER"}
+
+    def __init__(self):
+        self.last_view_corners = None
+        self.total_mousemoves = 0
+        self.cullable_objects = []
+
+    def modal(self, context, event):
+        if not LinksData.enable_culling:
+            for obj in bpy.context.visible_objects:
+                if obj.type == "MESH" and obj.name.startswith("Ifc"):
+                    obj.display_type = "SOLID"
+            self.cullable_objects = []
+            return {"CANCELLED"}
+
+        # Even if the view is changing, there are certain scenarios where we
+        # don't want to apply culling. For example, if we scroll to zoom but
+        # are simultaneously moving our mouse, or if we `Zoom to Selected`. A
+        # dumb but seemingly effective way is to count MOUSEMOVE events. If at
+        # least 3 consecutive events occur, you're probably not doing some
+        # other navigational thing.
+        if event.type == "MOUSEMOVE":
+            self.total_mousemoves += 1
+        else:
+            self.total_mousemoves = 0
+
+        if self.total_mousemoves > 2 and self.is_view_changed(context):
+            self.total_mousemoves = 0
+            camera_position = context.region_data.view_matrix.inverted().translation
+            for obj in self.cullable_objects:
+                if obj.type == "MESH" and obj.name.startswith("Ifc"):
+                    if self.is_object_in_view(obj, context, camera_position):
+                        obj.display_type = "SOLID"
+                    elif obj.display_type != "BOUNDS":
+                        obj.display_type = "BOUNDS"
+
+        return {"PASS_THROUGH"}
+
+    def is_view_changed(self, context):
+        view_matrix = context.region_data.view_matrix
+        projection_matrix = context.region_data.window_matrix
+        vp_matrix = projection_matrix @ view_matrix
+
+        # Get NDC coordinates of the viewport corners
+        viewport_corners = [Vector((-1, -1, 0)), Vector((1, -1, 0)), Vector((1, 1, 0)), Vector((-1, 1, 0))]
+        ndc_corners = [vp_matrix @ Vector((corner.x, corner.y, -1, 1)) for corner in viewport_corners]
+        ndc_corners = [(corner / corner.w).xy for corner in ndc_corners]
+
+        if self.last_view_corners != ndc_corners:
+            self.last_view_corners = ndc_corners
+            return True
+        return False
+
+    def is_object_in_view(self, obj, context, camera_position):
+        # Get the view matrix and the projection matrix from the active viewport
+        view_matrix = context.region_data.view_matrix
+        projection_matrix = context.region_data.window_matrix
+        # Calculate the combined view projection matrix
+        vp_matrix = projection_matrix @ view_matrix
+        obj_matrix_world = obj.matrix_world
+
+        # Transform each corner of the bounding box using the view projection matrix
+        # and check if it's inside the normalized device coordinates (NDC) space
+        for corner in [obj_matrix_world @ Vector(corner) for corner in obj.bound_box]:
+            ndc = vp_matrix @ corner.to_4d()
+            ndc /= ndc.w
+            if -1 <= ndc.x <= 1 and -1 <= ndc.y <= 1 and 0 <= ndc.z <= 1:
+                # At least one corner is inside the view, so the object is visible
+                break
+        else:
+            return False
+
+        # Check if the object is too far away from the camera
+        object_center = obj.matrix_world.translation
+        distance_threshold = 900 # 30m squared
+        if (camera_position - object_center).length_squared > distance_threshold:
+            # The object is too far away, so consider it not visible
+            return False
+        return True
+
+    def invoke(self, context, event):
+        LinksData.enable_culling = True
+        self.cullable_objects = []
+        for obj in bpy.context.visible_objects:
+            if obj.type == "MESH" and obj.name.startswith("Ifc") and max(obj.dimensions) < 0.6:
+                self.cullable_objects.append(obj)
+                camera_position = context.region_data.view_matrix.inverted().translation
+                if not self.is_object_in_view(obj, context, camera_position):
+                    obj.display_type = "BOUNDS"
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class DisableCulling(bpy.types.Operator):
+    bl_idname = "bim.disable_culling"
+    bl_label = "Disable Culling"
+    bl_options = {"REGISTER"}
+
+    def execute(self, context):
+        LinksData.enable_culling = False
+        return {"FINISHED"}
