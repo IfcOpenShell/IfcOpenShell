@@ -1257,6 +1257,8 @@ class xxx(bpy.types.Operator):
                     mesh.polygons.foreach_set("material_index", material_index)
                     mesh.update()
 
+                    meshes[shape.geometry.id] = mesh
+
                 obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
                 obj.matrix_world = Matrix(mat.tolist())
                 collection.objects.link(obj)
@@ -1622,8 +1624,8 @@ class LoadLinkedProject(bpy.types.Operator):
             iterator = ifcopenshell.geom.iterator(
                 settings, self.file, multiprocessing.cpu_count(), include=self.elements
             )
-            meshes = {}
-            blender_mats = {}
+            self.meshes = {}
+            self.blender_mats = {}
 
             total_materials = 0
             self.materials = []
@@ -1631,7 +1633,21 @@ class LoadLinkedProject(bpy.types.Operator):
             ci = 0
             if iterator.initialize():
                 while True:
-                    has_processed_chunk = False
+                    shape = iterator.get()
+                    if len(shape.geometry.faces) > 1000:  # 333 tris
+                        self.process_occurrence(shape)
+                        if not iterator.next():
+                            # The left over chunk
+                            chunk = iterator.get_chunk()
+                            for colour in chunk.colours:
+                                blender_mat = bpy.data.materials.new(str(total_materials))
+                                blender_mat.diffuse_color = list(colour)
+                                self.materials.append(blender_mat)
+                                total_materials += 1
+                            self.create_object(chunk)
+
+                            break
+                        continue
                     if iterator.process_chunk():
                         has_processed_chunk = True
                         ci += 1
@@ -1662,6 +1678,73 @@ class LoadLinkedProject(bpy.types.Operator):
             print("Finished", time.time() - start)
             break
         return {"FINISHED"}
+
+    def process_occurrence(self, shape):
+        element = self.file.by_id(shape.id)
+        matrix = shape.transformation.matrix.data
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+        materials = shape.geometry.materials
+        material_ids = shape.geometry.material_ids
+
+        m = shape.transformation.matrix.data
+        mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+
+        mesh = self.meshes.get(shape.geometry.id, None)
+        if not mesh:
+            mesh = bpy.data.meshes.new("Mesh")
+
+            material_to_slot = {}
+            max_slot_index = 0
+
+            for i, material in enumerate(materials):
+                alpha = 1.0
+                if material.has_transparency and material.transparency > 0:
+                    alpha = 1.0 - material.transparency
+                diffuse = material.diffuse + (alpha,)
+                material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+                blender_mat = self.blender_mats.get(material_name, None)
+                if not blender_mat:
+                    blender_mat = bpy.data.materials.new(material_name)
+                    blender_mat.diffuse_color = diffuse
+                    self.blender_mats[material_name] = blender_mat
+                slot_index = mesh.materials.find(material.name)
+                if slot_index == -1:
+                    mesh.materials.append(blender_mat)
+                    slot_index = max_slot_index
+                    max_slot_index += 1
+                material_to_slot[i] = slot_index
+
+            material_index = [(material_to_slot[i] if i != -1 else 0) for i in material_ids]
+
+            num_vertices = len(verts) // 3
+            total_faces = len(faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(faces)
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", faces)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            mesh.polygons.foreach_set("material_index", material_index)
+            mesh.update()
+
+            self.meshes[shape.geometry.id] = mesh
+
+        obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
+        obj.matrix_world = Matrix(mat.tolist())
+
+        obj["guids"] = [shape.guid]
+        obj["guid_ids"] = [len(mesh.polygons)]
+        obj["db"] = self.db_filepath
+
+        self.collection.objects.link(obj)
 
     def create_object(self, chunk):
         verts = chunk.get_verts()
@@ -1757,7 +1840,7 @@ class QueryLinkedElement(bpy.types.Operator):
                     vert_indices.update(polygon.vertices)
                 vert_indices = list(vert_indices)
                 vert_map = {k: v for v, k in enumerate(vert_indices)}
-                selected_vertices = [tuple(obj.data.vertices[vi].co) for vi in vert_indices]
+                selected_vertices = [tuple(obj.matrix_world @ obj.data.vertices[vi].co) for vi in vert_indices]
                 for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
                     selected_tris.append(tuple(vert_map[v] for v in polygon.vertices))
                     selected_edges.extend(tuple([vert_map[vi] for vi in e] for e in polygon.edge_keys))
