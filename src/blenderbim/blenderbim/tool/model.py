@@ -202,7 +202,7 @@ class Model(blenderbim.core.tool.Model):
         return surface
 
     @classmethod
-    def generate_occurrence_name(cls, element_type, ifc_class):
+    def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str):
         props = bpy.context.scene.BIMModelProperties
         if props.occurrence_name_style == "CLASS":
             return ifc_class[3:]
