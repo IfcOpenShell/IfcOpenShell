@@ -22,15 +22,15 @@ from blenderbim.bim.module.project.data import LinksData
 
 
 class QueryTool(bpy.types.WorkSpaceTool):
-    bl_space_type = 'VIEW_3D'
-    bl_context_mode = 'OBJECT'
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
     bl_idname = "bim.query_tool"
     bl_label = "Query Tool"
     bl_description = "Fetch data about a linked IFC element"
     bl_icon = "ops.generic.select_circle"
     bl_widget = None
     bl_keymap = (
-        ("bim.query_linked_element", {"type": 'LEFTMOUSE', "value": 'PRESS'}, None),
+        ("bim.query_linked_element", {"type": "LEFTMOUSE", "value": "PRESS"}, None),
         # ("bim.project_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
     )
 

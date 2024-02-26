@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.util.placement
 from blenderbim.bim.module.project.data import ProjectData
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, ObjProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -171,6 +171,7 @@ class BIMProjectProperties(PropertyGroup):
     template_file: EnumProperty(items=get_template_file, name="Template File")
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))

@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from . import ui, prop, operator, workspace
+from . import ui, prop, operator, workspace, gizmo
 
 classes = (
     operator.AppendEntireLibrary,
@@ -57,6 +57,8 @@ classes = (
     operator.QueryLinkedElement,
     operator.EnableCulling,
     operator.DisableCulling,
+    operator.CreateClippingPlane,
+    operator.RefreshClippingPlanes,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
@@ -70,6 +72,7 @@ classes = (
     ui.BIM_UL_library,
     ui.BIM_UL_filter_categories,
     ui.BIM_UL_links,
+    gizmo.ClippingPlane,
 )
 
 
