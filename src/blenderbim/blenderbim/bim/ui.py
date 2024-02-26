@@ -240,8 +240,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
         row = layout.row()
         row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
-        row = layout.row()
-        row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
+        if context.scene.BIMModelProperties == "CUSTOM":
+            row = layout.row()
+            row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
 
         row = self.layout.row()
         row.prop(self, "decorations_colour")
