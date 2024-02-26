@@ -237,7 +237,6 @@ class BIMStairProperties(PropertyGroup):
         unit="LENGTH",
         size=2,
     )
-    # TODO: need to clamp at zero for non WOOD/STEEL
     nosing_length: bpy.props.FloatProperty(
         name="Nosing Length",
         description=(
@@ -715,8 +714,15 @@ class BIMRoofProperties(PropertyGroup):
     height: bpy.props.FloatProperty(
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
     )
-    angle: bpy.props.FloatProperty(name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage())
-    percentage: bpy.props.FloatProperty(name="Slope %", default=17.63269754733197, subtype="PERCENTAGE", update=lambda self, context: self.update_angle())
+    angle: bpy.props.FloatProperty(
+        name="Slope Angle", default=pi / 18, subtype="ANGLE", update=lambda self, context: self.update_percentage()
+    )
+    percentage: bpy.props.FloatProperty(
+        name="Slope %",
+        default=math.tan(pi / 18) * 100,
+        subtype="PERCENTAGE",
+        update=lambda self, context: self.update_angle(),
+    )
     roof_thickness: bpy.props.FloatProperty(name="Roof Thickness", default=0.1, subtype="DISTANCE")
     rafter_edge_angle: bpy.props.FloatProperty(name="Rafter Edge Angle", min=0, max=pi, default=pi / 2, subtype="ANGLE")
 
@@ -748,4 +754,4 @@ class BIMRoofProperties(PropertyGroup):
         self.angle = math.atan(self.percentage / 100)
 
     def update_percentage(self):
-        self.percentage = math.tan(self.angle)*100
+        self.percentage = math.tan(self.angle) * 100
