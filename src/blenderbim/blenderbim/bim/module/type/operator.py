@@ -49,8 +49,12 @@ class AssignType(bpy.types.Operator, Operator):
             if self.related_object
             else context.selected_objects or [context.active_object]
         )
+        model_props = context.scene.BIMModelProperties
         for obj in related_objects:
-            core.assign_type(tool.Ifc, tool.Type, element=tool.Ifc.get_entity(obj), type=type)
+            element = tool.Ifc.get_entity(obj)
+            core.assign_type(tool.Ifc, tool.Type, element=element, type=type)
+            if model_props.occurrence_name_style == "TYPE":
+                obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
 
 
 class UnassignType(bpy.types.Operator):
