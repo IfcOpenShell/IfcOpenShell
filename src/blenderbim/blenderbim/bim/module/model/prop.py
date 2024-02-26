@@ -99,7 +99,10 @@ class BIMModelProperties(PropertyGroup):
         items=[("CLASS", "By Class", ""), ("TYPE", "By Type", ""), ("CUSTOM", "Custom", "")],
         name="Occurrence Name Style",
     )
-    occurrence_name_function: bpy.props.StringProperty(name="Occurrence Name Function")
+    occurrence_name_function: bpy.props.StringProperty(
+        name="Occurrence Name Function",
+        description="Code that will be evaluated to generate occurrence name for CUSTOM occurrence name style",
+    )
     getter_enum = {"ifc_class": get_ifc_class, "relating_type": get_relating_type_id}
     extrusion_depth: bpy.props.FloatProperty(min=0.001, default=42.0, subtype="DISTANCE")
     cardinal_point: bpy.props.EnumProperty(
