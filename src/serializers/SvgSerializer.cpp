@@ -80,6 +80,7 @@
 #include "../ifcparse/IfcGlobalId.h"
 #include "../ifcgeom_schema_agnostic/base_utils.h"
 #include "../ifcgeom_schema_agnostic/boolean_utils.h"
+#include "../ifcgeom_schema_agnostic/wire_utils.h"
 
 #include <boost/format.hpp>
 #include <boost/tokenizer.hpp>
@@ -702,6 +703,27 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 
 	if (unify_inputs_) {
 		compound_local = IfcGeom::util::unify(compound_local, 1.e-6);
+	}
+
+	{
+		bool any_wires_converted_to_face = false;
+		BRep_Builder BB;
+		TopoDS_Compound comp2;
+		BB.MakeCompound(comp2);
+		TopoDS_Iterator it(compound_local);
+		for (; it.More(); it.Next()) {
+			auto& s = it.Value();
+			if (s.ShapeType() == TopAbs_WIRE && s.Closed()) {
+				IfcGeom::util::wire_tolerance_settings wts{ false, false, Precision::Confusion(), Precision::Confusion() };
+				TopoDS_Compound faces;
+				IfcGeom::util::convert_wire_to_faces(TopoDS::Wire(s), faces, wts);
+				BB.Add(comp2, faces);
+				any_wires_converted_to_face = true;
+			} else {
+				BB.Add(comp2, s);
+			}
+		}
+		compound_local = comp2;
 	}
 
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };
