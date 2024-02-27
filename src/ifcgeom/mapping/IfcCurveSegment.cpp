@@ -97,32 +97,32 @@ class segment_geometry_adjuster {
           // through all of the curve segments until the end of curve is reached.
           // Mapping of IfcCompositeCurve, IfcGradientCurve, and IfcSegmentedReferenceCurve may
           // need to traverse the IfcCurveSegment objects in reverse order to avoid recursion.
-			 auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
+          auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
           start_of_next_inst_ = next->evaluate(0.0);
        } else {
-             // there is not a next segment, however IfcGradientCurve and IfcSegmentedReferenceCurve
-             // have an optional EndPoint attribute that serves the same purpose as the zero-length
-             // "next segment" at the end of the curve. The Ifc specification is a little redundant
-             // in that the "zero length" segment is required thereby negating the need for EndPoint
-             // but some implementations use the EndPoint instead of the "zero length" segment
-             //
-             // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedReferenceCurve
-             // look for the optional EndPoint attribute
-             auto curves = inst->UsingCurves();
-         if (curves && curves->size()) {
-                auto curve = *curves->begin();
-                const IfcSchema::IfcPlacement* placement = nullptr;
-                if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
-                    auto s = curve->as<IfcSchema::IfcSegmentedReferenceCurve>();
-                    placement = s->EndPoint();
-                } else if (curve->as<IfcSchema::IfcGradientCurve>()) {
-                    auto s = curve->as<IfcSchema::IfcGradientCurve>();
-                    placement = s->EndPoint();
-                }
-                if (placement) {
-                    start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
-                }
-         }
+          // there is not a next segment, however IfcGradientCurve and IfcSegmentedReferenceCurve
+          // have an optional EndPoint attribute that serves the same purpose as the zero-length
+          // "next segment" at the end of the curve. The Ifc specification is a little redundant
+          // in that the "zero length" segment is required thereby negating the need for EndPoint
+          // but some implementations use the EndPoint instead of the "zero length" segment
+          //
+          // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedReferenceCurve
+          // look for the optional EndPoint attribute
+          auto curves = inst->UsingCurves();
+          if (curves && curves->size()) {
+             auto curve = *curves->begin();
+             const IfcSchema::IfcPlacement* placement = nullptr;
+             if (curve->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+                 auto s = curve->as<IfcSchema::IfcSegmentedReferenceCurve>();
+                 placement = s->EndPoint();
+             } else if (curve->as<IfcSchema::IfcGradientCurve>()) {
+                 auto s = curve->as<IfcSchema::IfcGradientCurve>();
+                 placement = s->EndPoint();
+             }
+             if (placement) {
+                 start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
+             }
+          }
        }
     }
 
@@ -140,7 +140,7 @@ class segment_geometry_adjuster {
 
     // Transforms the ParentCurve geometry with the IfcCurveSegment.Placement and
     // applies geometric adjustments to the geometry, if enabled
-	 Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) const {
+    Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) const {
        // transform the parent curve's value into the segment curve's coordinate system
        Eigen::Matrix4d segment_curve_point = transformation_matrix_ * parent_curve_point;
        if (adjustments_) {
@@ -149,7 +149,7 @@ class segment_geometry_adjuster {
        return segment_curve_point;
     }
 
-	 protected:
+    protected:
        // precompute any values that are constant when applying geometry adjustments
        //( subclasses to override. 
     virtual void init_adjustments() { /*do nothing*/
@@ -185,7 +185,7 @@ class linear_segment_geometry_adjuster : public segment_geometry_adjuster {
           // adjustment is then adj = u*delta
     }
 
-	 virtual void apply_adjustments(double u, Eigen::Matrix4d& p) const override {
+    virtual void apply_adjustments(double u, Eigen::Matrix4d& p) const override {
        // make the adjustments based on the transition code
        // all segments must connect end to end except for last segment IfcTransitionCode_DISCONTINUOUS for open curve
        auto transition_code = get_transition_code();
@@ -315,12 +315,18 @@ class cant_adjuster : public segment_geometry_adjuster {
 
 // vector of parent curve types that are supported for IfcCurveSegment.ParentCurve
 typedef boost::mpl::vector<
-	IfcSchema::IfcLine
+   IfcSchema::IfcLine
 #ifdef SCHEMA_HAS_IfcClothoid
-	, IfcSchema::IfcClothoid
+   , IfcSchema::IfcClothoid
+#endif
+#if defined SCHEMA_HAS_IfcCosineSpiral
+   , IfcSchema::IfcCosineSpiral
+#endif
+#if defined SCHEMA_HAS_IfcSineSpiral
+    , IfcSchema::IfcSineSpiral
 #endif
 #if defined SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-	, IfcSchema::IfcSecondOrderPolynomialSpiral
+   , IfcSchema::IfcSecondOrderPolynomialSpiral
 #endif
 #if defined SCHEMA_HAS_IfcThirdOrderPolynomialSpiral
     , IfcSchema::IfcThirdOrderPolynomialSpiral
@@ -328,9 +334,10 @@ typedef boost::mpl::vector<
 #if defined SCHEMA_HAS_IfcSeventhOrderPolynomialSpiral
     , IfcSchema::IfcSeventhOrderPolynomialSpiral
 #endif
+
    , IfcSchema::IfcPolyline
-	, IfcSchema::IfcCircle
-	, IfcSchema::IfcPolynomialCurve
+   , IfcSchema::IfcCircle
+   , IfcSchema::IfcPolynomialCurve
 > curve_seg_types;
 
 class curve_segment_evaluator {
@@ -397,20 +404,19 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             auto start = start_;
             auto segment_type = segment_type_;
-            auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
             geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
             using boost::math::quadrature::trapezoidal;
-            auto start_x = trapezoidal(fnX, 0.0, start / s);
-            auto start_y = trapezoidal(fnY, 0.0, start / s);
-            auto start_dx = fnX(start / s)/s;
-            auto start_dy = fnY(start / s)/s;
-            eval_ = [start, s, start_x, start_y, start_dx,start_dy,fnX, fnY, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
+            auto start_x = s ? trapezoidal(fnX, 0.0, start / s) : 0.0;
+            auto start_y = s ? trapezoidal(fnY, 0.0, start / s) : 0.0;
+            auto start_dx = s ? fnX(start / s)/s : 0.0;
+            auto start_dy = s ? fnY(start / s)/s : 0.0;
+            eval_ = [start, s, start_x, start_y, start_dx,start_dy,fnX, fnY, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
 
                 u += start;
 
                 // integration limits, integrate from a to b
                 auto a = 0.0;
-                auto b = u / s;
+                auto b = s ? u / s : 0.0;
 
                 auto x = trapezoidal(fnX, a, b) - start_x;
                 auto y = trapezoidal(fnY, a, b) - start_y;
@@ -422,8 +428,8 @@ class curve_segment_evaluator {
 
                 // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
                 // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
-                auto dx = fnX(b)/s;
-                auto dy = fnY(b)/s;
+                auto dx = s ? fnX(b)/s : 1.0;
+                auto dy = s ? fnY(b)/s : 0.0;
 
                 // rotate about the Z-axis
                 Eigen::Matrix4d m;
@@ -431,10 +437,9 @@ class curve_segment_evaluator {
                 m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
                 m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
                 m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-                Eigen::Matrix4d result = transformation_matrix * m;
-                return geometry_adjuster->transform_and_adjust(u,result);
+                return geometry_adjuster->transform_and_adjust(u,m);
             };
-	     }
+        }
         else if (segment_type_ == ST_CANT) {
             auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, segment_type_, inst_, next_inst_);
             eval_ = [cant_adjuster_](double u) {
@@ -449,114 +454,85 @@ class curve_segment_evaluator {
 }
 
 
-	// Clothoid using numerical integration
+   // Clothoid using numerical integration
 #ifdef SCHEMA_HAS_IfcClothoid
 // Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
-	void operator()(const IfcSchema::IfcClothoid* c) {
+   void operator()(const IfcSchema::IfcClothoid* c) {
 
-		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+        geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
     // see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
       // also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
       // which defines the clothoid constant as sqrt(L*R) and L is the length measured from the inflection point and R is the radius at L
       auto A = c->ClothoidConstant();
       auto s = fabs(A * sqrt(PI)); // curve length when u = 1.0
 
-      auto fn_x = [A, s](double t) -> double { return s * cos(PI * A * t * t / (2 * fabs(A))); };
-      auto fn_y = [A, s](double t) -> double { return s * sin(PI * A * t * t / (2 * fabs(A))); };
+      auto fn_x = [A, s](double t) -> double { return A ? s * cos(PI * A * t * t / (2 * fabs(A))) : 0.0; };
+      auto fn_y = [A, s](double t) -> double { return A ? s * sin(PI * A * t * t / (2 * fabs(A))) : 0.0; };
 
       set_spiral_function(mapping_, c, s, fn_x, fn_y);
-	}
+   }
 #endif
 
-    void polynomial_spiral(const IfcSchema::IfcSpiral* c, boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
-      auto theta = [A0, A1, A2, A3, A4, A5, A6, A7](double t) {
+#if defined SCHEMA_HAS_IfcCosineSpiral
+   void operator()(const IfcSchema::IfcCosineSpiral* c) {
+      auto const_term = c->ConstantTerm();
+      auto cos_term = c->CosineTerm();
+
+      auto theta = [const_term, cos_term](double t) -> double {
+          auto ct = const_term.get_value_or(0);
+          return ct + cos_term * sin(t);
+      };
+      auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+      auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+      double s = 1.0;
+      set_spiral_function(mapping_, c, s, fn_x, fn_y);
+   }
+#endif
+
+#if defined SCHEMA_HAS_IfcSineSpiral
+   void operator()(const IfcSchema::IfcSineSpiral* c) {
+      auto const_term = c->ConstantTerm();
+      auto cos_term = c->SineTerm();
+
+      auto theta = [const_term, cos_term](double t) -> double {
+          auto ct = const_term.get_value_or(0);
+          return ct + cos_term * cos(t);
+      };
+      auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+      auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+      double s = 1.0;
+      set_spiral_function(mapping_, c, s, fn_x, fn_y);
+   }
+#endif
+
+    void polynomial_spiral(const IfcSchema::IfcSpiral* c, double lu, boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
+      auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, lu](double t) {
           auto a0 = A0.has_value() ? t / A0.value() : 0.0;
-          auto a1 = A1.has_value() ? A1.value() * std::pow(t, 2) / (2 * fabs(std::pow(A1.value(), 3))) : 0.0;
-          auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value(), 3)) : 0.0;
-          auto a3 = A3.has_value() ? A3.value() * std::pow(t, 4) / (4 * fabs(std::pow(A3.value(), 5))) : 0.0;
-          auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value(), 5)) : 0.0;
-          auto a5 = A5.has_value() ? A5.value() * std::pow(t, 6) / (6 * fabs(std::pow(A5.value(), 7))) : 0.0;
-          auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value(), 7)) : 0.0;
-          auto a7 = A7.has_value() ? A7.value() * std::pow(t, 8) / (8 * fabs(std::pow(A7.value(), 9))) : 0.0;
+          auto a1 = A1.has_value() ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
+          auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
+          auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
+          auto a4 = A4.has_value() ? std::pow(t, 5) / (5 * std::pow(A4.value() * lu, 5)) : 0.0;
+          auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 6) / (6 * fabs(std::pow(A5.value() * lu, 7))) : 0.0;
+          auto a6 = A6.has_value() ? std::pow(t, 7) / (7 * std::pow(A6.value() * lu, 7)) : 0.0;
+          auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 8) / (8 * fabs(std::pow(A7.value() * lu, 9))) : 0.0;
           return a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7;
       };
 
-      // find the curve length when u = 1.0 (there doesn't seem to be a closed form equation for this so do it numerically).
-      // u = 1.0 when theta = PI/2... do a root finding for theta-PI/2 = 0
-      boost::uintmax_t max_iter = 500;
-      auto iter = max_iter;
-      double eps = 0.000001;
-      auto tol = [eps](const auto& a, const auto& b) { return std::fabs(b - a) < eps; };
-      // guess the solution by using the highest order term in the theta equation.
-      // the term is in the form k*t^n
-      // solve k*t^n = PI/2
-      // t = nth root of (PI/(2*k)) = std::pow((PI/(2*fabs(k)), 1.0/n);
-      // use abs(k) because depending on the direction of the curve we seek t when theta = PI/2 or -PI/2
-      double k = fabs(length());
-      double n = 1.0;
-      if (A7.has_value()) {
-            auto a7 = A7.value();
-            k = a7 / (8 * std::abs(std::pow(a7, 9)));
-            n = 8;
-      } else if (A6.has_value()) {
-            auto a6 = A6.value();
-            k = 1 / (7 * std::pow(a6, 7));
-            n = 7;
-      } else if (A5.has_value()) {
-            auto a5 = A5.value();
-            k = a5 / (6 * std::fabs(std::pow(a5, 7)));
-            n = 6;
-      } else if (A4.has_value()) {
-            auto a4 = A4.value();
-            k = 1. / (5 * std::pow(a4, 5));
-            n = 5;
-      } else if (A3.has_value()) {
-            auto a3 = A3.value();
-            k = a3 / (4 * std::fabs(std::pow(a3, 5)));
-            n = 4;
-      } else if (A2.has_value()) {
-            auto a2 = A2.value();
-            k = 1. / (3 * std::pow(a2, 3));
-            n = 3;
-      } else if (A1.has_value()) {
-            auto a1 = A1.value();
-            k = a1 / (2 * std::fabs(std::pow(a1, 3)));
-            n = 2;
-      } else if (A0.has_value()) {
-            auto a0 = A0.value();
-            k = 1 / a0;
-            n = 1;
-      }
-      auto guess = std::pow(PI / (2 * fabs(k)), 1. / n);
+      auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+      auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
 
-      std::pair<double, double> result;
-      try {
-            auto sign_of_k = sign(k);
-            result = boost::math::tools::bracket_and_solve_root([sign_of_k,theta](double x) { return (sign_of_k*theta(x) - PI / 2.0); }, guess, 2.0, true, tol, iter);
-      } catch (const std::exception& e) {
-            Logger::Warning(std::string(e.what()));
-      }
-
-      if (iter == max_iter) {
-            Logger::Warning(std::string("bracket_and_solve_root did not converge"));
-      }
-
-      double s = result.first;
-
-      auto fn_x = [s, theta](double t) -> double { return s*cos(theta(s*t)); };
-      auto fn_y = [s, theta](double t) -> double { return s*sin(theta(s*t)); };
-
+      double s = 1.0;
       set_spiral_function(mapping_, c, s, fn_x, fn_y);
     }
 
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
-	void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral* c)
-	{
-		auto A0 = c->ConstantTerm();
-		auto A1 = c->LinearTerm();
-		auto A2 = c->QuadraticTerm();
+   void operator()(const IfcSchema::IfcSecondOrderPolynomialSpiral* c)
+   {
+      auto A0 = c->ConstantTerm();
+      auto A1 = c->LinearTerm();
+      auto A2 = c->QuadraticTerm();
       boost::optional<double> A3, A4, A5, A6, A7;
-      polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
+      polynomial_spiral(c, length_unit_, A0, A1, A2, A3, A4, A5, A6, A7);
     }
 #endif
 
@@ -567,7 +543,7 @@ class curve_segment_evaluator {
         auto A2 = c->QuadraticTerm();
         auto A3 = c->CubicTerm();
         boost::optional<double> A4, A5, A6, A7;
-        polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
+        polynomial_spiral(c, length_unit_, A0, A1, A2, A3, A4, A5, A6, A7);
     }
 #endif
 
@@ -582,37 +558,35 @@ class curve_segment_evaluator {
         auto A6 = c->SexticTerm();
         auto A7 = c->SepticTerm();
 
-        polynomial_spiral(c, A0, A1, A2, A3, A4, A5, A6, A7);
+        polynomial_spiral(c, length_unit_, A0, A1, A2, A3, A4, A5, A6, A7);
     }
 #endif
 
-	void operator()(const IfcSchema::IfcCircle* c)
-	{
-		auto R = c->Radius() * length_unit_;
+   void operator()(const IfcSchema::IfcCircle* c)
+   {
+      auto R = c->Radius() * length_unit_;
 
       auto sign_l = sign(length_);
-		auto start_angle = start_/R;
+      auto start_angle = start_/R;
 
       auto start_x = R * cos(start_angle);
       auto start_y = R * sin(start_angle);
 
-		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(c->Position()))->ccomponents();
+      auto segment_type = segment_type_;
 
-		auto segment_type = segment_type_;
+      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-
-		eval_ = [R, start_x, start_y, start_angle, sign_l, transformation_matrix, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
-			{
+      eval_ = [R, start_x, start_y, start_angle, sign_l, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
+         {
             auto angle = start_angle + sign_l * u / R;
 
-				auto dx = cos(angle);
+            auto dx = cos(angle);
             auto dy = sin(angle);
 
-				auto x = R * dx - start_x;
-				auto y = R * dy - start_y;
+            auto x = R * dx - start_x;
+            auto y = R * dy - start_y;
 
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            Eigen::Matrix4d m;
             if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
                 // rotate about the Z-axis
                 m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
@@ -622,79 +596,80 @@ class curve_segment_evaluator {
             }
             else if (segment_type == ST_CANT) {
                 Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
+                m = Eigen::Matrix4d::Identity();
             } else {
                 Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+                m = Eigen::Matrix4d::Identity();
             }
 
 
-            Eigen::Matrix4d result = transformation_matrix * m;
-            return geometry_adjuster->transform_and_adjust(u, result);
-			};
-	}
+            return geometry_adjuster->transform_and_adjust(u, m);
+         };
+   }
 
-	void operator()(const IfcSchema::IfcPolyline* pl)
-	{
-		struct Range
-		{
-			double u_start;
-			double u_end;
-			std::function<bool(double, double, double)> compare;
-			bool operator<(const Range& r) const { return u_start < r.u_start; }
-		};
+   void operator()(const IfcSchema::IfcPolyline* pl)
+   {
+      struct Range
+      {
+         double u_start;
+         double u_end;
+         std::function<bool(double, double, double)> compare;
+         bool operator<(const Range& r) const { return u_start < r.u_start; }
+      };
 
-		using Function = std::function<Eigen::Matrix4d(double u)>;
-		std::map<Range, Function> fns;
+      using Function = std::function<Eigen::Matrix4d(double u)>;
+      std::map<Range, Function> fns;
 
-		auto p = pl->Points();
-		if (p->size() < 2)
-		{
-			throw std::runtime_error("invalid polyline - must have at least 2 points"); // this should never happen, but just in case it does
-		}
+      auto p = pl->Points();
+      if (p->size() < 2)
+      {
+         throw std::runtime_error("invalid polyline - must have at least 2 points"); // this should never happen, but just in case it does
+      }
 
-		auto std_compare = [](double u_start, double u, double u_end) {return u_start <= u && u < u_end; };
+      auto std_compare = [](double u_start, double u, double u_end) {return u_start <= u && u < u_end; };
       auto end_compare = [](double u_start, double u, double u_end) { return u_start <= u && u <= (u_end + 0.001); };
 
-		auto begin = p->begin();
-		auto iter = begin;
-		auto end = p->end();
-		auto last = std::prev(end);
-		auto p1 = *(iter++);
+      auto begin = p->begin();
+      auto iter = begin;
+      auto end = p->end();
+      auto last = std::prev(end);
+      auto p1 = *(iter++);
       
-		if (p1->Coordinates().size() != 2)  Logger::Warning("Expected IfcPolyline.Points to be 2D",pl);
+      if (p1->Coordinates().size() != 2)  Logger::Warning("Expected IfcPolyline.Points to be 2D",pl);
       
-		auto u = 0.0;
-		for (; iter != end; iter++)
-		{
-			auto p2 = *iter;
+      auto u = 0.0;
+      for (; iter != end; iter++)
+      {
+         auto p2 = *iter;
 
-			auto p1x = p1->Coordinates()[0];
-			auto p1y = p1->Coordinates()[1];
+         auto p1x = p1->Coordinates()[0];
+         auto p1y = p1->Coordinates()[1];
 
-			auto p2x = p2->Coordinates()[0];
-			auto p2y = p2->Coordinates()[1];
+         auto p2x = p2->Coordinates()[0];
+         auto p2y = p2->Coordinates()[1];
 
-			auto dx = p2x - p1x;
-			auto dy = p2y - p1y;
-			auto l = sqrt(dx * dx + dy * dy);
-					
-			if (l < mapping_->settings().get<ifcopenshell::geometry::settings::Precision>().get())
-			{
+         auto dx = p2x - p1x;
+         auto dy = p2y - p1y;
+         auto l = sqrt(dx * dx + dy * dy);
+               
+         if (l < mapping_->settings().get<ifcopenshell::geometry::settings::Precision>().get())
+         {
             std::ostringstream os;
             os << "Coincident IfcPolyline.Points are not expected. Skipping point " << std::distance(iter, begin) << std::endl;
             Logger::Warning(os.str(), pl);
             continue; // go to next point
-			}
+         }
 
-			dx /= l;
-			dy /= l;
+         dx /= l;
+         dy /= l;
 
-   		auto segment_type = segment_type_;
+         auto segment_type = segment_type_;
 
          auto fn = [p1x, p1y, dx, dy, segment_type](double u) {
                 auto x = segment_type == ST_HORIZONTAL ? p1x + u * dx : u;
                 auto y = p1y + u * dy;
 
-                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                Eigen::Matrix4d m;
                 if (segment_type == ST_HORIZONTAL) {
                     // rotate about the Z-axis
                     m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
@@ -708,43 +683,44 @@ class curve_segment_evaluator {
                     m.col(2) = Eigen::Vector4d(-dy, 0, dx, 0);
                     m.col(3) = Eigen::Vector4d(0, 0, y, 1.0); // y is an elevation so store it as z
                 } else if (segment_type == ST_CANT) {
-                  Logger::Warning(std::runtime_error("Use of IfcPolyline for cant is not supported"));
+                    Logger::Warning(std::runtime_error("Use of IfcPolyline for cant is not supported"));
+                    m = Eigen::Matrix4d::Identity();
                 } else {
-                  Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+                    Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+                    m = Eigen::Matrix4d::Identity();
                 }
 
-					 return m;
-				};
+                return m;
+            };
 
-			fns.insert(std::make_pair(Range{ u, u + l,iter == last ? end_compare : std_compare }, fn));
+         fns.insert(std::make_pair(Range{ u, u + l,iter == last ? end_compare : std_compare }, fn));
 
-			p1 = p2;
-			u = u + l;
-		}
+         p1 = p2;
+         u = u + l;
+      }
+     
+         geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-		
-		  geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+         eval_ = [fns, geometry_adjuster = this->geometry_adjuster](double u) {
+         auto iter = std::find_if(fns.cbegin(), fns.cend(), [=](const auto& fn)
+            {
+               auto [u_start, u_end, compare] = fn.first;
+               return compare(u_start, u, u_end);
+            });
 
-		eval_ = [fns, geometry_adjuster = this->geometry_adjuster](double u) {
-			auto iter = std::find_if(fns.cbegin(), fns.cend(), [=](const auto& fn)
-				{
-					auto [u_start, u_end, compare] = fn.first;
-					return compare(u_start, u, u_end);
-				});
+         if (iter == fns.end()) throw std::runtime_error("invalid distance from start"); // this should never happen, but just in case it does, throw an exception so the problem gets automatically detected
 
-			if (iter == fns.end()) throw std::runtime_error("invalid distance from start"); // this should never happen, but just in case it does, throw an exception so the problem gets automatically detected
-
-			const auto& [u_start, u_end, compare] = iter->first;
+         const auto& [u_start, u_end, compare] = iter->first;
          const auto& fn = iter->second;
-			Eigen::Matrix4d m = fn(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
-            return geometry_adjuster->transform_and_adjust(u, m);
-			};
-	}
+         Eigen::Matrix4d m = fn(u - u_start); // (u - u_start) is distance from start of this segment of the polyline
+         return geometry_adjuster->transform_and_adjust(u, m);
+      };
+   }
 
-	void operator()(const IfcSchema::IfcLine* l) {
-		auto s = l->Pnt();
-		auto c = s->Coordinates();
-		auto v = l->Dir();
+   void operator()(const IfcSchema::IfcLine* l) {
+      auto s = l->Pnt();
+      auto c = s->Coordinates();
+      auto v = l->Dir();
 
       // 8.9.3.75 IfcVector https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcVector.htm
       // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
@@ -752,7 +728,7 @@ class curve_segment_evaluator {
       //
       // Therefore, the direction ratios need to be normalized to compute points on the line. Magnitude is not used
       // because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment 
-		auto dr = v->Orientation()->DirectionRatios();
+      auto dr = v->Orientation()->DirectionRatios();
 
       // normalize the direction ratios
       double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
@@ -767,18 +743,18 @@ class curve_segment_evaluator {
       geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
       if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
 
-			eval_ = [px, py, dx, dy, geometry_adjuster=this->geometry_adjuster](double u) {
-				auto x = px + u * dx;
-				auto y = py + u * dy;
+         eval_ = [px, py, dx, dy, geometry_adjuster=this->geometry_adjuster](double u) {
+            auto x = px + u * dx;
+            auto y = py + u * dy;
 
-            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+            Eigen::Matrix4d m;
             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
             m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
             return geometry_adjuster->transform_and_adjust(u, m);
-			};
-		}
+         };
+      }
       else if (segment_type_ == ST_CANT) {
             auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, segment_type_, inst_, next_inst_);
             eval_ = [cant_adjuster_](double u) {
@@ -787,30 +763,28 @@ class curve_segment_evaluator {
                 return result;
             };
         }
-		else {
+      else {
          Logger::Error(std::runtime_error("Unexpected segment type encountered"), l);
-		}
+      }
     }
 
-	void operator()(const IfcSchema::IfcPolynomialCurve* p) {
-		// see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
-		auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
+   void operator()(const IfcSchema::IfcPolynomialCurve* p) {
+      // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
+      auto coeffX = p->CoefficientsX().get_value_or(std::vector<double>());
       auto coeffY = p->CoefficientsY().get_value_or(std::vector<double>());
       auto coeffZ = p->CoefficientsZ().get_value_or(std::vector<double>());
       if (!coeffZ.empty())
-			Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", p);
+         Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", p);
 
 
 
-		auto transformation_matrix = taxonomy::cast<taxonomy::matrix4>(mapping_->map(p->Position()))->ccomponents();
+      auto segment_type = segment_type_;
+      auto length_unit = length_unit_;
 
-		auto segment_type = segment_type_;
-        auto length_unit = length_unit_;
-
-		geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
 
-      eval_ = [coeffX, coeffY, transformation_matrix, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
+      eval_ = [coeffX, coeffY, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
          std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
          std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
          std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
@@ -823,7 +797,7 @@ class curve_segment_evaluator {
                   auto coeff = (*iter)*length_conversion;
                   position[i] += coeff* pow(u, exp);
 
-						if (iter != begin) {
+                  if (iter != begin) {
                       slope[i] += coeff * exp * pow(u, exp - 1);
                   }
 
@@ -831,110 +805,112 @@ class curve_segment_evaluator {
              }
          }
 
-			auto x = position[0];
+         auto x = position[0];
          auto y = position[1];
 
-			auto dx = slope[0];
+         auto dx = slope[0];
          auto dy = slope[1];
 
          Eigen::Matrix4d m;
          if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
-				// rotate about the Z-axis
+            // rotate about the Z-axis
             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
             m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
          }
          else if (segment_type == ST_CANT) {
-                Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+            Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+            m = Eigen::Matrix4d::Identity();
          } else {
-                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            }
+            Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+            m = Eigen::Matrix4d::Identity();
+         }
 
-			return geometry_adjuster->transform_and_adjust(u, m);
-      };
-	}
+            return geometry_adjuster->transform_and_adjust(u, m);
+        };
+   }
 
-	// Take the boost::type value from mpl::for_each and test it against our curve instance
-	template <typename T>
-	void operator()(boost::type<T>) {
-		if (curve_->as<T>()) {
-			(*this)(curve_->as<T>());
-		}
-	}
+   // Take the boost::type value from mpl::for_each and test it against our curve instance
+   template <typename T>
+   void operator()(boost::type<T>) {
+      if (curve_->as<T>()) {
+         (*this)(curve_->as<T>());
+      }
+   }
 
-	double length() const {
-		return length_;
-	}
+   double length() const {
+      return length_;
+   }
 
-	const std::optional<std::function<Eigen::Matrix4d(double)>>& evaluation_function() const {
-		return eval_;
-	}
+   const std::optional<std::function<Eigen::Matrix4d(double)>>& evaluation_function() const {
+      return eval_;
+   }
 };
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
-	// Find the next segment after inst
-	const IfcSchema::IfcCurveSegment* next_inst = nullptr;
+   // Find the next segment after inst
+   const IfcSchema::IfcCurveSegment* next_inst = nullptr;
    auto composite_curves = inst->UsingCurves();
     if (composite_curves) {
-		 if (composite_curves->size() == 1) {
+       if (composite_curves->size() == 1) {
             auto segments = (*composite_curves->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments();
             bool emit_next = false;
             for (auto& s : *segments) {
-					if (emit_next) {
+               if (emit_next) {
                 next_inst = s->as<IfcSchema::IfcCurveSegment>();
-						 break;
-					}
-					if (s == inst) {
-						 emit_next = true;
-					}
+                   break;
+               }
+               if (s == inst) {
+                   emit_next = true;
+               }
             }
        }
-		 else {
+       else {
             Logger::Warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment. Geometry adjustments will not be made.");
-		 }
+       }
     }
 
-	bool is_horizontal = false;
-	bool is_vertical = false;
-	bool is_cant = false;
+   bool is_horizontal = false;
+   bool is_vertical = false;
+   bool is_cant = false;
 
-	if (composite_curves) {
-		for (auto& cc : *composite_curves) {
-			if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
-				is_cant = true;
-			}
-			else if (cc->as<IfcSchema::IfcGradientCurve>()) {
-				is_vertical = true;
-			}
-			else {
-				is_horizontal = true;
-			}
-		}
-	}
+   if (composite_curves) {
+      for (auto& cc : *composite_curves) {
+         if (cc->as<IfcSchema::IfcSegmentedReferenceCurve>()) {
+            is_cant = true;
+         }
+         else if (cc->as<IfcSchema::IfcGradientCurve>()) {
+            is_vertical = true;
+         }
+         else {
+            is_horizontal = true;
+         }
+      }
+   }
 
-	if ((is_horizontal + is_vertical + is_cant) != 1) {
-		// We have to choose the correct functor based on usage. We can't 
-		// support multiple, because we don't know the caller at this point.
-		return nullptr;
-	}
+   if ((is_horizontal + is_vertical + is_cant) != 1) {
+      // We have to choose the correct functor based on usage. We can't 
+      // support multiple, because we don't know the caller at this point.
+      return nullptr;
+   }
 
-	auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
+   auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
 
-	curve_segment_evaluator cse(this, inst, next_inst, length_unit_, segment_type);
-	boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
+   curve_segment_evaluator cse(this, inst, next_inst, length_unit_, segment_type);
+   boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
    cse.compute_segment_end_point();
-	
-	auto& eval_fn = cse.evaluation_function();
-	if(!eval_fn) throw std::runtime_error(inst->ParentCurve()->declaration().name() + " not implemented");
-	auto fn = *eval_fn;
-	auto length = fabs(cse.length());
+   
+   auto& eval_fn = cse.evaluation_function();
+   if(!eval_fn) throw std::runtime_error(inst->ParentCurve()->declaration().name() + " not implemented");
+   auto fn = *eval_fn;
+   auto length = fabs(cse.length());
 
-	// @todo it might be suboptimal that we no longer have the spans now
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-	pwf->spans.push_back({ length, fn });
-	pwf->instance = inst;
-	return pwf;
+   // @todo it might be suboptimal that we no longer have the spans now
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
+   pwf->spans.push_back({ length, fn });
+   pwf->instance = inst;
+   return pwf;
 }
 
 #endif
