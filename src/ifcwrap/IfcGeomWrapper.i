@@ -79,6 +79,14 @@
 %newobject IfcGeom::OpaqueNumber::operator*;
 %newobject IfcGeom::OpaqueNumber::operator/;
 
+%inline %{
+template <typename T>
+std::pair<char const*, size_t> vector_to_buffer(const T& t) {
+    using V = typename std::remove_reference<decltype(t)>::type;
+    return { reinterpret_cast<const char*>(t.data()), t.size() * sizeof(V::value_type) };
+}
+%}
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
@@ -288,6 +296,31 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %extend IfcGeom::Representation::Triangulation {
+
+	std::pair<const char*, size_t> faces_buffer() const {
+		return vector_to_buffer(self->faces());
+	}
+
+	std::pair<const char*, size_t> edges_buffer() const {
+		return vector_to_buffer(self->edges());
+	}
+
+	std::pair<const char*, size_t> material_ids_buffer() const {
+		return vector_to_buffer(self->material_ids());
+	}
+
+	std::pair<const char*, size_t> item_ids_buffer() const {
+		return vector_to_buffer(self->item_ids());
+	}
+
+	std::pair<const char*, size_t> verts_buffer() const {
+		return vector_to_buffer(self->verts());
+	}
+
+	std::pair<const char*, size_t> normals_buffer() const {
+		return vector_to_buffer(self->normals());
+	}
+
     %pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
@@ -298,6 +331,13 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         verts = property(verts)
         normals = property(normals)
         item_ids = property(item_ids)
+
+        faces_buffer = property(faces_buffer)
+        edges_buffer = property(edges_buffer)
+        material_ids_buffer = property(material_ids_buffer)
+        item_ids_buffer = property(item_ids_buffer)
+        verts_buffer = property(verts_buffer)
+        normals = property(normals)
     %}
 };
 
@@ -312,12 +352,17 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %extend IfcGeom::Element {
+    std::pair<const char*, size_t> transformation_buffer() const {
+        // @todo check whether needs to be transposed
+        const double* data = self->transformation().data()->ccomponents().data();
+        return { reinterpret_cast<const char*>(data), 16 * sizeof(double) };
+    }
 
-	const IfcUtil::IfcBaseClass* product_() const {
-		return $self->product();
-	}
+    const IfcUtil::IfcBaseClass* product_() const {
+        return $self->product();
+    }
 
-	%pythoncode %{
+    %pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
         parent_id = property(parent_id)
@@ -328,8 +373,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         unique_id = property(unique_id)
         transformation = property(transformation)
         product = property(product_)
-	%}
 
+        transformation_buffer = property(transformation_buffer)
+    %}
 };
 
 %extend IfcGeom::TriangulationElement {
