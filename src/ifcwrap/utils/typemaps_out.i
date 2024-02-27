@@ -157,3 +157,7 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 	pythonizing_visitor vis;
 	$result = $1.apply_visitor(vis);
 }
+
+%typemap(out) std::pair<const char*, size_t> {
+    $result = PyBytes_FromStringAndSize($1.first, $1.second);
+}
