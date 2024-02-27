@@ -58,6 +58,14 @@
 	}
 }
 
+%inline %{
+template <typename T>
+std::pair<char const*, size_t> vector_to_buffer(const T& t) {
+    using V = typename std::remove_reference<decltype(t)>::type;
+    return { reinterpret_cast<const char*>(t.data()), t.size() * sizeof(V::value_type) };
+}
+%}
+
 %include "../ifcgeom_schema_agnostic/ifc_geom_api.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
 %include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
@@ -234,6 +242,31 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %extend IfcGeom::Representation::Triangulation {
+	
+	std::pair<const char*, size_t> faces_buffer() const {
+		return vector_to_buffer(self->faces());
+	}
+
+	std::pair<const char*, size_t> edges_buffer() const {
+		return vector_to_buffer(self->edges());
+	}
+
+	std::pair<const char*, size_t> material_ids_buffer() const {
+		return vector_to_buffer(self->material_ids());
+	}
+
+	std::pair<const char*, size_t> item_ids_buffer() const {
+		return vector_to_buffer(self->item_ids());
+	}
+
+	std::pair<const char*, size_t> verts_buffer() const {
+		return vector_to_buffer(self->verts());
+	}
+
+	std::pair<const char*, size_t> normals_buffer() const {
+		return vector_to_buffer(self->normals());
+	}
+
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
@@ -242,15 +275,15 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         material_ids = property(material_ids)
         materials = property(materials)
         item_ids = property(item_ids)
-	%}
-};
-
-// Specialized accessors follow later, for otherwise property definitions
-// would appear before templated getter functions are defined.
-%extend IfcGeom::Representation::Triangulation {
-	%pythoncode %{
         # Hide the getters with read-only property implementations
         verts = property(verts)
+        normals = property(normals)
+
+        faces_buffer = property(faces_buffer)
+        edges_buffer = property(edges_buffer)
+        material_ids_buffer = property(material_ids_buffer)
+        item_ids_buffer = property(item_ids_buffer)
+        verts_buffer = property(verts_buffer)
         normals = property(normals)
 	%}
 };
@@ -266,6 +299,9 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 };
 
 %extend IfcGeom::Element {
+	std::pair<const char*, size_t> transformation_buffer() const {
+		return vector_to_buffer(self->transformation().matrix().data());
+	}
 
 	IfcUtil::IfcBaseClass* product_() const {
 		return $self->product();
@@ -282,6 +318,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         unique_id = property(unique_id)
         transformation = property(transformation)
         product = property(product_)
+        transformation_buffer = property(transformation_buffer)
 	%}
 
 };

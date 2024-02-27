@@ -146,3 +146,7 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::declaration const *)
+
+%typemap(out) std::pair<const char*, size_t> {
+    $result = PyBytes_FromStringAndSize($1.first, $1.second);
+}
