@@ -84,10 +84,18 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].NominalValue.is_a("IfcThermalTransmittanceMeasure")
         assert pset.HasProperties[0].NominalValue.wrappedValue == 42
 
-    def test_not_adding_a_property_if_it_is_none(self):
+    def test_adding_a_property_if_it_is_none(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
+        # should_purge is false by default
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None})
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        assert len(pset.HasProperties) == 1
+
+    def test_not_adding_a_property_if_it_is_none_and_should_purge_is_true(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None}, should_purge=True)
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 0
 

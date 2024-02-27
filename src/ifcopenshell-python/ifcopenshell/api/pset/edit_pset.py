@@ -278,7 +278,7 @@ class Usecase:
     def add_new_properties(self):
         properties = []
         for name, value in self.settings["properties"].items():
-            if value is None:
+            if value is None and self.settings["should_purge"]:
                 continue
             unit, value = self.unpack_unit_value(value)
 
@@ -343,8 +343,11 @@ class Usecase:
 
             else:
                 primary_measure_type = self.get_primary_measure_type(name, new_value=value)
-                value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
-                nominal_value = self.file.create_entity(primary_measure_type, value)
+                if value is None:
+                    nominal_value = value
+                else:
+                    value = self.cast_value_to_primary_measure_type(value, primary_measure_type)
+                    nominal_value = self.file.create_entity(primary_measure_type, value)
                 args = {"Name": name, "NominalValue": nominal_value}
                 if unit:
                     args["Unit"] = unit
