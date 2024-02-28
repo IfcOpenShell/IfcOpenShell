@@ -1175,7 +1175,7 @@ class ImportIFC(bpy.types.Operator):
 
 class xxx(bpy.types.Operator):
     bl_idname = "bim.xxx"
-    bl_label = "Regular IFC iterator and mesh loading"
+    bl_label = "Load IFC no chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1276,7 +1276,7 @@ class xxx(bpy.types.Operator):
 
 class zzz(bpy.types.Operator):
     bl_idname = "bim.zzz"
-    bl_label = "Load from H5 with no chunking"
+    bl_label = "Load H5 no chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1357,7 +1357,7 @@ class zzz(bpy.types.Operator):
 
 class zxc(bpy.types.Operator):
     bl_idname = "bim.zxc"
-    bl_label = "Load from H5 using Python chunking"
+    bl_label = "Load H5 Python chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -1502,7 +1502,7 @@ class zxc(bpy.types.Operator):
 
 class aaa(bpy.types.Operator):
     bl_idname = "bim.aaa"
-    bl_label = "Load from H5 with C++ chunking"
+    bl_label = "Load H5 C++ chunking"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -2182,6 +2182,8 @@ class CreateClippingPlane(bpy.types.Operator):
         new = bpy.context.scene.BIMProjectProperties.clipping_planes.add()
         new.obj = plane_obj
 
+        tool.Blender.set_active_object(plane_obj)
+
         ClippingPlaneDecorator.install(bpy.context)
         bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
         return {"FINISHED"}
@@ -2195,3 +2197,246 @@ class CreateClippingPlane(bpy.types.Operator):
         self.mouse_x = event.mouse_region_x
         self.mouse_y = event.mouse_region_y
         return self.execute(context)
+
+
+class asdfasdf(bpy.types.Operator):
+    bl_idname = "bim.asdfasdf"
+    bl_label = "Load IFC C++ chunking (no materials)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import ifcpatch
+        import multiprocessing
+        import ifcopenshell.geom
+
+        start = time.time()
+
+        self.filepath = "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+        self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
+        self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
+        print("doing", self.filepath)
+
+        self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
+        self.file = ifcopenshell.open(self.filepath)
+        # self.file = ifcopenshell.open('/home/dion/test.ifc')
+        # self.file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        # self.file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
+        print("Finished opening")
+        start = time.time()
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.process_context_filter()
+
+        self.elements = set(self.file.by_type("IfcElement"))
+        if self.file.schema in ("IFC2X3", "IFC4"):
+            self.elements |= set(self.file.by_type("IfcProxy"))
+        self.elements |= set(self.file.by_type("IfcSite"))
+        self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        self.elements = list(self.elements)
+
+        for settings in ifc_importer.context_settings:
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, multiprocessing.cpu_count(), include=self.elements
+            )
+            self.meshes = {}
+            self.blender_mats = {}
+
+            total_materials = 0
+            self.materials = []
+
+            ci = 0
+            if iterator.initialize():
+                while True:
+                    shape = iterator.get()
+                    if iterator.process_chunk():
+                        has_processed_chunk = True
+                        ci += 1
+                        if ci % 50 == 0:
+                            print("Doing chunk", ci)
+                        chunk = iterator.get_chunk()
+
+                        for colour in chunk.colours:
+                            blender_mat = bpy.data.materials.new(str(total_materials))
+                            blender_mat.diffuse_color = list(colour)
+                            self.materials.append(blender_mat)
+                            total_materials += 1
+                        self.create_object(chunk)
+
+                    if not iterator.next():
+                        if not has_processed_chunk:
+                            # The left over chunk
+                            chunk = iterator.get_chunk()
+                            for colour in chunk.colours:
+                                blender_mat = bpy.data.materials.new(str(total_materials))
+                                blender_mat.diffuse_color = list(colour)
+                                self.materials.append(blender_mat)
+                                total_materials += 1
+                            self.create_object(chunk)
+                        break
+
+            bpy.context.scene.collection.children.link(self.collection)
+            print("Finished", time.time() - start)
+            break
+        return {"FINISHED"}
+
+    def create_object(self, chunk):
+        verts = chunk.get_verts()
+        faces = chunk.get_faces()
+        # materials = chunk.get_materials()
+        # material_ids = chunk.get_material_ids()
+
+        num_vertices = len(verts) // 3
+        if not num_vertices:
+            return
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        # for material in materials:
+        #     mesh.materials.append(self.materials[material])
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        # if material_ids.size > 0:
+        #     mesh.polygons.foreach_set("material_index", material_ids)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Chunk", mesh)
+        obj["guids"] = list(chunk.guids)
+        obj["guid_ids"] = list(chunk.guid_ids)
+
+        self.collection.objects.link(obj)
+
+
+class qwerqwer(bpy.types.Operator):
+    bl_idname = "bim.qwerqwer"
+    bl_label = "Load IFC Python chunking (no materials)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import ifcpatch
+        import multiprocessing
+        import ifcopenshell.geom
+
+        start = time.time()
+
+        self.filepath = "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+        self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
+        self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
+        print("doing", self.filepath)
+
+        self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
+        self.file = ifcopenshell.open(self.filepath)
+        # self.file = ifcopenshell.open('/home/dion/test.ifc')
+        # self.file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
+        # self.file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
+        print("Finished opening")
+        start = time.time()
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.process_context_filter()
+
+        self.elements = set(self.file.by_type("IfcElement"))
+        if self.file.schema in ("IFC2X3", "IFC4"):
+            self.elements |= set(self.file.by_type("IfcProxy"))
+        self.elements |= set(self.file.by_type("IfcSite"))
+        self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        self.elements = list(self.elements)
+
+        for settings in ifc_importer.context_settings:
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, multiprocessing.cpu_count(), include=self.elements
+            )
+            self.meshes = {}
+            self.blender_mats = {}
+
+            total_materials = 0
+            self.materials = []
+
+            chunked_verts = []
+            chunked_faces = []
+            chunk_size = 10000
+            r4 = np.array([[0,0,0,1]])
+            offset = 0
+
+            ci = 0
+            if iterator.initialize():
+                while True:
+                    shape = iterator.get()
+
+                    has_processed_chunk = False
+
+                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 3))
+                    M4 = np.concatenate((M4.T, r4))
+                    vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
+                    vs = np.hstack((vs, np.ones((len(vs), 1))))
+                    vs = (np.asmatrix(M4) * np.asmatrix(vs).T).T.A
+                    vs = vs[:, :3].flatten()
+                    fs = np.frombuffer(shape.geometry.faces_buffer, dtype=np.int32)
+                    chunked_verts.append(vs)
+                    chunked_faces.append(fs + offset)
+                    offset += len(vs) // 3
+
+                    if offset > chunk_size:
+                        has_processed_chunk = True
+                        self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces))
+                        chunked_verts = []
+                        chunked_faces = []
+                        offset = 0
+                        pass
+
+                    if not iterator.next():
+                        if not has_processed_chunk:
+                            # The left over chunk
+                            self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces))
+                        break
+
+            bpy.context.scene.collection.children.link(self.collection)
+            print("Finished", time.time() - start)
+            break
+        return {"FINISHED"}
+
+    def create_object(self, verts, faces):
+        num_vertices = len(verts) // 3
+        if not num_vertices:
+            return
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Chunk", mesh)
+
+        self.collection.objects.link(obj)
