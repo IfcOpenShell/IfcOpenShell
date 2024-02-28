@@ -38,7 +38,11 @@ class TestUnassignRepresentationStyles(test.bootstrap.IFC4):
         )
         style2 = self.file.createIfcSurfaceStyle()
         ifcopenshell.api.run(
-            "style.assign_representation_styles", self.file, styles=[style2], shape_representation=representation
+            "style.assign_representation_styles",
+            self.file,
+            styles=[style2],
+            shape_representation=representation,
+            replace_previous_same_type_style=False,
         )
         assert item.StyledByItem[0].Styles == (style, style2)
 
@@ -81,6 +85,7 @@ class TestUnassignRepresentationStyles(test.bootstrap.IFC4):
             styles=[style2],
             shape_representation=representation,
             should_use_presentation_style_assignment=True,
+            replace_previous_same_type_style=False,
         )
         assert style_assignment.Styles == (style, style2)
 
