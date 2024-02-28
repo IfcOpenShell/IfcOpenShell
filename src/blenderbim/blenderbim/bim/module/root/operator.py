@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+import ifcopenshell.util.type
 import blenderbim.bim.handler
 import blenderbim.core.geometry
 import blenderbim.core.material
@@ -103,33 +104,68 @@ class ReassignClass(bpy.types.Operator):
         predefined_type = context.scene.BIMRootProperties.ifc_predefined_type
         if predefined_type == "USERDEFINED":
             predefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
-        reassigned_elements = set()
+
+        # NOTE: root.reassign_class
+        # automatically will reassign class for other occurrences of the type
+        # so we need to run it only for the types or non-typed elements
+        elements_to_reassign = set()
+        # need to update blender object name
+        # for all elements that were changed in the process
+        elements_to_update = set()
         for obj in objects:
-            product = ifcopenshell.api.run(
+            obj.BIMObjectProperties.is_reassigning_class = False
+            element = tool.Ifc.get_entity(obj)
+            if element.is_a("IfcTypeObject"):
+                elements_to_reassign.add(element)
+                elements_to_update.update(ifcopenshell.util.element.get_types(element))
+                continue
+
+            # check if element is typed
+            element_type = ifcopenshell.util.element.get_type(element)
+            if element_type:
+                elements_to_reassign.add(element_type)
+                elements_to_update.update(ifcopenshell.util.element.get_types(element_type))
+                continue
+
+            # non-typed element
+            elements_to_reassign.add(element)
+
+        # store elements to objects to update later as elements will get invalid
+        # after class reassignment
+        elements_to_update = elements_to_update | elements_to_reassign
+        objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
+
+        base_class = context.scene.BIMRootProperties.ifc_class
+        if context.scene.BIMRootProperties.ifc_product == "IfcElementType":
+            type_class = base_class
+            occurrence_classes = ifcopenshell.util.type.get_applicable_entities(type_class)
+            occurrence_class = None if len(occurrence_classes) == 0 else occurrence_classes[0]
+        else:
+            occurrence_class = base_class
+            type_classes = ifcopenshell.util.type.get_applicable_types(occurrence_class)
+            type_class = None if len(type_classes) == 0 else type_classes[0]
+
+        reassigned_elements = set()
+        for element in elements_to_reassign:
+            ifc_class = type_class if element.is_a("IfcTypeObject") else occurrence_class
+            if ifc_class is None:
+                self.report(
+                    {"ERROR"},
+                    f"Couldn't find valid class for reassigning element of class {element.is_a()} based on class {base_class}",
+                )
+                return {"CANCELLED"}
+
+            element = ifcopenshell.api.run(
                 "root.reassign_class",
                 self.file,
-                product=tool.Ifc.get_entity(obj),
-                ifc_class=context.scene.BIMRootProperties.ifc_class,
+                product=element,
+                ifc_class=ifc_class,
                 predefined_type=predefined_type,
             )
-            reassigned_elements.add(product)
-            obj.name = tool.Loader.get_name(product)
-            obj.BIMObjectProperties.is_reassigning_class = False
+            reassigned_elements.add(element)
 
-        dependent_elements = set()
-        for reassigned_element in reassigned_elements:
-            if reassigned_element.is_a("IfcTypeObject"):
-                dependent_elements.update(ifcopenshell.util.element.get_types(product))
-            else:
-                element_type = ifcopenshell.util.element.get_type(product)
-                if element_type:
-                    dependent_elements.add(element_type)
-                    dependent_elements.update(ifcopenshell.util.element.get_types(element_type))
-
-        for dependent_element in dependent_elements:
-            obj = tool.Ifc.get_object(dependent_element)
-            if obj:
-                obj.name = tool.Loader.get_name(dependent_element)
+        for obj in objects_to_update:
+            obj.name = tool.Loader.get_name(tool.Ifc.get_entity(obj))
         return {"FINISHED"}
 
 
