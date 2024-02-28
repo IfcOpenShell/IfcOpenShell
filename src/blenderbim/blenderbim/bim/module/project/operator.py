@@ -2366,8 +2366,7 @@ class qwerqwer(bpy.types.Operator):
                 settings, self.file, multiprocessing.cpu_count(), include=self.elements
             )
 
-            default_mat = bpy.data.materials.new("Default")
-            default_mat.diffuse_color = (1, 1, 1, 1)
+            default_mat = np.array([[1, 1, 1, 1]], dtype=np.float32)
 
             self.meshes = {}
             blender_mats = {}
@@ -2379,6 +2378,7 @@ class qwerqwer(bpy.types.Operator):
             chunked_faces = []
             chunked_materials = []
             chunked_material_ids = []
+            material_offset = 0
             max_slot_index = 0
             chunk_size = 10000
             r4 = np.array([[0,0,0,1]])
@@ -2389,57 +2389,11 @@ class qwerqwer(bpy.types.Operator):
                 while True:
                     shape = iterator.get()
 
-                    materials = shape.geometry.materials
-                    material_ids = shape.geometry.material_ids
-
-                    material_to_slot = {}
-
-                    for i, material in enumerate(materials):
-                        alpha = 1.0
-                        if material.has_transparency and material.transparency > 0:
-                            alpha = 1.0 - material.transparency
-                        diffuse = material.diffuse + (alpha,)
-                        material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
-                        blender_mat = blender_mats.get(material_name, None)
-                        if not blender_mat:
-                            blender_mat = bpy.data.materials.new(material_name)
-                            blender_mat.diffuse_color = diffuse
-                            blender_mats[material_name] = blender_mat
-                        try:
-                            slot_index = chunked_materials.index(blender_mat)
-                        except ValueError:
-                            chunked_materials.append(blender_mat)
-                            slot_index = max_slot_index
-                            max_slot_index += 1
-                        material_to_slot[i] = slot_index
-
-                    if not materials:
-                        try:
-                            slot_index = chunked_materials.index(default_mat)
-                        except ValueError:
-                            chunked_materials.append(default_mat)
-                            slot_index = max_slot_index
-                            max_slot_index += 1
-                        material_to_slot[-1] = slot_index
-
-
-                    # Numpy alternative
-                    """
-                    # Convert material_to_slot dictionary to a NumPy array
-                    max_material_id = max(material_to_slot.keys())
-                    material_to_slot_array = np.zeros(max_material_id + 1, dtype=int)
-                    for material_id, slot in material_to_slot.items():
-                        material_to_slot_array[material_id] = slot
-                    
-                    # Efficiently map material_ids to slots using NumPy
-                    material_ids = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)  # Ensure the dtype matches
-                    mapped_material_ids = material_to_slot_array[material_ids]
-                    
-                    # Extend the chunked_material_ids list
-                    chunked_material_ids.extend(mapped_material_ids)
-                    """
-
-                    chunked_material_ids.extend([material_to_slot[i] for i in material_ids])
+                    ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
+                    mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
+                    chunked_materials.append(ms)
+                    chunked_material_ids.append(mi + material_offset + 1)
+                    material_offset += len(ms)
 
                     has_processed_chunk = False
 
@@ -2456,21 +2410,51 @@ class qwerqwer(bpy.types.Operator):
 
                     if offset > chunk_size:
                         has_processed_chunk = True
-                        #self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), chunked_materials, np.concatenate(chunked_material_ids))
-                        self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), chunked_materials, chunked_material_ids)
+
+                        mats = np.concatenate(chunked_materials)
+                        midx = np.concatenate(chunked_material_ids)
+                        mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                        midx = mapping[midx]
+
+                        mat_results = []
+                        for mat in mats:
+                            mat = tuple(mat)
+                            blender_mat = blender_mats.get(mat, None)
+                            if not blender_mat:
+                                blender_mat = bpy.data.materials.new("Chunk")
+                                blender_mat.diffuse_color = mat
+                                blender_mats[mat] = blender_mat
+                            mat_results.append(blender_mat)
+
+                        self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx)
                         chunked_verts = []
                         chunked_faces = []
                         chunked_materials = []
                         chunked_material_ids = []
+                        material_offset = 0
                         max_slot_index = 0
                         offset = 0
                         pass
 
                     if not iterator.next():
                         if not has_processed_chunk:
+                            mats = np.concatenate(chunked_materials)
+                            midx = np.concatenate(chunked_material_ids)
+                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                            midx = mapping[midx]
+
+                            mat_results = []
+                            for mat in mats:
+                                mat = tuple(mat)
+                                blender_mat = blender_mats.get(mat, None)
+                                if not blender_mat:
+                                    blender_mat = bpy.data.materials.new("Chunk")
+                                    blender_mat.diffuse_color = mat
+                                    blender_mats[mat] = blender_mat
+                                mat_results.append(blender_mat)
+
                             # The left over chunk
-                            # self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), chunked_materials, np.concatenate(chunked_material_ids))
-                            self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), chunked_materials, chunked_material_ids)
+                            self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx)
                         break
 
             bpy.context.scene.collection.children.link(self.collection)

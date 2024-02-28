@@ -55,6 +55,7 @@ classes = (
     operator.aaa,
     operator.asdfasdf,
     operator.qwerqwer,
+    operator.qwerqwer2,
     operator.LoadLinkedProject,
     operator.QueryLinkedElement,
     operator.EnableCulling,
