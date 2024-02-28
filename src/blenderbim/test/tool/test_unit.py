@@ -154,7 +154,7 @@ class TestGetSceneUnitSIPrefix:
 
 class TestImportUnitAttributes(NewFile):
     def test_importing_derived_units(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         unit = ifc.createIfcDerivedUnit()
         unit.UnitType = "ANGULARVELOCITYUNIT"
         unit.UserDefinedType = "UserDefinedType"
@@ -164,7 +164,7 @@ class TestImportUnitAttributes(NewFile):
         assert props.unit_attributes.get("UserDefinedType").string_value == "UserDefinedType"
 
     def test_importing_monetary_units(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         unit = ifc.createIfcMonetaryUnit()
         unit.Currency = "Currency"
         subject.import_unit_attributes(unit)
@@ -172,7 +172,7 @@ class TestImportUnitAttributes(NewFile):
         assert props.unit_attributes.get("Currency").string_value == "Currency"
 
     def test_importing_monetary_units_ifc2x3(self):
-        ifc = ifcopenshell.file(schema="IFC2X3")
+        tool.Ifc.set(ifc := ifcopenshell.file(schema="IFC2X3"))
         unit = ifc.createIfcMonetaryUnit()
         unit.Currency = "USD"
         subject.import_unit_attributes(unit)
