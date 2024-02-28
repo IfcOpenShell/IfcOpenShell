@@ -75,7 +75,8 @@ class Usecase:
                     if enumeration and self.file.get_total_inverses(enumeration) == 1:
                         self.file.remove(enumeration)
                 self.file.remove(prop)
-            history = self.settings["pset"].OwnerHistory
+            # IfcMaterialProperties and IfcProfileProperties don't have OwnerHistory
+            history = getattr(self.settings["pset"], "OwnerHistory", None)
             self.file.remove(self.settings["pset"])
             if history:
                 ifcopenshell.util.element.remove_deep2(self.file, history)
