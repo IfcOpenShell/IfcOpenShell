@@ -392,7 +392,7 @@ class TestGetUVMaps(NewFile):
 
 class TestImportSurfaceAttributes(NewFile):
     def test_run(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         style = ifc.createIfcSurfaceStyle("Name", "BOTH")
         obj = bpy.data.materials.new("Material")
         subject.import_surface_attributes(style, obj)
@@ -400,7 +400,7 @@ class TestImportSurfaceAttributes(NewFile):
         assert obj.BIMStyleProperties.attributes.get("Side").enum_value == "BOTH"
 
     def test_importing_surface_attributes_twice(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         style = ifc.createIfcSurfaceStyle("Name", "BOTH")
         obj = bpy.data.materials.new("Material")
         subject.import_surface_attributes(style, obj)

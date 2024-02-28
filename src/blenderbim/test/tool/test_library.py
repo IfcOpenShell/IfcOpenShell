@@ -75,7 +75,7 @@ class TestGetActiveReference(NewFile):
 
 class TestImportLibraryAttributes(NewFile):
     def test_run(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         library = ifc.createIfcLibraryInformation("Name", "Version", None, "VersionDate", "Location", "Description")
         subject.import_library_attributes(library)
         props = bpy.context.scene.BIMLibraryProperties
@@ -88,7 +88,7 @@ class TestImportLibraryAttributes(NewFile):
 
 class TestImportReferenceAttributes(NewFile):
     def test_run(self):
-        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc := ifcopenshell.file())
         reference = ifc.createIfcLibraryReference("Location", "Identification", "Name", "Description", "Language")
         subject.import_reference_attributes(reference)
         props = bpy.context.scene.BIMLibraryProperties
