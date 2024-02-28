@@ -62,7 +62,7 @@
 template <typename T>
 std::pair<char const*, size_t> vector_to_buffer(const T& t) {
     using V = typename std::remove_reference<decltype(t)>::type;
-    return { reinterpret_cast<const char*>(t.data()), t.size() * sizeof(V::value_type) };
+    return { reinterpret_cast<const char*>(t.data()), t.size() * sizeof(typename V::value_type) };
 }
 %}
 
@@ -267,6 +267,29 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return vector_to_buffer(self->normals());
 	}
 
+    PyObject* colors_buffer() const {
+        std::vector<double> clrs;
+        clrs.reserve(self->materials().size() * 4);
+        for (auto& m : self->materials()) {
+            if (m.hasDiffuse()) {
+                clrs.push_back(m.diffuse()[0]);
+                clrs.push_back(m.diffuse()[1]);
+                clrs.push_back(m.diffuse()[2]);
+            } else {
+                clrs.push_back(0.);
+                clrs.push_back(0.);
+                clrs.push_back(0.);
+            }
+            if (m.hasTransparency()) {
+                clrs.push_back(1. - m.transparency());
+            } else {
+                clrs.push_back(1.);
+            }
+        }
+        auto p = vector_to_buffer(clrs);
+        return PyBytes_FromStringAndSize(p.first, p.second);
+    }
+
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
@@ -284,7 +307,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
         material_ids_buffer = property(material_ids_buffer)
         item_ids_buffer = property(item_ids_buffer)
         verts_buffer = property(verts_buffer)
-        normals = property(normals)
+        normals_buffer = property(normals_buffer)
+        colors_buffer = property(colors_buffer)
 	%}
 };
 
