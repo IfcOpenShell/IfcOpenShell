@@ -169,3 +169,31 @@ class TestSetObjectName(NewFile):
         element.Name = "Foobar"
         subject.set_object_name(obj, element)
         assert obj.name == "IfcWall/Foobar"
+
+
+class TestReassignClass(NewFile):
+    def test_run(self):
+        bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Library.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+        relating_type_id = ifc_file.by_type("IfcSlabType")[0].id()
+        n_wall_types = len(ifc_file.by_type("IfcWallType"))
+        n_slab_types = len(ifc_file.by_type("IfcSlabType"))
+
+        # create 3 slabs
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+
+        slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
+        assert len(slabs) == 3
+        tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
+        context.scene.BIMRootProperties.ifc_product = "IfcElement"
+        context.scene.BIMRootProperties.ifc_class = "IfcWall"
+        bpy.ops.bim.reassign_class()
+
+        assert len(ifc_file.by_type("IfcWall")) == 3
+        assert len(ifc_file.by_type("IfcSlab")) == 0
+        assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
+        assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
