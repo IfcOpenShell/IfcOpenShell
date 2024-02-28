@@ -19,6 +19,7 @@
 import os
 import json
 import ifcopenshell.util.schema
+from typing import List
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -51,11 +52,11 @@ for schema in mapped_schemas:
                 type_to_entity_map[schema][element_type] = [e for e in elements if guessed_element in e]
 
 
-def get_applicable_types(ifc_class, schema="IFC4"):
+def get_applicable_types(ifc_class: str, schema="IFC4") -> List[str]:
     schema = ifcopenshell.util.schema.get_fallback_schema(schema.upper())
     return entity_to_type_map[schema].get(ifc_class, [])
 
 
-def get_applicable_entities(ifc_type_class, schema="IFC4"):
+def get_applicable_entities(ifc_type_class: str, schema="IFC4") -> List[str]:
     schema = ifcopenshell.util.schema.get_fallback_schema(schema.upper())
     return type_to_entity_map[schema].get(ifc_type_class, [])
