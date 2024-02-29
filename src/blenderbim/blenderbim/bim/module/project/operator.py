@@ -21,6 +21,8 @@ import bpy
 import time
 import logging
 import tempfile
+import subprocess
+import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.selector
@@ -36,6 +38,7 @@ from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from pathlib import Path
+from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from blenderbim.bim.module.project.data import LinksData
 
@@ -812,16 +815,17 @@ class ToggleFilterCategories(bpy.types.Operator):
 
 class LinkIfc(bpy.types.Operator):
     bl_idname = "bim.link_ifc"
-    bl_label = "Link Blend/IFC File"
+    bl_label = "Link IFC"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "This will link the Blender file that is synced with the IFC file"
+    bl_description = "Reference in a read-only IFC model in the background"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
-    filter_glob: bpy.props.StringProperty(default="*.blend;*.blend1", options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
     def execute(self, context):
+        start = time.time()
         files = [f.name for f in self.files] if self.files else [self.filepath]
         for filename in files:
             filepath = os.path.join(self.directory, filename)
@@ -833,6 +837,7 @@ class LinkIfc(bpy.types.Operator):
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
             new.name = filepath
             bpy.ops.bim.load_link(filepath=filepath)
+        print(f"Finished linking {len(files)} IFCs", time.time() - start)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -888,6 +893,13 @@ class LoadLink(bpy.types.Operator):
         filepath = self.filepath
         if not os.path.isabs(filepath):
             filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+        if self.filepath.lower().endswith(".blend"):
+            self.link_blend(filepath)
+        elif self.filepath.lower().endswith(".ifc"):
+            self.link_ifc()
+        return {"FINISHED"}
+
+    def link_blend(self, filepath):
         with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
@@ -897,9 +909,36 @@ class LoadLink(bpy.types.Operator):
                 if "IfcProject" not in child.name:
                     continue
                 bpy.data.scenes[0].collection.children.link(child)
-        link = context.scene.BIMProjectProperties.links.get(self.filepath)
+        link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = True
-        return {"FINISHED"}
+
+    def link_ifc(self):
+        blend_filepath = self.filepath + ".cache.blend"
+        h5_filepath = self.filepath + ".cache.h5"
+
+        if not os.path.exists(blend_filepath):
+            code = f"""
+import bpy
+
+def run():
+    bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
+    bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
+
+try:
+    run()
+except Exception as e:
+    import traceback
+    traceback.print_exc()
+    exit(1)
+            """
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
+                temp_file.write(code)
+            run = subprocess.run([bpy.app.binary_path, "-b", "--python", temp_file.name, "--python-exit-code", "1"])
+            if run.returncode == 1:
+                print("An error occurred while processing your IFC.")
+
+        self.link_blend(blend_filepath)
 
 
 class ReloadLink(bpy.types.Operator):
@@ -1131,6 +1170,303 @@ class ImportIFC(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.bim.load_project("INVOKE_DEFAULT")
         return {"FINISHED"}
+
+
+class LoadLinkedProject(bpy.types.Operator):
+    bl_idname = "bim.load_linked_project"
+    bl_label = "Load a project for viewing only."
+    bl_options = {"REGISTER", "UNDO"}
+    filepath: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import ifcpatch
+        import multiprocessing
+        import ifcopenshell.geom
+
+        start = time.time()
+
+        self.filepath = self.filepath or "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+        print("Processing", self.filepath)
+
+        self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
+        self.file = ifcopenshell.open(self.filepath)
+        print("Finished opening")
+
+        self.db_filepath = self.filepath + ".cache.sqlite"
+        db = ifcpatch.execute(
+            {"input": self.filepath, "file": self.file, "recipe": "ExtractPropertiesToSQLite", "arguments": []}
+        )
+        ifcpatch.write(db, self.db_filepath)
+        print("Finished writing property database")
+
+        logger = logging.getLogger("ImportIFC")
+        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
+        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
+        ifc_importer.file = self.file
+        ifc_importer.process_context_filter()
+
+        self.elements = set(self.file.by_type("IfcElement"))
+        if self.file.schema in ("IFC2X3", "IFC4"):
+            self.elements |= set(self.file.by_type("IfcProxy"))
+        self.elements |= set(self.file.by_type("IfcSite"))
+        self.elements -= set(self.file.by_type("IfcFeatureElement"))
+        self.elements = list(self.elements)
+
+        for settings in ifc_importer.context_settings:
+            iterator = ifcopenshell.geom.iterator(
+                settings, self.file, multiprocessing.cpu_count(), include=self.elements
+            )
+            self.meshes = {}
+            self.blender_mats = {}
+            blender_mats = {}
+
+            default_mat = np.array([[1, 1, 1, 1]], dtype=np.float32)
+            chunked_guids = []
+            chunked_guid_ids = []
+            chunked_verts = []
+            chunked_faces = []
+            chunked_materials = []
+            chunked_material_ids = []
+            material_offset = 0
+            max_slot_index = 0
+            chunk_size = 10000
+            r4 = np.array([[0, 0, 0, 1]])
+            offset = 0
+
+            ci = 0
+            if iterator.initialize():
+                while True:
+                    shape = iterator.get()
+                    if len(shape.geometry.faces) > 1000:  # 333 tris
+                        self.process_occurrence(shape)
+                        if not iterator.next():
+                            mats = np.concatenate(chunked_materials)
+                            midx = np.concatenate(chunked_material_ids)
+                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                            midx = mapping[midx]
+
+                            mat_results = []
+                            for mat in mats:
+                                mat = tuple(mat)
+                                blender_mat = blender_mats.get(mat, None)
+                                if not blender_mat:
+                                    blender_mat = bpy.data.materials.new("Chunk")
+                                    blender_mat.diffuse_color = mat
+                                    blender_mats[mat] = blender_mat
+                                mat_results.append(blender_mat)
+
+                            # The left over chunk
+                            self.create_object(
+                                np.concatenate(chunked_verts),
+                                np.concatenate(chunked_faces),
+                                mat_results,
+                                midx,
+                                chunked_guids,
+                                chunked_guid_ids,
+                            )
+                            break
+                        continue
+
+                    ci += 1
+                    if ci % 50 == 0:
+                        print("Doing chunk", ci)
+
+                    has_processed_chunk = False
+
+                    ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
+                    mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
+                    chunked_materials.append(ms)
+                    chunked_material_ids.append(mi + material_offset + 1)
+                    material_offset += len(ms)
+
+                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 3))
+                    M4 = np.concatenate((M4.T, r4))
+                    vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
+                    vs = np.hstack((vs, np.ones((len(vs), 1))))
+                    vs = (np.asmatrix(M4) * np.asmatrix(vs).T).T.A
+                    vs = vs[:, :3].flatten()
+                    fs = np.frombuffer(shape.geometry.faces_buffer, dtype=np.int32)
+                    chunked_verts.append(vs)
+                    chunked_faces.append(fs + offset)
+                    offset += len(vs) // 3
+
+                    chunked_guids.append(shape.guid)
+                    if chunked_guid_ids:
+                        chunked_guid_ids.append((len(fs) // 3) + chunked_guid_ids[-1])
+                    else:
+                        chunked_guid_ids.append(len(fs) // 3)
+
+                    if offset > chunk_size:
+                        has_processed_chunk = True
+
+                        mats = np.concatenate(chunked_materials)
+                        midx = np.concatenate(chunked_material_ids)
+                        mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                        midx = mapping[midx]
+
+                        mat_results = []
+                        for mat in mats:
+                            mat = tuple(mat)
+                            blender_mat = blender_mats.get(mat, None)
+                            if not blender_mat:
+                                blender_mat = bpy.data.materials.new("Chunk")
+                                blender_mat.diffuse_color = mat
+                                blender_mats[mat] = blender_mat
+                            mat_results.append(blender_mat)
+
+                        self.create_object(
+                            np.concatenate(chunked_verts),
+                            np.concatenate(chunked_faces),
+                            mat_results,
+                            midx,
+                            chunked_guids,
+                            chunked_guid_ids,
+                        )
+                        chunked_guids = []
+                        chunked_guid_ids = []
+                        chunked_verts = []
+                        chunked_faces = []
+                        chunked_materials = []
+                        chunked_material_ids = []
+                        material_offset = 0
+                        max_slot_index = 0
+                        offset = 0
+
+                    if not iterator.next():
+                        if not has_processed_chunk:
+                            mats = np.concatenate(chunked_materials)
+                            midx = np.concatenate(chunked_material_ids)
+                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                            midx = mapping[midx]
+
+                            mat_results = []
+                            for mat in mats:
+                                mat = tuple(mat)
+                                blender_mat = blender_mats.get(mat, None)
+                                if not blender_mat:
+                                    blender_mat = bpy.data.materials.new("Chunk")
+                                    blender_mat.diffuse_color = mat
+                                    blender_mats[mat] = blender_mat
+                                mat_results.append(blender_mat)
+
+                            # The left over chunk
+                            self.create_object(
+                                np.concatenate(chunked_verts),
+                                np.concatenate(chunked_faces),
+                                mat_results,
+                                midx,
+                                chunked_guids,
+                                chunked_guid_ids,
+                            )
+                        break
+
+            bpy.context.scene.collection.children.link(self.collection)
+            print("Finished", time.time() - start)
+            break
+        return {"FINISHED"}
+
+    def process_occurrence(self, shape):
+        element = self.file.by_id(shape.id)
+        matrix = shape.transformation.matrix.data
+        faces = shape.geometry.faces
+        verts = shape.geometry.verts
+        materials = shape.geometry.materials
+        material_ids = shape.geometry.material_ids
+
+        m = shape.transformation.matrix.data
+        mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+
+        mesh = self.meshes.get(shape.geometry.id, None)
+        if not mesh:
+            mesh = bpy.data.meshes.new("Mesh")
+
+            material_to_slot = {}
+            max_slot_index = 0
+
+            for i, material in enumerate(materials):
+                alpha = 1.0
+                if material.has_transparency and material.transparency > 0:
+                    alpha = 1.0 - material.transparency
+                diffuse = material.diffuse + (alpha,)
+                material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
+                blender_mat = self.blender_mats.get(material_name, None)
+                if not blender_mat:
+                    blender_mat = bpy.data.materials.new(material_name)
+                    blender_mat.diffuse_color = diffuse
+                    self.blender_mats[material_name] = blender_mat
+                slot_index = mesh.materials.find(material.name)
+                if slot_index == -1:
+                    mesh.materials.append(blender_mat)
+                    slot_index = max_slot_index
+                    max_slot_index += 1
+                material_to_slot[i] = slot_index
+
+            material_index = [(material_to_slot[i] if i != -1 else 0) for i in material_ids]
+
+            num_vertices = len(verts) // 3
+            total_faces = len(faces)
+            loop_start = range(0, total_faces, 3)
+            num_loops = total_faces // 3
+            loop_total = [3] * num_loops
+            num_vertex_indices = len(faces)
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", faces)
+            mesh.polygons.add(num_loops)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            mesh.polygons.foreach_set("material_index", material_index)
+            mesh.update()
+
+            self.meshes[shape.geometry.id] = mesh
+
+        obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
+        obj.matrix_world = Matrix(mat.tolist())
+
+        obj["guids"] = [shape.guid]
+        obj["guid_ids"] = [len(mesh.polygons)]
+        obj["db"] = self.db_filepath
+
+        self.collection.objects.link(obj)
+
+    def create_object(self, verts, faces, materials, material_ids, guids, guid_ids):
+        num_vertices = len(verts) // 3
+        if not num_vertices:
+            return
+        total_faces = len(faces)
+        loop_start = range(0, total_faces, 3)
+        num_loops = total_faces // 3
+        loop_total = [3] * num_loops
+        num_vertex_indices = len(faces)
+
+        mesh = bpy.data.meshes.new("Mesh")
+
+        for material in materials:
+            mesh.materials.append(material)
+
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts)
+        mesh.loops.add(num_vertex_indices)
+        mesh.loops.foreach_set("vertex_index", faces)
+        mesh.polygons.add(num_loops)
+        mesh.polygons.foreach_set("loop_start", loop_start)
+        mesh.polygons.foreach_set("loop_total", loop_total)
+        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+
+        if material_ids.size > 0:
+            mesh.polygons.foreach_set("material_index", material_ids)
+
+        mesh.update()
+
+        obj = bpy.data.objects.new("Chunk", mesh)
+        obj["guids"] = list(guids)
+        obj["guid_ids"] = list(guid_ids)
+        obj["db"] = self.db_filepath
+
+        self.collection.objects.link(obj)
 
 
 class EnableCulling(bpy.types.Operator):
