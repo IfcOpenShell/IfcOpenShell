@@ -41,6 +41,7 @@ from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from blenderbim.bim.module.project.data import LinksData
+from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 
 
 class NewProject(bpy.types.Operator):
@@ -1700,3 +1701,178 @@ class DisableCulling(bpy.types.Operator):
     def execute(self, context):
         LinksData.enable_culling = False
         return {"FINISHED"}
+
+
+class RefreshClippingPlanes(bpy.types.Operator):
+    bl_idname = "bim.refresh_clipping_planes"
+    bl_label = "Refresh Clipping Planes"
+    bl_options = {"REGISTER"}
+
+    def __init__(self):
+        self.total_planes = 0
+
+    def invoke(self, context, event):
+        context.window_manager.modal_handler_add(self)
+        return {"RUNNING_MODAL"}
+
+    def modal(self, context, event):
+        should_refresh = False
+
+        self.clean_deleted_planes(context)
+
+        for clipping_plane in context.scene.BIMProjectProperties.clipping_planes:
+            if clipping_plane.obj and self.is_moved(clipping_plane.obj):
+                should_refresh = True
+                break
+
+        total_planes = len(context.scene.BIMProjectProperties.clipping_planes)
+        if should_refresh or total_planes != self.total_planes:
+            self.refresh_clipping_planes(context)
+            for clipping_plane in context.scene.BIMProjectProperties.clipping_planes:
+                if clipping_plane.obj:
+                    tool.Geometry.record_object_position(clipping_plane.obj)
+            self.total_planes = total_planes
+        return {"PASS_THROUGH"}
+
+    def clean_deleted_planes(self, context):
+        while True:
+            for i, clipping_plane in enumerate(context.scene.BIMProjectProperties.clipping_planes):
+                if clipping_plane.obj:
+                    try:
+                        clipping_plane.obj.name
+                    except:
+                        context.scene.BIMProjectProperties.clipping_planes.remove(i)
+                        break
+                else:
+                    context.scene.BIMProjectProperties.clipping_planes.remove(i)
+                    break
+            else:
+                break
+
+    def is_moved(self, obj):
+        if not obj.BIMObjectProperties.location_checksum:
+            return True  # Let's be conservative
+        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
+        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
+        loc_real = np.array(obj.matrix_world.translation).flatten()
+        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
+        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
+            return False
+        return True
+
+    def refresh_clipping_planes(self, context):
+        import bmesh
+        from itertools import cycle
+
+        area = next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")
+        region = next(r for r in area.regions if r.type == "WINDOW")
+        data = region.data
+
+        if not len(context.scene.BIMProjectProperties.clipping_planes):
+            data.use_clip_planes = False
+        else:
+            with bpy.context.temp_override(area=area, region=region):
+                bpy.ops.view3d.clip_border()
+
+                clip_planes = []
+                for clipping_plane in bpy.context.scene.BIMProjectProperties.clipping_planes:
+                    obj = clipping_plane.obj
+                    if not obj:
+                        continue
+                    print("doing", obj)
+
+                    bm = bmesh.new()
+                    bm.from_mesh(obj.data)
+
+                    world_matrix = obj.matrix_world
+
+                    bm.faces.ensure_lookup_table()
+                    face = bm.faces[0]
+                    center = world_matrix @ face.calc_center_median()
+                    print("center", center)
+                    normal = world_matrix.to_3x3() @ face.normal * -1
+                    center += normal * -0.01
+                    print("normal", normal)
+                    print("new center", center)
+
+                    normal.normalize()
+                    distance = -center.dot(normal)
+                    clip_plane = (normal.x, normal.y, normal.z, distance)
+                    clip_planes.append(clip_plane)
+                    bm.free()
+
+                clip_planes = cycle(clip_planes)
+                data.clip_planes = [tuple(next(clip_planes)) for i in range(0, 6)]
+        data.update()
+        region.tag_redraw()
+        [a.tag_redraw() for a in bpy.context.screen.areas]
+        return {"FINISHED"}
+
+
+class CreateClippingPlane(bpy.types.Operator):
+    bl_idname = "bim.create_clipping_plane"
+    bl_label = "Create Clipping Plane"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == "VIEW_3D"
+
+    def execute(self, context):
+        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+
+        # Clean up deleted planes
+
+        if len(bpy.context.scene.BIMProjectProperties.clipping_planes) > 5:
+            self.report({"INFO"}, "Maximum of six clipping planes allowed.")
+            return {"FINISHED"}
+
+        for area in bpy.context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        region = context.region
+        rv3d = context.region_data
+        coord = (self.mouse_x, self.mouse_y)
+        origin = region_2d_to_origin_3d(region, rv3d, coord)
+        direction = region_2d_to_vector_3d(region, rv3d, coord)
+        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+        if not hit:
+            self.report({"INFO"}, "No object found.")
+            return {"FINISHED"}
+
+        vertices = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (0.5, 0.5, 0), (-0.5, 0.5, 0)]
+
+        faces = [(0, 1, 2, 3)]
+
+        mesh = bpy.data.meshes.new(name="ClippingPlane")
+        mesh.from_pydata(vertices, [], faces)
+        mesh.update()
+
+        plane_obj = bpy.data.objects.new("ClippingPlane", mesh)
+        bpy.context.collection.objects.link(plane_obj)
+        z_axis = Vector((0, 0, 1))
+        rotation_matrix = z_axis.rotation_difference(normal).to_matrix().to_4x4()
+        plane_obj.matrix_world = rotation_matrix
+        plane_obj.matrix_world.translation = location
+
+        bpy.context.scene.cursor.location = location
+
+        new = bpy.context.scene.BIMProjectProperties.clipping_planes.add()
+        new.obj = plane_obj
+
+        tool.Blender.set_active_object(plane_obj)
+
+        ClippingPlaneDecorator.install(bpy.context)
+        bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+        return {"FINISHED"}
+
+    def ray_cast(self, context, origin, direction):
+        depsgraph = context.evaluated_depsgraph_get()
+        result = context.scene.ray_cast(depsgraph, origin, direction)
+        return result
+
+    def invoke(self, context, event):
+        self.mouse_x = event.mouse_region_x
+        self.mouse_y = event.mouse_region_y
+        return self.execute(context)
