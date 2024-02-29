@@ -576,7 +576,7 @@ class Client:
 
     def get_classes(self, dictionary_uri: str, use_nested_classes: bool = True,
                     class_type: ClassTypes = "Class",
-                    language_code: str = "", version: int = 1) -> DictionaryClassesResponseContractV1:
+                    language_code: str = "", version: int = 1, offset=0, limit=1000) -> DictionaryClassesResponseContractV1:
         """
         Get Dictionary with tree of classes
         This API replaces Domain
@@ -587,6 +587,8 @@ class Client:
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
+            "offset" : offset,
+            "limit" : limit
         }
         return self.get(endpoint, params)
 
