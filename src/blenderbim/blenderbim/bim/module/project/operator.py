@@ -1593,12 +1593,10 @@ class LoadLinkedProject(bpy.types.Operator):
         start = time.time()
 
         self.filepath = self.filepath or "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+        print("Processing", self.filepath)
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
         self.file = ifcopenshell.open(self.filepath)
-        # self.file = ifcopenshell.open('/home/dion/test.ifc')
-        # self.file = ifcopenshell.open('/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc')
-        # self.file = ifcopenshell.open("/home/dion/tmp/petrubug/F-ELECT.ifc")
         print("Finished opening")
 
         self.db_filepath = self.filepath + ".cache.sqlite"
@@ -1627,9 +1625,20 @@ class LoadLinkedProject(bpy.types.Operator):
             )
             self.meshes = {}
             self.blender_mats = {}
+            blender_mats = {}
 
-            total_materials = 0
-            self.materials = []
+            default_mat = np.array([[1, 1, 1, 1]], dtype=np.float32)
+            chunked_guids = []
+            chunked_guid_ids = []
+            chunked_verts = []
+            chunked_faces = []
+            chunked_materials = []
+            chunked_material_ids = []
+            material_offset = 0
+            max_slot_index = 0
+            chunk_size = 10000
+            r4 = np.array([[0, 0, 0, 1]])
+            offset = 0
 
             ci = 0
             if iterator.initialize():
@@ -1638,41 +1647,124 @@ class LoadLinkedProject(bpy.types.Operator):
                     if len(shape.geometry.faces) > 1000:  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
-                            # The left over chunk
-                            chunk = iterator.get_chunk()
-                            for colour in chunk.colours:
-                                blender_mat = bpy.data.materials.new(str(total_materials))
-                                blender_mat.diffuse_color = list(colour)
-                                self.materials.append(blender_mat)
-                                total_materials += 1
-                            self.create_object(chunk)
+                            mats = np.concatenate(chunked_materials)
+                            midx = np.concatenate(chunked_material_ids)
+                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                            midx = mapping[midx]
 
+                            mat_results = []
+                            for mat in mats:
+                                mat = tuple(mat)
+                                blender_mat = blender_mats.get(mat, None)
+                                if not blender_mat:
+                                    blender_mat = bpy.data.materials.new("Chunk")
+                                    blender_mat.diffuse_color = mat
+                                    blender_mats[mat] = blender_mat
+                                mat_results.append(blender_mat)
+
+                            # The left over chunk
+                            self.create_object(
+                                np.concatenate(chunked_verts),
+                                np.concatenate(chunked_faces),
+                                mat_results,
+                                midx,
+                                chunked_guids,
+                                chunked_guid_ids,
+                            )
                             break
                         continue
-                    if iterator.process_chunk():
-                        has_processed_chunk = True
-                        ci += 1
-                        if ci % 50 == 0:
-                            print("Doing chunk", ci)
-                        chunk = iterator.get_chunk()
 
-                        for colour in chunk.colours:
-                            blender_mat = bpy.data.materials.new(str(total_materials))
-                            blender_mat.diffuse_color = list(colour)
-                            self.materials.append(blender_mat)
-                            total_materials += 1
-                        self.create_object(chunk)
+                    ci += 1
+                    if ci % 50 == 0:
+                        print("Doing chunk", ci)
+
+                    has_processed_chunk = False
+
+                    ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
+                    mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
+                    chunked_materials.append(ms)
+                    chunked_material_ids.append(mi + material_offset + 1)
+                    material_offset += len(ms)
+
+                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 3))
+                    M4 = np.concatenate((M4.T, r4))
+                    vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
+                    vs = np.hstack((vs, np.ones((len(vs), 1))))
+                    vs = (np.asmatrix(M4) * np.asmatrix(vs).T).T.A
+                    vs = vs[:, :3].flatten()
+                    fs = np.frombuffer(shape.geometry.faces_buffer, dtype=np.int32)
+                    chunked_verts.append(vs)
+                    chunked_faces.append(fs + offset)
+                    offset += len(vs) // 3
+
+                    chunked_guids.append(shape.guid)
+                    if chunked_guid_ids:
+                        chunked_guid_ids.append((len(fs) // 3) + chunked_guid_ids[-1])
+                    else:
+                        chunked_guid_ids.append(len(fs) // 3)
+
+                    if offset > chunk_size:
+                        has_processed_chunk = True
+
+                        mats = np.concatenate(chunked_materials)
+                        midx = np.concatenate(chunked_material_ids)
+                        mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                        midx = mapping[midx]
+
+                        mat_results = []
+                        for mat in mats:
+                            mat = tuple(mat)
+                            blender_mat = blender_mats.get(mat, None)
+                            if not blender_mat:
+                                blender_mat = bpy.data.materials.new("Chunk")
+                                blender_mat.diffuse_color = mat
+                                blender_mats[mat] = blender_mat
+                            mat_results.append(blender_mat)
+
+                        self.create_object(
+                            np.concatenate(chunked_verts),
+                            np.concatenate(chunked_faces),
+                            mat_results,
+                            midx,
+                            chunked_guids,
+                            chunked_guid_ids,
+                        )
+                        chunked_guids = []
+                        chunked_guid_ids = []
+                        chunked_verts = []
+                        chunked_faces = []
+                        chunked_materials = []
+                        chunked_material_ids = []
+                        material_offset = 0
+                        max_slot_index = 0
+                        offset = 0
 
                     if not iterator.next():
                         if not has_processed_chunk:
+                            mats = np.concatenate(chunked_materials)
+                            midx = np.concatenate(chunked_material_ids)
+                            mats, mapping = np.unique(mats, axis=0, return_inverse=True)
+                            midx = mapping[midx]
+
+                            mat_results = []
+                            for mat in mats:
+                                mat = tuple(mat)
+                                blender_mat = blender_mats.get(mat, None)
+                                if not blender_mat:
+                                    blender_mat = bpy.data.materials.new("Chunk")
+                                    blender_mat.diffuse_color = mat
+                                    blender_mats[mat] = blender_mat
+                                mat_results.append(blender_mat)
+
                             # The left over chunk
-                            chunk = iterator.get_chunk()
-                            for colour in chunk.colours:
-                                blender_mat = bpy.data.materials.new(str(total_materials))
-                                blender_mat.diffuse_color = list(colour)
-                                self.materials.append(blender_mat)
-                                total_materials += 1
-                            self.create_object(chunk)
+                            self.create_object(
+                                np.concatenate(chunked_verts),
+                                np.concatenate(chunked_faces),
+                                mat_results,
+                                midx,
+                                chunked_guids,
+                                chunked_guid_ids,
+                            )
                         break
 
             bpy.context.scene.collection.children.link(self.collection)
@@ -1747,12 +1839,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection.objects.link(obj)
 
-    def create_object(self, chunk):
-        verts = chunk.get_verts()
-        faces = chunk.get_faces()
-        materials = chunk.get_materials()
-        material_ids = chunk.get_material_ids()
-
+    def create_object(self, verts, faces, materials, material_ids, guids, guid_ids):
         num_vertices = len(verts) // 3
         if not num_vertices:
             return
@@ -1765,7 +1852,7 @@ class LoadLinkedProject(bpy.types.Operator):
         mesh = bpy.data.meshes.new("Mesh")
 
         for material in materials:
-            mesh.materials.append(self.materials[material])
+            mesh.materials.append(material)
 
         mesh.vertices.add(num_vertices)
         mesh.vertices.foreach_set("co", verts)
@@ -1782,8 +1869,8 @@ class LoadLinkedProject(bpy.types.Operator):
         mesh.update()
 
         obj = bpy.data.objects.new("Chunk", mesh)
-        obj["guids"] = list(chunk.guids)
-        obj["guid_ids"] = list(chunk.guid_ids)
+        obj["guids"] = list(guids)
+        obj["guid_ids"] = list(guid_ids)
         obj["db"] = self.db_filepath
 
         self.collection.objects.link(obj)
@@ -2098,7 +2185,7 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     obj = clipping_plane.obj
                     if not obj:
                         continue
-                    print('doing', obj)
+                    print("doing", obj)
 
                     bm = bmesh.new()
                     bm.from_mesh(obj.data)
@@ -2108,11 +2195,11 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     bm.faces.ensure_lookup_table()
                     face = bm.faces[0]
                     center = world_matrix @ face.calc_center_median()
-                    print('center', center)
+                    print("center", center)
                     normal = world_matrix.to_3x3() @ face.normal * -1
                     center += normal * -0.01
-                    print('normal', normal)
-                    print('new center', center)
+                    print("normal", normal)
+                    print("new center", center)
 
                     normal.normalize()
                     distance = -center.dot(normal)
@@ -2212,7 +2299,7 @@ class asdfasdf(bpy.types.Operator):
         start = time.time()
 
         # self.filepath = "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
-        self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
+        self.filepath = "/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc"
         # self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
         print("doing", self.filepath)
 
@@ -2336,8 +2423,8 @@ class qwerqwer(bpy.types.Operator):
         start = time.time()
 
         # self.filepath = "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
-        self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
-        # self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
+        # self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
+        self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
         print("doing", self.filepath)
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
@@ -2371,9 +2458,6 @@ class qwerqwer(bpy.types.Operator):
             self.meshes = {}
             blender_mats = {}
 
-            total_materials = 0
-            self.materials = []
-
             chunked_verts = []
             chunked_faces = []
             chunked_materials = []
@@ -2381,7 +2465,7 @@ class qwerqwer(bpy.types.Operator):
             material_offset = 0
             max_slot_index = 0
             chunk_size = 10000
-            r4 = np.array([[0,0,0,1]])
+            r4 = np.array([[0, 0, 0, 1]])
             offset = 0
 
             ci = 0
@@ -2389,13 +2473,13 @@ class qwerqwer(bpy.types.Operator):
                 while True:
                     shape = iterator.get()
 
+                    has_processed_chunk = False
+
                     ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
                     mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
                     chunked_materials.append(ms)
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
-
-                    has_processed_chunk = False
 
                     M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 3))
                     M4 = np.concatenate((M4.T, r4))
@@ -2426,7 +2510,9 @@ class qwerqwer(bpy.types.Operator):
                                 blender_mats[mat] = blender_mat
                             mat_results.append(blender_mat)
 
-                        self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx)
+                        self.create_object(
+                            np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx
+                        )
                         chunked_verts = []
                         chunked_faces = []
                         chunked_materials = []
@@ -2454,7 +2540,9 @@ class qwerqwer(bpy.types.Operator):
                                 mat_results.append(blender_mat)
 
                             # The left over chunk
-                            self.create_object(np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx)
+                            self.create_object(
+                                np.concatenate(chunked_verts), np.concatenate(chunked_faces), mat_results, midx
+                            )
                         break
 
             bpy.context.scene.collection.children.link(self.collection)
@@ -2509,7 +2597,7 @@ class qwerqwer2(bpy.types.Operator):
         start = time.time()
 
         # self.filepath = "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
-        self.filepath = '/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc'
+        self.filepath = "/home/dion/drive/ifcs/TXG_sample_project-fixed-IFC4.ifc"
         # self.filepath = "/home/dion/tmp/petrubug/F-ELECT.ifc"
         print("doing", self.filepath)
 
@@ -2554,7 +2642,7 @@ class qwerqwer2(bpy.types.Operator):
             chunked_material_ids = []
             max_slot_index = 0
             chunk_size = 10000
-            r4 = np.array([[0,0,0,1]])
+            r4 = np.array([[0, 0, 0, 1]])
             offset = 0
 
             ci = 0
@@ -2596,7 +2684,6 @@ class qwerqwer2(bpy.types.Operator):
                             max_slot_index += 1
                         material_to_slot[-1] = slot_index
 
-
                     # Numpy alternative
                     """
                     # Convert material_to_slot dictionary to a NumPy array
@@ -2604,11 +2691,11 @@ class qwerqwer2(bpy.types.Operator):
                     material_to_slot_array = np.zeros(max_material_id + 1, dtype=int)
                     for material_id, slot in material_to_slot.items():
                         material_to_slot_array[material_id] = slot
-                    
+
                     # Efficiently map material_ids to slots using NumPy
                     material_ids = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)  # Ensure the dtype matches
                     mapped_material_ids = material_to_slot_array[material_ids]
-                    
+
                     # Extend the chunked_material_ids list
                     chunked_material_ids.extend(mapped_material_ids)
                     """
@@ -2659,7 +2746,6 @@ class qwerqwer2(bpy.types.Operator):
         transformed_vertices = np.dot(vertices, matrix.T)
         # Discard the homogeneous coordinate and flatten the array
         return transformed_vertices[:, :3].flatten()
-
 
     def create_object(self, verts, faces, materials, material_ids):
         num_vertices = len(verts) // 3
