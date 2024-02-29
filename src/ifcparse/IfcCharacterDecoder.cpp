@@ -33,6 +33,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
+#include <algorithm>
 
 #define FIRST_SOLIDUS (1 << 1)
 #define PAGE (1 << 2)
