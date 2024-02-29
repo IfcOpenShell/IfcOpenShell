@@ -27,6 +27,8 @@ Documentation = "https://github.com/IfcOpenShell/src/bsdd#readme"
 Issues = "https://github.com/IfcOpenShell/issues"
 Source = "https://github.com/IfcOpenShell/src/bsdd"
 
+[tool.hatch.version]
+path = "__about__.py"
 
 [tool.hatch.envs.default]
 dependencies = [
