@@ -65,5 +65,6 @@ class ProjectData:
 
 
 class LinksData:
+    linked_data = {}
     enable_culling = False
     is_loaded = False

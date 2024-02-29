@@ -1469,6 +1469,133 @@ class LoadLinkedProject(bpy.types.Operator):
         self.collection.objects.link(obj)
 
 
+class QueryLinkedElement(bpy.types.Operator):
+    bl_idname = "bim.query_linked_element"
+    bl_label = "Query Linked Element"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == "VIEW_3D"
+
+    def execute(self, context):
+        import sqlite3
+        from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
+
+        LinksData.linked_data = {}
+        bpy.context.scene.BIMProjectProperties.queried_obj = None
+
+        for area in bpy.context.screen.areas:
+            if area.type == "PROPERTIES":
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        region.tag_redraw()
+            elif area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        region = context.region
+        rv3d = context.region_data
+        coord = (self.mouse_x, self.mouse_y)
+        origin = region_2d_to_origin_3d(region, rv3d, coord)
+        direction = region_2d_to_vector_3d(region, rv3d, coord)
+        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+        if not hit:
+            self.report({"INFO"}, "No object found.")
+            return {"FINISHED"}
+
+        if "guids" not in obj:
+            self.report({"INFO"}, "Object is not a linked IFC element.")
+            return {"FINISHED"}
+
+        guid = None
+        guid_start_index = 0
+        for i, guid_end_index in enumerate(obj["guid_ids"]):
+            if face_index < guid_end_index:
+                guid = obj["guids"][i]
+                bpy.context.scene.BIMProjectProperties.queried_obj = obj
+
+                selected_tris = []
+                selected_edges = []
+                vert_indices = set()
+                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
+                    vert_indices.update(polygon.vertices)
+                vert_indices = list(vert_indices)
+                vert_map = {k: v for v, k in enumerate(vert_indices)}
+                selected_vertices = [tuple(obj.matrix_world @ obj.data.vertices[vi].co) for vi in vert_indices]
+                for polygon in obj.data.polygons[guid_start_index:guid_end_index]:
+                    selected_tris.append(tuple(vert_map[v] for v in polygon.vertices))
+                    selected_edges.extend(tuple([vert_map[vi] for vi in e] for e in polygon.edge_keys))
+
+                obj["selected_vertices"] = selected_vertices
+                obj["selected_edges"] = selected_edges
+                obj["selected_tris"] = selected_tris
+
+                break
+            guid_start_index = guid_end_index
+
+        self.db = sqlite3.connect(obj["db"])
+        self.c = self.db.cursor()
+
+        self.c.execute(f"SELECT * FROM elements WHERE global_id = '{guid}' LIMIT 1")
+        element = self.c.fetchone()
+
+        attributes = {}
+        for i, attr in enumerate(["GlobalId", "IFC Class", "Predefined Type", "Name", "Description"]):
+            if element[i + 1] is not None:
+                attributes[attr] = element[i + 1]
+
+        self.c.execute("SELECT * FROM properties WHERE element_id = ?", (element[0],))
+        rows = self.c.fetchall()
+
+        properties = {}
+        for row in rows:
+            properties.setdefault(row[1], {})[row[2]] = row[3]
+
+        self.c.execute("SELECT * FROM relationships WHERE from_id = ?", (element[0],))
+        relationships = self.c.fetchall()
+
+        relating_type_id = None
+
+        for relationship in relationships:
+            if relationship[1] == "IfcRelDefinesByType":
+                relating_type_id = relationship[2]
+
+        type_properties = {}
+        if relating_type_id is not None:
+            self.c.execute("SELECT * FROM properties WHERE element_id = ?", (relating_type_id,))
+            rows = self.c.fetchall()
+            for row in rows:
+                type_properties.setdefault(row[1], {})[row[2]] = row[3]
+
+        LinksData.linked_data = {
+            "attributes": attributes,
+            "properties": [(k, properties[k]) for k in sorted(properties.keys())],
+            "type_properties": [(k, type_properties[k]) for k in sorted(type_properties.keys())],
+        }
+
+        for area in bpy.context.screen.areas:
+            if area.type == "PROPERTIES":
+                for region in area.regions:
+                    if region.type == "WINDOW":
+                        region.tag_redraw()
+            elif area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        self.report({"INFO"}, f"Loaded data for {guid}")
+        ProjectDecorator.install(bpy.context)
+        return {"FINISHED"}
+
+    def ray_cast(self, context, origin, direction):
+        depsgraph = context.evaluated_depsgraph_get()
+        result = context.scene.ray_cast(depsgraph, origin, direction)
+        return result
+
+    def invoke(self, context, event):
+        self.mouse_x = event.mouse_region_x
+        self.mouse_y = event.mouse_region_y
+        return self.execute(context)
+
+
 class EnableCulling(bpy.types.Operator):
     bl_idname = "bim.enable_culling"
     bl_label = "Enable Culling"
