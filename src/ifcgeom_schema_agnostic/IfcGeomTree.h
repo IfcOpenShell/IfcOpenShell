@@ -40,6 +40,31 @@
 #include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepExtrema_ExtPF.hxx>
 
+#include <vector>
+#include <future>
+#include <mutex>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
+#include <BRepExtrema_TriangleSet.hxx>
+#include <BRepLProp_SLProps.hxx>
+#include <BVH_BinaryTree.hxx>
+#include <BVH_Box.hxx>
+#include <BVH_BoxSet.hxx>
+#include <BVH_LinearBuilder.hxx>
+#include <BVH_Tree.hxx>
+#include <BVH_Triangulation.hxx>
+#include <BVH_Types.hxx>
+#include <Bnd_OBB.hxx>
+#include <GeomAPI_ProjectPointOnSurf.hxx>
+#include <Geom_Plane.hxx>
+#include <IntTools_FaceFace.hxx>
+#include <STEPConstruct_PointHasher.hxx>
+#include "clash_utils.h"
+
+#include "H5Cpp.h"
+
+
 namespace IfcGeom {
 
 	struct ray_intersection_result {
@@ -50,6 +75,15 @@ namespace IfcGeom {
 		std::array<double, 3> normal;
 		double ray_distance;
 		double dot_product;
+	};
+
+	struct clash {
+        int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
+		IfcUtil::IfcBaseClass* a;
+		IfcUtil::IfcBaseClass* b;
+		double distance;
+		std::array<double, 3> p1;
+		std::array<double, 3> p2;
 	};
 
 	namespace {
@@ -101,6 +135,736 @@ namespace IfcGeom {
 	namespace impl {
 		template <typename T>
 		class tree {
+            bool is_shape_manifold(const TopoDS_Shape& s) {
+                TopExp_Explorer exp(s, TopAbs_SHELL);
+                bool is_closed = false;
+                while (exp.More()) {
+                    is_closed = true;
+                    TopoDS_Shell shell = TopoDS::Shell(exp.Current());
+                    TopTools_IndexedDataMapOfShapeListOfShape edgeFaceMap;
+                    TopExp::MapShapesAndAncestors(s, TopAbs_EDGE, TopAbs_FACE, edgeFaceMap);
+
+                    for (int i = 1; i <= edgeFaceMap.Extent(); ++i) {
+                        if (edgeFaceMap(i).Extent() < 2) {
+                            // This edge is not shared by two faces, indicating a potential opening
+                            return false;
+                        }
+                    }
+                    exp.Next();
+                }
+                return is_closed;
+            }
+
+            bool is_point_in_shape(
+                    const gp_Pnt& v,
+                    const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
+                    const std::vector<std::array<int, 3>>& tris,
+                    const std::vector<gp_Pnt>& verts,
+                    // In the case of "touching" rays, let's check again!
+                    bool should_check_again = false
+                    ) const {
+                ray v_ray;
+                v_ray.origin[0] = v.X();
+                v_ray.origin[1] = v.Y();
+                v_ray.origin[2] = v.Z();
+
+                if (should_check_again) {
+                    // The first check may be incorrect if it intersects
+                    // exactly between triangles or on edges of triangles.
+                    // A second check is used to "double check" the results.
+                    // The second check is perpendicular because AEC objects
+                    // are typically symmetrical along an axis, and goes down
+                    // because there's typically less stuff down there.
+                    v_ray.dir[0] = 0.0f;
+                    v_ray.dir[1] = 0.0f;
+                    v_ray.dir[2] = -1.0f;
+                    v_ray.dir_inv[0] = INFINITY; // 1.0f/dir[0]
+                    v_ray.dir_inv[1] = INFINITY; // 1.0f/dir[1]
+                    v_ray.dir_inv[2] = -1.0f; // 1.0f/dir[2]
+                } else {
+                    v_ray.dir[0] = 1.0f;
+                    v_ray.dir[1] = 0.0f;
+                    v_ray.dir[2] = 0.0f;
+                    v_ray.dir_inv[0] = 1.0f; // 1.0f/dir[0]
+                    v_ray.dir_inv[1] = INFINITY; // 1.0f/dir[1]
+                    v_ray.dir_inv[2] = INFINITY; // 1.0f/dir[2]
+                }
+
+                gp_Vec ray_origin(v.X(), v.Y(), v.Z());
+                gp_Vec ray_vector(v_ray.dir[0], v_ray.dir[1], v_ray.dir[2]);
+
+                int total_intersections = 0;
+
+                std::stack<int> stack;
+                stack.push(0);
+
+                while ( ! stack.empty()) {
+                    int i = stack.top();
+                    stack.pop();
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt min_point = bvh->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt max_point = bvh->MaxPoint(i);
+
+                    box box;
+                    // + 1e-5 for tolerance
+                    box.corners[0][0] = min_point[0] - 1e-5;
+                    box.corners[0][1] = min_point[1] - 1e-5;
+                    box.corners[0][2] = min_point[2] - 1e-5;
+                    box.corners[1][0] = max_point[0] + 1e-5;
+                    box.corners[1][1] = max_point[1] + 1e-5;
+                    box.corners[1][2] = max_point[2] + 1e-5;
+                    /*
+                    std::cout << "Ray " 
+                        << v_ray.origin[0] << " "
+                        << v_ray.origin[1] << " "
+                        << v_ray.origin[2] << " "
+                        << std::endl;
+                    std::cout << "Box " 
+                        << min_point[0] << " "
+                        << min_point[1] << " "
+                        << min_point[2] << " "
+                        << max_point[0] << " "
+                        << max_point[1] << " "
+                        << max_point[2] << " "
+                        << std::endl;
+                    */
+
+                    if ( ! is_intersect_ray_box(&v_ray, &box)) {
+                        continue;
+                    }
+                    //std::cout << "Ray hits box" << std::endl;
+                    if (bvh->IsOuter(i)) {
+                        //std::cout << "Ray hits leaf" << std::endl;
+                        // Do ray triangle check.
+                        for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
+                            const std::array<int, 3>& tri = tris[j];
+
+                            gp_Vec ta(verts[tri[0]].XYZ());
+                            gp_Vec tb(verts[tri[1]].XYZ());
+                            gp_Vec tc(verts[tri[2]].XYZ());
+
+                            /*
+                            std::cout << "ray origin " << ray_origin.X() << " " << ray_origin.Y() << " " << ray_origin.Z() << std::endl;
+                            std::cout << "inside-tri " << ta.X() << " " << ta.Y() << " " << ta.Z() << std::endl;
+                            std::cout << "inside-tri " << tb.X() << " " << tb.Y() << " " << tb.Z() << std::endl;
+                            std::cout << "inside-tri " << tc.X() << " " << tc.Y() << " " << tc.Z() << std::endl;
+                            */
+                            double at, au, av;
+                            if (intersectRayTriangle(ray_origin, ray_vector, ta, tb, tc, at, au, av, false)) {
+                                // At is a signed intersection distance (positive is along +ray_vector)
+                                if (at > -1e-5) {
+                                    total_intersections++;
+                                }
+                            }
+                        }
+                    } else {
+                        stack.push(bvh->Child<0>(i));
+                        stack.push(bvh->Child<1>(i));
+                    }
+                }
+
+                return total_intersections % 2 != 0;
+            }
+
+            std::tuple<
+                double,
+                std::array<double, 3>,
+                std::array<double, 3>
+                > pierce_shape(
+                    const gp_Vec& e1,
+                    const gp_Vec& e2,
+                    const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh,
+                    const std::vector<std::array<int, 3>>& tris,
+                    const std::vector<gp_Pnt>& verts,
+                    const std::vector<gp_Vec>& normals
+                    ) const {
+                const gp_Vec& ray_origin = e1;
+                gp_Vec ray_vector = e2 - e1;
+                double edge_length = ray_vector.Magnitude();
+
+                std::array<double, 3> min_int;
+                std::array<double, 3> max_int;
+
+                ray_vector.Normalize();
+
+                ray v_ray;
+                v_ray.origin[0] = ray_origin.X();
+                v_ray.origin[1] = ray_origin.Y();
+                v_ray.origin[2] = ray_origin.Z();
+
+                v_ray.dir[0] = ray_vector.X();
+                v_ray.dir[1] = ray_vector.Y();
+                v_ray.dir[2] = ray_vector.Z();
+                v_ray.dir_inv[0] = 1.0f / ray_vector.X();
+                v_ray.dir_inv[1] = 1.0f / ray_vector.Y();
+                v_ray.dir_inv[2] = 1.0f / ray_vector.Z();
+
+                double min_distance = std::numeric_limits<double>::infinity();
+                double max_distance = -std::numeric_limits<double>::infinity();
+
+                std::stack<int> stack;
+                stack.push(0);
+
+                while ( ! stack.empty()) {
+                    int i = stack.top();
+                    stack.pop();
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt min_point = bvh->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt max_point = bvh->MaxPoint(i);
+
+                    box box;
+                    // + 1e-5 for tolerance
+                    box.corners[0][0] = min_point[0] - 1e-5;
+                    box.corners[0][1] = min_point[1] - 1e-5;
+                    box.corners[0][2] = min_point[2] - 1e-5;
+                    box.corners[1][0] = max_point[0] + 1e-5;
+                    box.corners[1][1] = max_point[1] + 1e-5;
+                    box.corners[1][2] = max_point[2] + 1e-5;
+
+                    if ( ! is_intersect_ray_box(&v_ray, &box)) {
+                        continue;
+                    }
+                    if (bvh->IsOuter(i)) {
+                        // Do ray triangle check.
+                        for (int j=bvh->BegPrimitive(i); j<=bvh->EndPrimitive(i); ++j) {
+                            const std::array<int, 3>& tri = tris[j];
+                            const gp_Vec& normal = normals[j];
+
+                            if (std::abs(normal.Dot(ray_vector)) < 1e-3) {
+                                continue; // This ray is coplanar to the triangle
+                            }
+
+                            gp_Vec ta(verts[tri[0]].XYZ());
+                            gp_Vec tb(verts[tri[1]].XYZ());
+                            gp_Vec tc(verts[tri[2]].XYZ());
+
+                            double at, au, av;
+                            // Do box check first?
+                            if (intersectRayTriangle(ray_origin, ray_vector, ta, tb, tc, at, au, av, false)) {
+                                // At is a signed intersection distance (positive is along +ray_vector)
+                                if (at > 0 && at < edge_length) {
+                                    double aw = 1.0f - au - av; // Barycentric coordinate for ta
+                                    gp_Vec int_vec = aw * ta + au * tb + av * tc; // Intersection point
+
+                                    if (
+                                        is_point_on_line(int_vec, ta, tb)
+                                        || is_point_on_line(int_vec, ta, tc)
+                                        || is_point_on_line(int_vec, tb, tc)
+                                        || (ta - int_vec).Magnitude() < 1e-4
+                                        || (tb - int_vec).Magnitude() < 1e-4
+                                        || (tc - int_vec).Magnitude() < 1e-4
+                                    ) {
+                                        continue;
+                                    }
+
+                                    if (at < min_distance) {
+                                        min_distance = at;
+                                        min_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
+                                    }
+                                    if (at > max_distance) {
+                                        max_distance = at;
+                                        max_int = {int_vec.X(), int_vec.Y(), int_vec.Z()};
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        stack.push(bvh->Child<0>(i));
+                        stack.push(bvh->Child<1>(i));
+                    }
+                }
+
+                if (min_distance == std::numeric_limits<double>::infinity()) {
+                    return std::make_tuple(-1, min_int, max_int);
+                }
+                return std::make_tuple(max_distance - min_distance, min_int, max_int);
+            }
+
+            bool is_point_on_line(const gp_Pnt& point, const gp_Pnt& lineStart, const gp_Pnt& lineEnd) const {
+                // Create vectors
+                gp_Vec startToPoint(point.XYZ() - lineStart.XYZ());
+                gp_Vec startToEnd(lineEnd.XYZ() - lineStart.XYZ());
+
+                // Check if the point is on the line defined by start and end
+                // by checking if the cross product is (near) zero vector, indicating collinearity.
+                gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
+                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                    return false; // Not collinear, hence not on the line segment
+                }
+                return true; // The point is on the line segment
+            }
+
+            // Vec variant? This _Pnt and _Vec difference is annoying.
+            bool is_point_on_line(const gp_Vec& point, const gp_Vec& lineStart, const gp_Vec& lineEnd) const {
+                // Create vectors
+                gp_Vec startToPoint = point - lineStart;
+                gp_Vec startToEnd = lineEnd - lineStart;
+
+                // Check if the point is on the line defined by start and end
+                // by checking if the cross product is (near) zero vector, indicating collinearity.
+                gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
+                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                    return false; // Not collinear, hence not on the line segment
+                }
+                return true; // The point is on the line segment
+            }
+
+            std::unordered_map<int, std::vector<int>> clash_bvh(
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a,
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b,
+                double extend = 0.0
+                    ) const {
+                std::unordered_map<int, std::vector<int>> bvh_clashes;
+                for (int i=0; i<bvh_a->Length(); ++i) {
+                    if ( ! bvh_a->IsOuter(i)) {
+                        continue;
+                    }
+
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_min = bvh_a->MinPoint(i);
+                    BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_a_max = bvh_a->MaxPoint(i);
+                    bvh_a_min[0] -= 1e-3;
+                    bvh_a_min[1] -= 1e-3;
+                    bvh_a_min[2] -= 1e-3;
+                    bvh_a_max[0] += 1e-3;
+                    bvh_a_max[1] += 1e-3;
+                    bvh_a_max[2] += 1e-3;
+
+                    BVH_Box<Standard_Real, 3> box_a(bvh_a_min, bvh_a_max);
+
+                    std::stack<int> stack;
+                    stack.push(0);
+
+                    while ( ! stack.empty()) {
+                        int j = stack.top();
+                        stack.pop();
+
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_min = bvh_b->MinPoint(j);
+                        BVH_TreeBase<Standard_Real, 3>::BVH_VecNt bvh_b_max = bvh_b->MaxPoint(j);
+                        bvh_b_min[0] -= extend + 1e-3;
+                        bvh_b_min[1] -= extend + 1e-3;
+                        bvh_b_min[2] -= extend + 1e-3;
+                        bvh_b_max[0] += extend + 1e-3;
+                        bvh_b_max[1] += extend + 1e-3;
+                        bvh_b_max[2] += extend + 1e-3;
+
+                        if (box_a.IsOut(bvh_b_min, bvh_b_max)) {
+                            continue;
+                        }
+                        if (bvh_b->IsOuter(j)) {
+                            if (bvh_clashes.find(i) != bvh_clashes.end()) {
+                                bvh_clashes[i].push_back(j);
+                            } else {
+                                bvh_clashes[i] = {j};
+                            }
+                        } else {
+                            stack.push(bvh_b->Child<0>(j));
+                            stack.push(bvh_b->Child<1>(j));
+                        }
+                    }
+                }
+                return bvh_clashes;
+            }
+
+			clash test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
+                // If there are verts of A inside shape B (protrusion):
+                //  1. For each vert, find the shortest distance to the closest face
+                //  2. Find the innermost vert (i.e. the vert that has the longest distance)
+                // Otherwise (piercing):
+                //  1. Intersect each edge with shape B
+                //  2. Find the longest distance between intersections
+
+                auto obb_b = obbs_.find(tB)->second;
+                obb_b.Enlarge(-tolerance);
+
+                // No need to search beyond the distance of the max protrusion.
+                const double max_protrusion = max_protrusions_.find(tB)->second;
+
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, max_protrusion);
+                if (bvh_clashes.empty()) {
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+                }
+
+                const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
+                const std::vector<std::array<int, 3>>& tris_b = tris_.find(tB)->second;
+                const std::vector<gp_Pnt>& verts_a = verts_.find(tA)->second;
+                const std::vector<gp_Pnt>& verts_b = verts_.find(tB)->second;
+                const std::vector<gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::vector<gp_Vec>& normals_b = normals_.find(tB)->second;
+
+                // ~10% faster?
+                std::unordered_set<int> points_in_b_cache;
+                std::unordered_set<int> points_not_in_b_cache;
+
+                double protrusion = -std::numeric_limits<double>::infinity();
+                std::array<double, 3> protrusion_point;
+                std::array<double, 3> surface_point;
+
+                double pierce = -std::numeric_limits<double>::infinity();
+                std::array<double, 3> pierce_point1;
+                std::array<double, 3> pierce_point2;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const std::array<int, 3>& tri = tris_a[i];
+                        std::vector<gp_Pnt> points_in_b;
+
+                        for (int v_id : tri) {
+                            if (points_not_in_b_cache.find(v_id) != points_not_in_b_cache.end()) {
+                                continue;
+                            }
+
+                            const gp_Pnt& v = verts_a[v_id];
+
+                            if (points_in_b_cache.find(v_id) != points_in_b_cache.end()) {
+                                points_in_b.push_back(v);
+                                continue;
+                            }
+
+                            if (obb_b.IsOut(v)) {
+                                points_not_in_b_cache.insert(v_id);
+                                continue;
+                            }
+
+                            if (is_point_in_shape(v, bvh_b, tris_b, verts_b)
+                                    && is_point_in_shape(v, bvh_b, tris_b, verts_b, true)) {
+                                points_in_b.push_back(v);
+                                points_in_b_cache.insert(v_id);
+                            } else {
+                                points_not_in_b_cache.insert(v_id);
+                            }
+                        }
+
+                        // If there are no points in b, this may be a "piercing" triangle.
+                        if (points_in_b.empty()) {
+                            gp_Vec v1_a_vec(verts_a[tri[0]].XYZ());
+                            gp_Vec v2_a_vec(verts_a[tri[1]].XYZ());
+                            gp_Vec v3_a_vec(verts_a[tri[2]].XYZ());
+
+                            // Protrusions take priority over piercings. We only check for piercings if:
+                            //  - This is a piercing triangle (e.g. no points in b)
+                            //  - No protrusion was already found
+                            //  - We haven't yet found a piercing at the max protrusion limit
+                            if (protrusion == -std::numeric_limits<double>::infinity() && pierce != max_protrusion) {
+                                std::array<
+                                    std::tuple<double, std::array<double, 3>, std::array<double, 3>>, 3
+                                > pierce_results = {
+                                    pierce_shape(v1_a_vec, v2_a_vec, bvh_b, tris_b, verts_b, normals_b),
+                                    pierce_shape(v1_a_vec, v3_a_vec, bvh_b, tris_b, verts_b, normals_b),
+                                    pierce_shape(v2_a_vec, v3_a_vec, bvh_b, tris_b, verts_b, normals_b)
+                                };
+
+                                for (const auto& pr : pierce_results) {
+                                    auto& p_dist = std::get<0>(pr);
+                                    auto& p_min = std::get<1>(pr);
+                                    auto& p_max = std::get<2>(pr);
+                                    if (p_dist > tolerance && p_dist > pierce) {
+                                        // Piercings are capped at max_protrusion for intuitive results
+                                        pierce = std::min(p_dist, max_protrusion);
+                                        pierce_point1 = p_min;
+                                        pierce_point2 = p_max;
+                                        if ( ! check_all) {
+                                            return {1, tA, tB, pierce, pierce_point1, pierce_point2};
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Since there were no points in b, we don't need to check for protrusions.
+                            continue;
+                        }
+
+                        const gp_Vec& normal_a = normals_a[i];
+                        double v_protrusion = std::numeric_limits<double>::infinity();
+                        std::array<double, 3> v_protrusion_point;
+                        std::array<double, 3> v_surface_point;
+
+                        // Check for protrusions.
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const std::array<int, 3>& tri = tris_b[j];
+                                const gp_Vec& normal_b = normals_b[j];
+
+                                tri_count_++;
+
+                                // We're penetrating _into_ a shape, so don't
+                                // compare distances to faces with roughly the
+                                // same normal as the penetration.
+                                if (normal_a.Dot(normal_b) >= 0.9f) {
+                                    continue;
+                                }
+
+                                gp_Vec ta(verts_b[tri[0]].XYZ());
+                                gp_Vec tb(verts_b[tri[1]].XYZ());
+                                gp_Vec tc(verts_b[tri[2]].XYZ());
+
+                                for (const auto& v : points_in_b) {
+                                    gp_Vec ray_origin(v.XYZ());
+
+                                    /*
+                                    std::cout << "POINT IN B " << v.X() << " " << v.Y() << " " << v.Z() << std::endl;
+                                    std::cout << "dir-> " << normal_b.X() << " " << normal_b.Y() << " " << normal_b.Z() << std::endl;
+                                    std::cout << "->tri " << v1_b[0] << " " << v1_b[1] << " " << v1_b[2] << std::endl;
+                                    std::cout << "->tri " << v2_b[0] << " " << v2_b[1] << " " << v2_b[2] << std::endl;
+                                    std::cout << "->tri " << v3_b[0] << " " << v3_b[1] << " " << v3_b[2] << std::endl;
+                                    */
+
+                                    // Do (cheaper) line check.
+                                    double at, au, av;
+                                    if (intersectRayTriangle(ray_origin, normal_b, ta, tb, tc, at, au, av, false)) {
+                                        double current_v_protrusion = at;
+
+                                        // std::cout << "We got a current protrusion " << current_v_protrusion << std::endl;
+                                        if (current_v_protrusion < v_protrusion) {
+                                            double aw = 1.0f - au - av; // Barycentric coordinate for ta
+                                            gp_Vec point_on_b = aw * ta + au * tb + av * tc; // Intersection point
+                                            // std::cout << "New v_protrusion winner of " << current_v_protrusion << std::endl;
+                                            v_protrusion = current_v_protrusion;
+                                            v_protrusion_point = {v.X(), v.Y(), v.Z()};
+                                            v_surface_point = {point_on_b.X(), point_on_b.Y(), point_on_b.Z()};
+
+                                            if ( ! check_all && v_protrusion > tolerance) {
+                                                return {0, tA, tB, v_protrusion, v_protrusion_point, v_surface_point};
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (v_protrusion != std::numeric_limits<double>::infinity()) {
+                            if (v_protrusion > protrusion) {
+                                // std::cout << "New actual protrusion winner of " << v_protrusion << std::endl;
+                                protrusion = v_protrusion;
+                                protrusion_point = v_protrusion_point;
+                                surface_point = v_surface_point;
+                                if (protrusion > (max_protrusion - 1e-3)) {
+                                    return {0, tA, tB, protrusion, protrusion_point, surface_point};
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (protrusion > tolerance) {
+                    return {0, tA, tB, protrusion, protrusion_point, surface_point};
+                }
+
+                if (pierce > tolerance) {
+                    return {1, tA, tB, pierce, pierce_point1, pierce_point2};
+                }
+
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+            }
+
+			clash test_collision(const T& tA, const T& tB, bool allow_touching) const {
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b);
+                if (bvh_clashes.empty()) {
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+                }
+
+                const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
+                const std::vector<std::array<int, 3>>& tris_b = tris_.find(tB)->second;
+                const std::vector<gp_Pnt>& verts_a = verts_.find(tA)->second;
+                const std::vector<gp_Pnt>& verts_b = verts_.find(tB)->second;
+                const std::vector<gp_Vec>& normals_a = normals_.find(tA)->second;
+                const std::vector<gp_Vec>& normals_b = normals_.find(tB)->second;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const std::array<int, 3>& tri = tris_a[i];
+                        const gp_Pnt& v1_a_pnt = verts_a[tri[0]];
+                        const gp_Pnt& v2_a_pnt = verts_a[tri[1]];
+                        const gp_Pnt& v3_a_pnt = verts_a[tri[2]];
+                        const gp_Vec& normal_a = normals_a[i];
+
+                        const gp_Vec v1_a_vec(v1_a_pnt.XYZ());
+                        const gp_Vec v2_a_vec(v2_a_pnt.XYZ());
+                        const gp_Vec v3_a_vec(v3_a_pnt.XYZ());
+
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const std::array<int, 3>& tri = tris_b[j];
+                                const gp_Pnt& v1_b_pnt = verts_b[tri[0]];
+                                const gp_Pnt& v2_b_pnt = verts_b[tri[1]];
+                                const gp_Pnt& v3_b_pnt = verts_b[tri[2]];
+                                const gp_Vec& normal_b = normals_b[j];
+
+                                tri_count_++;
+
+                                const gp_Vec v1_b_vec(v1_b_pnt.XYZ());
+                                const gp_Vec v2_b_vec(v2_b_pnt.XYZ());
+                                const gp_Vec v3_b_vec(v3_b_pnt.XYZ());
+
+                                // Allow a deviation of 0.25 degrees in coplanarity check
+                                if (std::abs(normal_a.Dot(normal_b)) >= 0.99999f) {
+                                    continue;
+                                }
+
+                                gp_Vec int1, int2;
+                                if (trianglesIntersect(v1_a_vec, v2_a_vec, v3_a_vec, v1_b_vec, v2_b_vec, v3_b_vec, int1, int2, ! allow_touching)) {
+                                    if (allow_touching) {
+                                        return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
+                                    }
+
+                                    // A non-touching collision is defined as two triangles that:
+                                    //  1. Are not coplanar
+                                    //  2. The point of intersection is not along the edge of triangle A.
+                                    //  3. The point of intersection is not a vertex of triangle B.
+
+                                    if (
+                                        ! is_point_on_line(int1, v1_a_vec, v2_a_vec)
+                                        && ! is_point_on_line(int1, v1_a_vec, v3_a_vec)
+                                        && ! is_point_on_line(int1, v2_a_vec, v3_a_vec)
+                                    ) {
+                                        if (
+                                            (v1_b_vec - int1).Magnitude() > 1e-4
+                                            && (v2_b_vec - int1).Magnitude() > 1e-4
+                                            && (v3_b_vec - int1).Magnitude() > 1e-4
+                                        ) {
+                                            return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int1, v1_b_vec, v2_b_vec)
+                                        && ! is_point_on_line(int1, v1_b_vec, v3_b_vec)
+                                        && ! is_point_on_line(int1, v2_b_vec, v3_b_vec)
+                                    ) {
+                                        if (
+                                            (v1_a_vec - int1).Magnitude() > 1e-4
+                                            && (v2_a_vec - int1).Magnitude() > 1e-4
+                                            && (v3_a_vec - int1).Magnitude() > 1e-4
+                                        ) {
+                                            return {2, tA, tB, 0, {int1.X(), int1.Y(), int1.Z()}, {int2.X(), int2.Y(), int2.Z()}};
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int2, v1_a_vec, v2_a_vec)
+                                        && ! is_point_on_line(int2, v1_a_vec, v3_a_vec)
+                                        && ! is_point_on_line(int2, v2_a_vec, v3_a_vec)
+                                    ) {
+                                        if (
+                                            (v1_b_vec - int2).Magnitude() > 1e-4
+                                            && (v2_b_vec - int2).Magnitude() > 1e-4
+                                            && (v3_b_vec - int2).Magnitude() > 1e-4
+                                        ) {
+                                            return {2, tA, tB, 0, {int2.X(), int2.Y(), int2.Z()}, {int1.X(), int1.Y(), int1.Z()}};
+                                        }
+                                    }
+
+                                    if (
+                                        ! is_point_on_line(int2, v1_b_vec, v2_b_vec)
+                                        && ! is_point_on_line(int2, v1_b_vec, v3_b_vec)
+                                        && ! is_point_on_line(int2, v2_b_vec, v3_b_vec)
+                                    ) {
+                                        if (
+                                            (v1_a_vec - int2).Magnitude() > 1e-4
+                                            && (v2_a_vec - int2).Magnitude() > 1e-4
+                                            && (v3_a_vec - int2).Magnitude() > 1e-4
+                                        ) {
+                                            return {2, tA, tB, 0, {int2.X(), int2.Y(), int2.Z()}, {int1.X(), int1.Y(), int1.Z()}};
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+            }
+
+			clash test_clearance(const T& tA, const T& tB, double clearance, bool check_all) const {
+                // Collide BVH trees of shape A vs B
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
+                opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, clearance);
+                if (bvh_clashes.empty()) {
+                    return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+                }
+
+                const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
+                const std::vector<std::array<int, 3>>& tris_b = tris_.find(tB)->second;
+                const std::vector<gp_Pnt>& verts_a = verts_.find(tA)->second;
+                const std::vector<gp_Pnt>& verts_b = verts_.find(tB)->second;
+
+                double min_clearance = std::numeric_limits<double>::infinity();
+                std::array<double, 3> clearance_point1;
+                std::array<double, 3> clearance_point2;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const std::array<int, 3>& tri = tris_a[i];
+                        const gp_Pnt& v1_a_pnt = verts_a[tri[0]];
+                        const gp_Pnt& v2_a_pnt = verts_a[tri[1]];
+                        const gp_Pnt& v3_a_pnt = verts_a[tri[2]];
+
+                        const gp_Vec v1_a_vec(v1_a_pnt.XYZ());
+                        const gp_Vec v2_a_vec(v2_a_pnt.XYZ());
+                        const gp_Vec v3_a_vec(v3_a_pnt.XYZ());
+
+                        const std::array<gp_Vec, 3> p = {v1_a_vec, v2_a_vec, v3_a_vec};
+
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const std::array<int, 3>& tri = tris_b[j];
+                                const gp_Pnt& v1_b_pnt = verts_b[tri[0]];
+                                const gp_Pnt& v2_b_pnt = verts_b[tri[1]];
+                                const gp_Pnt& v3_b_pnt = verts_b[tri[2]];
+
+                                tri_count_++;
+
+                                const gp_Vec v1_b_vec(v1_b_pnt.XYZ());
+                                const gp_Vec v2_b_vec(v2_b_pnt.XYZ());
+                                const gp_Vec v3_b_vec(v3_b_pnt.XYZ());
+
+                                const std::array<gp_Vec, 3> q = {v1_b_vec, v2_b_vec, v3_b_vec};
+
+                                gp_Vec cp;
+                                gp_Vec cq;
+
+                                // https://stackoverflow.com/questions/53602907/algorithm-to-find-minimum-distance-between-two-triangles
+                                distanceTriangleTriangleSquared(cp, cq, p, q);
+
+                                double distance = (cq - cp).Magnitude();
+                                if (distance < clearance && distance < min_clearance) {
+                                    min_clearance = distance;
+                                    clearance_point1 = {cp.X(), cp.Y(), cp.Z()};
+                                    clearance_point2 = {cq.X(), cq.Y(), cq.Z()};
+                                    if ( ! check_all || min_clearance < 1e-4) {
+                                        return {3, tA, tB, min_clearance, clearance_point1, clearance_point2};
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (min_clearance < clearance) {
+                    return {3, tA, tB, min_clearance, clearance_point1, clearance_point2};
+
+                }
+
+                return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+            }
 
 			bool test(const TopoDS_Shape& A, const TopoDS_Shape& B, bool completely_within, double extend) const {
 				if (extend > 0.) {
@@ -143,6 +907,7 @@ namespace IfcGeom {
 			// @todo this is ugly, embed this in the return type
 			mutable std::vector<double> distances_;
 			mutable std::vector<double> protrusion_distances_;
+            mutable long long tri_count_ = 0;
 
 		public:
 
@@ -155,6 +920,143 @@ namespace IfcGeom {
 				BRepBndLib::AddClose(s, b);
 				add(t, b);
 				shapes_[t] = s;
+			}
+
+			void add_triangulation(const T& t, const TopoDS_Shape& s) {
+                // Note that the original add function is also used elsewhere (e.g. boolean_utils.cpp)
+                // We don't want to randomly add triangulated voids in our
+                // tree, so for now this is a separate function.
+
+				Bnd_Box b;
+				BRepBndLib::AddClose(s, b);
+                aabbs_[t] = b;
+
+                Bnd_OBB obb;
+                // If IsOptimal = True it doubles the execution time.
+                BRepBndLib::AddOBB(s, obb, true, false, false);
+                obbs_[t] = obb;
+
+                max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
+
+                int original_tris_index = 0;
+                std::vector<std::array<int, 3>> original_tris;
+                std::vector<gp_Pnt> verts;
+                std::vector<gp_Vec> original_normals;
+
+                // Attempt to copy exactly what BRepExtrema_TriangleSet is doing under the hood.
+                const auto builder = new BVH_LinearBuilder<Standard_Real, 3> (BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
+                BVH_Triangulation<Standard_Real, 3> triangulation(builder);
+
+                BRepExtrema_ShapeList shape_list;
+                std::vector<bool> is_reversed;
+                TopExp_Explorer exp_f;
+                for (exp_f.Init(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
+                    shape_list.Append(TopoDS::Face(exp_f.Current()));
+
+                    TopoDS_Face f = TopoDS::Face(exp_f.Current());
+                    is_reversed.push_back(f.Orientation() == TopAbs_REVERSED);
+                }
+
+                // Standard_Boolean BRepExtrema_TriangleSet::Init (const BRepExtrema_ShapeList& theShapes)
+                Standard_Boolean isOK = Standard_True;
+                for (Standard_Integer aShapeIdx = 0; aShapeIdx < shape_list.Size() && isOK; ++aShapeIdx)
+                {
+                    if (shape_list (aShapeIdx).ShapeType() == TopAbs_FACE) {
+                        // isOK = initFace (TopoDS::Face (shape_list(aShapeIdx)), aShapeIdx);
+                        // Standard_Boolean BRepExtrema_TriangleSet::initFace (const TopoDS_Face& theFace, const Standard_Integer theIndex)
+
+                        TopoDS_Face theFace = TopoDS::Face (shape_list(aShapeIdx));
+                        Standard_Integer theIndex = aShapeIdx;
+                        TopLoc_Location aLocation;
+
+                        bool is_reversed = theFace.Orientation() == TopAbs_REVERSED;
+
+                        Handle(Poly_Triangulation) aTriangulation = BRep_Tool::Triangulation (theFace, aLocation);
+                        if (aTriangulation.IsNull())
+                        {
+                            isOK = false;
+                        }
+
+                        const Standard_Integer aVertOffset = static_cast<Standard_Integer> (verts.size()) - 1;
+
+                        // initNodes (aTriangulation->MapNodeArray()->ChangeArray1(), aLocation.Transformation(), theIndex);
+                        // void BRepExtrema_TriangleSet::initNodes (const TColgp_Array1OfPnt& theNodes, const gp_Trsf& theTrsf, const Standard_Integer theIndex)
+                        TColgp_Array1OfPnt theNodes = aTriangulation->MapNodeArray()->ChangeArray1();
+                        gp_Trsf theTrsf = aLocation.Transformation();
+
+                        for (Standard_Integer aVertIdx = 1; aVertIdx <= theNodes.Size(); ++aVertIdx)
+                        {
+                            gp_Pnt aVertex = theNodes.Value (aVertIdx);
+                            aVertex.Transform (theTrsf);
+                            triangulation.Vertices.push_back (BVH_Vec3d (aVertex.X(), aVertex.Y(), aVertex.Z()));
+                            verts.push_back(aVertex);
+                            // myShapeIdxOfVtxVec.Append (theIndex);
+                        }
+
+                        // myNumVtxInShapeVec.SetValue (theIndex, theNodes.Size());
+
+                        for (Standard_Integer aTriIdx = 1; aTriIdx <= aTriangulation->NbTriangles(); ++aTriIdx)
+                        {
+                            Standard_Integer aVertex1;
+                            Standard_Integer aVertex2;
+                            Standard_Integer aVertex3;
+
+                            if (is_reversed) {
+                                aTriangulation->Triangle (aTriIdx).Get (aVertex3, aVertex2, aVertex1);
+                            } else {
+                                aTriangulation->Triangle (aTriIdx).Get (aVertex1, aVertex2, aVertex3);
+                            }
+
+                            const auto& v1_pnt = verts[aVertex1 + aVertOffset];
+                            const auto& v2_pnt = verts[aVertex2 + aVertOffset];
+                            const auto& v3_pnt = verts[aVertex3 + aVertOffset];
+                            gp_Vec dir1(v1_pnt, v2_pnt);
+                            gp_Vec dir2(v1_pnt, v3_pnt);
+                            gp_Vec cross_product = dir1.Crossed(dir2);
+                            if (cross_product.Magnitude() > Precision::Confusion()) {
+                                triangulation.Elements.push_back (BVH_Vec4i (
+                                    aVertex1 + aVertOffset,
+                                    aVertex2 + aVertOffset,
+                                    aVertex3 + aVertOffset,
+                                    original_tris_index));
+                                    //theIndex));
+                                original_tris_index++;
+                                original_tris.push_back({
+                                    aVertex1 + aVertOffset,
+                                    aVertex2 + aVertOffset,
+                                    aVertex3 + aVertOffset
+                                });
+                                original_normals.push_back(cross_product.Normalized());
+                            }
+                        }
+
+                        // myNumTrgInShapeVec.SetValue (theIndex, aTriangulation->NbTriangles());
+
+                        isOK = true;
+                    } else if (shape_list (aShapeIdx).ShapeType() == TopAbs_EDGE) {
+                        // isOK = initEdge (TopoDS::Edge (shape_list(aShapeIdx)), aShapeIdx);
+                        // Should never occur, we don't pass in edges.
+                    }
+                }
+
+                triangulation.MarkDirty();
+                const auto bvh = triangulation.BVH();
+
+                // After BVH is constructed, triangles are reordered
+                std::vector<std::array<int, 3>> tris(triangulation.Size());
+                std::vector<gp_Vec> normals(triangulation.Size());
+
+                for (int i=0; i<triangulation.Size(); ++i) {
+                    const auto& el = triangulation.Elements[i];
+                    tris[i] = original_tris[el[3]];
+                    normals[i] = original_normals[el[3]];
+                }
+
+                bvhs_[t] = bvh;
+                is_manifold_[t] = is_shape_manifold(s);
+                tris_[t] = std::move(tris);
+                verts_[t] = std::move(verts);
+                normals_[t] = std::move(normals);
 			}
 
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
@@ -210,6 +1112,333 @@ namespace IfcGeom {
 					return s.results();
 				}
 			}
+
+            std::unique_ptr<BVH_BoxSet<double, 3>> build_box_set(const std::vector<T>& elements) const {
+                double x, y, z, X, Y, Z;
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set = std::make_unique<BVH_BoxSet<double, 3>>();
+                for (int i=0; i<elements.size(); ++i) {
+                    auto it = aabbs_.find(elements[i]);
+                    if (it == aabbs_.end()) {
+                        continue;
+                    }
+                    const auto& aabb = it->second;
+                    aabb.Get(x, y, z, X, Y, Z);
+                    const BVH_Box<Standard_Real, 3>::BVH_VecNt min(x, y, z);
+                    const BVH_Box<Standard_Real, 3>::BVH_VecNt max(X, Y, Z);
+                    BVH_Box<Standard_Real, 3> bvh_box(min, max);
+                    box_set->Add(i, bvh_box);
+                }
+                return box_set;
+            }
+
+            struct clash_task {
+                T a, b;
+            };
+
+            std::vector<std::vector<clash_task>> allocate_tasks_to_threads(
+                    std::vector<clash_task>& task_queue) const {
+                int num_threads = std::thread::hardware_concurrency();
+                std::vector<std::vector<clash_task>> threaded_tasks(num_threads);
+
+                size_t tasks_per_thread = task_queue.size() / num_threads;
+                for (int i = 0; i < num_threads; ++i) {
+                    auto startIter = std::next(task_queue.begin(), i * tasks_per_thread);
+                    auto endIter = (i == num_threads - 1) ? task_queue.end() : std::next(startIter, tasks_per_thread);
+                    threaded_tasks[i] = std::vector<clash_task>(startIter, endIter);
+                }
+                return threaded_tasks;
+            }
+
+            std::vector<clash> clash_intersection_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b,
+                    double tolerance = 0.002, bool check_all = true
+                ) const {
+                std::vector<clash_task> task_queue;
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, 0.0);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                task_queue.emplace_back(clash_task{t_a, t_b});
+                            }
+                        }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, tolerance, check_all] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(-tolerance);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            bool has_clash = false;
+                            bool is_manifold = false;
+                            clash result;
+
+                            if (is_manifold_.find(task.b)->second) {
+                                is_manifold = true;
+                                clash intersection = test_intersection(task.a, task.b, tolerance, check_all);
+                                if (intersection.clash_type != -1) {
+                                    has_clash = true;
+                                    result = intersection;
+                                    if ( ! check_all) {
+                                        thread_results.push_back(result);
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            if (is_manifold_.find(task.a)->second) {
+                                is_manifold = true;
+                                clash intersection = test_intersection(task.b, task.a, tolerance, check_all);
+                                if (intersection.clash_type != -1) {
+                                    // Replace the clash result if any of these criteria apply:
+                                    // - We don't have a clash yet
+                                    // - Our previous clash is piercing, and our new one is a protrusion
+                                    // - We have the same clash type, but our clash is more severe
+                                    if (
+                                        ! has_clash
+                                        || (result.clash_type == 1 && intersection.clash_type == 0)
+                                        || (
+                                               result.clash_type == intersection.clash_type
+                                               && intersection.distance > result.distance
+                                           )
+                                    ) {
+                                        has_clash = true;
+                                        result = intersection;
+                                    }
+                                }
+                            }
+
+                            if ( ! is_manifold) {
+                                clash collision = test_collision(task.a, task.b, false);
+                                if (collision.clash_type != -1) {
+                                    has_clash = true;
+                                    result = collision;
+                                }
+                            }
+
+                            if (has_clash) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                }
+
+                return results;
+            }
+
+            std::vector<clash> clash_collision_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b, bool allow_touching = false
+                ) const {
+                std::vector<clash_task> task_queue;
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, 0.0);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                task_queue.emplace_back(clash_task{t_a, t_b});
+                            }
+                        }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, allow_touching] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(-0.001);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            clash result = test_collision(task.a, task.b, allow_touching);
+                            if (result.clash_type != -1) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                }
+
+                return results;
+            }
+
+            std::vector<clash> clash_clearance_many(
+                    const std::vector<T>& set_a, const std::vector<T>& set_b,
+                    double clearance = 0.05, bool check_all = false
+                ) const {
+                std::vector<clash_task> task_queue;
+                std::vector<clash> results;
+
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_a = build_box_set(set_a);
+                std::unique_ptr<BVH_BoxSet<double, 3>> box_set_b = build_box_set(set_b);
+
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_a = box_set_a->BVH();
+                const opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>& bvh_b = box_set_b->BVH();
+
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, clearance);
+
+                if (bvh_clashes.empty()) {
+                    return results;
+                }
+
+                std::map<T, std::set<T>> tested_pairs;
+
+                for (const auto& pair : bvh_clashes) {
+                    const int bvh_a_i = pair.first;
+                    const std::vector<int>& bvh_b_is = pair.second;
+                    for (int i=bvh_a->BegPrimitive(bvh_a_i); i<=bvh_a->EndPrimitive(bvh_a_i); ++i) {
+                        const T& t_a = set_a[box_set_a->Element(i)];
+                        for (const auto& bvh_b_i : bvh_b_is) {
+                            for (int j=bvh_b->BegPrimitive(bvh_b_i); j<=bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                                const T& t_b = set_b[box_set_b->Element(j)];
+                                if (t_a == t_b) {
+                                    continue;
+                                }
+
+                                if (tested_pairs[t_a].insert(t_b).second) {
+                                    tested_pairs[t_b].insert(t_a).second;
+                                } else {
+                                    continue;
+                                }
+
+                                task_queue.emplace_back(clash_task{t_a, t_b});
+                            }
+                        }
+                    }
+                }
+
+                std::vector<std::vector<clash_task>> threaded_tasks = allocate_tasks_to_threads(task_queue);
+
+                std::vector<std::thread> threads;
+                std::mutex results_mutex;
+
+                for (auto& tasks : threaded_tasks) {
+                    threads.emplace_back([this, &tasks, &results, &results_mutex, clearance, check_all] {
+                        std::vector<clash> thread_results;
+                        for (auto& task : tasks) {
+                            const auto& obb_a = obbs_.find(task.a)->second;
+                            auto obb_b = obbs_.find(task.b)->second;
+                            obb_b.Enlarge(clearance);
+                            if (obb_a.IsOut(obb_b)) {
+                                continue;
+                            }
+
+                            clash result = test_clearance(task.a, task.b, clearance, check_all);
+                            if (result.clash_type != -1) {
+                                thread_results.push_back(result);
+                            }
+                        }
+                        {
+                            std::lock_guard<std::mutex> lock(results_mutex);
+                            results.insert(results.end(), thread_results.begin(), thread_results.end());
+                        }
+                    });
+                }
+
+                for (auto& thread : threads) {
+                    if (thread.joinable()) {
+                        thread.join();
+                    }
+                }
+
+                return results;
+            }
 
 			std::vector<T> select(const T& t, bool completely_within = false, double extend = 0.0) const {
 				distances_.clear();
@@ -322,6 +1551,24 @@ namespace IfcGeom {
 
 			tree_t tree_;
 			map_t shapes_;
+            std::map<T, Bnd_Box> aabbs_;
+            std::map<T, Bnd_OBB> obbs_; 
+            std::map<T, double> max_protrusions_; 
+            std::map<T, opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>>> bvhs_; 
+            std::unordered_map<T, bool> is_manifold_;
+            std::unordered_map<T, std::vector<std::array<int, 3>>> tris_;
+            std::unordered_map<T, std::vector<gp_Pnt>> verts_;
+            std::unordered_map<T, std::vector<gp_Vec>> normals_;
+
+            // Temporary structures for H5
+            std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
+            std::map<IfcUtil::IfcBaseClass*, std::string> global_ids_;
+            std::map<IfcUtil::IfcBaseClass*, std::string> names_;
+            std::map<IfcUtil::IfcBaseClass*, std::vector<double>> placements_;
+            std::map<std::string, std::vector<double>> local_verts_;
+            std::map<std::string, std::vector<int>> local_faces_;
+            std::map<std::string, std::vector<IfcGeom::Material>> local_materials_;
+            std::map<std::string, std::vector<int>> local_material_ids_;
 			
 			bool enable_face_styles_ = false;
 
@@ -390,13 +1637,267 @@ namespace IfcGeom {
 			}
 		}
 
-		void add_element(IfcGeom::BRepElement* elem) {
+        void write_h5() {
+            H5::H5File file("filename.h5", H5F_ACC_TRUNC);
+            H5::Group shapes = file.createGroup("/shapes");
+
+            std::set<std::string> processed_geometry_ids;
+            std::vector<int> element_shape_ids;
+            std::unordered_map<std::string, int> geometry_id_to_shape_id;
+            int geometry_index = 0;
+
+            std::vector<std::vector<float>> matrices;
+            std::vector<std::array<float, 4>> colours;
+            std::vector<std::string> names;
+            std::vector<std::string> global_ids;
+
+            const float tolerance = 0.01f; // Tolerance value for comparison
+
+            for (const auto& elem : triangulation_elements_) {
+                const auto geometry_id = elem->geometry().id();
+
+                const auto& placement = placements_[elem->product()];
+                matrices.emplace_back(placement.begin(), placement.end());
+
+                names.push_back(names_[elem->product()]);
+                global_ids.push_back(global_ids_[elem->product()]);
+
+                if (processed_geometry_ids.find(geometry_id) != processed_geometry_ids.end()) {
+                    element_shape_ids.push_back(geometry_id_to_shape_id[geometry_id]);
+                    continue;
+                }
+
+                processed_geometry_ids.insert(geometry_id);
+                H5::Group group = shapes.createGroup(std::to_string(geometry_index));
+                geometry_id_to_shape_id[geometry_id] = geometry_index;
+                element_shape_ids.push_back(geometry_index);
+
+                geometry_index++;
+
+                const auto& faces = local_faces_[geometry_id];
+                const auto& verts = local_verts_[geometry_id];
+                const auto& materials = local_materials_[geometry_id];
+                const auto& material_ids = local_material_ids_[geometry_id];
+
+                std::vector<float> verts_float(verts.size());
+                std::transform(verts.begin(), verts.end(), verts_float.begin(),
+                   [](double val) { return static_cast<float>(val); });
+
+                // Write faces
+                size_t total_verts = verts.size() / 3;
+                hsize_t faces_dims[1] = {faces.size()};
+                H5::DataSpace faces_dataspace(1, faces_dims);
+                H5::DSetCreatPropList faces_propList;
+                faces_propList.setChunk(1, faces_dims);
+                faces_propList.setDeflate(9);
+                if (total_verts < (1 << 8)) {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    std::vector<uint8_t> faces_dtype(faces.begin(), faces.end());
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces_dtype.data(), dtype);
+                } else if (total_verts < (1 << 16)) {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT16;
+                    std::vector<uint16_t> faces_dtype(faces.begin(), faces.end());
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces_dtype.data(), dtype);
+                } else {
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT32;
+                    H5::DataSet faces_dataset = group.createDataSet("faces", dtype, faces_dataspace, faces_propList);
+                    faces_dataset.write(faces.data(), dtype);
+                }
+
+                // Write verts
+                H5::DataType dtype = H5::PredType::NATIVE_FLOAT;
+                hsize_t dims[1] = {verts.size()};
+                H5::DataSpace dataspace(1, dims);
+                H5::DSetCreatPropList propList;
+                propList.setChunk(1, dims);
+                propList.setDeflate(9);
+                H5::DataSet dataset = group.createDataSet("verts", dtype, dataspace, propList);
+                dataset.write(verts_float.data(), H5::PredType::NATIVE_FLOAT);
+
+                // Write materials
+                std::vector<uint8_t> material_keys;
+                for (const auto& material : materials) {
+                    float alpha = 1.0;
+                    if (material.hasTransparency() && material.transparency() > 0) {
+                        alpha = 1.0 - material.transparency();
+                    }
+
+                    int i = 0;
+                    bool is_existing_colour = false;
+                    for (const auto& colour : colours) {
+                        if (std::abs(colour[0] - static_cast<float>(material.diffuse()[0])) < tolerance
+                                && std::abs(colour[1] - static_cast<float>(material.diffuse()[1])) < tolerance
+                                && std::abs(colour[2] - static_cast<float>(material.diffuse()[2])) < tolerance
+                                && std::abs(colour[3] - alpha) < tolerance) {
+                            is_existing_colour = true;
+                            break;
+                        }
+                        i++;
+                    }
+
+                    if ( ! is_existing_colour) {
+                        colours.push_back({material.diffuse()[0], material.diffuse()[1], material.diffuse()[2], alpha});
+                    }
+                    material_keys.push_back(i);
+                }
+
+                size_t total_material_keys = material_keys.size();
+                if (total_material_keys) {
+                    hsize_t dims[1] = {material_keys.size()};
+                    H5::DataSpace dataspace(1, dims);
+                    H5::DSetCreatPropList propList;
+                    propList.setChunk(1, dims);
+                    propList.setDeflate(9);
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    H5::DataSet dataset = group.createDataSet("materials", dtype, dataspace, propList);
+                    dataset.write(material_keys.data(), dtype);
+                }
+
+                if (total_material_keys > 1) {
+                    hsize_t dims[1] = {material_ids.size()};
+                    H5::DataSpace dataspace(1, dims);
+                    H5::DSetCreatPropList propList;
+                    propList.setChunk(1, dims);
+                    propList.setDeflate(9);
+                    H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                    H5::DataSet dataset = group.createDataSet("material_ids", dtype, dataspace, propList);
+                    std::vector<uint8_t> data_dtype(material_ids.begin(), material_ids.end());
+                    dataset.write(data_dtype.data(), dtype);
+                }
+            }
+
+            // Write GlobalIds
+            std::vector<uint8_t> uuids_array;
+            for (const auto& id_str : global_ids) {
+                for (size_t i = 0; i < id_str.length(); i += 2) {
+                    uuids_array.push_back(std::stoi(id_str.substr(i, 2), 0, 16));
+                }
+            }
+
+            hsize_t global_ids_dims[2] = {global_ids.size(), 16};  // 16 bytes per UUID
+            H5::DataSpace global_ids_dataspace(2, global_ids_dims);
+            H5::DataSet global_ids_dataset = file.createDataSet("element_global_ids", H5::PredType::NATIVE_UINT8, global_ids_dataspace);
+            global_ids_dataset.write(uuids_array.data(), H5::PredType::NATIVE_UINT8);
+
+            // Write names
+            H5::StrType strType(H5::PredType::C_S1, H5T_VARIABLE);
+            hsize_t names_dims[1] = {names.size()};
+            H5::DataSpace names_dataspace(1, names_dims);
+            H5::DataSet names_dataset = file.createDataSet("element_names", strType, names_dataspace);
+            std::vector<const char*> cstr_names;
+            for (const auto& name : names) {
+                cstr_names.push_back(name.c_str());
+            }
+            names_dataset.write(&cstr_names[0], strType);
+
+            // Write matrices
+            std::vector<float> flat_matrices;
+            for (const auto& matrix : matrices) {
+                flat_matrices.insert(flat_matrices.end(), matrix.begin(), matrix.end());
+            }
+            hsize_t dims[2] = {matrices.size(), matrices[0].size()};
+            H5::DataSpace dataspace(2, dims);
+            H5::DSetCreatPropList propList;
+            propList.setChunk(2, dims);
+            propList.setDeflate(9);
+            H5::DataSet dataset = file.createDataSet("element_matrices", H5::PredType::NATIVE_FLOAT, dataspace, propList);
+            dataset.write(flat_matrices.data(), H5::PredType::NATIVE_FLOAT);
+
+            // Write element_shape_ids
+            hsize_t element_shape_ids_dims[1] = {element_shape_ids.size()};
+            H5::DataSpace element_shape_ids_dataspace(1, element_shape_ids_dims);
+            H5::DSetCreatPropList element_shape_ids_propList;
+            element_shape_ids_propList.setChunk(1, element_shape_ids_dims);
+            element_shape_ids_propList.setDeflate(9);
+            if (geometry_index < (1 << 8)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT8;
+                std::vector<uint8_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
+            } else if (geometry_index < (1 << 16)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT16;
+                std::vector<uint16_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
+            } else if (geometry_index < (1UL << 32)) {
+                H5::DataType dtype = H5::PredType::NATIVE_UINT32;
+                std::vector<uint32_t> element_shape_ids_dtype(element_shape_ids.begin(), element_shape_ids.end());
+                H5::DataSet element_shape_ids_dataset = file.createDataSet("element_shape_ids", dtype, element_shape_ids_dataspace, element_shape_ids_propList);
+                element_shape_ids_dataset.write(element_shape_ids_dtype.data(), dtype);
+            }
+
+            // Write colours
+            if (colours.size()) {
+                std::vector<float> flat_colours;
+                for (const auto& colour : colours) {
+                    flat_colours.insert(flat_colours.end(), colour.begin(), colour.end());
+                }
+                hsize_t colours_dims[2] = {colours.size(), colours[0].size()};
+                H5::DataSpace colours_dataspace(2, colours_dims);
+                H5::DSetCreatPropList colours_propList;
+                colours_propList.setChunk(2, colours_dims);
+                colours_propList.setDeflate(9);
+                H5::DataSet colours_dataset = file.createDataSet("materials", H5::PredType::NATIVE_FLOAT, colours_dataspace, colours_propList);
+                colours_dataset.write(flat_colours.data(), H5::PredType::NATIVE_FLOAT);
+            }
+        }
+
+        void apply_matrix_to_flat_verts(const std::vector<float>& flat_list, const std::vector<float>& matrix, std::vector<float>& result) {
+            result.clear();
+            result.reserve(flat_list.size());
+
+            for (size_t i = 0; i < flat_list.size(); i += 3) {
+                float x = flat_list[i];
+                float y = flat_list[i + 1];
+                float z = flat_list[i + 2];
+                result.push_back(x * matrix[0] + y * matrix[3] + z * matrix[6] + matrix[9]);
+                result.push_back(x * matrix[1] + y * matrix[4] + z * matrix[7] + matrix[10]);
+                result.push_back(x * matrix[2] + y * matrix[5] + z * matrix[8] + matrix[11]);
+            }
+        }
+
+        std::string uint8_to_b64(const std::vector<uint8_t>& uuids_array) {
+            std::string hex_str;
+            for (auto byte : uuids_array) {
+                // Convert each byte to a two-digit hexadecimal string and append it to the result
+                char hex[3]; // Two characters for the hex value and one for the null terminator
+                snprintf(hex, sizeof(hex), "%02x", byte);
+                hex_str.append(hex);
+            }
+            return hex_str;
+        }
+
+		void add_triangulation_element(IfcGeom::TriangulationElement* elem, std::string name, std::string global_id) {
+            triangulation_elements_.push_back(elem);
+            const auto& t = elem->product();
+            const auto geometry_id = elem->geometry().id();
+            placements_[t] = elem->transformation().matrix().data();
+            names_[t] = name;
+            global_ids_[t] = global_id;
+
+            if (local_verts_.find(geometry_id) != local_verts_.end()) {
+                return;
+            }
+
+            local_verts_[geometry_id] = elem->geometry().verts();
+            local_faces_[geometry_id] = elem->geometry().faces();
+            local_materials_[geometry_id] = elem->geometry().materials();
+            local_material_ids_[geometry_id] = elem->geometry().material_ids();
+        }
+
+		void add_element(IfcGeom::BRepElement* elem, bool should_triangulate=false) {
 			if (!elem) {
 				return;
 			}
 			auto compound = elem->geometry().as_compound();
 			compound.Move(elem->transformation().data());
-			add(elem->product(), compound);
+            if (should_triangulate) {
+                add_triangulation(elem->product(), compound);
+            } else {
+                add(elem->product(), compound);
+            }
 			auto git = elem->geometry().begin();
 
 			if (enable_face_styles_) {
