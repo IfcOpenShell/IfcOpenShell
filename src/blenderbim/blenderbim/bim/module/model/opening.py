@@ -101,6 +101,13 @@ class FilledOpeningGenerator:
                     new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
             else:
                 new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
+            
+            if element.is_a("IfcSlab") and filling.is_a("IfcWindow"):
+                # in this case i think new_matrix should be the filling obj
+                # i also wonder in what case it shouldn't be the filling obj that opens the target
+                # (in that last case we could unfilter this section ) 
+                new_matrix = filling_obj.matrix_world.copy()
+
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
