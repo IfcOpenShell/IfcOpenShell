@@ -153,18 +153,6 @@ namespace IfcGeom {
 		BRepElement* current_shape_model;
 		SerializedElement* current_serialization;
 
-        // Structures for chunking
-        int offset = 0;
-        int colour_offset = 0;
-        std::vector<std::string> chunked_guids;
-        std::vector<int> chunked_guid_ids;
-        std::vector<double> chunked_verts;
-        std::vector<int> chunked_faces;
-        std::vector<int> chunked_materials;
-        std::vector<int> chunked_material_ids;
-        std::vector<std::vector<float>> chunked_colours;
-        std::vector<std::array<float, 4>> colours;
-
 		// A container and iterator for IfcBuildingElements for the current IfcRepresentation referenced by *representation_iterator
 		IfcSchema::IfcProduct::list::ptr ifcproducts;
 		IfcSchema::IfcProduct::list::it ifcproduct_iterator;
@@ -772,7 +760,7 @@ namespace IfcGeom {
 				if (rt == GeometrySerializer::READ_TRIANGULATION) {
 					cache_->write((IfcGeom::TriangulationElement*) element);
 				} else {
-					// cache_->write((IfcGeom::BRepElement*)element);
+					cache_->write((IfcGeom::BRepElement*)element);
 				}				
 			}
 #endif
@@ -951,138 +939,6 @@ namespace IfcGeom {
 				return create();
 			}
 		}
-
-        void apply_matrix_to_flat_verts(const std::vector<double>& flat_list, const std::vector<double>& matrix, std::vector<double>& result) {
-            result.clear();
-            result.reserve(flat_list.size());
-
-            for (size_t i = 0; i < flat_list.size(); i += 3) {
-                double x = flat_list[i];
-                double y = flat_list[i + 1];
-                double z = flat_list[i + 2];
-                result.push_back(x * matrix[0] + y * matrix[3] + z * matrix[6] + matrix[9]);
-                result.push_back(x * matrix[1] + y * matrix[4] + z * matrix[7] + matrix[10]);
-                result.push_back(x * matrix[2] + y * matrix[5] + z * matrix[8] + matrix[11]);
-            }
-        }
-
-        bool process_chunk()
-        {
-            if (colours.size() == 0) {
-                colours.push_back({1, 1, 1, 1}); // Fallback "no material" colour
-                chunked_colours.push_back({1, 1, 1, 1});
-            }
-
-            const float tolerance = 0.01f; // Tolerance value for comparison
-            int chunk_size = 10000;
-
-            // Only works for multithreaded right now
-            TriangulationElement* ret = 0;
-            ret = dynamic_cast<IfcGeom::TriangulationElement*>(*task_result_iterator_);
-
-            const std::vector<double>& matrix = ret->transformation().matrix().data();
-            const std::vector<double>& geometry_verts = ret->geometry().verts();
-            const std::vector<int>& geometry_faces = ret->geometry().faces();
-            const auto& materials = ret->geometry().materials();
-            const auto& material_ids = ret->geometry().material_ids();
-
-            chunked_guids.push_back(ret->guid());
-            int guid_ids_size = chunked_guid_ids.size();
-            if (guid_ids_size > 0) {
-                chunked_guid_ids.push_back(chunked_guid_ids[guid_ids_size - 1] + geometry_faces.size() / 3);
-            } else {
-                chunked_guid_ids.push_back(geometry_faces.size() / 3);
-            }
-
-            std::vector<double> verts;
-            apply_matrix_to_flat_verts(geometry_verts, matrix, verts);
-
-            // Redo with resize and pushback to prevent unneccessary reallocations
-            std::vector<int> faces = geometry_faces;
-            for (size_t i = 0; i < faces.size(); ++i) {
-                faces[i] += offset;
-            }
-
-            chunked_verts.insert(chunked_verts.end(), verts.begin(), verts.end());
-            chunked_faces.insert(chunked_faces.end(), faces.begin(), faces.end());
-
-            std::vector<int> material_keys;
-            for (const auto& material : materials) {
-                float alpha = 1.0;
-                if (material.hasTransparency() && material.transparency() > 0) {
-                    alpha = 1.0 - material.transparency();
-                }
-
-                int i = 0;
-                bool is_existing_colour = false;
-                for (const auto& colour : colours) {
-                    if (std::abs(colour[0] - static_cast<float>(material.diffuse()[0])) < tolerance
-                            && std::abs(colour[1] - static_cast<float>(material.diffuse()[1])) < tolerance
-                            && std::abs(colour[2] - static_cast<float>(material.diffuse()[2])) < tolerance
-                            && std::abs(colour[3] - alpha) < tolerance) {
-                        is_existing_colour = true;
-                        break;
-                    }
-                    i++;
-                }
-
-                if ( ! is_existing_colour) {
-                    colours.push_back({material.diffuse()[0], material.diffuse()[1], material.diffuse()[2], alpha});
-                    chunked_colours.push_back({material.diffuse()[0], material.diffuse()[1], material.diffuse()[2], alpha});
-                }
-
-                int chunked_index = 0;
-                auto it = std::find(chunked_materials.begin(), chunked_materials.end(), i);
-                if (it == chunked_materials.end()) {
-                    // material not used so far in chunk
-                    chunked_index = chunked_materials.size();
-                    chunked_materials.push_back(i);
-                } else {
-                    // material already in chunk
-                    chunked_index = std::distance(chunked_materials.begin(), it);
-                }
-                material_keys.push_back(chunked_index);
-            }
-
-            if (materials.size() > 0) {
-                std::vector<int> mat_ids(material_ids.size());
-                for (int i = 0; i<material_ids.size(); ++i) {
-                    mat_ids[i] = material_keys[material_ids[i]];
-                }
-                chunked_material_ids.insert(chunked_material_ids.end(), mat_ids.begin(), mat_ids.end());
-            } else {
-                std::vector<int> mat_ids(faces.size() / 3, 0);
-                chunked_material_ids.insert(chunked_material_ids.end(), mat_ids.begin(), mat_ids.end());
-            }
-
-            offset += verts.size() / 3;
-
-            if (offset > chunk_size) {
-                return true;
-            }
-
-            return false;
-        }
-
-        chunk get_chunk()
-        {
-            chunk result = {
-                std::move(chunked_guids),
-                std::move(chunked_guid_ids),
-                std::move(chunked_verts),
-                std::move(chunked_faces),
-                std::move(chunked_materials),
-                std::move(chunked_material_ids),
-                std::move(chunked_colours),
-            };
-            chunked_verts.clear();
-            chunked_faces.clear();
-            chunked_materials.clear();
-            chunked_material_ids.clear();
-            chunked_colours.clear();
-            offset = 0;
-            return result;
-        }
 
         /// Gets the representation of the current geometrical entity.
         Element* get()

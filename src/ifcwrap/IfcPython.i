@@ -17,11 +17,6 @@
  *                                                                              *
  ********************************************************************************/
 
-%{
-#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#include "numpy/arrayobject.h"
-%}
-
 %begin %{
 #if defined(_DEBUG) && defined(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
 /* https://github.com/swig/swig/issues/325 */
@@ -86,7 +81,6 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
-	#include "../ifcgeom_schema_agnostic/chunk.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -153,7 +147,6 @@
 	#include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 	#include "../ifcgeom_schema_agnostic/Serialization.h"
 	#include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
-	#include "../ifcgeom_schema_agnostic/chunk.h"
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
@@ -211,11 +204,6 @@
 %include "IfcGeomWrapper.i"
 %include "IfcParseWrapper.i"
 %include "std_vector.i"
-%include "../ifcgeom_schema_agnostic/chunk.h"
-%include "numpy.i"
-%init %{
-    import_array();
-%}
 	
 namespace std {
   %template(float_array_3) array<double, 3>;
@@ -225,65 +213,4 @@ namespace std {
   %template(StringVector) std::vector<std::string>;
   %template(FloatVectorVector) std::vector<std::vector<float>>;
   %template(DoubleVectorVector) std::vector<std::vector<double>>;
-  %template(H5ShapeVector) std::vector<IfcGeom::h5_shape>;
-}
-
-%extend IfcGeom::h5_shape {
-    PyObject* get_verts() {
-        npy_intp dims[1] = { (npy_intp)$self->verts.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_FLOAT, (void*)$self->verts.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_faces() {
-        npy_intp dims[1] = { (npy_intp)$self->faces.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->faces.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_materials() {
-        npy_intp dims[1] = { (npy_intp)$self->materials.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->materials.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_material_ids() {
-        npy_intp dims[1] = { (npy_intp)$self->material_ids.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->material_ids.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-}
-
-%extend IfcGeom::chunk {
-    PyObject* get_verts() {
-        npy_intp dims[1] = { (npy_intp)$self->verts.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_DOUBLE, (void*)$self->verts.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_faces() {
-        npy_intp dims[1] = { (npy_intp)$self->faces.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->faces.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_materials() {
-        npy_intp dims[1] = { (npy_intp)$self->materials.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->materials.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
-
-    PyObject* get_material_ids() {
-        npy_intp dims[1] = { (npy_intp)$self->material_ids.size() };
-        PyObject* array = PyArray_SimpleNewFromData(1, dims, NPY_INT, (void*)$self->material_ids.data());
-        PyArray_CLEARFLAGS((PyArrayObject*)array, NPY_ARRAY_WRITEABLE);  // Make the array read-only
-        return array;
-    }
 }

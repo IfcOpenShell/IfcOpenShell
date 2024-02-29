@@ -59,7 +59,6 @@
 #define IFCGEOMITERATOR_H
 
 #include "../ifcgeom_schema_agnostic/IteratorImplementation.h"
-#include "../ifcgeom_schema_agnostic/chunk.h"
 
 // The infamous min & max Win32 #defines can leak here from OCE depending on the build configuration
 #ifdef min
@@ -138,9 +137,6 @@ namespace IfcGeom {
 		Element* get() { return implementation_->get(); }
 
 		BRepElement* get_native() { return implementation_->get_native(); }
-
-		bool process_chunk() { return implementation_->process_chunk(); }
-        IfcGeom::chunk get_chunk() { return implementation_->get_chunk(); }
 
 		const Element* get_object(int id) { return implementation_->get_object(id); }
 

@@ -25,7 +25,6 @@
 #include "../ifcgeom_schema_agnostic/IfcGeomFilter.h"
 #include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomIteratorSettings.h"
-#include "../ifcgeom_schema_agnostic/chunk.h"
 
 #include <gp_XYZ.hxx>
 
@@ -72,8 +71,6 @@ namespace IfcGeom {
 		virtual IfcUtil::IfcBaseClass* next() = 0;
 		virtual Element* get() = 0;
 		virtual BRepElement* get_native() = 0;
-		virtual bool process_chunk() = 0;
-		virtual IfcGeom::chunk get_chunk() = 0;
 		virtual const Element* get_object(int id) = 0;
 		virtual IfcUtil::IfcBaseClass* create() = 0;
 		virtual ~IteratorImplementation() {}
