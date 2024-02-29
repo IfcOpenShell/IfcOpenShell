@@ -33,6 +33,7 @@ classes = (
     operator.EnableCulling,
     operator.EnableEditingHeader,
     operator.ExportIFC,
+    operator.FlipClippingPlane,
     operator.ImportIFC,
     operator.LinkIfc,
     operator.LoadLink,
