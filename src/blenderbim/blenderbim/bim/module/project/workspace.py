@@ -33,6 +33,7 @@ class QueryTool(bpy.types.WorkSpaceTool):
     bl_keymap = (
         ("bim.query_linked_element", {"type": "RIGHTMOUSE", "value": "PRESS"}, None),
         ("bim.query_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
+        ("bim.query_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
         ("bim.query_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
     )
 
@@ -42,6 +43,9 @@ class QueryTool(bpy.types.WorkSpaceTool):
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add Clipping Plane", icon="EVENT_C")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Flip Clipping Plane", icon="EVENT_F")
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
@@ -64,6 +68,9 @@ class QueryHotkey(bpy.types.Operator):
 
     def hotkey_S_C(self):
         bpy.ops.bim.create_clipping_plane("INVOKE_DEFAULT")
+
+    def hotkey_S_F(self):
+        bpy.ops.bim.flip_clipping_plane("INVOKE_DEFAULT")
 
     def hotkey_A_C(self):
         if LinksData.enable_culling:
