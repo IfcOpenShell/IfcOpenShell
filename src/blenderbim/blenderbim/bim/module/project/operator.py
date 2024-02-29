@@ -37,6 +37,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
+from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
@@ -1876,3 +1877,20 @@ class CreateClippingPlane(bpy.types.Operator):
         self.mouse_x = event.mouse_region_x
         self.mouse_y = event.mouse_region_y
         return self.execute(context)
+
+
+class FlipClippingPlane(bpy.types.Operator):
+    bl_idname = "bim.flip_clipping_plane"
+    bl_label = "Flip Clipping Plane"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.area.type == "VIEW_3D"
+
+    def execute(self, context):
+        obj = bpy.context.active_object
+        if obj in [cp.obj for cp in bpy.context.scene.BIMProjectProperties.clipping_planes]:
+            obj.rotation_euler[0] += radians(180)
+            bpy.context.view_layer.update()
+        return {"FINISHED"}
