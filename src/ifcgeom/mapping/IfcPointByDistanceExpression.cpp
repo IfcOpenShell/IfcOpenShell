@@ -50,7 +50,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcPointByDistanceExpression* i
 
    if (inst->OffsetLongitudinal().has_value()) {
        auto offset_longitudinal = inst->OffsetLongitudinal().get() * length_unit_;
-       o == offset_longitudinal* x;
+       o += offset_longitudinal* x;
    }
 
    return taxonomy::make<taxonomy::matrix4>(o,z,x);
