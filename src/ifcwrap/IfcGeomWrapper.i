@@ -82,6 +82,8 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 
 %template(ray_intersection_results) std::vector<IfcGeom::ray_intersection_result>;
 
+%template(clashes) std::vector<IfcGeom::clash>;
+
 // A Template instantantation should be defined before it is used as a base class. 
 // But frankly I don't care as most methods are subtlely different anyway.
 %include "../ifcgeom_schema_agnostic/IfcGeomTree.h"
@@ -112,6 +114,80 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	aggregate_of_instance::ptr select_box(const Bnd_Box& b, bool completely_within = false) const {
 		std::vector<IfcUtil::IfcBaseEntity*> ps = $self->select_box(b, completely_within);
 		return IfcGeom_tree_vector_to_list(ps);
+	}
+
+
+    %typemap(in) const std::vector<IfcUtil::IfcBaseClass*>& (std::vector<IfcUtil::IfcBaseClass*> temp) {
+        if (!PyList_Check($input)) {
+            PyErr_SetString(PyExc_TypeError, "Expected a list.");
+            return NULL;
+        }
+        $1 = &temp;  // Set $1 to the address of temp, which SWIG will use as the argument in the wrapped function
+        temp.reserve(PyList_Size($input));  // Pre-allocate memory for efficiency
+        for (Py_ssize_t i = 0; i < PyList_Size($input); ++i) {
+            PyObject* pyObj = PyList_GetItem($input, i);
+            void* ptr = 0;
+            int res = SWIG_ConvertPtr(pyObj, &ptr, SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);
+            if (!SWIG_IsOK(res)) {
+                PyErr_SetString(PyExc_TypeError, "List item is not of type IfcBaseClass.");
+                return NULL;
+            }
+            temp.push_back(reinterpret_cast<IfcUtil::IfcBaseClass*>(ptr));
+        }
+    }
+
+	std::vector<clash> clash_intersection_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, double tolerance, bool check_all) const {
+        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        for (auto* e : set_a) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_a_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+        for (auto* e : set_b) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_b_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+		return $self->clash_intersection_many(set_a_entities, set_b_entities, tolerance, check_all);
+	}
+
+	std::vector<clash> clash_collision_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, bool allow_touching) const {
+        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        for (auto* e : set_a) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_a_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+        for (auto* e : set_b) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_b_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+		return $self->clash_collision_many(set_a_entities, set_b_entities, allow_touching);
+	}
+
+	std::vector<clash> clash_clearance_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, double clearance, bool check_all) const {
+        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        for (auto* e : set_a) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_a_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+        for (auto* e : set_b) {
+            if (!e->declaration().is("IfcProduct")) {
+                throw IfcParse::IfcException("All instances should be of type IfcProduct");
+            }
+            set_b_entities.push_back(static_cast<IfcUtil::IfcBaseEntity*>(e));
+        }
+		return $self->clash_clearance_many(set_a_entities, set_b_entities, clearance, check_all);
 	}
 
 	aggregate_of_instance::ptr select(IfcUtil::IfcBaseClass* e, bool completely_within = false, double extend = 0.0) const {
