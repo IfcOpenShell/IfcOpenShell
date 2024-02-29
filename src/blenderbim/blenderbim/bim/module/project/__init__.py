@@ -39,6 +39,7 @@ classes = (
     operator.LoadProject,
     operator.LoadProjectElements,
     operator.NewProject,
+    operator.QueryLinkedElement,
     operator.RefreshLibrary,
     operator.ReloadLink,
     operator.RevertProject,
