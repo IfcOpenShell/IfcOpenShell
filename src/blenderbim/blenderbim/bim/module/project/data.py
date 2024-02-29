@@ -24,6 +24,7 @@ from blenderbim.bim.ifc import IfcStore
 
 def refresh():
     ProjectData.is_loaded = False
+    LinksData.is_loaded = False
 
 
 class ProjectData:
@@ -61,3 +62,8 @@ class ProjectData:
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:
             return ""
+
+
+class LinksData:
+    enable_culling = False
+    is_loaded = False
