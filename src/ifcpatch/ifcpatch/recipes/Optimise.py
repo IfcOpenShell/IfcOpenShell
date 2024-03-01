@@ -18,7 +18,6 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
-from toposort import toposort_flatten as toposort
 
 
 class Patcher:
@@ -53,6 +52,8 @@ class Patcher:
         self.optimized_file = ifcopenshell.file(schema=self.file.schema)
 
     def patch(self):
+        from toposort import toposort_flatten as toposort
+
         def generate_instances_and_references():
             """
             Generator which yields an entity id and
