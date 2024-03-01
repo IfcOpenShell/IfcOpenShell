@@ -392,7 +392,7 @@ class curve_segment_evaluator {
        // of geometry_adjuster are disabled, eval_ is called to get the unadjusted end point
        // of this segment, the geometry_adjuster is updated with the end point so it can
        // compute and apply geometry adjustments.
-        if (eval_) {
+        if (eval_ && geometry_adjuster) {
             geometry_adjuster->enable_adjustments(false); // disable adjustments
             auto end_point = (*eval_)(fabs(length_)); // compute the end point without correction
             geometry_adjuster->set_segment_end_point(end_point); // save the unadjusted end point it can be used to compute adjustments
@@ -458,9 +458,7 @@ class curve_segment_evaluator {
 #ifdef SCHEMA_HAS_IfcClothoid
 // Then initialize Function(double) -> Vector3, by means of IfcCurve subtypes
    void operator()(const IfcSchema::IfcClothoid* c) {
-
-        geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-    // see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
+      // see https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcClothoid.htm
       // also see, https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/concepts/Partial_Templates/Geometry/Curve_Segment_Geometry/Clothoid_Transition_Segment/content.html,
       // which defines the clothoid constant as sqrt(L*R) and L is the length measured from the inflection point and R is the radius at L
       auto A = c->ClothoidConstant();
@@ -476,11 +474,12 @@ class curve_segment_evaluator {
 #if defined SCHEMA_HAS_IfcCosineSpiral
    void operator()(const IfcSchema::IfcCosineSpiral* c) {
       auto const_term = c->ConstantTerm();
-      auto cos_term = c->CosineTerm();
-
-      auto theta = [const_term, cos_term](double t) -> double {
-          auto ct = const_term.get_value_or(0);
-          return ct + cos_term * sin(t);
+      auto cosine_term = c->CosineTerm();
+      auto L = length()*length_unit_;
+      auto theta = [const_term, cosine_term,L,lu=length_unit_](double t) -> double {
+          auto a0 = const_term.has_value() ? t / (const_term.value()*lu) : 0.0;
+          auto a1 = (L/PI)*(1.0/(cosine_term*lu))*sin((PI/L)*t);
+          return a0 + a1;
       };
       auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
       auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
@@ -492,11 +491,14 @@ class curve_segment_evaluator {
 #if defined SCHEMA_HAS_IfcSineSpiral
    void operator()(const IfcSchema::IfcSineSpiral* c) {
       auto const_term = c->ConstantTerm();
-      auto cos_term = c->SineTerm();
-
-      auto theta = [const_term, cos_term](double t) -> double {
-          auto ct = const_term.get_value_or(0);
-          return ct + cos_term * cos(t);
+      auto linear_term = c->LinearTerm();
+      auto sine_term = c->SineTerm();
+      auto L = length() * length_unit_;
+      auto theta = [const_term, linear_term, sine_term,L,lu=length_unit_](double t) -> double {
+          auto a0 = const_term.has_value() ? t / (const_term.value() * lu) : 0.0;
+          auto a1 = linear_term.has_value() ? sign(linear_term.value())*pow(t / (linear_term.value()*lu), 2.0) / 2.0 : 0.0;
+          auto a2 = -1.0*(L / (2 * PI * sine_term * lu)) * (cos(2 * PI * t / L) - 1.0);
+          return a0 + a1 + a2;
       };
       auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
       auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
@@ -507,7 +509,7 @@ class curve_segment_evaluator {
 
     void polynomial_spiral(const IfcSchema::IfcSpiral* c, double lu, boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
       auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, lu](double t) {
-          auto a0 = A0.has_value() ? t / A0.value() : 0.0;
+          auto a0 = A0.has_value() ? t / (A0.value() * lu) : 0.0;
           auto a1 = A1.has_value() ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
           auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
           auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 4) / (4 * fabs(std::pow(A3.value() * lu, 5))) : 0.0;
@@ -564,19 +566,20 @@ class curve_segment_evaluator {
 
    void operator()(const IfcSchema::IfcCircle* c)
    {
-      auto R = c->Radius() * length_unit_;
+      if (segment_type_ == ST_HORIZONTAL) {
+         auto R = c->Radius() * length_unit_;
 
-      auto sign_l = sign(length_);
-      auto start_angle = start_/R;
+         auto sign_l = sign(length_);
+         auto start_angle = start_/R;
 
-      auto start_x = R * cos(start_angle);
-      auto start_y = R * sin(start_angle);
+         auto start_x = R * cos(start_angle);
+         auto start_y = R * sin(start_angle);
 
-      auto segment_type = segment_type_;
+         auto segment_type = segment_type_;
 
-      geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+         geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
-      eval_ = [R, start_x, start_y, start_angle, sign_l, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
+         eval_ = [R, start_x, start_y, start_angle, sign_l, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
          {
             auto angle = start_angle + sign_l * u / R;
 
@@ -587,24 +590,36 @@ class curve_segment_evaluator {
             auto y = R * dy - start_y;
 
             Eigen::Matrix4d m;
-            if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
-                // rotate about the Z-axis
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
-                m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
-                m.col(3) = Eigen::Vector4d(y * sign_l, -x * sign_l, 0.0, 1.0);
-            }
-            else if (segment_type == ST_CANT) {
-                Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
-                m = Eigen::Matrix4d::Identity();
-            } else {
-                Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-                m = Eigen::Matrix4d::Identity();
-            }
-
-
+            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+            m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+            m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
+            m.col(3) = Eigen::Vector4d(y * sign_l, -x * sign_l, 0.0, 1.0);
             return geometry_adjuster->transform_and_adjust(u, m);
          };
+      }
+      else if (segment_type_ == ST_VERTICAL) {
+         auto R = c->Radius() * length_unit_;
+         auto sign_l = sign(length_);
+
+         geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+
+         eval_ = [R, sign_l, geometry_adjuster = this->geometry_adjuster](double u) -> Eigen::Matrix4d {
+             auto y = sign_l * (R - sqrt(R*R - u*u));
+             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+             m.col(3) = Eigen::Vector4d(u, y, 0.0, 1.0);
+             return geometry_adjuster->transform_and_adjust(u, m);
+         };
+      } else if (segment_type_ == ST_CANT) {
+         Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
+         eval_ = [](double u) -> Eigen::Matrix4d {
+               return Eigen::Matrix4d::Identity();
+         };
+      } else {
+         Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+         eval_ = [](double u) -> Eigen::Matrix4d {
+            return Eigen::Matrix4d::Identity();
+         };
+      }
    }
 
    void operator()(const IfcSchema::IfcPolyline* pl)
@@ -744,13 +759,13 @@ class curve_segment_evaluator {
       if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
 
          eval_ = [px, py, dx, dy, geometry_adjuster=this->geometry_adjuster](double u) {
-            auto x = px + u * dx;
-            auto y = py + u * dy;
+            auto x = px + u/dx;
+            auto y = py;// + u * dy/dx;
 
-            Eigen::Matrix4d m;
-            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-            m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-            m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();;
+            //m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+            //m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+            //m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
             return geometry_adjuster->transform_and_adjust(u, m);
          };
@@ -762,7 +777,7 @@ class curve_segment_evaluator {
                 cant_adjuster_->transform_and_adjust(u, result);
                 return result;
             };
-        }
+      }
       else {
          Logger::Error(std::runtime_error("Unexpected segment type encountered"), l);
       }
@@ -776,59 +791,140 @@ class curve_segment_evaluator {
       if (!coeffZ.empty())
          Logger::Warning("Expected IfcPolynomialCurve.CoefficientsZ to be undefined for alignment geometry. Coefficients ignored.", p);
 
-
-
-      auto segment_type = segment_type_;
       auto length_unit = length_unit_;
 
       geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
+      if (segment_type_ == ST_HORIZONTAL) {
+         // @rb need to work on this - u is distance along curve, this differs from vertical where u = x
+         eval_ = [start=start_,coeffX,coeffY,length_unit,geometry_adjuster = this->geometry_adjuster](double u) -> Eigen::Matrix4d {
+             std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
+             std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
+             std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
+             for (int i = 0; i < 2; i++) {             // loop over X and Y
+                 auto length_conversion = length_unit;
+                 auto begin = coefficients[i]->cbegin();
+                 auto end = coefficients[i]->cend();
+                 for (auto iter = begin; iter != end; iter++) {
+                     auto exp = std::distance(begin, iter);
+                     auto coeff = (*iter) * length_conversion;
+                     position[i] += coeff * (pow(u + start, exp) - pow(start,exp));
 
-      eval_ = [coeffX, coeffY, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
-         std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
-         std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
-         std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
-         for (int i = 0; i < 2; i++) { // loop over X and Y
-             auto length_conversion = length_unit;
-             auto begin = coefficients[i]->cbegin();
-             auto end = coefficients[i]->cend();
-             for (auto iter = begin; iter != end; iter++) {
-                  auto exp = std::distance(begin, iter);
-                  auto coeff = (*iter)*length_conversion;
-                  position[i] += coeff* pow(u, exp);
+                     if (iter != begin) {
+                         slope[i] += coeff * exp * pow(u + start, exp - 1);
+                     }
 
-                  if (iter != begin) {
-                      slope[i] += coeff * exp * pow(u, exp - 1);
-                  }
-
-                  length_conversion /= length_unit;
+                     length_conversion /= length_unit;
+                 }
              }
-         }
 
-         auto x = position[0];
-         auto y = position[1];
+             auto x = position[0];
+             auto y = position[1];
 
-         auto dx = slope[0];
-         auto dy = slope[1];
+             auto dx = slope[0];
+             auto dy = slope[1];
 
-         Eigen::Matrix4d m;
-         if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
-            // rotate about the Z-axis
-            m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-            m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-            m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-            m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-         }
-         else if (segment_type == ST_CANT) {
-            Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
-            m = Eigen::Matrix4d::Identity();
-         } else {
-            Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            m = Eigen::Matrix4d::Identity();
-         }
+             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+              m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+              m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+              m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+             return geometry_adjuster->transform_and_adjust(u + start, m);
+         };
+      }
+      else if (segment_type_ == ST_VERTICAL) {
+         auto p = inst_->Placement()->Location()->as<IfcSchema::IfcCartesianPoint>();
+         double sx = p->Coordinates()[0] * length_unit_;
+         double sy = p->Coordinates()[1] * length_unit_;
+         eval_ = [start = start_, sx, sy, coeffX, coeffY, length_unit](double u) -> Eigen::Matrix4d {
+             std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
+             std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
+             std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
+             for (int i = 0; i < 2; i++) {             // loop over X and Y
+                 auto length_conversion = length_unit;
+                 auto begin = coefficients[i]->cbegin();
+                 auto end = coefficients[i]->cend();
+                 for (auto iter = begin; iter != end; iter++) {
+                     auto exp = std::distance(begin, iter);
+                     auto coeff = (*iter) * length_conversion;
+                     position[i] += coeff * pow(u + start, exp);
 
-            return geometry_adjuster->transform_and_adjust(u, m);
-        };
+                     if (iter != begin) {
+                         slope[i] += coeff * exp * pow(u, exp - 1);
+                     }
+                     length_conversion /= length_unit;
+                 }
+             }
+
+             auto x = position[0] - coeffX[0] + sx;
+             auto y = position[1] - coeffY[0] + sy;
+             auto dx = slope[0];
+             auto dy = slope[1];
+
+             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+             m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+             m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+             return m;
+         };
+      } else if (segment_type_ == ST_CANT) {
+         Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+         eval_ = [](double u) -> Eigen::Matrix4d {
+             return Eigen::Matrix4d::Identity();
+         };
+      } else {
+         Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+         eval_ = [](double u) -> Eigen::Matrix4d {
+             return Eigen::Matrix4d::Identity();
+         };
+      }
+
+      //eval_ = [start = start_, coeffX, coeffY, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
+      //   std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
+      //   std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
+      //   std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
+      //   for (int i = 0; i < 2; i++) { // loop over X and Y
+      //       auto length_conversion = length_unit;
+      //       auto begin = coefficients[i]->cbegin();
+      //       auto end = coefficients[i]->cend();
+      //       for (auto iter = begin; iter != end; iter++) {
+      //            auto exp = std::distance(begin, iter);
+      //            auto coeff = (*iter)*length_conversion;
+      //            position[i] += coeff * pow(u+start, exp);
+
+      //            if (iter != begin) {
+      //                slope[i] += coeff * exp * pow(u+start, exp - 1);
+      //            }
+
+      //            length_conversion /= length_unit;
+      //       }
+      //   }
+
+      //   auto x = position[0];
+      //   auto y = position[1];
+
+      //   auto dx = slope[0];
+      //   auto dy = slope[1];
+
+      //   Eigen::Matrix4d m;
+      //   if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
+      //       rotate about the Z-axis
+      //      m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
+      //      m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
+      //      m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
+      //      m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+      //   }
+      //   else if (segment_type == ST_CANT) {
+      //      Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
+      //      m = Eigen::Matrix4d::Identity();
+      //   } else {
+      //      Logger::Error(std::runtime_error("Unexpected segment type encountered"));
+      //      m = Eigen::Matrix4d::Identity();
+      //   }
+
+      //      return geometry_adjuster->transform_and_adjust(u+start, m);
+      //  };
    }
 
    // Take the boost::type value from mpl::for_each and test it against our curve instance
