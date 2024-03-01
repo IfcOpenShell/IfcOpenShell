@@ -6,8 +6,7 @@ This packages is totally independent from other packages in IfcOpenShell and req
 ## Installation
 
 ```bash
-pip install git+https://git@github.com/jgunstone/ifcopenshell.git@make-bsdd-installable-and-add-tests#subdirectory=src/bsdd
-# TODO ^^^ update the github domain if merged back to ifcopenshell
+pip install git+https://git@github.com/ifcopenshell/ifcopenshell.git@v0.7.0#subdirectory=src/bsdd
 
 # check your installation
 python
