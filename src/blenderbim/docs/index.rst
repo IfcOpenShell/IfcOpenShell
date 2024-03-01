@@ -42,6 +42,7 @@ Learn how to model a small building and create simple architectural plans, secti
    devs/hello_world
    devs/running_tests
    devs/writing_docs
+   devs/translations
    devs/undo_system
    devs/system_support
    devs/ux_guidelines
