@@ -830,15 +830,15 @@ class LinkIfc(bpy.types.Operator):
 
     def execute(self, context):
         start = time.time()
-        files = [f.name for f in self.files] if self.files else [self.filepath]
+        files = [f.name.replace("\\", "/") for f in self.files] if self.files else [self.filepath.replace("\\", "/")]
         for filename in files:
-            filepath = os.path.join(self.directory, filename)
+            filepath = os.path.join(self.directory, filename).replace("\\", "/")
             if bpy.data.filepath and Path(filepath).samefile(bpy.data.filepath):
                 self.report({"INFO"}, "Can't link the current .blend file")
                 continue
             new = context.scene.BIMProjectProperties.links.add()
             if self.use_relative_path:
-                filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
+                filepath = os.path.relpath(filepath, bpy.path.abspath("//")).replace("\\", "/")
             new.name = filepath
             bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
         print(f"Finished linking {len(files)} IFCs", time.time() - start)
@@ -857,6 +857,7 @@ class UnlinkIfc(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
+        self.filepath = self.filepath.replace("\\", "/")
         bpy.ops.bim.unload_link(filepath=self.filepath)
         index = context.scene.BIMProjectProperties.links.find(self.filepath)
         if index != -1:
@@ -872,14 +873,15 @@ class UnloadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
+        self.filepath = self.filepath.replace("\\", "/")
         filepath = self.filepath
         if not os.path.isabs(filepath):
-            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath)).replace("\\", "/")
         for collection in context.scene.collection.children:
-            if collection.library and collection.library.filepath == filepath:
+            if collection.library and collection.library.filepath.replace("\\", "/") == filepath:
                 context.scene.collection.children.unlink(collection)
         for scene in bpy.data.scenes:
-            if scene.library and scene.library.filepath == filepath:
+            if scene.library and scene.library.filepath.replace("\\", "/") == filepath:
                 bpy.data.scenes.remove(scene)
         link = context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = False
@@ -895,9 +897,10 @@ class LoadLink(bpy.types.Operator):
     false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
+        self.filepath = self.filepath.replace("\\", "/")
         filepath = self.filepath
         if not os.path.isabs(filepath):
-            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath)).replace("\\", "/")
         if self.filepath.lower().endswith(".blend"):
             self.link_blend(filepath)
         elif self.filepath.lower().endswith(".ifc"):
@@ -908,7 +911,7 @@ class LoadLink(bpy.types.Operator):
         with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
-            if not scene.library or scene.library.filepath != filepath:
+            if not scene.library or scene.library.filepath.replace("\\", "/") != filepath:
                 continue
             for child in scene.collection.children:
                 if "IfcProject" not in child.name:
@@ -955,7 +958,7 @@ class ReloadLink(bpy.types.Operator):
 
     def execute(self, context):
         def get_linked_ifcs():
-            selected_filename = os.path.basename(self.filepath)
+            selected_filename = os.path.basename(self.filepath.replace("\\", "/"))
             return [
                 c.library
                 for c in bpy.data.collections
@@ -979,7 +982,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         link = props.links.get(self.link)
         self.filepath = self.link
         if not os.path.isabs(self.filepath):
-            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath)).replace("\\", "/")
         for collection in self.get_linked_collections():
             collection.hide_select = not collection.hide_select
             link.is_selectable = not collection.hide_select
@@ -989,7 +992,7 @@ class ToggleLinkSelectability(bpy.types.Operator):
         return [
             c
             for c in bpy.data.collections
-            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            if "IfcProject" in c.name and c.library and c.library.filepath.replace("\\", "/") == self.filepath
         ]
 
 
@@ -1006,7 +1009,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         link = props.links.get(self.link)
         self.filepath = self.link
         if not os.path.isabs(self.filepath):
-            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath))
+            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath)).replace("\\", "/")
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
         elif self.mode == "VISIBLE":
@@ -1045,7 +1048,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
         return [
             c
             for c in bpy.data.collections
-            if "IfcProject" in c.name and c.library and c.library.filepath == self.filepath
+            if "IfcProject" in c.name and c.library and c.library.filepath.replace("\\", "/") == self.filepath
         ]
 
 
@@ -1191,7 +1194,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         start = time.time()
 
-        self.filepath = self.filepath or "/home/dion/drive/ifcs/racbasicsampleproject.ifc"
+        self.filepath = self.filepath.replace("\\", "/")
         print("Processing", self.filepath)
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
