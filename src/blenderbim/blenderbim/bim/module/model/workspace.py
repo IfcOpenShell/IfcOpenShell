@@ -176,6 +176,21 @@ class DuctTool(BimTool):
         BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
+class CableCarrierTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.cable_carrier_tool"
+    bl_label = "Create Cable Carrier"
+    bl_description = "Create and edit cable carriers"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
+    bl_widget = None
+    ifc_element_type = "IfcCableCarrierSegmentType"
+
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+
+
 class PipeTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -185,6 +200,21 @@ class PipeTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
     bl_widget = None
     ifc_element_type = "IfcPipeSegmentType"
+
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+
+
+class CableTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.cable_tool"
+    bl_label = "Create Cable"
+    bl_description = "Create and edit cables"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cable")
+    bl_widget = None
+    ifc_element_type = "IfcCableSegmentType"
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):

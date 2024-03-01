@@ -194,15 +194,18 @@ addon_keymaps = []
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.WallTool, after={"builtin.transform"}, separator=True, group=False)
+        bpy.utils.register_tool(workspace.WallTool, after={"bim.explore_tool"}, separator=True, group=False)
         bpy.utils.register_tool(workspace.SlabTool, after={"bim.wall_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.DoorTool, after={"bim.slab_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.ColumnTool, after={"bim.window_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.DuctTool, after={"bim.beam_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.BimTool, after={"bim.beam_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.DuctTool, after={"bim.beam_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.CableCarrierTool, after={"bim.pipe_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.CableTool, after={"bim.cable_carrier_tool"}, separator=False, group=False)
+
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
@@ -211,6 +214,7 @@ def register():
     bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
+
     bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.append(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -232,6 +236,8 @@ def unregister():
         bpy.utils.unregister_tool(workspace.BeamTool)
         bpy.utils.unregister_tool(workspace.DuctTool)
         bpy.utils.unregister_tool(workspace.PipeTool)
+        bpy.utils.unregister_tool(workspace.CableCarrierTool)
+        bpy.utils.unregister_tool(workspace.CableTool)
         bpy.utils.unregister_tool(workspace.BimTool)
     del bpy.types.Scene.BIMModelProperties
     del bpy.types.Object.BIMArrayProperties

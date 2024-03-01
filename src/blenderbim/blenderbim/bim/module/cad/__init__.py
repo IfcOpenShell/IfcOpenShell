@@ -37,7 +37,7 @@ classes = (
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=True)
+        bpy.utils.register_tool(workspace.CadTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMCadProperties = bpy.props.PointerProperty(type=prop.BIMCadProperties)
 
 
