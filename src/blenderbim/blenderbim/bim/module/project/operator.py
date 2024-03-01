@@ -26,6 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.selector
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
 import blenderbim.bim.schema
@@ -825,6 +826,7 @@ class LinkIfc(bpy.types.Operator):
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
         start = time.time()
@@ -838,7 +840,7 @@ class LinkIfc(bpy.types.Operator):
             if self.use_relative_path:
                 filepath = os.path.relpath(filepath, bpy.path.abspath("//"))
             new.name = filepath
-            bpy.ops.bim.load_link(filepath=filepath)
+            bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
         print(f"Finished linking {len(files)} IFCs", time.time() - start)
         return {"FINISHED"}
 
@@ -890,6 +892,7 @@ class LoadLink(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
     filepath: bpy.props.StringProperty()
+    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
         filepath = self.filepath
@@ -923,7 +926,7 @@ class LoadLink(bpy.types.Operator):
 import bpy
 
 def run():
-    bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
+    bpy.ops.bim.load_linked_project(filepath="{self.filepath}", false_origin="{self.false_origin}")
     bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
 
 try:
@@ -1179,6 +1182,7 @@ class LoadLinkedProject(bpy.types.Operator):
     bl_label = "Load a project for viewing only."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty()
+    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
         import ifcpatch
@@ -1214,7 +1218,20 @@ class LoadLinkedProject(bpy.types.Operator):
         self.elements -= set(self.file.by_type("IfcFeatureElement"))
         self.elements = list(self.elements)
 
+        model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0))
+        false_origin = np.array([float(o.strip()) for o in self.false_origin.split(",")])
+        model_offset = model_origin - false_origin
+        zero_origin = np.array((0, 0, 0))
+        has_model_offset = not np.allclose(model_offset, zero_origin)
+
         for settings in ifc_importer.context_settings:
+            settings = ifcopenshell.geom.settings()
+
+            if has_model_offset:
+                offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
+                offset[0], offset[1], offset[2] = model_offset
+                settings.offset = offset
+
             iterator = ifcopenshell.geom.iterator(
                 settings, self.file, multiprocessing.cpu_count(), include=self.elements
             )
@@ -1239,7 +1256,7 @@ class LoadLinkedProject(bpy.types.Operator):
             if iterator.initialize():
                 while True:
                     shape = iterator.get()
-                    if len(shape.geometry.faces) > 1000:  # 333 tris
+                    if len(shape.geometry.faces) > 1000 and self.is_local(shape):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             mats = np.concatenate(chunked_materials)
@@ -1366,6 +1383,14 @@ class LoadLinkedProject(bpy.types.Operator):
             print("Finished", time.time() - start)
             break
         return {"FINISHED"}
+
+    def is_local(self, shape):
+        m = shape.transformation.matrix.data
+        if max([abs(co) for co in (m[9], m[10], m[11])]) > 1000:
+            return False
+        elif max([abs(co) for co in shape.geometry.verts[0:3]]) > 1000:
+            return False
+        return True
 
     def process_occurrence(self, shape):
         element = self.file.by_id(shape.id)
