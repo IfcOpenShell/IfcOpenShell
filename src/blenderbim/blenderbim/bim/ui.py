@@ -111,6 +111,23 @@ class BIM_PT_section_plane(Panel):
         row.operator("bim.remove_section_plane")
 
 
+class BIM_PT_section_with_cappings(Panel):
+    bl_label = "Section Cutaways With Cappings"
+    bl_idname = "BIM_PT_section_with_cappings"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "output"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_sandbox"
+
+    def draw(self, context):
+        layout = self.layout
+        wm = context.window_manager
+        row = layout.row(align=True)
+        row.operator("bim.clipping_plane_cut_with_cappings", icon="XRAY", text="Cut")
+        row.operator("bim.revert_clipping_plane_cut", icon="FILE_REFRESH", text="Revert Cut")
+
+
 class BIM_UL_generic(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
