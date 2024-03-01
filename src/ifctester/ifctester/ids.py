@@ -81,12 +81,16 @@ class Ids:
             self.info["milestone"] = milestone
 
     def asdict(self):
+        info = {}
+        for attr in ["title", "copyright", "version", "description", "author", "date", "purpose", "milestone"]:
+            if attr in self.info:
+                info[attr] = self.info[attr]
         ids_dict = {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
             "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
-            "info": self.info,
+            "info": info,
             "specifications": {"specification": []},
         }
         for spec in self.specifications:
