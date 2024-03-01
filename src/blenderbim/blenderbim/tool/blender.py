@@ -450,9 +450,15 @@ class Blender(blenderbim.core.tool.Blender):
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     @classmethod
-    def remove_data_block(cls, data_block):
+    def remove_data_block(cls, data_block, skip_unlink=False):
+        """
+        `skip_unlink` method allows removing data blocks signficantly faster by avoiding some api checks.\n
+        Useful if you're sure data block is already unlinked.\n
+        See: https://projects.blender.org/blender/blender/issues/118787"""
         collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
-        getattr(bpy.data, collection_name).remove(data_block)
+        getattr(bpy.data, collection_name).remove(
+            data_block, do_unlink=skip_unlink, do_id_user=skip_unlink, do_ui_user=skip_unlink
+        )
 
     ## BMESH UTILS ##
     @classmethod
