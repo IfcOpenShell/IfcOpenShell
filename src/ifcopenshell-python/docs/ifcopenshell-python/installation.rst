@@ -30,8 +30,6 @@ the API.
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
    |             | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS Intel 64bit | MacOS Silicon 64bit |
    +=============+================+================+================+===================+=====================+
-   | Python 3.6  | py36-linux64_  | py36-win32_    | py36-win64_    | py36-macos64_     | N/A                 |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
    | Python 3.7  | py37-linux64_  | py37-win32_    | py37-win64_    | py37-macos64_     | py37-macosm164_     |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
    | Python 3.8  | py38-linux64_  | py38-win32_    | py38-win64_    | py38-macos64_     | py38-macosm164_     |
@@ -45,28 +43,24 @@ the API.
    | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | N/A               | py312-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
 
-.. _py36-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-eaa2aa0-linux64.zip
 .. _py37-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-linux64.zip
 .. _py38-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-linux64.zip
 .. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-linux64.zip
 .. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-linux64.zip
 .. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-linux64.zip
 .. _py312-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-linux64.zip
-.. _py36-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-eaa2aa0-win32.zip
 .. _py37-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-win32.zip
 .. _py38-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-win32.zip
 .. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-win32.zip
 .. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-win32.zip
 .. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-win32.zip
 .. _py312-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-win32.zip
-.. _py36-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-eaa2aa0-win64.zip
 .. _py37-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-win64.zip
 .. _py38-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-win64.zip
 .. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-win64.zip
 .. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-win64.zip
 .. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-win64.zip
 .. _py312-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-win64.zip
-.. _py36-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-36-v0.7.0-eaa2aa0-macos64.zip
 .. _py37-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-macos64.zip
 .. _py38-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-macos64.zip
 .. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-macos64.zip
