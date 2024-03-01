@@ -48,7 +48,7 @@ class Usecase:
         software library and will not know what application the API is being
         called from, and nor does it have the responsibility to manage the
         "active user" making edits, which may be as simple as hardcoding it to
-        "Bob" or even be as complex as integrationg with a CDE's authentication
+        "Bob" or even be as complex as integration with a CDE's authentication
         system. As a result, the developer responsible to integrate with
         IfcOpenShell is expected to overload the
         ifcopenshell.api.owner.settings.get_user and
@@ -106,26 +106,14 @@ class Usecase:
         application = ifcopenshell.api.owner.settings.get_application(self.file)
         if self.file.schema != "IFC2X3" and not application:
             return
-        try:
-            return self.file.create_entity(
-                "IfcOwnerHistory",
-                **{
-                    "OwningUser": user,
-                    "OwningApplication": application,
-                    "State": "READWRITE",
-                    "ChangeAction": "ADDED",
-                    "LastModifiedDate": int(time.time()),
-                    "LastModifyingUser": user,
-                    "LastModifyingApplication": application,
-                    "CreationDate": int(time.time()),
-                },
-            )
-        except Exception as e:
-            # clarification message because error may come out of blue for users
-            # first time they try to create_entity in IFC2X3
-            if self.file.schema == "IFC2X3" and (application is None or user is None):
-                raise Exception(
-                    "In IFC2X3 setting up owner history mandatory but it cannot be setup because either user or application is not set. "
-                    "See an example in the owner.create_owner_history documentation."
-                )
-            raise e
+        return self.file.create_entity(
+            "IfcOwnerHistory",
+            OwningUser=user,
+            OwningApplication=application,
+            State="READWRITE",
+            ChangeAction="ADDED",
+            LastModifiedDate=int(time.time()),
+            LastModifyingUser=user,
+            LastModifyingApplication=application,
+            CreationDate=int(time.time()),
+        )
