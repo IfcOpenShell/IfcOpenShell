@@ -99,6 +99,7 @@ classes = [
     operator.BIM_OT_open_webbrowser,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_show_description,
+    operator.ClippingPlaneCutWithCappings,
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
@@ -106,6 +107,7 @@ classes = [
     operator.OpenUri,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
+    operator.RevertClippingPlaneCut,
     operator.SelectDataDir,
     operator.SelectIfcFile,
     operator.SelectSchemaDir,
@@ -175,6 +177,7 @@ classes = [
     ui.BIM_PT_tab_sandbox,
     # TODO: move this somewhere else and clean it up
     ui.BIM_PT_section_plane,
+    ui.BIM_PT_section_with_cappings,
 ]
 
 for mod in modules.values():

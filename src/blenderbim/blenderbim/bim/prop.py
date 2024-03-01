@@ -475,6 +475,7 @@ class BIMMeshProperties(PropertyGroup):
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
+    replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")
 
 
 class BIMFacet(PropertyGroup):

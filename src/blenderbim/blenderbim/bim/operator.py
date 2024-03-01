@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import bmesh
 import json
 import time
 import logging
@@ -39,6 +40,8 @@ from blenderbim.bim.helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 from pathlib import Path
+from collections import namedtuple
+from typing import List
 
 
 class SetTab(bpy.types.Operator):
@@ -417,7 +420,7 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
             group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
             group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
-        else:        
+        else:
             group.inputs.new("NodeSocketFloat", "Value")
             group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
             group.inputs.new("NodeSocketVector", "Vector")
@@ -975,3 +978,124 @@ class BIM_OT_show_description(bpy.types.Operator):
     @classmethod
     def description(cls, context, properties):
         return properties.description
+
+
+CuttingPlaneData = namedtuple("CuttingPlaneData", ["co", "normal"])
+
+
+class ClippingPlaneCutWithCappings(bpy.types.Operator):
+    bl_idname = "bim.clipping_plane_cut_with_cappings"
+    bl_label = "Cut With Clipping Planes"
+    bl_description = "Cut selected objects with clipping planes and create cappings"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        cutting_planes = [p.obj for p in context.scene.BIMProjectProperties.clipping_planes]
+        if not cutting_planes:
+            self.report({"INFO"}, "No cutting planes found.")
+            return {"FINISHED"}
+        cutting_planes_data = self.get_cutting_plane_data(cutting_planes)
+
+        wm = context.window_manager
+        objects_processed, t0 = 0, time.time()
+        wm.progress_begin(0, len(context.selected_objects))
+        for obj_i, obj in enumerate(context.selected_objects):
+            if obj.type != "MESH":
+                continue
+
+            if obj in cutting_planes:
+                continue
+
+            RevertClippingPlaneCut.revert_object_mesh(self, obj)
+
+            # localize matrix to consider object's transform
+            ws_to_ls = obj.matrix_world.inverted()
+            rotation = ws_to_ls.to_quaternion()
+
+            mesh = obj.data
+            bm = tool.Blender.get_bmesh_for_mesh(mesh)
+            object_changed = False
+
+            for plane_data in cutting_planes_data:
+                geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
+                plane_co = ws_to_ls @ plane_data.co
+                plane_no = rotation @ plane_data.normal
+                # clear_outer -> remove everything in direction of the normal
+                results = bmesh.ops.bisect_plane(
+                    bm,
+                    geom=geom,
+                    dist=10e-4,
+                    plane_co=plane_co,
+                    plane_no=plane_no,
+                    clear_outer=True,
+                )
+                edges_to_fill = [e for e in results["geom_cut"] if isinstance(e, bmesh.types.BMEdge)]
+                object_changed = object_changed or edges_to_fill
+                bmesh.ops.contextual_create(bm, geom=edges_to_fill)
+
+            # don't swap mesh if it wasn't affected by any of the cutting planes
+            if object_changed:
+                temp_mesh = bpy.data.meshes.new("temp_cut")
+                temp_mesh.BIMMeshProperties.replaced_mesh = mesh
+                for material in mesh.materials:
+                    temp_mesh.materials.append(material)
+                obj.data = temp_mesh
+                tool.Blender.apply_bmesh(temp_mesh, bm, obj)
+
+            objects_processed += 1
+            wm.progress_update(obj_i)
+
+        self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
+
+        return {"FINISHED"}
+
+    def get_cutting_plane_data(self, cutting_planes: List[bpy.types.Object]) -> List[CuttingPlaneData]:
+        cutting_planes_data = []
+
+        for obj in cutting_planes:
+            cutting_matrix = obj.matrix_world
+            plane_data = CuttingPlaneData(cutting_matrix.translation, cutting_matrix.col[2].to_3d())
+            cutting_planes_data.append(plane_data)
+
+        return cutting_planes_data
+
+    # NOTE: unused, will be used later for cutting boxes support
+    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> List[CuttingPlaneData]:
+        matrix_world = obj.matrix_world
+        rotation = matrix_world.to_quaternion()  # avoid scale for normals
+        cutting_planes_data = []
+        for p in obj.data.polygons:
+            plane_data = CuttingPlaneData(matrix_world @ p.center, rotation @ p.normal)
+            cutting_planes_data.append(plane_data)
+        return cutting_planes_data
+
+
+class RevertClippingPlaneCut(bpy.types.Operator):
+    bl_idname = "bim.revert_clipping_plane_cut"
+    bl_label = "Revert Clipping Plane Cut"
+    bl_description = "Revert clipping plane cut (switch back to the original mesh)"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        obj = context.active_object
+        wm = context.window_manager
+
+        objects_processed, t0 = 0, time.time()
+        wm.progress_begin(0, len(context.selected_objects))
+        for obj_i, obj in enumerate(context.selected_objects):
+            if obj.type != "MESH":
+                continue
+            self.revert_object_mesh(obj)
+            objects_processed += 1
+            wm.progress_update(obj_i)
+        wm.progress_end()
+
+        self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
+        return {"FINISHED"}
+
+    def revert_object_mesh(self, obj):
+        mesh = obj.data
+        replaced_mesh = mesh.BIMMeshProperties.replaced_mesh
+        if replaced_mesh:
+            obj.data = replaced_mesh
+            tool.Blender.remove_data_block(mesh, skip_unlink=True)
