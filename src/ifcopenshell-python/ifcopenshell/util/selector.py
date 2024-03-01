@@ -507,6 +507,8 @@ class FacetTransformer(lark.Transformer):
 
         def filter_function(element):
             container = ifcopenshell.util.element.get_container(element)
+            if not container:
+                container = ifcopenshell.util.element.get_aggregate(element)
             containers = self.get_container_tree(container)
             result = False if containers else None
             for container in containers:
