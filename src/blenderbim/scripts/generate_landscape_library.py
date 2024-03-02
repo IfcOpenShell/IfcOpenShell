@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
+import random
 import ifcopenshell
 import ifcopenshell.api
-import random
+import blenderbim.tool as tool
 from math import cos, sin, tan, pi
 from pathlib import Path
 from itertools import chain
@@ -319,7 +321,7 @@ class LibraryGenerator:
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
         self.representations = {
-            "model_body": ifcopenshell.api.run(
+            "Model/Body/MODEL_VIEW": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Model",
@@ -327,7 +329,7 @@ class LibraryGenerator:
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "plan_body": ifcopenshell.api.run(
+            "Plan/Body/PLAN_VIEW": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
                 context_type="Plan",
@@ -335,30 +337,60 @@ class LibraryGenerator:
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
+            "Model/Body/PLAN_VIEW": ifcopenshell.api.run(
+                "context.add_context",
+                self.file,
+                context_type="Model",
+                context_identifier="Body",
+                target_view="PLAN_VIEW",
+                parent=model,
+            ),
+            "Model/Body/SECTION_VIEW": ifcopenshell.api.run(
+                "context.add_context",
+                self.file,
+                context_type="Model",
+                context_identifier="Body",
+                target_view="SECTION_VIEW",
+                parent=model,
+            ),
         }
+
+        # Manually modeled trees
+        for obj in bpy.data.objects:
+            if not obj.type == "MESH":
+                continue
+            if "Plan/" in obj.name or "Model/" in obj.name:
+                continue
+            representations = {"Model/Body/MODEL_VIEW": obj.name}
+            for rep_key in self.representations.keys():
+                rep_obj = bpy.data.objects.get(obj.name + " " + rep_key)
+                if rep_obj:
+                    representations[rep_key] = rep_obj.name
+            self.create_type("IfcGeographicElementType", obj.name, representations)
+
+        # Auto generated trees
 
         self.builder = ShapeBuilder(self.file)
         builder = self.builder
 
         TreeData = namedtuple("TreeData", "tree_name preset_name preset_data")
         trees = [
-            TreeData("Cone Tree (1.8m)", "low_poly", (1.8, 1.13, 0.0, 1.0, 0.28, 0.16, 10)),
-            TreeData("Cone Tree (15m)", "low_poly", (15.0, 4.37, 0.0, 1.0, 0.74, 0.44, 10)),
-            TreeData("Cone Tree (5m)", "low_poly", (5.0, 1.7, 0.0, 1.0, 0.32, 0.22, 10)),
-            TreeData("Hedge Small (0.4m)", "low_poly", (0.4, 0.4, 0.49, 0.15, 0.0, 0.0, 10)),
-            TreeData("Hedge Medium (0.8m)", "low_poly", (0.8, 0.8, 0.49, 0.15, 0.0, 0.0, 10)),
-            TreeData("Hedge Big (1.8m)", "low_poly", (1.8, 1.8, 0.49, 0.15, 0.0, 0.0, 10)),
-            TreeData("Palm Tree (5m)", "palm_tree", (5.0, 8.02, 0.2)),
+            TreeData("Conical Tree Small (5m)", "low_poly", (5.0, 1.13, 0.0, 1.0, 0.28, 0.16, 5)),
+            TreeData("Conical Tree Medium (10m)", "low_poly", (10.0, 2.7, 0.0, 1.0, 0.32, 0.22, 4)),
+            TreeData("Conical Tree Big (15m)", "low_poly", (15.0, 4.37, 0.0, 1.0, 0.74, 0.44, 3)),
             TreeData("Palm Tree (15m)", "palm_tree", (15.0, 16.64, 0.4)),
             TreeData("Shrub Small (0.4m)", "low_poly", (0.4, 0.4, 0.535, 0.524, 0.0, 0.0, 10)),
-            TreeData("Shrum Medium (0.8m)", "low_poly", (0.8, 0.8, 0.535, 0.524, 0.0, 0.0, 10)),
-            TreeData("Shrub Big (1.8m)", "low_poly", (1.8, 1.8, 0.535, 0.524, 0.0, 0.0, 10)),
-            TreeData("Simple Tree (1.8m)", "simple", (1.8, 1.34, 0.2)),
-            TreeData("Simple Tree (5m)", "simple", (5.0, 3.29, 0.2)),
-            TreeData("Simple Tree (15m)", "simple", (15.0, 9.21, 0.44)),
-            TreeData("Tree Small (1.8m)", "low_poly", (1.8, 1.7, 0.5, 0.36, 0.28, 0.16, 10)),
-            TreeData("Tree Big (15m)", "low_poly", (15.0, 10.0, 0.5, 0.36, 1.83, 0.44, 10)),
-            TreeData("Tree Medium (5m)", "low_poly", (5.0, 5.0, 0.5, 0.36, 0.84, 0.22, 10)),
+            TreeData("Shrub Big (0.8m)", "low_poly", (0.8, 0.8, 0.535, 0.524, 0.0, 0.0, 10)),
+            TreeData("Lollipop Tree (4m)", "simple", (4.0, 2.5, 0.2)),
+            TreeData("Lollipop Tree (6m)", "simple", (6.0, 3.5, 0.2)),
+            TreeData("Lollipop Tree (8m)", "simple", (8.0, 4.5, 0.2)),
+            TreeData("Lollipop Tree (10m)", "simple", (10.0, 5.5, 0.44)),
+            TreeData("Lollipop Tree (14m)", "simple", (14.0, 7.5, 0.44)),
+            TreeData("Lollipop Tree (18m)", "simple", (18.0, 9.5, 0.44)),
+            TreeData("Lollipop Tree (25m)", "simple", (25.0, 13.5, 0.50)),
+            TreeData("Tree Small (8m)", "low_poly", (8.0, 6.0, 0.0, .8, 1.0, 0.2, 10)),
+            TreeData("Tree Medium (12m)", "low_poly", (12.0, 10.0, 0.0, .8, 2.0, 0.4, 20)),
+            TreeData("Tree Big (20m)", "low_poly", (20.0, 15.0, 0.0, .8, 4.0, 0.6, 30)),
         ]
 
         for tree_data in trees:
@@ -373,10 +405,10 @@ class LibraryGenerator:
 
     def get_representations(self, generated_geometry: GeneratedGeometry):
         representation_2d = self.builder.get_representation(
-            self.representations["plan_body"], items=generated_geometry.items_2d
+            self.representations["Plan/Body/PLAN_VIEW"], items=generated_geometry.items_2d
         )
         representation_3d = self.builder.get_representation(
-            self.representations["model_body"], items=generated_geometry.items_3d
+            self.representations["Model/Body/MODEL_VIEW"], items=generated_geometry.items_3d
         )
         return {
             "representation_3d": representation_3d,
@@ -397,7 +429,39 @@ class LibraryGenerator:
         ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
         return element
 
+    def create_type(self, ifc_class, name, representations):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+        for rep_name, obj_name in representations.items():
+            obj = bpy.data.objects.get(obj_name)
+            representation = ifcopenshell.api.run(
+                "geometry.add_representation",
+                self.file,
+                context=self.representations[rep_name],
+                blender_object=obj,
+                geometry=obj.data,
+                total_items=max(1, len(obj.material_slots)),
+            )
+            styles = []
+            for slot in obj.material_slots:
+                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
+                ifcopenshell.api.run(
+                    "style.add_surface_style",
+                    self.file,
+                    style=style,
+                    ifc_class="IfcSurfaceStyleShading",
+                    attributes=tool.Style.get_surface_shading_attributes(slot.material),
+                )
+                styles.append(style)
+            if styles:
+                ifcopenshell.api.run(
+                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                )
+            ifcopenshell.api.run(
+                "geometry.assign_representation", self.file, product=element, representation=representation
+            )
+        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+
+
 
 if __name__ == "__main__":
-    path = Path(__file__).parents[1] / "blenderbim/bim/data/libraries"
-    LibraryGenerator().generate("Landscape Assets Library", output_filename=str(path / "IFC4 Landscape Library.ifc"))
+    LibraryGenerator().generate("Landscape Assets Library", output_filename="IFC4 Landscape Library.ifc")
