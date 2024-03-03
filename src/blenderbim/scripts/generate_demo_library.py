@@ -57,12 +57,12 @@ class LibraryGenerator:
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
-            "plan_annotation": ifcopenshell.api.run(
+            "model_annotation": ifcopenshell.api.run(
                 "context.add_context",
                 self.file,
-                context_type="Plan",
+                context_type="Model",
                 context_identifier="Annotation",
-                target_view="PLAN_VIEW",
+                target_view="MODEL_VIEW",
                 parent=plan,
             ),
         }
@@ -194,8 +194,8 @@ class LibraryGenerator:
             ))
 
         representation = self.file.createIfcShapeRepresentation(
-            self.representations["plan_annotation"],
-            self.representations["plan_annotation"].ContextIdentifier,
+            self.representations["model_annotation"],
+            self.representations["model_annotation"].ContextIdentifier,
             "Annotation2D",
             items,
         )
