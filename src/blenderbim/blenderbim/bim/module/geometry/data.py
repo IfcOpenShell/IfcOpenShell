@@ -96,6 +96,8 @@ class RepresentationsData:
     @classmethod
     def shape_aspects(cls):
         obj = bpy.context.active_object
+        if not obj.data:
+            return []
         element = tool.Ifc.get_entity(obj)
         active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
         base_representation = tool.Ifc.get().by_id(active_representation_id)
