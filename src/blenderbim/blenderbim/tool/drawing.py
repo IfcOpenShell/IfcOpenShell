@@ -676,13 +676,13 @@ class Drawing(blenderbim.core.tool.Drawing):
                     camera.BIMCameraProperties.custom_scale_numerator = numerator
                     camera.BIMCameraProperties.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
-                camera.BIMCameraProperties.has_underlay = pset["HasUnderlay"]
+                camera.BIMCameraProperties.has_underlay = bool(pset["HasUnderlay"])
             if "HasLinework" in pset:
-                camera.BIMCameraProperties.has_linework = pset["HasLinework"]
+                camera.BIMCameraProperties.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
-                camera.BIMCameraProperties.has_annotation = pset["HasAnnotation"]
+                camera.BIMCameraProperties.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
-                camera.BIMCameraProperties.is_nts = pset["IsNTS"]
+                camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
 
         tool.Loader.link_mesh(shape, camera)
 
