@@ -1,8 +1,9 @@
 IfcCSV
 ======
 
-IfcCSV lets you view and edit IFC data using spreadsheets or tabular datasets,
-such as CSV, ODS, XLSX, Pandas DataFrames, and regular Python lists.
+IfcCSV lets you view and edit IFC data using spreadsheets or tabular datasets.
+IfcCSV supports CSV (Comma Separated Values), ODS (Open Document Spreadsheet),
+XLSX (Microsoft Excel), Pandas DataFrames, and regular Python lists.
 
 IfcCSV lets you select rooted elements using the IFC selection queries. These
 elements may be physical elements (walls, doors, windows, etc), construction
@@ -13,13 +14,13 @@ Once you have selected a list of elements, you may specify attributes,
 properties, quantities, or relationships to extract and use as columns in your
 table.
 
-For example, you might use a selection query of ``.IfcDoor``, for all doors in
+For example, you might use a selection query of ``IfcDoor``, for all doors in
 your project. You may then specify a ``class`` attribute, a ``Name`` attribute,
-a ``type.Name`` relationship, and a ``type.Description`` relationship. This
-will produce a table as shown:
+a ``type.Name`` relationship, and a ``type.Description`` relationship. You can
+then produce a spreadsheet like this:
 
 +------------------------+---------+------+-----------+------------------------------------+
-| GlobalId               | class   | Name | type.Name | type.Description                   |
+| GlobalId               | Class   | Name | Type Name | Type Description                   |
 +========================+=========+======+===========+====================================+
 | 3AjGVS9EjBeBrDA5_tAcwQ | IfcDoor | 01   | DT-A      | Single swing steel frame door      |
 +------------------------+---------+------+-----------+------------------------------------+
@@ -32,8 +33,8 @@ will produce a table as shown:
 
 .. note::
 
-   IfcCSV automatically inserts the GlobalId column at the beginning, in order
-   to uniquely identify the element.
+   By default, IfcCSV automatically inserts the GlobalId column at the
+   beginning, in order to uniquely identify the element.
 
 This tabular data may then be exported in your desired format.
 
@@ -42,8 +43,8 @@ you make in the spreadsheet or table will also be made in the IFC.
 
 There are different methods of installation, depending on your situation.
 
-1. **Source installation** is recommended for users wanting to use the latest
-   code as a library or a CLI utility.
+1. **Source installation** is recommended for developers wanting to use the
+   latest code as a library or a CLI utility.
 2. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a
    graphical interface.
 
@@ -54,11 +55,12 @@ Source installation
 2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifccsv>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifccsv``
 
-Depending on which formats you want to edit, you will need to install more dependencies:
+Depending on which formats you want to edit, you will need to install more
+dependencies:
 
 - ``pip install odfpy`` for ODS support
-- ``pip install xlsxwriter`` for XLSX support
-- ``pip install pandas`` for Pandas DataFrame support
+- ``pip install openpyxl`` for XLSX support
+- ``pip install pandas`` for ODS, XLSX, and Pandas DataFrame support
 
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
@@ -100,7 +102,7 @@ utility:
                             Choose the sort order from ASC or DESC for each sorted attribute.
       --export              Export from IFC to the desired format.
       --import              Import from the autodetected format to IFC.
-    $ python -m ifccsv -i model.ifc -s out.csv -f csv -q .IfcProduct -a "Name" "Description" --export
+    $ python -m ifccsv -i model.ifc -s out.csv -f csv -q IfcProduct -a "Name" "Description" --export
     $ cat out.csv
 
 Here is a minimal example of how to use IfcCSV as a library:
@@ -159,7 +161,7 @@ interface to access the IfcOpenShell utilities.
 
 3. Browse to your IFC file.
 
-4. Type in a filter query, such as ``.IfcDoor``.
+4. Type in a filter query, such as ``IfcDoor``.
 
 5. Optionally add attributes you'd like to export.
 
