@@ -255,12 +255,20 @@ class BIM_PT_project_library(Panel):
         self.layout.use_property_split = True
         self.props = context.scene.BIMProjectProperties
         row = self.layout.row(align=True)
-        row.label(text=IfcStore.library_path or "No Library Loaded", icon="ASSET_MANAGER")
+        row.prop(self.props, "library_file", text="")
+        if self.props.library_file == "0":
+            row.operator("bim.select_library_file", icon="FILE_FOLDER", text="")
+        row = self.layout.row(align=True)
         if IfcStore.library_file:
-            row.label(text=IfcStore.library_file.schema)
+            row.label(
+                text=os.path.splitext(os.path.basename(IfcStore.library_path))[0]
+                + f" - {IfcStore.library_file.schema}",
+                icon="ASSET_MANAGER",
+            )
             row.operator("bim.append_library_element_by_query", text="", icon="APPEND_BLEND")
             row.operator("bim.save_library_file", text="", icon="EXPORT")
-        row.operator("bim.select_library_file", icon="FILE_FOLDER", text="")
+        else:
+            row.label(text="No Library Loaded", icon="ASSET_MANAGER")
         if IfcStore.library_file:
             self.draw_library_ul()
 
