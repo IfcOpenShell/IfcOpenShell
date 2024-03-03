@@ -199,10 +199,15 @@ class BIM_PT_object_material(Panel):
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
+
+
         if ObjectMaterialData.data["material_class"] == "IfcMaterial":
             self.draw_single_ui()
         else:
             self.draw_set_ui()
+
+
+
 
     def draw_single_ui(self):
         if self.props.is_editing:
@@ -226,6 +231,7 @@ class BIM_PT_object_material(Panel):
         blenderbim.bim.helper.draw_attributes(self.props.material_set_attributes, self.layout)
         blenderbim.bim.helper.draw_attributes(self.props.material_set_usage_attributes, self.layout)
 
+
         if ObjectMaterialData.data["set_item_name"] == "profile" and not self.mprops.profiles:
             row = self.layout.row(align=True)
             row.label(text="No Profiles Available")
@@ -237,6 +243,9 @@ class BIM_PT_object_material(Panel):
             prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
             op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
+            row = self.layout.row(align=True)
+            row.alignment = "CENTER"
+            row.label(text='Layers listed from origin point')
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
