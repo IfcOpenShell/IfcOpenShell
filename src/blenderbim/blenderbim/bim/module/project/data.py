@@ -35,6 +35,7 @@ class ProjectData:
     def load(cls):
         cls.data = {
             "export_schema": cls.get_export_schema(),
+            "library_file": cls.library_file(),
             "template_file": cls.template_file(),
             "last_saved": cls.last_saved(),
         }
@@ -45,10 +46,17 @@ class ProjectData:
         return [(s, s, "") for s in IfcStore.schema_identifiers]
 
     @classmethod
-    def template_file(cls):
+    def library_file(cls):
         files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries"))
+        results = [("0", "Custom Library", "")]
+        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
+        return results
+
+    @classmethod
+    def template_file(cls):
+        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "projects"))
         results = [("0", "Blank Project", "")]
-        results.extend([(f, f.replace(".ifc", ""), "") for f in files if ".ifc" in f])
+        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
         return results
 
     @classmethod
