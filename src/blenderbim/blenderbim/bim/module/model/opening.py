@@ -33,7 +33,7 @@ import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc
 import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
-from math import pi
+from math import pi, radians
 from mathutils import Vector, Matrix
 from bpy.types import Operator
 from bpy.types import SpaceView3D
@@ -87,20 +87,28 @@ class FilledOpeningGenerator:
 
             # In this prototype, we assume openings are only added to axis-based elements
             layers = tool.Model.get_material_layer_parameters(element)
-            axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+            if layers["layer_set_direction"] == "AXIS2":
+                axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
+                new_matrix = voided_obj.matrix_world.copy()
+                point_on_axis = tool.Cad.point_on_edge(target, axis)
+                new_matrix.translation.x = point_on_axis.x
+                new_matrix.translation.y = point_on_axis.y
 
-            new_matrix = voided_obj.matrix_world.copy()
-            point_on_axis = tool.Cad.point_on_edge(target, axis)
-            new_matrix.translation.x = point_on_axis.x
-            new_matrix.translation.y = point_on_axis.y
-
-            if should_set_z_level:
-                if filling.is_a("IfcDoor"):
-                    new_matrix.translation.z = voided_obj.matrix_world.translation.z
+                if should_set_z_level:
+                    if filling.is_a("IfcDoor"):
+                        new_matrix.translation.z = voided_obj.matrix_world.translation.z
+                    else:
+                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
                 else:
-                    new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
-            else:
-                new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
+                    new_matrix.translation.z = filling_obj.matrix_world.copy().translation.z
+            elif layers["layer_set_direction"] == "AXIS3":
+                new_matrix = voided_obj.matrix_world.copy()
+                local_position_on_voided_obj = raycast[1]
+                # Equivalent to "side Z" for a wall axis, so that stuff like skylights appear on the top.
+                local_position_on_voided_obj.z = layers["offset"] + layers["thickness"]
+                new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
+                rotation_matrix = Matrix.Rotation(radians(-90), 4, 'X')
+                new_matrix @= rotation_matrix
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -776,20 +784,28 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                 building_objs.add(obj)
 
                 similar_openings = blenderbim.core.geometry.get_similar_openings(tool.Ifc, opening)
-                similar_openings_building_objs = blenderbim.core.geometry.get_similar_openings_building_objs(tool.Ifc, similar_openings)
+                similar_openings_building_objs = blenderbim.core.geometry.get_similar_openings_building_objs(
+                    tool.Ifc, similar_openings
+                )
                 building_objs.update(similar_openings_building_objs)
 
                 if opening_obj:
                     if tool.Ifc.is_edited(opening_obj):
                         tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
+                        blenderbim.core.geometry.edit_similar_opening_placement(
+                            tool.Geometry, opening, similar_openings
+                        )
                     elif tool.Ifc.is_moved(opening_obj):
                         blenderbim.core.geometry.edit_object_placement(
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
                         )
-                        blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
+                        blenderbim.core.geometry.edit_similar_opening_placement(
+                            tool.Geometry, opening, similar_openings
+                        )
 
-                    building_objs.update(self.get_all_building_objects_of_similar_openings(opening)) #NB this has nothing to do with clone similar_opening
+                    building_objs.update(
+                        self.get_all_building_objects_of_similar_openings(opening)
+                    )  # NB this has nothing to do with clone similar_opening
                     tool.Ifc.unlink(element=opening, obj=opening_obj)
                     bpy.data.objects.remove(opening_obj)
 
