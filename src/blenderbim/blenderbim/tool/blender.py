@@ -450,14 +450,24 @@ class Blender(blenderbim.core.tool.Blender):
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     @classmethod
-    def remove_data_block(cls, data_block, skip_unlink=False):
+    def remove_data_block(cls, data_block, do_unlink=True):
+        """Removes a datablock (such as a mesh)
+
+        See https://projects.blender.org/blender/blender/issues/118787 for more
+        details about do_unlink.
+
+        :param data_block: The bpy.data datablock to delete.
+        :param do_unlink: Whether or not to unlink the datablock first. This
+            defaults to true, which is Blender's default behaviour. If you are
+            sure that the data block has zero users, then you can set this
+            to False, which will make datablock deletion significantly faster
+            by avoiding unnecessary Blender data checks.
+        :return: None
+        :rtype: None
         """
-        `skip_unlink` method allows removing data blocks signficantly faster by avoiding some api checks.\n
-        Useful if you're sure data block is already unlinked.\n
-        See: https://projects.blender.org/blender/blender/issues/118787"""
         collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
         getattr(bpy.data, collection_name).remove(
-            data_block, do_unlink=skip_unlink, do_id_user=skip_unlink, do_ui_user=skip_unlink
+            data_block, do_unlink=do_unlink, do_id_user=do_unlink, do_ui_user=do_unlink
         )
 
     ## BMESH UTILS ##
