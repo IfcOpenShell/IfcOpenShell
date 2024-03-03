@@ -579,8 +579,7 @@ class CreateDrawing(bpy.types.Operator):
                 if global_id not in elements_with_faces:
                     continue
                 for path in projection.findall("./{http://www.w3.org/2000/svg}path"):
-                    # Rounding is necessary to ensure coincident points are coincident
-                    start, end = [[round(float(o), 1) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
+                    start, end = [[float(o) for o in co[1:].split(",")] for co in path.attrib["d"].split()]
                     if start == end:
                         continue
                     # Extension by 0.5mm is necessary to ensure lines overlap with other diagonal lines
@@ -954,7 +953,7 @@ class CreateDrawing(bpy.types.Operator):
             for path in el.findall("{http://www.w3.org/2000/svg}path"):
                 for subpath in path.attrib["d"].split("M")[1:]:
                     subpath = "M" + subpath.strip()
-                    coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath.split()]
+                    coords = [[float(o) for o in co[1:].split(",")] for co in subpath.split()]
                     if coords[0] != coords[-1]:
                         has_open_paths = True
                     line_strings.append(shapely.LineString(coords))
@@ -1018,7 +1017,7 @@ class CreateDrawing(bpy.types.Operator):
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
                         subpath_co = "M" + subpath.strip(" Z")
-                        coords = [[round(float(o), 1) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        coords = [[float(o) for o in co[1:].split(",")] for co in subpath_co.split()]
                         if subpath.strip().lower().endswith("z"):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:
