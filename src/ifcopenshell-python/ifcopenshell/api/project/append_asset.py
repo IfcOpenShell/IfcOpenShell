@@ -84,12 +84,12 @@ class Usecase:
             # Now we can easily append our wall type from our libary
             wall_type = ifcopenshell.api.run("project.append_asset", model, library=library, element=wall_type)
         """
-        self.file = file
+        self.file: ifcopenshell.file = file
         self.settings = {"library": library, "element": element}
 
     def execute(self):
         # mapping of old element ids to new elements
-        self.added_elements:dict[int, ifcopenshell.entity_instance] = {}
+        self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -268,6 +268,7 @@ class Usecase:
 
     def reuse_existing_contexts(self):
         added_contexts = set([e for e in self.added_elements.values() if e.is_a("IfcGeometricRepresentationContext")])
+        added_contexts -= set(self.existing_contexts)
         for added_context in added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
