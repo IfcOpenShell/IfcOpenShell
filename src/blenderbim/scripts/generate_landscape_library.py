@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
+import csv
 import random
 import ifcopenshell
 import ifcopenshell.api
@@ -29,6 +31,10 @@ from collections import namedtuple
 from mathutils import Vector, Matrix
 from random import uniform
 
+
+# When run from Blender
+BLEND_DIR = os.path.dirname(bpy.data.filepath)
+OUT_PATH = os.path.join(BLEND_DIR, "..", "blenderbim", "bim", "data", "libraries", "IFC4 Landscape Library.ifc")
 
 SimpleTreeParams = namedtuple("SimpleTreeParams", "plant_height crown_diameter trunk_diameter")
 LowPolyTreeParams = namedtuple(
@@ -301,7 +307,7 @@ tree_presets = {
 
 
 class LibraryGenerator:
-    def generate(self, library_name, output_filename="IFC4 EU Steel.ifc"):
+    def generate(self, library_name, output_filename):
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
 
@@ -368,7 +374,7 @@ class LibraryGenerator:
                     representations[rep_key] = rep_obj.name
             self.create_type("IfcGeographicElementType", obj.name, representations)
 
-        # Auto generated trees
+        # Auto generated generic trees
 
         self.builder = ShapeBuilder(self.file)
         builder = self.builder
@@ -400,6 +406,21 @@ class LibraryGenerator:
             self.create_explicit_type(
                 "IfcGeographicElementType", tree_data.tree_name, **self.get_representations(tree_geometry)
             )
+
+        # From tree species table
+
+        with open(os.path.join(BLEND_DIR, "tree_species.csv"), 'r') as csvfile:
+            reader = csv.reader(csvfile)
+            for i, row in enumerate(reader):
+                if i == 0:
+                    continue
+                preset = tree_presets.get(row[0])
+                data = [float(x) for x in row[2:]]
+                preset_data = preset.preset_class(*data)._asdict()
+                tree_geometry = preset.generator(builder, **preset_data)
+                self.create_explicit_type(
+                    "IfcGeographicElementType", row[1], **self.get_representations(tree_geometry)
+                )
 
         self.file.write(output_filename)
 
@@ -464,4 +485,4 @@ class LibraryGenerator:
 
 
 if __name__ == "__main__":
-    LibraryGenerator().generate("Landscape Assets Library", output_filename="IFC4 Landscape Library.ifc")
+    LibraryGenerator().generate("Landscape Assets Library", output_filename=OUT_PATH)
