@@ -1504,7 +1504,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     def get_drawing_metadata(cls, drawing):
         return [
             v.strip()
-            for v in ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "").split(",")
+            for v in (ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or "").split(",")
             if v
         ]
 
