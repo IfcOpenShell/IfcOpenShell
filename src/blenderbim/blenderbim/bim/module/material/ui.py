@@ -230,16 +230,17 @@ class BIM_PT_object_material(Panel):
             row = self.layout.row(align=True)
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
-        else:
+        else:            
+            #indication to the user From where Layer set is stacked (#3515) Unactivated for now
+            # row = self.layout.row(align=True)
+            # row.alignment = "CENTER"
+            # row.label(text='From Origin Point')
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
             prop_with_search(row, self.props, "material", icon="MATERIAL", text="")
             op = row.operator(f"bim.add_{ObjectMaterialData.data['set_item_name']}", icon="ADD", text="")
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
-            row = self.layout.row(align=True)
-            row.alignment = "CENTER"
-            row.label(text='Layers listed from origin point')
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):

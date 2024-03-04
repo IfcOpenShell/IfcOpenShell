@@ -273,6 +273,7 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
 class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_layer"
     bl_label = "Add Layer"
+    bl_description = "The List is Ordered From Origin Point"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     layer_set: bpy.props.IntProperty()
@@ -297,6 +298,7 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reorder_material_set_item"
     bl_label = "Reorder Material Set Item"
+    bl_description = "The List is Ordered From Origin Point"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     old_index: bpy.props.IntProperty()
