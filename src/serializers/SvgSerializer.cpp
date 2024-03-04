@@ -493,6 +493,9 @@ namespace {
 				for (auto& prop : *props) {
 					if (prop->declaration().is("IfcPropertySingleValue")) {
 						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
+                        if (((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue")->isNull()) {
+                            continue;
+                        }
 						IfcUtil::IfcBaseClass* v = *((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
 						auto value = v->data().getArgument(0);
 						if (value->type() == IfcUtil::Argument_STRING) {
