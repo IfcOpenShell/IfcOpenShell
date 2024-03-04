@@ -1,0 +1,27 @@
+"f","name","PlantHeight","CrownDiameter","CrownMaxLoc","CrownTaper","TrunkHeight","TrunkDiameter","RandomSeed"
+"low_poly","Apple",8,9,0.5,0.2,1.5,0.2,1
+"low_poly","Beech",30,20,0,0.4,3,0.75,2
+"low_poly","Cedar",25,17,0,1,1,0.625,3
+"low_poly","Dogwood",8,6,1,0.9,0.3,0.2,4
+"low_poly","Elm",17,12,0.6,0.7,2,0.425,5
+"low_poly","Fir",27,15,0.1,1,0.1,0.675,6
+"low_poly","Ginkgo",25,9,0.5,0.6,7,0.625,7
+"low_poly","Horsechesnut",30,23,0.5,0.2,3,0.75,8
+"low_poly","Ilex",26,13,0.4,0.3,12,0.65,9
+"low_poly","Juniper",30,15,0.7,1,1,0.75,10
+"low_poly","Kentucky Coffeetree",20,10,0.5,0,6,0.5,11
+"low_poly","Linden",28,18,0.3,0.2,3,0.7,12
+"low_poly","Mulberry",15,12,0.5,0.5,2,0.375,13
+"low_poly","Nannybery",5,4,0.7,0.8,1,0.125,14
+"low_poly","Oak",25,13,0.5,0.5,6,0.625,15
+"low_poly","Pine",27,9,0.5,0.2,14,0.675,16
+"low_poly","Quaking Aspen",13,4,0.5,0.3,4,0.325,17
+"low_poly","Redwood",90,24,0.1,0.8,8,2.25,18
+"low_poly","Sycamore",35,22,0.2,0.6,5,0.875,19
+"low_poly","Tree of Heaven",20,15,0.2,0.8,3,0.5,20
+"low_poly","Umbrella Tree",8,5,0.4,0.5,2,0.2,21
+"low_poly","Viburnum",4,3,0.8,0.7,0.2,0.1,22
+"low_poly","Weeping Willow",13,12,0.9,0.3,1,0.325,23
+"low_poly","Zanthoxylum",10,8,0.4,0.6,2,0.25,24
+"low_poly","Yellowwood",25,20,0.2,0.3,5,0.625,25
+"low_poly","Zelkova",12,8,0.4,0.4,2,0.3,26
