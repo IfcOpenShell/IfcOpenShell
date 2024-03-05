@@ -22,7 +22,7 @@ import ifcopenshell.api.owner.settings
 
 
 class Usecase:
-    def __init__(self, file, library=None, element=None):
+    def __init__(self, file, library=None, element=None, reuse_identities=None):
         """Appends an asset from a library into the active project
 
         A BIM library asset may be a type product (e.g. wall type), product
@@ -43,7 +43,12 @@ class Usecase:
         :param element: An element in the library file of the asset. It may be
             an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
             IfcProfileDef.
-        :type library: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance.entity_instance
+        :param reuse_identities: Optional dictionary of mapped entities' identities to the
+            already created elements. It will be used to avoid creating
+            duplicated inverse elements during multiple `project.append_asset` calls. If you want
+            to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
+        :type reuse_identities: dict[int, ifcopenshell.entity_instance.entity_instance]
         :return: The appended element
         :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -83,13 +88,37 @@ class Usecase:
 
             # Now we can easily append our wall type from our libary
             wall_type = ifcopenshell.api.run("project.append_asset", model, library=library, element=wall_type)
+
+        Example of adding multiple assets and avoiding duplicated inverses:
+
+        .. code:: python
+
+            # since occurrences of IfcWindow of the same type
+            # might have shared inverses (e.g. IfcStyledItem)
+            # we provide a dictionary that will be populated with newly created items
+            # and reused to avoid duplicated elements
+            reuse_identities = dict()
+
+            for element in ifcopenshell.util.selector.filter_elements(model, "IfcWindow"):
+                ifcopenshell.api.run(
+                    "project.append_asset",
+                    model, library=library,
+                    element=wall_type
+                    reuse_identities=reuse_identities
+                )
+
         """
         self.file: ifcopenshell.file = file
-        self.settings = {"library": library, "element": element}
+        self.settings = {
+            "library": library,
+            "element": element,
+            "reuse_identities": {} if reuse_identities is None else reuse_identities,
+        }
 
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
+        self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -165,7 +194,11 @@ class Usecase:
         if element_type:
             ifcopenshell.api.owner.settings.factory_reset()
             new_type = ifcopenshell.api.run(
-                "project.append_asset", self.file, library=self.settings["library"], element=element_type
+                "project.append_asset",
+                self.file,
+                library=self.settings["library"],
+                element=element_type,
+                reuse_identities=self.reuse_identities,
             )
             ifcopenshell.api.run(
                 "type.assign_type",
@@ -232,11 +265,20 @@ class Usecase:
                     elif not attribute_class:
                         self.add_inverse_element(inverse)
 
-    def add_inverse_element(self, element):
+    def add_inverse_element(self, element: ifcopenshell.entity_instance) -> None:
         # Inverse attributes are added manually because they are basically
         # relationships that can reference many other assets that we are not
         # interested in.
+
+        element_identity = element.wrapped_data.identity()
+
+        # check if inverse element were created before
+        if self.reuse_identities.get(element_identity) is not None:
+            return
+
         new = self.file.create_entity(element.is_a())
+        self.reuse_identities[element_identity] = new
+
         for i, attribute in enumerate(element):
             new_attribute = None
             if isinstance(attribute, ifcopenshell.entity_instance):
