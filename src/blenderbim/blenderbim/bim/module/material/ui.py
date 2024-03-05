@@ -230,7 +230,7 @@ class BIM_PT_object_material(Panel):
             row = self.layout.row(align=True)
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
-        else:
+        else:            
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
