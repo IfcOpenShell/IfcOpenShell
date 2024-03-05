@@ -83,7 +83,7 @@ class NewProject(bpy.types.Operator):
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
             bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
             bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
-            bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Library.ifc"
+            bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":
             bpy.ops.bim.create_project()
