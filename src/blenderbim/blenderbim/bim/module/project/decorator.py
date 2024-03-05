@@ -17,11 +17,26 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import gpu
+import bpy
 import bmesh
 import blenderbim.tool as tool
 from bpy.types import SpaceView3D
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
+from bpy.app.handlers import persistent
+
+
+@persistent
+def toggle_decorations_on_load(*args):
+    if bpy.context.scene.BIMProjectProperties.clipping_planes:
+        ClippingPlaneDecorator.install(bpy.context)
+    else:
+        ClippingPlaneDecorator.uninstall()
+
+    # NOTE: ProjectDecorator cannot be loaded at reopening .blend file
+    # since selected_vertices and other data is stored in queried object's
+    # custom attributes and they get purged after Blender session is closed
+    # as queried object is linked from separate .blend file.
 
 
 class ProjectDecorator:
