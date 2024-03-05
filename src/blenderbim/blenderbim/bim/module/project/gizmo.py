@@ -34,6 +34,7 @@ class ClippingPlane(GizmoGroup):
         obj = context.object
         return (
             context.selected_objects
+            and obj
             and obj.name.startswith("ClippingPlane")
             and obj in [sp.obj for sp in context.scene.BIMProjectProperties.clipping_planes]
         )
