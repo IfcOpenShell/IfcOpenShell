@@ -173,6 +173,23 @@ class TestAppendAsset(test.bootstrap.IFC4):
         assert len(new.RepresentationMaps[0].MappedRepresentation.Items[0].StyledByItem) == 1
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
+    def test_append_product_with_styles_to_reuse_styleditems(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        history = library.createIfcOwnerHistory()
+        element_type.OwnerHistory = history
+        item = library.createIfcBoundingBox()
+        library.createIfcStyledItem(Item=item)
+        context = self.file.createIfcGeometricRepresentationContext()
+        mapped_rep = library.createIfcShapeRepresentation(Items=[item], ContextOfItems=context)
+        element_type.RepresentationMaps = [library.createIfcRepresentationMap(MappedRepresentation=mapped_rep)]
+
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert len(self.file.by_type("IfcStyledItem")) == 1
+
     def test_append_a_type_product_with_a_styled_materials(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         local_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
