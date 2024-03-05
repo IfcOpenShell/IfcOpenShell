@@ -231,10 +231,6 @@ class BIM_PT_object_material(Panel):
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
         else:            
-            #indication to the user From where Layer set is stacked (#3515) Unactivated for now
-            # row = self.layout.row(align=True)
-            # row.alignment = "CENTER"
-            # row.label(text='From Origin Point')
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
