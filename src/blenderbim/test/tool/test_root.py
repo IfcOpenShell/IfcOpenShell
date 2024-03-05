@@ -173,7 +173,7 @@ class TestSetObjectName(NewFile):
 
 class TestReassignClass(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Library.ifc"
+        bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         context = bpy.context

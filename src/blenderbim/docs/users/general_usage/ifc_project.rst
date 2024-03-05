@@ -41,7 +41,7 @@ project, or view high level project metadata about the currently loaded project.
    Choose between starting a completely blank project with no objects, or with
    preloaded object assets (such as wall types, beam types, etc) that you can
    use immediately. The blank project is recommended for users who want to
-   curate assets, whereas the IFC4 Demo Library is recommended for users wanting
+   curate assets, whereas the IFC4 Demo Template is recommended for users wanting
    to experiment and learn with a basic set of objects.
 
    This also shows other larger object libraries for steel and countries
