@@ -137,14 +137,14 @@ namespace IfcGeom {
         class tree {
 
             template <typename Fn>
-            bool process_bvh_intersections(const T& tA, const T& tB, Fn&& f) {
+            boost::optional<clash> process_bvh_pairs(const T& tA, const T& tB, Fn&& f, double extend = 0.0) {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b = bvhs_.find(tB)->second;
 
-                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b);
+                std::unordered_map<int, std::vector<int>> bvh_clashes = clash_bvh(bvh_a, bvh_b, extend);
                 if (bvh_clashes.empty()) {
-                    return { -1, tA, tB, 0, {0, 0, 0}, {0, 0, 0} };
+                    return boost::none;
                 }
 
                 const std::vector<std::array<int, 3>>& tris_a = tris_.find(tA)->second;
@@ -161,12 +161,17 @@ namespace IfcGeom {
                     for (int i = bvh_a->BegPrimitive(bvh_a_i); i <= bvh_a->EndPrimitive(bvh_a_i); ++i) {
                         const std::array<int, 3>& tri = tris_a[i];
 
-                        f(bvh_a, bvh_b, tris_a, tris_b, verts_a, verts_b, normals_a, normals_b, i, tri, bvh_b_is);
+                        boost::optional<clash> result = f(bvh_a, bvh_b, tris_a, tris_b, verts_a, verts_b, normals_a, normals_b, i, tri, bvh_b_is);
+                        if (result) {
+                            return result;
+                        }
                     }
                 }
+
+                return boost::none;
             }
 
-            clash test_intersection_2(const T& tA, const T& tB, double tolerance, bool check_all = true) {
+            boost::optional<clash> test_intersection_2(const T& tA, const T& tB, double tolerance, bool check_all = true) {
                 auto obb_b = obbs_.find(tB)->second;
                 obb_b.Enlarge(-tolerance);
 
@@ -185,7 +190,7 @@ namespace IfcGeom {
                 // No need to search beyond the distance of the max protrusion.
                 const double max_protrusion = max_protrusions_.find(tB)->second;
 
-                process_bvh_intersections(tA, tB, [
+                auto return_value = process_bvh_pairs(tA, tB, [
                     &obb_b,
                     &points_in_b_cache, 
                     &points_not_in_b_cache,
@@ -266,7 +271,7 @@ namespace IfcGeom {
                                     pierce_point1 = p_min;
                                     pierce_point2 = p_max;
                                     if (!check_all) {
-                                        return { 1, tA, tB, pierce, pierce_point1, pierce_point2 };
+                                        return clash{ 1, tA, tB, pierce, pierce_point1, pierce_point2 };
                                     }
                                 }
                             }
@@ -326,7 +331,7 @@ namespace IfcGeom {
                                         v_surface_point = { point_on_b.X(), point_on_b.Y(), point_on_b.Z() };
 
                                         if (!check_all && v_protrusion > tolerance) {
-                                            return { 0, tA, tB, v_protrusion, v_protrusion_point, v_surface_point };
+                                            return clash{ 0, tA, tB, v_protrusion, v_protrusion_point, v_surface_point };
                                         }
                                     }
                                 }
@@ -341,11 +346,27 @@ namespace IfcGeom {
                             protrusion_point = v_protrusion_point;
                             surface_point = v_surface_point;
                             if (protrusion > (max_protrusion - 1e-3)) {
-                                return { 0, tA, tB, protrusion, protrusion_point, surface_point };
+                                return clash{ 0, tA, tB, protrusion, protrusion_point, surface_point };
                             }
                         }
                     }
+
+                    return boost::none;
                 });
+
+                if (return_value) {
+                    return return_value;
+                }
+
+                if (protrusion > tolerance) {
+                    return clash{ 0, tA, tB, protrusion, protrusion_point, surface_point };
+                }
+
+                if (pierce > tolerance) {
+                    return clash{ 1, tA, tB, pierce, pierce_point1, pierce_point2 };
+                }
+
+                return boost::none;
             }
 
 			clash test_intersection(const T& tA, const T& tB, double tolerance, bool check_all = true) const {
@@ -546,6 +567,86 @@ namespace IfcGeom {
                 return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
             }
 
+            boost::optional<clash> test_collision_2(const T& tA, const T& tB, bool allow_touching) const {
+                return process_bvh_pairs(tA, tB, [](
+                    opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a,
+                    opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b,
+                    const std::vector<std::array<int, 3>>&tris_a,
+                    const std::vector<std::array<int, 3>>&tris_b,
+                    const std::vector<gp_Pnt>& verts_a,
+                    const std::vector<gp_Pnt>& verts_b,
+                    const std::vector<gp_Vec>& normals_a,
+                    const std::vector<gp_Vec>& normals_b,
+                    int i,
+                    const std::array<int, 3>&tri,
+                    const std::vector<int>& bvh_b_is
+                ) {
+                    const gp_Vec & normal_a = normals_a[i];
+
+                    const std::array<gp_Vec, 3> A = {
+                        verts_a[tri[0]].XYZ(),
+                        verts_a[tri[1]].XYZ(),
+                        verts_a[tri[2]].XYZ()
+                    };
+
+                    for (const auto& bvh_b_i : bvh_b_is) {
+                        for (int j = bvh_b->BegPrimitive(bvh_b_i); j <= bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                            const std::array<int, 3>& tri = tris_b[j];
+                            tri_count_++;
+
+                            const gp_Vec& normal_b = normals_b[j];
+
+                            const std::array<gp_Vec, 3> B = {
+                                verts_b[tri[0]].XYZ(),
+                                verts_b[tri[1]].XYZ(),
+                                verts_b[tri[2]].XYZ()
+                            };
+
+                            // Allow a deviation of 0.25 degrees in coplanarity check
+                            if (std::abs(normal_a.Dot(normal_b)) >= 0.99999f) {
+                                return boost::none;
+                            }
+
+                            gp_Vec int12[2];
+                            if (trianglesIntersect(A[0], A[1], A[2], B[0], B[1], B[2], int12[0], int12[1], !allow_touching)) {
+                                if (allow_touching) {
+                                    return clash{ 2, tA, tB, 0, {int12[0].X(), int12[0].Y(), int12[0].Z()}, {int12[1].X(), int12[1].Y(), int12[1].Z()} };
+                                }
+
+                                // A non-touching collision is defined as two triangles that:
+                                //  1. Are not coplanar
+                                //  2. The point of intersection is not along the edge of triangle A.
+                                //  3. The point of intersection is not a vertex of triangle B.
+
+                                auto Aptr = &A[0];
+                                auto Bptr = &B[0];
+
+                                for (int iter = 0; iter < 2; ++iter) {
+                                    for (int i = 0; i < 2; ++i) {
+                                        bool not_along_edge = true;
+                                        for (int edge = 0; edge < 3; ++edge) {
+                                            not_along_edge = not_along_edge && !IfcGeom::util::is_point_on_line(int12[0], Aptr[edge], Aptr[(edge + 1) % 3]);
+                                        }
+                                        if (not_along_edge) {
+                                            bool not_vertex_of_b = true;
+                                            for (int j = 0; j < 3; ++j) {
+                                                not_vertex_of_b = not_vertex_of_b && ((Bptr[j] - int12[0]).Magnitude() > 1e-4);
+                                            }
+                                            if (not_vertex_of_b) {
+                                                return clash{ 2, tA, tB, 0, {int12[0].X(), int12[0].Y(), int12[0].Z()}, {int12[1].X(), int12[1].Y(), int12[1].Z()} };
+                                            }
+                                        }
+                                        std::swap(Aptr, Bptr);
+                                    }                                    
+                                    std::swap(int12[0], int12[1]);
+                                }
+                            }
+                        }
+                    }
+                    return boost::none;
+                });
+            }
+
 			clash test_collision(const T& tA, const T& tB, bool allow_touching) const {
                 // Collide BVH trees of shape A vs B
                 opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a = bvhs_.find(tA)->second;
@@ -669,6 +770,72 @@ namespace IfcGeom {
                     }
                 }
                 return {-1, tA, tB, 0, {0, 0, 0}, {0, 0, 0}};
+            }
+
+            boost::optional<clash> test_clearance_2(const T& tA, const T& tB, double clearance, bool check_all) const {
+                double min_clearance = std::numeric_limits<double>::infinity();
+                std::array<double, 3> clearance_point1;
+                std::array<double, 3> clearance_point2;
+
+                return process_bvh_pairs(tA, tB, [
+                    &min_clearance,
+                    &clearance_point1,
+                    &clearance_point2
+                ](
+                    opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_a,
+                    opencascade::handle<BVH_Tree<double, 3, BVH_BinaryTree>> bvh_b,
+                    const std::vector<std::array<int, 3>>& tris_a,
+                    const std::vector<std::array<int, 3>>& tris_b,
+                    const std::vector<gp_Pnt>& verts_a,
+                    const std::vector<gp_Pnt>& verts_b,
+                    const std::vector<gp_Vec>& normals_a,
+                    const std::vector<gp_Vec>& normals_b,
+                    int i,
+                    const std::array<int, 3>& tri,
+                    const std::vector<int>& bvh_b_is
+                    ) {
+                    const std::array<gp_Vec,3> p = {
+                        verts_a[tri[0]].XYZ(),
+                        verts_a[tri[1]].XYZ(),
+                        verts_a[tri[2]].XYZ()
+                    };
+
+                    for (const auto& bvh_b_i : bvh_b_is) {
+                        for (int j = bvh_b->BegPrimitive(bvh_b_i); j <= bvh_b->EndPrimitive(bvh_b_i); ++j) {
+                            const std::array<int, 3>& tri = tris_b[j];
+                            tri_count_++;
+                            
+                            const std::array<gp_Vec, 3> q = {
+                                verts_b[tri[0]].XYZ(),
+                                verts_b[tri[1]].XYZ(),
+                                verts_b[tri[2]].XYZ()
+                            };
+
+                            gp_Vec cp;
+                            gp_Vec cq;
+
+                            // https://stackoverflow.com/questions/53602907/algorithm-to-find-minimum-distance-between-two-triangles
+                            distanceTriangleTriangleSquared(cp, cq, p, q);
+
+                            double distance = (cq - cp).Magnitude();
+                            if (distance < clearance && distance < min_clearance) {
+                                min_clearance = distance;
+                                clearance_point1 = { cp.X(), cp.Y(), cp.Z() };
+                                clearance_point2 = { cq.X(), cq.Y(), cq.Z() };
+                                if (!check_all || min_clearance < 1e-4) {
+                                    return clash{ 3, tA, tB, min_clearance, clearance_point1, clearance_point2 };
+                                }
+                            }
+                        }
+                    }
+                    return boost::none;
+                }, clearance);
+
+                if (min_clearance < clearance) {
+                    return { 3, tA, tB, min_clearance, clearance_point1, clearance_point2 };
+                }
+
+                return boost::none;
             }
 
 			clash test_clearance(const T& tA, const T& tB, double clearance, bool check_all) const {
