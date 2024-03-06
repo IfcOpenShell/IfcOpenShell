@@ -353,6 +353,8 @@ endif
 	cd dist/working && mkdir site-packages
 	# Required by IfcCSV
 	cd dist/working && . env/bin/activate && $(PIP) install pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# Pandas ships with very heavy tests
+	cd dist/working/site-packages/pandas && rm -rf tests
 	cd dist/working && . env/bin/activate && $(PIP) install openpyxl --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install odfpy --target=./site-packages
 	# Required by IFCCityJSON
