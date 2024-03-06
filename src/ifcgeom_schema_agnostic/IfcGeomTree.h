@@ -922,143 +922,6 @@ namespace IfcGeom {
 				shapes_[t] = s;
 			}
 
-			void add_triangulation(const T& t, const TopoDS_Shape& s) {
-                // Note that the original add function is also used elsewhere (e.g. boolean_utils.cpp)
-                // We don't want to randomly add triangulated voids in our
-                // tree, so for now this is a separate function.
-
-				Bnd_Box b;
-				BRepBndLib::AddClose(s, b);
-                aabbs_[t] = b;
-
-                Bnd_OBB obb;
-                // If IsOptimal = True it doubles the execution time.
-                BRepBndLib::AddOBB(s, obb, true, false, false);
-                obbs_[t] = obb;
-
-                max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
-
-                int original_tris_index = 0;
-                std::vector<std::array<int, 3>> original_tris;
-                std::vector<gp_Pnt> verts;
-                std::vector<gp_Vec> original_normals;
-
-                // Attempt to copy exactly what BRepExtrema_TriangleSet is doing under the hood.
-                const auto builder = new BVH_LinearBuilder<Standard_Real, 3> (BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
-                BVH_Triangulation<Standard_Real, 3> triangulation(builder);
-
-                BRepExtrema_ShapeList shape_list;
-                std::vector<bool> is_reversed;
-                TopExp_Explorer exp_f;
-                for (exp_f.Init(s, TopAbs_FACE); exp_f.More(); exp_f.Next()) {
-                    shape_list.Append(TopoDS::Face(exp_f.Current()));
-
-                    TopoDS_Face f = TopoDS::Face(exp_f.Current());
-                    is_reversed.push_back(f.Orientation() == TopAbs_REVERSED);
-                }
-
-                // Standard_Boolean BRepExtrema_TriangleSet::Init (const BRepExtrema_ShapeList& theShapes)
-                Standard_Boolean isOK = Standard_True;
-                for (Standard_Integer aShapeIdx = 0; aShapeIdx < shape_list.Size() && isOK; ++aShapeIdx)
-                {
-                    if (shape_list (aShapeIdx).ShapeType() == TopAbs_FACE) {
-                        // isOK = initFace (TopoDS::Face (shape_list(aShapeIdx)), aShapeIdx);
-                        // Standard_Boolean BRepExtrema_TriangleSet::initFace (const TopoDS_Face& theFace, const Standard_Integer theIndex)
-
-                        TopoDS_Face theFace = TopoDS::Face (shape_list(aShapeIdx));
-                        Standard_Integer theIndex = aShapeIdx;
-                        TopLoc_Location aLocation;
-
-                        bool is_reversed = theFace.Orientation() == TopAbs_REVERSED;
-
-                        Handle(Poly_Triangulation) aTriangulation = BRep_Tool::Triangulation (theFace, aLocation);
-                        if (aTriangulation.IsNull())
-                        {
-                            isOK = false;
-                        }
-
-                        const Standard_Integer aVertOffset = static_cast<Standard_Integer> (verts.size()) - 1;
-
-                        // initNodes (aTriangulation->MapNodeArray()->ChangeArray1(), aLocation.Transformation(), theIndex);
-                        // void BRepExtrema_TriangleSet::initNodes (const TColgp_Array1OfPnt& theNodes, const gp_Trsf& theTrsf, const Standard_Integer theIndex)
-                        TColgp_Array1OfPnt theNodes = aTriangulation->MapNodeArray()->ChangeArray1();
-                        gp_Trsf theTrsf = aLocation.Transformation();
-
-                        for (Standard_Integer aVertIdx = 1; aVertIdx <= theNodes.Size(); ++aVertIdx)
-                        {
-                            gp_Pnt aVertex = theNodes.Value (aVertIdx);
-                            aVertex.Transform (theTrsf);
-                            triangulation.Vertices.push_back (BVH_Vec3d (aVertex.X(), aVertex.Y(), aVertex.Z()));
-                            verts.push_back(aVertex);
-                            // myShapeIdxOfVtxVec.Append (theIndex);
-                        }
-
-                        // myNumVtxInShapeVec.SetValue (theIndex, theNodes.Size());
-
-                        for (Standard_Integer aTriIdx = 1; aTriIdx <= aTriangulation->NbTriangles(); ++aTriIdx)
-                        {
-                            Standard_Integer aVertex1;
-                            Standard_Integer aVertex2;
-                            Standard_Integer aVertex3;
-
-                            if (is_reversed) {
-                                aTriangulation->Triangle (aTriIdx).Get (aVertex3, aVertex2, aVertex1);
-                            } else {
-                                aTriangulation->Triangle (aTriIdx).Get (aVertex1, aVertex2, aVertex3);
-                            }
-
-                            const auto& v1_pnt = verts[aVertex1 + aVertOffset];
-                            const auto& v2_pnt = verts[aVertex2 + aVertOffset];
-                            const auto& v3_pnt = verts[aVertex3 + aVertOffset];
-                            gp_Vec dir1(v1_pnt, v2_pnt);
-                            gp_Vec dir2(v1_pnt, v3_pnt);
-                            gp_Vec cross_product = dir1.Crossed(dir2);
-                            if (cross_product.Magnitude() > Precision::Confusion()) {
-                                triangulation.Elements.push_back (BVH_Vec4i (
-                                    aVertex1 + aVertOffset,
-                                    aVertex2 + aVertOffset,
-                                    aVertex3 + aVertOffset,
-                                    original_tris_index));
-                                    //theIndex));
-                                original_tris_index++;
-                                original_tris.push_back({
-                                    aVertex1 + aVertOffset,
-                                    aVertex2 + aVertOffset,
-                                    aVertex3 + aVertOffset
-                                });
-                                original_normals.push_back(cross_product.Normalized());
-                            }
-                        }
-
-                        // myNumTrgInShapeVec.SetValue (theIndex, aTriangulation->NbTriangles());
-
-                        isOK = true;
-                    } else if (shape_list (aShapeIdx).ShapeType() == TopAbs_EDGE) {
-                        // isOK = initEdge (TopoDS::Edge (shape_list(aShapeIdx)), aShapeIdx);
-                        // Should never occur, we don't pass in edges.
-                    }
-                }
-
-                triangulation.MarkDirty();
-                const auto bvh = triangulation.BVH();
-
-                // After BVH is constructed, triangles are reordered
-                std::vector<std::array<int, 3>> tris(triangulation.Size());
-                std::vector<gp_Vec> normals(triangulation.Size());
-
-                for (int i=0; i<triangulation.Size(); ++i) {
-                    const auto& el = triangulation.Elements[i];
-                    tris[i] = original_tris[el[3]];
-                    normals[i] = original_normals[el[3]];
-                }
-
-                bvhs_[t] = bvh;
-                is_manifold_[t] = is_shape_manifold(s);
-                tris_[t] = std::move(tris);
-                verts_[t] = std::move(verts);
-                normals_[t] = std::move(normals);
-			}
-
 			std::vector<T> select_box(const T& t, bool completely_within = false, double extend=-1.e-5) const {
 				typename map_t::const_iterator it = shapes_.find(t);
 				if (it == shapes_.end()) {
@@ -1738,9 +1601,13 @@ namespace IfcGeom {
                     }
 
                     if ( ! is_existing_colour) {
-                        colours.push_back({material.diffuse()[0], material.diffuse()[1], material.diffuse()[2], alpha});
+                        colours.push_back({
+                            static_cast<float>(material.diffuse()[0]), 
+                            static_cast<float>(material.diffuse()[1]),
+                            static_cast<float>(material.diffuse()[2]),
+                            alpha});
                     }
-                    material_keys.push_back(i);
+                    material_keys.push_back(static_cast<decltype(material_keys)::value_type>(i));
                 }
 
                 size_t total_material_keys = material_keys.size();
@@ -1844,7 +1711,8 @@ namespace IfcGeom {
             }
         }
 
-        void apply_matrix_to_flat_verts(const std::vector<float>& flat_list, const std::vector<float>& matrix, std::vector<float>& result) {
+        template <typename T>
+        void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const std::vector<T>& matrix, std::vector<T>& result) {
             result.clear();
             result.reserve(flat_list.size());
 
@@ -1869,36 +1737,202 @@ namespace IfcGeom {
             return hex_str;
         }
 
-		void add_triangulation_element(IfcGeom::TriangulationElement* elem, std::string name, std::string global_id) {
-            triangulation_elements_.push_back(elem);
-            const auto& t = elem->product();
-            const auto geometry_id = elem->geometry().id();
-            placements_[t] = elem->transformation().matrix().data();
-            names_[t] = name;
-            global_ids_[t] = global_id;
-
-            if (local_verts_.find(geometry_id) != local_verts_.end()) {
-                return;
+        static bool is_manifold(const std::vector<int>& fs) {
+            std::unordered_set<std::pair<size_t, size_t>, boost::hash<std::pair<size_t, size_t>>> dict;
+            for (size_t i = 0; i < fs.size(); i += 3) {
+                for (size_t j = 0; j < 3; ++j) {
+                    auto k = (j + 1) % 3;
+                    auto it = dict.find({ i + j, i + k });
+                    if (it != dict.end()) {
+                        dict.erase(it);
+                    } else {
+                        dict.insert({ i + k, i + j });
+                    }
+                }
             }
-
-            local_verts_[geometry_id] = elem->geometry().verts();
-            local_faces_[geometry_id] = elem->geometry().faces();
-            local_materials_[geometry_id] = elem->geometry().materials();
-            local_material_ids_[geometry_id] = elem->geometry().material_ids();
+            return dict.empty();
         }
 
-		void add_element(IfcGeom::BRepElement* elem, bool should_triangulate=false) {
+        void add_element(IfcGeom::TriangulationElement* elem) {
+
+            Bnd_Box aabb;
+            Bnd_OBB obb;
+
+            {
+                auto& trsf = elem->transformation().data();
+                auto& vs = elem->geometry().verts();
+                auto& fs = elem->geometry().faces();
+
+                std::vector<gp_Pnt> vs_transformed;
+                vs_transformed.reserve(vs.size() / 3);
+                for (size_t i = 0; i < vs.size(); i += 3) {
+                    gp_Pnt p(vs[i + 0], vs[i + 1], vs[i + 2]);
+                    vs_transformed.push_back(p.Transformed(trsf));
+                    aabb.Add(vs_transformed.back());
+                }
+
+                std::cout << "aabb: ";
+                aabb.DumpJson(std::cout);
+                std::cout << std::endl;
+            
+                std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, boost::hash<std::tuple<int, int, int>>> quantized_normal_counts;
+
+                std::vector<double> tri_areas;
+                std::vector<gp_XYZ> tri_norms;
+                for (size_t i = 0; i < fs.size(); i += 3) {
+                    auto& p = vs_transformed[fs[i+0]];
+                    auto& q = vs_transformed[fs[i+1]];
+                    auto& r = vs_transformed[fs[i+2]];
+                    auto cross = (q.XYZ() - p.XYZ()).Crossed(r.XYZ() - p.XYZ());
+                    auto mag = cross.Modulus();
+                    tri_areas.push_back(mag / 2.);
+                    cross /= mag;
+                    tri_norms.push_back(cross);
+                    auto quantized = std::make_tuple(
+                        static_cast<int>(cross.X() * 1000),
+                        static_cast<int>(cross.Y() * 1000),
+                        static_cast<int>(cross.Z() * 1000)
+                    );
+                    quantized_normal_counts[quantized].push_back(i / 3);
+                }
+
+                std::vector<std::pair<double, decltype(quantized_normal_counts)::const_iterator>> area_to_it;
+
+                for (auto it = quantized_normal_counts.cbegin(); it != quantized_normal_counts.cend(); ++it) {
+                    double area_sum = 0.;
+                    for (auto& i : it->second) {
+                        area_sum += tri_areas[i];
+                    }
+                    area_to_it.push_back({ area_sum, it });
+                }
+
+                std::sort(area_to_it.begin(), area_to_it.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; });
+
+                auto calc_average_norm = [&tri_norms](const std::vector<size_t>& idxs) {
+                    gp_XYZ normal_sum;
+                    for (auto& i : idxs) {
+                        normal_sum.Add(tri_norms[i]);
+                    }
+                    normal_sum.Normalize();
+                    return normal_sum;
+                };
+
+                auto Z = calc_average_norm(area_to_it.back().second->second);
+
+                std::vector<std::pair<double, gp_XYZ>> candidates;
+
+                size_t num_candidates = 0;
+                for (auto it = ++area_to_it.rbegin(); it != area_to_it.rend() && num_candidates < 10; ++it, ++num_candidates) {
+                    auto ref = calc_average_norm(it->second->second);
+                    candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                }
+
+                if (candidates.empty()) {
+                    {
+                        gp_XYZ ref(0, 0, 1);
+                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                    }
+                    {
+                        gp_XYZ ref(1, 0, 0);
+                        candidates.push_back({ std::abs(Z.Dot(ref)), ref });
+                    }
+                }
+
+                auto X = std::min_element(candidates.begin(), candidates.end(), [](auto& p1, auto& p2) { return p1.first < p2.first; })->second;
+
+                gp_Trsf trsf2;
+                gp_Ax3 ax3(gp::Origin(), Z, X);
+                trsf2.SetTransformation(gp::XOY(), ax3);
+
+                Bnd_Box tmp;
+
+                for (auto& p : vs_transformed) {
+                    tmp.Add(p.Transformed(trsf2));
+                }
+
+                gp_Pnt cent = (tmp.CornerMax().XYZ() + tmp.CornerMin().XYZ()) / 2;
+                auto halfsize = tmp.CornerMax().XYZ() - cent.XYZ();
+
+                obb.SetXComponent(ax3.XDirection(), halfsize.X());
+                obb.SetYComponent(ax3.YDirection(), halfsize.Y());
+                obb.SetZComponent(ax3.Direction(), halfsize.Z());
+                obb.SetCenter(cent.Transformed(trsf2.Inverted()));
+
+                std::cout << "obb: ";
+                obb.DumpJson(std::cout);
+                std::cout << std::endl;
+            }
+            
+            const auto& t = elem->product();
+            const std::vector<double>& matrix = elem->transformation().matrix().data();
+            const std::vector<double>& elem_verts_local = elem->geometry().verts();
+            const std::vector<int>& elem_faces = elem->geometry().faces();
+            std::vector<double> elem_verts;
+            apply_matrix_to_flat_verts(elem_verts_local, matrix, elem_verts);
+
+            int original_tris_index = 0;
+            std::vector<std::array<int, 3>> original_tris;
+            std::vector<gp_Pnt> verts;
+            std::vector<gp_Vec> original_normals;
+
+            // Attempt to copy exactly what BRepExtrema_TriangleSet is doing under the hood.
+            const auto builder = new BVH_LinearBuilder<Standard_Real, 3>(BVH_Constants_LeafNodeSizeDefault, BVH_Constants_MaxTreeDepth);
+            BVH_Triangulation<Standard_Real, 3> triangulation(builder);
+
+            for (int i = 0; i < elem_verts.size(); i += 3) {
+                triangulation.Vertices.push_back(BVH_Vec3d(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+                verts.push_back(gp_Pnt(elem_verts[i], elem_verts[i + 1], elem_verts[i + 2]));
+            }
+
+            for (int i = 0; i < elem_faces.size(); i += 3) {
+                const auto& v1_pnt = verts[elem_faces[i]];
+                const auto& v2_pnt = verts[elem_faces[i + 1]];
+                const auto& v3_pnt = verts[elem_faces[i + 2]];
+                gp_Vec dir1(v1_pnt, v2_pnt);
+                gp_Vec dir2(v1_pnt, v3_pnt);
+                gp_Vec cross_product = dir1.Crossed(dir2);
+                if (cross_product.Magnitude() > Precision::Confusion()) {
+                    triangulation.Elements.push_back(BVH_Vec4i(
+                        elem_faces[i], elem_faces[i + 1], elem_faces[i + 2], original_tris_index
+                    ));
+                    original_tris_index++;
+                    original_tris.push_back({
+                        elem_faces[i], elem_faces[i + 1], elem_faces[i + 2]
+                        });
+                    original_normals.push_back(cross_product.Normalized());
+                }
+            }
+
+            triangulation.MarkDirty();
+            const auto bvh = triangulation.BVH();
+
+            // After BVH is constructed, triangles are reordered
+            std::vector<std::array<int, 3>> tris(triangulation.Size());
+            std::vector<gp_Vec> normals(triangulation.Size());
+
+            for (int i = 0; i < triangulation.Size(); ++i) {
+                const auto& el = triangulation.Elements[i];
+                tris[i] = original_tris[el[3]];
+                normals[i] = original_normals[el[3]];
+            }
+
+            bvhs_[t] = bvh;
+            is_manifold_[t] = is_manifold(elem_faces);
+            tris_[t] = std::move(tris);
+            verts_[t] = std::move(verts);
+            normals_[t] = std::move(normals);
+            aabbs_[t] = aabb;
+            obbs_[t] = obb;
+        }
+        
+		void add_element(IfcGeom::BRepElement* elem) {
 			if (!elem) {
 				return;
 			}
 			auto compound = elem->geometry().as_compound();
 			compound.Move(elem->transformation().data());
-            if (should_triangulate) {
-                add_triangulation(elem->product(), compound);
-            } else {
-                add(elem->product(), compound);
-            }
-			auto git = elem->geometry().begin();
+            add(elem->product(), compound);
+        	auto git = elem->geometry().begin();
 
 			if (enable_face_styles_) {
 				TopoDS_Iterator it(compound);
