@@ -354,56 +354,52 @@ float distanceTriangleTriangleSquared(gp_Vec& cp, gp_Vec& cq, const std::array<g
 // With minor modifications to use gp_Vec type.
 //Based on the paper A Fast Triangle-Triangle Intersection Test by T. Moeller
 //http://web.stanford.edu/class/cs277/resources/papers/Moller1997b.pdf
-struct Interval
-{
-    Standard_Real min;
-    Standard_Real max;
-    gp_Vec minPoint;
-    gp_Vec maxPoint;
-
-    Interval() : min(FLT_MAX), max(-FLT_MAX), minPoint(gp_Vec(NAN, NAN, NAN)), maxPoint(gp_Vec(NAN, NAN, NAN)) { }
-
-    static bool overlapOrTouch(const Interval& a, const Interval& b)
+namespace {
+    struct Interval
     {
-        return !(a.min > b.max || b.min > a.max);
-    }
+        Standard_Real min;
+        Standard_Real max;
+        gp_Vec minPoint;
+        gp_Vec maxPoint;
 
-    static Interval intersection(const Interval& a, const Interval& b)
-    {
-        Interval result;
-        if (!overlapOrTouch(a, b))
+        Interval() : min(FLT_MAX), max(-FLT_MAX), minPoint(gp_Vec(NAN, NAN, NAN)), maxPoint(gp_Vec(NAN, NAN, NAN)) { }
+
+        static bool overlapOrTouch(const Interval& a, const Interval& b)
+        {
+            return !(a.min > b.max || b.min > a.max);
+        }
+
+        static Interval intersection(const Interval& a, const Interval& b)
+        {
+            Interval result;
+            if (!overlapOrTouch(a, b))
+                return result;
+
+            if (a.min > b.min) {
+                result.min = a.min;
+                result.minPoint = a.minPoint;
+            } else {
+                result.min = b.min;
+                result.minPoint = b.minPoint;
+            }
+
+            if (a.max < b.max) {
+                result.max = a.max;
+                result.maxPoint = a.maxPoint;
+            } else {
+                result.max = b.max;
+                result.maxPoint = b.maxPoint;
+            }
             return result;
-
-        if (a.min > b.min)
-        {
-            result.min = a.min;
-            result.minPoint = a.minPoint;
-        }
-        else
-        {
-            result.min = b.min;
-            result.minPoint = b.minPoint;
         }
 
-        if (a.max < b.max)
+        void include(Standard_Real d, const gp_Vec& p)
         {
-            result.max = a.max;
-            result.maxPoint = a.maxPoint;
+            if (d < min) { min = d; minPoint = p; }
+            if (d > max) { max = d; maxPoint = p; }
         }
-        else
-        {
-            result.max = b.max;
-            result.maxPoint = b.maxPoint;
-        }
-        return result;
-    }
-
-    void include(Standard_Real d, const gp_Vec& p)
-    {
-        if (d < min) { min = d; minPoint = p; }
-        if (d > max) { max = d; maxPoint = p; }
-    }
-};
+    };
+}
 
 // From NVIDIA-Omniverse PhysX - BSD 3-Clause "New" or "Revised" License
 // https://github.com/NVIDIA-Omniverse/PhysX/blob/main/LICENSE.md
