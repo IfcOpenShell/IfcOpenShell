@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import sys
 import bpy
 import time
 import logging
@@ -623,3 +624,39 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
                 print("Finished 20 batches. Manually stopping in case of infinite loop.")
         self.report({"INFO"}, f"Auto purged {total_purged} orphaned elements")
         tool.Ifc.get().write(self.filepath)
+
+
+class PipInstall(bpy.types.Operator):
+    bl_idname = "bim.pip_install"
+    bl_label = "Pip Install"
+    bl_description = "Installs a package from PyPI"
+    name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        import blenderbim.bim
+
+        target = [p for p in sys.path if p.endswith("packages") and "addons" in p][0]
+        py_exec = str(sys.executable)
+
+        print("Detected executable:", py_exec)
+        print("Installing to:", target)
+
+        subprocess.call([py_exec, "-m", "ensurepip", "--user"])
+        subprocess.call([py_exec, "-m", "pip", "install", "--upgrade", "pip"])
+        # Trusted host to make things simpler due to some enterprise network restrictions
+        subprocess.call(
+            [
+                py_exec,
+                "-m",
+                "pip",
+                "install",
+                f"--target={target}",
+                "--upgrade",
+                self.name,
+                "--trusted-host",
+                "pypi.org",
+                "--trusted-host",
+                "files.pythonhosted.org",
+            ]
+        )
+        return {"FINISHED"}

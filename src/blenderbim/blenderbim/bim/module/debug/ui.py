@@ -44,6 +44,10 @@ class BIM_PT_debug(Panel):
         row.operator("bim.parse_express", icon="IMPORT", text="")
         row.operator("bim.select_express_file", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "package_name", text="")
+        row.operator("bim.pip_install", icon="EVENT_PAGEDOWN").name = props.package_name
+
         row = layout.row()
         row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
 
