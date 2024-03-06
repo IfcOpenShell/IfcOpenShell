@@ -351,6 +351,8 @@ class curve_segment_evaluator {
     segment_type_t segment_type_;
     const IfcSchema::IfcCurve* curve_;
 
+    double projected_length_;
+
     std::shared_ptr<segment_geometry_adjuster> geometry_adjuster;
 
     std::optional<std::function<Eigen::Matrix4d(double)>> eval_;
@@ -401,13 +403,13 @@ class curve_segment_evaluator {
     }
 
     void set_spiral_function(mapping* mapping_, const IfcSchema::IfcSpiral* c, double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
-        if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
+        if (segment_type_ == ST_HORIZONTAL) {
             auto start = start_;
+            projected_length_ = length_;
             auto segment_type = segment_type_;
             geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
-            using boost::math::quadrature::trapezoidal;
-            auto start_x = s ? trapezoidal(fnX, 0.0, start / s) : 0.0;
-            auto start_y = s ? trapezoidal(fnY, 0.0, start / s) : 0.0;
+            auto start_x = s ? boost::math::quadrature::trapezoidal(fnX, 0.0, start / s) : 0.0;
+            auto start_y = s ? boost::math::quadrature::trapezoidal(fnY, 0.0, start / s) : 0.0;
             auto start_dx = s ? fnX(start / s)/s : 0.0;
             auto start_dy = s ? fnY(start / s)/s : 0.0;
             eval_ = [start, s, start_x, start_y, start_dx,start_dy,fnX, fnY, segment_type, geometry_adjuster = this->geometry_adjuster](double u) {
@@ -418,8 +420,8 @@ class curve_segment_evaluator {
                 auto a = 0.0;
                 auto b = s ? u / s : 0.0;
 
-                auto x = trapezoidal(fnX, a, b) - start_x;
-                auto y = trapezoidal(fnY, a, b) - start_y;
+                auto x = boost::math::quadrature::trapezoidal(fnX, a, b) - start_x;
+                auto y = boost::math::quadrature::trapezoidal(fnY, a, b) - start_y;
 
                 auto x1 = x * start_dx + y * start_dy;
                 auto y1 = -x * start_dy + y * start_dx;
@@ -438,6 +440,53 @@ class curve_segment_evaluator {
                 m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
                 m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
                 return geometry_adjuster->transform_and_adjust(u,m);
+            };
+        } else if (segment_type_ == ST_VERTICAL) {
+
+           // This functor is f'(x) = dy/dx
+            auto df = [fnX,fnY](double t) -> double {
+                return fnY(t) / fnX(t);
+            };
+
+            // This functor computes the curve length
+            // Integral (sqrt (f'(x) ^ 2 + 1)dx
+            auto fc = [df](double x) -> double {
+                auto fs = [df](double x) -> double {
+                    return sqrt(pow(df(x), 2) + 1);
+                };
+                auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                return s;
+            };
+
+            eval_ = [s,fnX,fnY,fc](double u) -> Eigen::Matrix4d {
+                // find x when u - s = 0
+                std::uintmax_t max_iter = 5000;
+                auto max_iter_ = max_iter;
+                auto tol = [](double a, double b) { return fabs(b - a) < 1.0E-09; };
+                auto ux = u;
+                try {
+                    auto f = [fc, u](double x) -> double { return fc(x) - u; };
+                    auto result = boost::math::tools::bracket_and_solve_root(f, u, 2.0, true, tol, max_iter);
+                    ux = result.first;
+                } catch (...) {
+                    Logger::Warning("root solver failed");
+                }
+
+                // integration limits, integrate from a to b
+                auto a = 0.0;
+                auto b = s ? u / s : 0.0;
+                auto y = boost::math::quadrature::trapezoidal(fnY, a, b); // - start_y;
+
+                auto dx = s ? fnX(b)/s : 1.0;
+                auto dy = s ? fnY(b)/s : 0.0;
+
+                Eigen::Matrix4d m;
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);
+                m.col(3) = Eigen::Vector4d(0.0, y, 0.0, 1.0); 
+
+                return m;
             };
         }
         else if (segment_type_ == ST_CANT) {
@@ -579,8 +628,10 @@ class curve_segment_evaluator {
 
          geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
+         projected_length_ = length_;
          eval_ = [R, start_x, start_y, start_angle, sign_l, segment_type, geometry_adjuster = this->geometry_adjuster](double u)
          {
+            // u is measured along the circle
             auto angle = start_angle + sign_l * u / R;
 
             auto dx = cos(angle);
@@ -599,15 +650,32 @@ class curve_segment_evaluator {
       }
       else if (segment_type_ == ST_VERTICAL) {
          auto R = c->Radius() * length_unit_;
+         auto start_angle = start_/R;
+         auto end_angle = start_angle + length_ / R;
+         auto u_end = R * (cos(end_angle)-cos(start_angle));
          auto sign_l = sign(length_);
 
-         geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
+         const auto& p = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+         auto ys = p.col(3)(1) * length_unit_;
 
-         eval_ = [R, sign_l, geometry_adjuster = this->geometry_adjuster](double u) -> Eigen::Matrix4d {
-             auto y = sign_l * (R - sqrt(R*R - u*u));
+         projected_length_ = u_end;
+
+         eval_ = [ys,R,u_end,start_angle,end_angle,sign_l](double u) -> Eigen::Matrix4d {
+            // u is measured along the x-axis, not along the circle
+             auto theta = start_angle + u * (end_angle - start_angle) / u_end;
+             auto x = u;
+             //auto y = ys + R * (sin(theta) - sin(start_angle));
+             auto y = ys - sign_l*(sqrt(R * R - pow(R * cos(start_angle) + u, 2)) - sqrt(R * R - pow(R * cos(start_angle), 2)));
+
+             auto dx = sin(theta);
+             auto dy = -cos(theta);
+
              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+             m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
              m.col(3) = Eigen::Vector4d(u, y, 0.0, 1.0);
-             return geometry_adjuster->transform_and_adjust(u, m);
+             return m;
          };
       } else if (segment_type_ == ST_CANT) {
          Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
@@ -638,7 +706,7 @@ class curve_segment_evaluator {
       auto p = pl->Points();
       if (p->size() < 2)
       {
-         throw std::runtime_error("invalid polyline - must have at least 2 points"); // this should never happen, but just in case it does
+         Logger::Error(std::runtime_error("invalid polyline - must have at least 2 points")); // this should never happen, but just in case it does
       }
 
       auto std_compare = [](double u_start, double u, double u_end) {return u_start <= u && u < u_end; };
@@ -716,6 +784,8 @@ class curve_segment_evaluator {
      
          geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
 
+         projected_length_ = length_;
+
          eval_ = [fns, geometry_adjuster = this->geometry_adjuster](double u) {
          auto iter = std::find_if(fns.cbegin(), fns.cend(), [=](const auto& fn)
             {
@@ -754,6 +824,8 @@ class curve_segment_evaluator {
 
       auto px = c[0] * length_unit_;
       auto py = c[1] * length_unit_;
+
+      projected_length_ = length_;
 
       geometry_adjuster = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, segment_type_, inst_, next_inst_);
       if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
@@ -797,7 +869,48 @@ class curve_segment_evaluator {
 
       if (segment_type_ == ST_HORIZONTAL) {
          // @rb need to work on this - u is distance along curve, this differs from vertical where u = x
-         eval_ = [start=start_,coeffX,coeffY,length_unit,geometry_adjuster = this->geometry_adjuster](double u) -> Eigen::Matrix4d {
+         projected_length_ = length_;
+
+         // This functor evalutes the derivative of the Y polynomial
+         auto df = [coeffY, length_unit](double x) -> double {
+             auto begin = std::next(coeffY.begin());
+             auto iter = begin;
+             auto end = coeffY.end();
+             auto length_conversion = length_unit;
+             double value = 0;
+             for (; iter != end; iter++) {
+                 auto exp = std::distance(begin, iter);
+                 auto coeff = (*iter) * length_conversion;
+                 value += (double)exp * coeff * pow(x, exp);
+                 length_conversion /= length_unit;
+             }
+             return value;
+            };
+
+         // This functor computes the curve length
+         // Integral (sqrt (f'(x) ^ 2 + 1)dx
+         auto fc = [df](double x) -> double {
+             auto fs = [df](double x) -> double {
+                return sqrt(pow(df(x), 2) + 1);
+             };
+             auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+             return s;
+         };
+
+         eval_ = [start=start_,coeffX,coeffY,length_unit,geometry_adjuster = this->geometry_adjuster, fc](double u) -> Eigen::Matrix4d {
+            // find x when u - s = 0
+             std::uintmax_t max_iter = 5000;
+             auto max_iter_ = max_iter;
+             auto tol = [](double a, double b) { return fabs(b - a) < 1.0E-09; };
+             auto ux = u;
+             try {
+                 auto f = [fc, u](double x) -> double { return fc(x) - u; };
+                 auto result = boost::math::tools::bracket_and_solve_root(f, u, 2.0, true, tol, max_iter);
+                 ux = result.first;
+             } catch (...) {
+                 Logger::Warning("root solver failed");
+             }
+
              std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
              std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
              std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
@@ -808,10 +921,10 @@ class curve_segment_evaluator {
                  for (auto iter = begin; iter != end; iter++) {
                      auto exp = std::distance(begin, iter);
                      auto coeff = (*iter) * length_conversion;
-                     position[i] += coeff * (pow(u + start, exp) - pow(start,exp));
+                     position[i] += coeff * (pow(ux /*+ start*/, exp)/* - pow(start, exp)*/);
 
                      if (iter != begin) {
-                         slope[i] += coeff * exp * pow(u + start, exp - 1);
+                         slope[i] += coeff * exp * pow(ux/* + start*/, exp - 1);
                      }
 
                      length_conversion /= length_unit;
@@ -833,6 +946,8 @@ class curve_segment_evaluator {
          };
       }
       else if (segment_type_ == ST_VERTICAL) {
+         projected_length_ = length_;
+
          auto p = inst_->Placement()->Location()->as<IfcSchema::IfcCartesianPoint>();
          double sx = p->Coordinates()[0] * length_unit_;
          double sy = p->Coordinates()[1] * length_unit_;
@@ -879,52 +994,6 @@ class curve_segment_evaluator {
              return Eigen::Matrix4d::Identity();
          };
       }
-
-      //eval_ = [start = start_, coeffX, coeffY, segment_type, length_unit, geometry_adjuster = this->geometry_adjuster](double u) {
-      //   std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
-      //   std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
-      //   std::array<double, 2> slope{0.0, 0.0}; // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
-      //   for (int i = 0; i < 2; i++) { // loop over X and Y
-      //       auto length_conversion = length_unit;
-      //       auto begin = coefficients[i]->cbegin();
-      //       auto end = coefficients[i]->cend();
-      //       for (auto iter = begin; iter != end; iter++) {
-      //            auto exp = std::distance(begin, iter);
-      //            auto coeff = (*iter)*length_conversion;
-      //            position[i] += coeff * pow(u+start, exp);
-
-      //            if (iter != begin) {
-      //                slope[i] += coeff * exp * pow(u+start, exp - 1);
-      //            }
-
-      //            length_conversion /= length_unit;
-      //       }
-      //   }
-
-      //   auto x = position[0];
-      //   auto y = position[1];
-
-      //   auto dx = slope[0];
-      //   auto dy = slope[1];
-
-      //   Eigen::Matrix4d m;
-      //   if (segment_type == ST_HORIZONTAL || segment_type == ST_VERTICAL) {
-      //       rotate about the Z-axis
-      //      m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-      //      m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-      //      m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-      //      m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-      //   }
-      //   else if (segment_type == ST_CANT) {
-      //      Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
-      //      m = Eigen::Matrix4d::Identity();
-      //   } else {
-      //      Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-      //      m = Eigen::Matrix4d::Identity();
-      //   }
-
-      //      return geometry_adjuster->transform_and_adjust(u+start, m);
-      //  };
    }
 
    // Take the boost::type value from mpl::for_each and test it against our curve instance
@@ -936,7 +1005,7 @@ class curve_segment_evaluator {
    }
 
    double length() const {
-      return length_;
+      return segment_type_ == ST_HORIZONTAL ? length_ : projected_length_;
    }
 
    const std::optional<std::function<Eigen::Matrix4d(double)>>& evaluation_function() const {
