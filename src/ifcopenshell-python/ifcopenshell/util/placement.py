@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import ifcopenshell
 
 
 def a2p(o, z, x):
@@ -44,7 +45,7 @@ def a2p(o, z, x):
     return r.T
 
 
-def get_axis2placement(placement):
+def get_axis2placement(placement: ifcopenshell.entity_instance) -> np.array:
     """Parses an IfcAxis2Placement (2D or 3D) to a 4x4 transformation matrix
 
     Note that this function only parses a single placement axis. If you want to
@@ -202,6 +203,7 @@ def rotation(angle, axis, is_degrees=True):
     theta = np.radians(angle) if is_degrees else angle
     cos, sin = np.cos(theta), np.sin(theta)
 
+    # fmt: off
     if axis == "X":
         return np.array([
             [1, 0, 0, 0],
@@ -223,3 +225,4 @@ def rotation(angle, axis, is_degrees=True):
             [0, 0, 1, 0],
             [0, 0, 0, 1]
         ])
+    # fmt: on
