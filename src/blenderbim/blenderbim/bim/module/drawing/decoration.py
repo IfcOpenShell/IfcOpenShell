@@ -812,8 +812,9 @@ class AngleDecorator(BaseDecorator):
             base_edge = edge0 if tool.Cad.is_counter_clockwise_order(p0, p1, p2) else edge1
             text_offset = (Matrix.Rotation(-angle_rad / 2, 2) @ base_edge).normalized() * (radius + ANGLE_LABEL_OFFSET)
             label_position = p1 + text_offset
-
-            text = f"{int(angle)}deg"
+            drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+            decimal_places = drawing_pset_data.get("AngleDecimalPlaces", None)
+            text = f"{round(angle, decimal_places)}°"
             label_dir = Vector((1, 0))
             self.draw_label(context, text, label_position, label_dir, box_alignment="center")
 

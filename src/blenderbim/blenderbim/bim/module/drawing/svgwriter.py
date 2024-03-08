@@ -32,6 +32,7 @@ import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
+from blenderbim.bim.module.drawing.data import DrawingsData
 
 from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.ifc import IfcStore
@@ -1066,7 +1067,9 @@ class SvgWriter:
         # calculating text parameters and adding text
         text_position = arc_mid_point + arc_mid_dir * 5
         text_style = SvgWriter.get_box_alignment_parameters("center")
-        angle_text = f"{int(angle)}deg"
+        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        decimal_places = drawing_pset_data.get("AngleDecimalPlaces", None)
+        angle_text = f"{round(angle, decimal_places)}°"
         self.svg.add(self.svg.text(angle_text, insert=text_position, class_="ANGLE", **text_style))
 
         # Draw SVG arc, see for details: http://xahlee.info/js/svg_circle_arc.html
