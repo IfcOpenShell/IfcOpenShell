@@ -203,6 +203,7 @@ si_conversions = {
     "gallon UK": 0.004546,
     "gallon US": 0.003785,
     "degree": pi / 180,
+    "radian": 180 / pi,
     "ounce": 0.02835,
     "pound": 0.454,
     "ton UK": 1016.0469088,
