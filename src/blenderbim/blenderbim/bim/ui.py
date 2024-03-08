@@ -441,6 +441,10 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     def draw(self, context):
         pass
 
+    def draw_header(self,context):
+        # Draws Help button 
+        self.layout.operator("bim.help_filter", text="", icon="HELP")
+
 
 class BIM_PT_tab_geometry(Panel):
     bl_label = "Geometry"

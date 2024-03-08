@@ -178,6 +178,8 @@ classes = [
     # TODO: move this somewhere else and clean it up
     ui.BIM_PT_section_plane,
     ui.BIM_PT_section_with_cappings,
+    # Online Help operators
+    operator.HelpFilter,
 ]
 
 for mod in modules.values():
