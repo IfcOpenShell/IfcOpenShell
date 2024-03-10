@@ -601,12 +601,8 @@ def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
             unit = unit.ConversionFactor.UnitComponent
-        if unit.is_a("IfcSIUnit"):
+        if unit.is_a("IfcSIUnit") and not unit_type=='PLANEANGLEUNIT':
             unit_scale *= get_prefix_multiplier(unit.Prefix)
-            current_unit_type = getattr(unit, 'UnitType', None)
-            if unit_type == 'PLANEANGLEUNIT':
-                if current_unit_type == unit_type and (scale := do_try(lambda: si_conversions.get(getattr(unit, 'Name', None).lower()), False)):
-                    unit_scale = scale
     return unit_scale
 
 
