@@ -203,7 +203,6 @@ si_conversions = {
     "gallon UK": 0.004546,
     "gallon US": 0.003785,
     "degree": pi / 180,
-    "radian": 180 / pi,
     "ounce": 0.02835,
     "pound": 0.454,
     "ton UK": 1016.0469088,
@@ -567,13 +566,6 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def do_try(fn, default=None):
-    try:
-        return fn()
-    except:
-        return default
-
-
 def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
     """Returns a unit scale factor to convert to and from IFC project length units and SI meters
 
@@ -601,7 +593,7 @@ def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
             unit = unit.ConversionFactor.UnitComponent
-        if unit.is_a("IfcSIUnit") and not unit_type=='PLANEANGLEUNIT':
+        if unit.is_a("IfcSIUnit")':
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
 
