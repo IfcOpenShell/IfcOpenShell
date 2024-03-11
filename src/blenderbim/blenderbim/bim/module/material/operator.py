@@ -34,6 +34,7 @@ from blenderbim.bim.ifc import IfcStore
 class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_materials"
     bl_label = "Load Materials"
+    bl_description = "Display list of named materials"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
@@ -762,6 +763,11 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.run("style.assign_material_style", ifc_file, material=material, style=style, context=context)
         tool.Material.disable_editing_material()
         core.load_materials(tool.Material, props.material_type)
+        # NOTE: Update all elements that has this material and
+        # not just the ones that are using it in IfcMaterialConstituent,
+        # to handle cases where Style is connected to geometry implicitly:
+        # e.g. RepItem->IfcElement->IfcMaterial->Style
+        # instead of RepItem->ShapeAspect->Constituent->Style.
         tool.Material.update_elements_using_material(material)
 
 
