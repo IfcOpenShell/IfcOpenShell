@@ -566,7 +566,7 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(ifc_file):
+def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
     """Returns a unit scale factor to convert to and from IFC project length units and SI meters
 
     Example:
@@ -578,6 +578,8 @@ def calculate_unit_scale(ifc_file):
 
     :param ifc_file: The IFC file.
     :type ifc_file: ifcopenshell.file.file
+    :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
+    :type unit_type: str
     :returns: The scale factor
     :rtype: float
     """
@@ -586,12 +588,12 @@ def calculate_unit_scale(ifc_file):
     units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
-        if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+        if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
             continue
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
             unit = unit.ConversionFactor.UnitComponent
-        if unit.is_a("IfcSIUnit"):
+        if unit.is_a("IfcSIUnit")':
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
 
