@@ -34,17 +34,17 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
 
-    def serialise_entity_instance(entity):
-        return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
-
-    vcs_settings = settings.copy()
-    for key, value in settings.items():
-        if isinstance(value, ifcopenshell.entity_instance):
-            vcs_settings[key] = serialise_entity_instance(value)
-        elif isinstance(value, numpy.ndarray):
-            vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
-        elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
-            vcs_settings[key] = [serialise_entity_instance(i) for i in value]
+    # TODO: settings serialization for client-server systems
+    # def serialise_entity_instance(entity):
+    #     return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
+    # vcs_settings = settings.copy()
+    # for key, value in settings.items():
+    #     if isinstance(value, ifcopenshell.entity_instance):
+    #         vcs_settings[key] = serialise_entity_instance(value)
+    #     elif isinstance(value, numpy.ndarray):
+    #         vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
+    #     elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
+    #         vcs_settings[key] = [serialise_entity_instance(i) for i in value]
     if "add_representation" in usecase_path:
         pass
         # print(usecase_path, "{ ... settings too complex right now ... }")
