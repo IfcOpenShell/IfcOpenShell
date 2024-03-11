@@ -566,8 +566,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
-    """Returns a unit scale factor to convert to and from IFC project length units and SI meters
+def calculate_unit_scale(ifc_file, unit_type="LENGTHUNIT"):
+    """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
     Example:
 
