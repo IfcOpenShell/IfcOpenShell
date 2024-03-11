@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
@@ -139,7 +141,7 @@ class Usecase:
     def modify_existing_definition_representation(self):
         # NOTE: while it's theoritically possible to have multiple styles per 1 material
         # (either with multiple styled items or multiple styles in 1 item)
-        # we use an implicit convention that
+        # we use an implicit convention that there is only 1 style per material.
         definition_representation = self.settings["material"].HasRepresentation[0]
         representation = self.get_styled_representation(definition_representation)
         if representation:
