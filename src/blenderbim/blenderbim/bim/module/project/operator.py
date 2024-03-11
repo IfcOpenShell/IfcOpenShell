@@ -28,6 +28,7 @@ import ifcopenshell.api
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 import blenderbim.tool as tool
@@ -185,7 +186,11 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.active_library_element = ""
 
         types = IfcStore.library_file.wrapped_data.types_with_super()
-        for importable_type in sorted(["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]):
+
+        element_classes = ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]
+        if self.props.library_display_elements:
+            element_classes += ["IfcElement"]
+        for importable_type in sorted(element_classes):
             if importable_type in types:
                 new = self.props.library_elements.add()
                 new.name = importable_type
@@ -204,11 +209,15 @@ class ChangeLibraryElement(bpy.types.Operator):
         self.library_file = IfcStore.library_file
         ifc_classes = set()
         self.props.active_library_element = self.element_name
+
         crumb = self.props.library_breadcrumb.add()
         crumb.name = self.element_name
+
         elements = self.library_file.by_type(self.element_name)
         [ifc_classes.add(e.is_a()) for e in elements]
+
         self.props.library_elements.clear()
+
         if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
             for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
                 self.add_library_asset(name, ifc_definition_id)
@@ -430,6 +439,11 @@ class AppendLibraryElement(bpy.types.Operator):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
             self.import_product_from_ifc(element, context)
+            element_type = ifcopenshell.util.element.get_type(element)
+            obj = tool.Ifc.get_object(element_type)
+            if obj is None:
+                self.import_type_from_ifc(element_type, context)
+
         elif element.is_a("IfcMaterial"):
             self.import_material_from_ifc(element, context)
         try:
