@@ -59,6 +59,10 @@ def update_library_file(self, context):
         )
 
 
+def update_library_display_elements(self, context):
+    bpy.ops.bim.refresh_library()
+
+
 def update_filter_mode(self, context):
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
@@ -121,6 +125,11 @@ class BIMProjectProperties(PropertyGroup):
     organisation_name: StringProperty(name="Organisation")
     organisation_email: StringProperty(name="Organisation Email")
     authorisation: StringProperty(name="Authoriser")
+    library_display_elements: BoolProperty(
+        name="Display IfcElements",
+        description="Display IfcElements from library too, not just the types",
+        update=update_library_display_elements,
+    )
     active_library_element: StringProperty(name="Enable Authoring Mode", default="")
     library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)
