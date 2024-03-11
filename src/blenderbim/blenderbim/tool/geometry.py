@@ -26,6 +26,7 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.style
 import blenderbim.core.spatial
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from math import radians, pi
@@ -723,6 +724,9 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def reload_representation(cls, obj):
+        """reload `obj` active representation"""
+        if not obj.data:
+            return
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
