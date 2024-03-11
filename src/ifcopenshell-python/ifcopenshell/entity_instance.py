@@ -30,7 +30,7 @@ import functools
 import subprocess
 import sys
 import time
-from typing import Union
+from typing import Union, Any, Callable
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -196,7 +196,36 @@ class entity_instance(object):
             )
 
     @staticmethod
-    def walk(f, g, value):
+    def walk(f: Callable[[Any], bool], g: Callable[[Any], Any], value: Any) -> Any:
+        """
+         Applies transformation to `value` based on a given condition.
+         If value is a nested structure (e.g., a list or a tuple) will apply transformation to it's elements.
+        .
+
+         :param f: A callable that takes a single argument and returns a boolean value. It represents the condition
+         :type f: Callable
+         :param g: A callable that takes a single argument and returns a transformed value. It represents the transformation
+         :type g: Callable
+         :param value: Any object, the input value to be processed
+         :type value: Any
+         :return: Transformed value
+         :rtype: Any
+
+         Example:
+
+         .. code:: python
+
+             # Define condition and transformation functions
+             condition = lambda v: v == old
+             transform = lambda v: new
+
+             # Usage example
+             attribute_value = element.RelatedElements
+             print(old in attribute_value, new in attribute_value) # True, False
+             result = element.walk(condition, transform, element.RelatedElements)
+             print(old in attribute_value, new in attribute_value) # False, True
+        """
+
         if isinstance(value, (tuple, list)):
             return tuple(map(functools.partial(entity_instance.walk, f, g), value))
         elif f(value):
