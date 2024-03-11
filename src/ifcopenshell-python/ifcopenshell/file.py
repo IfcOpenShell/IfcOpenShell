@@ -595,7 +595,7 @@ class file(object):
         return
 
     @staticmethod
-    def from_string(s: str) -> ifcopenshell.entity_instance:
+    def from_string(s: str) -> file:
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod

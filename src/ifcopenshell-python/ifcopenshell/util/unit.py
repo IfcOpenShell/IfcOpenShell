@@ -593,7 +593,7 @@ def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
             unit = unit.ConversionFactor.UnitComponent
-        if unit.is_a("IfcSIUnit"):
+        if unit.is_a("IfcSIUnit")':
             unit_scale *= get_prefix_multiplier(unit.Prefix)
     return unit_scale
 
