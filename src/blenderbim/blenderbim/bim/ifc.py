@@ -23,33 +23,39 @@ import hashlib
 import zipfile
 import tempfile
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
 from blenderbim.tool.brick import BrickStore
+from typing import Set, Union
+
+
+IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 
 class IfcStore:
     path = ""
-    file = None
-    schema = None
-    cache = None
-    cache_path = None
-    id_map = {}
-    guid_map = {}
-    edited_objs = set()
+    file: ifcopenshell.file = None
+    schema: ifcopenshell.ifcopenshell_wrapper.schema_definition = None
+    cache: ifcopenshell.ifcopenshell_wrapper.HdfSerializer = None
+    cache_path: str = None
+    id_map: dict[int, IFC_CONNECTED_TYPE] = {}
+    guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
+    edited_objs: Set[bpy.types.Object] = set()
     pset_template_path = ""
-    pset_template_file = None
+    pset_template_file: ifcopenshell.file = None
     classification_path = ""
-    classification_file = None
+    classification_file: ifcopenshell.file = None
     library_path = ""
-    library_file = None
+    library_file: ifcopenshell.file = None
     current_transaction = ""
     last_transaction = ""
     history = []
     future = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
-    session_files = {}
+    session_files: dict[str, ifcopenshell.file] = {}
 
     @staticmethod
     def purge():
@@ -117,7 +123,7 @@ class IfcStore:
         IfcStore.get_cache()
 
     @staticmethod
-    def load_file(path):
+    def load_file(path) -> None:
         if not os.path.isfile(path):
             return
         extension = path.split(".")[-1]
@@ -146,7 +152,7 @@ class IfcStore:
         return IfcStore.schema
 
     @staticmethod
-    def get_element(id_or_guid):
+    def get_element(id_or_guid: Union[int, str]) -> IFC_CONNECTED_TYPE:
         if isinstance(id_or_guid, int):
             map_object = IfcStore.id_map
         else:
@@ -159,7 +165,7 @@ class IfcStore:
         return obj
 
     @staticmethod
-    def relink_all_objects():
+    def relink_all_objects() -> None:
         if not IfcStore.get_file():
             return
         for obj in bpy.data.objects:
@@ -172,7 +178,7 @@ class IfcStore:
             IfcStore.relink_object(obj)
 
     @staticmethod
-    def relink_object(obj):
+    def relink_object(obj: IFC_CONNECTED_TYPE) -> None:
         if not obj:
             return
         if obj.BIMObjectProperties.ifc_definition_id:
@@ -193,7 +199,7 @@ class IfcStore:
             IfcStore.commit_link_element(data)
 
     @staticmethod
-    def link_element(element, obj):
+    def link_element(element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
         # Please use tool.Ifc.link() instead of this method. We want to
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.
@@ -259,7 +265,7 @@ class IfcStore:
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
-    def rollback_unlink_element(data):
+    def rollback_unlink_element(data) -> None:
         if "id" not in data or "obj" not in data:
             return
         obj = bpy.data.objects.get(data["obj"])
@@ -268,13 +274,13 @@ class IfcStore:
             IfcStore.guid_map[data["guid"]] = obj
 
     @staticmethod
-    def commit_unlink_element(data):
+    def commit_unlink_element(data) -> None:
         del IfcStore.id_map[data["id"]]
         if data["guid"]:
             del IfcStore.guid_map[data["guid"]]
 
     @staticmethod
-    def unlink_element(element=None, obj=None):
+    def unlink_element(element: ifcopenshell.entity_instance = None, obj: IFC_CONNECTED_TYPE = None) -> None:
         if element is None:
             try:
                 element = tool.Ifc.get_entity(obj)
@@ -320,7 +326,7 @@ class IfcStore:
             )
 
     @staticmethod
-    def execute_ifc_operator(operator, context, is_invoke=False):
+    def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
@@ -354,17 +360,17 @@ class IfcStore:
         return result
 
     @staticmethod
-    def begin_transaction(operator):
+    def begin_transaction(operator: bpy.types.Operator) -> None:
         IfcStore.current_transaction = str(uuid.uuid4())
         operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
-    def end_transaction(operator):
+    def end_transaction(operator: bpy.types.Operator) -> None:
         IfcStore.current_transaction = ""
         operator.transaction_key = ""
 
     @staticmethod
-    def add_transaction_operation(operator, rollback=None, commit=None):
+    def add_transaction_operation(operator: bpy.types.Operator, rollback=None, commit=None) -> None:
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
         bpy.context.scene.BIMProperties.last_transaction = key
@@ -380,7 +386,7 @@ class IfcStore:
         IfcStore.future = []
 
     @staticmethod
-    def undo(until_key=None):
+    def undo(until_key=None) -> None:
         BrickStore.undo()
         if not IfcStore.history:
             return
@@ -395,7 +401,7 @@ class IfcStore:
             IfcStore.future.append(event)
 
     @staticmethod
-    def redo(until_key=None):
+    def redo(until_key=None) -> None:
         BrickStore.redo()
 
         if not IfcStore.future:
