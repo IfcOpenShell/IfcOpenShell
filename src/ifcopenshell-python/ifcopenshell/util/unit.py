@@ -599,13 +599,13 @@ def calculate_unit_scale(ifc_file, unit_type='LENGTHUNIT'):
 
 
 def format_length(
-        value,
-        precision,
-        decimal_places=2,
-        suppress_zero_inches=True,
-        unit_system="imperial",
-        input_unit="foot",
-        output_unit="foot",
+    value,
+    precision,
+    decimal_places=2,
+    suppress_zero_inches=True,
+    unit_system="imperial",
+    input_unit="foot",
+    output_unit="foot",
 ):
     """Formats a length for readability and imperial formatting
 
@@ -668,8 +668,9 @@ def format_length(
 
 
 def is_attr_type(
-        content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
-        ifc_unit_type_name: str) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
+    content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
+    ifc_unit_type_name: str,
+) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
     cur_decl = content_type
     while hasattr(cur_decl, "declared_type") is True:
         cur_decl = cur_decl.declared_type()
@@ -693,8 +694,9 @@ def is_attr_type(
     return None
 
 
-def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Iterable[
-    Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
+def iter_element_and_attributes_per_type(
+    ifc_file: ifcopenshell.file, attr_type_name: str
+) -> Iterable[Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
 
     for element in ifc_file:
