@@ -175,6 +175,8 @@ class Hotkey(bpy.types.Operator, Operator):
         bpy.ops.bim.add_boundary()
 
     def hotkey_A_B(self):
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
         if not bpy.context.selected_objects:
             return
         if AuthoringData.data["has_visible_boundaries"]:
