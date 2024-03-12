@@ -48,6 +48,7 @@ class SpatialTool(WorkSpaceTool):
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.spatial_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
+        ("bim.spatial_hotkey", {"type": "V", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_V")]}),
         ("bim.spatial_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.spatial_hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.spatial_hotkey", {"type": "H", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_H")]}),
@@ -92,6 +93,8 @@ class SpatialToolUI:
         if context.active_object and context.selected_objects:
             cls.draw_selected_object_interface(context)
 
+        add_layout_hotkey(cls.layout, "Decorate Boundaries", "A_V", bpy.ops.bim.decorate_boundaries.__doc__)
+
     @classmethod
     def draw_default_interface(cls, context):
         row = cls.layout.row(align=True)
@@ -129,7 +132,7 @@ class SpatialToolUI:
         row.prop(cls.model_props, "boundary_class", text="")
         row.operator("bim.add_boundary", text="Add Boundary")
 
-        add_layout_hotkey(cls.layout, "Boundaries", "A_B", "Toggle boundaries")
+        add_layout_hotkey(cls.layout, "Boundaries", "A_B", "Load/unload boundaries on selected objects")
 
     @classmethod
     def draw_type_selection_interface(cls, context):
@@ -183,6 +186,9 @@ class Hotkey(bpy.types.Operator, Operator):
             bpy.ops.bim.hide_boundaries()
         else:
             bpy.ops.bim.show_boundaries()
+
+    def hotkey_A_V(self):
+        bpy.ops.bim.decorate_boundaries()
 
     def hotkey_S_T(self):
         bpy.ops.bim.toggle_space_visibility()
