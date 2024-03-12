@@ -280,7 +280,7 @@ class IfcDiff:
                 old_type = ifcopenshell.util.element.get_type(old)
                 new_type = ifcopenshell.util.element.get_type(new)
                 if old_type is not None and new_type is not None:
-                    if old_type.get_info() != new_type.get_info():
+                    if old_type.GlobalId != new_type.GlobalId:
                         self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
                         return True
                 elif old_type != new_type:
