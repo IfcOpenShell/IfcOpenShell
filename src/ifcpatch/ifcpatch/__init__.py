@@ -19,6 +19,7 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import shutil
 import ifcopenshell
 import logging
 import typing
@@ -99,7 +100,8 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
         return
     elif isinstance(output, str):
         if os.path.exists(output):
-            os.rename(output, filepath)
+            print('DEBUG shutil')
+            shutil.move(output, filepath)
         else:
             with open(filepath, "w") as text_file:
                 text_file.write(output)
