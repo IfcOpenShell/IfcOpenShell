@@ -100,31 +100,27 @@ class SpatialToolUI:
         row = cls.layout.row(align=True)
         row.prop(data=cls.model_props, property="rl3", text="RL")
         row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_A")
-        row.operator("bim.generate_spaces_from_walls")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_A")
-        row.operator("bim.generate_space")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_T")
-        row.operator("bim.toggle_space_visibility")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_H")
-        row.operator("bim.toggle_hide_spaces")
+        op_name = lambda op: op.get_rna_type().name
+        add_layout_hotkey(
+            cls.layout,
+            op_name(bpy.ops.bim.generate_spaces_from_walls),
+            "S_A",
+            bpy.ops.bim.generate_spaces_from_walls.__doc__,
+        )
+        add_layout_hotkey(cls.layout, op_name(bpy.ops.bim.generate_space), "S_A", bpy.ops.bim.generate_space.__doc__)
+        add_layout_hotkey(
+            cls.layout, op_name(bpy.ops.bim.toggle_space_visibility), "S_T", bpy.ops.bim.toggle_space_visibility.__doc__
+        )
+        add_layout_hotkey(
+            cls.layout, op_name(bpy.ops.bim.toggle_hide_spaces), "S_H", bpy.ops.bim.toggle_hide_spaces.__doc__
+        )
 
     @classmethod
     def draw_selected_object_interface(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
         if element and bpy.context.selected_objects and element.is_a("IfcSpace"):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            row.operator("bim.generate_space", text="Regen")
+            add_layout_hotkey(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
