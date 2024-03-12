@@ -100,7 +100,6 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
         return
     elif isinstance(output, str):
         if os.path.exists(output):
-            print('DEBUG shutil')
             shutil.move(output, filepath)
         else:
             with open(filepath, "w") as text_file:
