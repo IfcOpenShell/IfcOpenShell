@@ -24,6 +24,7 @@ import mathutils
 import numpy as np
 import multiprocessing
 import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -37,6 +38,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.decorator import ProfileDecorator
 from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
 import blenderbim.core
+import blenderbim.core.geometry
 
 
 def get_boundaries_collection(blender_space):
@@ -147,7 +149,9 @@ class Loader:
         self.ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         self.ifc_importer.file = self.ifc_file
 
-    def load_boundary(self, boundary, blender_space=None):
+    def load_boundary(
+        self, boundary: ifcopenshell.entity_instance, blender_space: bpy.types.Object = None
+    ) -> bpy.types.Object:
         if not blender_space:
             if not boundary.RelatingSpace:
                 self.operator.report(
@@ -509,10 +513,10 @@ class DisableEditingBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
 class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_boundaries"
     bl_label = "Show Boundaries"
+    bl_description = "Load selected objects boundaries if they are not loaded"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMBoundaryProperties
         loader = Loader(self)
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -524,7 +528,7 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             for rel in element.BoundedBy or []:
                 boundary_obj = loader.load_boundary(rel, obj)
                 tool.Boundary.decorate_boundary(boundary_obj)
-        BoundaryDecorator.install(bpy.context)
+        BoundaryDecorator.install(context)
         return {"FINISHED"}
 
 
@@ -554,6 +558,36 @@ class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc.unlink(obj=boundary_obj)
             bpy.data.objects.remove(boundary_obj)
         context.scene.BIMBoundaryProperties.boundaries.clear()
+        return {"FINISHED"}
+
+
+class DecorateBoundaries(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.decorate_boundaries"
+    bl_label = "Toggle Boundaries Decorations"
+    bl_description = "Add special decorations for all boundaries in the scene or hide them if they are already added"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        props = context.scene.BIMBoundaryProperties
+        # filter not decorated boundaries and add decorations for them
+        decorated_boundaries = set([i.obj for i in props.boundaries])
+        active_boundaries = set()
+        for element in tool.Ifc.get().by_type("IfcRelSpaceBoundary"):
+            obj = tool.Ifc.get_object(element)
+            if obj is not None:
+                active_boundaries.add(obj)
+
+        boundaries_to_decorate = active_boundaries - decorated_boundaries
+        if boundaries_to_decorate:
+            for obj in boundaries_to_decorate:
+                tool.Boundary.decorate_boundary(obj)
+            BoundaryDecorator.install(context)
+        else:
+            for obj in decorated_boundaries:
+                tool.Boundary.undecorate_boundary(obj)
+            props.boundaries.clear()
+            BoundaryDecorator.uninstall()
+            tool.Blender.update_viewport()
         return {"FINISHED"}
 
 
