@@ -37,6 +37,7 @@ from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offset
 from blenderbim.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
+from typing import Optional, Iterator
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -121,17 +122,18 @@ def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
     return head
 
 
-def get_circle_head(size, segments=20):
+def get_circle_head(size: float, segments: int = 20, rotation: float = 0.0) -> list[Vector]:
+    """`rotation` value in radians"""
     angle_d = 2 * pi / segments
     head = []
     for i in range(segments):
-        angle = angle_d * i
+        angle = angle_d * i + rotation
         head.append(Vector([cos(angle), sin(angle), 0]) * size)
     return head
 
 
-def get_circle_head_asterisk(size, segments=6):
-    circle_head = get_circle_head(size, segments)
+def get_circle_head_asterisk(size: float, segments: int = 6, rotation: float = 0.0) -> Iterator[tuple[Vector, Vector]]:
+    circle_head = get_circle_head(size, segments, rotation)
     middle = segments // 2
     return zip(circle_head[:middle], circle_head[middle:])
 
@@ -485,7 +487,8 @@ class BaseDecorator:
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
         return format_distance(value, precision=precision, decimal_places=decimal_places)
 
-    def draw_asterisk(self, context, obj):
+    def draw_asterisk(self, context: bpy.types.Context, obj: bpy.types.Object, rotation: float = 0.0) -> None:
+        """ "`rotation` value in radians"""
         # gather geometry data and convert to winspace
         verts = [obj.location]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
@@ -502,13 +505,19 @@ class BaseDecorator:
         }
 
         v0 = winspace_verts[0]
-        asterisk_head = get_circle_head_asterisk(circle_size)
+        asterisk_head = get_circle_head_asterisk(circle_size, rotation=rotation)
         start_i = 0
         for segment in asterisk_head:
             start_i = add_verts_sequence(add_offsets(v0, segment), start_i, **out_kwargs)
         self.draw_lines(context, obj, output_verts, output_edges)
 
-    def draw_text(self, context, obj, text_world_position=None, reverse_lines_order=False):
+    def draw_text(
+        self,
+        context: bpy.types.Context,
+        obj: bpy.types.Object,
+        text_world_position: Optional[Vector] = None,
+        reverse_lines_order=False,
+    ) -> None:
         """if `text_world_position` is not provided, the object's location will be used"""
 
         if not text_world_position:
@@ -539,7 +548,8 @@ class BaseDecorator:
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
         if symbol:
-            self.draw_asterisk(context, obj)
+            rotation = -Vector((1, 0)).angle_signed(text_dir)
+            self.draw_asterisk(context, obj, rotation)
             # NOTE: for now we assume that scale is uniform
             text_scale = obj.scale.x
 
