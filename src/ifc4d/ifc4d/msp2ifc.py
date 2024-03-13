@@ -18,6 +18,7 @@
 
 import datetime
 from datetime import timedelta, date
+from typing import List
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
@@ -25,7 +26,7 @@ import xml.etree.ElementTree as ET
 
 
 class MSP2Ifc:
-    def __init__(self):
+    def __init__(self, optionalColumns: List[str] = []):
         self.xml = None
         self.file = None
         self.ns = None
@@ -33,6 +34,7 @@ class MSP2Ifc:
         self.project = {}
         self.calendars = {}
         self.tasks = {}
+        self.optionalColumns = optionalColumns
         self.resources = {}
         self.RESOURCE_TYPES_MAPPING = {"1": "LABOR", "0": "MATERIAL", "2": None}
 
@@ -105,6 +107,18 @@ class MSP2Ifc:
                 "subtasks": [],
                 "ifc": None,
             }
+
+            # retrieve optional columns
+            # If first column = "all" then retrieve all columns
+            if len(self.optionalColumns) and self.optionalColumns[0] == "all":
+                self.optionalColumns = [child.tag.split("}")[1] for child in task]
+            
+            for column in self.optionalColumns:
+                if not self.tasks[task_id].get(column):
+                    self.tasks[task_id][column] = task.find(f"pr:{column}", self.ns).text if task.find(f"pr:{column}", self.ns) else None
+            
+
+
 
     def parse_calendar_xml(self, project):
         def parse_working_times(day):
@@ -194,13 +208,14 @@ class MSP2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        self.file.create_entity("IfcProject", Name=self.project["Name"])
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, work_schedule):
         for task_id in self.tasks:
             task = self.tasks[task_id]
-            if task["OutlineLevel"] == 0:
+            # Outline Level can be None or 0
+            if not task["OutlineLevel"]:
                 self.create_task(task, work_schedule=work_schedule)
 
     def create_work_schedule(self):
@@ -215,6 +230,7 @@ class MSP2Ifc:
         for calendar in self.calendars.values():
             if not has_work_or_exceptions(calendar):
                 continue
+            ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
@@ -267,6 +283,18 @@ class MSP2Ifc:
         )
         for subtask_id in task["subtasks"]:
             self.create_task(self.tasks[subtask_id], parent_task=task)
+
+
+        # create pset for optional columns
+        if len(self.optionalColumns):
+            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=task["ifc"] , name="Pset_MSP_Task")
+
+            ifcopenshell.api.run(
+                "pset.edit_pset",
+                self.file,
+                pset=pset,
+                properties= {name: str(task[name]) for name in self.optionalColumns if task[name]}
+            )
 
     def process_working_week(self, week, calendar):
         day_map = {
