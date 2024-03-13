@@ -208,7 +208,7 @@ class MSP2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
-        self.file.create_entity("IfcProject", Name=self.project["Name"])
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, work_schedule):
@@ -230,7 +230,6 @@ class MSP2Ifc:
         for calendar in self.calendars.values():
             if not has_work_or_exceptions(calendar):
                 continue
-            ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar["HolidayOrExceptions"], calendar["ifc"])
