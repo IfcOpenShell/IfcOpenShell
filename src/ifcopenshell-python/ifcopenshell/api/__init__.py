@@ -23,13 +23,14 @@ import numpy
 import importlib
 import ifcopenshell
 import ifcopenshell.api
+from typing import Callable, Any
 
 
 pre_listeners = {}
 post_listeners = {}
 
 
-def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
+def run(usecase_path: str, ifc_file: ifcopenshell.file = None, should_run_listeners=True, **settings) -> Any:
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
@@ -74,42 +75,44 @@ def run(usecase_path, ifc_file=None, should_run_listeners=True, **settings):
     return result
 
 
-def add_pre_listener(usecase_path, name, callback):
+def add_pre_listener(usecase_path: str, name: str, callback: Callable[[str, ifcopenshell.file, dict], None]) -> None:
     """Add a pre listener
 
     :param usecase_path: string, ifcopenshell api use case path
     :param name: string, name of listener
-    :param callback: callback function
+    :param callback: callback function with 3 arguments: `usecase_path`, `ifc_file`, `settings`
     """
     pre_listeners.setdefault(usecase_path, {})[name] = callback
 
 
-def add_post_listener(usecase_path, name, callback):
+def add_post_listener(usecase_path: str, name: str, callback: Callable[[str, ifcopenshell.file, dict], None]) -> None:
     """Add a post listener
 
     :param usecase_path: string, ifcopenshell api use case path
     :param name: string, name of listener
-    :param callback: callback function
+    :param callback: callback function with 3 arguments: `usecase_path`, `ifc_file`, `settings`
     """
     post_listeners.setdefault(usecase_path, {})[name] = callback
 
 
-def remove_pre_listener(usecase_path, name, callback):
+def remove_pre_listener(usecase_path: str, name: str, callback: Callable[[str, ifcopenshell.file, dict], None]) -> None:
     """Remove a pre listener
 
     :param usecase_path: string, ifcopenshell api use case path
     :param name: string, name of listener
-    :param callback: callback function
+    :param callback: callback function with 3 arguments: `usecase_path`, `ifc_file`, `settings`
     """
     pre_listeners.get(usecase_path, {}).pop(name, None)
 
 
-def remove_post_listener(usecase_path, name, callback):
+def remove_post_listener(
+    usecase_path: str, name: str, callback: Callable[[str, ifcopenshell.file, dict], None]
+) -> None:
     """Remove a post listener
 
     :param usecase_path: string, ifcopenshell api use case path
     :param name: string, name of listener
-    :param callback: callback function
+    :param callback: callback function with 3 arguments: `usecase_path`, `ifc_file`, `settings`
     """
     post_listeners.get(usecase_path, {}).pop(name, None)
 

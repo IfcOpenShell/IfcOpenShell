@@ -20,45 +20,47 @@ import os
 import bpy
 import numpy as np
 import ifcopenshell.api
+import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
+from typing import Optional, Union, Any
 
 
 class Ifc(blenderbim.core.tool.Ifc):
     @classmethod
-    def run(cls, command, **kwargs):
+    def run(cls, command: str, **kwargs) -> Any:
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
 
     @classmethod
-    def set(cls, ifc):
+    def set(cls, ifc: ifcopenshell.file) -> None:
         IfcStore.file = ifc
 
     @classmethod
-    def get(cls):
+    def get(cls) -> ifcopenshell.file:
         return IfcStore.get_file()
 
     @classmethod
-    def get_path(cls):
+    def get_path(cls) -> str:
         return IfcStore.path
 
     @classmethod
-    def get_schema(cls):
+    def get_schema(cls) -> str:
         if IfcStore.get_file():
             return IfcStore.get_file().schema
 
     @classmethod
-    def has_changed_shading(cls, obj):
+    def has_changed_shading(cls, obj: bpy.types.Material) -> bool:
         checksum = obj.BIMMaterialProperties.shading_checksum
         return checksum != repr(np.array(obj.diffuse_color).tobytes())
 
     @classmethod
-    def is_edited(cls, obj):
+    def is_edited(cls, obj: bpy.types.Object) -> bool:
         return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
 
     @classmethod
-    def is_moved(cls, obj):
+    def is_moved(cls, obj: bpy.types.Object) -> bool:
         element = cls.get_entity(obj)
         if not element or element.is_a("IfcTypeProduct") or element.is_a("IfcProject"):
             return False
@@ -77,7 +79,7 @@ class Ifc(blenderbim.core.tool.Ifc):
         return IfcStore.get_schema()
 
     @classmethod
-    def get_entity(cls, obj):
+    def get_entity(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         ifc = IfcStore.get_file()
         props = getattr(obj, "BIMObjectProperties", None)
         if ifc and props and props.ifc_definition_id:
@@ -87,7 +89,7 @@ class Ifc(blenderbim.core.tool.Ifc):
                 pass
 
     @classmethod
-    def get_entity_by_id(cls, entity_id):
+    def get_entity_by_id(cls, entity_id) -> Union[ifcopenshell.entity_instance, None]:
         """useful to check whether entity_id is still exists in IFC"""
         ifc_file = tool.Ifc.get()
         try:
@@ -96,11 +98,11 @@ class Ifc(blenderbim.core.tool.Ifc):
             return None
 
     @classmethod
-    def get_object(cls, element):
+    def get_object(cls, element: ifcopenshell.entity_instance) -> IFC_CONNECTED_TYPE:
         return IfcStore.get_element(element.id())
 
     @classmethod
-    def rebuild_element_maps(cls):
+    def rebuild_element_maps(cls) -> None:
         """Rebuilds the id_map and guid_map
 
         When any Blender object is stored outside a Blender PointerProperty,
@@ -153,15 +155,15 @@ class Ifc(blenderbim.core.tool.Ifc):
             blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
 
     @classmethod
-    def link(cls, element, obj):
+    def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
         IfcStore.link_element(element, obj)
 
     @classmethod
-    def edit(cls, obj):
+    def edit(cls, obj: bpy.types.Object) -> None:
         IfcStore.edited_objs.add(obj)
 
     @classmethod
-    def finish_edit(cls, obj):
+    def finish_edit(cls, obj: bpy.types.Object) -> None:
         try:
             IfcStore.edited_objs.remove(obj)
         except:
@@ -186,11 +188,13 @@ class Ifc(blenderbim.core.tool.Ifc):
         return os.path.relpath(uri, ifc_path).replace("\\", "/")
 
     @classmethod
-    def unlink(cls, element=None, obj=None):
+    def unlink(
+        cls, element: Optional[ifcopenshell.entity_instance] = None, obj: Optional[IFC_CONNECTED_TYPE] = None
+    ) -> None:
         IfcStore.unlink_element(element, obj)
 
     @classmethod
-    def get_all_element_occurrences(cls, element):
+    def get_all_element_occurrences(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         if element.is_a("IfcElementType"):
             element_type = element
             occurrences = ifcopenshell.util.element.get_types(element_type)
