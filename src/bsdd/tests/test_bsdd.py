@@ -35,3 +35,7 @@ def test_search_class():
     assert len(li) < 8 # I think it should be 4 but just validating it isn't overfetching with some space for future change
     for l in li: 
         assert l in [_["name"] for _ in ss_heat_pump_sys["classes"]]
+        
+def test_get_properties():
+    pr = client.get_properties(ifc4x3_uri, offset=0, limit=5)
+    assert len(pr["properties"]) == 5
