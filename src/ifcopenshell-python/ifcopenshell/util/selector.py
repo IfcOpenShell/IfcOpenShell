@@ -26,6 +26,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
 from decimal import Decimal
+from typing import Optional
 
 
 filter_elements_grammar = lark.Lark(
@@ -262,7 +263,44 @@ def get_element_value(element, query):
     return Selector.get_element_value(element, keys)
 
 
-def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+def filter_elements(
+    ifc_file: ifcopenshell.file,
+    query: str,
+    elements: Optional[set[ifcopenshell.entity_instance]] = None,
+    edit_in_place=False,
+) -> set[ifcopenshell.entity_instance]:
+    """
+    Filter elements based on the provided `query`.
+
+    :param ifc_file: The IFC file object
+    :type ifc_file: ifcopenshell.file.file
+    :param query: Query to execute
+    :type query: str
+    :param elements: Base set of IFC elements for the query.
+        If provided, new elements found for the current query will be added to `elements`.
+        Elements explicitly excluded in the `query` will also be excluded from `elements`
+    :type elements: set[ifcopenshell.entity_instance.entity_instance], optional
+    :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
+    :type edit_in_place: bool
+    :return: Set of filtered elements
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        # Select all walls in the file.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcWall, IfcSlab")
+
+        # Add doors to the elements too.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcDoor", elements)
+
+        # Changed our mind, exclude the slabs.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "! IfcSlab", elements)
+
+        # {#1=IfcWall(...), #2=IfcDoor(...)}
+        print(elements)
+    """
     if elements and not edit_in_place:
         elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
@@ -376,10 +414,10 @@ def set_element_value(ifc_file, element, query, value):
 
 
 class FacetTransformer(lark.Transformer):
-    def __init__(self, ifc_file, elements):
+    def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
-        self.elements = elements or set()
+        self.elements = set() if elements is None else elements
         self.container_parents = {}
         self.container_trees = {}
 
