@@ -29,14 +29,14 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
 from blenderbim.tool.brick import BrickStore
-from typing import Set, Union
+from typing import Set, Union, Optional
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 
 class IfcStore:
-    path = ""
+    path: str = ""
     file: ifcopenshell.file = None
     schema: ifcopenshell.ifcopenshell_wrapper.schema_definition = None
     cache: ifcopenshell.ifcopenshell_wrapper.HdfSerializer = None
@@ -44,11 +44,11 @@ class IfcStore:
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
     edited_objs: Set[bpy.types.Object] = set()
-    pset_template_path = ""
+    pset_template_path: str = ""
     pset_template_file: ifcopenshell.file = None
-    classification_path = ""
+    classification_path: str = ""
     classification_file: ifcopenshell.file = None
-    library_path = ""
+    library_path: str = ""
     library_file: ifcopenshell.file = None
     current_transaction = ""
     last_transaction = ""
@@ -280,7 +280,9 @@ class IfcStore:
             del IfcStore.guid_map[data["guid"]]
 
     @staticmethod
-    def unlink_element(element: ifcopenshell.entity_instance = None, obj: IFC_CONNECTED_TYPE = None) -> None:
+    def unlink_element(
+        element: Optional[ifcopenshell.entity_instance] = None, obj: Optional[IFC_CONNECTED_TYPE] = None
+    ) -> None:
         if element is None:
             try:
                 element = tool.Ifc.get_entity(obj)
