@@ -53,10 +53,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 			}
 		}
 #endif
-		auto len = end - start;
-		auto nsteps = (size_t)ceil(len);
-		for (size_t i = 0; i <= nsteps; ++i) {
-			auto m4 = pwf->evaluate(start + len / nsteps * i);
+		auto curve_length = end - start;
+		auto param_type = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepType>().get();
+		auto param = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get();
+		size_t num_steps = 0;
+		if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
+			// parameter is max step size
+			num_steps = (size_t) std::ceil(curve_length / param);
+		} else {
+			// parameter is minimum number of steps
+			num_steps = (size_t) std::ceil(param);
+		}
+		for (size_t i = 0; i <= num_steps; ++i) {
+			auto m4 = pwf->evaluate(start + curve_length / num_steps * i);
 			
 			/*
 			std::stringstream ss;
