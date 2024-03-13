@@ -35,6 +35,8 @@ import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
@@ -45,6 +47,7 @@ from lxml import etree
 from mathutils import Vector
 from fractions import Fraction
 import collections
+from typing import Optional
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -417,7 +420,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             return obj.BIMObjectProperties.collection
 
     @classmethod
-    def get_drawing_group(cls, drawing):
+    def get_drawing_group(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
@@ -441,7 +444,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
-    def get_group_elements(cls, group):
+    def get_group_elements(cls, group: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         for rel in group.IsGroupedBy or []:
             return rel.RelatedObjects
 
@@ -1525,7 +1528,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
 
     @classmethod
-    def get_drawing_elements(cls, drawing):
+    def get_drawing_elements(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         """returns a set of elements that are included in the drawing"""
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
@@ -1539,6 +1542,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
+
+        # exclude annotations to avoid including annotations from other drawings
+        elements = {i for i in elements if not i.is_a("IfcAnnotation")}
+        # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
 
@@ -1549,15 +1556,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         return elements
 
     @classmethod
-    def get_drawing_spaces(cls, drawing):
+    def get_drawing_spaces(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
-        include = pset.get("Include", None)
         elements = cls.get_elements_in_camera_view(
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
-        if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
+        # NOTE: EPset_Drawing.Include is not used to avoid adding other elements besides spaces
         exclude = pset.get("Exclude", None)
         if exclude:
             elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
@@ -1722,7 +1727,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 obj.hide_render = True
 
     @classmethod
-    def get_elements_in_camera_view(cls, camera, objs):
+    def get_elements_in_camera_view(
+        cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
+    ) -> set[ifcopenshell.entity_instance]:
         props = camera.data.BIMCameraProperties
         x = props.width
         y = props.height
