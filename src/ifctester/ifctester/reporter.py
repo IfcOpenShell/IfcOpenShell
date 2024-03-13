@@ -150,7 +150,7 @@ class Txt(Console):
     def to_string(self):
         print(self.text)
 
-    def to_file(self, filepath):
+    def to_file(self, filepath: str) -> None:
         with open(filepath, "w", encoding="utf-8") as outfile:
             return outfile.write(self.text)
 
@@ -273,7 +273,7 @@ class Json(Reporter):
 
         return json.dumps(self.results)
 
-    def to_file(self, filepath):
+    def to_file(self, filepath: str) -> None:
         import json
 
         with open(filepath, "w", encoding="utf-8") as outfile:
@@ -302,7 +302,7 @@ class Html(Json):
         with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
             return pystache.render(file.read(), self.results)
 
-    def to_file(self, filepath):
+    def to_file(self, filepath: str) -> None:
         import pystache
 
         with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
@@ -321,7 +321,7 @@ class Ods(Json):
         }
         self.results = {}
 
-    def to_file(self, filepath):
+    def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
         from odf.table import Table, TableRow, TableCell
@@ -421,7 +421,7 @@ class Ods(Json):
                     table.addElement(tr)
             self.doc.spreadsheet.addElement(table)
 
-        self.doc.save(filepath, True)
+        self.doc.save(filepath, addsuffix=filepath.lower().endswith(".ods"))
 
 
 class Bcf(Json):
@@ -430,7 +430,7 @@ class Bcf(Json):
             {"reason": requirement.failed_reasons[i], "element": e} for i, e in enumerate(requirement.failed_entities)
         ]
 
-    def to_file(self, filepath):
+    def to_file(self, filepath: str) -> None:
         from bcf.v2.bcfxml import BcfXml
 
         unit_scale = None

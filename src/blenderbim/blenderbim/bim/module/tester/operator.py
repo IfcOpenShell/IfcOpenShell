@@ -27,7 +27,7 @@ import ifctester.reporter
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.handler
-from blenderbim.bim.module.tester.data import TesterData
+from pathlib import Path
 
 
 class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
@@ -44,7 +44,7 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
 
         with tempfile.TemporaryDirectory() as dirpath:
             start = time.time()
-            output = os.path.join(dirpath, "{}.html".format(props.specs))
+            output = Path(os.path.join(dirpath, "{}.html".format(props.specs)))
 
             filepath = None
             if props.should_load_from_memory and tool.Ifc.get():
@@ -65,8 +65,15 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
             if props.generate_html_report:
                 engine = ifctester.reporter.Html(specs)
                 engine.report()
-                engine.to_file(output)
-                webbrowser.open("file://" + output)
+                output_path = output.as_posix()
+                engine.to_file(output_path)
+                webbrowser.open(f"file://{output_path}")
+
+            if props.generate_ods_report:
+                engine = ifctester.reporter.Ods(specs)
+                engine.report()
+                output_path = output.with_suffix(".ods").as_posix()
+                engine.to_file(output_path)
 
             report = None
             report = ifctester.reporter.Json(specs).report()["specifications"]
