@@ -194,6 +194,7 @@ class MSP2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, work_schedule):
