@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 from pathlib import Path
+from typing import Any
 
 
 def refresh():
@@ -292,7 +293,7 @@ class DecoratorData:
 
     # used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"
     @classmethod
-    def get_ifc_text_data(cls, obj):
+    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
         """returns font size in mm for current ifc text object"""
         result = cls.data.get(obj.name, None)
         if result is not None:
