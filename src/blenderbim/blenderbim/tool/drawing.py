@@ -49,7 +49,7 @@ import collections
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
-    def canonicalise_class_name(self, name):
+    def canonicalise_class_name(cls, name):
         return re.sub("[^0-9a-zA-Z]+", "", name)
 
     @classmethod
@@ -1613,11 +1613,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
-            #turn off local view before activating drawing, and then turn it on again.
+            # turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
-                if a.type == 'VIEW_3D':
+                if a.type == "VIEW_3D":
                     override = bpy.context.copy()
-                    override['area'] = a
+                    override["area"] = a
                     bpy.ops.view3d.localview(override)
             bpy.context.scene.camera = camera
             bpy.ops.view3d.localview(override)
