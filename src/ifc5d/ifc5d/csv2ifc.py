@@ -196,6 +196,7 @@ class Csv2Ifc:
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
 
 
 def has_property(self, product, property_name):
