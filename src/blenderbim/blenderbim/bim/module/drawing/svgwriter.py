@@ -864,10 +864,7 @@ class SvgWriter:
         point = self.project_point_onto_camera(obj.matrix_world.translation)
 
         element = tool.Ifc.get_entity(obj)
-        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
-        if not svg_id:
-            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
-            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        svg_id = tool.Drawing.get_annotation_symbol(element)
         if not svg_id:
             svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
         if not svg_id:
@@ -913,10 +910,7 @@ class SvgWriter:
         projected_points = [self.project_point_onto_camera(matrix_world @ v.co) for v in obj.data.vertices]
 
         element = tool.Ifc.get_entity(obj)
-        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
-        if not svg_id:
-            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
-            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        svg_id = tool.Drawing.get_annotation_symbol(element)
         if not svg_id:
             svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
         if not svg_id:
