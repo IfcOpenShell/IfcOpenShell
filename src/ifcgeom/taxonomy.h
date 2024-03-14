@@ -436,6 +436,7 @@ typedef item const* ptr;
 			template <size_t N>
 			struct cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
 				cartesian_base() : eigen_base() {}
+				cartesian_base(const Eigen::Vector3d& c) : eigen_base(c) {}
 				cartesian_base(double x, double y, double z = 0.) : eigen_base(Eigen::Vector3d(x, y, z)) {}
 			};
 
@@ -455,6 +456,7 @@ typedef item const* ptr;
 				}
 
 				point3() : cartesian_base() {}
+				point3(const Eigen::Vector3d& c) : cartesian_base(c) {}
 				point3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 			};
 
@@ -474,6 +476,7 @@ typedef item const* ptr;
 				}
 
 				direction3() : cartesian_base() {}
+				direction3(const Eigen::Vector3d& c) : cartesian_base(c) {}
 				direction3(double x, double y, double z = 0.) : cartesian_base(x, y, z) {}
 			};
 
