@@ -300,7 +300,9 @@ class DecoratorData:
             return result
 
         element = tool.Ifc.get_entity(obj)
-        if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+        if not element or not tool.Drawing.is_annotation_object_type(
+            element, ["TEXT", "TEXT_LEADER", "SYMBOL"]
+        ):
             return None
 
         props = obj.BIMTextProperties
