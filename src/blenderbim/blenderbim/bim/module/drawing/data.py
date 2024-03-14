@@ -320,7 +320,7 @@ class DecoratorData:
         font_size = FONT_SIZES[font_size_type]
 
         # get symbol
-        symbol = pset_data.get("Symbol", None)
+        symbol = tool.Drawing.get_annotation_symbol(element)
 
         # other attributes
         props_literals = props.literals

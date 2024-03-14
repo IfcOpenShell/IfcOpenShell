@@ -1520,8 +1520,12 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
     @classmethod
-    def get_annotation_symbol(cls, drawing: ifcopenshell.entity_instance) -> Union[str, None]:
-        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "Symbol")
+    def get_annotation_symbol(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
+        symbol = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
+        if not symbol:
+            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+            symbol = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        return symbol
 
     @classmethod
     def has_linework(cls, drawing):
