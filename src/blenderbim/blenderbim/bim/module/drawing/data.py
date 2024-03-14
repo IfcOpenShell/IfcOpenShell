@@ -413,10 +413,12 @@ class AnnotationData:
         relating_types = []
         for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
-                relating_types.append({
-                    "id": relating_type.id(),
-                    "name": relating_type.Name or "Unnamed",
-                    "description": relating_type.Description or "No Description",
-                })
+                relating_types.append(
+                    {
+                        "id": relating_type.id(),
+                        "name": relating_type.Name or "Unnamed",
+                        "description": relating_type.Description or "No Description",
+                    }
+                )
 
         return sorted(relating_types, key=lambda x: x["name"])
