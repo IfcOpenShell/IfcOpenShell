@@ -47,7 +47,7 @@ from lxml import etree
 from mathutils import Vector
 from fractions import Fraction
 import collections
-from typing import Optional
+from typing import Optional, Union
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -1505,18 +1505,22 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_metadata(cls, drawing):
+        # fmt: off
         return [
             v.strip()
-            for v in (ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or "").split(",")
+            for v in (
+                ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or ""
+            ).split(",")
             if v
         ]
+        # fmt: on
 
     @classmethod
     def get_annotation_z_index(cls, drawing):
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
     @classmethod
-    def get_annotation_symbol(cls, drawing):
+    def get_annotation_symbol(cls, drawing: ifcopenshell.entity_instance) -> Union[str, None]:
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "Symbol")
 
     @classmethod
