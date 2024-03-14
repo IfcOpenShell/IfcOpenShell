@@ -231,7 +231,7 @@ namespace IfcGeom {
 
 				task_result_index_ = 0;
 				done = 0;
-				total = tasks_.size();
+				total = (int) tasks_.size();
 
 				if (num_threads_ != 1) {
 					init_future_ = std::async(std::launch::async, [this]() { process_concurrently(); });

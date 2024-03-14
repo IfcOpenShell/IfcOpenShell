@@ -252,12 +252,13 @@ enum tree_type { TT_NARY_BRANCH, TT_PLANE };
 template <typename Kernel>
 class halfspace_tree {
 public:
-	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level = 0) const = 0;
+	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate() const = 0;
 	virtual void accumulate(std::list<typename Kernel::Plane_3>&) const = 0;
 	virtual std::unique_ptr<halfspace_tree> map(const plane_map<Kernel>&) const = 0;
 	virtual std::string dump(int level = 0) const = 0;
 	virtual tree_type kind() const = 0;
 	virtual void merge(CGAL::Nef_polyhedron_3<Kernel>&) const = 0;
+	virtual ~halfspace_tree() {}
 };
 
 // Halfspace tree component as n-ary operands
@@ -291,18 +292,18 @@ public:
 		ss << std::string(level * 2, ' ') << ")" << std::endl;
 		return ss.str();
 	}
-	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level) const {
+	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate() const {
 		CGAL::Nef_polyhedron_3<Kernel> result;
 
 		if (operation_ == OP_SUBTRACTION) {
 			if (operands_.size() != 2) {
 				throw std::runtime_error("");
 			}
-			result = operands_.front()->evaluate(level + 1) - operands_.back()->evaluate(level + 1);
+			result = operands_.front()->evaluate() - operands_.back()->evaluate();
 		} else if (operation_ == OP_UNION) {
 			CGAL::Nef_nary_union_3<CGAL::Nef_polyhedron_3<Kernel>> builder;
 			for (auto& op : operands_) {
-				builder.add_polyhedron(op->evaluate(level + 1));
+				builder.add_polyhedron(op->evaluate());
 			}
 			result = builder.get_union();
 		} else if (operation_ == OP_INTERSECTION) {
@@ -320,7 +321,7 @@ public:
 				bool first = true;
 				for (auto& op : operands_) {
 					if (first) {
-						result = op->evaluate(level + 1);
+						result = op->evaluate();
 						first = false;
 					} else {
 						op->merge(result);
@@ -329,7 +330,7 @@ public:
 			} else {
 				CGAL::Nef_nary_intersection_3<CGAL::Nef_polyhedron_3<Kernel>> builder;
 				for (auto& op : operands_) {
-					builder.add_polyhedron(op->evaluate(level + 1));
+					builder.add_polyhedron(op->evaluate());
 				}
 				result = builder.get_intersection();
 			}
@@ -339,11 +340,11 @@ public:
 			bool first = true;
 			for (auto& op : operands_) {
 				if (first) {
-					r = op->evaluate(level + 1);
+					r = op->evaluate();
 					first = false;
 					continue;
 				}
-				r = r * op->evaluate(level + 1);
+				r = r * op->evaluate();
 			}
 			return r;
 			*/
@@ -451,7 +452,7 @@ public:
 		ss << std::string(level * 2, ' ') << "p " << std::setprecision(15) << plane_ << std::endl;
 		return ss.str();
 	}
-	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate(int level) const {
+	virtual CGAL::Nef_polyhedron_3<Kernel> evaluate() const {
 		if constexpr(CGAL::Is_extended_kernel<Kernel>::value_type::value) {
 			throw std::runtime_error("Not implemented yet");
 			// typename Kernel::Plane_3 plane(plane_.a().exact(), plane_.b().exact(), plane_.c().exact(), plane_.d().exact());

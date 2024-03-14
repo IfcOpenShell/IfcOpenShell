@@ -289,7 +289,7 @@ typedef item const* ptr;
 							boost::hash_combine(h, std::hash<typename T::Scalar>()(elem));
 						}
 					}
-					return h;
+					return (uint32_t) h;
 				}
 			};
 
@@ -741,7 +741,8 @@ typedef item const* ptr;
 					for (auto& c : children) {
 						boost::hash_combine(h, c->hash());
 					}
-					return h;
+					// @todo should we really use uint32_t instead of size_t for hashes?
+					return (uint32_t) h;
 				}
 			};
 

@@ -70,7 +70,7 @@ namespace IfcGeom {
 			bool calculate_surface_area(double&) const;
 			bool calculate_projected_surface_area(const ifcopenshell::geometry::taxonomy::matrix4& ax, double& along_x, double& along_y, double& along_z) const;
 
-			int size() const { return shapes_.size(); }
+			int size() const { return (int) shapes_.size(); }
 			const IfcGeom::ConversionResultShape* item(int i) const;
 			int item_id(int i) const;
 		};
