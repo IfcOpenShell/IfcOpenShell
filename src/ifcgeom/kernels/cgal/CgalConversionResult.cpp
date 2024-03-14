@@ -168,7 +168,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 				vidx = it->second;
 			}
 
-			vertexidx[i++] = vidx;
+			vertexidx[i++] = (int) vidx;
 
 			++num_vertices;
 			++current_halfedge;
@@ -216,7 +216,7 @@ double ifcopenshell::geometry::CgalShape::bounding_box(void *& b) const {
 }
 
 int ifcopenshell::geometry::CgalShape::num_vertices() const {
-	return static_cast<cgal_shape_t>(*this).size_of_vertices();
+	return (int) static_cast<cgal_shape_t>(*this).size_of_vertices();
 }
 
 void ifcopenshell::geometry::CgalShape::set_box(void * b) {
@@ -228,14 +228,14 @@ void ifcopenshell::geometry::CgalShape::set_box(void * b) {
 
 int ifcopenshell::geometry::CgalShape::surface_genus() const {
 	to_poly();
-	int nv = shape_->size_of_vertices();
-	int ne = shape_->size_of_halfedges() / 2;
-	int nf = shape_->size_of_facets();
+	auto nv = shape_->size_of_vertices();
+	auto ne = shape_->size_of_halfedges() / 2;
+	auto nf = shape_->size_of_facets();
 
-	const int euler = nv - ne + nf;
-	const int genus = (2 - euler) / 2;
+	auto euler = nv - ne + nf;
+	auto genus = (2 - euler) / 2;
 
-	return genus;
+	return (int) genus;
 }
 
 bool ifcopenshell::geometry::CgalShape::is_manifold() const {
@@ -247,18 +247,18 @@ bool ifcopenshell::geometry::CgalShape::is_manifold() const {
 int ifcopenshell::geometry::CgalShape::num_edges() const
 {
 	to_poly();
-	return shape_->size_of_halfedges() / 2;
+	return (int) shape_->size_of_halfedges() / 2;
 }
 
 int ifcopenshell::geometry::CgalShape::num_faces() const
 {
 #ifndef IFOPSH_SIMPLE_KERNEL
 	if (nef_) {
-		return nef_->number_of_facets();
+		return (int) nef_->number_of_facets();
 	} else
 #endif
 	if (shape_) {
-		return shape_->size_of_facets();
+		return (int) shape_->size_of_facets();
 	} else {
 		return 0;
 	}
@@ -537,11 +537,11 @@ ConversionResultShape* ifcopenshell::geometry::CgalShape::moved(ifcopenshell::ge
 	return new CgalShape(s, convex_tag_);
 }
 
-void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>& from, OpaqueCoordinate<4>& to) {
+void ifcopenshell::geometry::CgalShape::map(OpaqueCoordinate<4>&, OpaqueCoordinate<4>&) {
 	throw std::runtime_error("Not implemented");
 }
 
-void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>& from, const std::vector<OpaqueCoordinate<4>>& to) {
+void ifcopenshell::geometry::CgalShape::map(const std::vector<OpaqueCoordinate<4>>&, const std::vector<OpaqueCoordinate<4>>&) {
 	throw std::runtime_error("Not implemented");
 }
 
