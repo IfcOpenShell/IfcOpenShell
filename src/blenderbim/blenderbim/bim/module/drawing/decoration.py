@@ -37,7 +37,7 @@ from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offset
 from blenderbim.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
-from typing import Optional, Iterator
+from typing import Optional, Iterator, Type, Union
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -487,7 +487,9 @@ class BaseDecorator:
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
         return format_distance(value, precision=precision, decimal_places=decimal_places)
 
-    def draw_asterisk(self, context: bpy.types.Context, obj: bpy.types.Object, rotation: float = 0.0) -> None:
+    def draw_asterisk(
+        self, context: bpy.types.Context, obj: bpy.types.Object, rotation: float = 0.0, scale: float = 1.0
+    ) -> None:
         """ "`rotation` value in radians"""
         # gather geometry data and convert to winspace
         verts = [obj.location]
@@ -495,7 +497,7 @@ class BaseDecorator:
         winspace_verts = worldspace_to_winspace(verts, context)
 
         # setup geometry parameters
-        circle_size = viewportDrawingScale * 4
+        circle_size = viewportDrawingScale * 4 * scale
 
         output_verts = []
         output_edges = []
@@ -549,9 +551,10 @@ class BaseDecorator:
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
         if symbol:
             rotation = -Vector((1, 0)).angle_signed(text_dir)
-            self.draw_asterisk(context, obj, rotation)
             # NOTE: for now we assume that scale is uniform
-            text_scale = obj.scale.x
+            uniform_scale = obj.scale.x
+            self.draw_asterisk(context, obj, rotation, uniform_scale)
+            text_scale = uniform_scale
 
         line_i = 0
         font_size_mm = text_data["FontSize"] * text_scale
@@ -1912,7 +1915,7 @@ class CutDecorator:
 
 
 class DecorationsHandler:
-    decorators_classes = [
+    decorators_classes: list[Type[BaseDecorator]] = [
         DimensionDecorator,
         AngleDecorator,
         GridDecorator,
@@ -1956,6 +1959,7 @@ class DecorationsHandler:
         self.decorators = {cls.objecttype: cls() for cls in self.decorators_classes}
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
+        self.decorators["SYMBOL"] = self.decorators["TEXT"]
 
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?
@@ -1973,7 +1977,7 @@ class DecorationsHandler:
             if not element.is_a("IfcAnnotation"):
                 continue
 
-            object_type = element.ObjectType
+            object_type: Union[str, None] = element.ObjectType
             if object_type == "DRAWING":
                 continue
 
