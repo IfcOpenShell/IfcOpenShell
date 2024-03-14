@@ -27,12 +27,6 @@
 #ifndef IFCPARSE_H
 #define IFCPARSE_H
 
-#if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
-#define IFCOPENSHELL_VERSION STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT)
-#else
-#define IFCOPENSHELL_VERSION "0.8.0"
-#endif
-
 #include "aggregate_of_instance.h"
 #include "Argument.h"
 #include "ifc_parse_api.h"
@@ -51,6 +45,12 @@
 #include <sstream>
 #include <string>
 #include <vector>
+
+#if defined(IFCOPENSHELL_BRANCH) && defined(IFCOPENSHELL_COMMIT)
+#define IFCOPENSHELL_VERSION STRINGIFY(IFCOPENSHELL_BRANCH) "-" STRINGIFY(IFCOPENSHELL_COMMIT)
+#else
+#define IFCOPENSHELL_VERSION "0.8.0"
+#endif
 
 namespace IfcParse {
 
