@@ -237,7 +237,7 @@ class DecoratorData:
 
     @classmethod
     def get_batting_thickness(cls, obj):
-        """used by IfcAnnotations with ObjectType = "BATTING""""
+        """used by IfcAnnotations with ObjectType = "BATTING" """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
@@ -251,7 +251,7 @@ class DecoratorData:
 
     @classmethod
     def get_section_markers_display_data(cls, obj):
-        """used by IfcAnnotations with ObjectType = "SECTION""""
+        """used by IfcAnnotations with ObjectType = "SECTION" """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
