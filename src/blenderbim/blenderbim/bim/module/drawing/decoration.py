@@ -70,7 +70,7 @@ class profile_consequential:
         cls.lines = []
 
 
-def worldspace_to_winspace(verts, context):
+def worldspace_to_winspace(verts: list[Vector], context: bpy.types.Context) -> list[Vector]:
     """Convert world space verts to window space"""
     region = context.region
     region3d = context.region_data
@@ -81,7 +81,7 @@ def worldspace_to_winspace(verts, context):
     return winspace_verts
 
 
-def winspace_to_worldspace(verts, context):
+def winspace_to_worldspace(verts: list[Vector], context: bpy.types.Context) -> list[Vector]:
     """Convert winspace verts to world space"""
     region = context.region
     region3d = context.region_data
@@ -266,7 +266,7 @@ class BaseDecorator:
         vertices = [obj.matrix_world @ v.co for v in bm.verts]
         return vertices, indices
 
-    def decorate(self, context, obj):
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object):
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
@@ -312,13 +312,28 @@ class BaseDecorator:
 
         self.draw_lines(context, obj, output_verts, output_edges)
 
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
+    def draw_batch(
+        self,
+        shader_type: str,
+        content_pos: list[Vector],
+        color: tuple[float, float, float, float],
+        indices: Optional[list[tuple[int, int]]] = None,
+    ) -> None:
         shader = self.line_shader if shader_type == "LINES" else self.base_shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_lines(self, context, obj, vertices, indices, color=None, line_width=1.0):
+    def draw_lines(
+        self,
+        context: bpy.types.Context,
+        obj: Optional[bpy.types.Object],
+        vertices: list[Vector],
+        indices: list[tuple[int, int]],
+        color: Optional[tuple[float, float, float, float]] = None,
+        line_width: float = 1.0,
+    ) -> None:
+        # TODO: `obj` is actually never used, need to remove it
         """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
         if not color:
@@ -331,7 +346,7 @@ class BaseDecorator:
         gpu.state.blend_set("ALPHA")
         self.draw_batch("LINES", vertices, color, indices)
 
-    def get_viewport_drawing_scale(self, context):
+    def get_viewport_drawing_scale(self, context: bpy.types.Context) -> float:
         # Horrific prototype code
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
@@ -487,12 +502,11 @@ class BaseDecorator:
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
         return format_distance(value, precision=precision, decimal_places=decimal_places)
 
-    def draw_asterisk(
-        self, context: bpy.types.Context, obj: bpy.types.Object, rotation: float = 0.0, scale: float = 1.0
-    ) -> None:
-        """ "`rotation` value in radians"""
+    def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
+        """`pos` is a world space position\n
+        `rotation` value in radians"""
         # gather geometry data and convert to winspace
-        verts = [obj.location]
+        verts = [pos]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         winspace_verts = worldspace_to_winspace(verts, context)
 
@@ -511,7 +525,51 @@ class BaseDecorator:
         start_i = 0
         for segment in asterisk_head:
             start_i = add_verts_sequence(add_offsets(v0, segment), start_i, **out_kwargs)
-        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_lines(context, None, output_verts, output_edges)
+
+    def get_annotation_direction(self, context: bpy.types.Context, obj: bpy.types.Object) -> Vector:
+        camera = context.scene.camera
+
+        def get_basis_vector(matrix, i=0):
+            """returns basis vector for i in world space, unaffected by object scale"""
+            return matrix.inverted()[i].to_3d().normalized()
+
+        text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
+        camera_matrix = tool.Drawing.get_camera_matrix(camera)
+        text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        return text_dir
+
+    def draw_symbol(self, context: bpy.types.Context, obj: bpy.types.Object, annotation_dir: Vector) -> None:
+        if obj.type not in ("MESH", "EMPTY"):
+            return
+
+        if obj.type == "MESH":
+            mesh: bpy.types.Mesh = obj.data
+
+            if len(mesh.vertices) == 0:
+                return
+
+            if mesh.edges:
+                MiscDecorator.decorate(self, context, obj)
+                return
+
+            symbol = DecoratorData.get_symbol(obj)
+            if not symbol:
+                return
+
+            for vert in mesh.vertices:
+                self.draw_asterisk(context, obj.matrix_world @ vert.co)
+
+            return
+
+        # EMPTY objects
+        symbol = DecoratorData.get_symbol(obj)
+        if not symbol:
+            return
+
+        rotation = -Vector((1, 0)).angle_signed(annotation_dir)
+        # NOTE: for now we assume that scale is uniform
+        self.draw_asterisk(context, obj.location, rotation, obj.scale.x)
 
     def draw_text(
         self,
@@ -527,17 +585,7 @@ class BaseDecorator:
 
         region = context.region
         region3d = context.region_data
-        camera = context.scene.camera
-
-        def get_basis_vector(matrix, i=0):
-            """returns basis vector for i in world space, unaffected by object scale"""
-            return matrix.inverted()[i].to_3d().normalized()
-
-        text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
-
-        camera_matrix = tool.Drawing.get_camera_matrix(camera)
-
-        text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        text_dir = self.get_annotation_direction(context, obj)
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
@@ -550,11 +598,8 @@ class BaseDecorator:
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
         if symbol:
-            rotation = -Vector((1, 0)).angle_signed(text_dir)
-            # NOTE: for now we assume that scale is uniform
-            uniform_scale = obj.scale.x
-            self.draw_asterisk(context, obj, rotation, uniform_scale)
-            text_scale = uniform_scale
+            self.draw_symbol(context, obj, text_dir)
+            text_scale = obj.scale.x
 
         line_i = 0
         font_size_mm = text_data["FontSize"] * text_scale
@@ -1017,7 +1062,7 @@ class StairDecorator(BaseDecorator):
 class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
-    def decorate(self, context, obj):
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object):
         if obj.data.is_editmode:
             verts, idxs = self.get_editmesh_geom(obj)
         else:
@@ -1519,6 +1564,14 @@ class TextDecorator(BaseDecorator):
         self.draw_text(context, obj)
 
 
+class SymbolDecorator(BaseDecorator):
+    objecttype = "SYMBOL"
+
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        annotation_dir = self.get_annotation_direction(context, obj)
+        self.draw_symbol(context, obj, annotation_dir)
+
+
 class CutDecorator:
     installed = None
     cache = {}
@@ -1932,6 +1985,7 @@ class DecorationsHandler:
         SectionDecorator,
         ElevationDecorator,
         TextDecorator,
+        SymbolDecorator,
         BattingDecorator,
         FallDecorator,
     ]
@@ -1959,7 +2013,7 @@ class DecorationsHandler:
         self.decorators = {cls.objecttype: cls() for cls in self.decorators_classes}
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
-        self.decorators["SYMBOL"] = self.decorators["TEXT"]
+        self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
 
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?
