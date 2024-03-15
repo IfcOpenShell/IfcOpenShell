@@ -29,6 +29,7 @@ import svgwrite
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.selector
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
@@ -40,6 +41,7 @@ from blenderbim.bim.ifc import IfcStore
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
 from bpy_extras import view3d_utils
+from typing import Optional
 
 
 class External(svgwrite.container.Group):
@@ -323,7 +325,7 @@ class SvgWriter:
                 )
             )
 
-    def draw_misc_annotation(self, obj):
+    def draw_misc_annotation(self, obj: bpy.types.Object) -> None:
         # We have to decide whether this should come from Blender or from IFC.
         # For the moment, for convenience of experimenting with ideas, it comes
         # from Blender. In the future, it should probably come from IFC.
@@ -357,14 +359,14 @@ class SvgWriter:
             d = "M{}".format(d[1:])
             path = self.svg.add(self.svg.path(d=d, class_=" ".join(classes)))
 
-    def get_attribute_classes(self, obj):
+    def get_attribute_classes(self, obj: bpy.types.Object) -> list[str]:
         element = tool.Ifc.get_entity(obj)
         global_id = "GlobalId-{}".format(element.GlobalId)
         predefined_type = "PredefinedType-" + tool.Drawing.canonicalise_class_name(
             str(ifcopenshell.util.element.get_predefined_type(element))
         )
         classes = [global_id, element.is_a(), predefined_type]
-        custom_classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+        custom_classes: str = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
         if custom_classes:
             classes.extend(custom_classes.split())
         for key in self.metadata:
@@ -788,7 +790,7 @@ class SvgWriter:
         attrib["filter"] = "url(#fill-background)"
         return element
 
-    def draw_text_annotation(self, text_obj, position):
+    def draw_text_annotation(self, text_obj: bpy.types.Object, position: Vector) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
         element = tool.Ifc.get_entity(text_obj)
@@ -800,17 +802,7 @@ class SvgWriter:
         text_position_svg = text_position * self.svg_scale
         text_position_svg_str = ", ".join(map(str, text_position_svg))
 
-        def get_basis_vector(matrix, i=0):
-            """returns basis vector for i in world space, unaffected by object scale"""
-            return matrix.inverted()[i].to_3d().normalized()
-
-        text_dir_world_x_axis = get_basis_vector(text_obj.matrix_world)
-
-        # RCP cameras may be scaled, so reset scales.
-        camera_matrix = tool.Drawing.get_camera_matrix(self.camera)
-        text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
-        angle = math.degrees(-text_dir.angle_signed(Vector((1, 0))))
-
+        angle = self.get_empty_object_angle(text_obj)
         classes = self.get_attribute_classes(text_obj)
         classes_str = " ".join(classes)
         fill_bg = "fill-bg" in classes
@@ -818,8 +810,7 @@ class SvgWriter:
         symbol = tool.Drawing.get_annotation_symbol(element)
         template_text_fields = []
         if symbol:
-            # NOTE: for now we assume that scale is uniform
-            symbol_transform = f"translate({text_position_svg_str}) rotate({angle}) scale({text_obj.scale.x})"
+            symbol_transform = self.get_symbol_transform(text_position_svg_str, angle, text_obj)
 
             symbol_svg = self.find_xml_symbol_by_id(symbol)
             if symbol_svg:
@@ -848,7 +839,7 @@ class SvgWriter:
                     return None
 
             if not symbol_svg or not template_text_fields:
-                self.svg.add(self.svg.use(f"#{symbol}", transform=symbol_transform))
+                self.draw_symbol(symbol, symbol_transform)
 
         line_number = 0
         for text_literal in text_literals:
@@ -866,17 +857,14 @@ class SvgWriter:
                 self.svg.add(tag)
             line_number += len(tag.elements)
 
-    def draw_empty_annotation(self, obj, classes):
+    def draw_empty_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
         point = self.project_point_onto_camera(obj.matrix_world.translation)
 
         element = tool.Ifc.get_entity(obj)
-        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
-        if not svg_id:
-            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
-            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        svg_id = tool.Drawing.get_annotation_symbol(element)
         if not svg_id:
             svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
         if not svg_id:
@@ -884,9 +872,37 @@ class SvgWriter:
 
         point = Vector(((x_offset + point.x), (y_offset - point.y)))
         symbol_position_svg = point * self.svg_scale
-        self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
+        svg_position_str = ", ".join(map(str, symbol_position_svg))
 
-    def draw_point_annotation(self, obj, classes):
+        angle = self.get_empty_object_angle(obj)
+        symbol_transform = self.get_symbol_transform(svg_position_str, angle, obj)
+        self.draw_symbol(svg_id, symbol_transform)
+
+    def get_empty_object_angle(self, obj: bpy.types.Object) -> float:
+        def get_basis_vector(matrix: bpy.types.Object, i: int = 0) -> Vector:
+            """returns basis vector for i in world space, unaffected by object scale"""
+            return matrix.inverted()[i].to_3d().normalized()
+
+        text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
+
+        # RCP cameras may be scaled, so reset scales.
+        camera_matrix = tool.Drawing.get_camera_matrix(self.camera)
+        text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        return math.degrees(-text_dir.angle_signed(Vector((1, 0))))
+
+    def get_symbol_transform(
+        self, svg_position_str: str, angle: float = 0.0, obj: Optional[bpy.types.Object] = None
+    ) -> str:
+        """`obj` will be used to identify symbol scale,
+        ignore it if object scale doesn't match the symbol scale"""
+        # NOTE: for now we assume that scale is uniform
+        scale = 1.0 if not obj else obj.scale.x
+        return f"translate({svg_position_str}) rotate({angle}) scale({scale})"
+
+    def draw_symbol(self, symbol_id: str, symbol_transform: str) -> None:
+        self.svg.add(self.svg.use(f"#{symbol_id}", transform=symbol_transform))
+
+    def draw_point_annotation(self, obj: bpy.types.Object, classes: list[str]) -> None:
         x_offset = self.raw_width / 2
         y_offset = self.raw_height / 2
 
@@ -894,10 +910,7 @@ class SvgWriter:
         projected_points = [self.project_point_onto_camera(matrix_world @ v.co) for v in obj.data.vertices]
 
         element = tool.Ifc.get_entity(obj)
-        svg_id = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
-        if not svg_id:
-            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
-            svg_id = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        svg_id = tool.Drawing.get_annotation_symbol(element)
         if not svg_id:
             svg_id = str(ifcopenshell.util.element.get_predefined_type(element))
         if not svg_id:
@@ -906,7 +919,10 @@ class SvgWriter:
         for symbol_position in projected_points:
             symbol_position = Vector(((x_offset + symbol_position.x), (y_offset - symbol_position.y)))
             symbol_position_svg = symbol_position * self.svg_scale
-            self.svg.add(self.svg.use(f"#{svg_id}", insert=symbol_position_svg))
+            svg_position_str = ", ".join(map(str, symbol_position_svg))
+
+            symbol_transform = self.get_symbol_transform(svg_position_str)
+            self.draw_symbol(svg_id, symbol_transform)
 
     def draw_break_annotations(self, obj):
         x_offset = self.raw_width / 2
@@ -1405,7 +1421,7 @@ class SvgWriter:
 
         return text_tags
 
-    def project_point_onto_camera(self, point):
+    def project_point_onto_camera(self, point: Vector) -> Vector:
         # TODO is this needlessly complex?
         return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
             point.xyz,

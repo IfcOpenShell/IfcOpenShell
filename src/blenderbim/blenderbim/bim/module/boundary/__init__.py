@@ -22,6 +22,7 @@ from . import ui, operator, prop
 classes = (
     operator.AddBoundary,
     operator.ColourByRelatedBuildingElement,
+    operator.DecorateBoundaries,
     operator.DisableEditingBoundary,
     operator.DisableEditingBoundaryGeometry,
     operator.EditBoundaryAttributes,

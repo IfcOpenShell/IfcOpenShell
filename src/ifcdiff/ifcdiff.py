@@ -277,7 +277,14 @@ class IfcDiff:
             return
         for relationship in self.relationships:
             if relationship == "type":
-                if ifcopenshell.util.element.get_type(old) != ifcopenshell.util.element.get_type(new):
+                old_type = ifcopenshell.util.element.get_type(old)
+                new_type = ifcopenshell.util.element.get_type(new)
+                if old_type is not None and new_type is not None:
+                    if old_type.GlobalId != new_type.GlobalId:
+                        self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
+                        return True
+                elif old_type != new_type:
+                    # one of the types is None while the other is not None
                     self.change_register.setdefault(new.GlobalId, {}).update({"type_changed": True})
                     return True
             elif relationship == "property":

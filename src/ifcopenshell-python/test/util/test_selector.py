@@ -251,6 +251,21 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab, Name=Bar") == {element, element2}
 
+    def test_using_elements_argument(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+
+        # keep elements unaffected by expression
+        assert subject.filter_elements(self.file, "IfcWall", {slab}) == {wall, slab}
+
+        # filter out excluded elements
+        assert subject.filter_elements(self.file, "IfcWall, ! IfcSlab", {slab}) == {wall}
+
+        # edit_in_place to update original set
+        original_set = set()
+        new_set = subject.filter_elements(self.file, "IfcWall", original_set, edit_in_place=True)
+        assert new_set == original_set
+
 
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_by_class(self):

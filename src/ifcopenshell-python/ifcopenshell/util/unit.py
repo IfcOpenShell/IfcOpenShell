@@ -566,8 +566,8 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(ifc_file):
-    """Returns a unit scale factor to convert to and from IFC project length units and SI meters
+def calculate_unit_scale(ifc_file, unit_type="LENGTHUNIT"):
+    """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
     Example:
 
@@ -578,6 +578,8 @@ def calculate_unit_scale(ifc_file):
 
     :param ifc_file: The IFC file.
     :type ifc_file: ifcopenshell.file.file
+    :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
+    :type unit_type: str
     :returns: The scale factor
     :rtype: float
     """
@@ -586,7 +588,7 @@ def calculate_unit_scale(ifc_file):
     units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
-        if not hasattr(unit, "UnitType") or unit.UnitType != "LENGTHUNIT":
+        if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
             continue
         while unit.is_a("IfcConversionBasedUnit"):
             unit_scale *= unit.ConversionFactor.ValueComponent.wrappedValue
@@ -597,13 +599,13 @@ def calculate_unit_scale(ifc_file):
 
 
 def format_length(
-        value,
-        precision,
-        decimal_places=2,
-        suppress_zero_inches=True,
-        unit_system="imperial",
-        input_unit="foot",
-        output_unit="foot",
+    value,
+    precision,
+    decimal_places=2,
+    suppress_zero_inches=True,
+    unit_system="imperial",
+    input_unit="foot",
+    output_unit="foot",
 ):
     """Formats a length for readability and imperial formatting
 
@@ -666,8 +668,9 @@ def format_length(
 
 
 def is_attr_type(
-        content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
-        ifc_unit_type_name: str) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
+    content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
+    ifc_unit_type_name: str,
+) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
     cur_decl = content_type
     while hasattr(cur_decl, "declared_type") is True:
         cur_decl = cur_decl.declared_type()
@@ -691,8 +694,9 @@ def is_attr_type(
     return None
 
 
-def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Iterable[
-    Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
+def iter_element_and_attributes_per_type(
+    ifc_file: ifcopenshell.file, attr_type_name: str
+) -> Iterable[Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
 
     for element in ifc_file:
