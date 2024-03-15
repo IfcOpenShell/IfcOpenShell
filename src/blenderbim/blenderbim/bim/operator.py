@@ -1101,13 +1101,4 @@ class RevertClippingPlaneCut(bpy.types.Operator):
             tool.Blender.remove_data_block(mesh, do_unlink=False)
 
 
-#TODO check if this is OK to leave help operators here ?   
-class HelpFilter(bpy.types.Operator):
-    bl_idname = "bim.help_filter"
-    bl_label = "Grouping and filtering"
-    bl_description = 'Browse selector syntax documentation '
-
-    def execute(self, context):
-        webbrowser.open_new_tab('https://blenderbim.org/docs-python/ifcopenshell-python/selector_syntax.html')    
-        return {"FINISHED"}
 
