@@ -48,6 +48,7 @@ class SpatialTool(WorkSpaceTool):
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_B")]}),
         ("bim.spatial_hotkey", {"type": "A", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_A")]}),
         ("bim.spatial_hotkey", {"type": "B", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_B")]}),
+        ("bim.spatial_hotkey", {"type": "V", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_V")]}),
         ("bim.spatial_hotkey", {"type": "T", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_T")]}),
         ("bim.spatial_hotkey", {"type": "G", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_G")]}),
         ("bim.spatial_hotkey", {"type": "H", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_H")]}),
@@ -92,36 +93,34 @@ class SpatialToolUI:
         if context.active_object and context.selected_objects:
             cls.draw_selected_object_interface(context)
 
+        add_layout_hotkey(cls.layout, "Decorate Boundaries", "A_V", bpy.ops.bim.decorate_boundaries.__doc__)
+
     @classmethod
     def draw_default_interface(cls, context):
         row = cls.layout.row(align=True)
         row.prop(data=cls.model_props, property="rl3", text="RL")
         row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_A")
-        row.operator("bim.generate_spaces_from_walls")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_A")
-        row.operator("bim.generate_space")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_T")
-        row.operator("bim.toggle_space_visibility")
-        row = cls.layout.row(align=True)
-        row.label(text="", icon="EVENT_SHIFT")
-        row.label(text="", icon="EVENT_H")
-        row.operator("bim.toggle_hide_spaces")
+        op_name = lambda op: op.get_rna_type().name
+        add_layout_hotkey(
+            cls.layout,
+            op_name(bpy.ops.bim.generate_spaces_from_walls),
+            "S_A",
+            bpy.ops.bim.generate_spaces_from_walls.__doc__,
+        )
+        add_layout_hotkey(cls.layout, op_name(bpy.ops.bim.generate_space), "S_A", bpy.ops.bim.generate_space.__doc__)
+        add_layout_hotkey(
+            cls.layout, op_name(bpy.ops.bim.toggle_space_visibility), "S_T", bpy.ops.bim.toggle_space_visibility.__doc__
+        )
+        add_layout_hotkey(
+            cls.layout, op_name(bpy.ops.bim.toggle_hide_spaces), "S_H", bpy.ops.bim.toggle_hide_spaces.__doc__
+        )
 
     @classmethod
     def draw_selected_object_interface(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
         if element and bpy.context.selected_objects and element.is_a("IfcSpace"):
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_G")
-            row.operator("bim.generate_space", text="Regen")
+            add_layout_hotkey(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
         row = cls.layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
@@ -129,7 +128,7 @@ class SpatialToolUI:
         row.prop(cls.model_props, "boundary_class", text="")
         row.operator("bim.add_boundary", text="Add Boundary")
 
-        add_layout_hotkey(cls.layout, "Boundaries", "A_B", "Toggle boundaries")
+        add_layout_hotkey(cls.layout, "Boundaries", "A_B", "Load/unload boundaries on selected objects")
 
     @classmethod
     def draw_type_selection_interface(cls, context):
@@ -175,12 +174,17 @@ class Hotkey(bpy.types.Operator, Operator):
         bpy.ops.bim.add_boundary()
 
     def hotkey_A_B(self):
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
         if not bpy.context.selected_objects:
             return
         if AuthoringData.data["has_visible_boundaries"]:
             bpy.ops.bim.hide_boundaries()
         else:
             bpy.ops.bim.show_boundaries()
+
+    def hotkey_A_V(self):
+        bpy.ops.bim.decorate_boundaries()
 
     def hotkey_S_T(self):
         bpy.ops.bim.toggle_space_visibility()

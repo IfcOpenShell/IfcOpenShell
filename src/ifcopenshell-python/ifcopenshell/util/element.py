@@ -18,18 +18,19 @@
 
 from __future__ import annotations
 import ifcopenshell
-from typing import List, Any, Callable
+import ifcopenshell.util.element
+from typing import List, Any, Callable, Optional, Union
 
 
 def get_pset(
     element: ifcopenshell.entity_instance,
     name: str,
-    prop: str = None,
+    prop: Optional[str] = None,
     psets_only=False,
     qtos_only=False,
     should_inherit=True,
     verbose=False,
-) -> dict:
+) -> Union[Any, dict[str, Any]]:
     """Retrieve a single property set or single property
 
     This is more efficient than ifcopenshell.util.element.get_psets if you know
@@ -52,7 +53,7 @@ def get_pset(
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
         property is specified.
-    :rtype: dict
+    :rtype: dict[str, Any]
 
     Example:
 
@@ -117,7 +118,7 @@ def get_pset(
 
 def get_psets(
     element: ifcopenshell.entity_instance, psets_only=False, qtos_only=False, should_inherit=True, verbose=False
-) -> dict:
+) -> dict[str, dict[str, Any]]:
     """Retrieve property sets, their related properties' names & values and ids.
 
     If should_inherit is true, the pset "id" only refers to the ID of the
@@ -132,7 +133,7 @@ def get_psets(
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
     :return: Key, value pair of psets' names and their properties' names & values
-    :rtype: dict
+    :rtype: dict[str, dict[str, Any]]
 
     Example:
 
@@ -172,7 +173,9 @@ def get_psets(
     return psets
 
 
-def get_property_definition(definition, prop=None, verbose=False):
+def get_property_definition(
+    definition: ifcopenshell.entity_instance, prop: Optional[str] = None, verbose=False
+) -> Union[Any, dict[str, Any]]:
     if not definition:
         return
 
@@ -202,14 +205,16 @@ def get_property_definition(definition, prop=None, verbose=False):
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
-        for prop in range(4, len(definition)):
-            if definition[prop] is not None:
-                props[definition.attribute_name(prop)] = definition[prop]
+        for prop_i in range(4, len(definition)):
+            if definition[prop_i] is not None:
+                props[definition.attribute_name(prop_i)] = definition[prop_i]
     props["id"] = definition.id()
     return props
 
 
-def get_quantity(quantities, name, verbose=False):
+def get_quantity(
+    quantities: list[ifcopenshell.entity_instance], name: str, verbose=False
+) -> Union[Any, dict[str, Any]]:
     for quantity in quantities or []:
         if quantity.Name != name:
             continue
@@ -225,7 +230,7 @@ def get_quantity(quantities, name, verbose=False):
         return result
 
 
-def get_quantities(quantities, verbose=False):
+def get_quantities(quantities: list[ifcopenshell.entity_instance], verbose=False) -> dict[str, dict[str, Any]]:
     results = {}
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
@@ -250,7 +255,9 @@ def get_quantities(quantities, verbose=False):
     return results
 
 
-def get_property(properties, name, verbose=False):
+def get_property(
+    properties: list[ifcopenshell.entity_instance], name: str, verbose=False
+) -> Union[Any, dict[str, Any]]:
     for prop in properties or []:
         if prop.Name != name:
             continue
@@ -276,7 +283,7 @@ def get_property(properties, name, verbose=False):
         return result
 
 
-def get_properties(properties, verbose=False):
+def get_properties(properties: list[ifcopenshell.entity_instance], verbose=False) -> dict[str, dict[str, Any]]:
     results = {}
     for prop in properties or []:
         if prop.is_a("IfcPropertySingleValue"):
@@ -724,7 +731,7 @@ def get_layers(
 
 
 def get_container(
-    element: ifcopenshell.entity_instance, should_get_direct=False, ifc_class: str = None
+    element: ifcopenshell.entity_instance, should_get_direct=False, ifc_class: Optional[str] = None
 ) -> ifcopenshell.entity_instance:
     """
     Retrieves the spatial structure container of an element.
@@ -739,7 +746,7 @@ def get_container(
     :type should_get_direct: bool
     :param ifc_class: Optionally filter the type of container you're after. For
         example, you may be after the storey, not a space.
-    :type ifc_class: str
+    :type ifc_class: str, optional
     :return: The direct or indirect container of the element or None.
     :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -1160,9 +1167,9 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
 def copy_deep(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
-    exclude: List[str] = None,
-    exclude_callback: Callable[[ifcopenshell.entity_instance], bool] = None,
-    copied_entities: dict[int, ifcopenshell.entity_instance] = None,
+    exclude: Optional[List[str]] = None,
+    exclude_callback: Optional[Callable[[ifcopenshell.entity_instance], bool]] = None,
+    copied_entities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
 ) -> ifcopenshell.entity_instance:
     """
     Recursively copy an element and all of its directly related subelements.
