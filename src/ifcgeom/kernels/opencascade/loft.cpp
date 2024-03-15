@@ -24,6 +24,8 @@
 #include <BRepFill_Filling.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRepBuilderAPI_MakeEdge.hxx>
+#include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeFace.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -56,6 +58,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			if (shps[i].ShapeType() != TopAbs_FACE) {
 				return false;
 			}
+			// @todo this is only outer wire
 			ws[i] = BRepTools::OuterWire(TopoDS::Face(shps[i]));
 		}
 		if (it == loft->children.begin()) {
@@ -69,10 +72,10 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 		BRepTools_WireExplorer a(ws[0]);
 		BRepTools_WireExplorer b(ws[1]);
 		for (; a.More() && b.More(); a.Next(), b.Next()) {
-			BRepFill_Filling fill;
 			auto& e1 = a.Current();
-			auto e3 = TopoDS::Edge(b.Current().Reversed());
-			
+			// auto e3 = TopoDS::Edge(b.Current().Reversed());
+			auto& e3 = b.Current();
+
 			// Documentation says unconnected edges are automatically connected, but this is not the case
 			TopoDS_Vertex e1a, e1b, e3a, e3b;
 			TopExp::Vertices(e1, e1a, e1b, true);
@@ -80,6 +83,8 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			auto e2 = BRepBuilderAPI_MakeEdge(e1b, e3a).Edge();
 			auto e4 = BRepBuilderAPI_MakeEdge(e3b, e1a).Edge();
 			
+			/*
+			BRepFill_Filling fill;
 			fill.Add(e1, GeomAbs_C0);
 			fill.Add(e2, GeomAbs_C0);
 			fill.Add(e3, GeomAbs_C0);
@@ -87,6 +92,12 @@ bool OpenCascadeKernel::convert(const taxonomy::loft::ptr loft, TopoDS_Shape& re
 			fill.Build();
 			// faces.Append(fill.Face());
 			BB.Add(comp, fill.Face());
+			*/
+
+			auto f = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e1a, e1b, e3b, true).Wire()).Face();
+			BB.Add(comp, f);
+			auto g = BRepBuilderAPI_MakeFace(BRepBuilderAPI_MakePolygon(e3b, e3a, e1a, true).Wire()).Face();
+			BB.Add(comp, g);
 		}
 	}
 

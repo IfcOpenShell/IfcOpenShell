@@ -132,6 +132,9 @@ BIND(IfcIndexedPolyCurve);
 #ifdef SCHEMA_HAS_IfcFixedReferenceSweptAreaSolid
 BIND(IfcFixedReferenceSweptAreaSolid)
 #endif
+#ifdef SCHEMA_HAS_IfcSectionedSolidHorizontal
+BIND(IfcSectionedSolidHorizontal)
+#endif
 
 BIND(IfcCircle);
 BIND(IfcEllipse);
