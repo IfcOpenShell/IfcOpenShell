@@ -58,6 +58,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	for (auto& cs : *css) {
 		cross_sections.push_back(std::move(taxonomy::cast<taxonomy::face>(map(cs))));
 	}
+#ifdef SCHEMA_HAS_IfcPointByDistanceExpression
 	for (auto& csp : *csps) {
 		auto pbde = csp->Location()->as<IfcSchema::IfcPointByDistanceExpression>(true);
 		
@@ -73,6 +74,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 
 		profile_offsets.push_back(po);
 	}
+#else
+	return nullptr;
+#endif
 	if (cross_sections.size() != profile_offsets.size()) {
 		Logger::Error("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(cross_sections.size()) + " and " + std::to_string(profile_offsets.size())  + " respectively", inst);
 		return nullptr;
