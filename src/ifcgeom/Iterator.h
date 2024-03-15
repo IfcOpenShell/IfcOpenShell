@@ -1,58 +1,58 @@
 /********************************************************************************
- *                                                                              *
- * This file is part of IfcOpenShell.                                           *
- *                                                                              *
- * IfcOpenShell is free software: you can redistribute it and/or modify         *
+ *																			  *
+ * This file is part of IfcOpenShell.										   *
+ *																			  *
+ * IfcOpenShell is free software: you can redistribute it and/or modify		 *
  * it under the terms of the Lesser GNU General Public License as published by  *
- * the Free Software Foundation, either version 3.0 of the License, or          *
- * (at your option) any later version.                                          *
- *                                                                              *
- * IfcOpenShell is distributed in the hope that it will be useful,              *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of               *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the                 *
- * Lesser GNU General Public License for more details.                          *
- *                                                                              *
- * You should have received a copy of the Lesser GNU General Public License     *
- * along with this program. If not, see <http://www.gnu.org/licenses/>.         *
- *                                                                              *
+ * the Free Software Foundation, either version 3.0 of the License, or		  *
+ * (at your option) any later version.										  *
+ *																			  *
+ * IfcOpenShell is distributed in the hope that it will be useful,			  *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of			   *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the				 *
+ * Lesser GNU General Public License for more details.						  *
+ *																			  *
+ * You should have received a copy of the Lesser GNU General Public License	 *
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.		 *
+ *																			  *
  ********************************************************************************/
 
 /********************************************************************************
- *                                                                              *
+ *																			  *
  * Geometrical data in an IFC file consists of shapes (IfcShapeRepresentation)  *
- * and instances (SUBTYPE OF IfcBuildingElement e.g. IfcWindow).                *
- *                                                                              *
- * IfcGeom::Representation::Triangulation is a class that represents a          *
- * triangulated IfcShapeRepresentation.                                         *
- *   Triangulation.verts is a 1 dimensional vector of float defining the        *
- *      cartesian coordinates of the vertices of the triangulated shape in the  *
- *      format of [x1,y1,z1,..,xn,yn,zn]                                        *
- *   Triangulation.faces is a 1 dimensional vector of int containing the        *
- *     indices of the triangles referencing positions in Triangulation.verts    *
+ * and instances (SUBTYPE OF IfcBuildingElement e.g. IfcWindow).				*
+ *																			  *
+ * IfcGeom::Representation::Triangulation is a class that represents a		  *
+ * triangulated IfcShapeRepresentation.										 *
+ *   Triangulation.verts is a 1 dimensional vector of float defining the		*
+ *	  cartesian coordinates of the vertices of the triangulated shape in the  *
+ *	  format of [x1,y1,z1,..,xn,yn,zn]										*
+ *   Triangulation.faces is a 1 dimensional vector of int containing the		*
+ *	 indices of the triangles referencing positions in Triangulation.verts	*
  *   Triangulation.edges is a 1 dimensional vector of int in {0,1} that dictates*
  *	   the visibility of the edges that span the faces in Triangulation.faces   *
- *                                                                              *
- * IfcGeom::Element represents the actual IfcBuildingElements.                  *
- *   IfcGeomObject.name is the GUID of the element                              *
- *   IfcGeomObject.type is the datatype of the element e.g. IfcWindow           *
- *   IfcGeomObject.mesh is a pointer to an IfcMesh                              *
- *   IfcGeomObject.transformation.matrix is a 4x3 matrix that defines the       *
- *     orientation and translation of the mesh in relation to the world origin  *
- *                                                                              *
- * IfcGeom::Iterator::initialize()                                              *
- *   finds the most suitable representation contexts. Returns true iff          *
- *   at least a single representation will process successfully                 *
- *                                                                              *
- * IfcGeom::Iterator::get()                                                     *
- *   returns a pointer to the current IfcGeom::Element                          *
- *                                                                              *
- * IfcGeom::Iterator::next()                                                    *
+ *																			  *
+ * IfcGeom::Element represents the actual IfcBuildingElements.				  *
+ *   IfcGeomObject.name is the GUID of the element							  *
+ *   IfcGeomObject.type is the datatype of the element e.g. IfcWindow		   *
+ *   IfcGeomObject.mesh is a pointer to an IfcMesh							  *
+ *   IfcGeomObject.transformation.matrix is a 4x3 matrix that defines the	   *
+ *	 orientation and translation of the mesh in relation to the world origin  *
+ *																			  *
+ * IfcGeom::Iterator::initialize()											  *
+ *   finds the most suitable representation contexts. Returns true iff		  *
+ *   at least a single representation will process successfully				 *
+ *																			  *
+ * IfcGeom::Iterator::get()													 *
+ *   returns a pointer to the current IfcGeom::Element						  *
+ *																			  *
+ * IfcGeom::Iterator::next()													*
  *   returns true iff a following entity is available for a successive call to  *
- *   IfcGeom::Iterator::get()                                                   *
- *                                                                              *
- * IfcGeom::Iterator::progress()                                                *
- *   returns an int in [0..100] that indicates the overall progress             *
- *                                                                              *
+ *   IfcGeom::Iterator::get()												   *
+ *																			  *
+ * IfcGeom::Iterator::progress()												*
+ *   returns an int in [0..100] that indicates the overall progress			 *
+ *																			  *
  ********************************************************************************/
 
 #ifndef IFCGEOMITERATOR_H
@@ -102,6 +102,7 @@ namespace IfcGeom {
 		GeometrySerializer* cache_ = nullptr;
 
 		std::atomic<bool> finished_{ false };
+		std::atomic<bool> terminating_{ false };
 		std::atomic<int> progress_{ 0 };
 
 		std::vector<geometry_conversion_result> tasks_;
@@ -148,13 +149,13 @@ namespace IfcGeom {
 		std::string unit_name_;
 		double unit_magnitude_;
 
-        ifcopenshell::geometry::taxonomy::point3 bounds_min_;
+		ifcopenshell::geometry::taxonomy::point3 bounds_min_;
 		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
 
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
 
-        /// @todo public/private sections all over the place: move all public to the beginning of the class
+		/// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
@@ -302,7 +303,7 @@ namespace IfcGeom {
 							break;
 						} // if
 					}   // for
-				}     // while
+				}	 // while
 
 				std::future<geometry_conversion_result*> fu = std::async(
 					std::launch::async, [this](
@@ -316,6 +317,10 @@ namespace IfcGeom {
 					std::ref(settings_),
 					&rep);
 
+				if (terminating_) {
+					break;
+				}
+
 				threadpool.emplace_back(std::move(fu));
 			}
 
@@ -327,18 +332,20 @@ namespace IfcGeom {
 
 			Logger::SetProduct(boost::none);
 
-			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
-				" objects)                                ");
+			if (!terminating_) {
+				Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
+					" objects)								");
+			}
 		}
 
-        /// Computes model's bounding box (bounds_min and bounds_max).
-        /// @note Can take several minutes for large files.
-        void compute_bounds(bool with_geometry)
-        {
-            for (int i = 0; i < 3; ++i) {
-                bounds_min_.components()(i) = std::numeric_limits<double>::infinity();
+		/// Computes model's bounding box (bounds_min and bounds_max).
+		/// @note Can take several minutes for large files.
+		void compute_bounds(bool with_geometry)
+		{
+			for (int i = 0; i < 3; ++i) {
+				bounds_min_.components()(i) = std::numeric_limits<double>::infinity();
 				bounds_max_.components()(i) = -std::numeric_limits<double>::infinity();
-            }
+			}
 
 			if (with_geometry) {
 				size_t num_created = 0;
@@ -381,7 +388,7 @@ namespace IfcGeom {
 					}
 				}
 			}
-        }
+		}
 
 		int progress() const {
 			return progress_;
@@ -391,11 +398,11 @@ namespace IfcGeom {
 
 		IfcParse::IfcFile* file() const { return ifc_file; }
 
-        const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
-        std::vector<IfcGeom::filter_t>& filters() { return filters_; }
+		const std::vector<IfcGeom::filter_t>& filters() const { return filters_; }
+		std::vector<IfcGeom::filter_t>& filters() { return filters_; }
 
-        const ifcopenshell::geometry::taxonomy::point3& bounds_min() const { return bounds_min_; }
-        const ifcopenshell::geometry::taxonomy::point3& bounds_max() const { return bounds_max_; }
+		const ifcopenshell::geometry::taxonomy::point3& bounds_min() const { return bounds_min_; }
+		const ifcopenshell::geometry::taxonomy::point3& bounds_max() const { return bounds_max_; }
 
 	private:
 
@@ -558,23 +565,23 @@ namespace IfcGeom {
 			}
 		}
 
-    public:
-        /// Returns what would be the product for the next shape representation
-        /// @todo Double-check and test the impl.
-        //IfcSchema::IfcProduct* peek_next() const
-        //{
-        //    if (ifcproducts && ifcproduct_iterator + 1 != ifcproducts->end()){
-        //        return *(ifcproduct_iterator + 1);
-        //    } else {
-        //        return 0;
-        //    }
-        //}
+	public:
+		/// Returns what would be the product for the next shape representation
+		/// @todo Double-check and test the impl.
+		//IfcSchema::IfcProduct* peek_next() const
+		//{
+		//	if (ifcproducts && ifcproduct_iterator + 1 != ifcproducts->end()){
+		//		return *(ifcproduct_iterator + 1);
+		//	} else {
+		//		return 0;
+		//	}
+		//}
 
-        /// @todo Would this be as simple as the following code?
-        //void skip_next() { if (ifcproducts) { ++ifcproduct_iterator; } }
+		/// @todo Would this be as simple as the following code?
+		//void skip_next() { if (ifcproducts) { ++ifcproduct_iterator; } }
 
-        /// Moves to the next shape representation, create its geometry, and returns the associated product.
-        /// Use get() to retrieve the created geometry.
+		/// Moves to the next shape representation, create its geometry, and returns the associated product.
+		/// Use get() to retrieve the created geometry.
 		const IfcUtil::IfcBaseClass* next() {
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
@@ -602,10 +609,10 @@ namespace IfcGeom {
 			}
 		}
 
-        /// Gets the representation of the current geometrical entity.
-        Element* get()
-        {
-            auto ret = *task_result_iterator_;
+		/// Gets the representation of the current geometrical entity.
+		Element* get()
+		{
+			auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy
 			if (settings_.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get())
@@ -653,8 +660,8 @@ namespace IfcGeom {
 				}
 			}
 
-            return ret;
-        }
+			return ret;
+		}
 
 		/// Gets the native (Open Cascade or CGAL) representation of the current geometrical entity.
 		BRepElement* get_native()
@@ -666,7 +673,7 @@ namespace IfcGeom {
 			ifcopenshell::geometry::taxonomy::matrix4::ptr m4;
 			int parent_id = -1;
 			std::string instance_type, product_name, product_guid;
-            IfcUtil::IfcBaseEntity* ifc_product = 0;
+			IfcUtil::IfcBaseEntity* ifc_product = 0;
 
 			try {
 				IfcUtil::IfcBaseEntity* ifc_entity = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
@@ -773,6 +780,14 @@ namespace IfcGeom {
 		}
 
 		~Iterator() {
+			if (num_threads_ != 1) {
+				terminating_ = true;
+
+				if (init_future_.valid()) {
+					init_future_.wait();
+				}
+			}
+
 			if (owns_ifc_file) {
 				delete ifc_file;
 			}
@@ -787,7 +802,7 @@ namespace IfcGeom {
 				delete k;
 			}
 			
-		    for (auto& p : all_processed_elements_) {
+			for (auto& p : all_processed_elements_) {
 				delete p;
 			}
 		}
