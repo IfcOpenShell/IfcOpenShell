@@ -33,23 +33,24 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
-from typing import Dict
+from typing import Dict, Union
 
 
 class MaterialCreator:
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.mesh = None
-        self.obj = None
+        self.mesh: bpy.types.Mesh = None
+        self.obj: bpy.types.Object = None
         self.materials: Dict[int, bpy.types.Material] = {}
         self.styles: Dict[int, bpy.types.Material] = {}
-        self.parsed_meshes = set()
+        self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
-    def create(self, element, obj, mesh):
+    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> None:
         self.mesh = mesh
         # as ifcopenshell triangulates the mesh, we need to merge it to quads again
         self.obj = obj
@@ -65,7 +66,7 @@ class MaterialCreator:
             self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
 
-    def add_default_material(self, element):
+    def add_default_material(self, element: ifcopenshell.entity_instance) -> None:
         element_material = ifcopenshell.util.element.get_material(element)
         if not element_material:
             return
@@ -83,14 +84,17 @@ class MaterialCreator:
             self.mesh.materials.append(self.materials[material.id()])
             return
 
-    def load_existing_materials(self):
+    def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
             if material.BIMObjectProperties.ifc_definition_id:
                 self.materials[material.BIMObjectProperties.ifc_definition_id] = material
             if material.BIMMaterialProperties.ifc_style_id:
                 self.styles[material.BIMMaterialProperties.ifc_style_id] = material
 
-    def parse_representations(self, element):
+    def parse_representations(self, element: ifcopenshell.entity_instance) -> bool:
+        """Search for styles in in all `element`'s representation items
+        and adds them to `self.mesh.materials`.\n
+        Returns `True` if any styles were found and added, returns `False` otherwise."""
         has_parsed = False
         if hasattr(element, "Representation"):
             for representation in element.Representation.Representations:
@@ -104,7 +108,7 @@ class MaterialCreator:
                     has_parsed = True
         return has_parsed
 
-    def parse_representation(self, representation):
+    def parse_representation(self, representation: ifcopenshell.entity_instance) -> bool:
         has_parsed = False
         representation_items = self.resolve_all_stylable_representation_items(representation)
         for item in representation_items:
@@ -112,9 +116,9 @@ class MaterialCreator:
                 has_parsed = True
         return has_parsed
 
-    def parse_representation_item(self, item):
+    def parse_representation_item(self, item: ifcopenshell.entity_instance) -> bool:
         if not item.StyledByItem:
-            return
+            return False
         style_ids = []
         styles = list(item.StyledByItem[0].Styles)
         while styles:
@@ -124,11 +128,12 @@ class MaterialCreator:
             elif style.is_a("IfcPresentationStyleAssignment"):
                 styles.extend(style.Styles)
         if not style_ids:
-            return
+            return False
         for style_id in style_ids:
             material = self.styles[style_id]
 
-            def get_ifc_coordinate(material):
+            def get_ifc_coordinate(material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+                """returns IfcTextureCoordinate"""
                 texture_style = tool.Style.get_texture_style(material)
                 if not texture_style:
                     return
@@ -149,7 +154,7 @@ class MaterialCreator:
                 self.mesh.materials.append(material)
         return True
 
-    def assign_material_slots_to_faces(self):
+    def assign_material_slots_to_faces(self) -> None:
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
         if len(self.mesh.materials) == 1:
@@ -157,8 +162,12 @@ class MaterialCreator:
         material_to_slot = {}
 
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
-            for i, style_id in enumerate(self.mesh["ios_materials"]):
-                slot_index = self.mesh.materials.find(self.styles[style_id].name)
+            for i, style_or_material_id in enumerate(self.mesh["ios_materials"]):
+                if style_or_material_id in self.styles:
+                    blender_material = self.styles[style_or_material_id]
+                else:
+                    blender_material = self.materials[style_or_material_id]
+                slot_index = self.mesh.materials.find(blender_material.name)
                 material_to_slot[i] = slot_index
 
             material_index = [
@@ -166,7 +175,10 @@ class MaterialCreator:
             ]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
-    def resolve_all_stylable_representation_items(self, representation):
+    def resolve_all_stylable_representation_items(
+        self, representation: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
+        """returns list of resolved IfcRepresentationItems"""
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
@@ -187,7 +199,7 @@ class IfcImporter:
     def __init__(self, ifc_import_settings):
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
-        self.file = None
+        self.file: ifcopenshell.file = None
         self.context_settings = []
         self.gross_context_settings = []
         self.contexts = []
@@ -1818,12 +1830,13 @@ class IfcImporter:
             polyline.points[-1].co = mathutils.Vector(v2)
         return curve
 
-    def create_mesh(self, element, shape):
+    def create_mesh(self, element: ifcopenshell.entity_instance, shape) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
-                geometry = shape.geometry
+                # shape is ifcopenshell_wrapper.TriangulationElement
+                geometry: ifcopenshell_wrapper.Triangulation = shape.geometry
             else:
-                geometry = shape
+                geometry: ifcopenshell_wrapper.Triangulation = shape
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name(geometry))
 
