@@ -843,7 +843,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
         # Recreate decompositions
         tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
-        OverrideDuplicateMove.handle_linked_aggregates(old_to_new)
+        OverrideDuplicateMove.remove_linked_aggregate_data(old_to_new)
         blenderbim.bim.handler.refresh_ui_data()
         return old_to_new
 
@@ -896,25 +896,21 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 if entity in old_to_new.keys():
                     core.remove_connection(tool.Geometry, connection=connection)
 
-    @staticmethod
-    def handle_linked_aggregates(old_to_new):
+    def remove_linked_aggregate_data(old_to_new):
         for old, new in old_to_new.items():
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
-                old_aggregate = ifcopenshell.util.element.get_aggregate(old)
-                new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                if old_aggregate == new_aggregate:
-                    parts = ifcopenshell.util.element.get_parts(new_aggregate)
-                    if parts:
-                        index = DuplicateMoveLinkedAggregate.get_max_index(parts)
-                        index += 1
-                        pset = tool.Ifc.get().by_id(pset['id'])
-                        ifcopenshell.api.run(
-                            "pset.edit_pset",
-                            tool.Ifc.get(),
-                            pset=pset,
-                            properties={"Index": index},
-                        )
+                pset = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+                
+            if new[0].is_a("IfcElementAssembly"):
+                linked_aggregate_group = [
+                    r.RelatingGroup
+                    for r in getattr(new[0], "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                ]
+                tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], product=new[0])
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -974,15 +970,15 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             obj.select_set(True)
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
-                index = DuplicateMoveLinkedAggregate.get_max_index(parts)
+                index = get_max_index(parts)
                 add_linked_aggregate_pset(element, index)
                 index +=1
                 for part in parts:
                     if part.is_a("IfcElementAssembly"):
                         select_objects_and_add_data(part)
                     else:
-                        add_linked_aggregate_pset(part, index)
-                        index += 1
+                        index = add_linked_aggregate_pset(part, index)
+                        # index += 1
                         
                     obj = tool.Ifc.get_object(part)
                     obj.select_set(True)
@@ -1002,6 +998,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     pset=pset,
                     properties={"Index": index},
                 )
+
+                index += 1
             else:
                 pass
 
@@ -1042,7 +1040,39 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     if re.findall(pattern2, new_obj.name):
                         split_name = new_obj.name.split(".")
                         new_obj.name = split_name[0] + "_" + number
+                        
+        def get_max_index(parts):
+            psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts]
+            index = [i['Index'] for i in psets if i]
+            if len(index) > 0:
+                index = max(index)
+                return index
+            else:
+                return 0
 
+        def copy_linked_aggregate_data(old_to_new):
+            for old, new in old_to_new.items():
+                pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
+                if pset:
+                    new_pset = ifcopenshell.api.run(
+                        "pset.add_pset", tool.Ifc.get(), product=new[0], name=self.pset_name
+                    )
+            
+                    ifcopenshell.api.run(
+                        "pset.edit_pset",
+                        tool.Ifc.get(),
+                        pset=new_pset,
+                        properties={"Index": pset["Index"]},
+                    )
+                
+                if new[0].is_a("IfcElementAssembly"):
+                    linked_aggregate_group = [
+                        r.RelatingGroup
+                        for r in getattr(old, "HasAssignments", []) or []
+                        if r.is_a("IfcRelAssignsToGroup")
+                        if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                    ]
+                    tool.Ifc.run("group.assign_group", group=linked_aggregate_group[0], products=new)
              
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
@@ -1063,28 +1093,18 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         select_objects_and_add_data(selected_element)
 
         old_to_new = OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context, linked=True)
+        
+        tool.Root.recreate_aggregate(old_to_new)
+
+        copy_linked_aggregate_data(old_to_new)
 
         custom_incremental_naming_for_element_assembly(old_to_new)
         
-        # Recreate aggregate relationship
-        for old in old_to_new.keys():
-            if old.is_a("IfcElementAssembly"):
-                tool.Root.recreate_aggregate(old_to_new)
-
         blenderbim.bim.handler.refresh_ui_data()
 
         return old_to_new
 
     
-    @staticmethod
-    def get_max_index(parts):
-        psets = [ifcopenshell.util.element.get_pset(p, "BBIM_Linked_Aggregate") for p in parts]
-        index = [i['Index'] for i in psets if i]
-        if len(index) > 0:
-            index = max(index)
-            return index
-        else:
-            return 0
         
 
 
@@ -1176,8 +1196,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 obj.name = original_names[group][index]
             except:
                 return
-            
-            
 
         def get_element_assembly(element):
             if element.is_a("IfcElementAssembly"):
