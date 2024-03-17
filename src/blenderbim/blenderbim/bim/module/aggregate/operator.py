@@ -46,7 +46,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
         if self.relating_object:
             element = tool.Ifc.get().by_id(self.relating_object)
             if element.IsDecomposedBy:
-                relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+                relating_obj = tool.Ifc.get_object(element)
             else:
                 assembly = element.Decomposes[0].RelatingObject
                 relating_obj = tool.Ifc.get_object(assembly)
