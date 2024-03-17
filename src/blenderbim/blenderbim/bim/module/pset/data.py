@@ -125,9 +125,12 @@ class ObjectQtosData(Data):
 
     @classmethod
     def load(cls):
-        cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object), qtos_only=True)}
+        cls.data = {
+            "qtos": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object), qtos_only=True),
+            "inherited_qsets": cls.inherited_qsets(),
+        }
         cls.is_loaded = True
-    
+
     @classmethod
     def inherited_qsets(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
@@ -136,7 +139,8 @@ class ObjectQtosData(Data):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
             return cls.psetqtos(element_type, qtos_only=True)
-        
+
+
 class MaterialPsetsData(Data):
     data = {}
     is_loaded = False

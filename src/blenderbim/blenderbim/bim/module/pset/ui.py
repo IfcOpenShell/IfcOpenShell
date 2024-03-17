@@ -33,7 +33,6 @@ from blenderbim.bim.module.pset.data import (
     GroupPsetData,
     ProfilePsetsData,
     WorkSchedulePsetsData,
-
 )
 
 
@@ -248,11 +247,12 @@ class BIM_PT_object_qtos(Panel):
 
         for qto in ObjectQtosData.data["qtos"]:
             draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
-        
+
         if ObjectQtosData.data["inherited_qsets"]:
             self.layout.label(text="Inherited Qsets:", icon="FILE_PARENT")
             for qset in ObjectQtosData.data["inherited_qsets"]:
                 draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object")
+
 
 class BIM_PT_material_psets(Panel):
     bl_label = "Material Property Sets"
@@ -543,8 +543,6 @@ class BIM_PT_group_psets(Panel):
 
         for pset in GroupPsetData.data["psets"]:
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Group")
-
-
 
 
 class BIM_PT_profile_psets(Panel):
