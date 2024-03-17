@@ -201,17 +201,87 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     bl_label = "Select Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    bl_description = (
+        "Selects the part's aggregate empties.\n\n"
+        + "SHIFT+CLICK - selects all the aggregate empties and all the parts within"
+    )
+
+    select_all: bpy.props.BoolProperty(name="Select All Parts", default=False, options={"SKIP_SAVE"})
+
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.select_all = True
+        return self.execute(context)    
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj) or context.active_object
-        aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
-        aggregate_obj = tool.Ifc.get_object(aggregate)
-        if aggregate_obj in context.selectable_objects:
-            aggregate_obj.select_set(True)
-            bpy.context.view_layer.objects.active = aggregate_obj
+        #obj = bpy.data.objects.get(self.obj) or context.active_object
+        parts = []
+        for obj in context.selected_objects:
+            el = tool.Ifc.get_entity(obj)
+            if el:
+                aggregate = ifcopenshell.util.element.get_aggregate(el)
+                if aggregate:
+                    parts.append(aggregate)
+                    obj.select_set(False)
+                else:
+                    pass
+            if not el:
+               obj.select_set(False) 
+
+        #aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
+        #aggregate_obj = tool.Ifc.get_object(aggregate)
+        if self.select_all:
+            parts_objs = []
+            for part in parts:
+                if part.IsDecomposedBy:
+                    for subpart in part.IsDecomposedBy[0].RelatedObjects:
+                        parts.append(subpart)
+                parts_objs.append(part)
+
+            for element in parts_objs:
+                obj = tool.Ifc.get_object(element)
+                if obj:
+                    obj.select_set(True)
+        else:
+            for aggregate_element in parts:
+                aggregate_obj = tool.Ifc.get_object(aggregate_element)
+                aggregate_obj.select_set(True)
+                bpy.context.view_layer.objects.active = aggregate_obj
         return {"FINISHED"}
 
+
+'''
+    def execute(self, context):
+        self.file = IfcStore.get_file()
+        #obj = bpy.data.objects.get(self.obj) or context.active_object
+        parts = []
+        for obj in context.selected_objects:
+            el = tool.Ifc.get_entity(obj)
+            if el:
+                aggregate = ifcopenshell.util.element.get_aggregate(el)
+                if aggregate:
+                    parts.append(aggregate)
+                else:
+                    pass
+                    
+            
+        #parts = list(ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj)))
+        parts_objs = []
+        for part in parts:
+            if part.IsDecomposedBy:
+                for subpart in part.IsDecomposedBy[0].RelatedObjects:
+                    parts.append(subpart)
+            parts_objs.append(part)
+
+        for element in parts_objs:
+             obj = tool.Ifc.get_object(element)
+             if obj:
+                obj.select_set(True)
+        
+        return {"FINISHED"}
+'''
 
 class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
     bl_idname = "bim.add_part_to_object"
@@ -271,6 +341,18 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
     bl_idname = "bim.select_linked_aggregates"
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Selects the part's aggregate empties.\n\n"
+        + "SHIFT+CLICK - selects all the aggregate empties and all the parts within"
+    )
+
+    select_all: bpy.props.BoolProperty(name="Select All Parts", default=False, options={"SKIP_SAVE"})
+
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.select_all = True
+        return self.execute(context)    
 
     def _execute(self, context):
         element = tool.Ifc.get_entity(bpy.context.active_object)
@@ -290,9 +372,26 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
         for obj in context.selected_objects:
             obj.select_set(False)
             
-        for rel in linked_aggregate_group[0].IsGroupedBy or []:
-            for element in rel.RelatedObjects:
-                obj = tool.Ifc.get_object(element)
-                obj.select_set(True)
+
+        group_rel = linked_aggregate_group[0].IsGroupedBy or []
+        for groupLink in group_rel:
+            parts = list(groupLink.RelatedObjects)
+            if self.select_all:
+                parts_objs = []
+                for part in parts:
+                    if part.IsDecomposedBy:
+                        for subpart in part.IsDecomposedBy[0].RelatedObjects:
+                            parts.append(subpart)
+                    parts_objs.append(part)
+
+                for element in parts_objs:
+                    obj = tool.Ifc.get_object(element)
+                    if obj:
+                        obj.select_set(True)
+            else:
+                for element in parts:
+                    obj = tool.Ifc.get_object(element)
+                    obj.select_set(True)
 
         return {"FINISHED"}
+
