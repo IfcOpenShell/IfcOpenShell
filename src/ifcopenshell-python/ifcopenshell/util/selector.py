@@ -25,8 +25,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.schema
 from decimal import Decimal
-from typing import Optional
+from typing import Optional, Any, Union
 
 
 filter_elements_grammar = lark.Lark(
@@ -258,8 +259,8 @@ def format(query):
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
-def get_element_value(element, query):
-    keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:
+    keys: list[str] = GetElementTransformer().transform(get_element_grammar.parse(query))
     return Selector.get_element_value(element, keys)
 
 
@@ -309,7 +310,12 @@ def filter_elements(
     return transformer.elements
 
 
-def set_element_value(ifc_file, element, query, value):
+def set_element_value(
+    ifc_file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    query: Union[str, list[str]],
+    value: Optional[str],
+) -> Union[ifcopenshell.entity_instance, None]:
     if isinstance(query, (list, tuple)):
         keys = query
     else:
@@ -885,7 +891,7 @@ class Selector:
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
-    def get_element_value(cls, element, keys):
+    def get_element_value(cls, element: ifcopenshell.entity_instance, keys: list[str]) -> Any:
         value = element
         for key in keys:
             if value is None:

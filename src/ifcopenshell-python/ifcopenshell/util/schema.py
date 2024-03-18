@@ -21,6 +21,7 @@ import json
 import time
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
 # In this simple implementation, we only support 2X3<->4 right now
@@ -28,7 +29,7 @@ import ifcopenshell.util.attribute
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 
-def get_fallback_schema(version):
+def get_fallback_schema(version: str) -> str:
     """fallback to the schema version we do have docs and mapping for,
     needed to support IFC versions like 4X3_RC1, 4X1 etc"""
     if version.startswith("IFC4X3"):
@@ -38,7 +39,7 @@ def get_fallback_schema(version):
     return version
 
 
-def is_a(entity, ifc_class):
+def is_a(entity: ifcopenshell.entity_instance, ifc_class: str) -> bool:
     ifc_class = ifc_class.upper()
     if entity.name_uc() == ifc_class:
         return True
@@ -59,7 +60,9 @@ def get_subtypes(entity):
     return get_classes(entity)
 
 
-def reassign_class(ifc_file, element, new_class):
+def reassign_class(
+    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, new_class: str
+) -> ifcopenshell.entity_instance:
     """
     Attempts to change the class (entity name) of `element` to `new_class` by
     removing element and recreating a similar instance of type `new_class`
@@ -74,7 +77,7 @@ def reassign_class(ifc_file, element, new_class):
     It's unlikely that this affects real-world usage of this function.
     """
 
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
     try:
         declaration = schema.declaration_by_name(new_class)
     except:
@@ -116,11 +119,11 @@ def reassign_class(ifc_file, element, new_class):
 
 
 class BatchReassignClass:
-    def __init__(self, file):
+    def __init__(self, file: ifcopenshell.file):
         self.file = file
         self.purge()
 
-    def reassign(self, element, new_class):
+    def reassign(self, element: ifcopenshell.entity_instance, new_class: str) -> ifcopenshell.entity_instance:
         try:
             new_element = self.file.create_entity(new_class)
         except:
@@ -150,9 +153,12 @@ class BatchReassignClass:
             self.file.remove(element)
         self.purge()
 
-    def purge(self):
-        self.replacements = {}
-        self.to_delete = set()
+    def purge(self) -> None:
+        # mapping {inverse: {attribute_index: {old_element: new_element} } }
+        self.replacements: dict[
+            ifcopenshell.entity_instance, dict[int, dict[ifcopenshell.entity_instance, ifcopenshell.entity_instance]]
+        ] = {}
+        self.to_delete: set[ifcopenshell.entity_instance] = set()
 
 
 class Migrator:
@@ -217,7 +223,7 @@ class Migrator:
             "User": None,
         }
 
-    def migrate(self, element, new_file):
+    def migrate(self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
         if element.id() == 0:
             return new_file.create_entity(element.is_a(), element.wrappedValue)
         try:
