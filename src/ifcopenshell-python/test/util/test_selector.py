@@ -20,6 +20,7 @@ import pytest
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.selector as subject
+import numpy as np
 
 
 class TestFormat():
