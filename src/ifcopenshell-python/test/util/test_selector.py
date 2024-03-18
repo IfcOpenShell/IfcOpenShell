@@ -267,6 +267,19 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert new_set == original_set
 
 
+class TestSetElementValue(test.bootstrap.IFC4):
+    def test_set_xyz_coordinates(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element, is_si=False)
+        for coord, value in zip("xyz", ("5", "10", "15")):
+            subject.set_element_value(self.file, element, coord, value)
+        matrix = np.eye(4)
+        matrix[:, 3] = (5, 10, 15, 1)
+        assert np.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
+
+
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
