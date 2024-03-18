@@ -18,6 +18,7 @@
 
 import re
 import lark
+import ifcopenshell.api
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
@@ -357,7 +358,19 @@ def set_element_value(
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
-            return
+            # TODO: add support
+            if key in ("easting", "northing", "elevation"):
+                return
+
+            placement = getattr(element, "ObjectPlacement", None)
+            if not placement:
+                return
+            matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            coord_i = "xyz".index(key)
+            matrix[coord_i][3] = float(value) if value else 0.0
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
+            )
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
