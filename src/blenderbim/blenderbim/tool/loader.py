@@ -36,7 +36,7 @@ from pathlib import Path
 
 class Loader(blenderbim.core.tool.Loader):
     @classmethod
-    def create_project_collection(self, name):
+    def create_project_collection(cls, name: str) -> bpy.types.Collection:
         project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project_obj.BIMObjectProperties.collection
         for collection in project_collection.children:

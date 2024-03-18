@@ -183,7 +183,7 @@ class sqlite(file):
             return True
         return False
 
-    def get_geometry(self, ids):
+    def get_geometry(self, ids: list[int]) -> dict[str, dict]:
         import numpy as np
 
         ids_csv = ",".join(map(str, ids))
