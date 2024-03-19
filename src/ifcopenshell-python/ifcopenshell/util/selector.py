@@ -18,6 +18,7 @@
 
 import re
 import lark
+import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util
 import ifcopenshell.util.fm
@@ -362,13 +363,14 @@ def set_element_value(
             if key in ("easting", "northing", "elevation"):
                 return
 
-            placement = getattr(element, "ObjectPlacement", None)
-            if not placement:
-                return
-            matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-            coord_i = "xyz".index(key)
+            placement = element.ObjectPlacement
+            if placement is None:
+                matrix = np.eye(4)
+            else:
+                matrix = ifcopenshell.util.placement.get_local_placement(placement)
 
             # check if value is within tolerance to avoid api calls
+            coord_i = "xyz".index(key)
             prev_value = matrix[coord_i][3]
             new_value = float(value) if value else 0.0
             TOLERANCE = 1.0e-5
