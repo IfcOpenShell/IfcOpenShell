@@ -1294,10 +1294,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
                 element_aggregate = ifcopenshell.util.element.get_aggregate(element)
 
-                # selected_obj = tool.Ifc.get_object(base_instance)
-                # selected_matrix = selected_obj.matrix_world
-                # object_duplicate = tool.Ifc.get_object(element)
-                # duplicate_matrix = object_duplicate.matrix_world.decompose()
                 selected_matrix, duplicate_matrix = get_original_matrix(element, base_instance)
                 
                 original_names = get_original_names(element)
@@ -1312,12 +1308,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                 old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
 
                 set_new_matrix(selected_matrix, duplicate_matrix, old_to_new)
-                # for old, new in old_to_new.items():
-                #     new_obj = tool.Ifc.get_object(new[0])
-                #     new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
-                #     matrix_diff = Matrix.inverted(selected_matrix) @ new_obj.matrix_world
-                #     new_obj_matrix = new_base_matrix @ matrix_diff
-                #     new_obj.matrix_world = new_obj_matrix
                     
                 for old, new in old_to_new.items():
                     if element_aggregate and new[0].is_a("IfcElementAssembly"):
