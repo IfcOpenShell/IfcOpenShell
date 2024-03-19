@@ -33,6 +33,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
@@ -797,7 +798,7 @@ class IfcImporter:
                 continue
             self.create_element_type(element_type)
 
-    def create_element_type(self, element):
+    def create_element_type(self, element: ifcopenshell.entity_instance) -> None:
         self.ifc_import_settings.logger.info("Creating object %s", element)
         mesh = None
         if self.ifc_import_settings.should_load_geometry:
@@ -864,7 +865,9 @@ class IfcImporter:
         self.create_generic_elements(self.gross_elements)
         self.context_settings = tmp
 
-    def create_generic_shape(self, element):
+    def create_generic_shape(
+        self, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell_wrapper.TriangulationElement, None]:
         for settings in self.context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element)
@@ -1690,7 +1693,9 @@ class IfcImporter:
                 continue
             self.create_style(style)
 
-    def create_style(self, style, blender_material=None):
+    def create_style(
+        self, style: ifcopenshell.entity_instance, blender_material: Optional[bpy.types.Material] = None
+    ) -> None:
         if not blender_material:
             name = style.Name or str(style.id())
             blender_material = bpy.data.materials.new(name)
