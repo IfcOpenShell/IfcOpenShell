@@ -326,6 +326,10 @@ class BIM_PT_links(Panel):
             row.label(text="No Object Selected", icon="QUESTION")
             return
 
+        row = self.layout.row(align=True)
+        row.label(text="")
+        row.operator("bim.append_inspected_linked_element", icon="APPEND_BLEND", text="")
+
         for name, value in LinksData.linked_data["attributes"].items():
             row = self.layout.row(align=True)
             row.label(text=name)

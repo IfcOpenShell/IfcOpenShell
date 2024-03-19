@@ -21,6 +21,7 @@ from . import ui, prop, operator, workspace, gizmo, decorator
 
 classes = (
     operator.AppendEntireLibrary,
+    operator.AppendInspectedLinkedElement,
     operator.AppendLibraryElement,
     operator.AppendLibraryElementByQuery,
     operator.AssignLibraryDeclaration,
