@@ -27,6 +27,7 @@ import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.aggregate
