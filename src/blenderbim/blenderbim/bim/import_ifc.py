@@ -1622,7 +1622,11 @@ class IfcImporter:
             ] + [
                 r
                 for r in self.file.by_type("IfcRelNests")
-                if (r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType"))
+                if (
+                    r.RelatingObject.is_a("IfcElement")
+                    or r.RelatingObject.is_a("IfcElementType")
+                    or (r.RelatingObject.is_a("IfcPositioningElement") and not r.RelatingObject.is_a("IfcGrid"))
+                )
                 and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
 
@@ -1733,8 +1737,8 @@ class IfcImporter:
         elif getattr(element, "Nests", None) and not element.is_a("IfcPort"):
             nest = ifcopenshell.util.element.get_nest(element)
             return self.collections[nest.GlobalId].objects.link(obj)
-        else:
-            return self.place_object_in_spatial_decomposition_collection(element, obj)
+
+        return self.place_object_in_spatial_decomposition_collection(element, obj)
 
     def place_object_in_spatial_decomposition_collection(
         self, element: ifcopenshell.entity_instance, obj: bpy.types.Object
