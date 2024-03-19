@@ -367,7 +367,15 @@ def set_element_value(
                 return
             matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
             coord_i = "xyz".index(key)
-            matrix[coord_i][3] = float(value) if value else 0.0
+
+            # check if value is within tolerance to avoid api calls
+            prev_value = matrix[coord_i][3]
+            new_value = float(value) if value else 0.0
+            TOLERANCE = 1.0e-5
+            if new_value + TOLERANCE > prev_value > new_value - TOLERANCE:
+                return
+
+            matrix[coord_i][3] = new_value
             ifcopenshell.api.run(
                 "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
             )
