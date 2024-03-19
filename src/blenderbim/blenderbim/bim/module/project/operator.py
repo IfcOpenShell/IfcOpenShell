@@ -1514,6 +1514,7 @@ class LoadLinkedProject(bpy.types.Operator):
         obj["guids"] = list(guids)
         obj["guid_ids"] = list(guid_ids)
         obj["db"] = self.db_filepath
+        obj["ifc_filepath"] = self.filepath
 
         self.collection.objects.link(obj)
 
@@ -1643,6 +1644,42 @@ class QueryLinkedElement(bpy.types.Operator):
         self.mouse_x = event.mouse_region_x
         self.mouse_y = event.mouse_region_y
         return self.execute(context)
+
+
+class AppendInspectedLinkedElement(AppendLibraryElement):
+    bl_idname = "bim.append_inspected_linked_element"
+    bl_label = "Append Inspected Linked Element"
+    bl_description = "Append inspected linked element"
+    bl_options = {"REGISTER"}
+
+    def _execute(self, context):
+        from blenderbim.bim.module.project.data import LinksData
+
+        if not LinksData.linked_data:
+            self.report({"INFO"}, "No linked element found.")
+            return {"CANCELLED"}
+
+        guid = LinksData.linked_data["attributes"].get("GlobalId")
+        if guid is None:
+            self.report({"INFO"}, "Cannot find Global Id for element.")
+            return {"CANCELLED"}
+
+        queried_obj = context.scene.BIMProjectProperties.queried_obj
+        ifc_file = ifcopenshell.open(queried_obj["ifc_filepath"])
+        element_to_append = ifc_file.by_guid(guid)
+        element = ifcopenshell.api.run(
+            "project.append_asset",
+            tool.Ifc.get(),
+            library=ifc_file,
+            element=element_to_append,
+        )
+        self.import_product_from_ifc(element, context)
+        element_type = ifcopenshell.util.element.get_type(element)
+        obj = tool.Ifc.get_object(element_type)
+        if obj is None:
+            self.import_type_from_ifc(element_type, context)
+
+        return {"FINISHED"}
 
 
 class EnableCulling(bpy.types.Operator):
