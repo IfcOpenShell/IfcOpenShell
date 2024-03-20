@@ -907,8 +907,17 @@ class UnloadLink(bpy.types.Operator):
             if scene.library and Path(scene.library.filepath) == filepath:
                 bpy.data.scenes.remove(scene)
 
-        link = context.scene.BIMProjectProperties.links.get(self.filepath)
-        link.is_loaded = False
+        links = context.scene.BIMProjectProperties.links
+        links.get(self.filepath).is_loaded = False
+
+        if not any([l.is_loaded for l in links]):
+            ProjectDecorator.uninstall()
+        # we make sure we don't draw queried object from the file that was just unlinked
+        elif queried_obj := context.scene.BIMProjectProperties.queried_obj:
+            queried_filepath = Path(queried_obj["ifc_filepath"])
+            if queried_filepath == filepath:
+                ProjectDecorator.uninstall()
+
         return {"FINISHED"}
 
 
