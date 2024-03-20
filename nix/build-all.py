@@ -76,7 +76,7 @@ PROJECT_NAME = "IfcOpenShell"
 USE_CURRENT_PYTHON_VERSION = os.getenv("USE_CURRENT_PYTHON_VERSION")
 ADD_COMMIT_SHA = os.getenv("ADD_COMMIT_SHA")
 
-PYTHON_VERSIONS = ["3.7.13", "3.8.13", "3.9.11", "3.10.3", "3.11.7", "3.12.1"]
+PYTHON_VERSIONS = ["3.7.13", "3.8.13", "3.9.11", "3.10.3", "3.11.8", "3.12.1"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.5.3"
@@ -254,6 +254,11 @@ if not os.path.exists(LOG_FILE):
     open(LOG_FILE, "w").close()
 logger.info(f"using command log file '{LOG_FILE}'")
 
+# Causing havoc in python 3.11 build
+try:
+    del os.environ['__PYVENV_LAUNCHER__']
+except: pass
+
 def run(cmds, cwd=None, can_fail=False):
 
     """
@@ -284,8 +289,9 @@ if platform.system() == "Darwin":
         # Apparently not supported
         PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) >= (3, 7)]
     if run(["sw_vers", "-productVersion"]) < "10.16":
-        # Apparently not supported
-        PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
+        # This is now solved with the '__PYVENV_LAUNCHER__' hack
+        # PYTHON_VERSIONS = [pv for pv in PYTHON_VERSIONS if tuple(map(int, pv.split("."))) < (3, 11)]
+        pass
 
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
