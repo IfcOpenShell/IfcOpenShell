@@ -894,13 +894,19 @@ class UnloadLink(bpy.types.Operator):
         self.filepath = self.filepath.replace("\\", "/")
         filepath = self.filepath
         if not os.path.isabs(filepath):
-            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath)).replace("\\", "/")
+            filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), filepath))
+        filepath = Path(filepath)
+        if filepath.suffix.lower() == ".ifc":
+            filepath = filepath.with_suffix(".ifc.cache.blend")
+
         for collection in context.scene.collection.children:
-            if collection.library and collection.library.filepath.replace("\\", "/") == filepath:
+            if collection.library and Path(collection.library.filepath) == filepath:
                 context.scene.collection.children.unlink(collection)
+
         for scene in bpy.data.scenes:
-            if scene.library and scene.library.filepath.replace("\\", "/") == filepath:
+            if scene.library and Path(scene.library.filepath) == filepath:
                 bpy.data.scenes.remove(scene)
+
         link = context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = False
         return {"FINISHED"}
