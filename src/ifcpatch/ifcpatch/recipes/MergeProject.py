@@ -18,10 +18,12 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
+from typing import Union
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, filepath=None):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepath: str):
         """Merge two IFC models into one
 
         Note that other than combining the two IfcProject elements into one, no
@@ -46,18 +48,25 @@ class Patcher:
 
     def patch(self):
         source = ifcopenshell.open(self.filepath)
-        self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
-        self.added_contexts = set()
+        self.existing_contexts: list[ifcopenshell.entity_instance] = self.file.by_type(
+            "IfcGeometricRepresentationContext"
+        )
+        self.added_contexts: set[ifcopenshell.entity_instance] = set()
+
         original_project = self.file.by_type("IfcProject")[0]
         merged_project = self.file.add(source.by_type("IfcProject")[0])
+
         for element in source.by_type("IfcGeometricRepresentationContext"):
             new = self.file.add(element)
             self.added_contexts.add(new)
+
         for element in source:
             self.file.add(element)
+
         for inverse in self.file.get_inverse(merged_project):
             ifcopenshell.util.element.replace_attribute(inverse, merged_project, original_project)
         self.file.remove(merged_project)
+
         self.reuse_existing_contexts()
 
     def reuse_existing_contexts(self):
@@ -73,7 +82,9 @@ class Patcher:
         for added_context in to_delete:
             ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
-    def get_equivalent_existing_context(self, added_context):
+    def get_equivalent_existing_context(
+        self, added_context: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for context in self.existing_contexts:
             if context.is_a() != added_context.is_a():
                 continue
