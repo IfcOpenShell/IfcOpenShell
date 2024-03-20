@@ -272,9 +272,6 @@ class BIM_PT_project_library(Panel):
             row.label(text="No Library Loaded", icon="ASSET_MANAGER")
 
     def draw_library_ul(self):
-        self.layout.use_property_split = False
-        self.layout.prop(self.props, "library_display_elements")
-        self.layout.use_property_split = True
         if not self.props.library_elements:
             row = self.layout.row()
             row.label(text="No Assets Found", icon="ERROR")
