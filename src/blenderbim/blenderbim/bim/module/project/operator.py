@@ -188,8 +188,6 @@ class RefreshLibrary(bpy.types.Operator):
         types = IfcStore.library_file.wrapped_data.types_with_super()
 
         element_classes = ["IfcTypeProduct", "IfcMaterial", "IfcCostSchedule", "IfcProfileDef"]
-        if self.props.library_display_elements:
-            element_classes += ["IfcElement"]
         for importable_type in sorted(element_classes):
             if importable_type in types:
                 new = self.props.library_elements.add()
@@ -438,6 +436,7 @@ class AppendLibraryElement(bpy.types.Operator):
         if element.is_a("IfcTypeProduct"):
             self.import_type_from_ifc(element, context)
         elif element.is_a("IfcProduct"):
+            # NOTE: not used as UI doesn't allow appending non-types
             self.import_product_from_ifc(element, context)
             element_type = ifcopenshell.util.element.get_type(element)
             obj = tool.Ifc.get_object(element_type)
