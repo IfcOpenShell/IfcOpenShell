@@ -38,8 +38,9 @@ import blenderbim.tool as tool
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
+from blenderbim.tool.loader import OBJECT_DATA_TYPE
 from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
-from typing import Dict, Union, Optional
+from typing import Dict, Union, Optional, Any
 
 
 class MaterialCreator:
@@ -855,10 +856,10 @@ class IfcImporter:
             self.create_product(element, mesh=mesh)
         print("Done creating geometry")
 
-    def create_spatial_elements(self):
-        self.create_generic_elements(self.spatial_elements)
+    def create_spatial_elements(self) -> None:
+        self.create_generic_elements(self.spatial_elements, unselectable=True)
 
-    def create_elements(self):
+    def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
         tmp = self.context_settings
         self.context_settings = self.gross_context_settings
@@ -876,7 +877,7 @@ class IfcImporter:
             except:
                 pass
 
-    def create_generic_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
+    def create_generic_elements(self, elements: set[ifcopenshell.entity_instance], unselectable=False) -> None:
         if isinstance(self.file, ifcopenshell.sqlite):
             return self.create_generic_sqlite_elements(elements)
 
@@ -1108,7 +1109,12 @@ class IfcImporter:
         self.link_element(product, obj)
         return product
 
-    def create_product(self, element, shape=None, mesh=None):
+    def create_product(
+        self,
+        element: ifcopenshell.entity_instance,
+        shape: Optional[Any] = None,
+        mesh: Optional[OBJECT_DATA_TYPE] = None,
+    ) -> Union[bpy.types.Object, None]:
         if element is None:
             return
 
@@ -1833,7 +1839,7 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
-    def create_curve(self, element, shape):
+    def create_curve(self, element: ifcopenshell.entity_instance, shape) -> bpy.types.Curve:
         if hasattr(shape, "geometry"):
             geometry = shape.geometry
         else:

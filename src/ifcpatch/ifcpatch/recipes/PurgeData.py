@@ -17,10 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import ifcopenshell
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger):
         """Purge IFC properties, relationships, and other data
 
         In some rare cases (i.e. "resetting" a model or for security purposes)
