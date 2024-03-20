@@ -891,10 +891,15 @@ class IfcImporter:
             elements -= products
 
         total = len(elements)
+        objects = set()
         for i, element in enumerate(elements):
             if i % 250 == 0:
                 print("{} / {} elements processed ...".format(i, total))
-            self.create_product(element)
+            objects.add(self.create_product(element))
+
+        if unselectable:
+            for obj in objects:
+                obj.hide_select = True
 
     def create_generic_sqlite_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
         self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
@@ -1565,6 +1570,7 @@ class IfcImporter:
             "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
         )
         obj = self.create_product(self.project["ifc"])
+        obj.hide_select = True
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
         obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
