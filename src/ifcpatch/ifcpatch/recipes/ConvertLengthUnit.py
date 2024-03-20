@@ -22,16 +22,17 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, unit="METERS"):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, unit: str = "METERS"):
         """Converts the length unit of a model to the specified unit
 
         Allowed metric units include METERS, MILLIMETERS, CENTIMETERS, etc.
         Allowed imperial units include INCHES, FEET, MILES.
 
-        :param unit: The name of the desired unit.
+        :param unit: The name of the desired unit, defaults to "METERS"
         :type unit: str
 
         Example:
@@ -48,7 +49,7 @@ class Patcher:
         self.file = file
         self.logger = logger
         self.unit = unit
-        self.file_patched: ifcopenshell.file = None
+        self.file_patched: ifcopenshell.file
 
     def patch(self):
         self.file_patched = ifcopenshell.util.unit.convert_file_length_units(self.file, self.unit)

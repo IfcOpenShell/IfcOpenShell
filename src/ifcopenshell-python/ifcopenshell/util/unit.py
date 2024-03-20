@@ -18,7 +18,7 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Tuple, Iterable, Any
+from typing import Tuple, Iterable, Any, Union, Literal
 
 import ifcopenshell
 import ifcopenshell.api
@@ -599,14 +599,14 @@ def calculate_unit_scale(ifc_file, unit_type="LENGTHUNIT"):
 
 
 def format_length(
-    value,
-    precision,
-    decimal_places=2,
+    value: float,
+    precision: float,
+    decimal_places: int = 2,
     suppress_zero_inches=True,
-    unit_system="imperial",
+    unit_system: Union[Literal["metric"], Literal["imperial"]] = "imperial",
     input_unit="foot",
     output_unit="foot",
-):
+) -> str:
     """Formats a length for readability and imperial formatting
 
     :param value: The value in meters if metric, or either decimal feet or
@@ -670,7 +670,7 @@ def format_length(
 def is_attr_type(
     content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
     ifc_unit_type_name: str,
-) -> ifcopenshell.ifcopenshell_wrapper.type_declaration | None:
+) -> Union[ifcopenshell.ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
     while hasattr(cur_decl, "declared_type") is True:
         cur_decl = cur_decl.declared_type()
