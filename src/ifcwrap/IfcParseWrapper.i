@@ -593,6 +593,15 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return f;
 	}
 
+	PyObject* get_identity_mapping(IfcParse::IfcFile* f) {
+		PyObject* pyDict = PyDict_New();
+		for (const auto& pair : f->getEntityFileMapCopy()) {
+			PyDict_SetItem(pyDict, pythonize(pair.first), pythonize(pair.second));
+		}
+
+		return pyDict;
+	}
+
 	const char* version() {
 		return IFCOPENSHELL_VERSION;
 	}

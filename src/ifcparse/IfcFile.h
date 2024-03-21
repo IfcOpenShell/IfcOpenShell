@@ -122,9 +122,9 @@ public:
 	static bool guid_map() { return guid_map_; }
 	static void guid_map(bool b) { guid_map_ = b; }
 
-private:
 	typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
+private:
 	bool parsing_complete_;
 	file_open_status good_ = file_open_status::SUCCESS;
 
@@ -275,6 +275,8 @@ public:
 	const IfcParse::declaration* ifcroot_type() const { return ifcroot_type_; }
 
 	void recalculate_id_counter();
+
+	entity_entity_map_t getEntityFileMapCopy() const;
 
 	IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id=-1);
 	void addEntities(aggregate_of_instance::ptr es);

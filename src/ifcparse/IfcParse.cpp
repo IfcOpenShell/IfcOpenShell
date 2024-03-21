@@ -1839,6 +1839,14 @@ void IfcFile::addEntities(aggregate_of_instance::ptr es) {
 	}
 }
 
+IfcFile::entity_entity_map_t IfcFile::getEntityFileMapCopy() const {
+	std::map<uint32_t, IfcUtil::IfcBaseClass*> copy_map;
+	for (const auto& pair : entity_file_map) {
+		copy_map[pair.first] = pair.second;
+	}
+	return copy_map;
+}
+
 IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id) {
 	if (id != -1 && byid.find((unsigned)id) != byid.end()) {
 		throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
