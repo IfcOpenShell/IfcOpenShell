@@ -21,6 +21,7 @@ import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.selector as subject
 import ifcopenshell.util.placement
+import ifcopenshell.util.pset
 import numpy as np
 
 
@@ -293,6 +294,10 @@ class TestSetElementValue(test.bootstrap.IFC4):
 
 
 class TestSelector(test.bootstrap.IFC4):
+    def test_selecting_from_specified_elements(self):
+        elements = [ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall") for _ in range(2)]
+        assert subject.Selector.parse(self.file, ".IfcWall", elements[:1]) == [elements[0]]
+
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
