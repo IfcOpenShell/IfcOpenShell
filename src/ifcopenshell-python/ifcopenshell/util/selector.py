@@ -711,7 +711,9 @@ class FacetTransformer(lark.Transformer):
 
 class Selector:
     @classmethod
-    def parse(cls, ifc_file, query, elements=None):
+    def parse(
+        cls, ifc_file: ifcopenshell.file, query: str, elements: Optional[list[ifcopenshell.entity_instance]] = None
+    ) -> list[ifcopenshell.entity_instance]:
         cls.file = ifc_file
         cls.elements = elements
         l = lark.Lark(
