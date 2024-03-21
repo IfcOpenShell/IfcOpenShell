@@ -66,6 +66,10 @@ class Patcher:
     def patch(self):
         context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
+
+        if not elements:
+            return
+
         settings = ifcopenshell.geom.settings()
         settings.set(settings.STRICT_TOLERANCE, True)
         settings.set_context_ids([context.id()])
