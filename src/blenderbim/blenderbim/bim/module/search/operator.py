@@ -131,7 +131,7 @@ class SelectFilterElements(bpy.types.Operator):
             text_data = bpy.data.texts.new(name)
             text_data.from_string(",".join(global_ids))
             filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
-            self.report({"INFO"}, f'List of Global Ids were saved to the text file "{name}" in the current .blend file')
+            self.report({"INFO"}, f'List of Global Ids was saved to the text file "{name}" in the current .blend file')
         else:
             filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
