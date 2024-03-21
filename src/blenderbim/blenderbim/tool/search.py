@@ -5,15 +5,17 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
+from blenderbim.bim.prop import BIMFacet
+from typing import Union, Literal
 
 
 class Search(blenderbim.core.tool.Search):
     @classmethod
-    def get_group_query(cls, group):
+    def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
     @classmethod
-    def get_filter_groups(cls, module):
+    def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection:
         if module == "search":
             return bpy.context.scene.BIMSearchProperties.filter_groups
         elif module == "csv":
@@ -24,13 +26,13 @@ class Search(blenderbim.core.tool.Search):
             return bpy.context.active_object.data.BIMCameraProperties.exclude_filter_groups
 
     @classmethod
-    def import_filter_query(cls, query, filter_groups):
+    def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
     @classmethod
-    def export_filter_query(cls, filter_groups):
+    def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection) -> str:
         query = []
         for filter_group in filter_groups:
             filter_group_query = []
@@ -87,13 +89,15 @@ class Search(blenderbim.core.tool.Search):
         return " + ".join(query)
 
     @classmethod
-    def get_comparison_and_value(cls, ifc_filter):
+    def get_comparison_and_value(
+        cls, ifc_filter: BIMFacet
+    ) -> Union[tuple[Literal["!="], str], tuple[Literal["="], str]]:
         if ifc_filter.value.startswith("!="):
             return ("!=", cls.wrap_value(ifc_filter, ifc_filter.value[2:].strip()))
         return ("=", cls.wrap_value(ifc_filter, ifc_filter.value.strip()))
 
     @classmethod
-    def wrap_value(cls, ifc_filter, value):
+    def wrap_value(cls, ifc_filter: BIMFacet, value: str) -> str:
         if value.startswith("/") and value.endswith("/"):
             return value
         elif value in ("NULL", "TRUE", "FALSE"):
@@ -101,7 +105,7 @@ class Search(blenderbim.core.tool.Search):
         return '"' + value.replace('"', '\\"') + '"'
 
     @classmethod
-    def from_selector_query(cls, query):
+    def from_selector_query(cls, query: str) -> list[ifcopenshell.entity_instance]:
         """Returns a list of products from a selector query"""
         return Selector().parse(tool.Ifc.get(), query)
 
