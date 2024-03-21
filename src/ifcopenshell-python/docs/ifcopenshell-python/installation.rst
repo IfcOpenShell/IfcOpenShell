@@ -38,9 +38,9 @@ the API.
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
    | Python 3.10 | py310-linux64_ | py310-win32_   | py310-win64_   | py310-macos64_    | py310-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | N/A               | py311-macosm164_    |
+   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | py311-macos64_    | py311-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | N/A               | py312-macosm164_    |
+   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | py312-macos64_    | py312-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
 
 .. _py37-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-e38eafd-linux64.zip
@@ -65,6 +65,8 @@ the API.
 .. _py38-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-e38eafd-macos64.zip
 .. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-e38eafd-macos64.zip
 .. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-e38eafd-macos64.zip
+.. _py311-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-e38eafd-macos64.zip
+.. _py312-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-e38eafd-macos64.zip
 .. _py37-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-e38eafd-macosm164.zip
 .. _py38-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-e38eafd-macosm164.zip
 .. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-e38eafd-macosm164.zip
