@@ -28,6 +28,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
 import ifcopenshell.util.schema
+import ifcopenshell.util.shape
 from decimal import Decimal
 from typing import Optional, Any, Union
 
@@ -373,8 +374,7 @@ def set_element_value(
             coord_i = "xyz".index(key)
             prev_value = matrix[coord_i][3]
             new_value = float(value) if value else 0.0
-            TOLERANCE = 1.0e-5
-            if new_value + TOLERANCE > prev_value > new_value - TOLERANCE:
+            if ifcopenshell.util.shape.is_x(new_value, prev_value):
                 return
 
             matrix[coord_i][3] = new_value
