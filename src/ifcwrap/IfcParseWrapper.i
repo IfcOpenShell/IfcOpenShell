@@ -582,14 +582,20 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 %inline %{
 	IfcParse::IfcFile* open(const std::string& fn) {
-		IfcParse::IfcFile* f = new IfcParse::IfcFile(fn);
+		IfcParse::IfcFile* f;
+		Py_BEGIN_ALLOW_THREADS;
+		f = new IfcParse::IfcFile(fn);
+		Py_END_ALLOW_THREADS;
 		return f;
 	}
 
     IfcParse::IfcFile* read(const std::string& data) {
 		char* copiedData = new char[data.length()];
 		memcpy(copiedData, data.c_str(), data.length());
-		IfcParse::IfcFile* f = new IfcParse::IfcFile((void *)copiedData, data.length());
+		IfcParse::IfcFile* f;
+		Py_BEGIN_ALLOW_THREADS;
+		f = new IfcParse::IfcFile((void *)copiedData, data.length());
+		Py_END_ALLOW_THREADS;
 		return f;
 	}
 
