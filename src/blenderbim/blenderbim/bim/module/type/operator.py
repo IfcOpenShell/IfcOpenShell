@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 import ifcopenshell.api
@@ -171,15 +172,22 @@ class SelectSimilarType(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         objects = bpy.context.selected_objects
+
+        # store relating types to avoid selecting same elements multiple times
+        relating_types = set()
+
         for related_object in objects:
             relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
             if not relating_type:
                 related_object.select_set(False)
                 continue
+            relating_types.add(relating_type)
+
+        for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
-            for obj in context.visible_objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element in related_objects:
+            for element in related_objects:
+                obj = tool.Ifc.get_object(element)
+                if obj and obj in context.visible_objects:
                     obj.select_set(True)
         return {"FINISHED"}
 
