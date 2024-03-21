@@ -18,6 +18,7 @@
 
 import bpy
 import importlib
+import importlib.util
 from pathlib import Path
 import ifcpatch
 from blenderbim.bim.prop import StrProperty, Attribute
