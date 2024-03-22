@@ -191,11 +191,11 @@ class CoveringToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="FILE_3D")
             prop_with_search(row, cls.props, "relating_type_id", text="")
-            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
+            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
         else:
             row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
             row = cls.layout.row()
-            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="Launch Type Manager")
+            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
 
     @classmethod
     def draw_basic_bim_tool_interface(cls):
