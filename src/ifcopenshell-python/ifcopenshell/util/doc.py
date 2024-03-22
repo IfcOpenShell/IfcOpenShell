@@ -18,10 +18,10 @@
 
 import json
 from pathlib import Path
-from pprint import pprint
 import copy
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.util.schema
 
 try:
     import glob
@@ -103,7 +103,7 @@ def get_db(version):
     return db.get(version)
 
 
-def get_schema_by_name(version):
+def get_schema_by_name(version: str):
     global schema_by_name
     version = ifcopenshell.util.schema.get_fallback_schema(version)
     if not schema_by_name[version]:

@@ -76,7 +76,7 @@ class Blender:
     def get_name(cls, ifc_class, name): pass
     def get_selected_objects(cls): pass
     def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
     def is_ifc_object(cls, obj): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def get_viewport_context(cls): pass

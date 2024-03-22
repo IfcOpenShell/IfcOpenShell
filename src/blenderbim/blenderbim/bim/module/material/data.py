@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
 
