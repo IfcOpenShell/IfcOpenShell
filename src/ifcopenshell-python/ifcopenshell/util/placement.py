@@ -20,8 +20,10 @@ import numpy as np
 import ifcopenshell
 from typing import Literal, Iterable
 
+MatrixType = np.ndarray[np.ndarray[float]]
 
-def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> np.array:
+
+def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixType:
     """Converts a location, X, and Z axis vector to a 4x4 transformation matrix
 
     IFC uses a right-handed coordinate system, so it is not necessary to
@@ -34,7 +36,7 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> np.array:
     :param x: The +X vector / axis of the matrix
     :type x: iterable[float]
     :return: A 4x4 numpy matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     x = x / np.linalg.norm(x)
     z = z / np.linalg.norm(z)
@@ -46,7 +48,7 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> np.array:
     return r.T
 
 
-def get_axis2placement(placement: ifcopenshell.entity_instance) -> np.array:
+def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     """Parses an IfcAxis2Placement (2D or 3D) to a 4x4 transformation matrix
 
     Note that this function only parses a single placement axis. If you want to
@@ -57,7 +59,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> np.array:
     :param placement: The IfcLocalPlacement enitity
     :type placement: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     if placement.is_a("IfcAxis2Placement3D"):
         z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
@@ -74,7 +76,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> np.array:
     return a2p(o, z, x)
 
 
-def get_local_placement(placement: ifcopenshell.entity_instance) -> np.array:
+def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     """Parse a local placement into a 4x4 transformation matrix
 
     This is typically used to find the location and rotation of an element. The
@@ -97,7 +99,7 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> np.array:
     :param placement: The IfcLocalPlacement entity
     :type placement: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     if placement is None:
         return np.eye(4)
@@ -108,7 +110,7 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> np.array:
     return np.dot(parent, get_axis2placement(placement.RelativePlacement))
 
 
-def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) -> np.array:
+def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) -> MatrixType:
     """Parses an IfcCartesianTransformationOperator into a 4x4 transformation matrix
 
     Note that in general you will not need to call this directly. See
@@ -117,7 +119,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     :param item: The IfcCartesianTransformationOperator entity
     :type item: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     origin = np.array(inst.LocalOrigin.Coordinates)
     axis1 = np.array((1.0, 0.0, 0.0))
@@ -153,7 +155,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     return m4
 
 
-def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> np.array:
+def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixType:
     """Parse an IfcMappedItem into a 4x4 transformation matrix
 
     Mapped items take a representation with an origin and transform them with a
@@ -163,7 +165,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> np.arra
     :param item: The IfcMappedItem entity
     :type item: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     m4 = get_axis2placement(item.MappingSource.MappingOrigin)
     # TODO 2d
@@ -188,7 +190,7 @@ def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
     return getattr(storey, "Elevation", 0.0) or 0.0
 
 
-def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> np.array:
+def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> MatrixType:
     """Create a 4x4 numpy matrix representing an euler rotation
 
     :param angle: The angle of rotation
@@ -199,7 +201,7 @@ def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> np.
         radians. Defaults to true (i.e. degrees).
     :type is_degrees: bool
     :return: A 4x4 numpy rotation matrix
-    :rtype: np.array[np.array[float]]
+    :rtype: np.ndarray[np.ndarray[float]]
     """
     theta = np.radians(angle) if is_degrees else angle
     cos, sin = np.cos(theta), np.sin(theta)

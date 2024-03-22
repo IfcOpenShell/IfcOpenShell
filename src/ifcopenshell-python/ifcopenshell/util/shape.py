@@ -24,7 +24,7 @@ import ifcopenshell.util.representation
 from typing import Optional, Literal, Union, Iterable
 
 tol = 1e-6
-AXIS_LITERAL = Union[Literal["X"], Literal["Y"], Literal["Z"]]
+AXIS_LITERAL = Literal["X", "Y", "Z"]
 VECTOR_3D = tuple[float, float, float]
 
 

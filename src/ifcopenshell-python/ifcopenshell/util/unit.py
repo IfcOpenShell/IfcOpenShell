@@ -603,7 +603,7 @@ def format_length(
     precision: float,
     decimal_places: int = 2,
     suppress_zero_inches=True,
-    unit_system: Union[Literal["metric"], Literal["imperial"]] = "imperial",
+    unit_system: Literal["metric", "imperial"] = "imperial",
     input_unit="foot",
     output_unit="foot",
 ) -> str:

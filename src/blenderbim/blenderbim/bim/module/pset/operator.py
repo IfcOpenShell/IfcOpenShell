@@ -85,7 +85,6 @@ class EnablePsetEditing(bpy.types.Operator):
     def execute(self, context):
         self.props = get_pset_props(context, self.obj, self.obj_type)
         self.props.properties.clear()
-        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
 
         if self.pset_id:
             pset = tool.Ifc.get().by_id(self.pset_id)
@@ -250,7 +249,7 @@ class DisablePsetEditing(bpy.types.Operator, Operator):
         props = get_pset_props(context, self.obj, self.obj_type)
         if props.active_pset_id:
             pset = tool.Ifc.get().by_id(props.active_pset_id)
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
             if tool.Pset.is_pset_empty(pset):
                 ifcopenshell.api.run(
                     "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
@@ -272,7 +271,7 @@ class EditPset(bpy.types.Operator, Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
         properties = {}
 
@@ -343,7 +342,7 @@ class RemovePset(bpy.types.Operator, Operator):
         pset_name = tool.Ifc.get().by_id(self.pset_id).Name
         for obj in objects:
             props = get_pset_props(context, obj, self.obj_type)
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             element = tool.Ifc.get().by_id(ifc_definition_id)
             pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
             if pset:
@@ -374,7 +373,7 @@ class AddQto(bpy.types.Operator, Operator):
     def _execute(self, context):
         self.file = IfcStore.get_file()
         props = get_pset_props(context, self.obj, self.obj_type)
-        ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, self.obj, self.obj_type)
+        ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
