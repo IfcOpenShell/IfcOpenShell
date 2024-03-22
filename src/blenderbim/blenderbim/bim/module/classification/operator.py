@@ -293,7 +293,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         identification = active_reference[1]
 
         for obj in objects:
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             element = tool.Ifc.get().by_id(ifc_definition_id)
             references = ifcopenshell.util.classification.get_references(element, should_inherit=False)
             for reference in references:
@@ -358,7 +358,7 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 break
 
         for obj in objects:
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             if not ifc_definition_id:
                 continue
             ifcopenshell.api.run(
@@ -406,7 +406,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             classification.Location = bsdd_classification.domain_namespace_uri
 
         for obj in objects:
-            ifc_definition_id = blenderbim.bim.helper.get_obj_ifc_definition_id(context, obj, self.obj_type)
+            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             if not ifc_definition_id:
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
