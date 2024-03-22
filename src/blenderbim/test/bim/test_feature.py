@@ -29,11 +29,12 @@ from blenderbim.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
+from pathlib import Path
 
 scenarios("feature")
 
 variables = {
-    "cwd": os.getcwd(),
+    "cwd": Path.cwd().as_posix(),
     "ifc": "IfcStore.get_file()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
@@ -44,8 +45,6 @@ webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
-    if "{cwd}" in value and os.name == "nt":
-        value = value.replace("/", "\\").replace("{cwd}", os.getcwd()).replace("\\", "\\\\")
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
@@ -291,10 +290,16 @@ def the_object_name_is_scaled_to_scale(name, scale):
 
 @given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 @when(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
-def the_object_name_is_placed_in_the_collection_collection(name, collection):
+def the_object_name_is_placed_in_the_collection_collection(name: str, collection: str) -> None:
     obj = the_object_name_exists(name)
     [c.objects.unlink(obj) for c in obj.users_collection]
     bpy.data.collections.get(collection).objects.link(obj)
+
+
+@then(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
+def then_the_object_name_is_placed_in_the_collection_collection(name: str, collection: str) -> None:
+    obj = the_object_name_exists(name)
+    assert obj in bpy.data.collections.get(collection).objects[:]
 
 
 @given(parsers.parse('additionally the object "{name}" is selected'))
@@ -363,7 +368,7 @@ def nothing_happens():
 
 
 @then(parsers.parse('the object "{name}" exists'))
-def the_object_name_exists(name) -> bpy.types.Object:
+def the_object_name_exists(name: str) -> bpy.types.Object:
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
@@ -953,5 +958,3 @@ def run_pdb():
     import pdb
 
     pdb.set_trace()
-
-    
