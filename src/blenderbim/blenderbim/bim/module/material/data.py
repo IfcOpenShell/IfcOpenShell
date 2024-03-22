@@ -110,29 +110,38 @@ class MaterialsData:
     def active_styles(cls):
         props = bpy.context.scene.BIMMaterialProperties
         results = []
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index].ifc_definition_id
-            if not material:
-                return results
-            material = tool.Ifc.get().by_id(material)
-            for definition in material.HasRepresentation:
-                for representation in definition.Representations:
-                    if not representation.is_a("IfcStyledRepresentation"):
+        if not props.materials or props.active_material_index >= len(props.materials):
+            return results
+
+        material = props.materials[props.active_material_index].ifc_definition_id
+        if not material:
+            return results
+
+        material = tool.Ifc.get().by_id(material)
+
+        if not material.is_a("IfcMaterial"):
+            return results
+
+        for definition in material.HasRepresentation:
+            for representation in definition.Representations:
+                if not representation.is_a("IfcStyledRepresentation"):
+                    continue
+                context = representation.ContextOfItems
+                for item in representation.Items:
+                    if not item.is_a("IfcStyledItem"):
                         continue
-                    context = representation.ContextOfItems
-                    for item in representation.Items:
-                        if not item.is_a("IfcStyledItem"):
-                            continue
-                        for style in item.Styles:
-                            if style.is_a("IfcSurfaceStyle"):
-                                results.append({
+                    for style in item.Styles:
+                        if style.is_a("IfcSurfaceStyle"):
+                            results.append(
+                                {
                                     "context_type": context.ContextType,
                                     "context_identifier": getattr(context, "ContextIdentifier", ""),
                                     "target_view": getattr(context, "TargetView", ""),
                                     "name": style.Name or "Unnamed",
                                     "id": style.id(),
                                     "context_id": context.id(),
-                                })
+                                }
+                            )
         return results
 
 
