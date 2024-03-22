@@ -201,11 +201,13 @@ def i_press_operator_and_expect_error(operator, error_msg):
         else:
             exec(f"bpy.ops.{operator}()")
         assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
-    except Exception as e:     
+    except Exception as e:
         actual_error_msg = str(e).strip()
         if str(e).strip() != error_msg:
             traceback.print_exc()
-            assert False, f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+            msg = f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+            assert False, msg
+
 
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
@@ -232,11 +234,13 @@ def i_evaluate_expression(expression):
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
-    
+
+
 @when("I duplicate linked aggregate the selected objects")
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.object_duplicate_move_linked_aggregate()
     blenderbim.bim.handler.active_object_callback()
+
 
 @when("I refresh linked aggregate the selected object")
 def i_refresh_the_selected_objects():
@@ -381,6 +385,7 @@ def the_object_name_does_not_exist(name) -> bpy.types.Object:
     if not obj:
         assert True, f'The object "{name}" exists'
     return obj
+
 
 @given(parsers.parse('the collection "{name}" exists'))
 @when(parsers.parse('the collection "{name}" exists'))
@@ -666,6 +671,7 @@ def the_object_name_has_a_thickness_thick_layered_material_containing_the_materi
     assert is_x(total_thickness, float(thickness))
     assert material_name in material_names
 
+
 @then(parsers.parse('the object "{name}" has no IFC materials'))
 def the_object_has_no_ifc_materials(name):
     element = tool.Ifc.get_entity(the_object_name_exists(name))
@@ -796,10 +802,12 @@ def the_file_name_should_contain_value(name, value):
 def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
 
+
 @given(parsers.parse('I load the IFC test file "{filepath}"'))
 def i_load_the_ifc_test_file(filepath):
     filepath = f"{variables['cwd']}{filepath}"
     bpy.ops.bim.load_project(filepath=filepath, use_relative_path=True)
+
 
 @given("I load the demo construction library")
 @when("I load the demo construction library")
@@ -852,6 +860,7 @@ def hit_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
     bpy.ops.ed.undo()
 
+
 @then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
 def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
     element1 = replace_variables(obj_name1)
@@ -871,9 +880,11 @@ def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
         relationships[conn.RelatedElement] = conn.RelatingElement
 
     for key, value in relationships.items():
-        assert (key.id() == element1.id() and value.id() == element2.id()) or (key.id() == element2.id() and value.id() == element1.id()), f"The object {obj_name1} is connected to {obj_name2}"
+        assert (key.id() == element1.id() and value.id() == element2.id()) or (
+            key.id() == element2.id() and value.id() == element1.id()
+        ), f"The object {obj_name1} is connected to {obj_name2}"
 
-        
+
 @then(parsers.parse('the object "{obj_name1}" and "{obj_name2}" belong to the same Linked Aggregate Group'))
 def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name2):
     element1 = replace_variables(obj_name1)
@@ -897,6 +908,7 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
 
     assert groups[0] == groups[1], "Objects do not belong to the same Linked Aggregate group"
 
+
 @when(parsers.parse('the object layer length is set to "{value}"'))
 def the_obj_layer_lenght_is_set_to(value):
     value = float(value)
@@ -905,11 +917,11 @@ def the_obj_layer_lenght_is_set_to(value):
     except:
         assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
 
-    print(50*"@", bpy.context.selected_objects)
-        
+    print(50 * "@", bpy.context.selected_objects)
+
     bpy.context.scene.BIMModelProperties.length = value
     bpy.ops.bim.change_layer_length(length=value)
-    
+
 
 # These definitions are not to be used in tests but simply in debugging failing tests
 
