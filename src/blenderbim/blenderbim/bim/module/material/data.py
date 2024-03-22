@@ -117,9 +117,12 @@ class MaterialsData:
         if not material:
             return results
 
-        material = tool.Ifc.get().by_id(material)
+        material = tool.Ifc.get_entity_by_id(material)
 
-        if not material.is_a("IfcMaterial"):
+        # NOTE: it's possible that data will be refreshed during material removal
+        # (when it will try to fetch active material type and will reach for material_types)
+        # and props.materials[i].ifc_definition_id will contain already removed id
+        if not material or not material.is_a("IfcMaterial"):
             return results
 
         for definition in material.HasRepresentation:
