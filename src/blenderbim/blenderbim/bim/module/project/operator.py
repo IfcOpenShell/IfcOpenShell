@@ -899,11 +899,11 @@ class UnloadLink(bpy.types.Operator):
         if filepath.suffix.lower() == ".ifc":
             filepath = filepath.with_suffix(".ifc.cache.blend")
 
-        for collection in context.scene.collection.children:
+        for collection in context.scene.collection.children[:]:
             if collection.library and Path(collection.library.filepath) == filepath:
-                context.scene.collection.children.unlink(collection)
+                bpy.data.collections.remove(collection)
 
-        for scene in bpy.data.scenes:
+        for scene in bpy.data.scenes[:]:
             if scene.library and Path(scene.library.filepath) == filepath:
                 bpy.data.scenes.remove(scene)
 
