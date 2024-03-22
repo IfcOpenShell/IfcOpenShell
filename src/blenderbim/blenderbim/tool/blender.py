@@ -41,6 +41,7 @@ VIEWPORT_ATTRIBUTES = [
 class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
+    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
     @classmethod
     def get_area_props(cls, context):
