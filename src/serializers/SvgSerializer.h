@@ -556,6 +556,7 @@ protected:
 	bool unify_inputs_;
 	bool mirror_y_;
 	bool mirror_x_;
+	bool only_valid_;
 
 	int profile_threshold_;
 
@@ -721,6 +722,14 @@ public:
 
 	bool getUnifyInputs() const {
 		return unify_inputs_;
+	}
+
+	void setOnlyValid(bool b) {
+		only_valid_ = b;
+	}
+
+	bool getOnlyValid(bool b) const {
+		return only_valid_;
 	}
 
 	void setScale(double s) { scale_ = s; }

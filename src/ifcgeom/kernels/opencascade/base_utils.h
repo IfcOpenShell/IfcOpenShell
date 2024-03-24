@@ -74,6 +74,7 @@ namespace IfcGeom {
 		TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
 
 		bool flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol);
+		bool validate_shape(const TopoDS_Shape&);
 	}
 }
 
