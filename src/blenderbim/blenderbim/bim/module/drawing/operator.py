@@ -1345,7 +1345,7 @@ class SelectAllDrawings(bpy.types.Operator):
     bl_label = "Select All Drawings"
     view: bpy.props.StringProperty()
     bl_description = "Select all drawings in the drawing list.\n\n" + "SHIFT+CLICK to deselect all drawings"
-    select_all: bpy.props.BoolProperty(name="Open All", default=False, options={"SKIP_SAVE"})
+    select_all: bpy.props.BoolProperty(name="Open All", default=True, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # deselect all drawings on shift+click
