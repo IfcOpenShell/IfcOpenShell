@@ -648,6 +648,35 @@ class Blender(blenderbim.core.tool.Blender):
         open_file_or_folder(filepath.as_posix())
         return {"PASS_THROUGH"}
 
+    @classmethod
+    def get_layer_collection(
+        cls, collection: bpy.types.Collection, view_layer: Optional[bpy.types.ViewLayer] = None
+    ) -> Union[bpy.types.LayerCollection, None]:
+        return cls.get_layer_collections_mapping([collection], view_layer).get(collection)
+
+    @classmethod
+    def get_layer_collections_mapping(
+        cls, collections: list[bpy.types.Collection], view_layer: Optional[bpy.types.ViewLayer] = None
+    ) -> dict[bpy.types.Collection, bpy.types.LayerCollection]:
+        if view_layer is None:
+            view_layer = bpy.context.view_layer
+
+        collections = list(collections)  # copy to prevent mutation
+        collections_mapping = dict()
+        queue = [view_layer.layer_collection]
+
+        while queue:
+            layer = queue.pop()
+            collection = layer.collection
+            if collection in collections:
+                collections_mapping[collection] = layer
+                collections.remove(collection)
+                if not collections:
+                    break
+            queue.extend(list(layer.children))
+
+        return collections_mapping
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
