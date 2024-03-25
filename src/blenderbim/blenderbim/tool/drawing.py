@@ -440,7 +440,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return results
 
     @classmethod
-    def get_drawing_target_view(cls, drawing):
+    def get_drawing_target_view(cls, drawing: ifcopenshell.entity_instance) -> str:
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
@@ -1661,6 +1661,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
+
+        # hide non-filtered elemenets
         for view_layer_object in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(view_layer_object)
             if not element or element.is_a("IfcTypeProduct"):
@@ -1669,7 +1671,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             view_layer_object.hide_set(hide)
             view_layer_object.hide_render = hide
 
-        subcontexts = []
+        subcontexts: list[ifcopenshell.entity_instance] = []
         target_view = cls.get_drawing_target_view(drawing)
 
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
@@ -1702,6 +1704,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             if subcontext:
                 subcontexts.append(context_filter)
 
+
+        # switch representations and hide elements without representations
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
             current_representation = tool.Geometry.get_active_representation(obj)

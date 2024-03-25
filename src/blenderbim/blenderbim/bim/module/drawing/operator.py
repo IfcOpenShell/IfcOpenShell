@@ -1451,10 +1451,6 @@ class ActivateModel(bpy.types.Operator):
 
 
 class ActivateDrawing(bpy.types.Operator):
-    """
-    Activates the selected drawing view
-    """
-
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
