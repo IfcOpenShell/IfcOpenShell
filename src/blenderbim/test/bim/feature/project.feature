@@ -322,8 +322,12 @@ Scenario: Link IFC
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
-    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='WIREFRAME')"
-    Then nothing happens
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='WIREFRAME')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "True"
+    And the object "Chunk" should display as "WIRE"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='WIREFRAME')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "False"
+    And the object "Chunk" should display as "TEXTURED"
 
 Scenario: Toggle link visibility - visible mode
     Given an empty IFC project
