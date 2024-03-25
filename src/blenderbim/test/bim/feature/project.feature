@@ -341,18 +341,18 @@ Scenario: Toggle link visibility - visible mode
 
 Scenario: Unload link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "False"
-    And "scene.collection.children.get('IfcProject/My Project')" is "None"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "False"
+    And the collection "IfcProject/basic.ifc" does not exist
 
 Scenario: Load link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.load_link(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "True"
-    And "scene.collection.children['IfcProject/My Project'].users" is "2"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.load_link(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
+    And the collection "IfcProject/basic.ifc" exists in viewlayer
 
 Scenario: Unlink IFC
     Given an empty Blender session
