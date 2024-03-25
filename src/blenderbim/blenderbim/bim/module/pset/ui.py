@@ -171,7 +171,7 @@ def draw_psetqto_editable_ui(box, props, prop):
 
 
 class BIM_PT_object_psets(Panel):
-    bl_label = "Object Property Sets"
+    bl_label = "Property Sets"
     bl_idname = "BIM_PT_object_psets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -203,17 +203,19 @@ class BIM_PT_object_psets(Panel):
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
 
-        for pset in ObjectPsetsData.data["psets"]:
-            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
+        if ObjectPsetsData.data["psets"]:
+            self.layout.label(text="Instance:")
+            for pset in ObjectPsetsData.data["psets"]:
+                draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
         if ObjectPsetsData.data["inherited_psets"]:
-            self.layout.label(text="Inherited Psets:", icon="FILE_PARENT")
+            self.layout.label(text="Type:")
             for pset in ObjectPsetsData.data["inherited_psets"]:
                 draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
 
 class BIM_PT_object_qtos(Panel):
-    bl_label = "Object Quantity Sets"
+    bl_label = "Quantity Sets"
     bl_idname = "BIM_PT_object_qtos"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -244,12 +246,14 @@ class BIM_PT_object_qtos(Panel):
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
-
-        for qto in ObjectQtosData.data["qtos"]:
-            draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
+        
+        if ObjectQtosData.data["qtos"]:
+            self.layout.label(text="Instance:")
+            for qto in ObjectQtosData.data["qtos"]:
+                draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
 
         if ObjectQtosData.data["inherited_qsets"]:
-            self.layout.label(text="Inherited Qsets:", icon="FILE_PARENT")
+            self.layout.label(text="Type:")
             for qset in ObjectQtosData.data["inherited_qsets"]:
                 draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object")
 
