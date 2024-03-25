@@ -31,7 +31,7 @@ import blenderbim.bim.schema
 class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_radius_of_selected_vertices(cls, obj):
-        selected_verts = [v.co for v in obj.data.vertices if v.select]
+        selected_verts = [v.co for v in obj.data.vertices]
         total = Vector()
         for v in selected_verts:
             total += v
