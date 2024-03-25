@@ -1008,24 +1008,24 @@ class ToggleLinkSelectability(bpy.types.Operator):
     bl_label = "Toggle Link Selectability"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle selectability"
-    link: bpy.props.StringProperty()
+    link: bpy.props.StringProperty(name="Linked IFC Filepath")
 
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
-        self.filepath = self.link
-        if not os.path.isabs(self.filepath):
-            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath)).replace("\\", "/")
+        if not os.path.isabs(self.link):
+            self.link = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.link))
+        self.library_filepath = Path(self.link).with_suffix(".ifc.cache.blend")
         for collection in self.get_linked_collections():
             collection.hide_select = not collection.hide_select
             link.is_selectable = not collection.hide_select
         return {"FINISHED"}
 
-    def get_linked_collections(self):
+    def get_linked_collections(self) -> list[bpy.types.Collection]:
         return [
             c
             for c in bpy.data.collections
-            if "IfcProject" in c.name and c.library and c.library.filepath.replace("\\", "/") == self.filepath
+            if "IfcProject" in c.name and c.library and Path(c.library.filepath) == self.library_filepath
         ]
 
 
