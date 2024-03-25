@@ -1734,7 +1734,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            if not has_context:
+            # don't hide IfcAnnotations as some of them might exist without representations
+            # e.g. with ObjectType = SYMBOL
+            if not has_context and not element.is_a("IfcAnnotation"):
                 obj.hide_set(True)
                 obj.hide_render = True
 
