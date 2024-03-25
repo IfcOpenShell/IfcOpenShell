@@ -397,6 +397,18 @@ def the_collection_name_exists(name) -> bpy.types.Collection:
     return obj
 
 
+@then(parsers.parse('the collection "{name}" is selectable'))
+def the_collection_name_is_selectable(name: str) -> None:
+    col = the_collection_name_exists(name)
+    assert col.hide_select == False
+
+
+@then(parsers.parse('the collection "{name}" is unselectable'))
+def the_collection_name_is_unselectable(name: str) -> None:
+    col = the_collection_name_exists(name)
+    assert col.hide_select == True
+
+
 @then(parsers.parse('the collection "{name}" exists in viewlayer'))
 def the_collection_exists_in_viewlayer(name: str) -> bpy.types.LayerCollection:
     col = the_collection_name_exists(name)
