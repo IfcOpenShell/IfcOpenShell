@@ -1034,15 +1034,15 @@ class ToggleLinkVisibility(bpy.types.Operator):
     bl_label = "Toggle Link Visibility"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Toggle visibility between SOLID and WIREFRAME"
-    link: bpy.props.StringProperty()
-    mode: bpy.props.StringProperty()
+    link: bpy.props.StringProperty(name="Linked IFC Filepath")
+    mode: bpy.props.EnumProperty(name="Visibility Mode", items=((i, i, "") for i in ("WIREFRAME", "VISIBLE")))
 
     def execute(self, context):
         props = context.scene.BIMProjectProperties
         link = props.links.get(self.link)
-        self.filepath = self.link
-        if not os.path.isabs(self.filepath):
-            self.filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.filepath)).replace("\\", "/")
+        if not os.path.isabs(self.link):
+            self.link = os.path.abspath(os.path.join(bpy.path.abspath("//"), self.link))
+        self.library_filepath = Path(self.link).with_suffix(".ifc.cache.blend")
         if self.mode == "WIREFRAME":
             self.toggle_wireframe(link)
         elif self.mode == "VISIBLE":
@@ -1077,11 +1077,11 @@ class ToggleLinkVisibility(bpy.types.Operator):
             layer_collection.exclude = not layer_collection.exclude
             link.is_hidden = layer_collection.exclude
 
-    def get_linked_collections(self):
+    def get_linked_collections(self) -> list[bpy.types.Collection]:
         return [
             c
             for c in bpy.data.collections
-            if "IfcProject" in c.name and c.library and c.library.filepath.replace("\\", "/") == self.filepath
+            if "IfcProject" in c.name and c.library and Path(c.library.filepath) == self.library_filepath
         ]
 
 
