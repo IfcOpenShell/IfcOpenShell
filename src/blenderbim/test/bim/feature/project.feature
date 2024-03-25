@@ -331,9 +331,13 @@ Scenario: Toggle link visibility - wireframe mode
 
 Scenario: Toggle link visibility - visible mode
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='VISIBLE')"
-    Then nothing happens
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "True"
+    And the collection "IfcProject/basic.ifc" exclude status is "True"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "False"
+    And the collection "IfcProject/basic.ifc" exclude status is "False"
 
 Scenario: Unload link
     Given an empty Blender session
