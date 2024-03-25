@@ -176,7 +176,7 @@ def the_material_name_colour_is_set_to_colour(name, colour):
 
 
 @given("I add an array modifier")
-def i_add_a_cube():
+def i_add_an_array_modifier():
     bpy.ops.object.modifier_add(type="ARRAY")
 
 
@@ -237,7 +237,7 @@ def i_duplicate_the_selected_objects():
 
 
 @when("I duplicate linked aggregate the selected objects")
-def i_duplicate_the_selected_objects():
+def i_duplicate_linked_aggregate_the_selected_objects():
     bpy.ops.bim.object_duplicate_move_linked_aggregate()
     blenderbim.bim.handler.active_object_callback()
 
@@ -338,7 +338,7 @@ def i_set_prop_to_value(prop, value):
 
 @given(parsers.parse('I set "{prop}" to ""'))
 @when(parsers.parse('I set "{prop}" to ""'))
-def i_set_prop_to_value(prop):
+def i_set_prop_to_empty_string(prop):
     try:
         eval(f"bpy.context.{prop}")
     except:
@@ -450,7 +450,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
 
 @given(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
 @then(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
-def the_object_name_has_a_representation_type_of_context(name, type, context):
+def the_object_name_data_is_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     context, subcontext, target_view = context.split("/")
     rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
@@ -555,7 +555,7 @@ def the_object_name_has_no_data(name):
 
 
 @then(parsers.parse('the object "{name}" has data which is an IFC representation'))
-def the_object_name_is_not_an_ifc_element(name):
+def the_object_name_has_ifc_representation_data(name):
     id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
     assert id != 0, f"The ID is {id}"
 
@@ -589,7 +589,7 @@ def the_material_name_is_not_an_ifc_style(name):
 
 
 @then(parsers.parse('the material "{name}" colour is "{colour}"'))
-def the_material_name_colour_is_set_to_colour(name, colour):
+def then_the_material_name_colour_is_set_to_colour(name, colour):
     diffuse_color = list(the_material_name_exists(name).diffuse_color)
     assert diffuse_color == [float(c) for c in colour.split(",")], f"The colour is {diffuse_color}"
 
@@ -653,7 +653,7 @@ def prop_is_value(prop, value):
 
 
 @then(parsers.parse('"{prop}" is roughly "{value}"'))
-def prop_is_value(prop, value):
+def prop_is_roughly_value(prop, value):
     prop = replace_variables(prop)
     value = replace_variables(value)
     is_value = False
@@ -743,12 +743,6 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
     assert bpy.data.collections.get(name2).children.get(name1)
 
 
-@then(parsers.parse('the object "{name}" does not exist'))
-def the_object_name_does_not_exist(name):
-    obj = bpy.data.objects.get(name)
-    assert obj is None or len(obj.users_collection) == 0, f"Object {name} exists"
-
-
 @then(parsers.parse('the collection "{name}" does not exist'))
 def the_collection_name_does_not_exist(name):
     obj = bpy.data.collections.get(name)
@@ -791,7 +785,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
-def the_object_name_is_at_location(name, location):
+def the_object_name_top_right_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
@@ -800,7 +794,7 @@ def the_object_name_is_at_location(name, location):
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
-def the_object_name_is_at_location(name, location):
+def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
@@ -876,7 +870,7 @@ def move_cursor_bottom_left():
 @given(parsers.parse("I prepare to undo"))
 @when(parsers.parse("I prepare to undo"))
 @then(parsers.parse("I prepare to undo"))
-def hit_undo():
+def prepare_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
 
 
