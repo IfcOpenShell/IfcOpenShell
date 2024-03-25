@@ -397,6 +397,21 @@ def the_collection_name_exists(name) -> bpy.types.Collection:
     return obj
 
 
+@then(parsers.parse('the collection "{name}" exists in viewlayer'))
+def the_collection_exists_in_viewlayer(name: str) -> bpy.types.LayerCollection:
+    col = the_collection_name_exists(name)
+    layer = tool.Blender.get_layer_collection(col)
+    if not layer:
+        assert False, f'The collection "{name}" is not present in the current viewlayer'
+    return layer
+
+
+@then(parsers.parse('the collection "{name}" exclude status is "{exclude}"'))
+def the_collection_exclude_status_is(name: str, exclude: str) -> None:
+    layer = the_collection_exists_in_viewlayer(name)
+    assert layer.exclude == (exclude == "True")
+
+
 @then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
