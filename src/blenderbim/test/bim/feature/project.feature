@@ -329,6 +329,16 @@ Scenario: Toggle link visibility - wireframe mode
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "False"
     And the object "Chunk" should display as "TEXTURED"
 
+Scenario: Toggle link selectability
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.toggle_link_selectability(link='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_selectable" is "False"
+    And the collection "IfcProject/basic.ifc" is unselectable
+    When I press "bim.toggle_link_selectability(link='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_selectable" is "True"
+    And the collection "IfcProject/basic.ifc" is selectable
+
 Scenario: Toggle link visibility - visible mode
     Given an empty IFC project
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
