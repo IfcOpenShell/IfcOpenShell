@@ -1,0 +1,46 @@
+from enum import Enum
+
+
+class AlignmentCantSide(Enum):
+    LEFT = -1
+    RIGHT = 1
+
+
+class AlignmentCantSegmentType(Enum):
+    CONSTANTCANT = "CONSTANTCANT"
+    COSINECURVE = "COSINECURVE"
+    HELMERTCURVE = "HELMERTCURVE"
+    LINEARTRANSITION = "LINEARTRANSITION"
+    SINECURVE = "SINECURVE"
+    VIENNESEBEND = "VIENNESEBEND"
+
+
+class AlignmentHorizontalSegmentType(Enum):
+    BLOSSCURVE = "BLOSSCURVE"
+    CIRCULARARC = "CIRCULARARC"
+    CLOTHOID = "CLOTHOID"
+    COSINECURVE = "COSINECURVE"
+    CUBIC = "CUBIC"
+    HELMERTCURVE = "HELMERTCURVE"  # also referred to as Schramm curve.
+    LINE = "LINE"
+    SINECURVE = "SINECURVE"  # also referred to as Klein curve
+    VIENNESEBEND = "VIENNESEBEND"
+
+
+class AlignmentVerticalSegmentType(Enum):
+    CONSTANTGRADIENT = "CONSTANTGRADIENT"
+    PARABOLICARC = "PARABOLICARC"
+    CIRCULARARC = "CIRCULARARC"
+    CLOTHOID = "CLOTHOID"
+
+
+class TransitionCode(Enum):
+    CONTINUOUS = "CONTINUOUS"
+    CONTSAMEGRADIENT = "CONTSAMEGRADIENT"
+    CONTSAMEGRADIENTSAMECURVATURE = "CONTSAMEGRADIENTSAMECURVATURE"
+    DISCONTINUOUS = "DISCONTINUOUS"
+
+
+class VerticalCurveDirection(Enum):
+    SAG = 1
+    CREST = -1

@@ -1,0 +1,1 @@
+GEOM_TOLERANCE = 1.0e-6

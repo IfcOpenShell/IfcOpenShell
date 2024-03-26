@@ -1,1 +1,4 @@
 tests/
+
+*.ifc.png
+update_virtualenv.sh
