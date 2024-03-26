@@ -118,7 +118,7 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty(name="Material Name")
     name: bpy.props.StringProperty(default="Default")
 
     def invoke(self, context, event):
