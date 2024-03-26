@@ -481,8 +481,7 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 			}
 		}
 
-        // Temporarily commented out so we don't need to triangulate it again for clash detection.
-		// BRepTools::Clean(s);
+		BRepTools::Clean(s);
 	}
 }
 
