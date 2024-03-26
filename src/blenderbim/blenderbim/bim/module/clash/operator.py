@@ -23,10 +23,11 @@ import bmesh
 import logging
 import numpy as np
 import ifcopenshell
-from mathutils import Matrix, Vector
-from math import radians
-from blenderbim.bim.ifc import IfcStore
 import blenderbim.tool as tool
+from math import radians
+from mathutils import Matrix, Vector
+from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.module.clash.decorator import ClashDecorator
 
 
 class ExportClashSets(bpy.types.Operator):
@@ -45,18 +46,7 @@ class ExportClashSets(bpy.types.Operator):
 
     def execute(self, context):
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
-        clash_sets = []
-        for clash_set in context.scene.BIMClashProperties.clash_sets:
-            self.a = []
-            self.b = []
-            for ab in ["a", "b"]:
-                for data in getattr(clash_set, ab):
-                    clash_source = {"file": data.name}
-                    if data.selector:
-                        clash_source["selector"] = data.selector
-                        clash_source["mode"] = data.mode
-                    getattr(self, ab).append(clash_source)
-            clash_sets.append({"name": clash_set.name, "tolerance": clash_set.tolerance, "a": self.a, "b": self.b})
+        clash_sets = tool.Clash.export_clash_sets()
         with open(self.filepath, "w") as destination:
             destination.write(json.dumps(clash_sets, indent=4))
         return {"FINISHED"}
@@ -78,25 +68,33 @@ class ImportClashSets(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
-        with open(self.filepath) as f:
-            clash_sets = json.load(f)
-        for clash_set in clash_sets:
+        tool.Clash.load_clash_sets(self.filepath)
+        for clash_set in tool.Clash.get_clash_sets():
             new = context.scene.BIMClashProperties.clash_sets.add()
             new.name = clash_set["name"]
-            new.tolerance = clash_set["tolerance"]
+            new.mode = clash_set["mode"]
+            if new.mode == "intersection":
+                new.tolerance = clash_set["tolerance"]
+                new.check_all = clash_set["check_all"]
+            elif new.mode == "collision":
+                new.allow_touching = clash_set["allow_touching"]
+            elif new.mode == "clearance":
+                new.clearance = clash_set["clearance"]
+                new.check_all = clash_set["check_all"]
             for clash_source in clash_set["a"]:
                 new_source = new.a.add()
                 new_source.name = clash_source["file"]
                 if "selector" in clash_source:
                     new_source.selector = clash_source["selector"]
                     new_source.mode = clash_source["mode"]
-            if clash_set["b"]:
+            if "b" in clash_set and clash_set["b"]:
                 for clash_source in clash_set["b"]:
                     new_source = new.b.add()
                     new_source.name = clash_source["file"]
                     if "selector" in clash_source:
                         new_source.selector = clash_source["selector"]
                         new_source.mode = clash_source["mode"]
+        tool.Clash.import_active_clashes()
         return {"FINISHED"}
 
 
@@ -109,7 +107,6 @@ class AddClashSet(bpy.types.Operator):
     def execute(self, context):
         new = context.scene.BIMClashProperties.clash_sets.add()
         new.name = "New Clash Set"
-        new.tolerance = 0.01
         return {"FINISHED"}
 
 
@@ -220,6 +217,8 @@ class ExecuteIfcClash(bpy.types.Operator):
     def execute(self, context):
         from ifcclash import ifcclash
 
+        self.props = context.scene.BIMClashProperties
+
         _, extension = os.path.splitext(self.filepath)
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
@@ -230,7 +229,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         settings.logger.setLevel(logging.DEBUG)
         clasher = ifcclash.Clasher(settings)
 
-        if context.scene.BIMClashProperties.should_create_clash_snapshots:
+        if self.props.should_create_clash_snapshots:
 
             def get_viewpoint_snapshot(viewpoint):
                 camera = bpy.data.objects.get("IFC Clash Camera")
@@ -271,23 +270,20 @@ class ExecuteIfcClash(bpy.types.Operator):
 
             clasher.get_viewpoint_snapshot = get_viewpoint_snapshot
 
-        clasher.clash_sets = []
-        for clash_set in context.scene.BIMClashProperties.clash_sets:
-            self.a = []
-            self.b = []
-            for ab in ["a", "b"]:
-                for data in getattr(clash_set, ab):
-                    clash_source = {"file": data.name}
-                    if data.selector:
-                        clash_source["selector"] = data.selector
-                        clash_source["mode"] = data.mode
-                    getattr(self, ab).append(clash_source)
-            clash_set_data = {"name": clash_set.name, "tolerance": clash_set.tolerance, "a": self.a}
-            if self.b:
-                clash_set_data["b"] = self.b
-            clasher.clash_sets.append(clash_set_data)
+        clasher.clash_sets = tool.Clash.export_clash_sets()
         clasher.clash()
         clasher.export()
+
+        if extension == ".json":
+            tool.Clash.load_clash_sets(self.filepath)
+            result = tool.Clash.get_clash_set(self.props.active_clash_set.name)
+            for clash in result["clashes"].values():
+                blender_clash = self.props.active_clash_set.clashes.add()
+                blender_clash.a_global_id = clash["a_global_id"]
+                blender_clash.b_global_id = clash["b_global_id"]
+                blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
+                blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
+                blender_clash.status = False if not "status" in clash.keys() else clash["status"]
         return {"FINISHED"}
 
 
@@ -306,6 +302,7 @@ class SelectIfcClashResults(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
+        # TODO refactor into new clash results system
         self.file = IfcStore.get_file()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
@@ -352,83 +349,6 @@ class SelectIfcClashResults(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadIfcClashes(bpy.types.Operator):
-    bl_idname = "bim.load_ifc_clashes"
-    bl_label = "Load IFC Clashes"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Load the clashing IFC geometry stored in a file"
-    filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
-        with open(self.filepath) as f:
-            clash_sets_json = json.load(f)
-        active_clash_set = context.scene.BIMClashProperties.active_clash_set
-
-        for clash_set in clash_sets_json:
-            if not "clashes" in clash_set.keys():
-                self.report({"WARNING"}, "No clashes found for the selected Clash Set.")
-                return {"CANCELLED"}
-            active_clash_set.clashes.clear()
-            for clash in clash_set["clashes"].values():
-                blender_clash = active_clash_set.clashes.add()
-                blender_clash.a_global_id = clash["a_global_id"]
-                blender_clash.b_global_id = clash["b_global_id"]
-                blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
-                blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
-                blender_clash.status = False if not "status" in clash.keys() else clash["status"]
-        return {"FINISHED"}
-
-
-class SaveIfcClashes(bpy.types.Operator):
-    bl_idname = "bim.save_ifc_clashes"
-    bl_label = "Save IFC Clashes"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Save the clashing IFC geometry stored in a file"
-    filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
-        clash_sets_json = self.load_json()
-        active_clash_set = context.scene.BIMClashProperties.active_clash_set
-        self.update_clash_sets(clash_sets_json, active_clash_set)
-        self.save_json(clash_sets_json)
-        return {"FINISHED"}
-
-    def load_json(self):
-        with open(self.filepath) as f:
-            return json.load(f)
-
-    def update_clash_sets(self, clash_sets_json, active_clash_set):
-        for clash_set in clash_sets_json:
-            if clash_set["name"] != active_clash_set.name or "clashes" not in clash_set.keys():
-                continue
-            for clash in active_clash_set.clashes:
-                clash_key = clash.a_global_id + "-" + clash.b_global_id
-                if clash_set.get("clashes", {}).get(clash_key, None) is not None:
-                    clash_set["clashes"][clash_key]["status"] = clash.status
-
-    def save_json(self, clash_sets_json):
-        with open(self.filepath, "w") as destination:
-            json.dump(clash_sets_json, destination, indent=4)
-
-
 class SelectClash(bpy.types.Operator):
     bl_idname = "bim.select_clash"
     bl_label = "Select Clash"
@@ -437,31 +357,28 @@ class SelectClash(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        clash = context.scene.BIMClashProperties.active_clash
+        self.props = context.scene.BIMClashProperties
+        clash_set = tool.Clash.get_clash_set(self.props.active_clash_set.name)
+        active_clash = self.props.active_clash
+        clash = tool.Clash.get_clash(clash_set, active_clash.a_global_id, active_clash.b_global_id)
+
+        if not clash:
+            return {"FINISHED"}
 
         products = []
-        linked_objects = []
-        try:
-            products.append(tool.Ifc.get().by_guid(clash.a_global_id))
-        except:
-            linked_objects.append(clash.a_name)
-        try:
-            products.append(tool.Ifc.get().by_guid(clash.b_global_id))
-        except:
-            linked_objects.append(clash.b_name)
+
+        for global_id in (clash["a_global_id"], clash["b_global_id"]):
+            try:
+                products.append(tool.Ifc.get().by_guid(global_id))
+            except:
+                pass
 
         tool.Spatial.select_products(products, unhide=True)
-        print(linked_objects)
-        for obj_name in linked_objects:
-            obj = bpy.data.objects.get(obj_name)
-            if obj:
-                obj.select_set(True)
-            else:
-                print("Object not found:", obj_name)
-        if context.scene.BIMClashProperties.sould_focus_on_clash:
-            context_override = tool.Blender.get_viewport_context()
-            with bpy.context.temp_override(**context_override):
-                bpy.ops.view3d.view_selected()
+        ClashDecorator.install(bpy.context)
+        target = Vector(clash["p1"])
+        tool.Clash.look_at(target, target + Vector((5, 5, 5)))
+        self.props.p1 = clash["p1"]
+        self.props.p2 = clash["p2"]
         return {"FINISHED"}
 
 
