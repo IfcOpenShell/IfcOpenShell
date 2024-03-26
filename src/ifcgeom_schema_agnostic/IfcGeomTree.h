@@ -1924,6 +1924,7 @@ namespace IfcGeom {
             normals_[t] = std::move(normals);
             aabbs_[t] = aabb;
             obbs_[t] = obb;
+            max_protrusions_[t] = std::min(std::min(obb.XHSize(), obb.YHSize()), obb.ZHSize()) * 2;
         }
         
 		void add_element(IfcGeom::BRepElement* elem) {
