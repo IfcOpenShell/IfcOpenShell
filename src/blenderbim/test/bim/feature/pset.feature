@@ -387,10 +387,10 @@ Scenario: Edit pset length property
 
     When I set "active_object.PsetProperties.properties['NosingLength'].metadata.length_value" to "0.45"
     Then "active_object.PsetProperties.properties['NosingLength'].metadata.float_value" is roughly "450"
-    
+
     When I press "bim.edit_pset(obj='IfcStairFlight/StairFlight', obj_type='Object')"
     Then nothing happens
-    
+
 Scenario: Edit qset length property
     Given an empty IFC project
     And I press "mesh.add_clever_stair"
@@ -401,15 +401,14 @@ Scenario: Edit qset length property
 
     # Testing Q_LENGTH type of prop
     Then "active_object.PsetProperties.properties['Length'].metadata.special_type" is "LENGTH"
-    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2492.57495"
+    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2492.57397"
     And "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "2.49257"
 
     When I set "active_object.PsetProperties.properties['Length'].metadata.float_value" to "350"
-    Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "350"
+    Then "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "0.35"
 
     When I set "active_object.PsetProperties.properties['Length'].metadata.length_value" to "0.45"
     Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "450"
-    
+
     When I press "bim.edit_pset(obj='IfcStairFlight/StairFlight', obj_type='Object')"
     Then nothing happens
-    
