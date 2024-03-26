@@ -215,7 +215,7 @@ class UnlinkObject(bpy.types.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+    obj: bpy.props.StringProperty(name="Object Name")
     should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
 
     def execute(self, context):
@@ -227,6 +227,7 @@ class UnlinkObject(bpy.types.Operator):
         else:
             objects = context.selected_objects
 
+        objects: list[bpy.types.Object]
         for obj in objects:
             was_active_object = obj == context.active_object
 
@@ -241,6 +242,27 @@ class UnlinkObject(bpy.types.Operator):
                 obj_copy = obj.copy()
                 if obj.data:
                     obj_copy.data = obj.data.copy()
+
+                    # prevent unlinking materials that might be used elsewhere
+                    replacements: dict[bpy.types.Material, bpy.types.Material] = dict()
+                    for material_slot in obj_copy.material_slots:
+                        material = material_slot.material
+                        if material is None:
+                            continue
+
+                        if material in replacements:
+                            material_replacement = replacements[material]
+
+                        # no need to copy non-ifc materials as unlinking won't do anything to them
+                        elif tool.Ifc.get_entity(material) is None and tool.Style.get_style(material) is None:
+                            replacements[material] = material
+                            continue
+
+                        else:
+                            material_replacement = material.copy()
+                            replacements[material] = material_replacement
+
+                        material_slot.material = material_replacement
 
                 tool.Geometry.delete_ifc_object(obj)
 

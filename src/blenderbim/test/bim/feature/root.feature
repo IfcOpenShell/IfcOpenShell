@@ -24,7 +24,7 @@ Scenario: Unlink object
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And I press "bim.add_material"
+    And I press "bim.add_style()"
     When I press "bim.unlink_object(obj='IfcWall/Cube')"
     Then the object "Cube" is not an IFC element
     And the material "Material" is an IFC style

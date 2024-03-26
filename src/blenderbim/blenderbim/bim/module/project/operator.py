@@ -113,6 +113,10 @@ class CreateProject(bpy.types.Operator):
         if tool.Blender.is_default_scene():
             for obj in bpy.data.objects:
                 bpy.data.objects.remove(obj)
+            for mesh in bpy.data.meshes:
+                bpy.data.meshes.remove(mesh)
+            for mat in bpy.data.materials:
+                bpy.data.materials.remove(mat)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
         tool.Blender.register_toolbar()
 
