@@ -96,7 +96,7 @@ class Style(blenderbim.core.tool.Style):
         return obj.name
 
     @classmethod
-    def get_style(cls, obj):
+    def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         if obj.BIMMaterialProperties.ifc_style_id:
             try:
                 return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)

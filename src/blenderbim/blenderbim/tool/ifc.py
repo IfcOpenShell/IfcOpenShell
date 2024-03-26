@@ -79,7 +79,7 @@ class Ifc(blenderbim.core.tool.Ifc):
         return IfcStore.get_schema()
 
     @classmethod
-    def get_entity(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
+    def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> ifcopenshell.entity_instance:
         ifc = IfcStore.get_file()
         props = getattr(obj, "BIMObjectProperties", None)
         if ifc and props and props.ifc_definition_id:

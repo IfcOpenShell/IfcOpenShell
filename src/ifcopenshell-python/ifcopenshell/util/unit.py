@@ -18,7 +18,7 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Tuple, Iterable, Any, Union, Literal
+from typing import Tuple, Iterable, Any, Union, Literal, Optional
 
 import ifcopenshell
 import ifcopenshell.api
@@ -525,7 +525,7 @@ def convert_unit(value, from_unit, to_unit):
     )
 
 
-def convert(value, from_prefix, from_unit, to_prefix, to_unit):
+def convert(value: float, from_prefix: Optional[str], from_unit: str, to_prefix: Optional[str], to_unit: str) -> float:
     """Converts between length, area, and volume units
 
     In this case, you manually specify the names and (optionally) prefixes to
@@ -534,12 +534,12 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
 
     :param value: The numeric value you want to convert
     :type value: float
-    :param from_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type from_prefix: str,optional
+    :param from_prefix: A prefix from IfcSIPrefix. Can be None
+    :type from_prefix: str, optional
     :param from_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
     :type from_unit: str
-    :param to_prefix: A prefix from IfcSIPrefix. Can be None.
-    :type to_prefix: str,optional
+    :param to_prefix: A prefix from IfcSIPrefix. Can be None
+    :type to_prefix: str, optional
     :param to_unit: IfcSIUnitName or IfcConversionBasedUnit.Name
     :type to_unit: str
     :return: The converted value.
@@ -566,7 +566,7 @@ def convert(value, from_prefix, from_unit, to_prefix, to_unit):
     return value
 
 
-def calculate_unit_scale(ifc_file, unit_type="LENGTHUNIT"):
+def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUNIT") -> float:
     """Returns a unit scale factor to convert to and from IFC project units and SI units.
 
     Example:
