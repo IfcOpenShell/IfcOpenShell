@@ -25,8 +25,16 @@ from shapely.geometry import Polygon
 from shapely.ops import unary_union
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.geom
+import ifcopenshell.util.element
 from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 import blenderbim.bim
+from typing import Literal, Union, Optional
+
+
+AxisType = Literal["x", "y", "z"]
+VectorTuple = tuple[float, float, float]
+QuanityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
 
 class QtoCalculator:
@@ -45,7 +53,7 @@ class QtoCalculator:
                 else:
                     self.mapping_dict[key][item] = None
 
-    def calculate_quantity(self, qto_name, quantity_name, obj):
+    def calculate_quantity(self, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
         """calculates the value of the quantity in the project units"""
         string = "self.mapping_dict[qto_name][quantity_name](obj"
         if isinstance(mapper[qto_name][quantity_name], dict):
@@ -54,11 +62,13 @@ class QtoCalculator:
             args = ""
         string += args
         string += ")"
-        value = eval(string)
+        value: float = eval(string)
 
         return tool.Qto.convert_to_project_units(value, qto_name, quantity_name) or value
 
-    def guess_quantity(self, prop_name, alternative_prop_names, obj):
+    def guess_quantity(
+        self, prop_name: str, alternative_prop_names: list[str], obj: bpy.types.Object
+    ) -> Union[float, None]:
         """guess the value of the quantity by name, returns the value in the project units"""
         prop_name = prop_name.lower()
         alternative_prop_names = [p.lower() for p in alternative_prop_names]
@@ -89,7 +99,7 @@ class QtoCalculator:
         if value is None:
             return
 
-        unit_type_keywords = {
+        unit_type_keywords: dict[str, QuanityTypes] = {
             "length": "Q_LENGTH",
             "width": "Q_LENGTH",
             "height": "Q_LENGTH",
@@ -102,10 +112,10 @@ class QtoCalculator:
         unit_type = next(unit_type_keywords[k] for k in unit_type_keywords if k in prop_name)
         return tool.Qto.convert_to_project_units(value, quantity_type=unit_type) or value
 
-    def get_units(self, o, vg_index):
+    def get_units(self, o: bpy.types.Object, vg_index: int) -> int:
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 
-    def get_linear_length(self, o):
+    def get_linear_length(self, o: bpy.types.Object) -> float:
         """_summary_: Returns the length of the longest edge of the object bounding box
 
         :param blender-object o: Blender Object
@@ -116,7 +126,7 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x, y, z)
 
-    def get_length(self, o, vg_index=None, main_axis: str = ""):
+    def get_length(self, o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "") -> float:
         if vg_index is None:
             x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
             y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
@@ -141,23 +151,23 @@ class QtoCalculator:
             length += self.get_edge_distance(o, e)
         return length
 
-    def get_stair_length(self, obj):
+    def get_stair_length(self, obj: bpy.types.Object) -> float:
         length = self.get_length(obj)
         height = self.get_height(obj)
         stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
         return stair_length
 
-    def get_net_stair_area(self, obj):
+    def get_net_stair_area(self, obj: bpy.types.Object) -> float:
         OBB_obj = self.get_OBB_object(obj)
         OBB_net_footprint_area = self.get_net_footprint_area(OBB_obj)
         return OBB_net_footprint_area
 
-    def get_gross_stair_area(self, obj):
+    def get_gross_stair_area(self, obj: bpy.types.Object) -> float:
         OBB_obj = self.get_OBB_object(obj)
         OBB_gross_footprint_area = self.get_gross_footprint_area(OBB_obj)
         return OBB_gross_footprint_area
 
-    def get_parametric_axis(self, obj):
+    def get_parametric_axis(self, obj: bpy.types.Object) -> Literal["AXIS2", "AXIS3", None]:
         relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(obj))
         if relating_type:
             parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -172,7 +182,7 @@ class QtoCalculator:
                     return None
         return None
 
-    def get_covering_gross_area(self, obj):
+    def get_covering_gross_area(self, obj: bpy.types.Object) -> float:
         get_parametric_axis = self.get_parametric_axis(obj)
         if not get_parametric_axis:
             return self.get_gross_footprint_area(obj)
@@ -181,7 +191,7 @@ class QtoCalculator:
         elif get_parametric_axis == "AXIS3":
             return self.get_gross_footprint_area(obj)
 
-    def get_covering_net_area(self, obj):
+    def get_covering_net_area(self, obj: bpy.types.Object) -> float:
         get_parametric_axis = self.get_parametric_axis(obj)
         if not get_parametric_axis:
             return self.get_net_footprint_area(obj)
@@ -190,7 +200,7 @@ class QtoCalculator:
         elif get_parametric_axis == "AXIS3":
             return self.get_net_footprint_area(obj)
 
-    def get_covering_width(self, obj):
+    def get_covering_width(self, obj: bpy.types.Object) -> float:
         get_parametric_axis = self.get_parametric_axis(obj)
         if not get_parametric_axis:
             return self.get_height(obj)
@@ -199,7 +209,7 @@ class QtoCalculator:
         elif get_parametric_axis == "AXIS3":
             return self.get_height(obj)
 
-    def get_width(self, o):
+    def get_width(self, o: bpy.types.Object) -> float:
         """_summary_: Returns the width of the object bounding box
 
         :param blender-object o: blender object
@@ -209,7 +219,7 @@ class QtoCalculator:
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
         return min(x, y)
 
-    def get_height(self, o):
+    def get_height(self, o: bpy.types.Object) -> float:
         """_summary_: Returns the height of the object bounding box
 
         :param blender-object o: blender object
@@ -217,32 +227,32 @@ class QtoCalculator:
         """
         return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
-    def get_opening_height(self, obj):
+    def get_opening_height(self, obj: bpy.types.Object) -> float:
         if self.is_opening_horizontal(obj):
             return self.get_width(obj)
         else:
             return self.get_height(obj)
 
-    def get_opening_depth(self, obj):
+    def get_opening_depth(self, obj: bpy.types.Object) -> float:
         if self.is_opening_horizontal(obj):
             return self.get_height(obj)
         else:
             return self.get_width(obj)
 
-    def get_opening_mapping_area(self, obj):
+    def get_opening_mapping_area(self, obj: bpy.types.Object) -> float:
         if self.is_opening_horizontal(obj):
             return self.get_net_footprint_area(obj)
         else:
             return self.get_net_side_area(obj)
 
-    def get_finish_ceiling_height(self, obj):
+    def get_finish_ceiling_height(self, obj: bpy.types.Object) -> float:
         space_height = self.get_height(obj)
         floor_height = self.get_finish_floor_height(obj)
         ceiling_height = self.get_ceiling_height(obj)
         finish_ceiling_height = space_height - floor_height - ceiling_height
         return finish_ceiling_height
 
-    def get_finish_floor_height(self, obj):
+    def get_finish_floor_height(self, obj: bpy.types.Object) -> float:
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         finish_floor_height = 0
@@ -258,7 +268,7 @@ class QtoCalculator:
 
         return finish_floor_height
 
-    def get_ceiling_height(self, obj):
+    def get_ceiling_height(self, obj: bpy.types.Object) -> float:
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         finish_ceiling_height = 0
@@ -274,7 +284,7 @@ class QtoCalculator:
 
         return finish_ceiling_height
 
-    def get_net_perimeter(self, o):
+    def get_net_perimeter(self, o: bpy.types.Object) -> float:
         parsed_edges = []
         shared_edges = []
         perimeter = 0
@@ -289,7 +299,7 @@ class QtoCalculator:
             perimeter -= self.get_edge_key_distance(o, edge_key)
         return perimeter
 
-    def get_gross_perimeter(self, o):
+    def get_gross_perimeter(self, o: bpy.types.Object) -> float:
         element = tool.Ifc.get_entity(o)
         mesh = self.get_gross_element_mesh(element)
         gross_obj = bpy.data.objects.new("GrossObj", mesh)
@@ -297,15 +307,15 @@ class QtoCalculator:
         self.delete_obj(gross_obj)
         return gross_perimeter
 
-    def get_space_net_perimeter(self, obj):
+    def get_space_net_perimeter(self, obj: bpy.types.Object) -> float:
         pass
 
-    def get_rectangular_perimeter(self, obj):
+    def get_rectangular_perimeter(self, obj: bpy.types.Object) -> float:
         length = self.get_length(obj, main_axis="x")
         height = self.get_height(obj)
         return (length + height) * 2
 
-    def get_lowest_polygons(self, o):
+    def get_lowest_polygons(self, o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
         lowest_polygons = []
         lowest_z = None
         for polygon in o.data.polygons:
@@ -321,7 +331,7 @@ class QtoCalculator:
                 lowest_z = z
         return lowest_polygons
 
-    def get_highest_polygons(self, o):
+    def get_highest_polygons(self, o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
         highest_polygons = []
         highest_z = None
         for polygon in o.data.polygons:
@@ -337,13 +347,13 @@ class QtoCalculator:
                 highest_z = z
         return highest_polygons
 
-    def get_edge_key_distance(self, obj, edge_key):
+    def get_edge_key_distance(self, obj: bpy.types.Object, edge_key: tuple[int, int]) -> float:
         return (obj.data.vertices[edge_key[1]].co - obj.data.vertices[edge_key[0]].co).length
 
-    def get_edge_distance(self, obj, edge):
+    def get_edge_distance(self, obj: bpy.types.Object, edge: bpy.types.MeshEdge) -> float:
         return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
 
-    def get_net_floor_area(self, obj):
+    def get_net_floor_area(self, obj: bpy.types.Object) -> float:
         decompositions = self.get_obj_decompositions(obj)
         if not decompositions:
             return self.get_gross_footprint_area(obj)
@@ -359,7 +369,7 @@ class QtoCalculator:
 
         return total_net_floor_area
 
-    def get_gross_ceiling_area(self, obj):
+    def get_gross_ceiling_area(self, obj: bpy.types.Object) -> float:
         decompositions = self.get_obj_decompositions(obj)
         if not decompositions:
             return self.get_gross_top_area(obj)
@@ -375,7 +385,7 @@ class QtoCalculator:
 
         return total_gross_ceiling_area
 
-    def get_net_ceiling_area(self, obj):
+    def get_net_ceiling_area(self, obj: bpy.types.Object) -> float:
         decompositions = self.get_obj_decompositions(obj)
         if not decompositions:
             return self.get_net_top_area(obj)
@@ -395,7 +405,7 @@ class QtoCalculator:
 
         return total_net_ceiling_area
 
-    def get_space_net_volume(self, obj):
+    def get_space_net_volume(self, obj: bpy.types.Object) -> float:
         decompositions = self.get_obj_decompositions(obj)
         if not decompositions:
             return self.get_gross_volume(obj)
@@ -410,7 +420,7 @@ class QtoCalculator:
 
         return total_space_net_volume
 
-    def get_net_footprint_area(self, o):
+    def get_net_footprint_area(self, o: bpy.types.Object) -> float:
         """_summary_: Returns the area of the footprint of the object, excluding any holes
 
         :param blender-object o: blender object
@@ -421,7 +431,7 @@ class QtoCalculator:
             area += polygon.area
         return area
 
-    def get_gross_footprint_area(self, o):
+    def get_gross_footprint_area(self, o: bpy.types.Object) -> float:
         """_summary_: Returns the area of the footprint of the object, without related opening and excluding any holes
 
         :param blender-object o: blender object
@@ -437,7 +447,7 @@ class QtoCalculator:
         self.delete_mesh(mesh)
         return gross_footprint_area
 
-    def get_net_roofprint_area(self, o):
+    def get_net_roofprint_area(self, o: bpy.types.Object) -> float:
         # Is roofprint the right word? Couldn't think of anything better - vulevukusej
         """_summary_: Returns the area of the net roofprint of the object, excluding any holes
 
@@ -449,7 +459,7 @@ class QtoCalculator:
             area += polygon.area
         return area
 
-    def get_side_area(self, o):
+    def get_side_area(self, o: bpy.types.Object) -> float:
         # There are a few dumb options for this, but this seems the dumbest
         # until I get more practical experience on what works best.
         x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
@@ -457,8 +467,7 @@ class QtoCalculator:
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
         return max(x * z, y * z)
 
-    def get_cross_section_area(self, obj):
-        element = tool.Ifc.get_entity(obj)
+    def get_cross_section_area(self, obj: bpy.types.Object) -> float:
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         item = representation.Items[0]
         while True:
@@ -474,7 +483,7 @@ class QtoCalculator:
                 return area
         # TODO handle other types of sections, and then fall back to mesh parsing
 
-    def get_gross_surface_area(self, o, vg_index=None):
+    def get_gross_surface_area(self, o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
         if vg_index is None:
             if not self.has_openings(o):
                 return self.get_net_surface_area(o)
@@ -492,29 +501,29 @@ class QtoCalculator:
                 area += polygon.area
         return area
 
-    def get_net_surface_area(self, obj):
+    def get_net_surface_area(self, obj: bpy.types.Object) -> float:
         return self.get_mesh_area(obj.data)
 
-    def get_mesh_area(self, mesh):
+    def get_mesh_area(self, mesh: bpy.types.Mesh) -> float:
         area = 0
         for polygon in mesh.polygons:
             area += polygon.area
         return area
 
-    def is_polygon_in_vg(self, polygon, vertices_in_vg):
+    def is_polygon_in_vg(self, polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.types.MeshVertex]) -> bool:
         for v in polygon.vertices:
             if v not in vertices_in_vg:
                 return False
         return True
 
-    def get_net_volume(self, o):
+    def get_net_volume(self, o: bpy.types.Object) -> float:
         o_mesh = bmesh.new()
         o_mesh.from_mesh(o.data)
         volume = o_mesh.calc_volume()
         o_mesh.free()
         return volume
 
-    def get_gross_volume(self, o):
+    def get_gross_volume(self, o: bpy.types.Object) -> float:
         if not self.has_openings(o):
             return self.get_net_volume(o)
 
@@ -529,16 +538,18 @@ class QtoCalculator:
 
         return gross_volume
 
-    def has_openings(self, obj):
+    def has_openings(
+        self, obj: bpy.types.Object
+    ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
         element = tool.Ifc.get_entity(obj)
         return element and getattr(element, "HasOpenings", [])
 
-    def get_obj_decompositions(self, obj):
+    def get_obj_decompositions(self, obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
         return decompositions
 
-    def get_gross_weight(self, obj):
+    def get_gross_weight(self, obj: bpy.types.Object) -> Union[float, None]:
         obj_mass_density = self.get_obj_mass_density(obj)
         if not obj_mass_density:
             return
@@ -546,7 +557,7 @@ class QtoCalculator:
         gross_weight = obj_mass_density * gross_volume
         return gross_weight
 
-    def get_net_weight(self, obj):
+    def get_net_weight(self, obj: bpy.types.Object) -> Union[float, None]:
         obj_mass_density = self.get_obj_mass_density(obj)
         if not obj_mass_density:
             return
@@ -554,7 +565,7 @@ class QtoCalculator:
         net_weight = obj_mass_density * net_volume
         return net_weight
 
-    def get_obj_mass_density(self, obj):
+    def get_obj_mass_density(self, obj: bpy.types.Object) -> Union[float, None]:
         entity = tool.Ifc.get_entity(obj)
         material = ifcopenshell.util.element.get_material(entity)
         if material is None:
@@ -629,7 +640,7 @@ class QtoCalculator:
     #         volume += v1.dot(v2.cross(v3)) / 6.0
     # return volume
 
-    def get_opening_type(self, opening, obj):
+    def get_opening_type(self, opening: bpy.types.Object, obj: bpy.types.Object) -> Literal["OPENING", "RECESS"]:
         """_summary_: Returns the opening type - OPENING / RECESS
 
         :param blender-object opening: blender opening object
@@ -649,14 +660,22 @@ class QtoCalculator:
         return "OPENING" if ray_intersections % 2 == 0 else "RECESS"
 
     def get_opening_area(
-        self, obj, angle_z1: int = 45, angle_z2: int = 135, min_area: int = 0, ignore_recesses: bool = False
-    ):
+        self,
+        obj: bpy.types.Object,
+        angle_z1: int = 45,
+        angle_z2: int = 135,
+        min_area: int = 0,
+        ignore_recesses: bool = False,
+    ) -> float:
         """_summary_: Returns the lateral area of the openings in the object.
 
         :param obj: blender object
-        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector lower than this value will be ignored, defaults to 45
-        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the opening area. Openings with a normal_vector greater than this value will be ignored,defaults to 135
-        :param float min_area: Minimum opening area to consider.  Values lower than this will be ignored, defaults to 0
+        :param int angle_z1: Angle measured from the positive z-axis to the normal-vector of the opening area.
+            Openings with a normal_vector lower than this value will be ignored, defaults to 45
+        :param int angle_z2: Angle measured from the positive z-axis to the normal-vector of the opening area.
+            Openings with a normal_vector greater than this value will be ignored,defaults to 135
+        :param float min_area: Minimum opening area to consider.  Values lower than this will be ignored,
+            defaults to 0
         :param bool ignore_recesses: Toggle whether recess areas should be considered, defaults to False
         :return float: Opening Area
         """
@@ -702,14 +721,14 @@ class QtoCalculator:
 
     def get_lateral_area(
         self,
-        obj,
+        obj: bpy.types.Object,
         subtract_openings: bool = True,
         exclude_end_areas: bool = False,
         exclude_side_areas: bool = False,
         angle_z1: int = 45,
         angle_z2: int = 135,
         main_axis: str = "",
-    ):
+    ) -> float:
         """_summary_
 
         :param blender-object obj: blender object, bpy.types.Object
@@ -760,7 +779,7 @@ class QtoCalculator:
             area += polygon.area
         return area + total_opening_area
 
-    def get_gross_side_area(self, obj):
+    def get_gross_side_area(self, obj: bpy.types.Object) -> float:
         if not self.has_openings(obj):
             return self.get_net_side_area(obj)
 
@@ -768,15 +787,15 @@ class QtoCalculator:
 
         return gross_side_area
 
-    def get_net_side_area(self, obj):
+    def get_net_side_area(self, obj: bpy.types.Object) -> float:
         net_side_area = self.get_lateral_area(obj, exclude_end_areas=True, main_axis="x") / 2
         return net_side_area
 
-    def get_outer_surface_area(self, obj):
+    def get_outer_surface_area(self, obj: bpy.types.Object) -> float:
         outer_surface_area = self.get_lateral_area(obj, exclude_end_areas=True, angle_z1=0, angle_z2=360)
         return outer_surface_area
 
-    def get_end_area(self, obj):
+    def get_end_area(self, obj: bpy.types.Object) -> float:
         element = tool.Ifc.get_entity(obj)
         gross_mesh = self.get_gross_element_mesh(element)
         gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
@@ -790,7 +809,7 @@ class QtoCalculator:
 
         return end_area
 
-    def get_gross_top_area(self, obj, angle: int = 45):
+    def get_gross_top_area(self, obj: bpy.types.Object, angle: int = 45) -> float:
         """_summary_: Returns the gross top area of the object.
 
         :param blender-object obj: blender object
@@ -827,12 +846,14 @@ class QtoCalculator:
         return area + opening_area
 
     # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
-    def get_net_top_area(self, obj, angle: int = 45, ignore_internal: bool = True):
+    def get_net_top_area(self, obj: bpy.types.Object, angle: int = 45, ignore_internal: bool = True) -> float:
         """_summary_: Returns the net top area of the object.
 
         :param blender-object obj: blender object
-        :param int angle: Angle measured from the positive z-axis to the normal-vector of the area. Values lower than this will be ignored, defaults to 45
-        :param bool ignore_internal: Toggle whether internal areas should be subtracted (Like window sills), defaults to True
+        :param int angle: Angle measured from the positive z-axis to the normal-vector of the area.
+            Values lower than this will be ignored, defaults to 45
+        :param bool ignore_internal: Toggle whether internal areas should be subtracted (Like window sills),
+            defaults to True
         :return float: Net Top Area
         """
         z_axis = (0, 0, 1)
@@ -852,11 +873,11 @@ class QtoCalculator:
 
         return area
 
-    def get_projected_area(self, obj, projection_axis: str = "z", is_gross: bool = True):
+    def get_projected_area(self, obj, projection_axis: AxisType = "z", is_gross: bool = True) -> float:
         """_summary_: Returns the projected area of the object.
 
         :param blender-object obj: blender object
-        :param str projection_axis: Axis to project the area onto. Can be "X", "Y" or "Z"
+        :param str projection_axis: Axis to project the area onto. Can be "x", "y" or "z"
         :param bool is_gross: if True, the projected area will include openings, if False, the projected area will exclude openings
         :return float: Projected Area
         """
@@ -891,7 +912,7 @@ class QtoCalculator:
             return projected_polygon.area + void_area
         return projected_polygon.area
 
-    def get_OBB_object(self, obj):
+    def get_OBB_object(self, obj: bpy.types.Object) -> bpy.types.Object:
         """_summary_: Returns the Oriented-Bounding-Box (OBB) of the object.
 
         :param blender-object obj: Blender Object
@@ -932,7 +953,7 @@ class QtoCalculator:
 
         return new_OBB_object
 
-    def get_AABB_object(self, obj):
+    def get_AABB_object(self, obj: bpy.types.Object) -> bpy.types.Object:
         """_summary_: Returns the Axis-Aligned-Bounding-Box (AABB) of the object.
 
         :param blender-object obj: Blender Object
@@ -988,12 +1009,12 @@ class QtoCalculator:
 
     def get_bisected_obj(
         self,
-        obj,
-        plane_co_pos,
-        plane_no_pos,
-        plane_co_neg,
-        plane_no_neg,
-    ):
+        obj: bpy.types.Object,
+        plane_co_pos: VectorTuple,
+        plane_no_pos: VectorTuple,
+        plane_co_neg: VectorTuple,
+        plane_no_neg: VectorTuple,
+    ) -> bpy.types.Object:
         """_summary_: Returns the object bisected by two planes.
 
         :param blender-object obj: Blender Object
@@ -1031,11 +1052,12 @@ class QtoCalculator:
 
         return bis_obj
 
-    def get_total_contact_area(self, obj, class_filter: str = ["IfcElement"]):
+    def get_total_contact_area(self, obj: bpy.types.Object, class_filter: list[str] = ["IfcElement"]) -> float:
         """_summary_: Returns the total contact area of the object with other objects.
 
         :param blender-object obj: Blender Object
-        :param list [] class_filter: A list of classes used to filter the objects to be considered for the calculation. Example: ["IfcWall"] or ["IfcWall", "IfcSlab"]
+        :param list [] class_filter: A list of classes used to filter the objects
+            to be considered for the calculation. Example: ["IfcWall"] or ["IfcWall", "IfcSlab"]
         :return float: Total contact area of the object with other objects.
         """
         total_contact_area = 0
@@ -1046,11 +1068,12 @@ class QtoCalculator:
 
         return total_contact_area
 
-    def get_touching_objects(self, obj, class_filter):
+    def get_touching_objects(self, obj: bpy.types.Object, class_filter: list[str]) -> list[bpy.types.Object]:
         """_summary_: Returns a list of objects that are touching the object.
 
         :param blender-object obj: Blender Object
-        :param list [] class_filter: A list of classes used to filter the objects to be considered for the calculation. Example: ["IfcWall"] or ["IfcWall", "IfcSlab"]
+        :param list [] class_filter: A list of classes used to filter the objects
+            to be considered for the calculation. Example: ["IfcWall"] or ["IfcWall", "IfcSlab"]
         :return list: List of touching objects
         """
         # rotate the object ever so slightly, otherwise bvhtree.overlap won't work properly.  https://blender.stackexchange.com/a/275244/130742
@@ -1094,7 +1117,7 @@ class QtoCalculator:
 
         return touching_objects
 
-    def get_contact_area(self, object1, object2):
+    def get_contact_area(self, object1: bpy.types.Object, object2: bpy.types.Object) -> float:
         """_summary_: Returns the contact area between two objects.
 
         :param blender-object obj: Blender Object
@@ -1109,7 +1132,13 @@ class QtoCalculator:
                 total_area += self.get_intersection_between_polygons(object1, poly1, object2, poly2)
         return total_area
 
-    def get_intersection_between_polygons(self, object1, poly1, object2, poly2):
+    def get_intersection_between_polygons(
+        self,
+        object1: bpy.types.Object,
+        poly1: bpy.types.MeshPolygon,
+        object2: bpy.types.Object,
+        poly2: bpy.types.MeshPolygon,
+    ) -> float:
         """_summary_: Returns the intersection between two polygons.
 
         :param blender-object object1: Blender Object
@@ -1152,7 +1181,9 @@ class QtoCalculator:
             # TopologicalError - Generated Geometry might be invalid
             return 0
 
-    def create_shapely_polygon(self, obj, polygon, trans_matrix):
+    def create_shapely_polygon(
+        self, obj: bpy.types.Object, polygon: bpy.types.MeshPolygon, trans_matrix: Matrix
+    ) -> Polygon:
         """_summary_: Create a shapely polygon
 
         :param blender-object obj: Blender Object
@@ -1171,12 +1202,14 @@ class QtoCalculator:
             polygon_tuples.append((x, y))
         return Polygon(polygon_tuples)
 
-    def get_gross_element_mesh(self, element):
+    def get_gross_element_mesh(self, element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
         settings = ifcopenshell.geom.settings()
         settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
         return self.create_mesh_from_shape(element, settings)
 
-    def create_mesh_from_shape(self, element, settings=None):
+    def create_mesh_from_shape(
+        self, element: ifcopenshell.entity_instance, settings: Optional[ifcopenshell.geom.settings] = None
+    ) -> bpy.types.Mesh:
         if settings is None:
             settings = ifcopenshell.geom.settings()
         shape = ifcopenshell.geom.create_shape(settings, element)
@@ -1203,12 +1236,12 @@ class QtoCalculator:
         mesh.update()
         return mesh
 
-    def get_bmesh_from_mesh(self, mesh):
+    def get_bmesh_from_mesh(self, mesh: bpy.types.Mesh) -> bmesh.types.BMesh:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         return bm
 
-    def get_object_main_axis(self, o):
+    def get_object_main_axis(self, o: bpy.types.Object) -> AxisType:
         """_summary_: Returns the main object axis. Useful for profile-defined objects.
 
         :param blender-object o: Blender Object
@@ -1227,18 +1260,18 @@ class QtoCalculator:
         else:
             return "x"
 
-    def is_opening_horizontal(self, o):
+    def is_opening_horizontal(self, o: bpy.types.Object) -> bool:
         x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
         y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
         z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
         return z < x and z < y
 
-    def delete_mesh(self, mesh):
+    def delete_mesh(self, mesh: bpy.types.Mesh) -> None:
         mesh.user_clear()
         bpy.data.meshes.remove(mesh)
 
-    def delete_obj(self, obj):
+    def delete_obj(self, obj: bpy.types.Object) -> None:
         bpy.data.objects.remove(obj, do_unlink=True)
 
 
