@@ -544,14 +544,14 @@ Scenario: Override paste buffer - with active IFC data
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "view3d.copybuffer"
+    # IFC elements unlinked on paste for safety
     And I press "bim.override_paste_buffer"
     Then the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
-    And the object "IfcWall/Cube.001" exists
-    And the object "IfcWall/Cube.001" is an "IfcWall"
-    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    And the object "IfcBuildingStorey/My Storey.001" exists
-    And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+    And the object "Cube.001" exists
+    And the object "Cube.001" is not an IFC element
+    And the object "My Storey.001" exists
+    And the object "My Storey.001" is not an IFC element
 
 Scenario: Duplicate linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
