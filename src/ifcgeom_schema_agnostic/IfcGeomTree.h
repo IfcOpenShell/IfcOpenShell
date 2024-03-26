@@ -1738,15 +1738,16 @@ namespace IfcGeom {
         }
 
         static bool is_manifold(const std::vector<int>& fs) {
+            // @nb this assumes geometry is processed with the WELD_VERTICES setting
             std::unordered_set<std::pair<size_t, size_t>, boost::hash<std::pair<size_t, size_t>>> dict;
             for (size_t i = 0; i < fs.size(); i += 3) {
                 for (size_t j = 0; j < 3; ++j) {
                     auto k = (j + 1) % 3;
-                    auto it = dict.find({ i + j, i + k });
+                    auto it = dict.find({ fs[i + j], fs[i + k] });
                     if (it != dict.end()) {
                         dict.erase(it);
                     } else {
-                        dict.insert({ i + k, i + j });
+                        dict.insert({ fs[i + k], fs[i + j] });
                     }
                 }
             }
