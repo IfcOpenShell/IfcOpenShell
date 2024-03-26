@@ -44,7 +44,12 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
     def _execute(self, context):
         relating_obj = None
         if self.relating_object:
-            relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+            element = tool.Ifc.get().by_id(self.relating_object)
+            if element.IsDecomposedBy:
+                relating_obj = tool.Ifc.get_object(element)
+            else:
+                assembly = element.Decomposes[0].RelatingObject
+                relating_obj = tool.Ifc.get_object(assembly)
         elif context.active_object:
             relating_obj = context.active_object
         if not relating_obj:
@@ -89,9 +94,9 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
                 relating_obj=tool.Ifc.get_object(aggregate),
                 related_obj=tool.Ifc.get_object(element),
             )
-            
+
             # Removes Pset related to Linked Aggregates
-            pset = ifcopenshell.util.element.get_pset(element, 'BBIM_Linked_Aggregate')
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate")
             if pset:
                 pset = tool.Ifc.get().by_id(pset["id"])
                 ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
@@ -201,15 +206,29 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
     bl_label = "Select Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
+    select_parts: bpy.props.BoolProperty(default=False)
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.select_parts:
+            return "Select Aggregate and Parts"
+        else:
+            return "Select Aggregate"
 
     def execute(self, context):
         self.file = IfcStore.get_file()
         obj = bpy.data.objects.get(self.obj) or context.active_object
         aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
         aggregate_obj = tool.Ifc.get_object(aggregate)
+        if self.select_parts:
+            bpy.ops.bim.select_parts(obj=aggregate_obj.name)
         if aggregate_obj in context.selectable_objects:
-            aggregate_obj.select_set(True)
-            bpy.context.view_layer.objects.active = aggregate_obj
+            tool.Blender.set_objects_selection(
+                context,
+                aggregate_obj,
+                [aggregate_obj],
+                clear_previous_selection=not self.select_parts,
+            )
         return {"FINISHED"}
 
 
@@ -237,6 +256,7 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
             part_name=self.part_name,
         )
 
+
 class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
     bl_idname = "bim.break_link_to_other_aggregates"
     bl_label = "Break link to other aggregates"
@@ -251,12 +271,12 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
             return []
 
         parts = ifcopenshell.util.element.get_parts(aggregate)
-        
+
         for part in parts:
-            pset = ifcopenshell.util.element.get_pset(part, 'BBIM_Linked_Aggregate')
+            pset = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
             pset = tool.Ifc.get().by_id(pset["id"])
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
-        
+
         linked_aggregate_group = [
             r.RelatingGroup
             for r in getattr(aggregate, "HasAssignments", []) or []
@@ -264,8 +284,9 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
             if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
         ]
         tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], product=aggregate)
-        
+
         return {"FINISHED"}
+
 
 class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
     bl_idname = "bim.select_linked_aggregates"
@@ -279,17 +300,17 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
             return []
         if not element:
             return []
-        
+
         linked_aggregate_group = [
             r.RelatingGroup
             for r in getattr(aggregate, "HasAssignments", []) or []
             if r.is_a("IfcRelAssignsToGroup")
             if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
         ]
-        
+
         for obj in context.selected_objects:
             obj.select_set(False)
-            
+
         for rel in linked_aggregate_group[0].IsGroupedBy or []:
             for element in rel.RelatedObjects:
                 obj = tool.Ifc.get_object(element)

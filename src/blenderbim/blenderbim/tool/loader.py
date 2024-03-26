@@ -26,6 +26,7 @@ import os
 import numpy as np
 from mathutils import Vector
 from pathlib import Path
+from typing import Union
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -34,9 +35,12 @@ from pathlib import Path
 # supplementary objects (e.g. drawings, structural analysis models, etc).
 
 
+OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
+
+
 class Loader(blenderbim.core.tool.Loader):
     @classmethod
-    def create_project_collection(self, name):
+    def create_project_collection(cls, name: str) -> bpy.types.Collection:
         project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project_obj.BIMObjectProperties.collection
         for collection in project_collection.children:
@@ -51,7 +55,7 @@ class Loader(blenderbim.core.tool.Loader):
         return collection
 
     @classmethod
-    def get_mesh_name(cls, geometry):
+    def get_mesh_name(cls, geometry) -> str:
         representation_id = geometry.id
         if "-" in representation_id:
             representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
@@ -62,11 +66,11 @@ class Loader(blenderbim.core.tool.Loader):
         return "{}/{}".format(context_id, representation_id)
 
     @classmethod
-    def get_name(cls, element):
+    def get_name(cls, element: ifcopenshell.entity_instance) -> str:
         return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
 
     @classmethod
-    def link_mesh(cls, shape, mesh):
+    def link_mesh(cls, shape, mesh: OBJECT_DATA_TYPE) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
         if "-" in geometry.id:
             mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])

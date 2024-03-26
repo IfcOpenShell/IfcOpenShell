@@ -37,6 +37,7 @@ from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offset
 from blenderbim.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
+from typing import Optional, Iterator, Type, Union
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 
@@ -69,7 +70,7 @@ class profile_consequential:
         cls.lines = []
 
 
-def worldspace_to_winspace(verts, context):
+def worldspace_to_winspace(verts: list[Vector], context: bpy.types.Context) -> list[Vector]:
     """Convert world space verts to window space"""
     region = context.region
     region3d = context.region_data
@@ -80,7 +81,7 @@ def worldspace_to_winspace(verts, context):
     return winspace_verts
 
 
-def winspace_to_worldspace(verts, context):
+def winspace_to_worldspace(verts: list[Vector], context: bpy.types.Context) -> list[Vector]:
     """Convert winspace verts to world space"""
     region = context.region
     region3d = context.region_data
@@ -121,17 +122,18 @@ def get_callout_head(edge_dir, edge_side, callout_size, callout_gap):
     return head
 
 
-def get_circle_head(size, segments=20):
+def get_circle_head(size: float, segments: int = 20, rotation: float = 0.0) -> list[Vector]:
+    """`rotation` value in radians"""
     angle_d = 2 * pi / segments
     head = []
     for i in range(segments):
-        angle = angle_d * i
+        angle = angle_d * i + rotation
         head.append(Vector([cos(angle), sin(angle), 0]) * size)
     return head
 
 
-def get_circle_head_asterisk(size, segments=6):
-    circle_head = get_circle_head(size, segments)
+def get_circle_head_asterisk(size: float, segments: int = 6, rotation: float = 0.0) -> Iterator[tuple[Vector, Vector]]:
+    circle_head = get_circle_head(size, segments, rotation)
     middle = segments // 2
     return zip(circle_head[:middle], circle_head[middle:])
 
@@ -264,7 +266,7 @@ class BaseDecorator:
         vertices = [obj.matrix_world @ v.co for v in bm.verts]
         return vertices, indices
 
-    def decorate(self, context, obj):
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object):
         """perform actual drawing stuff"""
         raise NotImplementedError()
 
@@ -310,13 +312,28 @@ class BaseDecorator:
 
         self.draw_lines(context, obj, output_verts, output_edges)
 
-    def draw_batch(self, shader_type, content_pos, color, indices=None):
+    def draw_batch(
+        self,
+        shader_type: str,
+        content_pos: list[Vector],
+        color: tuple[float, float, float, float],
+        indices: Optional[list[tuple[int, int]]] = None,
+    ) -> None:
         shader = self.line_shader if shader_type == "LINES" else self.base_shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_lines(self, context, obj, vertices, indices, color=None, line_width=1.0):
+    def draw_lines(
+        self,
+        context: bpy.types.Context,
+        obj: Optional[bpy.types.Object],
+        vertices: list[Vector],
+        indices: list[tuple[int, int]],
+        color: Optional[tuple[float, float, float, float]] = None,
+        line_width: float = 1.0,
+    ) -> None:
+        # TODO: `obj` is actually never used, need to remove it
         """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
         if not color:
@@ -329,7 +346,7 @@ class BaseDecorator:
         gpu.state.blend_set("ALPHA")
         self.draw_batch("LINES", vertices, color, indices)
 
-    def get_viewport_drawing_scale(self, context):
+    def get_viewport_drawing_scale(self, context: bpy.types.Context) -> float:
         # Horrific prototype code
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
@@ -485,14 +502,16 @@ class BaseDecorator:
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
         return format_distance(value, precision=precision, decimal_places=decimal_places)
 
-    def draw_asterisk(self, context, obj):
+    def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
+        """`pos` is a world space position\n
+        `rotation` value in radians"""
         # gather geometry data and convert to winspace
-        verts = [obj.location]
+        verts = [pos]
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         winspace_verts = worldspace_to_winspace(verts, context)
 
         # setup geometry parameters
-        circle_size = viewportDrawingScale * 4
+        circle_size = viewportDrawingScale * 4 * scale
 
         output_verts = []
         output_edges = []
@@ -502,20 +521,13 @@ class BaseDecorator:
         }
 
         v0 = winspace_verts[0]
-        asterisk_head = get_circle_head_asterisk(circle_size)
+        asterisk_head = get_circle_head_asterisk(circle_size, rotation=rotation)
         start_i = 0
         for segment in asterisk_head:
             start_i = add_verts_sequence(add_offsets(v0, segment), start_i, **out_kwargs)
-        self.draw_lines(context, obj, output_verts, output_edges)
+        self.draw_lines(context, None, output_verts, output_edges)
 
-    def draw_text(self, context, obj, text_world_position=None, reverse_lines_order=False):
-        """if `text_world_position` is not provided, the object's location will be used"""
-
-        if not text_world_position:
-            text_world_position = obj.location
-
-        region = context.region
-        region3d = context.region_data
+    def get_annotation_direction(self, context: bpy.types.Context, obj: bpy.types.Object) -> Vector:
         camera = context.scene.camera
 
         def get_basis_vector(matrix, i=0):
@@ -523,10 +535,57 @@ class BaseDecorator:
             return matrix.inverted()[i].to_3d().normalized()
 
         text_dir_world_x_axis = get_basis_vector(obj.matrix_world)
-
         camera_matrix = tool.Drawing.get_camera_matrix(camera)
-
         text_dir = (camera_matrix.inverted().to_quaternion() @ text_dir_world_x_axis).to_2d().normalized()
+        return text_dir
+
+    def draw_symbol(self, context: bpy.types.Context, obj: bpy.types.Object, annotation_dir: Vector) -> None:
+        if obj.type not in ("MESH", "EMPTY"):
+            return
+
+        if obj.type == "MESH":
+            mesh: bpy.types.Mesh = obj.data
+
+            if len(mesh.vertices) == 0:
+                return
+
+            if mesh.edges:
+                MiscDecorator.decorate(self, context, obj)
+                return
+
+            symbol = DecoratorData.get_symbol(obj)
+            if not symbol:
+                return
+
+            for vert in mesh.vertices:
+                self.draw_asterisk(context, obj.matrix_world @ vert.co)
+
+            return
+
+        # EMPTY objects
+        symbol = DecoratorData.get_symbol(obj)
+        if not symbol:
+            return
+
+        rotation = -Vector((1, 0)).angle_signed(annotation_dir)
+        # NOTE: for now we assume that scale is uniform
+        self.draw_asterisk(context, obj.location, rotation, obj.scale.x)
+
+    def draw_text(
+        self,
+        context: bpy.types.Context,
+        obj: bpy.types.Object,
+        text_world_position: Optional[Vector] = None,
+        reverse_lines_order=False,
+    ) -> None:
+        """if `text_world_position` is not provided, the object's location will be used"""
+
+        if not text_world_position:
+            text_world_position = obj.location
+
+        region = context.region
+        region3d = context.region_data
+        text_dir = self.get_annotation_direction(context, obj)
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
         props = obj.BIMTextProperties
@@ -539,8 +598,7 @@ class BaseDecorator:
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
         if symbol:
-            self.draw_asterisk(context, obj)
-            # NOTE: for now we assume that scale is uniform
+            self.draw_symbol(context, obj, text_dir)
             text_scale = obj.scale.x
 
         line_i = 0
@@ -812,8 +870,9 @@ class AngleDecorator(BaseDecorator):
             base_edge = edge0 if tool.Cad.is_counter_clockwise_order(p0, p1, p2) else edge1
             text_offset = (Matrix.Rotation(-angle_rad / 2, 2) @ base_edge).normalized() * (radius + ANGLE_LABEL_OFFSET)
             label_position = p1 + text_offset
-
-            text = f"{int(angle)}deg"
+            drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+            decimal_places = drawing_pset_data.get("AngleDecimalPlaces", None)
+            text = f"{round(angle, decimal_places)}°"
             label_dir = Vector((1, 0))
             self.draw_label(context, text, label_position, label_dir, box_alignment="center")
 
@@ -1003,7 +1062,7 @@ class StairDecorator(BaseDecorator):
 class MiscDecorator(BaseDecorator):
     objecttype = "MISC"
 
-    def decorate(self, context, obj):
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object):
         if obj.data.is_editmode:
             verts, idxs = self.get_editmesh_geom(obj)
         else:
@@ -1505,6 +1564,14 @@ class TextDecorator(BaseDecorator):
         self.draw_text(context, obj)
 
 
+class SymbolDecorator(BaseDecorator):
+    objecttype = "SYMBOL"
+
+    def decorate(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        annotation_dir = self.get_annotation_direction(context, obj)
+        self.draw_symbol(context, obj, annotation_dir)
+
+
 class CutDecorator:
     installed = None
     cache = {}
@@ -1901,7 +1968,7 @@ class CutDecorator:
 
 
 class DecorationsHandler:
-    decorators_classes = [
+    decorators_classes: list[Type[BaseDecorator]] = [
         DimensionDecorator,
         AngleDecorator,
         GridDecorator,
@@ -1918,6 +1985,7 @@ class DecorationsHandler:
         SectionDecorator,
         ElevationDecorator,
         TextDecorator,
+        SymbolDecorator,
         BattingDecorator,
         FallDecorator,
     ]
@@ -1945,6 +2013,7 @@ class DecorationsHandler:
         self.decorators = {cls.objecttype: cls() for cls in self.decorators_classes}
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
+        self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
 
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?
@@ -1962,7 +2031,7 @@ class DecorationsHandler:
             if not element.is_a("IfcAnnotation"):
                 continue
 
-            object_type = element.ObjectType
+            object_type: Union[str, None] = element.ObjectType
             if object_type == "DRAWING":
                 continue
 

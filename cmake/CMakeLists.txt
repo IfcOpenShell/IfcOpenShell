@@ -376,13 +376,34 @@ if(BUILD_IFCGEOM)
         message(STATUS "Looking for Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
     endif()
 
+    if(OCC_INCLUDE_DIR)
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAJOR
+            REGEX "#define OCC_VERSION_MAJOR.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MAJOR ${OCC_MAJOR})
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MINOR
+          REGEX "#define OCC_VERSION_MINOR.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MINOR ${OCC_MINOR})
+        file(STRINGS ${OCC_INCLUDE_DIR}/Standard_Version.hxx OCC_MAINT
+          REGEX "#define OCC_VERSION_MAINTENANCE.*"
+        )
+        string(REGEX MATCH "[0-9]+" OCC_MAINT ${OCC_MAINT})     
+        set(OCC_VERSION_STRING "${OCC_MAJOR}.${OCC_MINOR}.${OCC_MAINT}")
+    endif(OCC_INCLUDE_DIR)
+
     set(OPENCASCADE_LIBRARY_NAMES
         TKernel TKMath TKBRep TKGeomBase TKGeomAlgo TKG3d TKG2d TKShHealing TKTopAlgo TKMesh TKPrim TKBool TKBO
-        TKFillet TKSTEP TKSTEPBase TKSTEPAttr TKXSBase TKSTEP209 TKIGES TKOffset TKHLR
+        TKFillet TKXSBase TKOffset TKHLR
 
         # @todo investigate the exact conditions when this is necessary
         TKBin
     )
+    if(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+        list(APPEND OPENCASCADE_LIBRARY_NAMES  TKIGES TKSTEPBase TKSTEPAttr TKSTEP209 TKSTEP)
+    else(OCC_VERSION_STRING VERSION_LESS 7.8.0)
+        list(APPEND OPENCASCADE_LIBRARY_NAMES TKDESTEP TKDEIGES)
+    endif(OCC_VERSION_STRING VERSION_LESS 7.8.0)
 
     if("${OCC_LIBRARY_DIR}" STREQUAL "")
         find_library(OCC_LIBRARY TKernel
@@ -1151,7 +1172,7 @@ endforeach(COMPONENT)
 
 set(CPACK_DEBIAN_PACKAGE_NAME "${PROJECT_NAME}")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "${CPACK_PACKAGE_CONTACT}")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3.8, python3-pytest ${BOOST_DEPS}")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "python3, libxml2, libocct-foundation-dev, libocct-modeling-algorithms-dev, libocct-modeling-data-dev, libocct-ocaf-dev, libocct-visualization-dev, libocct-data-exchange-dev, libhdf5-serial-dev, libpython3-dev, python3-pytest ${BOOST_DEPS}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION_SUMMARY "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION}")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")

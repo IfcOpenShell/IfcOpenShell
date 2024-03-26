@@ -61,26 +61,6 @@ PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
 LXML_ARCH:=manylinux_2_28_x86_64
 SHAPELY_ARCH:=manylinux_2_17_x86_64.manylinux2014_x86_64
 PILLOW_ARCH:=manylinux_2_28_x86_64
-ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py39h359ec1e_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py39hb1babde_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py39h7c9e3ff_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py310hd002f03_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py310hcfe0b05_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py310hc4a4660_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py311)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/linux-64/hpp-fcl-2.4.0-py311h04f086a_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/linux-64/eigenpy-3.2.0-py311h995a085_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/linux-64/boost-1.78.0-py311h59ea3da_3.tar.bz2
-endif
-ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/linux-64/assimp-5.0.1-hedfc422_6.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/linux-64/qhull-2020.2-h4bd325d_2.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/linux-64/octomap-1.9.8-h924138e_0.tar.bz2
-BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/linux-64/boost-cpp-1.78.0-h6582d0a_3.conda
-ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/linux-64/zlib-1.2.11-h516909a_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macos)
@@ -89,27 +69,13 @@ SHAPELY_ARCH:=macosx_10_9_x86_64
 PILLOW_ARCH:=macosx_10_10_x86_64
 ifeq ($(PYVERSION), py39)
 LXML_ARCH:=macosx_11_0_x86_64
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py39h26350b9_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py39h3323527_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py39h953a6b8_4.tar.bz2
 endif
 ifeq ($(PYVERSION), py310)
 LXML_ARCH:=macosx_11_0_x86_64
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py310ha216469_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py310h33a8c9b_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py310h3e792ce_4.tar.bz2
 endif
 ifeq ($(PYVERSION), py311)
 LXML_ARCH:=macosx_11_0_universal2
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-64/hpp-fcl-2.4.0-py311hebdd1a2_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-64/eigenpy-3.2.0-py311h62e90b6_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-64/boost-1.78.0-py311h349b758_4.tar.bz2
 endif
-ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-64/assimp-5.0.1-h1224e73_6.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-64/qhull-2020.2-h940c156_2.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/osx-64/octomap-1.9.8-hb8565cd_0.tar.bz2
-BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/osx-64/boost-cpp-1.78.0-hf5ba120_3.conda
-ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-64/zlib-1.2.11-h7795811_1010.tar.bz2
 endif
 
 ifeq ($(PLATFORM), macosm1)
@@ -117,26 +83,6 @@ PYPI_PLATFORM:=--platform macosx_11_0_arm64
 LXML_ARCH:=macosx_11_0_universal2
 SHAPELY_ARCH:=macosx_11_0_arm64
 PILLOW_ARCH:=macosx_11_0_arm64
-ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py39h82b2ff2_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py39h3a9e884_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py39h99de9ae_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py310hdb6c3eb_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py310h96e9823_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py310h629746b_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py311)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/osx-arm64/hpp-fcl-2.4.0-py311hc0c29b9_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/osx-arm64/eigenpy-3.2.0-py311h24fa84d_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/osx-arm64/boost-1.78.0-py311h5c64717_4.tar.bz2
-endif
-ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.0.1/download/osx-arm64/assimp-5.0.1-h0f81e16_7.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/osx-arm64/qhull-2020.2-hc021e02_2.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/osx-arm64/octomap-1.9.8-hffc8910_0.tar.bz2
-BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/osx-arm64/boost-cpp-1.78.0-h9ed8d21_3.conda
-ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/osx-arm64/zlib-1.2.11-h90dfc92_1014.tar.bz2
 endif
 
 ifeq ($(PLATFORM), win)
@@ -144,26 +90,6 @@ PYPI_PLATFORM:=--platform win_amd64
 LXML_ARCH:=win_amd64
 SHAPELY_ARCH:=win_amd64
 PILLOW_ARCH:=win_amd64
-ifeq ($(PYVERSION), py39)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py39hf3ebc58_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py39ha1f6a47_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py39hea4d8d1_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py310)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py310h1bf3f0a_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py310h7fb871d_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py310h220cb41_4.tar.bz2
-endif
-ifeq ($(PYVERSION), py311)
-HPPFCL_URL:=https://anaconda.org/conda-forge/hpp-fcl/2.4.0/download/win-64/hpp-fcl-2.4.0-py311hd263b2c_0.conda
-EIGENPY_URL:=https://anaconda.org/conda-forge/eigenpy/3.2.0/download/win-64/eigenpy-3.2.0-py311hd354db1_0.conda
-BOOST_URL:=https://anaconda.org/conda-forge/boost/1.78.0/download/win-64/boost-1.78.0-py311h12feb9d_3.tar.bz2
-endif
-ASSIMP_URL:=https://anaconda.org/conda-forge/assimp/5.2.5/download/win-64/assimp-5.2.5-h4dcb625_0.tar.bz2
-QHULL_URL:=https://anaconda.org/conda-forge/qhull/2020.2/download/win-64/qhull-2020.2-h70d2c02_2.tar.bz2
-OCTOMAP_URL:=https://anaconda.org/conda-forge/octomap/1.9.8/download/win-64/octomap-1.9.8-h91493d7_0.tar.bz2
-BOOSTCPP_URL:=https://anaconda.org/conda-forge/boost-cpp/1.78.0/download/win-64/boost-cpp-1.78.0-h9f4b32c_3.conda
-ZLIB_URL:=https://anaconda.org/conda-forge/zlib/1.2.11/download/win-64/zlib-1.2.11-h62dcd97_1010.tar.bz2
 endif
 
 LXML_NAME:=lxml
@@ -211,7 +137,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-6c9e130-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-e38eafd-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -427,6 +353,8 @@ endif
 	cd dist/working && mkdir site-packages
 	# Required by IfcCSV
 	cd dist/working && . env/bin/activate && $(PIP) install pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# Pandas ships with very heavy tests
+	cd dist/working/site-packages/pandas && rm -rf tests
 	cd dist/working && . env/bin/activate && $(PIP) install openpyxl --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install odfpy --target=./site-packages
 	# Required by IFCCityJSON
@@ -436,157 +364,6 @@ endif
 	# Provides Brickschema functionality
 	cd dist/working && . env/bin/activate && $(PIP) install brickschema[persistence] --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by IFCClash
-	mkdir dist/working
-	cd dist/working && wget $(HPPFCL_URL)
-	cd dist/working && unzip hpp-fcl*
-	cd dist/working && tar -I zstd -xvf pkg*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/hppfcl dist/blenderbim/libs/site/packages/
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Lib/site-packages/hppfcl dist/blenderbim/libs/site/packages/
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(ASSIMP_URL)
-	cd dist/working && tar -xf assimp*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(QHULL_URL)
-	cd dist/working && tar -xf qhull*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(EIGENPY_URL)
-	cd dist/working && unzip eigenpy*
-	cd dist/working && tar -I zstd -xvf pkg*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(OCTOMAP_URL)
-	cd dist/working && tar -xf octomap*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(BOOST_URL)
-	cd dist/working && tar -xf boost*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(BOOSTCPP_URL)
-	cd dist/working && unzip boost-cpp*
-	cd dist/working && tar -I zstd -xvf pkg*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/libboost_serialization.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/libboost_serialization.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/libboost_serialization.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/boost_serialization.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
-	rm -rf dist/working
-
-	# Required by hpp-fcl
-	mkdir dist/working
-	cd dist/working && wget $(ZLIB_URL)
-	cd dist/working && tar -xf zlib*
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/lib/*.so* dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macos)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), macosm1)
-	cp -r dist/working/lib/*.dylib dist/blenderbim/libs/
-endif
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/Library/bin/*.dll dist/blenderbim/libs/site/packages/hppfcl/
-endif
 	rm -rf dist/working
 
 	# Required by BIMTester
@@ -636,34 +413,6 @@ endif
 	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by augin
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/76/b4/b7baffbda025efd5dc8fcd8d2e953e3aa939c236a484084fa8f4c3588ee9/boto3-1.17.17.tar.gz
-	cd dist/working && tar -xzvf boto3*
-	cd dist/working/boto3-1.17.17/ && cp -r boto3 ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by boto3
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/7f/2e/e02fdfd0f0377c4e44e61de27b05d5cfe93575770661ef9ded80ed90fa88/botocore-1.20.17.tar.gz
-	cd dist/working && tar -xzvf botocore*
-	cd dist/working/botocore-1.20.17/ && cp -r botocore ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by boto3
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/3c/56/3f325b1eef9791759784aa5046a8f6a1aff8f7c898a2e34506771d3b99d8/jmespath-0.10.0.tar.gz
-	cd dist/working && tar -xzvf jmespath*
-	cd dist/working/jmespath-0.10.0/ && cp -r jmespath ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by boto3
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/08/e1/3ee2096ebaeeb8c186d20ed16c8faf4a503913e5c9a0e14cd6b8ffc405a3/s3transfer-0.3.4.tar.gz
-	cd dist/working && tar -xzvf s3transfer*
-	cd dist/working/s3transfer-0.3.4/ && cp -r s3transfer ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Provides IFCJSON functionality
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
@@ -696,9 +445,9 @@ endif
 	# Required for Desktop icon and file association
 	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
 
-	# generate translations module for BBIM build
+	# Generate translations module for BBIM build
 	git clone https://github.com/IfcOpenShell/blenderbim-translations.git dist/working
-	python scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
+	$(PYTHON) scripts/bbim_translations.py -i "dist/working" -o "dist/blenderbim"
 	rm -rf dist/working
 
 	# Remove dependencies also bundled with Blender

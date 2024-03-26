@@ -26,12 +26,13 @@ import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.style
 import blenderbim.core.spatial
+import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import List
+from typing import List, Union
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -314,7 +315,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_subcontext_parameters(cls, subcontext):
+    def get_subcontext_parameters(
+        cls, subcontext: ifcopenshell.entity_instance
+    ) -> tuple[Union[str, None], Union[str, None], Union[str, None]]:
         return (
             subcontext.ContextType,
             subcontext.ContextIdentifier,
@@ -723,6 +726,9 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def reload_representation(cls, obj):
+        """reload `obj` active representation"""
+        if not obj.data:
+            return
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,

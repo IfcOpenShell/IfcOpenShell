@@ -44,6 +44,26 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert len(self.file.by_type("IfcWallType")) == 1
 
+    def test_reuse_an_existing_context_if_it_was_added_from_library_previously(self):
+        library = ifcopenshell.api.run("project.create_file")
+        project = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
+        lib_context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
+
+        self.file.add(project)  # will add project and it's contexts
+
+        material = ifcopenshell.api.run("material.add_material", library, name="Material")
+        style = ifcopenshell.api.run("style.add_style", library)
+        ifcopenshell.api.run(
+            "style.assign_material_style", library, material=material, style=style, context=lib_context
+        )
+
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
+        context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        # make sure it's still valid
+        assert context.WorldCoordinateSystem
+
     def test_append_a_single_type_product_even_though_an_inverse_material_relationship_is_shared(self):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
@@ -153,6 +173,23 @@ class TestAppendAsset(test.bootstrap.IFC4):
         assert len(new.RepresentationMaps[0].MappedRepresentation.Items[0].StyledByItem) == 1
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
+    def test_append_product_with_styles_to_reuse_styleditems(self):
+        library = ifcopenshell.api.run("project.create_file")
+        element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
+        history = library.createIfcOwnerHistory()
+        element_type.OwnerHistory = history
+        item = library.createIfcBoundingBox()
+        library.createIfcStyledItem(Item=item)
+        context = self.file.createIfcGeometricRepresentationContext()
+        mapped_rep = library.createIfcShapeRepresentation(Items=[item], ContextOfItems=context)
+        element_type.RepresentationMaps = [library.createIfcRepresentationMap(MappedRepresentation=mapped_rep)]
+
+        element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+
+        ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
+        assert len(self.file.by_type("IfcStyledItem")) == 1
+
     def test_append_a_type_product_with_a_styled_materials(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         local_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
@@ -202,24 +239,40 @@ class TestAppendAsset(test.bootstrap.IFC4):
         style = ifcopenshell.api.run("style.add_style", library)
         context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
         ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=context)
+
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
         assert len(self.file.by_type("IfcMaterial")) == 1
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
         context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
         assert context == file_context
+        # make sure it's still valid
         assert context.WorldCoordinateSystem
 
     def test_append_a_material_with_a_representation_and_reuse_an_existing_subcontext(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         file_context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        file_subcontext = ifcopenshell.api.run("context.add_context", self.file, parent=file_context, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+        file_subcontext = ifcopenshell.api.run(
+            "context.add_context",
+            self.file,
+            parent=file_context,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+        )
 
         library = ifcopenshell.api.run("project.create_file")
         ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
         style = ifcopenshell.api.run("style.add_style", library)
         context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
-        subcontext = ifcopenshell.api.run("context.add_context", library, parent=context, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+        subcontext = ifcopenshell.api.run(
+            "context.add_context",
+            library,
+            parent=context,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+        )
         ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=subcontext)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
         assert len(self.file.by_type("IfcMaterial")) == 1
@@ -227,6 +280,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False)) == 1
         subcontext = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
         assert subcontext == file_subcontext
+        # make sure it's still valid
         assert subcontext.ParentContext.WorldCoordinateSystem
 
     def test_append_a_material_with_a_representation_and_reuse_an_existing_context_by_a_new_subcontext(self):
@@ -238,8 +292,14 @@ class TestAppendAsset(test.bootstrap.IFC4):
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
         style = ifcopenshell.api.run("style.add_style", library)
         context = ifcopenshell.api.run("context.add_context", library, context_type="Model")
-        subcontext = ifcopenshell.api.run("context.add_context", library, context_type="Model",
-                context_identifier="Body", target_view="MODEL_VIEW", parent=context)
+        subcontext = ifcopenshell.api.run(
+            "context.add_context",
+            library,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+            parent=context,
+        )
         ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=subcontext)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=material)
         assert len(self.file.by_type("IfcMaterial")) == 1

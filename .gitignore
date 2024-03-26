@@ -76,8 +76,14 @@ src/ifcopenshell-python/test/build
 # blenderbim libs
 src/blenderbim/blenderbim/libs
 
+# blenderbim i18n
+src/blenderbim/blenderbim/translations.py
+
 # blenderbim test temp files
 src/blenderbim/test/files/temp
+src/blenderbim/test/files/basic.ifc.cache.blend
+src/blenderbim/test/files/basic.ifc.cache.sqlite
+
 src/blenderbim/drawings
 src/blenderbim/layouts
 

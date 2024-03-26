@@ -20,6 +20,9 @@ import pytest
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.selector as subject
+import ifcopenshell.util.placement
+import ifcopenshell.util.pset
+import numpy as np
 
 
 class TestFormat():
@@ -251,8 +254,50 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo + IfcSlab, Name=Bar") == {element, element2}
 
+    def test_using_elements_argument(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+
+        # keep elements unaffected by expression
+        assert subject.filter_elements(self.file, "IfcWall", {slab}) == {wall, slab}
+
+        # filter out excluded elements
+        assert subject.filter_elements(self.file, "IfcWall, ! IfcSlab", {slab}) == {wall}
+
+        # edit_in_place to update original set
+        original_set = set()
+        new_set = subject.filter_elements(self.file, "IfcWall", original_set, edit_in_place=True)
+        assert new_set == original_set
+
+
+class TestSetElementValue(test.bootstrap.IFC4):
+    def test_set_xyz_coordinates(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.run("unit.assign_unit", self.file)
+
+        items = list(zip("xyz", ("5", "10", "15")))
+        matrix = np.eye(4)
+        matrix[:, 3] = (5, 10, 15, 1)
+
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element, is_si=False)
+        for coord, value in items:
+            subject.set_element_value(self.file, element, coord, value)
+        assert np.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
+
+        element_without_placement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        for coord, value in items:
+            subject.set_element_value(self.file, element_without_placement, coord, value)
+        assert np.array_equal(
+            ifcopenshell.util.placement.get_local_placement(element_without_placement.ObjectPlacement), matrix
+        )
+
 
 class TestSelector(test.bootstrap.IFC4):
+    def test_selecting_from_specified_elements(self):
+        elements = [ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall") for _ in range(2)]
+        assert subject.Selector.parse(self.file, ".IfcWall", elements[:1]) == [elements[0]]
+
     def test_selecting_by_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")

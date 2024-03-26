@@ -20,6 +20,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
+from __future__ import annotations
 
 import os
 import sys
@@ -31,7 +32,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar
+from typing import TypeVar, Union, Optional
 
 T = TypeVar("T")
 
@@ -79,7 +80,14 @@ class settings(ifcopenshell_wrapper.SerializerSettings):
 
 # Make sure people are able to use python's platform agnostic paths
 class iterator(ifcopenshell_wrapper.Iterator):
-    def __init__(self, settings, file_or_filename, num_threads=1, include=None, exclude=None):
+    def __init__(
+        self,
+        settings: settings,
+        file_or_filename: Union[file, str],
+        num_threads: int = 1,
+        include: Optional[list[entity_instance]] = None,
+        exclude: Optional[list[entity_instance]] = None,
+    ):
         self.settings = settings
         if isinstance(file_or_filename, file):
             file_or_filename = file_or_filename.wrapped_data
@@ -128,7 +136,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
 
 
 class tree(ifcopenshell_wrapper.tree):
-    def __init__(self, file=None, settings=None):
+    def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
         args = [self]
         if file is not None:
             args.append(file.wrapped_data)
@@ -136,13 +144,19 @@ class tree(ifcopenshell_wrapper.tree):
                 args.append(settings)
         ifcopenshell_wrapper.tree.__init__(*args)
 
-    def add_file(self, file, settings):
+    def add_file(self, file: file, settings: settings) -> None:
         ifcopenshell_wrapper.tree.add_file(self, file.wrapped_data, settings)
 
-    def add_iterator(self, iterator):
+    def add_iterator(self, iterator: iterator) -> None:
         ifcopenshell_wrapper.tree.add_file(self, iterator)
 
-    def select(self, value, **kwargs):
+    def select(
+        self,
+        value: Union[
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
+        ],
+        **kwargs,
+    ) -> list[entity_instance]:
         def unwrap(value):
             if isinstance(value, entity_instance):
                 return value.wrapped_data
@@ -166,7 +180,7 @@ class tree(ifcopenshell_wrapper.tree):
                     args.append(kwargs["extend"])
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select(*args)]
 
-    def select_box(self, value, **kwargs):
+    def select_box(self, value, **kwargs) -> list[entity_instance]:
         def unwrap(value):
             if isinstance(value, entity_instance):
                 return value.wrapped_data
@@ -194,7 +208,9 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
 
-def create_shape(settings, inst, repr=None):
+def create_shape(
+    settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None
+) -> ifcopenshell_wrapper.TriangulationElement:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or

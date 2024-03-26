@@ -21,11 +21,12 @@ import ifcopenshell.util.element
 
 import blenderbim.core.tool
 import blenderbim.tool as tool
+from typing import Union
 
 
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
-    def sync(cls, obj):
+    def sync(cls, obj: bpy.types.Object) -> None:
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
 
@@ -76,12 +77,15 @@ class Collector(blenderbim.core.tool.Collector):
             blenderbim.core.spatial.assign_container(
                 tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
             )
+            # NOTE: won't allow assigning IfcElements to the IfcProject directly
+            # and some elements might get missing in other viewers if they're don't support displaying
+            # elements without hierarchy
             blenderbim.core.aggregate.assign_object(
                 tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
             )
 
     @classmethod
-    def assign(cls, obj):
+    def assign(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
 
         object_collection = None
@@ -112,7 +116,9 @@ class Collector(blenderbim.core.tool.Collector):
             bpy.data.collections.remove(obj.BIMObjectProperties.collection)
 
     @classmethod
-    def _get_own_collection(cls, element, obj):
+    def _get_own_collection(
+        cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object
+    ) -> Union[bpy.types.Collection, None]:
         if element.is_a("IfcProject"):
             return cls._create_own_collection(obj)
 
@@ -161,7 +167,7 @@ class Collector(blenderbim.core.tool.Collector):
                 return cls._create_own_collection(obj)
 
     @classmethod
-    def _get_collection(cls, element, obj):
+    def _get_collection(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> bpy.types.Collection:
         if element.is_a("IfcTypeObject"):
             return cls._create_project_child_collection("Types")
 
@@ -229,7 +235,7 @@ class Collector(blenderbim.core.tool.Collector):
                 return collection
 
     @classmethod
-    def _create_project_child_collection(cls, name):
+    def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:
         collection = bpy.data.collections.get(name)
         if not collection:
             collection = bpy.data.collections.new(name)
@@ -239,7 +245,7 @@ class Collector(blenderbim.core.tool.Collector):
         return collection
 
     @classmethod
-    def _create_own_collection(cls, obj):
+    def _create_own_collection(cls, obj: bpy.types.Object) -> bpy.types.Collection:
         if obj.BIMObjectProperties.collection:
             return obj.BIMObjectProperties.collection
         collection = bpy.data.collections.new(obj.name)

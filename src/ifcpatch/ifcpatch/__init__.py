@@ -19,15 +19,17 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import shutil
 import ifcopenshell
 import logging
 import typing
 import inspect
 import collections
 import importlib
+from typing import Union
 
 
-def execute(args):
+def execute(args: dict) -> Union[ifcopenshell.file, str]:
     """Execute a patch recipe
 
     The details of how the patch recipe is executed depends on the definition of
@@ -80,7 +82,7 @@ def execute(args):
     return output
 
 
-def write(output, filepath):
+def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
     """Write the output of an IFC patch to a file
 
     Typically a patch output would be a patched IFC model file object, or as a
@@ -98,7 +100,7 @@ def write(output, filepath):
         return
     elif isinstance(output, str):
         if os.path.exists(output):
-            os.rename(output, filepath)
+            shutil.move(output, filepath)
         else:
             with open(filepath, "w") as text_file:
                 text_file.write(output)

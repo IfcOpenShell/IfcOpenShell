@@ -16,24 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import blenderbim.tool as tool
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.project.data import LinksData
 
 
-class QueryTool(bpy.types.WorkSpaceTool):
+class ExploreTool(bpy.types.WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
-    bl_idname = "bim.query_tool"
-    bl_label = "Query Tool"
+    bl_idname = "bim.explore_tool"
+    bl_label = "Explore Tool"
     bl_description = "Fetch data about a linked IFC element"
-    bl_icon = "ops.generic.select_circle"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.explore")
     bl_widget = None
     bl_keymap = (
         ("bim.query_linked_element", {"type": "RIGHTMOUSE", "value": "PRESS"}, None),
-        ("bim.query_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
-        ("bim.query_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
+        ("bim.explore_hotkey", {"type": "W", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_W")]}),
+        ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_C")]}),
+        ("bim.explore_hotkey", {"type": "F", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_F")]}),
+        ("bim.explore_hotkey", {"type": "C", "value": "PRESS", "alt": True}, {"properties": [("hotkey", "A_C")]}),
     )
 
     def draw_settings(context, layout, ws_tool):
@@ -41,15 +44,24 @@ class QueryTool(bpy.types.WorkSpaceTool):
         row.label(text="Query Object", icon="MOUSE_RMB")
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Walk Mode", icon="EVENT_W")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
         row.label(text="Add Clipping Plane", icon="EVENT_C")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_SHIFT")
+        row.label(text="Flip Clipping Plane", icon="EVENT_F")
+        row = layout.row(align=True)
+        row.label(text="", icon="EVENT_ALT")
+        row.label(text="Set Orbit Center", icon="MOUSE_MMB")
         row = layout.row(align=True)
         row.label(text="", icon="EVENT_ALT")
         row.label(text="Disable Culling" if LinksData.enable_culling else "Enable Culling", icon="EVENT_C")
 
 
-class QueryHotkey(bpy.types.Operator):
-    bl_idname = "bim.query_hotkey"
-    bl_label = "Query Hotkey"
+class ExploreHotkey(bpy.types.Operator):
+    bl_idname = "bim.explore_hotkey"
+    bl_label = "Explore Hotkey"
     bl_options = {"REGISTER", "UNDO"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
@@ -62,8 +74,14 @@ class QueryHotkey(bpy.types.Operator):
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
+    def hotkey_S_W(self):
+        bpy.ops.view3d.walk("INVOKE_DEFAULT")
+
     def hotkey_S_C(self):
         bpy.ops.bim.create_clipping_plane("INVOKE_DEFAULT")
+
+    def hotkey_S_F(self):
+        bpy.ops.bim.flip_clipping_plane("INVOKE_DEFAULT")
 
     def hotkey_A_C(self):
         if LinksData.enable_culling:

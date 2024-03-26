@@ -17,13 +17,17 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bmesh
 import json
 import ifcopenshell.api
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim
+import addon_utils
 from mathutils import Vector
 from pathlib import Path
-import addon_utils
+from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
+from typing import Any, Optional, Union, Literal, Iterable, Callable
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -37,13 +41,16 @@ VIEWPORT_ATTRIBUTES = [
     "clip_planes",
 ]
 
+OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
+
 
 class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
+    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
     @classmethod
-    def get_area_props(cls, context):
+    def get_area_props(cls, context: bpy.types.Context) -> Any:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
                 screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
@@ -55,12 +62,12 @@ class Blender(blenderbim.core.tool.Blender):
             return
 
     @classmethod
-    def set_active_object(cls, obj):
+    def set_active_object(cls, obj: bpy.types.Object) -> None:
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
     @classmethod
-    def setup_tabs(cls):
+    def setup_tabs(cls) -> None:
         # https://blender.stackexchange.com/questions/140644/how-can-make-the-state-of-a-boolean-property-relative-to-the-3d-view-area
         for screen in bpy.data.screens:
             if len(screen.BIMAreaProperties) == 20:
@@ -70,7 +77,7 @@ class Blender(blenderbim.core.tool.Blender):
                 screen.BIMAreaProperties.add()
 
     @classmethod
-    def is_tab(cls, context, tab):
+    def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
         aprops = cls.get_area_props(context)
         if not aprops:
             return context.screen.BIMTabProperties.tab == tab
@@ -79,7 +86,7 @@ class Blender(blenderbim.core.tool.Blender):
         return aprops.tab == tab
 
     @classmethod
-    def is_default_scene(cls):
+    def is_default_scene(cls) -> bool:
         if len(bpy.context.scene.objects) != 3:
             return False
         if {obj.type for obj in bpy.context.scene.objects} == {"MESH", "LIGHT", "CAMERA"}:
@@ -87,7 +94,7 @@ class Blender(blenderbim.core.tool.Blender):
         return False
 
     @classmethod
-    def get_name(cls, ifc_class, name):
+    def get_name(cls, ifc_class: str, name: str) -> str:
         if not bpy.data.objects.get(f"{ifc_class}/{name}"):
             return name
         i = 2
@@ -96,13 +103,15 @@ class Blender(blenderbim.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
-    def get_selected_objects(cls):
+    def get_selected_objects(cls) -> set[bpy.types.Object]:
         if bpy.context.selected_objects:
             return set(bpy.context.selected_objects + [bpy.context.active_object])
         return set([bpy.context.active_object])
 
     @classmethod
-    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None) -> bpy.types.Object:
+    def create_ifc_object(
+        cls, ifc_class: str, name: Optional[str] = None, data: Optional[OBJECT_DATA_TYPE] = None
+    ) -> bpy.types.Object:
         name = name or "My " + ifc_class
         name = cls.get_name(ifc_class, name)
         obj = bpy.data.objects.new(name, data)
@@ -110,7 +119,11 @@ class Blender(blenderbim.core.tool.Blender):
         return obj
 
     @classmethod
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None):
+    def get_obj_ifc_definition_id(
+        cls, obj: Optional[str] = None, obj_type: Optional[str] = None, context: Optional[bpy.types.Context] = None
+    ) -> Union[int, None]:
+        if context is None:
+            context = bpy.context
         if obj_type == "Object":
             return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
         elif obj_type == "Material":
@@ -122,41 +135,42 @@ class Blender(blenderbim.core.tool.Blender):
         elif obj_type == "MaterialSetItem":
             return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
         elif obj_type == "Task":
-            return bpy.context.scene.BIMTaskTreeProperties.tasks[
-                bpy.context.scene.BIMWorkScheduleProperties.active_task_index
+            return context.scene.BIMTaskTreeProperties.tasks[
+                context.scene.BIMWorkScheduleProperties.active_task_index
             ].ifc_definition_id
         elif obj_type == "Cost":
-            return bpy.context.scene.BIMCostProperties.cost_items[
-                bpy.context.scene.BIMCostProperties.active_cost_item_index
+            return context.scene.BIMCostProperties.cost_items[
+                context.scene.BIMCostProperties.active_cost_item_index
             ].ifc_definition_id
         elif obj_type == "Resource":
-            return bpy.context.scene.BIMResourceTreeProperties.resources[
-                bpy.context.scene.BIMResourceProperties.active_resource_index
+            return context.scene.BIMResourceTreeProperties.resources[
+                context.scene.BIMResourceProperties.active_resource_index
             ].ifc_definition_id
         elif obj_type == "Profile":
-            return bpy.context.scene.BIMProfileProperties.profiles[
-                bpy.context.scene.BIMProfileProperties.active_profile_index
+            return context.scene.BIMProfileProperties.profiles[
+                context.scene.BIMProfileProperties.active_profile_index
             ].ifc_definition_id
         elif obj_type == "WorkSchedule":
-            return bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+            return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
         elif obj_type == "Group":
-            prop = bpy.context.scene.BIMGroupProperties
+            prop = context.scene.BIMGroupProperties
             return prop.groups[prop.active_group_index].ifc_definition_id
 
     @classmethod
-    def is_ifc_object(cls, obj):
+    def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
         return bool(obj.BIMObjectProperties.ifc_definition_id)
 
     @classmethod
-    def is_ifc_class_active(cls, ifc_class):
-        if bpy.context.active_object:
-            if cls.is_ifc_object(bpy.context.active_object):
-                return tool.Ifc.get_entity(bpy.context.active_object).is_a(ifc_class)
+    def is_ifc_class_active(cls, ifc_class: str) -> bool:
+        obj = bpy.context.active_object
+        if obj:
+            if cls.is_ifc_object(obj):
+                return tool.Ifc.get_entity(obj).is_a(ifc_class)
             return False
         return False
 
     @classmethod
-    def show_info_message(cls, text, message_type="INFO"):
+    def show_info_message(cls, text: str, message_type: Literal["INFO", "ERROR"] = "INFO") -> None:
         """useful for showing error messages outside blender operators
 
         Possible `message_type`: `INFO` / `ERROR`"""
@@ -167,14 +181,14 @@ class Blender(blenderbim.core.tool.Blender):
         bpy.context.window_manager.popup_menu(message_ui, title=message_type.capitalize(), icon=message_type)
 
     @classmethod
-    def get_view3d_area(cls):
+    def get_view3d_area(cls) -> Union[bpy.types.Area, None]:
         for window in bpy.context.window_manager.windows:
             for area in window.screen.areas:
                 if area.type == "VIEW_3D":
                     return area
 
     @classmethod
-    def get_blender_prop_default_value(cls, props, prop_name):
+    def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
             prop_value = prop_bl_rna.default_array
@@ -183,7 +197,7 @@ class Blender(blenderbim.core.tool.Blender):
         return prop_value
 
     @classmethod
-    def get_viewport_context(cls):
+    def get_viewport_context(cls) -> dict:
         """Get viewport area context for context overriding.
 
         Useful for calling operators outside viewport context.
@@ -198,25 +212,25 @@ class Blender(blenderbim.core.tool.Blender):
         return context_override
 
     @classmethod
-    def get_viewport_position(cls):
+    def get_viewport_position(cls) -> dict:
         region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
         copy_if_possible = lambda x: x.copy() if hasattr(x, "copy") else x
         viewport_data = {attr: copy_if_possible(getattr(region_3d, attr)) for attr in VIEWPORT_ATTRIBUTES}
         return viewport_data
 
     @classmethod
-    def set_viewport_position(cls, data):
+    def set_viewport_position(cls, data: dict) -> None:
         region_3d = cls.get_viewport_context()["area"].spaces[0].region_3d
         for attr in VIEWPORT_ATTRIBUTES:
             setattr(region_3d, attr, data[attr])
 
     @classmethod
-    def set_viewport_tool(cls, tool_name):
+    def set_viewport_tool(cls, tool_name: str) -> None:
         with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
-    def get_shader_editor_context(cls):
+    def get_shader_editor_context(cls) -> Union[dict, None]:
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
@@ -226,7 +240,7 @@ class Blender(blenderbim.core.tool.Blender):
                             return context_override
 
     @classmethod
-    def copy_node_graph(cls, material_to, material_from):
+    def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
         # https://projects.blender.org/blender/blender/issues/108763
         if bpy.app.version[:2] == (4, 0):
             print(
@@ -270,7 +284,9 @@ class Blender(blenderbim.core.tool.Blender):
         shader_editor.pin = previous_pin_setting
 
     @classmethod
-    def get_material_node(cls, blender_material, node_type, kwargs={}):
+    def get_material_node(
+        cls, blender_material: bpy.types.Material, node_type: str, kwargs: Optional[dict] = {}
+    ) -> Union[bpy.types.ShaderNode, None]:
         """returns first node from the `blender_material` shader graph with type `node_type`"""
         if not blender_material.use_nodes:
             return
@@ -280,15 +296,15 @@ class Blender(blenderbim.core.tool.Blender):
                 return node
 
     @classmethod
-    def update_screen(cls):
+    def update_screen(cls) -> None:
         bpy.ops.wm.redraw_timer(type="DRAW_WIN_SWAP", iterations=1)
 
     @classmethod
-    def update_viewport(cls):
+    def update_viewport(cls) -> None:
         tool.Blender.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
-    def force_depsgraph_update(cls):
+    def force_depsgraph_update(cls) -> None:
         """useful if you need to trigger callbacks like `depsgraph_update_pre`"""
         # blender is requiring some ID to be changed
         # to trigger depsgraph update
@@ -297,9 +313,11 @@ class Blender(blenderbim.core.tool.Blender):
         bpy.context.view_layer.update()
 
     @classmethod
-    def ensure_unique_name(cls, name, objects, iteration=0):
+    def ensure_unique_name(cls, name: str, objects: Iterable[str], iteration=0) -> str:
         """returns a unique name for the given name and dictionary of objects
-        blender style name with .001, .002, etc. suffix
+        blender style name with .001, .002, etc. suffix.
+
+        objects can be `bpy.data.objects`.
         """
         current_iteration = name if not iteration else f"{name}.{iteration:03d}"
         if current_iteration not in objects:
@@ -307,7 +325,7 @@ class Blender(blenderbim.core.tool.Blender):
         return cls.ensure_unique_name(name, objects, iteration + 1)
 
     @classmethod
-    def blender_path_to_posix(cls, blender_path):
+    def blender_path_to_posix(cls, blender_path: str) -> str:
         """Process blender path to be saved as posix.
 
         If path is relative the method will keep it relative to .ifc file
@@ -322,7 +340,7 @@ class Blender(blenderbim.core.tool.Blender):
         return path.as_posix()
 
     @classmethod
-    def get_default_selection_keypmap(cls):
+    def get_default_selection_keypmap(cls) -> tuple:
         """keymap to replicate default blender selection behaviour with click and box selection"""
         # code below comes from blender_default.py which is part of default blender scripts licensed under GPL v2
         # https://github.com/blender/blender/blob/master/release/scripts/presets/keyconfig/keymap_data/blender_default.py
@@ -369,7 +387,9 @@ class Blender(blenderbim.core.tool.Blender):
         return keymap
 
     @classmethod
-    def add_layout_hotkey_operator(cls, tool_name, layout, text, hotkey, description):
+    def add_layout_hotkey_operator(
+        cls, tool_name: str, layout: bpy.types.UILayout, text: str, hotkey: str, description: str
+    ) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
         modifiers = {
             "A": "EVENT_ALT",
             "S": "EVENT_SHIFT",
@@ -386,7 +406,7 @@ class Blender(blenderbim.core.tool.Blender):
         return op, row
 
     @classmethod
-    def get_object_bounding_box(cls, obj):
+    def get_object_bounding_box(cls, obj: bpy.types.Object) -> dict:
         """Returns dict with local min and max x, y, z values for the object.
 
         Careful with using this method for objects in EDIT mode because
@@ -407,14 +427,20 @@ class Blender(blenderbim.core.tool.Blender):
         return bbox_dict
 
     @classmethod
-    def select_and_activate_single_object(cls, context, active_object):
+    def select_and_activate_single_object(cls, context: bpy.types.Context, active_object: bpy.types.Object) -> None:
         for obj in context.selected_objects:
             obj.select_set(False)
         context.view_layer.objects.active = active_object
         active_object.select_set(True)
 
     @classmethod
-    def set_objects_selection(cls, context, active_object, selected_objects, clear_previous_selection=True):
+    def set_objects_selection(
+        cls,
+        context: bpy.types.Context,
+        active_object: Optional[bpy.types.Object] = None,
+        selected_objects: list[bpy.types.Object] = list(),
+        clear_previous_selection=True,
+    ) -> None:
         if clear_previous_selection:
             for obj in context.selected_objects:
                 obj.select_set(False)
@@ -425,7 +451,7 @@ class Blender(blenderbim.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
-    def enum_property_has_valid_index(cls, props, prop_name, enum_items):
+    def enum_property_has_valid_index(cls, props, prop_name: str, enum_items: tuple) -> bool:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
         """
@@ -436,7 +462,7 @@ class Blender(blenderbim.core.tool.Blender):
         return current_value_index < len(enum_items)
 
     @classmethod
-    def append_data_block(cls, filepath, data_block_type, name, link=False, relative=False):
+    def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
         if Path(filepath) == Path(bpy.data.filepath):
             data_block = getattr(bpy.data, data_block_type).get(name, None)
             if not data_block:
@@ -450,13 +476,29 @@ class Blender(blenderbim.core.tool.Blender):
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     @classmethod
-    def remove_data_block(cls, data_block):
+    def remove_data_block(cls, data_block: bpy.types.ID, do_unlink=True) -> None:
+        """Removes a datablock (such as a mesh)
+
+        See https://projects.blender.org/blender/blender/issues/118787 for more
+        details about do_unlink.
+
+        :param data_block: The bpy.data datablock to delete.
+        :param do_unlink: Whether or not to unlink the datablock first. This
+            defaults to true, which is Blender's default behaviour. If you are
+            sure that the data block has zero users, then you can set this
+            to False, which will make datablock deletion significantly faster
+            by avoiding unnecessary Blender data checks.
+        :return: None
+        :rtype: None
+        """
         collection_name = repr(data_block).split(".", 2)[-1].split("[", 1)[0]
-        getattr(bpy.data, collection_name).remove(data_block)
+        getattr(bpy.data, collection_name).remove(
+            data_block, do_unlink=do_unlink, do_id_user=do_unlink, do_ui_user=do_unlink
+        )
 
     ## BMESH UTILS ##
     @classmethod
-    def apply_bmesh(cls, mesh, bm, obj=None):
+    def apply_bmesh(cls, mesh: bpy.types.Mesh, bm: bmesh.types.BMesh, obj: Optional[bpy.types.Object] = None) -> None:
         """`obj` argument is not optional if you plan to update mesh in EDIT mode
         and it's possible that that mesh object won't be currenly active."""
         import bmesh
@@ -490,7 +532,7 @@ class Blender(blenderbim.core.tool.Blender):
         mesh.update()
 
     @classmethod
-    def get_bmesh_for_mesh(cls, mesh, clean=False):
+    def get_bmesh_for_mesh(cls, mesh: bpy.types.Mesh, clean=False) -> bmesh.types.BMesh:
         import bmesh
 
         if mesh.is_editmode:
@@ -504,7 +546,16 @@ class Blender(blenderbim.core.tool.Blender):
         return bm
 
     @classmethod
-    def bmesh_join(cls, bm_a, bm_b, callback=None):
+    def bmesh_join(
+        cls,
+        bm_a: bmesh.types.BMesh,
+        bm_b: bmesh.types.BMesh,
+        callback: Optional[
+            Callable[
+                [bmesh.types.BMesh, list[bmesh.types.BMVert], list[bmesh.types.BMEdge], list[bmesh.types.BMFace]], None
+            ]
+        ] = None,
+    ):
         """Join two meshes into single one, store it in `bm_a`"""
         import bmesh
 
@@ -519,7 +570,7 @@ class Blender(blenderbim.core.tool.Blender):
         return bm_a
 
     @classmethod
-    def toggle_edit_mode(cls, context):
+    def toggle_edit_mode(cls, context: bpy.types.Context) -> set:
         ao = context.active_object
         if not ao:
             return {"CANCELLED"}
@@ -531,21 +582,21 @@ class Blender(blenderbim.core.tool.Blender):
             return {"CANCELLED"}
 
     @classmethod
-    def is_object_an_ifc_class(cls, obj, classes):
+    def is_object_an_ifc_class(cls, obj: bpy.types.Object, classes: Iterable[str]) -> bool:
         if not tool.Ifc.get():
             return False
         element = tool.Ifc.get_entity(obj)
         return element and element.is_a() in classes
 
     @classmethod
-    def get_object_from_guid(cls, guid):
+    def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
         element = tool.Ifc.get().by_guid(guid)
         obj = tool.Ifc.get_object(element)
         if obj:
             return obj
 
     @classmethod
-    def lock_transform(cls, obj, lock_state=True):
+    def lock_transform(cls, obj: bpy.types.ObjectBase, lock_state=True) -> None:
         for prop in ("lock_location", "lock_rotation", "lock_scale"):
             attr = getattr(obj, prop)
             for axis_idx in range(3):
@@ -554,7 +605,9 @@ class Blender(blenderbim.core.tool.Blender):
     operator_invoke_filepath_hotkeys_description = "Hold Shift to open the file, Alt to browse containing directory"
 
     @classmethod
-    def operator_invoke_filepath_hotkeys(cls, operator, context, event, filepath: Path):
+    def operator_invoke_filepath_hotkeys(
+        cls, operator: bpy.types.Operator, context: bpy.types.Context, event: bpy.types.Event, filepath: Path
+    ) -> Union[set, None]:
         if not event.alt and not event.shift:
             return
 
@@ -594,6 +647,35 @@ class Blender(blenderbim.core.tool.Blender):
             return {"CANCELLED"}
         open_file_or_folder(filepath.as_posix())
         return {"PASS_THROUGH"}
+
+    @classmethod
+    def get_layer_collection(
+        cls, collection: bpy.types.Collection, view_layer: Optional[bpy.types.ViewLayer] = None
+    ) -> Union[bpy.types.LayerCollection, None]:
+        return cls.get_layer_collections_mapping([collection], view_layer).get(collection)
+
+    @classmethod
+    def get_layer_collections_mapping(
+        cls, collections: list[bpy.types.Collection], view_layer: Optional[bpy.types.ViewLayer] = None
+    ) -> dict[bpy.types.Collection, bpy.types.LayerCollection]:
+        if view_layer is None:
+            view_layer = bpy.context.view_layer
+
+        collections = list(collections)  # copy to prevent mutation
+        collections_mapping = dict()
+        queue = [view_layer.layer_collection]
+
+        while queue:
+            layer = queue.pop()
+            collection = layer.collection
+            if collection in collections:
+                collections_mapping[collection] = layer
+                collections.remove(collection)
+                if not collections:
+                    break
+            queue.extend(list(layer.children))
+
+        return collections_mapping
 
     class Modifier:
         @classmethod

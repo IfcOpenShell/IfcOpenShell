@@ -30,6 +30,7 @@ import functools
 import subprocess
 import sys
 import time
+from typing import Union, Any, Callable
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -117,6 +118,8 @@ class entity_instance(object):
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
 
+    wrapped_data: ifcopenshell_wrapper.entity_instance
+
     def __init__(self, e, file=None):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
@@ -193,7 +196,36 @@ class entity_instance(object):
             )
 
     @staticmethod
-    def walk(f, g, value):
+    def walk(f: Callable[[Any], bool], g: Callable[[Any], Any], value: Any) -> Any:
+        """
+         Applies transformation to `value` based on a given condition.
+         If value is a nested structure (e.g., a list or a tuple) will apply transformation to it's elements.
+        .
+
+         :param f: A callable that takes a single argument and returns a boolean value. It represents the condition
+         :type f: Callable
+         :param g: A callable that takes a single argument and returns a transformed value. It represents the transformation
+         :type g: Callable
+         :param value: Any object, the input value to be processed
+         :type value: Any
+         :return: Transformed value
+         :rtype: Any
+
+         Example:
+
+         .. code:: python
+
+             # Define condition and transformation functions
+             condition = lambda v: v == old
+             transform = lambda v: new
+
+             # Usage example
+             attribute_value = element.RelatedElements
+             print(old in attribute_value, new in attribute_value) # True, False
+             result = element.walk(condition, transform, element.RelatedElements)
+             print(old in attribute_value, new in attribute_value) # False, True
+        """
+
         if isinstance(value, (tuple, list)):
             return tuple(map(functools.partial(entity_instance.walk, f, g), value))
         elif f(value):
@@ -221,7 +253,7 @@ class entity_instance(object):
 
         return entity_instance.walk(is_instance, unwrap, v)
 
-    def attribute_type(self, attr):
+    def attribute_type(self, attr: int) -> str:
         """Return the data type of a positional attribute of the element
 
         :param attr: The index of the attribute
@@ -231,7 +263,7 @@ class entity_instance(object):
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
         return self.wrapped_data.get_argument_type(attr_idx)
 
-    def attribute_name(self, attr_idx):
+    def attribute_name(self, attr_idx: int) -> str:
         """Return the name of a positional attribute of the element
 
         :param attr_idx: The index of the attribute
@@ -272,7 +304,7 @@ class entity_instance(object):
     def __repr__(self):
         return repr(self.wrapped_data)
 
-    def to_string(self, valid_spf=True):
+    def to_string(self, valid_spf=True) -> str:
         """Returns a string representation of the current entity instance.
         Equal to str(self) when valid_spf=False. When valid_spf is True
         returns a representation of the string that conforms to valid Step
@@ -283,7 +315,7 @@ class entity_instance(object):
 
         return self.wrapped_data.to_string(valid_spf)
 
-    def is_a(self, *args):
+    def is_a(self, *args) -> Union[str, bool]:
         """Return the IFC class name of an instance, or checks if an instance belongs to a class.
 
         The check will also return true if a parent class name is provided.
@@ -306,7 +338,7 @@ class entity_instance(object):
         """
         return self.wrapped_data.is_a(*args)
 
-    def id(self):
+    def id(self) -> int:
         """Return the STEP numerical identifier
 
         :rtype: int
@@ -335,7 +367,7 @@ class entity_instance(object):
                     other.wrapped_data.file_pointer(),
                 )
 
-    def is_entity(self):
+    def is_entity(self) -> bool:
         """Tests whether the instance is an entity type as opposed to a simple data type.
 
         Returns:
@@ -430,7 +462,9 @@ class entity_instance(object):
             )
         )
 
-    def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False):
+    def get_info(
+        self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False
+    ) -> dict:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
 
         :param include_identifier: Whether or not to include the STEP numerical identifier

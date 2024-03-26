@@ -51,3 +51,4 @@ class BIMDebugProperties(PropertyGroup):
         default="BOUNDS",
     )
     ifc_class_purge: StringProperty(name="Unused Elements IFC Class", default="")
+    package_name: StringProperty(name="Package Name", default="")

@@ -19,7 +19,11 @@
 # Note: it is the intent for you to override these with your own functions
 
 
-def get_application(ifc):
+import ifcopenshell
+from typing import Union
+
+
+def get_application(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     """Returns the application representing the authoring software
 
     It is expected for you to overload this function with your own
@@ -30,10 +34,16 @@ def get_application(ifc):
     :return: The IfcApplication with metadata of the authoring software.
     :rtype: ifcopenshell.entity_instance.entity_instance
     """
-    return (ifc.by_type("IfcApplication") or [None])[0]
+    app = ifc.by_type("IfcApplication")
+    if not app and ifc.schema == "IFC2X3":
+        raise Exception(
+            "Please create an application to continue. See the owner.create_owner_history docs for more info."
+            "https://blenderbim.org/docs-python/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
+        )
+    return (app or [None])[0]
 
 
-def get_user(ifc):
+def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     """Returns the active authoring user
 
     It is expected for you to overload this function with your own
@@ -44,7 +54,13 @@ def get_user(ifc):
     :return: The IfcPersonAndOrganization with metadata of the authoring user.
     :rtype: ifcopenshell.entity_instance.entity_instance
     """
-    return (ifc.by_type("IfcPersonAndOrganization") or [None])[0]
+    pao = ifc.by_type("IfcPersonAndOrganization")
+    if not pao and ifc.schema == "IFC2X3":
+        raise Exception(
+            "Please create a user to continue. See the owner.create_owner_history docs for more info."
+            "https://blenderbim.org/docs-python/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
+        )
+    return (pao or [None])[0]
 
 
 get_application_factory = get_application

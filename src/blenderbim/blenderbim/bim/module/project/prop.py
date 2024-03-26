@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import bpy
 import ifcopenshell.util.placement
 from blenderbim.bim.module.project.data import ProjectData
@@ -43,6 +44,19 @@ def get_template_file(self, context):
     if not ProjectData.is_loaded:
         ProjectData.load()
     return ProjectData.data["template_file"]
+
+
+def get_library_file(self, context):
+    if not ProjectData.is_loaded:
+        ProjectData.load()
+    return ProjectData.data["library_file"]
+
+
+def update_library_file(self, context):
+    if self.library_file != "0":
+        bpy.ops.bim.select_library_file(
+            filepath=os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries", self.library_file)
+        )
 
 
 def update_filter_mode(self, context):
@@ -169,6 +183,7 @@ class BIMProjectProperties(PropertyGroup):
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
     template_file: EnumProperty(items=get_template_file, name="Template File")
+    library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)

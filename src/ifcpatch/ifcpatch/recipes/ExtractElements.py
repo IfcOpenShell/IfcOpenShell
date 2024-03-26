@@ -56,6 +56,7 @@ class Patcher:
         self.aggregates = {}
         self.new = ifcopenshell.file(schema=self.file.wrapped_data.schema)
         self.owner_history = None
+        self.reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
         for owner_history in self.file.by_type("IfcOwnerHistory"):
             self.owner_history = self.new.add(owner_history)
             break
@@ -83,7 +84,9 @@ class Patcher:
             pass
         if element.is_a("IfcProject"):
             return self.new.add(element)
-        return ifcopenshell.api.run("project.append_asset", self.new, library=self.file, element=element)
+        return ifcopenshell.api.run(
+            "project.append_asset", self.new, library=self.file, element=element, reuse_identities=self.reuse_identities
+        )
 
     def add_decomposition_parents(self, element, new_element) -> None:
         for rel in element.Decomposes:

@@ -70,6 +70,8 @@ namespace IfcGeom {
 
 		TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_Trsf&);
 		TopoDS_Shape apply_transformation(const TopoDS_Shape&, const gp_GTrsf&);
+
+		bool validate_shape(const TopoDS_Shape&);
 	}
 }
 

@@ -131,6 +131,7 @@ class SelectFilterElements(bpy.types.Operator):
             text_data = bpy.data.texts.new(name)
             text_data.from_string(",".join(global_ids))
             filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+            self.report({"INFO"}, f'List of Global Ids was saved to the text file "{name}" in the current .blend file')
         else:
             filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
@@ -538,9 +539,11 @@ class ActivateIfcClassFilter(Operator):
             "filter_classes",
             context.scene.BIMSearchProperties,
             "filter_classes_index",
-            rows=20
-            if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20
-            else len(bpy.context.scene.BIMSearchProperties.filter_classes),
+            rows=(
+                20
+                if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20
+                else len(bpy.context.scene.BIMSearchProperties.filter_classes)
+            ),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -595,9 +598,11 @@ class ActivateContainerFilter(Operator):
             "filter_container",
             context.scene.BIMSearchProperties,
             "filter_container_index",
-            rows=20
-            if len(bpy.context.scene.BIMSearchProperties.filter_container) > 20
-            else len(bpy.context.scene.BIMSearchProperties.filter_container),
+            rows=(
+                20
+                if len(bpy.context.scene.BIMSearchProperties.filter_container) > 20
+                else len(bpy.context.scene.BIMSearchProperties.filter_container)
+            ),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"

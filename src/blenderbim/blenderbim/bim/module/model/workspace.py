@@ -176,6 +176,21 @@ class DuctTool(BimTool):
         BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
+class CableCarrierTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.cable_carrier_tool"
+    bl_label = "Create Cable Carrier"
+    bl_description = "Create and edit cable carriers"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
+    bl_widget = None
+    ifc_element_type = "IfcCableCarrierSegmentType"
+
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+
+
 class PipeTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -185,6 +200,21 @@ class PipeTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
     bl_widget = None
     ifc_element_type = "IfcPipeSegmentType"
+
+    @classmethod
+    def draw_settings(cls, context, layout, ws_tool):
+        BimToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+
+
+class CableTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.cable_tool"
+    bl_label = "Create Cable"
+    bl_description = "Create and edit cables"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cable")
+    bl_widget = None
+    ifc_element_type = "IfcCableSegmentType"
 
     @classmethod
     def draw_settings(cls, context, layout, ws_tool):
@@ -486,7 +516,7 @@ class BimToolUI:
                 prop_with_search(row, cls.props, "relating_type_id", text="")
             else:
                 row.label(text="No Construction Type", icon="FILE_3D")
-            row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="")
+            row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
         else:
             if AuthoringData.data["ifc_element_type"]:
                 row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
@@ -499,7 +529,7 @@ class BimToolUI:
                 op.ifc_element_type = AuthoringData.data["ifc_element_type"]
             else:
                 row.label(text="No Element Types Found", icon="ERROR")
-                row.operator("bim.launch_type_manager", icon="LIGHTPROBE_GRID", text="Launch Type Manager")
+                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
 
     @classmethod
     def draw_basic_bim_tool_interface(cls):

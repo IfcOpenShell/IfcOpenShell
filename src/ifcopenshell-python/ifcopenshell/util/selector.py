@@ -18,6 +18,8 @@
 
 import re
 import lark
+import numpy as np
+import ifcopenshell.api
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
@@ -25,7 +27,10 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.schema
+import ifcopenshell.util.shape
 from decimal import Decimal
+from typing import Optional, Any, Union
 
 
 filter_elements_grammar = lark.Lark(
@@ -257,12 +262,49 @@ def format(query):
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
-def get_element_value(element, query):
-    keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:
+    keys: list[str] = GetElementTransformer().transform(get_element_grammar.parse(query))
     return Selector.get_element_value(element, keys)
 
 
-def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+def filter_elements(
+    ifc_file: ifcopenshell.file,
+    query: str,
+    elements: Optional[set[ifcopenshell.entity_instance]] = None,
+    edit_in_place=False,
+) -> set[ifcopenshell.entity_instance]:
+    """
+    Filter elements based on the provided `query`.
+
+    :param ifc_file: The IFC file object
+    :type ifc_file: ifcopenshell.file.file
+    :param query: Query to execute
+    :type query: str
+    :param elements: Base set of IFC elements for the query.
+        If provided, new elements found for the current query will be added to `elements`.
+        Elements explicitly excluded in the `query` will also be excluded from `elements`
+    :type elements: set[ifcopenshell.entity_instance.entity_instance], optional
+    :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
+    :type edit_in_place: bool
+    :return: Set of filtered elements
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        # Select all walls in the file.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcWall, IfcSlab")
+
+        # Add doors to the elements too.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcDoor", elements)
+
+        # Changed our mind, exclude the slabs.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "! IfcSlab", elements)
+
+        # {#1=IfcWall(...), #2=IfcDoor(...)}
+        print(elements)
+    """
     if elements and not edit_in_place:
         elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
@@ -271,7 +313,12 @@ def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
     return transformer.elements
 
 
-def set_element_value(ifc_file, element, query, value):
+def set_element_value(
+    ifc_file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    query: Union[str, list[str]],
+    value: Optional[str],
+) -> Union[ifcopenshell.entity_instance, None]:
     if isinstance(query, (list, tuple)):
         keys = query
     else:
@@ -313,7 +360,27 @@ def set_element_value(ifc_file, element, query, value):
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
-            return
+            # TODO: add support
+            if key in ("easting", "northing", "elevation"):
+                return
+
+            placement = element.ObjectPlacement
+            if placement is None:
+                matrix = np.eye(4)
+            else:
+                matrix = ifcopenshell.util.placement.get_local_placement(placement)
+
+            # check if value is within tolerance to avoid api calls
+            coord_i = "xyz".index(key)
+            prev_value = matrix[coord_i][3]
+            new_value = float(value) if value else 0.0
+            if ifcopenshell.util.shape.is_x(new_value, prev_value):
+                return
+
+            matrix[coord_i][3] = new_value
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
+            )
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
@@ -376,10 +443,10 @@ def set_element_value(ifc_file, element, query, value):
 
 
 class FacetTransformer(lark.Transformer):
-    def __init__(self, ifc_file, elements):
+    def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
-        self.elements = elements or set()
+        self.elements = set() if elements is None else elements
         self.container_parents = {}
         self.container_trees = {}
 
@@ -507,6 +574,8 @@ class FacetTransformer(lark.Transformer):
 
         def filter_function(element):
             container = ifcopenshell.util.element.get_container(element)
+            if not container:
+                container = ifcopenshell.util.element.get_aggregate(element)
             containers = self.get_container_tree(container)
             result = False if containers else None
             for container in containers:
@@ -642,7 +711,9 @@ class FacetTransformer(lark.Transformer):
 
 class Selector:
     @classmethod
-    def parse(cls, ifc_file, query, elements=None):
+    def parse(
+        cls, ifc_file: ifcopenshell.file, query: str, elements: Optional[list[ifcopenshell.entity_instance]] = None
+    ) -> list[ifcopenshell.entity_instance]:
         cls.file = ifc_file
         cls.elements = elements
         l = lark.Lark(
@@ -845,7 +916,7 @@ class Selector:
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
-    def get_element_value(cls, element, keys):
+    def get_element_value(cls, element: ifcopenshell.entity_instance, keys: list[str]) -> Any:
         value = element
         for key in keys:
             if value is None:

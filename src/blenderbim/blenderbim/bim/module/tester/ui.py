@@ -44,6 +44,8 @@ class BIM_PT_tester(Panel):
         row = self.layout.row()
         row.prop(props, "generate_html_report")
         row = self.layout.row()
+        row.prop(props, "generate_ods_report")
+        row = self.layout.row()
         row.prop(props, "flag")
 
         if not tool.Ifc.get() or not props.should_load_from_memory:

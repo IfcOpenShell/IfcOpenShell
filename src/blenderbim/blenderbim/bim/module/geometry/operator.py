@@ -26,6 +26,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import ifcopenshell.util.placement
 import ifcopenshell.api
 import blenderbim.core.geometry as core
 import blenderbim.core.aggregate
@@ -37,6 +38,7 @@ import blenderbim.bim.handler
 from mathutils import Vector, Matrix
 from time import time
 from blenderbim.bim.ifc import IfcStore
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class Operator:
@@ -1328,18 +1330,23 @@ class OverrideJoin(bpy.types.Operator, Operator):
         return self.join_blender_obj()
 
     def join_ifc_obj(self):
-        representation = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
+        ifc_file = tool.Ifc.get()
+        builder = ShapeBuilder(ifc_file)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        representation = ifc_file.by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
         if representation.RepresentationType in ("Tessellation", "Brep"):
             for obj in bpy.context.selected_objects:
                 if obj == self.target:
                     continue
                 element = tool.Ifc.get_entity(obj)
                 if element:
-                    ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+                    ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
         elif representation.RepresentationType == "SweptSolid":
             target_placement = np.array(self.target.matrix_world)
+            target_placement[:, 3][:3] /= si_conversion
+
             items = list(representation.Items)
             for obj in bpy.context.selected_objects:
                 if obj == self.target:
@@ -1352,31 +1359,28 @@ class OverrideJoin(bpy.types.Operator, Operator):
                     continue
 
                 # Only objects of the same representation type can be joined
-                obj_rep = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                obj_rep = ifc_file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 if obj_rep.RepresentationType != "SweptSolid":
                     obj.select_set(False)
                     continue
 
                 placement = np.array(obj.matrix_world)
+                placement[:, 3][:3] /= si_conversion
 
                 for item in obj_rep.Items:
-                    copied_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+                    copied_item = ifcopenshell.util.element.copy_deep(ifc_file, item)
                     for style in item.StyledByItem:
-                        copied_style = ifcopenshell.util.element.copy(tool.Ifc.get(), style)
+                        copied_style = ifcopenshell.util.element.copy(ifc_file, style)
                         copied_style.Item = copied_item
                     if copied_item.Position:
                         position = ifcopenshell.util.placement.get_axis2placement(copied_item.Position)
                     else:
-                        position = np.eye(4)
+                        position = np.eye(4, dtype=float)
                     position = placement @ position
                     position = np.linalg.inv(target_placement) @ position
-                    copied_item.Position = tool.Ifc.get().createIfcAxis2Placement3D(
-                        tool.Ifc.get().createIfcCartesianPoint([float(n) for n in position[:, 3][:3]]),
-                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 2][:3]]),
-                        tool.Ifc.get().createIfcDirection([float(n) for n in position[:, 0][:3]]),
-                    )
+                    copied_item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                     items.append(copied_item)
-                ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+                ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(

@@ -29,11 +29,12 @@ from blenderbim.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
+from pathlib import Path
 
 scenarios("feature")
 
 variables = {
-    "cwd": os.getcwd(),
+    "cwd": Path.cwd().as_posix(),
     "ifc": "IfcStore.get_file()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
@@ -44,8 +45,6 @@ webbrowser.open = lambda x: True
 
 
 def replace_variables(value):
-    if "{cwd}" in value and os.name == "nt":
-        value = value.replace("/", "\\").replace("{cwd}", os.getcwd()).replace("\\", "\\\\")
     for key, new_value in variables.items():
         value = value.replace("{" + key + "}", str(new_value))
     return value
@@ -177,7 +176,7 @@ def the_material_name_colour_is_set_to_colour(name, colour):
 
 
 @given("I add an array modifier")
-def i_add_a_cube():
+def i_add_an_array_modifier():
     bpy.ops.object.modifier_add(type="ARRAY")
 
 
@@ -202,11 +201,13 @@ def i_press_operator_and_expect_error(operator, error_msg):
         else:
             exec(f"bpy.ops.{operator}()")
         assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
-    except Exception as e:     
+    except Exception as e:
         actual_error_msg = str(e).strip()
         if str(e).strip() != error_msg:
             traceback.print_exc()
-            assert False, f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+            msg = f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
+            assert False, msg
+
 
 @given(parsers.parse('I press "{operator}"'))
 @when(parsers.parse('I press "{operator}"'))
@@ -233,11 +234,13 @@ def i_evaluate_expression(expression):
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
     blenderbim.bim.handler.active_object_callback()
-    
+
+
 @when("I duplicate linked aggregate the selected objects")
-def i_duplicate_the_selected_objects():
+def i_duplicate_linked_aggregate_the_selected_objects():
     bpy.ops.bim.object_duplicate_move_linked_aggregate()
     blenderbim.bim.handler.active_object_callback()
+
 
 @when("I refresh linked aggregate the selected object")
 def i_refresh_the_selected_objects():
@@ -291,10 +294,16 @@ def the_object_name_is_scaled_to_scale(name, scale):
 
 @given(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
 @when(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
-def the_object_name_is_placed_in_the_collection_collection(name, collection):
+def the_object_name_is_placed_in_the_collection_collection(name: str, collection: str) -> None:
     obj = the_object_name_exists(name)
     [c.objects.unlink(obj) for c in obj.users_collection]
     bpy.data.collections.get(collection).objects.link(obj)
+
+
+@then(parsers.parse('the object "{name}" is placed in the collection "{collection}"'))
+def then_the_object_name_is_placed_in_the_collection_collection(name: str, collection: str) -> None:
+    obj = the_object_name_exists(name)
+    assert obj in bpy.data.collections.get(collection).objects[:]
 
 
 @given(parsers.parse('additionally the object "{name}" is selected'))
@@ -329,7 +338,7 @@ def i_set_prop_to_value(prop, value):
 
 @given(parsers.parse('I set "{prop}" to ""'))
 @when(parsers.parse('I set "{prop}" to ""'))
-def i_set_prop_to_value(prop):
+def i_set_prop_to_empty_string(prop):
     try:
         eval(f"bpy.context.{prop}")
     except:
@@ -363,7 +372,7 @@ def nothing_happens():
 
 
 @then(parsers.parse('the object "{name}" exists'))
-def the_object_name_exists(name) -> bpy.types.Object:
+def the_object_name_exists(name: str) -> bpy.types.Object:
     obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
@@ -377,6 +386,7 @@ def the_object_name_does_not_exist(name) -> bpy.types.Object:
         assert True, f'The object "{name}" exists'
     return obj
 
+
 @given(parsers.parse('the collection "{name}" exists'))
 @when(parsers.parse('the collection "{name}" exists'))
 @then(parsers.parse('the collection "{name}" exists'))
@@ -385,6 +395,33 @@ def the_collection_name_exists(name) -> bpy.types.Collection:
     if not obj:
         assert False, f'The collection "{name}" does not exist'
     return obj
+
+
+@then(parsers.parse('the collection "{name}" is selectable'))
+def the_collection_name_is_selectable(name: str) -> None:
+    col = the_collection_name_exists(name)
+    assert col.hide_select == False
+
+
+@then(parsers.parse('the collection "{name}" is unselectable'))
+def the_collection_name_is_unselectable(name: str) -> None:
+    col = the_collection_name_exists(name)
+    assert col.hide_select == True
+
+
+@then(parsers.parse('the collection "{name}" exists in viewlayer'))
+def the_collection_exists_in_viewlayer(name: str) -> bpy.types.LayerCollection:
+    col = the_collection_name_exists(name)
+    layer = tool.Blender.get_layer_collection(col)
+    if not layer:
+        assert False, f'The collection "{name}" is not present in the current viewlayer'
+    return layer
+
+
+@then(parsers.parse('the collection "{name}" exclude status is "{exclude}"'))
+def the_collection_exclude_status_is(name: str, exclude: str) -> None:
+    layer = the_collection_exists_in_viewlayer(name)
+    assert layer.exclude == (exclude == "True")
 
 
 @then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
@@ -413,7 +450,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
 
 @given(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
 @then(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
-def the_object_name_has_a_representation_type_of_context(name, type, context):
+def the_object_name_data_is_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     context, subcontext, target_view = context.split("/")
     rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
@@ -518,7 +555,7 @@ def the_object_name_has_no_data(name):
 
 
 @then(parsers.parse('the object "{name}" has data which is an IFC representation'))
-def the_object_name_is_not_an_ifc_element(name):
+def the_object_name_has_ifc_representation_data(name):
     id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
     assert id != 0, f"The ID is {id}"
 
@@ -552,7 +589,7 @@ def the_material_name_is_not_an_ifc_style(name):
 
 
 @then(parsers.parse('the material "{name}" colour is "{colour}"'))
-def the_material_name_colour_is_set_to_colour(name, colour):
+def then_the_material_name_colour_is_set_to_colour(name, colour):
     diffuse_color = list(the_material_name_exists(name).diffuse_color)
     assert diffuse_color == [float(c) for c in colour.split(",")], f"The colour is {diffuse_color}"
 
@@ -616,7 +653,7 @@ def prop_is_value(prop, value):
 
 
 @then(parsers.parse('"{prop}" is roughly "{value}"'))
-def prop_is_value(prop, value):
+def prop_is_roughly_value(prop, value):
     prop = replace_variables(prop)
     value = replace_variables(value)
     is_value = False
@@ -660,6 +697,7 @@ def the_object_name_has_a_thickness_thick_layered_material_containing_the_materi
         material_names.append(layer.Material.Name)
     assert is_x(total_thickness, float(thickness))
     assert material_name in material_names
+
 
 @then(parsers.parse('the object "{name}" has no IFC materials'))
 def the_object_has_no_ifc_materials(name):
@@ -705,12 +743,6 @@ def the_collection_name1_is_in_the_collection_name2(name1, name2):
     assert bpy.data.collections.get(name2).children.get(name1)
 
 
-@then(parsers.parse('the object "{name}" does not exist'))
-def the_object_name_does_not_exist(name):
-    obj = bpy.data.objects.get(name)
-    assert obj is None or len(obj.users_collection) == 0, f"Object {name} exists"
-
-
 @then(parsers.parse('the collection "{name}" does not exist'))
 def the_collection_name_does_not_exist(name):
     obj = bpy.data.collections.get(name)
@@ -753,7 +785,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
-def the_object_name_is_at_location(name, location):
+def the_object_name_top_right_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
@@ -762,7 +794,7 @@ def the_object_name_is_at_location(name, location):
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
-def the_object_name_is_at_location(name, location):
+def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj = the_object_name_exists(name)
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
@@ -791,10 +823,12 @@ def the_file_name_should_contain_value(name, value):
 def the_object_name_has_no_modifiers(name):
     assert len(the_object_name_exists(name).modifiers) == 0
 
+
 @given(parsers.parse('I load the IFC test file "{filepath}"'))
 def i_load_the_ifc_test_file(filepath):
     filepath = f"{variables['cwd']}{filepath}"
     bpy.ops.bim.load_project(filepath=filepath, use_relative_path=True)
+
 
 @given("I load the demo construction library")
 @when("I load the demo construction library")
@@ -836,7 +870,7 @@ def move_cursor_bottom_left():
 @given(parsers.parse("I prepare to undo"))
 @when(parsers.parse("I prepare to undo"))
 @then(parsers.parse("I prepare to undo"))
-def hit_undo():
+def prepare_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
 
 
@@ -846,6 +880,7 @@ def hit_undo():
 def hit_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
     bpy.ops.ed.undo()
+
 
 @then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
 def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
@@ -866,9 +901,11 @@ def the_obj1_has_a_connection_with_obj2(obj_name1, obj_name2):
         relationships[conn.RelatedElement] = conn.RelatingElement
 
     for key, value in relationships.items():
-        assert (key.id() == element1.id() and value.id() == element2.id()) or (key.id() == element2.id() and value.id() == element1.id()), f"The object {obj_name1} is connected to {obj_name2}"
+        assert (key.id() == element1.id() and value.id() == element2.id()) or (
+            key.id() == element2.id() and value.id() == element1.id()
+        ), f"The object {obj_name1} is connected to {obj_name2}"
 
-        
+
 @then(parsers.parse('the object "{obj_name1}" and "{obj_name2}" belong to the same Linked Aggregate Group'))
 def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name2):
     element1 = replace_variables(obj_name1)
@@ -892,6 +929,7 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
 
     assert groups[0] == groups[1], "Objects do not belong to the same Linked Aggregate group"
 
+
 @when(parsers.parse('the object layer length is set to "{value}"'))
 def the_obj_layer_lenght_is_set_to(value):
     value = float(value)
@@ -900,11 +938,11 @@ def the_obj_layer_lenght_is_set_to(value):
     except:
         assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
 
-    print(50*"@", bpy.context.selected_objects)
-        
+    print(50 * "@", bpy.context.selected_objects)
+
     bpy.context.scene.BIMModelProperties.length = value
     bpy.ops.bim.change_layer_length(length=value)
-    
+
 
 # These definitions are not to be used in tests but simply in debugging failing tests
 
@@ -953,5 +991,3 @@ def run_pdb():
     import pdb
 
     pdb.set_trace()
-
-    

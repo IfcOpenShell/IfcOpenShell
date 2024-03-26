@@ -493,6 +493,9 @@ namespace {
 				for (auto& prop : *props) {
 					if (prop->declaration().is("IfcPropertySingleValue")) {
 						std::string name = *((IfcUtil::IfcBaseEntity*) prop)->get("Name");
+                        if (((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue")->isNull()) {
+                            continue;
+                        }
 						IfcUtil::IfcBaseClass* v = *((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
 						auto value = v->data().getArgument(0);
 						if (value->type() == IfcUtil::Argument_STRING) {
@@ -724,6 +727,10 @@ void SvgSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			}
 		}
 		compound_local = comp2;
+	}
+
+	if (only_valid_ && !IfcGeom::util::validate_shape(compound_local)) {
+		return;
 	}
 
 	geometry_data data{ compound_local, dash_arrays, trsf, brep_obj->product(), storey, elev, brep_obj->name(), nameElement(storey, brep_obj) };

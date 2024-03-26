@@ -72,7 +72,11 @@ class Boundary(blenderbim.core.tool.Boundary):
         obj.matrix_world = space.matrix_world
 
     @classmethod
-    def decorate_boundary(cls, obj):
+    def decorate_boundary(cls, obj: bpy.types.Object) -> None:
         new = bpy.context.scene.BIMBoundaryProperties.boundaries.add()
         new.obj = obj
         obj.show_in_front = True
+
+    @classmethod
+    def undecorate_boundary(cls, obj: bpy.types.Object) -> None:
+        obj.show_in_front = False

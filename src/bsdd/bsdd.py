@@ -23,7 +23,7 @@ import urllib
 import requests
 import webbrowser
 import http.server
-from typing import TypedDict, Literal
+from typing import TypedDict, Literal, Optional
 
 Status = Literal["Preview", "Active", "Inactive"]
 ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
@@ -576,7 +576,7 @@ class Client:
 
     def get_classes(self, dictionary_uri: str, use_nested_classes: bool = True,
                     class_type: ClassTypes = "Class",
-                    language_code: str = "", version: int = 1) -> DictionaryClassesResponseContractV1:
+                    language_code: str = "", version: int = 1, offset=0, limit=1000) -> DictionaryClassesResponseContractV1:
         """
         Get Dictionary with tree of classes
         This API replaces Domain
@@ -587,10 +587,12 @@ class Client:
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
+            "offset" : offset,
+            "limit" : limit
         }
         return self.get(endpoint, params)
 
-    def get_properties(self, dictionary_uri: str, language_code: str = "",
+    def get_properties(self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "",
                        version: int = 1) -> DictionaryPropertiesResponseContractV1:
         """
         Get Dictionary with its properties
@@ -599,11 +601,14 @@ class Client:
         params = {
             "Uri": dictionary_uri,
             "languageCode": language_code,
+            "offset": offset,
+            "limit": limit 
         }
         return self.get(endpoint, params)
 
     def get_class(self, class_uri: str, include_class_properties: bool = True,
                   include_child_class_reference: bool = True, include_class_relations: bool = True,
+                  include_reverse_relations: bool = False, reverse_relation_dictionary_uris: Optional[list[str]]=None,
                   language_code: str = "", version: int = 1) -> ClassContractV1:
         """
         Get Class details
@@ -615,8 +620,11 @@ class Client:
             "includeClassProperties": include_class_properties,
             "includeChildClassReferences": include_child_class_reference,
             "includeClassRelations": include_class_relations,
+            "IncludeReverseRelations": include_reverse_relations,
+            "ReverseRelationDictionaryUris": reverse_relation_dictionary_uris,
             "languageCode": language_code,
         }
+        params = {k: v for k, v in params.items() if v is not None}
         return self.get(endpoint, params)
 
     def get_property(self, uri, include_classes=False, language_code="",
@@ -647,7 +655,7 @@ class Client:
         return self.get(endpoint, params)
 
     def search_text(self, search_text: str, type_filter="All", dictionary_uris=None,
-                    version: int = 1) -> TextSearchResponseContractV1:
+                    version: int = 1, offset: int = 0, limit: int = 100) -> TextSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes and/or Properties matching the text.
         Pagination options are for Classes and Properties combined.
@@ -661,13 +669,15 @@ class Client:
             "SearchText": search_text,
             "TypeFilter": type_filter,
             "DictionaryUris": dictionary_uris,
+            "offset": offset,
+            "limit": limit
         }
         return self.get(endpoint, params)
         pass
 
     def search_in_dictionary(self, dictionary_uri: str, search_text: str = "", language_code: str = "",
                              related_ifc_entity: str = "",
-                             version: int = "1") -> SearchInDictionaryResponseContractV1:
+                             version: int = 1, offset: int = 0, limit: int = 100) -> SearchInDictionaryResponseContractV1:
         """
         Search the bSDD database, get list of Classes without details.
         This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
@@ -679,11 +689,13 @@ class Client:
             "SearchText": search_text,
             "LanguageCode": language_code,
             "RelatedIfcEntity": related_ifc_entity,
+            "offset": offset,
+            "limit": limit
         }
         return self.get(endpoint, params)
 
     def search_class(self, search_text: str, dictionary_uris=None, related_ifc_entities=None,
-                     version: int = 1) -> ClassSearchResponseContractV1:
+                     version: int = 1, offset: int = 0, limit: int = 100) -> ClassSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes matching the text and optional additional filters.
         this API replaces ClassificationSearch
@@ -698,6 +710,8 @@ class Client:
             "SearchText": search_text,
             "DictionaryUris": dictionary_uris,
             "RelatedIfcEntities": related_ifc_entities,
+            "offset": offset,
+            "limit": limit
         }
         return self.get(endpoint, params)
 
