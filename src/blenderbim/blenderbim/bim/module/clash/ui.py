@@ -45,57 +45,79 @@ class BIM_PT_ifcclash(Panel):
 
         layout.template_list("BIM_UL_clash_sets", "", props, "clash_sets", props, "active_clash_set_index")
 
-        if props.active_clash_set_index < len(props.clash_sets):
-            clash_set = props.active_clash_set
+        if not props.active_clash_set:
+            return
 
-            row = layout.row(align=True)
-            row.prop(clash_set, "name")
-            row.operator("bim.remove_clash_set", icon="X", text="").index = props.active_clash_set_index
+        clash_set = props.active_clash_set
 
-            row = layout.row(align=True)
+        row = layout.row(align=True)
+        row.prop(clash_set, "name")
+        row.operator("bim.remove_clash_set", icon="X", text="").index = props.active_clash_set_index
+
+        row = layout.row()
+        row.prop(clash_set, "mode")
+
+        if clash_set.mode == "intersection":
+            row = layout.row()
             row.prop(clash_set, "tolerance")
-
-            layout.label(text="Group A:")
             row = layout.row()
-            row.operator("bim.add_clash_source").group = "a"
-
-            for index, source in enumerate(clash_set.a):
-                row = layout.row(align=True)
-                row.prop(source, "name", text="")
-                op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-                op.index = index
-                op.group = "a"
-                op = row.operator("bim.remove_clash_source", icon="X", text="")
-                op.index = index
-                op.group = "a"
-
-                row = layout.row(align=True)
-                row.prop(source, "mode", text="")
-                row.prop(source, "selector", text="")
-
-            layout.label(text="Group B:")
+            row.prop(clash_set, "check_all")
+        elif clash_set.mode == "collision":
             row = layout.row()
-            row.operator("bim.add_clash_source").group = "b"
-
-            for index, source in enumerate(clash_set.b):
-                row = layout.row(align=True)
-                row.prop(source, "name", text="")
-                op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-                op.index = index
-                op.group = "b"
-                op = row.operator("bim.remove_clash_source", icon="X", text="")
-                op.index = index
-                op.group = "b"
-
-                row = layout.row(align=True)
-                row.prop(source, "mode", text="")
-                row.prop(source, "selector", text="")
-
+            row.prop(clash_set, "allow_touching")
+        elif clash_set.mode == "clearance":
             row = layout.row()
-            row.prop(props, "should_create_clash_snapshots")
+            row.prop(clash_set, "clearance")
+            row = layout.row()
+            row.prop(clash_set, "check_all")
+
+        row = layout.row(align=True)
+        row.label(text="Group A:", icon="OUTLINER_OB_POINTCLOUD")
+        row.operator("bim.add_clash_source", icon="ADD", text="").group = "a"
+
+        for index, source in enumerate(clash_set.a):
             row = layout.row(align=True)
-            row.operator("bim.execute_ifc_clash")
-            row.operator("bim.select_ifc_clash_results")
+            row.prop(source, "name", text="")
+            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
+            op.index = index
+            op.group = "a"
+            op = row.operator("bim.remove_clash_source", icon="X", text="")
+            op.index = index
+            op.group = "a"
+
+            row = layout.row(align=True)
+            row.prop(source, "mode", text="")
+            row.prop(source, "selector", text="")
+
+        row = layout.row(align=True)
+        row.label(text="Group B:", icon="OUTLINER_OB_POINTCLOUD")
+        row.operator("bim.add_clash_source", icon="ADD", text="").group = "b"
+
+        for index, source in enumerate(clash_set.b):
+            row = layout.row(align=True)
+            row.prop(source, "name", text="")
+            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
+            op.index = index
+            op.group = "b"
+            op = row.operator("bim.remove_clash_source", icon="X", text="")
+            op.index = index
+            op.group = "b"
+
+            row = layout.row(align=True)
+            row.prop(source, "mode", text="")
+            row.prop(source, "selector", text="")
+
+        row = layout.row()
+        row.prop(props, "should_create_clash_snapshots")
+        row = layout.row()
+        row.operator("bim.execute_ifc_clash")
+
+        row = layout.row()
+        row.label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")
+
+        layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
+        row = layout.row()
+        row.operator("bim.select_clash")
 
 
 class BIM_PT_clash_manager(Panel):
@@ -109,29 +131,6 @@ class BIM_PT_clash_manager(Panel):
 
     def draw(self, context):
         pass
-
-
-class BIM_PT_dumb_clash_manager(Panel):
-    bl_idname = "BIM_PT_dumb_clash_manager"
-    bl_label = "Dumb Manager"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_clash_manager"
-
-    def draw(self, context):
-        layout = self.layout
-        props = context.scene.BIMClashProperties
-
-        row = layout.row(align=True)
-        row.operator("bim.load_ifc_clashes", text="LOAD IFC CLASHES", icon="IMPORT")
-        row.operator("bim.save_ifc_clashes", text="SAVE CLASH RESULTS", icon="EXPORT")
-        layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
-        # bim.select_clash
-        row = layout.row(align=True)
-        row.operator("bim.select_clash", text="SELECT CLASH", icon="IMPORT")
-        row.prop(props, "sould_focus_on_clash", icon="RESTRICT_VIEW_OFF")
 
 
 class BIM_PT_smart_clash_manager(Panel):
