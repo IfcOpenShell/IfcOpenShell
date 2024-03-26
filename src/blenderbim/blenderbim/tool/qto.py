@@ -99,10 +99,10 @@ class Qto(blenderbim.core.tool.Qto):
         cls, calculator: QtoCalculator, qto_name: str, obj: bpy.types.Object
     ) -> dict[str, float]:
         return {
-            quantity_name: cls.get_rounded_value(calculator.calculate_quantity(qto_name, quantity_name, obj))
+            quantity_name: cls.get_rounded_value(value)
             for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
             if cls.has_calculator(qto_name, quantity_name)
-            and calculator.calculate_quantity(qto_name, quantity_name, obj) is not None
+            and (value := calculator.calculate_quantity(qto_name, quantity_name, obj)) is not None
         }
 
     @classmethod
