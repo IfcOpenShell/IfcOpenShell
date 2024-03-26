@@ -378,7 +378,7 @@ set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
 set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
-call :DownloadFile http://download.savannah.gnu.org/releases/freetype/%FREETYPE_ZIP% "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://sourceforge.net/projects/freetype/files/freetype2/2.7.1/%FREETYPE_ZIP%/download "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
