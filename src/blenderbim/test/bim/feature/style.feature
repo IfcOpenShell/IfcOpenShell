@@ -18,7 +18,7 @@ Scenario: Remove style
     When I press "bim.remove_style(style={style})"
     Then nothing happens
 
-Scenario: Add style
+Scenario: Add style to current blender material
     Given an empty IFC project
     And I add a cube
     And I add a material
@@ -33,30 +33,37 @@ Scenario: Unlink style
     When I press "bim.unlink_style"
     Then the material "Material" is not an IFC style
 
-Scenario: Enable editing style
+Scenario: Add a new style
     Given an empty IFC project
-    And I add a cube
-    And I add a material
-    And I press "bim.add_style"
-    When I press "bim.enable_editing_style"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    When I press "bim.add_presentation_style"
     Then nothing happens
 
-Scenario: Disable editing style
+Scenario: Disable adding a new style
     Given an empty IFC project
-    And I add a cube
-    And I add a material
-    And I press "bim.add_style"
-    And I press "bim.enable_editing_style"
-    When I press "bim.disable_editing_style"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    When I press "bim.disable_adding_presentation_style"
     Then nothing happens
 
 Scenario: Edit style
     Given an empty IFC project
-    And I add a cube
-    And I add a material
-    And I press "bim.add_style"
-    And I press "bim.enable_editing_style"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    And I press "bim.add_presentation_style"
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    And I press "bim.enable_editing_style(style={style})"
     When I press "bim.edit_style"
+    Then nothing happens
+
+Scenario: Disable editing style
+    Given an empty IFC project
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    And I press "bim.add_presentation_style"
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    And I press "bim.enable_editing_style(style={style})"
+    When I press "bim.disable_editing_style"
     Then nothing happens
 
 Scenario: Load styles
