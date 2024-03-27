@@ -61,7 +61,8 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
        $ sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
 
-3. Install OpenCascade Technology (OCCT).
+3. Install OpenCascade Technology (OCCT). Officially v7.5.0 is supported. Other
+   versions may have unexpected behaviour.
 
    ::
 
