@@ -135,8 +135,7 @@ class Clasher:
         self.logger.info(f"Adding objects {name}")
         assert iterator.initialize()
         while True:
-            self.tree.add_element(iterator.get_native(), should_triangulate=True)
-            # self.tree.add_element(iterator.get())
+            self.tree.add_element(iterator.get())
             shape = iterator.get()
             if not iterator.next():
                 break
