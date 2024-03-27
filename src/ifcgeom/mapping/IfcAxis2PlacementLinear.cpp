@@ -30,41 +30,56 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis2PlacementLinear* inst) 
 
 	Eigen::Vector3d o, axis(0, 0, 1), refDirection;
 
-	taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Location()));
-    o = m->components().col(3).head<3>();
+   taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Location()));
+   o = m->components().col(3).head<3>();
 
-   const bool hasAxis = !!inst->Axis();
-	const bool hasRef = !!inst->RefDirection();
+	// From 8.9.3.4 IfcAxis2PlacementLinear there are 4 cases that need to be considered
+	// 1) Axis is given but not RefDirection
+	// 2) RefDirection is given but not Axis
+   // 3) Neither Axis or RefDirection are provided
+   // 4) Both Axis and RefDirection are provided
+
+	const bool hasAxis = inst->Axis() != nullptr;
+   const bool hasRef = inst->RefDirection() != nullptr;
 
 	if (hasAxis != hasRef) {
 		Logger::Warning("Axis and RefDirection should be specified together", inst);
 	}
 
-	if (hasAxis) {
-		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
-		axis = *v->components_;
-    } else { 
-		// 8.9.3.4 IfcAxis2LinearPlacement does not specify the default when Axis is omitted
-		// When RefDirection is omitted, see comment below, it is taken to be tangent to the curve.
-		// To be consistent, Axis is taken to be orthogonal to RefDirection
-        axis = m->components().col(2).head<3>();
-    }
+	if (hasAxis && !hasRef) 
+	{
+      taxonomy::direction3::ptr a = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
+      axis = *a->components_;
 
-	if (hasRef) {
-		taxonomy::direction3::ptr v = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
-		refDirection = *v->components_;
-	} else {
-		// 8.9.3.4 IfcAxis2LinearPlacement 
-		// https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcAxis2PlacementLinear.htm
-      // "If RefDirection is omitted, the direction is taken from the curve tangent at Location"
-		//
-		// When the PointByDistanceExpression Location is evaluated, it is evaluating the basis curve and returning
-		// the matrix of orthogonal vectors that define the coordinate system at the point on curve as well as the point on curve
-		// In other words, the m matrix has everything needed
+	   refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
+      // refDirection is not necessarily orthogonal to axis.
+      // axis.cross(refDirection) gives y. y.cross(axis) gives x=refDirection
+      refDirection = axis.cross(refDirection).cross(axis);
+   } 
+	else if (!hasAxis && hasRef) 
+	{
+      taxonomy::direction3::ptr r = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
+      refDirection = *r->components_;
+      Eigen::Vector3d up(0, 0, 1);
+      axis = refDirection.cross(up.cross(refDirection));
+   } 
+	else if (!hasAxis && !hasRef) 
+	{
+       refDirection = m->components().col(0).head<3>(); // RefDirection is the curve tangent when omitted
+       Eigen::Vector3d up(0, 0, 1);
+       axis = refDirection.cross(up.cross(refDirection));
+   }
+	else 
+	{
+       taxonomy::direction3::ptr a = taxonomy::cast<taxonomy::direction3>(map(inst->Axis()));
+       axis = *a->components_;
 
-		refDirection = m->components().col(0).head<3>();
+       taxonomy::direction3::ptr r = taxonomy::cast<taxonomy::direction3>(map(inst->RefDirection()));
+       refDirection = *r->components_;
+       refDirection = axis.cross(refDirection).cross(axis); // refDirection needs to be orthogonal to axis
+   }
 
-    }
+   // axis and refDirection need to be orthogonal
 	return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection);
 }
 
