@@ -740,6 +740,8 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
 					filler.push_back(ea);
 				} catch (IfcException& e) {
 					Logger::Message(Logger::LOG_ERROR, e.what());
+					// #4070 We didn't actually capture an aggregate entry, undo length increment.
+					return_value--;
 				}
 			} else {
 				filler.push_back(new TokenArgument(next));
