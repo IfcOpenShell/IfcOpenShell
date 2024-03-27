@@ -438,7 +438,7 @@ Scenario: Override duplicate move - copying an aggregate
     And the object "IfcElementAssembly/Assembly.001" exists
     And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
     And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcBuildingStorey/My Storey"
-    
+
 Scenario: Override duplicate move - copying objects with connection
     Given an empty IFC project
     And I load the demo construction library
@@ -467,7 +467,7 @@ Scenario: Override duplicate move - copying objects with connection
     Then the object "IfcSlab/Slab.001" exists
     And the variable "slab_name" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcSlab/Slab.001'][0]"
     Then the object "{wall_name}" has a connection with "{slab_name}"
-    
+
 Scenario: Override duplicate move - copying walls with mitre joint
     Given an empty IFC project
     And I load the demo construction library
@@ -494,7 +494,7 @@ Scenario: Override duplicate move - copying walls with mitre joint
     Then the object "IfcWall/Wall.003" exists
     And the variable "wall_name2" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.003'][0]"
     Then the object "{wall_name1}" has a connection with "{wall_name2}"
-    
+
 Scenario: Override duplicate move linked - without active IFC data
     Given an empty Blender session
     And I add a cube
@@ -588,7 +588,7 @@ Scenario: Refresh linked aggregate - after deleting an object
     When I refresh linked aggregate the selected object
     Then the object "IfcWall/Wall_01" does not exist
     And the object "IfcWall/Wall_02" exists
-    
+
 Scenario: Refresh linked aggregate - after duplicating an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected
@@ -606,4 +606,4 @@ Scenario: Refresh linked aggregate - after duplicating an object
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
-    
+
