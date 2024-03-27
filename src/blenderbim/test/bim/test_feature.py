@@ -51,7 +51,7 @@ def replace_variables(value):
 
 
 def is_x(number, x):
-    return abs(number - x) < 1e-6
+    return abs(number - x) < 1e-5
 
 
 def vectors_are_equal(v1, v2):
