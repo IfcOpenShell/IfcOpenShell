@@ -53,7 +53,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 		auto g = gradient->evaluate(u);
 		auto c = cant->evaluate(u);
 
-      std::swap(c.col(3)(1), c.col(3)(2));
+      c.col(3)(0) = 0.0;        // x is distance along. zero it out so it doesn't add to the x from gradient curve
+      c.col(1).swap(c.col(2));  // c is 2D in distance along - y plane, swap y and z so elevations become z
+      c.row(1).swap(c.row(2));
 
       Eigen::Matrix4d m;
       m = g * c;
