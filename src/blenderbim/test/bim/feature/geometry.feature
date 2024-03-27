@@ -559,8 +559,8 @@ Scenario: Duplicate linked aggregate
     When I duplicate linked aggregate the selected objects
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
-    And the object "IfcElementAssembly/Assembly_02" exists
-    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_02" belong to the same Linked Aggregate Group
+    And the object "IfcElementAssembly/Assembly_01" exists
+    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_01" belong to the same Linked Aggregate Group
 
 Scenario: Refresh linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
