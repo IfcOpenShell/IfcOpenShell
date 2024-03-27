@@ -432,7 +432,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"DEFAULT_CLOSED","HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
@@ -440,6 +440,13 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
     def draw(self, context):
         pass
+
+    def draw_header(self, context):
+        # Draws help button on the right
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        row.operator("bim.open_uri", text="", icon="HELP").uri = \
+            "https://blenderbim.org/docs-python/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):
