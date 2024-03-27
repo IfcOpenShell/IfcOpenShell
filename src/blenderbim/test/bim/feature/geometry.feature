@@ -477,17 +477,17 @@ Scenario: Override duplicate move - copying walls with mitre joint
     And I press "bim.hotkey(hotkey='S_A')"
     And the cursor is at "0.5,0,0"
     And I press "bim.hotkey(hotkey='S_A')"
-    And the object "IfcWall/Wall" is selected
-    And additionally the object "IfcWall/Wall.001" is selected
+    And the object "IfcWall/Wall.001" is selected
+    And additionally the object "IfcWall/Wall" is selected
     When I press "bim.hotkey(hotkey='S_Y')"
-    Then the object "IfcWall/Wall.001" dimensions are "0.5,0.1,3"
-    And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0,0"
-    And the object "IfcWall/Wall" dimensions are "1.1,0.1,3"
-    And the object "IfcWall/Wall" bottom left corner is at "0.5,0.1,0"
-    And the object "IfcWall/Wall" top right corner is at "0.6,-1,3"
+    Then the object "IfcWall/Wall" dimensions are "0.5,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0.5,0,0"
+    And the object "IfcWall/Wall.001" dimensions are "1.1,0.1,3"
+    And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0.1,0"
+    And the object "IfcWall/Wall.001" top right corner is at "0.6,-1,3"
     When I deselect all objects
-    And the object "IfcWall/Wall" is selected
-    And additionally the object "IfcWall/Wall.001" is selected
+    And the object "IfcWall/Wall.001" is selected
+    And additionally the object "IfcWall/Wall" is selected
     When I duplicate the selected objects
     Then the object "IfcWall/Wall.002" exists
     And the variable "wall_name1" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.002'][0]"
