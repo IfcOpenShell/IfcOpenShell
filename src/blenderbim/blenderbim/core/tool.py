@@ -154,6 +154,17 @@ class Bsdd:
 
 
 @interface
+class Clash:
+    def export_clash_sets(cls): pass
+    def get_clash(cls, clash_set, a_global_id, b_global_id): pass
+    def get_clash_set(cls, name): pass
+    def get_clash_sets(cls): pass
+    def import_active_clashes(cls): pass
+    def load_clash_sets(cls, fn): pass
+    def look_at(cls, target, location): pass
+
+
+@interface
 class Collector:
     def assign(cls, obj): pass
     def sync(cls, obj): pass
