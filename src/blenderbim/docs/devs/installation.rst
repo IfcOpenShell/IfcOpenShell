@@ -22,8 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=4.1, choose py311
 - If you are on Blender >=3.1 and <=4.0, choose py10
 - If you are on Blender >=2.93 and <3.1, choose py39
-- Choose ``linux``, ``macos``, ``macosm1`` (for Apple M1 devices), or ``win``
-  depending on your operating system
+- Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
+  ``win`` depending on your operating system
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
