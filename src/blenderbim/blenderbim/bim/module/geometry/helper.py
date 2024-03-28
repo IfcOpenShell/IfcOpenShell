@@ -21,6 +21,7 @@ import bmesh
 import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
+import blenderbim.tool as tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
 from typing import Union
@@ -141,13 +142,14 @@ class Helper:
             total_groups = 0
             is_circle = False
             for group_type, group_indices in groups.items():
-                for group_index in group_indices:
-                    if group_index in vert[deform_layer]:
-                        if group_type == "IFCCIRCLE":
-                            is_circle = True
-                        group_verts[group_type].setdefault(group_index, 0)
-                        group_verts[group_type][group_index] += 1
-                        total_groups += 0
+                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
+                if not is_special:
+                    continue
+                if group_type == "IFCCIRCLE":
+                    is_circle = True
+                group_verts[group_type].setdefault(group_index, 0)
+                group_verts[group_type][group_index] += 1
+                total_groups += 0
             if total_groups > 1:  # A vert can only belong to one group
                 return (False, "AMBIGUOUS_SPECIAL_VERTEX")
             elif is_circle:

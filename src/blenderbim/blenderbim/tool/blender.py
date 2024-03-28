@@ -570,6 +570,18 @@ class Blender(blenderbim.core.tool.Blender):
         return bm_a
 
     @classmethod
+    def bmesh_check_vertex_in_groups(
+        cls, vertex: bmesh.types.BMVert, deform_layer: bmesh.types.BMLayerItem, groups: list[int]
+    ) -> Union[tuple[Literal[True], int], tuple[Literal[False], None]]:
+        """returns tuple boolean (whether vertex is in any of the groups) and related group index"""
+        for group_index in vertex[deform_layer].keys():
+            # ignore vertex groups assignments produced by edge subdivision near arcs
+            # they usually have weight = 0.5
+            if group_index in groups and vertex[deform_layer][group_index] == 1.0:
+                return True, group_index
+        return False, None
+
+    @classmethod
     def toggle_edit_mode(cls, context: bpy.types.Context) -> set:
         ao = context.active_object
         if not ao:
