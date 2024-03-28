@@ -23,6 +23,7 @@ from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
+from typing import Union
 
 
 ERROR_ELEMENTS_COLOR = (1, 0.2, 0.322, 1)  # RED
@@ -33,15 +34,6 @@ def transparent_color(color, alpha=0.1):
     color = [i for i in color]
     color[3] = alpha
     return color
-
-
-def bm_check_vertex_in_groups(vertex, deform_layer, groups):
-    """returns tuple boolean (whether vertex is in any of the groups)
-    and related group index"""
-    for group_index in vertex[deform_layer].keys():
-        if group_index in groups:
-            return True, group_index
-    return False, None
 
 
 class ProfileDecorator:
@@ -148,12 +140,12 @@ class ProfileDecorator:
             # deform_layer is None if there are no verts assigned to vertex groups
             # even if there are vertex groups in the obj.vertex_groups
             if deform_layer:
-                is_arc, group_index = bm_check_vertex_in_groups(vertex, deform_layer, arc_groups)
+                is_arc, group_index = tool.Blender.bmesh_check_vertex_in_groups(vertex, deform_layer, arc_groups)
                 if is_arc:
                     arcs.setdefault(group_index, []).append(vertex)
                     special_vertex_indices[vertex.index] = group_index
 
-                is_circle, group_index = bm_check_vertex_in_groups(vertex, deform_layer, circle_groups)
+                is_circle, group_index = tool.Blender.bmesh_check_vertex_in_groups(vertex, deform_layer, circle_groups)
                 if is_circle:
                     circles.setdefault(group_index, []).append(vertex)
                     special_vertex_indices[vertex.index] = group_index
