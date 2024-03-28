@@ -150,9 +150,9 @@ class Spatial(blenderbim.core.tool.Spatial):
         for product in products:
             obj = tool.Ifc.get_object(product)
             if obj and bpy.context.view_layer.objects.get(obj.name):
-                obj.select_set(True)
                 if unhide:
                     obj.hide_set(False)
+                obj.select_set(True)
 
     @classmethod
     def filter_products(cls, products, action):
