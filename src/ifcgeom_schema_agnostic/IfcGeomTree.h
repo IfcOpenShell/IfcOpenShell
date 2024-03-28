@@ -388,7 +388,7 @@ namespace IfcGeom {
                 // Check if the point is on the line defined by start and end
                 // by checking if the cross product is (near) zero vector, indicating collinearity.
                 gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
-                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                if (crossProduct.Magnitude() > 1e-5) {
                     return false; // Not collinear, hence not on the line segment
                 }
                 return true; // The point is on the line segment
@@ -403,7 +403,7 @@ namespace IfcGeom {
                 // Check if the point is on the line defined by start and end
                 // by checking if the cross product is (near) zero vector, indicating collinearity.
                 gp_Vec crossProduct = startToPoint.Crossed(startToEnd);
-                if (crossProduct.Magnitude() > Precision::Confusion()) {
+                if (crossProduct.Magnitude() > 1e-5) {
                     return false; // Not collinear, hence not on the line segment
                 }
                 return true; // The point is on the line segment
