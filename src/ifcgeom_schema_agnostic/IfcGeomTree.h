@@ -251,6 +251,10 @@ namespace IfcGeom {
                             */
                             double at, au, av;
                             if (intersectRayTriangle(ray_origin, ray_vector, ta, tb, tc, at, au, av, false)) {
+                                if (std::abs(at) < 1e-4) {
+                                    // The point is basically lying on a face so inside/outside is ambiguous.
+                                    return false;
+                                }
                                 // At is a signed intersection distance (positive is along +ray_vector)
                                 if (at > -1e-5) {
                                     total_intersections++;
