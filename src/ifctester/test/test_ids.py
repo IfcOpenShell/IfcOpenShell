@@ -48,12 +48,11 @@ class TestIds:
 
     def test_create_an_ids_with_minimal_information(self):
         specs = ids.Ids()
-        print('AAA', specs.asdict())
         assert specs.asdict() == {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -73,7 +72,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {
                 "title": "title",
                 "copyright": "copyright",
@@ -93,7 +92,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -117,7 +116,7 @@ class TestIds:
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
-        spec.requirements.append(name_attr := ids.Attribute(name="Name", value="Waldo"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
         specs.specifications.append(spec)
         assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
         assert spec.status == None
@@ -233,12 +232,9 @@ class TestIds:
 class TestSpecification:
     def test_create_specification_with_minimal_information(self):
         spec = ids.Specification()
-        print(spec.asdict())
         assert spec.asdict() == {
             "@name": "Unnamed",
             "@ifcVersion": ["IFC2X3", "IFC4"],
-            "@minOccurs": 0,
-            "@maxOccurs": "unbounded",
             "applicability": {},
             "requirements": {},
         }
@@ -255,8 +251,6 @@ class TestSpecification:
         )
         assert spec.asdict() == {
             "@name": "name",
-            "@minOccurs": 1,
-            "@maxOccurs": 1,
             "@ifcVersion": "IFC4",
             "@identifier": "identifier",
             "@description": "description",

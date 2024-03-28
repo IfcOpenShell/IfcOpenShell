@@ -66,22 +66,22 @@ class Facet:
         for name in self.parameters:
             value = getattr(self, name.replace("@", ""))
             if value is not None:
+                if name == "@dataType":
+                    value = value.upper()
                 results[name] = value if "@" in name else self.to_ids_value(value)
         if clause_type == "applicability":
-            for key in ["@uri", "@instructions", "@minOccurs", "@maxOccurs"]:
+            for key in ["@uri", "@instructions", "@cardinality"]:
                 results.pop(key, None)
         return results
 
     def parse(self, xml):
-        setattr(self, "minOccurs", 1)
-        setattr(self, "maxOccurs", 1)
+        setattr(self, "cardinality", "required")
         for name, value in xml.items():
             name = name.replace("@", "")
             if isinstance(value, dict) and "simpleValue" in value.keys():
                 setattr(self, name, value["simpleValue"])
             elif isinstance(value, dict) and "restriction" in value.keys():
                 setattr(self, name, Restriction().parse(value["restriction"][0]))
-                # TODO handle more than one restriction: return [restriction(r) for r in v["restriction"]]
             else:
                 setattr(self, name, value)
         return self
@@ -96,9 +96,9 @@ class Facet:
             templates = self.applicability_templates
         elif clause_type == "requirement":
             is_prohibited = False
-            if specification.maxOccurs == 0:
+            if specification.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
-            if requirement.maxOccurs == 0:
+            if requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
 
@@ -131,12 +131,7 @@ class Facet:
         return parameter_dict
 
     def get_usage(self):
-        if self.minOccurs != 0:
-            return "required"
-        elif self.minOccurs == 0 and self.maxOccurs != 0:
-            return "optional"
-        elif self.maxOccurs == 0:
-            return "prohibited"
+        return self.cardinality
 
 
 class Entity(Facet):
@@ -197,8 +192,8 @@ class Entity(Facet):
 
 
 class Attribute(Facet):
-    def __init__(self, name="Name", value=None, minOccurs=None, maxOccurs=None, instructions=None):
-        self.parameters = ["name", "value", "@minOccurs", "@maxOccurs", "@instructions"]
+    def __init__(self, name="Name", value=None, cardinality="required", instructions=None):
+        self.parameters = ["name", "value", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "Data where the {name} is {value}",
             "Data where the {name} is provided",
@@ -211,7 +206,7 @@ class Attribute(Facet):
             "The {name} shall not be {value}",
             "The {name} shall not be provided",
         ]
-        super().__init__(name, value, minOccurs, maxOccurs, instructions)
+        super().__init__(name, value, cardinality, instructions)
 
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
@@ -242,7 +237,7 @@ class Attribute(Facet):
         return results
 
     def __call__(self, inst, logger=None):
-        if self.minOccurs == 0 and self.maxOccurs != 0:
+        if self.cardinality == "optional":
             return AttributeResult(True)
 
         if isinstance(self.name, str):
@@ -323,34 +318,31 @@ class Attribute(Facet):
                     reason = {"type": "VALUE", "actual": value}
                     break
 
-        if self.maxOccurs == 0:
+        if self.cardinality == "prohibited":
             return AttributeResult(not is_pass, {"type": "PROHIBITED"})
         return AttributeResult(is_pass, reason)
 
 
 class Classification(Facet):
-    def __init__(self, value=None, system=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
-        self.parameters = ["value", "system", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
+    def __init__(self, value=None, system=None, uri=None, cardinality="required", instructions=None):
+        self.parameters = ["value", "system", "@uri", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "Data having a {system} reference of {value}",
             "Data classified using {system}",
             "Data classified as {value}",
-            "Classified data",
         ]
         self.requirement_templates = [
             "Shall have a {system} reference of {value}",
             "Shall be classified using {system}",
             "Shall be classified as {value}",
-            "Shall be classified",
         ]
         self.prohibited_templates = [
             "Shall not have a {system} reference of {value}",
             "Shall not be classified using {system}",
             "Shall not be classified as {value}",
-            "Shall not be classified",
         ]
 
-        super().__init__(value, system, uri, minOccurs, maxOccurs, instructions)
+        super().__init__(value, system, uri, cardinality, instructions)
 
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
@@ -360,8 +352,8 @@ class Classification(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
-        if self.minOccurs == 0 and self.maxOccurs != 0:
-            return ClassificationResult(True)
+        if self.cardinality == "optional":
+            return ClassificationResult(True) # Is this really the correct behaviour?
 
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
@@ -381,13 +373,13 @@ class Classification(Facet):
             if not is_pass:
                 reason = {"type": "VALUE", "actual": values}
 
-        if is_pass and self.system:
+        if is_pass:
             systems = [ifcopenshell.util.classification.get_classification(r).Name for r in references]
             is_pass = any([self.system == s for s in systems])
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
 
-        if self.maxOccurs == 0:
+        if self.cardinality == "prohibited":
             return ClassificationResult(not is_pass, {"type": "PROHIBITED"})
         return ClassificationResult(is_pass, reason)
 
@@ -398,11 +390,10 @@ class PartOf(Facet):
         name="IFCWALL",
         predefinedType=None,
         relation=None,
-        minOccurs=None,
-        maxOccurs="unbounded",
+        cardinality="required",
         instructions=None,
     ):
-        self.parameters = ["name", "predefinedType", "@relation", "@minOccurs", "@maxOccurs", "@instructions"]
+        self.parameters = ["name", "predefinedType", "@relation", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "An element with an {relation} relationship with an {name}",
             "An element with an {relation} relationship",
@@ -415,7 +406,7 @@ class PartOf(Facet):
             "An element must not have an {relation} relationship with an {name}",
             "An element must not have an {relation} relationship",
         ]
-        super().__init__(name, predefinedType, relation, minOccurs, maxOccurs, instructions)
+        super().__init__(name, predefinedType, relation, cardinality, instructions)
 
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
@@ -444,9 +435,6 @@ class PartOf(Facet):
         return super().parse(xml)
 
     def __call__(self, inst, logger=None):
-        if self.minOccurs == 0 and self.maxOccurs != 0:
-            return PartOfResult(True)
-
         reason = None
         if not self.relation:
             is_pass = False
@@ -536,8 +524,14 @@ class PartOf(Facet):
                     nest = self.get_nested_whole(nest)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
-        elif self.relation == "IFCRELVOIDSELEMENT":
-            building_element = self.get_voided_element(inst)
+        elif self.relation == "IFCRELVOIDSELEMENT IFCRELFILLSELEMENT":
+            if inst.is_a("IfcOpeningElement"):
+                building_element = self.get_voided_element(inst)
+            else:
+                building_element = None
+                opening = self.get_filled_opening(inst)
+                if opening:
+                    building_element = self.get_voided_element(opening)
             is_pass = building_element is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
@@ -551,23 +545,8 @@ class PartOf(Facet):
                         is_pass = True
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": building_element}
-        elif self.relation == "IFCRELFILLSELEMENT":
-            opening = self.filled_opening(inst)
-            is_pass = opening is not None
-            if not is_pass:
-                reason = {"type": "NOVALUE"}
-            if is_pass and self.name:
-                is_pass = False
-                if opening.is_a().upper() == self.name:
-                    if self.predefinedType:
-                        if ifcopenshell.util.element.get_predefined_type(opening) == self.predefinedType:
-                            is_pass = True
-                    else:
-                        is_pass = True
-                if not is_pass:
-                    reason = {"type": "ENTITY", "actual": opening}
 
-        if self.maxOccurs == 0:
+        if self.cardinality == "prohibited":
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
         return PartOfResult(is_pass, reason)
 
@@ -605,37 +584,35 @@ class Property(Facet):
     def __init__(
         self,
         propertySet="Property_Set",
-        name="PropertyName",
+        baseName="PropertyName",
         value=None,
-        datatype=None,
+        dataType=None,
         uri=None,
-        minOccurs=None,
-        maxOccurs="unbounded",
+        cardinality="required",
         instructions=None,
     ):
         self.parameters = [
             "propertySet",
-            "name",
+            "baseName",
             "value",
-            "@datatype",
+            "@dataType",
             "@uri",
-            "@minOccurs",
-            "@maxOccurs",
+            "@cardinality",
             "@instructions",
         ]
         self.applicability_templates = [
-            "Elements with {name} data of {value} in the dataset {propertySet}",
-            "Elements with {name} data in the dataset {propertySet}",
+            "Elements with {baseName} data of {value} in the dataset {propertySet}",
+            "Elements with {baseName} data in the dataset {propertySet}",
         ]
         self.requirement_templates = [
-            "{name} data shall be {value} and in the dataset {propertySet}",
-            "{name} data shall be provided in the dataset {propertySet}",
+            "{baseName} data shall be {value} and in the dataset {propertySet}",
+            "{baseName} data shall be provided in the dataset {propertySet}",
         ]
         self.prohibited_templates = [
-            "{name} data shall not be {value} and in the dataset {propertySet}",
-            "{name} data shall not be provided in the dataset {propertySet}",
+            "{baseName} data shall not be {value} and in the dataset {propertySet}",
+            "{baseName} data shall not be provided in the dataset {propertySet}",
         ]
-        super().__init__(propertySet, name, value, datatype, uri, minOccurs, maxOccurs, instructions)
+        super().__init__(propertySet, baseName, value, dataType, uri, cardinality, instructions)
 
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
@@ -651,7 +628,7 @@ class Property(Facet):
         )
 
     def __call__(self, inst, logger=None):
-        if self.minOccurs == 0 and self.maxOccurs != 0:
+        if self.cardinality == "optional":
             return PropertyResult(True)
 
         if isinstance(self.propertySet, str):
@@ -671,18 +648,18 @@ class Property(Facet):
             props = {}
             for pset_name, pset_props in psets.items():
                 props[pset_name] = {}
-                if isinstance(self.name, str):
-                    prop = pset_props.get(self.name)
+                if isinstance(self.baseName, str):
+                    prop = pset_props.get(self.baseName)
                     if prop == "UNKNOWN" and [
                         p
                         for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
-                        if p.Name == self.name
+                        if p.Name == self.baseName
                     ][0].NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":
-                        props[pset_name][self.name] = prop
+                        props[pset_name][self.baseName] = prop
                 else:
-                    props[pset_name] = {k: v for k, v in pset_props.items() if k == self.name}
+                    props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
 
                 if not bool(props[pset_name]):
                     is_pass = False
@@ -701,9 +678,9 @@ class Property(Facet):
                     elif prop_entity.is_a("IfcPropertySingleValue"):
                         data_type = prop_entity.NominalValue.is_a()
 
-                        if data_type.lower() != self.datatype.lower():
+                        if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -720,9 +697,9 @@ class Property(Facet):
                         prop_schema = prop_entity.wrapped_data.declaration().as_entity()
                         data_type = prop_schema.attribute_by_index(3).type_of_attribute().declared_type().name()
 
-                        if data_type.lower() != self.datatype.lower():
+                        if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
 
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
@@ -740,9 +717,9 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.EnumerationValues[0].is_a()
-                        if data_type.lower() != self.datatype.lower():
+                        if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                     elif prop_entity.is_a("IfcPropertyListValue"):
                         if not prop_entity.ListValues:
@@ -750,9 +727,9 @@ class Property(Facet):
                             reason = {"type": "NOVALUE"}
                             break
                         data_type = prop_entity.ListValues[0].is_a()
-                        if data_type.lower() != self.datatype.lower():
+                        if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -773,9 +750,9 @@ class Property(Facet):
                             if value is not None:
                                 data_type = value.is_a()
                                 values.append(value.wrappedValue)
-                        if data_type.lower() != self.datatype.lower():
+                        if self.dataType and data_type.lower() != self.dataType.lower():
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                         unit = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
                         if unit:
@@ -798,7 +775,7 @@ class Property(Facet):
                             if not column_values:
                                 continue
                             data_type = column_values[0].is_a()
-                            if data_type.lower() == self.datatype.lower():
+                            if self.dataType and data_type.lower() == self.dataType.lower():
                                 column_values = [v.wrappedValue for v in column_values]
                                 unit = units[f"{attribute}Unit"]
                                 if unit:
@@ -815,7 +792,7 @@ class Property(Facet):
                                 values.extend(column_values)
                         if not values:
                             is_pass = False
-                            reason = {"type": "DATATYPE", "actual": data_type, "datatype": self.datatype}
+                            reason = {"type": "DATATYPE", "actual": data_type, "dataType": self.dataType}
                             break
                         props[pset_name][prop_entity.Name] = values
                     else:
@@ -868,7 +845,7 @@ class Property(Facet):
                             reason = {"type": "VALUE", "actual": value}
                             break
 
-        if self.maxOccurs == 0:
+        if self.cardinality == "prohibited":
             return PropertyResult(not is_pass, {"type": "PROHIBITED"})
         return PropertyResult(is_pass, reason)
 
@@ -888,8 +865,8 @@ class Property(Facet):
 
 
 class Material(Facet):
-    def __init__(self, value=None, uri=None, minOccurs=None, maxOccurs="unbounded", instructions=None):
-        self.parameters = ["value", "@uri", "@minOccurs", "@maxOccurs", "@instructions"]
+    def __init__(self, value=None, uri=None, cardinality="required", instructions=None):
+        self.parameters = ["value", "@uri", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "All data with a {value} material",
             "All data with a material",
@@ -902,7 +879,7 @@ class Material(Facet):
             "Shall not have a material of {value}",
             "Shall not have a material",
         ]
-        super().__init__(value, uri, minOccurs, maxOccurs, instructions)
+        super().__init__(value, uri, cardinality, instructions)
 
     def filter(
         self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
@@ -912,7 +889,7 @@ class Material(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst, logger=None):
-        if self.minOccurs == 0 and self.maxOccurs != 0:
+        if self.cardinality == "optional":
             return MaterialResult(True)
 
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
@@ -963,7 +940,7 @@ class Material(Facet):
             if not is_pass:
                 reason = {"type": "VALUE", "actual": values}
 
-        if self.maxOccurs == 0:
+        if self.cardinality == "prohibited":
             return MaterialResult(not is_pass, {"type": "PROHIBITED"})
         return MaterialResult(is_pass, reason)
 
@@ -1108,7 +1085,7 @@ class PropertyResult(Result):
         elif self.reason["type"] == "NOVALUE":
             return "The property set does not contain the required property"
         elif self.reason["type"] == "DATATYPE":
-            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['datatype'])}\""
+            return f"The property's data type \"{str(self.reason['actual'])}\" does not match the required data type of \"{str(self.reason['dataType'])}\""
         elif self.reason["type"] == "VALUE":
             if isinstance(self.reason["actual"], list):
                 if len(self.reason["actual"]) == 1:
