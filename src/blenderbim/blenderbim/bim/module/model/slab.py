@@ -20,9 +20,12 @@ import bpy
 import json
 import bmesh
 import ifcopenshell
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
+import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
+import ifcopenshell.util.type
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.geometry
@@ -698,9 +701,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         new_footprint = ifcopenshell.api.run(
             "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
         )
-        old_footprint = ifcopenshell.util.representation.get_representation(
-            element, "Plan", "FootPrint", "SKETCH_VIEW"
-        )
+        old_footprint = ifcopenshell.util.representation.get_representation(element, "Plan", "FootPrint", "SKETCH_VIEW")
         if old_footprint:
             for inverse in tool.Ifc.get().get_inverse(old_footprint):
                 ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
