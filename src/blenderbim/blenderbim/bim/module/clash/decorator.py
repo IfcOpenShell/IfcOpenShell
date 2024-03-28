@@ -16,31 +16,37 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import blf
 import gpu
 import bmesh
 import blenderbim.tool as tool
 from bpy.types import SpaceView3D
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
 class ClashDecorator:
-    installed = None
+    is_installed = False
+    handlers = []
 
     @classmethod
     def install(cls, context):
-        if cls.installed:
+        if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW")
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_geometry, (context,), "WINDOW", "POST_VIEW"))
+        cls.is_installed = True
 
     @classmethod
     def uninstall(cls):
-        try:
-            SpaceView3D.draw_handler_remove(cls.installed, "WINDOW")
-        except ValueError:
-            pass
-        cls.installed = None
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
         shader = self.line_shader if shader_type == "LINES" else self.shader
@@ -48,7 +54,27 @@ class ClashDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def __call__(self, context):
+    def draw_text(self, context):
+        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        selected_elements_color = self.addon_prefs.decorator_color_selected
+        unselected_elements_color = self.addon_prefs.decorator_color_unselected
+        special_elements_color = self.addon_prefs.decorator_color_special
+
+        text = context.scene.BIMClashProperties.active_clash_text
+        p = context.scene.BIMClashProperties.p1.lerp(context.scene.BIMClashProperties.p2, 0.5)
+
+        font_id = 0
+        blf.size(font_id, 12)
+        coords_2d = location_3d_to_region_2d(context.region, context.region_data, p)
+        color = self.addon_prefs.decorations_colour
+        blf.color(font_id, *color)
+        if coords_2d:
+            w, h = blf.dimensions(font_id, text)
+            coords_2d -= Vector((w * .5, 0))
+            blf.position(font_id, coords_2d[0], coords_2d[1], 0)
+            blf.draw(font_id, text)  # Set your text here
+
+    def draw_geometry(self, context):
         self.addon_prefs = context.preferences.addons["blenderbim"].preferences
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
