@@ -80,7 +80,7 @@ class Clash(blenderbim.core.tool.Clash):
             return
         clash_set.clashes.clear()
         result = tool.Clash.get_clash_set(clash_set.name)
-        for clash in result.get("clashes", {}).values():
+        for clash in sorted(result.get("clashes", {}).values(), key=lambda x: x["distance"]):
             blender_clash = clash_set.clashes.add()
             blender_clash.a_global_id = clash["a_global_id"]
             blender_clash.b_global_id = clash["b_global_id"]

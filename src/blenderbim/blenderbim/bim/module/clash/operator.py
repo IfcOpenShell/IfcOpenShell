@@ -69,6 +69,7 @@ class ImportClashSets(bpy.types.Operator):
 
     def execute(self, context):
         tool.Clash.load_clash_sets(self.filepath)
+        context.scene.BIMClashProperties.clash_sets.clear()
         for clash_set in tool.Clash.get_clash_sets():
             new = context.scene.BIMClashProperties.clash_sets.add()
             new.name = clash_set["name"]
@@ -276,14 +277,7 @@ class ExecuteIfcClash(bpy.types.Operator):
 
         if extension == ".json":
             tool.Clash.load_clash_sets(self.filepath)
-            result = tool.Clash.get_clash_set(self.props.active_clash_set.name)
-            for clash in result["clashes"].values():
-                blender_clash = self.props.active_clash_set.clashes.add()
-                blender_clash.a_global_id = clash["a_global_id"]
-                blender_clash.b_global_id = clash["b_global_id"]
-                blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
-                blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
-                blender_clash.status = False if not "status" in clash.keys() else clash["status"]
+            tool.Clash.import_active_clashes()
         return {"FINISHED"}
 
 
@@ -379,6 +373,7 @@ class SelectClash(bpy.types.Operator):
         tool.Clash.look_at(target, target + Vector((5, 5, 5)))
         self.props.p1 = clash["p1"]
         self.props.p2 = clash["p2"]
+        self.props.active_clash_text = clash["type"].title() + " " + str(round(clash["distance"] * 1000)) + "mm"
         return {"FINISHED"}
 
 
