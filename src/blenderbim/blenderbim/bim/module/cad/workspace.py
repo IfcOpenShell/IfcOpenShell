@@ -20,6 +20,7 @@ import os
 import bpy
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
+import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData
 
@@ -239,8 +240,9 @@ class CadHotkey(bpy.types.Operator):
                 row.prop(props, "resolution")
 
     def hotkey_S_C(self):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if self.is_profile():
-            bpy.ops.bim.add_ifccircle(radius=self.props.radius)
+            bpy.ops.bim.add_ifccircle(radius=self.props.radius / si_conversion)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
@@ -248,13 +250,15 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if self.is_profile():
-            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius)
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius / si_conversion)
         else:
-            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
+            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius / si_conversion)
 
     def hotkey_S_O(self):
-        bpy.ops.bim.cad_offset(distance=self.props.distance)
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bpy.ops.bim.cad_offset(distance=self.props.distance / si_conversion)
 
     def hotkey_S_Q(self):
         element = tool.Ifc.get_entity(bpy.context.active_object)
@@ -270,7 +274,8 @@ class CadHotkey(bpy.types.Operator):
 
     def hotkey_S_R(self):
         if self.is_profile():
-            bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
+            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            bpy.ops.bim.add_rectangle(x=self.props.x / si_conversion, y=self.props.y / si_conversion)
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["pset_data"]
