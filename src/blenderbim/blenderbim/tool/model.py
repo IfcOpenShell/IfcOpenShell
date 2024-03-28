@@ -20,6 +20,7 @@ import bpy
 import json
 import bmesh
 import collections
+import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
@@ -36,23 +37,26 @@ from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
+from typing import Optional, Union, TypeVar, Any
+
+T = TypeVar("T")
 
 
 class Model(blenderbim.core.tool.Model):
     @classmethod
-    def convert_si_to_unit(cls, value):
+    def convert_si_to_unit(cls, value: T) -> T:
         if isinstance(value, (tuple, list)):
             return [v / cls.unit_scale for v in value]
         return value / cls.unit_scale
 
     @classmethod
-    def convert_unit_to_si(cls, value):
+    def convert_unit_to_si(cls, value: T) -> T:
         if isinstance(value, (tuple, list)):
             return [v * cls.unit_scale for v in value]
         return value * cls.unit_scale
 
     @classmethod
-    def convert_data_to_project_units(cls, data, non_si_props=[]):
+    def convert_data_to_project_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:
@@ -65,7 +69,7 @@ class Model(blenderbim.core.tool.Model):
         return data
 
     @classmethod
-    def convert_data_to_si_units(cls, data, non_si_props=[]):
+    def convert_data_to_si_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:
@@ -78,34 +82,35 @@ class Model(blenderbim.core.tool.Model):
         return data
 
     @classmethod
-    def export_curve(cls, position, edge_indices, points=None):
+    def export_curve(cls, position: Matrix, edge_indices: list[tuple[int, int]]) -> ifcopenshell.entity_instance:
         position_i = position.inverted()
+        ifc_file = tool.Ifc.get()
         if len(edge_indices) == 2:
             diameter = edge_indices[0]
             p1 = cls.bm.verts[diameter[0]].co
             p2 = cls.bm.verts[diameter[1]].co
             center = cls.convert_si_to_unit(list(position_i @ p1.lerp(p2, 0.5)))
             radius = cls.convert_si_to_unit((p1 - p2).length / 2)
-            return tool.Ifc.get().createIfcCircle(
-                tool.Ifc.get().createIfcAxis2Placement2D(tool.Ifc.get().createIfcCartesianPoint(center[0:2])), radius
+            return ifc_file.createIfcCircle(
+                ifc_file.createIfcAxis2Placement2D(ifc_file.createIfcCartesianPoint(center[0:2])), radius
             )
-        if tool.Ifc.get().schema == "IFC2X3":
+        if ifc_file.schema == "IFC2X3":
             points = []
             for edge in edge_indices:
                 local_point = (position_i @ Vector(cls.bm.verts[edge[0]].co)).to_2d()
-                points.append(tool.Ifc.get().createIfcCartesianPoint(cls.convert_si_to_unit(local_point)))
+                points.append(ifc_file.createIfcCartesianPoint(cls.convert_si_to_unit(local_point)))
             points.append(points[0])
-            return tool.Ifc.get().createIfcPolyline(points)
+            return ifc_file.createIfcPolyline(points)
         segments = []
         for segment in edge_indices:
             if len(segment) == 2:
-                segments.append(tool.Ifc.get().createIfcLineIndex([i + 1 for i in segment]))
+                segments.append(ifc_file.createIfcLineIndex([i + 1 for i in segment]))
             elif len(segment) == 3:
-                segments.append(tool.Ifc.get().createIfcArcIndex([i + 1 for i in segment]))
-        return tool.Ifc.get().createIfcIndexedPolyCurve(cls.points, segments, False)
+                segments.append(ifc_file.createIfcArcIndex([i + 1 for i in segment]))
+        return ifc_file.createIfcIndexedPolyCurve(cls.points, segments, False)
 
     @classmethod
-    def export_points(cls, position, indices):
+    def export_points(cls, position: Matrix, indices: list[Vector]) -> ifcopenshell.entity_instance:
         position_i = position.inverted()
         points = []
         for point in indices:
@@ -114,7 +119,10 @@ class Model(blenderbim.core.tool.Model):
         return tool.Ifc.get().createIfcCartesianPointList2D(points)
 
     @classmethod
-    def export_profile(cls, obj, position=None):
+    def export_profile(
+        cls, obj: bpy.types.Object, position: Optional[Matrix] = None
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """Returns `None` in case if profile was invalid."""
         if position is None:
             position = Matrix()
 
@@ -150,7 +158,7 @@ class Model(blenderbim.core.tool.Model):
         return profile
 
     @classmethod
-    def export_surface(cls, obj):
+    def export_surface(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         p1, p2, p3 = [v.co.copy() for v in obj.data.vertices[0:3]]
 
         edge1 = p2 - p1
@@ -202,7 +210,7 @@ class Model(blenderbim.core.tool.Model):
         return surface
 
     @classmethod
-    def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str):
+    def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str) -> str:
         props = bpy.context.scene.BIMModelProperties
         if props.occurrence_name_style == "CLASS":
             return ifc_class[3:]
@@ -216,7 +224,8 @@ class Model(blenderbim.core.tool.Model):
                 return "Instance"
 
     @classmethod
-    def get_extrusion(cls, representation):
+    def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """return first found IfcExtrudedAreaSolid"""
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):

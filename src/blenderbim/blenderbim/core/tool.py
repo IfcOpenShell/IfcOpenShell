@@ -519,7 +519,7 @@ class Misc:
 class Model:
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
-    def export_curve(cls, position, edge_indices, points=None): pass
+    def export_curve(cls, position, edge_indices): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
