@@ -89,7 +89,7 @@ class Ids:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": info,
             "specifications": {"specification": []},
         }
@@ -164,7 +164,7 @@ class Specification:
             "applicability": {},
             "requirements": {},
         }
-        for attribute in ["identifier", "description", "instructions", "minOccurs", "maxOccurs"]:
+        for attribute in ["identifier", "description", "instructions"]:
             value = getattr(self, attribute)
             if value is not None:
                 results[f"@{attribute}"] = value
@@ -181,20 +181,25 @@ class Specification:
             for facet_type in ("entity", "partOf", "classification", "attribute", "property", "material"):
                 if facet_type in facets:
                     results[clause_type][facet_type] = facets[facet_type]
+            if clause_type == "applicability":
+                for attribute in ["minOccurs", "maxOccurs"]:
+                    value = getattr(self, attribute)
+                    if value is not None:
+                        results[clause_type][f"@{attribute}"] = value
         return results
 
     def parse(self, ids_dict):
         self.name = ids_dict.get("@name", "")
         self.description = ids_dict.get("@description", "")
         self.instructions = ids_dict.get("@instructions", "")
-        self.minOccurs = ids_dict["@minOccurs"]
-        self.maxOccurs = ids_dict["@maxOccurs"]
+        self.minOccurs = ids_dict.get("applicability", {}).get("@minOccurs", 0)
+        self.maxOccurs = ids_dict.get("applicability", {}).get("@minOccurs", "unbounded")
         self.ifcVersion = ids_dict["@ifcVersion"]
         self.applicability = (
-            self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability") is not None else []
+            self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability", None) is not None else []
         )
         self.requirements = (
-            self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements") is not None else []
+            self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements", None) is not None else []
         )
         return self
 
@@ -243,21 +248,17 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if self.maxOccurs == 0:
-                    prohibited = bool(result)
-                else:
-                    prohibited = not bool(result)
-                if prohibited:
+                if not bool(result):
                     self.failed_entities.add(element)
                     facet.failed_entities.append(element)
                     facet.failed_reasons.append(str(result))
 
         for facet in self.requirements:
-            if facet.minOccurs != 0:
+            if facet.cardinality == "required":
                 facet.status = not bool(facet.failed_entities)
-            elif facet.minOccurs == 0 and facet.maxOccurs != 0:
+            elif facet.cardinality == "optional":
                 facet.status = True
-            elif facet.maxOccurs == 0:
+            elif facet.cardinality == "prohibited":
                 facet.status = bool(facet.failed_entities)
 
         self.status = True

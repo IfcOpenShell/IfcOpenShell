@@ -1,5 +1,5 @@
-<!-- June 20, 2023 - DRAFT  -->
-<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:altova="http://www.altova.com/xml-schema-extensions" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.9.6">
+<!-- Draft - Do not use in production -->
+<xs:schema xmlns:ids="http://standards.buildingsmart.org/IDS" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:altova="http://www.altova.com/xml-schema-extensions" targetNamespace="http://standards.buildingsmart.org/IDS" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.9.7">
 	<xs:import namespace="http://www.w3.org/XML/1998/namespace" schemaLocation="http://www.w3.org/2001/xml.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema" schemaLocation="http://www.w3.org/2001/XMLSchema.xsd"/>
 	<xs:import namespace="http://www.w3.org/2001/XMLSchema-instance" schemaLocation="http://www.w3.org/2001/XMLSchema-instance"/>
@@ -40,20 +40,20 @@
 		<xs:choice minOccurs="1">
 			<!-- place for potential additional rules for idsValue -->
 			<xs:element name="simpleValue" type="xs:string" minOccurs="1" maxOccurs="1"/>
-			<xs:element ref="xs:restriction" minOccurs="1" maxOccurs="unbounded"/>
+			<xs:element ref="xs:restriction" minOccurs="1" maxOccurs="1"/>
 		</xs:choice>
 	</xs:complexType>
 	<xs:complexType name="classificationType">
 		<xs:sequence>
 			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
-			<xs:element name="system" type="ids:idsValue" minOccurs="0"/>
+			<xs:element name="system" type="ids:idsValue" minOccurs="1"/>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="partOfType">
 		<xs:sequence>
 			<xs:element name="entity" type="ids:entityType" minOccurs="1"/>
 		</xs:sequence>
-		<xs:attribute name="relation" type="ids:relations"/>
+		<xs:attribute name="relation" type="ids:relations" use="optional" />
 	</xs:complexType>
 	<xs:complexType name="applicabilityType">
 		<xs:sequence>
@@ -62,26 +62,53 @@
 			<xs:element name="classification" type="ids:classificationType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="attribute" type="ids:attributeType" minOccurs="0" maxOccurs="unbounded"/>
 			<xs:element name="property" type="ids:propertyType" minOccurs="0" maxOccurs="unbounded"/>
-			<xs:element name="material" type="ids:materialType" minOccurs="0"/>
+			<xs:element name="material" type="ids:materialType" minOccurs="0" maxOccurs="unbounded"/>
 		</xs:sequence>
+		<!-- Please note there is an implementation agreement on the use of minOccurs and maxOccurs.
+			Valid values are: 
+			a. 0 to unbounded, meaning Optional
+			b. 1 to unbounded, meaning Required
+			c. 0 to 0, meaning Prohibited
+		 -->
+		<xs:attributeGroup ref="xs:occurs"/>
 	</xs:complexType>
 	<xs:complexType name="propertyType">
 		<xs:sequence>
 			<xs:element name="propertySet" type="ids:idsValue"/>
-			<xs:element name="name" type="ids:idsValue"/>
-			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
+			<xs:element name="baseName" type="ids:idsValue">
+				<xs:annotation>
+					<xs:documentation>
+						the moniker 'baseName' is chosen to clarify that the data needs to reference the property name as stored in the IFC file, 
+						which might differ from the multiple language-dependent presentations (e.g. 'FireRating' vs. 'Fire rating').
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Depending on the dataType attribute, values are expressed in the default unit documented at 
+						https://github.com/buildingSMART/IDS/blob/master/Documentation/units.md, and unit conversion might be required.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 		</xs:sequence>
-		<xs:attribute name="datatype" use="required">
+		<xs:attribute name="dataType" type="ids:upperCaseName" use="optional">
 			<xs:annotation>
-				<xs:documentation>This is the name of an IFC Defined Type. See the full list for IFC 4 on https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/link/alphabeticalorder-defined-types.htm  Documentation and default units on https://github.com/buildingSMART/IDS/blob/master/Documentation/units.md</xs:documentation>
+				<xs:documentation>This is the name of an IFC Defined Type, all uppercase.</xs:documentation>
 			</xs:annotation>
-			<!-- renamed 'measure' to data type to better represent reality -->
 		</xs:attribute>
 	</xs:complexType>
 	<xs:complexType name="attributeType">
 		<xs:sequence>
 			<xs:element name="name" type="ids:idsValue"/>
-			<xs:element name="value" type="ids:idsValue" minOccurs="0"/>
+			<xs:element name="value" type="ids:idsValue" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>
+						Depending on the IFC type of the attribute, values are expressed in the default unit documented at 
+						https://github.com/buildingSMART/IDS/blob/master/Documentation/units.md, and unit conversion might be required.
+					</xs:documentation>
+				</xs:annotation>
+			</xs:element>
 		</xs:sequence>
 	</xs:complexType>
 	<xs:complexType name="materialType">
@@ -98,6 +125,13 @@
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:entityType">
+							<!-- 
+								Contrary to other requirements facet extensions, cardinality is not available in the entityType facet when used for requirements.
+								Its cardinality state is always considered to be "required".
+								Constraining the acceptable values is achieved by specifying criteria via with xs:Enumeration and xs:Pattern, rather than the negative form.
+								This is possible because the list of options is finite and mandated by the IFC schema, so prohibited constraints are superfluous.
+								This choice allows for improved user experience in the editors.
+							-->
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -111,7 +145,7 @@
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:partOfType">
-							<xs:attributeGroup ref="xs:occurs"/>
+							<xs:attribute name="cardinality" type="ids:simpleCardinality" use="optional" default="required"/>
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -126,7 +160,7 @@
 					<xs:complexContent>
 						<xs:extension base="ids:classificationType">
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
-							<xs:attributeGroup ref="xs:occurs"/>
+							<xs:attribute name="cardinality" type="ids:conditionalCardinality" use="optional" default="required"/>
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -140,6 +174,7 @@
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:attributeType">
+							<xs:attribute name="cardinality" type="ids:conditionalCardinality" use="optional" default="required"/>
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -154,7 +189,7 @@
 					<xs:complexContent>
 						<xs:extension base="ids:propertyType">
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
-							<xs:attributeGroup ref="xs:occurs"/>
+							<xs:attribute name="cardinality" type="ids:conditionalCardinality" use="optional" default="required"/>
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -164,12 +199,12 @@
 					</xs:complexContent>
 				</xs:complexType>
 			</xs:element>
-			<xs:element name="material" minOccurs="0">
+			<xs:element name="material" minOccurs="0" maxOccurs="unbounded">
 				<xs:complexType>
 					<xs:complexContent>
 						<xs:extension base="ids:materialType">
 							<xs:attribute name="uri" type="xs:anyURI" use="optional"/>
-							<xs:attributeGroup ref="xs:occurs"/>
+							<xs:attribute name="cardinality" type="ids:conditionalCardinality" use="optional" default="required"/>
 							<xs:attribute name="instructions" type="xs:string" use="optional">
 								<xs:annotation>
 									<xs:documentation>Author of the IDS can leave instructions for the authors of the IFC. This text could/should be displayed in the BIM/IFC authoring tool.</xs:documentation>
@@ -195,7 +230,6 @@
 			</xs:element>
 		</xs:sequence>
 		<xs:attribute name="name" type="xs:string" use="required"/>
-		<xs:attributeGroup ref="xs:occurs"/>
 		<xs:attribute name="ifcVersion" use="required">
 			<xs:simpleType>
 				<xs:list>
@@ -210,7 +244,7 @@
 				</xs:list>
 			</xs:simpleType>
 		</xs:attribute>
-		<xs:attribute name="identifier" type="xs:string">
+		<xs:attribute name="identifier" type="xs:string" use="optional">
 			<xs:annotation>
 				<xs:documentation>Author of the IDS can provide an identifier to the specification. This is intended to be a machine readable identifier. Beware: because of the possibility to combine different 'specification' elements from several ids files this cannot be enforced/assumed as (global) unique.</xs:documentation>
 			</xs:annotation>
@@ -229,12 +263,30 @@
 	</xs:complexType>
 	<xs:simpleType name="relations">
 		<xs:restriction base="xs:string">
-			<xs:enumeration value="IFCRELAGGREGATES"/>
-			<xs:enumeration value="IFCRELASSIGNSTOGROUP"/>
-			<xs:enumeration value="IFCRELCONTAINEDINSPATIALSTRUCTURE"/>
-			<xs:enumeration value="IFCRELNESTS"/>
-			<xs:enumeration value="IFCRELVOIDSELEMENT"/>
-			<xs:enumeration value="IFCRELFILLSELEMENT"/>
+			<xs:enumeration value="IFCRELAGGREGATES"/>  
+			<xs:enumeration value="IFCRELASSIGNSTOGROUP"/> 
+			<xs:enumeration value="IFCRELCONTAINEDINSPATIALSTRUCTURE"/> 
+			<xs:enumeration value="IFCRELNESTS"/> 
+			<xs:enumeration value="IFCRELVOIDSELEMENT IFCRELFILLSELEMENT"/> 
 		</xs:restriction>
 	</xs:simpleType>
+	<xs:simpleType name="upperCaseName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[A-Z]+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="simpleCardinality">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="required"/>
+			<xs:enumeration value="prohibited"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="conditionalCardinality">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="required"/>
+			<xs:enumeration value="prohibited"/>
+			<xs:enumeration value="optional"/>
+		</xs:restriction>
+	</xs:simpleType>
+	
 </xs:schema>

@@ -16,14 +16,13 @@ my_ids = ids.Ids(title="My IDS")
 my_spec = ids.Specification(name="My first specification")
 my_spec.applicability.append(ids.Entity(name="IFCWALL"))
 property = ids.Property(
-    name="IsExternal", 
+    baseName="IsExternal",
     value="TRUE", 
     propertySet="Pset_WallCommon", 
-    datatype="IfcBoolean",
+    dataType="IfcBoolean",
     uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing", 
     instructions="Walls need to be load bearing.",
-    minOccurs=1,
-    maxOccurs="unbounded")
+    cardinality="required")
 my_spec.requirements.append(property)
 my_ids.specifications.append(my_spec)
 
