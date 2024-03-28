@@ -97,6 +97,7 @@ class BIMClashProperties(PropertyGroup):
     )
     p1: FloatVectorProperty(name="P1", default=(0.0, 0.0, 0.0), subtype="XYZ")
     p2: FloatVectorProperty(name="P2", default=(0.0, 0.0, 0.0), subtype="XYZ")
+    active_clash_text: StringProperty(name="Active Clash Text")
 
     @property
     def active_clash_set(self):
