@@ -371,6 +371,11 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 						triangles(i).Get(n3, n2, n1);
 					else triangles(i).Get(n1, n2, n3);
 
+					if (dict[n1] == dict[n2] || dict[n2] == dict[n3] || dict[n3] == dict[n1]) {
+						Logger::Warning("Mesher generated a degenerate triangle, ignoring");
+						continue;
+					}
+
 					/* An alternative would be to calculate normals based
 						* on the coordinates of the mesh vertices */
 						/*
