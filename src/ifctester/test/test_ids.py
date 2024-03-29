@@ -36,7 +36,7 @@ def run(name, ids, ifc, expected, applicable_entities=None, failed_entities=None
         all_applicable.update(spec.applicable_entities)
         for requirement in spec.requirements:
             if requirement.status is False:
-                all_failures.update(requirement.failed_entities)
+                all_failures.update([f["element"] for f in requirement.failures])
     assert set(all_applicable) == set(applicable_entities)
     assert set(all_failures) == set(failed_entities)
 
@@ -162,9 +162,9 @@ class TestIds:
             "Prohibited specifications fail if at least one entity passes all requirements 2/3",
             specs,
             model,
-            False,
+            True,
             [wall],
-            [wall],
+            [],
         )
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
@@ -173,6 +173,7 @@ class TestIds:
             specs,
             model,
             False,
+            [wall],
             [wall],
         )
 
@@ -238,8 +239,10 @@ class TestIds:
 
         assert spec.status == False
         assert set(spec.applicable_entities) == {wall, waldo}
-        assert spec.requirements[0].failed_entities == [wall]
-        assert spec2.requirements[0].failed_entities == [wall]
+        assert len(spec.requirements[0].failures) == 1
+        assert len(spec2.requirements[0].failures) == 1
+        assert spec.requirements[0].failures[0]["element"] == wall
+        assert spec2.requirements[0].failures[0]["element"] == wall
 
 
 class TestSpecification:
