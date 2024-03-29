@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import re
 import builtins
 import ifcopenshell.util.unit
@@ -23,7 +24,11 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from functools import lru_cache
 from xmlschema.validators import identities
-from typing import List, Union
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING
+from logging import Logger
+
+if TYPE_CHECKING:
+    from .ids import Specification
 
 
 def cast_to_value(from_value, to_value):
@@ -53,14 +58,19 @@ def get_psets(element):
     return ifcopenshell.util.element.get_psets(element)
 
 
+Cardinality = Literal["required", "optional", "prohibited"]
+
+
 class Facet:
+    cardinality: Cardinality
+
     def __init__(self, *parameters):
         self.status = None
         self.failures = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
-    def asdict(self, clause_type):
+    def asdict(self, clause_type: str) -> dict[str, Any]:
         results = {}
         for name in self.parameters:
             value = getattr(self, name.replace("@", ""))
@@ -86,11 +96,16 @@ class Facet:
         return self
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: List[ifcopenshell.entity_instance]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
         return [e for e in elements if self(e)]
 
-    def to_string(self, clause_type, specification=None, requirement=None):
+    def to_string(
+        self,
+        clause_type: str,
+        specification: Optional[Specification] = None,
+        requirement: Optional[Facet] = None,
+    ):
         if clause_type == "applicability":
             templates = self.applicability_templates
         elif clause_type == "requirement":
@@ -114,7 +129,7 @@ class Facet:
                 if total_replacements == total_variables:
                     return template
 
-    def to_ids_value(self, parameter):
+    def to_ids_value(self, parameter: Union[str, Restriction, list]) -> dict[str, Any]:
         if isinstance(parameter, str):
             parameter_dict = {"simpleValue": parameter}
         elif isinstance(parameter, Restriction):
@@ -129,8 +144,11 @@ class Facet:
             raise Exception(str(parameter) + " was not able to be converted into 'Parameter_dict'")
         return parameter_dict
 
-    def get_usage(self):
+    def get_usage(self) -> Cardinality:
         return self.cardinality
+
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> Result:
+        raise NotImplementedError
 
 
 class Entity(Facet):
@@ -150,7 +168,9 @@ class Entity(Facet):
         ]
         super().__init__(name, predefinedType, instructions)
 
-    def filter(self, ifc_file, elements):
+    def filter(
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]] = None
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
 
@@ -173,7 +193,7 @@ class Entity(Facet):
             return [r for r in results if self(r)]
         return results
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> EntityResult:
         is_pass = inst.is_a().upper() == self.name
         reason = None
 
@@ -191,7 +211,7 @@ class Entity(Facet):
 
 
 class Attribute(Facet):
-    def __init__(self, name="Name", value=None, cardinality="required", instructions=None):
+    def __init__(self, name="Name", value=None, cardinality: Cardinality = "required", instructions=None):
         self.parameters = ["name", "value", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "Data where the {name} is {value}",
@@ -208,8 +228,8 @@ class Attribute(Facet):
         super().__init__(name, value, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
 
@@ -235,7 +255,7 @@ class Attribute(Facet):
 
         return results
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
         if self.cardinality == "optional":
             return AttributeResult(True)
 
@@ -323,7 +343,7 @@ class Attribute(Facet):
 
 
 class Classification(Facet):
-    def __init__(self, value=None, system=None, uri=None, cardinality="required", instructions=None):
+    def __init__(self, value=None, system=None, uri=None, cardinality: Cardinality = "required", instructions=None):
         self.parameters = ["value", "system", "@uri", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "Data having a {system} reference of {value}",
@@ -344,13 +364,13 @@ class Classification(Facet):
         super().__init__(value, system, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> ClassificationResult:
         if self.cardinality == "optional":
             return ClassificationResult(True)  # Is this really the correct behaviour?
 
@@ -389,7 +409,7 @@ class PartOf(Facet):
         name="IFCWALL",
         predefinedType=None,
         relation=None,
-        cardinality="required",
+        cardinality: Cardinality = "required",
         instructions=None,
     ):
         self.parameters = ["name", "predefinedType", "@relation", "@cardinality", "@instructions"]
@@ -408,13 +428,13 @@ class PartOf(Facet):
         super().__init__(name, predefinedType, relation, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return list(ifc_file)  # Lazy
 
-    def asdict(self, clause_type):
+    def asdict(self, clause_type: str) -> dict[str, Any]:
         results = super().asdict(clause_type)
         entity = {}
         if "name" in results:
@@ -433,7 +453,7 @@ class PartOf(Facet):
             del xml["entity"]
         return super().parse(xml)
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> PartOfResult:
         reason = None
         if not self.relation:
             is_pass = False
@@ -587,7 +607,7 @@ class Property(Facet):
         value=None,
         dataType=None,
         uri=None,
-        cardinality="required",
+        cardinality: Cardinality = "required",
         instructions=None,
     ):
         self.parameters = [
@@ -614,8 +634,8 @@ class Property(Facet):
         super().__init__(propertySet, baseName, value, dataType, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         if ifc_file.schema == "IFC2X3":
@@ -626,7 +646,7 @@ class Property(Facet):
             + ifc_file.by_type("IfcProfileDef")
         )
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> PropertyResult:
         if self.cardinality == "optional":
             return PropertyResult(True)
 
@@ -864,7 +884,7 @@ class Property(Facet):
 
 
 class Material(Facet):
-    def __init__(self, value=None, uri=None, cardinality="required", instructions=None):
+    def __init__(self, value=None, uri=None, cardinality: Cardinality = "required", instructions=None):
         self.parameters = ["value", "@uri", "@cardinality", "@instructions"]
         self.applicability_templates = [
             "All data with a {value} material",
@@ -881,13 +901,13 @@ class Material(Facet):
         super().__init__(value, uri, cardinality, instructions)
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: Union[ifcopenshell.entity_instance, None]
-    ) -> List[ifcopenshell.entity_instance]:
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
+    ) -> list[ifcopenshell.entity_instance]:
         if isinstance(elements, list):
             return super().filter(ifc_file, elements)
         return ifc_file.by_type("IfcObjectDefinition")
 
-    def __call__(self, inst, logger=None):
+    def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> MaterialResult:
         if self.cardinality == "optional":
             return MaterialResult(True)
 
@@ -965,7 +985,7 @@ class Restriction:
                 self.options[key] = [v["@value"] for v in value]
         return self
 
-    def asdict(self):
+    def asdict(self) -> dict[str, Any]:
         result = {"@base": "xs:" + self.base}
         for constraint, value in self.options.items():
             value = [value] if not isinstance(value, list) else value
