@@ -1457,6 +1457,39 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 		new_attribute = copy;
 	}
 
+	bool inverses_handled = false;
+
+	/*
+	// #4474 This shaves us some milliseconds, but doesn't structurally change things.
+	if (this->file && attributes_[i] != 0 
+		&& attributes_[i]->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE 
+		&& new_attribute->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE
+		&& attributes_[i]->size() >= 16 && new_attribute->size() >= 16) {
+		aggregate_of_instance::ptr existing_aggregate = *attributes_[i];
+		aggregate_of_instance::ptr replacing_aggregate = *new_attribute;
+		std::set<IfcUtil::IfcBaseClass*> existing(existing_aggregate->begin(), existing_aggregate->end());
+		std::set<IfcUtil::IfcBaseClass*> replacing(replacing_aggregate->begin(), replacing_aggregate->end());
+		std::vector<IfcUtil::IfcBaseClass*> removed;
+		std::vector<IfcUtil::IfcBaseClass*> added;
+		std::set_difference(existing.begin(), existing.end(), replacing.begin(), replacing.end(), std::back_inserter(removed));
+		std::set_difference(replacing.begin(), replacing.end(), existing.begin(), existing.end(), std::back_inserter(added));
+		register_inverse_visitor visitor(*this->file, *this);
+		{
+			unregister_inverse_visitor visitor(*this->file, *this);
+			for (auto& inst : removed) {
+				visitor(inst, i);
+			}
+		}
+		{
+			register_inverse_visitor visitor(*this->file, *this);
+			for (auto& inst : added) {
+				visitor(inst, i);
+			}
+		}
+		inverses_handled = true;
+	}
+	*/
+
 	if (attributes_[i] != 0) {
 		Argument* current_attribute = attributes_[i];
 		if (this->file) {
@@ -1474,14 +1507,16 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 				}
 			}
 
-			// Deregister inverse indices in file
-			unregister_inverse_visitor visitor(*this->file, *this);
-			apply_individual_instance_visitor(current_attribute, i).apply(visitor);
+			if (!inverses_handled) {
+				// Deregister inverse indices in file
+				unregister_inverse_visitor visitor(*this->file, *this);
+				apply_individual_instance_visitor(current_attribute, i).apply(visitor);
+			}
 		}
 		delete attributes_[i];
 	}
 
-	if (this->file) {
+	if (this->file && !inverses_handled) {
 		// Register inverse indices in file
 		register_inverse_visitor visitor(*this->file, *this);
 		apply_individual_instance_visitor(new_attribute, i).apply(visitor);
