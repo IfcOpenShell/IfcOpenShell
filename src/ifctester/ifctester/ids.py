@@ -18,6 +18,7 @@
 
 import os
 import datetime
+import ifcopenshell
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
@@ -32,8 +33,9 @@ from .facet import (
     Restriction,
     get_pset,
     get_psets,
+    Cardinality,
 )
-from typing import List, Set
+from typing import List, Optional, Union
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
@@ -57,7 +59,7 @@ def get_schema():
 class Ids:
     def __init__(
         self,
-        title="Untitled",
+        title: Optional[str] = "Untitled",
         copyright=None,
         version=None,
         description=None,
@@ -131,7 +133,7 @@ class Ids:
         ET.ElementTree(get_schema().encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return get_schema().is_valid(filepath)
 
-    def validate(self, ifc_file, filter_version=False, filepath=None):
+    def validate(self, ifc_file: ifcopenshell.file, filter_version=False, filepath: Optional[str] = None) -> None:
         if filepath:
             self.filepath = filepath
             self.filename = os.path.basename(filepath)
@@ -158,14 +160,14 @@ class Specification:
         self.name = name or "Unnamed"
         self.applicability: List[Facet] = []
         self.requirements: List[Facet] = []
-        self.minOccurs = minOccurs
-        self.maxOccurs = maxOccurs
+        self.minOccurs: Union[int, str] = minOccurs
+        self.maxOccurs: Union[int, str] = maxOccurs
         self.ifcVersion = ifcVersion
         self.identifier = identifier
         self.description = description
         self.instructions = instructions
 
-        self.applicable_entities: List[Entity] = []
+        self.applicable_entities: list[ifcopenshell.entity_instance] = []
         self.status = None
 
     def asdict(self):
@@ -229,13 +231,13 @@ class Specification:
 
     def reset_status(self):
         self.applicable_entities.clear()
-        self.failed_entities: Set[Entity] = set()
+        self.failed_entities: set[ifcopenshell.entity_instance] = set()
         for facet in self.requirements:
             facet.status = None
             facet.failures.clear()
         self.status = None
 
-    def validate(self, ifc_file, filter_version=False):
+    def validate(self, ifc_file: ifcopenshell.file, filter_version=False) -> None:
         if filter_version and ifc_file.schema not in self.ifcVersion:
             return
 
@@ -286,7 +288,7 @@ class Specification:
             if self.applicable_entities and not self.requirements:
                 self.status = False
 
-    def get_usage(self):
+    def get_usage(self) -> Cardinality:
         if self.minOccurs != 0:
             return "required"
         elif self.minOccurs == 0 and self.maxOccurs != 0:
