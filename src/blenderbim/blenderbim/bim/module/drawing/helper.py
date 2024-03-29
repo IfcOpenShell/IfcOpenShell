@@ -188,7 +188,6 @@ def format_distance(
                 feet += 1
                 inches = 0
 
-
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches
             tx_dist = ""
@@ -299,7 +298,9 @@ def parse_diagram_scale(camera):
     return float(numerator) / float(denominator)
 
 
-def ortho_view_frame(camera, margin=0.015):
+def ortho_view_frame(
+    camera: bpy.types.Camera, margin: float = 0.015
+) -> tuple[float, float, float, float, float, float]:
     """Calculates 2d bounding box of camera view area.
 
     Similar to `bpy.types.Camera.view_frame`
