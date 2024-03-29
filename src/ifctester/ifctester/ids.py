@@ -259,31 +259,31 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if not bool(result):
-                    self.failed_entities.add(element)
-                    facet.failures.append({"element": element, "reason": str(result)})
-
-        for facet in self.requirements:
-            if facet.cardinality == "required":
-                facet.status = not bool(facet.failures)
-            elif facet.cardinality == "optional":
-                facet.status = True
-            elif facet.cardinality == "prohibited":
-                facet.status = bool(facet.failures)
+                is_pass = bool(result)
+                if facet.cardinality == "prohibited":
+                    is_pass = not is_pass
+                if self.maxOccurs != 0: # This is a required or optional specification
+                    if not is_pass:
+                        self.failed_entities.add(element)
+                        facet.failures.append({"element": element, "reason": str(result)})
+                else: # This is a prohibited specification
+                    if is_pass:
+                        self.failed_entities.add(element)
+                        facet.failures.append({"element": element, "reason": str(result)})
 
         self.status = True
-        if self.minOccurs != 0:
+        for facet in self.requirements:
+            facet.status = not bool(facet.failures)
+            if not facet.status:
+                self.status = False
+
+        if self.minOccurs != 0: # Required specification
             if not self.applicable_entities:
                 self.status = False
                 for facet in self.requirements:
                     facet.status = False
-            elif self.failed_entities:
-                self.status = False
-        elif self.minOccurs == 0 and self.maxOccurs != 0:
-            if self.failed_entities:
-                self.status = False
-        elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) > 0:
+        elif self.maxOccurs == 0: # Prohibited specification
+            if self.applicable_entities and not self.requirements:
                 self.status = False
 
     def get_usage(self):
