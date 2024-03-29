@@ -387,7 +387,30 @@ def set_element_value(
 
             if isinstance(key, str) and hasattr(element, key):
                 if getattr(element, key) != value:
-                    return setattr(element, key, value)
+                    try:
+                        # Try our luck
+                        return setattr(element, key, value)
+                    except:
+                        # Try to cast
+                        data_type = ifcopenshell.util.attribute.get_primitive_type(
+                            element.wrapped_data.declaration()
+                            .as_entity()
+                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                        )
+                        if data_type == "string":
+                            value = str(value)
+                        elif data_type == "float":
+                            value = float(value)
+                        elif data_type == "integer":
+                            value = int(value)
+                        elif data_type == "boolean":
+                            if value in ("True", "true", "TRUE", "Yes", "1"):
+                                value = True
+                            elif value in ("False", "false", "FALSE", "No", "0"):
+                                value = True
+                            else:
+                                value = bool(value)
+                        return setattr(element, key, value)
             else:
                 # Try to extract pset
                 if isinstance(key, re.Pattern):
