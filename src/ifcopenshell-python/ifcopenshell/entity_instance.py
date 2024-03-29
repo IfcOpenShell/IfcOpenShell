@@ -30,7 +30,7 @@ import functools
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable
+from typing import Union, Any, Callable, TypeVar
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -39,6 +39,8 @@ try:
     import logging
 except ImportError as e:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
+
+T = TypeVar("T")
 
 
 def set_derived_attribute(*args):
@@ -272,16 +274,16 @@ class entity_instance(object):
         """
         return self.wrapped_data.get_argument_name(attr_idx)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         index = self.wrapped_data.get_argument_index(key)
         self[index] = value
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         if key < 0 or key >= len(self):
             raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key), self.wrapped_data.file)
 
-    def __setitem__(self, idx, value):
+    def __setitem__(self, idx: int, value: T) -> T:
         if self.wrapped_data.file and self.wrapped_data.file.transaction:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
