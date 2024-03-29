@@ -142,6 +142,8 @@ class Helper:
             total_groups = 0
             is_circle = False
             for group_type, group_indices in groups.items():
+                if not group_indices:
+                    continue
                 is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
                 if not is_special:
                     continue
