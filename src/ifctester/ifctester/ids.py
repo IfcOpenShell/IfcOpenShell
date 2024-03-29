@@ -193,7 +193,7 @@ class Specification:
         self.description = ids_dict.get("@description", "")
         self.instructions = ids_dict.get("@instructions", "")
         self.minOccurs = ids_dict.get("applicability", {}).get("@minOccurs", 0)
-        self.maxOccurs = ids_dict.get("applicability", {}).get("@minOccurs", "unbounded")
+        self.maxOccurs = ids_dict.get("applicability", {}).get("@maxOccurs", "unbounded")
         self.ifcVersion = ids_dict["@ifcVersion"]
         self.applicability = (
             self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability", None) is not None else []
@@ -221,7 +221,7 @@ class Specification:
         self.failed_entities: Set[Entity] = set()
         for facet in self.requirements:
             facet.status = None
-            facet.failed_entities.clear()
+            facet.failures.clear()
         self.status = None
 
     def validate(self, ifc_file, filter_version=False):
@@ -250,16 +250,15 @@ class Specification:
                 result = facet(element)
                 if not bool(result):
                     self.failed_entities.add(element)
-                    facet.failed_entities.append(element)
-                    facet.failed_reasons.append(str(result))
+                    facet.failures.append({"element": element, "reason": str(result)})
 
         for facet in self.requirements:
             if facet.cardinality == "required":
-                facet.status = not bool(facet.failed_entities)
+                facet.status = not bool(facet.failures)
             elif facet.cardinality == "optional":
                 facet.status = True
             elif facet.cardinality == "prohibited":
-                facet.status = bool(facet.failed_entities)
+                facet.status = bool(facet.failures)
 
         self.status = True
         if self.minOccurs != 0:
