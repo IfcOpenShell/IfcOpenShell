@@ -34,9 +34,11 @@ import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
+import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
+import blenderbim.bim.import_ifc
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
@@ -44,7 +46,7 @@ import blenderbim.bim.module.drawing.helper as helper
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from lxml import etree
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from fractions import Fraction
 import collections
 from typing import Optional, Union
@@ -366,7 +368,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def get_annotation_context(cls, target_view, object_type=None):
+    def get_annotation_context(
+        cls, target_view: str, object_type: Optional[str] = None
+    ) -> Union[ifcopenshell.entity_instance, None]:
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
             "FALL",
@@ -593,7 +597,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingProduct
 
     @classmethod
-    def import_annotations_in_group(cls, group):
+    def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
         elements = set(
             [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
         )
@@ -612,7 +616,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
     # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
-    def import_drawing(cls, drawing):
+    def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
         settings.set(settings.STRICT_TOLERANCE, True)
 
@@ -1051,7 +1055,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 shutil.copy(ootb_resource, resource_path)
 
     @classmethod
-    def get_potential_reference_elements(cls, drawing):
+    def get_potential_reference_elements(
+        cls, drawing: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         elements = []
         existing_references = cls.get_group_elements(cls.get_drawing_group(drawing))
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
@@ -1072,7 +1078,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return elements
 
     @classmethod
-    def get_drawing_reference_annotation(cls, drawing, reference_element):
+    def get_drawing_reference_annotation(
+        cls, drawing: ifcopenshell.entity_instance, reference_element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, bool, None]:
         if drawing == reference_element:
             return True
         for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
@@ -1088,7 +1096,12 @@ class Drawing(blenderbim.core.tool.Drawing):
                             return element
 
     @classmethod
-    def generate_reference_annotation(cls, drawing, reference_element, context):
+    def generate_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
         elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
@@ -1102,12 +1115,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             return cls.generate_storey_annotation(drawing, reference_element, context)
 
     @classmethod
-    def generate_storey_annotation(cls, drawing, reference_element, context):
+    def generate_storey_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
         reference_obj = tool.Ifc.get_object(reference_element)
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1162,13 +1180,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         return element
 
     @classmethod
-    def generate_section_reference_annotation(cls, drawing, reference_element, context):
+    def generate_section_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1240,12 +1263,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             return element
 
     @classmethod
-    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+    def generate_elevation_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1272,7 +1300,12 @@ class Drawing(blenderbim.core.tool.Drawing):
             return element
 
     @classmethod
-    def generate_grid_axis_reference_annotation(cls, drawing, reference_element, context):
+    def generate_grid_axis_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
         camera = tool.Ifc.get_object(drawing)
@@ -1300,7 +1333,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             mesh.to_mesh(obj.data)
             return obj
 
-        def to_camera_coords(obj, mesh):
+        def to_camera_coords(obj: bpy.types.Object, mesh: bpy.types.Mesh) -> tuple[bpy.types.Object, bpy.types.Mesh]:
             mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
             obj.matrix_world = camera.matrix_world
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
@@ -1357,7 +1390,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return element
 
     @classmethod
-    def is_perpendicular(cls, a, b):
+    def is_perpendicular(cls, a: bpy.types.Object, b: bpy.types.Object) -> bool:
         axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
         a_quaternion = a.matrix_world.to_quaternion()
         b_quaternion = b.matrix_world.to_quaternion()
@@ -1367,7 +1400,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return False
 
     @classmethod
-    def get_camera_block(cls, obj):
+    def get_camera_block(cls, obj: bpy.types.Object) -> dict:
         raster_x = obj.data.BIMCameraProperties.raster_x
         raster_y = obj.data.BIMCameraProperties.raster_y
 
@@ -1400,7 +1433,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return {"verts": verts, "faces": faces}
 
     @classmethod
-    def is_intersecting(cls, a, b):
+    def is_intersecting(cls, a: bpy.types.Object, b: bpy.types.Object) -> bool:
         a_block = cls.get_camera_block(a)
         a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
         b_block = cls.get_camera_block(b)
@@ -1622,7 +1655,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.ops.bim.activate_model()
 
     @classmethod
-    def activate_drawing(cls, camera):
+    def activate_drawing(cls, camera: bpy.types.Object) -> None:
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
@@ -1703,7 +1736,6 @@ class Drawing(blenderbim.core.tool.Drawing):
             subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), *context_filter)
             if subcontext:
                 subcontexts.append(context_filter)
-
 
         # switch representations and hide elements without representations
         for element in filtered_elements:
