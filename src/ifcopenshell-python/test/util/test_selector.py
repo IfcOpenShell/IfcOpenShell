@@ -292,6 +292,13 @@ class TestSetElementValue(test.bootstrap.IFC4):
             ifcopenshell.util.placement.get_local_placement(element_without_placement.ObjectPlacement), matrix
         )
 
+    def test_set_attribute(self):
+        element = self.file.createIfcWall()
+        subject.set_element_value(self.file, element, "Name", "Foo")
+        assert element.Name == "Foo"
+        subject.set_element_value(self.file, element, "Name", 123)
+        assert element.Name == "123"
+
 
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_from_specified_elements(self):
