@@ -105,19 +105,19 @@ class Console(Reporter):
 
         for requirement in specification.requirements:
             self.set_style("reset")
-            self.set_style("red") if requirement.failed_entities else self.set_style("green")
+            self.set_style("red") if requirement.failures else self.set_style("green")
             self.print(" " * 8 + requirement.to_string("requirement", specification, requirement))
             self.set_style("reset")
-            for i, element in enumerate(requirement.failed_entities[0:10]):
+            for failure in requirement.failures[0:10]:
                 self.print(" " * 12, end="")
-                self.report_reason(requirement.failed_reasons[i], element)
-            if len(requirement.failed_entities) > 10:
-                self.print(" " * 12 + f"... {len(requirement.failed_entities)} in total ...")
+                self.report_reason(failure)
+            if len(requirement.failures) > 10:
+                self.print(" " * 12 + f"... {len(requirement.failures)} in total ...")
         self.set_style("reset")
 
-    def report_reason(self, reason, element):
+    def report_reason(self, failure):
         is_bold = False
-        for substring in reason.split('"'):
+        for substring in failure["reason"].split('"'):
             if is_bold:
                 self.set_style("purple")
             else:
@@ -125,7 +125,7 @@ class Console(Reporter):
             self.print(substring, end="")
             is_bold = not is_bold
         self.set_style("grey")
-        self.print(" - " + str(element))
+        self.print(" - " + str(failure["element"]))
         self.set_style("reset")
 
     def set_style(self, *colours):
@@ -212,7 +212,7 @@ class Json(Reporter):
         total_checks_pass = 0
         requirements = []
         for requirement in specification.requirements:
-            total_fail = len(requirement.failed_entities)
+            total_fail = len(requirement.failures)
             total_pass = total_applicable - total_fail
             percent_pass = math.floor((total_pass / total_applicable) * 100) if total_applicable else "N/A"
             total_checks += total_applicable
@@ -254,18 +254,18 @@ class Json(Reporter):
     def report_failed_entities(self, requirement):
         return [
             {
-                "reason": requirement.failed_reasons[i],
-                "element": str(e),
-                "element_type": str(ifcopenshell.util.element.get_type(e)),
-                "class": e.is_a(),
-                "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
-                "name": getattr(e, "Name", None),
-                "description": getattr(e, "Description", None),
-                "id": e.id(),
-                "global_id": getattr(e, "GlobalId", None),
-                "tag": getattr(e, "Tag", None),
+                "reason": f["reason"],
+                "element": str(f["element"]),
+                "element_type": str(ifcopenshell.util.element.get_type(f["element"])),
+                "class": f["element"].is_a(),
+                "predefined_type": ifcopenshell.util.element.get_predefined_type(f["element"]),
+                "name": getattr(f["element"], "Name", None),
+                "description": getattr(f["element"], "Description", None),
+                "id": f["element"].id(),
+                "global_id": getattr(f["element"], "GlobalId", None),
+                "tag": getattr(f["element"], "Tag", None),
             }
-            for i, e in enumerate(requirement.failed_entities)
+            for f in requirement.failures
         ]
 
     def to_string(self):

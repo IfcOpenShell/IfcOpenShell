@@ -56,8 +56,7 @@ def get_psets(element):
 class Facet:
     def __init__(self, *parameters):
         self.status = None
-        self.failed_entities: List[Facet] = []
-        self.failed_reasons: List[str] = []
+        self.failures = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
@@ -96,7 +95,7 @@ class Facet:
             templates = self.applicability_templates
         elif clause_type == "requirement":
             is_prohibited = False
-            if specification.cardinality == "prohibited":
+            if specification.maxOccurs == 0:
                 is_prohibited = not is_prohibited
             if requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
