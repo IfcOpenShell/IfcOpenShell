@@ -860,7 +860,10 @@ class LinkIfc(bpy.types.Operator):
                 continue
             new = context.scene.BIMProjectProperties.links.add()
             if self.use_relative_path:
-                filepath = os.path.relpath(filepath, bpy.path.abspath("//")).replace("\\", "/")
+                try:
+                    filepath = os.path.relpath(filepath, bpy.path.abspath("//")).replace("\\", "/")
+                except:
+                    pass  # Perhaps on another drive or something
             new.name = filepath
             bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
         print(f"Finished linking {len(files)} IFCs", time.time() - start)
