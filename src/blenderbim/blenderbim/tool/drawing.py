@@ -1102,15 +1102,30 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
+
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
+
         elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
+
+            def ensure_referenced_drawing_obj_exists(drawing: ifcopenshell.entity_instance):
+                obj = tool.Ifc.get_object(drawing)
+                if obj is None:
+                    obj = cls.import_drawing(drawing)
+                    # there is no need for other drawing annotations in that case
+                    # but we import them anyway so we won't break that drawing activation
+                    cls.import_annotations_in_group(cls.get_drawing_group(drawing))
+                    tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
+
             psets = ifcopenshell.util.element.get_psets(reference_element)
             target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
             if target_view == "ELEVATION_VIEW":
+                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
             elif target_view == "SECTION_VIEW":
+                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_section_reference_annotation(drawing, reference_element, context)
+
         elif reference_element.is_a("IfcBuildingStorey"):
             return cls.generate_storey_annotation(drawing, reference_element, context)
 
