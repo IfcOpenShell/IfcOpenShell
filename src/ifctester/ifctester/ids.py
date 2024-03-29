@@ -21,7 +21,18 @@ import datetime
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Facet, Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
+from .facet import (
+    Facet,
+    Entity,
+    Attribute,
+    Classification,
+    Property,
+    PartOf,
+    Material,
+    Restriction,
+    get_pset,
+    get_psets,
+)
 from typing import List, Set
 
 cwd = os.path.dirname(os.path.realpath(__file__))

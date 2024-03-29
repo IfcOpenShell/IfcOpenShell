@@ -134,7 +134,7 @@ class TestIds:
             specs,
             model,
             True,
-            [wall, waldo]
+            [wall, waldo],
         )
 
         spec.ifcVersion = []
@@ -158,10 +158,23 @@ class TestIds:
         run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Wally")
-        run("Prohibited specifications fail if at least one entity passes all requirements 2/3", specs, model, False, [wall], [wall])
+        run(
+            "Prohibited specifications fail if at least one entity passes all requirements 2/3",
+            specs,
+            model,
+            False,
+            [wall],
+            [wall],
+        )
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
-        run("Prohibited specifications fail if at least one entity passes all requirements 3/3", specs, model, False, [wall])
+        run(
+            "Prohibited specifications fail if at least one entity passes all requirements 3/3",
+            specs,
+            model,
+            False,
+            [wall],
+        )
 
         spec.minOccurs = 0
         spec.maxOccurs = "unbounded"
@@ -258,43 +271,78 @@ class TestSpecification:
             "applicability": {},
             "requirements": {},
         }
-    
+
     def test_specification_has_no_requirements(self):
         model = ifcopenshell.file()
         wall = model.createIfcWall()
         waldo = model.createIfcWall(Name="Waldo")
-        
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
         spec.minOccurs = 1
-        run("A specification that is required and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
-        
+        run(
+            "A specification that is required and has at least one applicable entity but no requirements shall pass",
+            test_ids,
+            model,
+            True,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
         spec.minOccurs = 1
-        run("A specification that is required but has no applicable entities or requirements shall fail", test_ids, model, False, None, None)
-        
+        run(
+            "A specification that is required but has no applicable entities or requirements shall fail",
+            test_ids,
+            model,
+            False,
+            None,
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
         spec.minOccurs = 0
-        run("A specification that is optional and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
-        
+        run(
+            "A specification that is optional and has at least one applicable entity but no requirements shall pass",
+            test_ids,
+            model,
+            True,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
         spec.minOccurs = 0
         spec.maxOccurs = 0
-        run("A specification that is prohibited and has at least one applicable entity but no requirements shall fail", test_ids, model, False, [wall, waldo], None)
-        
+        run(
+            "A specification that is prohibited and has at least one applicable entity but no requirements shall fail",
+            test_ids,
+            model,
+            False,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
         spec.minOccurs = 0
         spec.maxOccurs = 0
-        run("A specification that is prohibited but has no applicable entities or requirements shall pass", test_ids, model, True, None, None)
+        run(
+            "A specification that is prohibited but has no applicable entities or requirements shall pass",
+            test_ids,
+            model,
+            True,
+            None,
+            None,
+        )
