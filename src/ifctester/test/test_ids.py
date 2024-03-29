@@ -21,9 +21,17 @@ import pytest
 import xmlschema
 import ifcopenshell
 from ifctester import ids
+from typing import Optional
 
 
-def run(name, ids, ifc, expected, applicable_entities=None, failed_entities=None):
+def run(
+    name: str,
+    ids: ids.Ids,
+    ifc: ifcopenshell.file,
+    expected: bool,
+    applicable_entities: Optional[list[ifcopenshell.entity_instance]] = None,
+    failed_entities: Optional[list[ifcopenshell.entity_instance]] = None,
+):
     ids.validate(ifc)
     all_applicable = set()
     all_failures = set()
