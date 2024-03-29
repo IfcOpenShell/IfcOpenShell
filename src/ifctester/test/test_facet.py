@@ -226,9 +226,7 @@ class TestAttribute:
         assert attribute.asdict("applicability") == {"name": {"simpleValue": "name"}}
         attribute = Attribute(name="name", value="value")
         assert attribute.asdict("applicability") == {"name": {"simpleValue": "name"}, "value": {"simpleValue": "value"}}
-        attribute = Attribute(
-            name="name", value="value", cardinality="required", instructions="instructions"
-        )
+        attribute = Attribute(name="name", value="value", cardinality="required", instructions="instructions")
         assert attribute.asdict("requirement") == {
             "name": {"simpleValue": "name"},
             "value": {"simpleValue": "value"},
@@ -668,9 +666,13 @@ class TestAttribute:
 class TestClassification:
     def test_creating_a_classification_facet(self):
         facet = Classification(system="system")
-        assert facet.asdict("requirement") == {"system": {"simpleValue": "system"}, "@cardinality": "required" }
+        assert facet.asdict("requirement") == {"system": {"simpleValue": "system"}, "@cardinality": "required"}
         facet = Classification(value="value", system="system")
-        assert facet.asdict("requirement") == {"value": {"simpleValue": "value"}, "system": {"simpleValue": "system"}, "@cardinality": "required" }
+        assert facet.asdict("requirement") == {
+            "value": {"simpleValue": "value"},
+            "system": {"simpleValue": "system"},
+            "@cardinality": "required",
+        }
         facet = Classification(
             value="value",
             system="system",
@@ -833,7 +835,7 @@ class TestProperty:
         assert facet.asdict("requirement") == {
             "propertySet": {"simpleValue": "Property_Set"},
             "baseName": {"simpleValue": "PropertyName"},
-            "@cardinality": "required"
+            "@cardinality": "required",
         }
         facet = Property(
             propertySet="propertySet",
@@ -1242,9 +1244,7 @@ class TestMaterial:
     def test_creating_a_material_facet(self):
         facet = Material()
         assert facet.asdict("requirement") == {"@cardinality": "required"}
-        facet = Material(
-            value="value", uri="https://test.com", cardinality="required", instructions="instructions"
-        )
+        facet = Material(value="value", uri="https://test.com", cardinality="required", instructions="instructions")
         assert facet.asdict("requirement") == {
             "value": {"simpleValue": "value"},
             "@uri": "https://test.com",
@@ -1398,7 +1398,10 @@ class TestMaterial:
 class TestPartOf:
     def test_creating_a_partof_facet(self):
         facet = PartOf()
-        assert facet.asdict("requirement") == {"entity": {"name": {"simpleValue": "IFCWALL"}}, "@cardinality": "required" }
+        assert facet.asdict("requirement") == {
+            "entity": {"name": {"simpleValue": "IFCWALL"}},
+            "@cardinality": "required",
+        }
         facet = PartOf(
             name="IFCGROUP",
             predefinedType="predefinedType",

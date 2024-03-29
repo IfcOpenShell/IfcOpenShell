@@ -352,7 +352,7 @@ class Classification(Facet):
 
     def __call__(self, inst, logger=None):
         if self.cardinality == "optional":
-            return ClassificationResult(True) # Is this really the correct behaviour?
+            return ClassificationResult(True)  # Is this really the correct behaviour?
 
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
