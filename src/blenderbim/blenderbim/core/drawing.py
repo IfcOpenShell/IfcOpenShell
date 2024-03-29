@@ -394,7 +394,7 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
             elif not reference_obj:
                 should_delete_existing_annotation = True
 
-        if reference_obj and (should_delete_existing_annotation or not annotation):
+        if (should_delete_existing_annotation or not annotation):
             should_create_annotation = True
 
         if should_delete_existing_annotation:
