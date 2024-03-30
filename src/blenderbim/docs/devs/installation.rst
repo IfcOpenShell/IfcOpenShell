@@ -43,11 +43,11 @@ compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
-You can choose between a ``PYVERSION`` of ``py39``, or ``py310``.
+You can choose between a ``PYVERSION`` of ``py311``, ``py310``, or ``py39``.
 ::
 
     $ cd src/blenderbim
-    $ make dist PLATFORM=linux PYVERSION=py310
+    $ make dist PLATFORM=linux PYVERSION=py311
     $ ls dist/
 
 This will give you a fully packaged Blender add-on zip that you can distribute
@@ -258,10 +258,12 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     ifcclash
     bimtester
     ifccobie
-    ifcdiff
     ifccsv
+    ifcdiff
+    ifc4d
+    ifc5d
     ifcpatch
-    ifcp6
+    ifctester
     pystache
     svgwrite
     dateutil
@@ -276,17 +278,13 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     elementpath
     six
     lark-parser
-    hppfcl
     behave
     parse
     parse_type
     xlsxwriter
     odfpy
     defusedxml
-    boto3
-    botocore
     jmespath
-    s3transfer
     ifcjson
 
 Notes:
