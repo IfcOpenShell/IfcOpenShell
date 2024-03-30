@@ -80,7 +80,7 @@ class Facet:
             if isinstance(value, dict) and "simpleValue" in value.keys():
                 setattr(self, name, value["simpleValue"])
             elif isinstance(value, dict) and "restriction" in value.keys():
-                setattr(self, name, Restriction().parse(value["restriction"][0]))
+                setattr(self, name, Restriction().parse(value["restriction"]))
             else:
                 setattr(self, name, value)
         return self
