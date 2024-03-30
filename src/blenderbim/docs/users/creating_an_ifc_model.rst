@@ -70,8 +70,8 @@ In the top left **File** menu, Save your new IFC model on your computer.
 Congratulations! You have now created your first OpenBIM model from Blender! You
 can open the IFC file in any other program, and you will see something similar
 to the image below. Three simple open source online viewers you can test with
-are `IfcPipeline <https://view.ifcopenshell.org>`__, `IFC.JS
-<https://ifcjs.github.io/web-ifc-viewer/example/index>`__, and `3DViewer
+are `IfcPipeline <https://view.ifcopenshell.org>`__, `ThatOpenEditor
+<https://platform.thatopen.com/app>`__, and `3DViewer
 <https://3dviewer.net/>`__.
 
 .. image:: images/ifc-pipeline.png
