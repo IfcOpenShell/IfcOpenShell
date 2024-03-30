@@ -8,6 +8,12 @@ h1, h2, h3, h4 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+a {
+    text-decoration: none;
+}
+.toc-tree .reference:hover {
+    color: #d98014;
+}
 .sidebar-brand-text {
     font-size: 1rem;
 }
@@ -30,6 +36,9 @@ h1, h2, h3, h4 {
 }
 .blockbutton a:hover {
     background: #70ba35;
+}
+.highlight .hll {
+    background-color: #ffc2;
 }
 section img {
     display: block;

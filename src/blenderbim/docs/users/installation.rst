@@ -25,7 +25,7 @@ Installation
 
 .. warning::
 
-   If you are not using Blender version >=3.1, please follow the **Unstable installation** instructions. :doc:`Read more <../devs/installation>`
+   If you are not using Blender version >=4.1, please follow the **Unstable installation** instructions. :doc:`Read more <../devs/installation>`
 
 3. **Install the BlenderBIM Add-on**
 
