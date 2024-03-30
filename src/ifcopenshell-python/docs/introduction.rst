@@ -87,3 +87,4 @@ IfcOpenShell is a modular ecosystem of tools that work together, where each tool
 
    introduction/introduction_to_bim
    introduction/introduction_to_ifc
+   introduction/how_to_contribute
