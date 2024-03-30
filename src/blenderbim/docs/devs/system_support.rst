@@ -6,9 +6,13 @@ the Python version shipped by the Blender Foundation for the most recent three
 major Blender versions:
 
 - 64-bit Linux on Python 3.10
+- 64-bit Linux on Python 3.11
 - 64-bit MacOS Intel on Python 3.10
+- 64-bit MacOS Intel on Python 3.11
 - 64-bit MacOS Silicon on Python 3.10
+- 64-bit MacOS Silicon on Python 3.11
 - 64-bit Windows on Python 3.10
+- 64-bit Windows on Python 3.11
 
 Note that developer builds may exist for older versions of Python but there will
 be no guarantee of the uptime or stability of these builds.
