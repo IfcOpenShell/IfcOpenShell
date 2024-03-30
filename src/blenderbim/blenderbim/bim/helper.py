@@ -271,6 +271,9 @@ def draw_filter(layout, filter_groups, data, module):
         op.type = sprops.facet
         op.index = i
         op.module = module
+        op = row.operator("bim.remove_filter_group", text="", icon="X")
+        op.index = i
+        op.module = module
 
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
@@ -317,10 +320,6 @@ def draw_filter(layout, filter_groups, data, module):
             op.index = j
             op.module = module
 
-        row = box.row()
-        op = row.operator("bim.remove_filter_group", icon="X")
-        op.index = i
-        op.module = module
 
 
 # TODO this should move into ifcopenshell.util
