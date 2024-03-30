@@ -36,7 +36,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "BlenderBIM Add-on"
-copyright = "2020-2023 IfcOpenShell Contributors"
+copyright = "2020-2024 IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
@@ -48,7 +48,7 @@ release = "0.0.231104"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosectionlabel"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosectionlabel", "sphinx_copybutton"]
 
 # Auto add document prefixes to help guarantee uniqueness of automatic section references.
 autosectionlabel_prefix_document = True
@@ -75,3 +75,56 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_css_files = ["custom.css"]
+
+# Code block styles. Dark styling helps important code examples "pop" on the
+# page even on light themes.
+pygments_style = "one-dark"
+pygments_dark_style = "one-dark"
+
+html_logo = "https://blenderbim.org/assets/images/blender/blender-logo.png"
+html_theme_options = {
+    "source_repository": "https://github.com/IfcOpenShell/IfcOpenShell/",
+    "source_branch": "v0.7.0",
+    "source_directory": "src/blenderbim/docs/",
+    "light_css_variables": {
+        "color-brand-primary": "#39b54a",
+        "color-brand-content": "#39b54a",
+        "color-brand-visited": "#d9e021",
+        "color-background-primary": "#f7f7f6",
+        "color-background-secondary": "#eeeeec",
+        "color-background-border": "#cfd0cb",
+        "color-foreground-primary": "#2e3436",
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#39b54a",
+        "color-brand-content": "#39b54a",
+        "color-brand-visited": "#d9e021",
+        # "color-background-primary": "#f7f7f6",
+        "color-background-primary": "#2e3436",
+        "color-background-border": "#2e3436",
+        "color-foreground-primary": "#eeeeec",
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+    },
+
+    "footer_icons": [
+        {
+            "name": "IfcOpenShell",
+            "url": "https://ifcopenshell.org",
+            "html": """
+                <img src="https://ifcopenshell.org/assets/images/logo.png" style="width: auto;" />
+            """,
+            "class": "",
+        },
+        {
+            "name": "GitHub",
+            "url": "https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/docs",
+            "html": """
+                <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+                </svg>
+            """,
+            "class": "",
+        },
+    ],
+}
