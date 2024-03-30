@@ -1164,6 +1164,9 @@ class IfcImporter:
 
         return obj
 
+    def load_existing_meshes(self) -> None:
+        self.meshes.update({m.name: m for m in bpy.data.meshes})
+
     def get_representation_item_material_name(self, item):
         if not item.StyledByItem:
             return
