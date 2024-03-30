@@ -697,31 +697,37 @@ class FacetTransformer(lark.Transformer):
         if isinstance(element_value, (list, tuple)):
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):
-            if isinstance(element_value, int):
-                value = int(value)
-            elif isinstance(element_value, float):
-                value = float(value)
+            try:
+                if isinstance(element_value, int):
+                    value = int(value)
+                elif isinstance(element_value, float):
+                    value = float(value)
 
-            if isinstance(element_value, (int, float)):
-                operator = comparison.lstrip("!")
-                if operator == ">=":
-                    result = element_value >= value
-                elif operator == "<=":
-                    result = element_value <= value
-                elif operator == ">":
-                    result = element_value > value
-                elif operator == "<":
-                    result = element_value < value
-                else:
-                    result = element_value == value  # Tolerance?
-            elif isinstance(element_value, str):
-                operator = comparison.lstrip("!")
-                if operator == "*=":
-                    result = value in element_value
+                if isinstance(element_value, (int, float)):
+                    operator = comparison.lstrip("!")
+                    if operator == ">=":
+                        result = element_value >= value
+                    elif operator == "<=":
+                        result = element_value <= value
+                    elif operator == ">":
+                        result = element_value > value
+                    elif operator == "<":
+                        result = element_value < value
+                    else:
+                        result = element_value == value  # Tolerance?
+                elif isinstance(element_value, str):
+                    operator = comparison.lstrip("!")
+                    if operator == "*=":
+                        result = value in element_value
+                    else:
+                        result = element_value == value
                 else:
                     result = element_value == value
-            else:
-                result = element_value == value
+            except:
+                # Potentially they are trying to compare a value which cannot
+                # be legally casted to the element_value, or cannot use the
+                # `in` or more / less than comparison operators.
+                result = False
         elif isinstance(value, re.Pattern):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
