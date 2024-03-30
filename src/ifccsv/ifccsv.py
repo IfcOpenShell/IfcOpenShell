@@ -240,12 +240,18 @@ class IfcCsv:
             index = attributes.index(data["name"])
             formatting_indices[index] = data["format"]
 
-        for row in self.results:
-            for index, format_query in formatting_indices.items():
+        for index, format_query in formatting_indices.items():
+            for row in self.results:
                 if row[index] == null:
                     continue
                 row[index] = '"' + str(row[index]).replace('"', '\\"') + '"'
                 row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
+
+            if self.summaries[index] is not None:
+                summary_label, summary_value = self.summaries[index].split(": ")
+                summary_value = '"' + str(summary_value).replace('"', '\\"') + '"'
+                summary_value = ifcopenshell.util.selector.format(format_query.replace("{{value}}", summary_value))
+                self.summaries[index] = summary_label + ": " + str(summary_value)
 
     def sort_results(self, sort, attributes, include_global_id):
         if not self.results:
