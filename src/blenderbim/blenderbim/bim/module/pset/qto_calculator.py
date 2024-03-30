@@ -260,20 +260,23 @@ class QtoCalculator:
         return min(z_values)
 
     def get_finish_floor_height(self, obj: bpy.types.Object) -> float:
+        space_min_z_value = self.get_min_global_z(obj)
+        space_max_z_value = self.get_max_global_z(obj)
+
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
-        finish_floor_height = 0
+        flooring_max_z_value = space_min_z_value
         for decomposition in decompositions:
             if (
                 decomposition.get_info()["PredefinedType"] == "FLOORING"
                 and decomposition.get_info()["type"] == "IfcCovering"
             ):
-                floor_obj = tool.Ifc.get_object(decomposition)
-                new_finish_floor_height = self.get_height(floor_obj)
-                if new_finish_floor_height > finish_floor_height:
-                    finish_floor_height = new_finish_floor_height
+                flooring_obj = tool.Ifc.get_object(decomposition)
+                flooring_z_value = self.get_max_global_z(flooring_obj)
+                if flooring_z_value > space_min_z_value:
+                    flooring_max_z_value = flooring_z_value
 
-        return finish_floor_height
+        return flooring_max_z_value - space_min_z_value
 
     def get_ceiling_height(self, obj: bpy.types.Object) -> float:
         space_min_z_value = self.get_min_global_z(obj)
