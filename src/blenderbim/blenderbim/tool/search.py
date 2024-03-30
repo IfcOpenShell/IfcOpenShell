@@ -189,6 +189,8 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def query(self, args):
         keys, comparison, value = args
+        if comparison == "=":
+            comparison = ""
         return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
 
     def comparison(self, args):
