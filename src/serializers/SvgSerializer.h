@@ -400,6 +400,13 @@ namespace {
 			Bnd_Box box;
 			BRepBndLib::AddClose(s, box);
 
+			if (box.IsVoid()) {
+				// false or true, it doesn't really matter, just don't
+				// proceed because asking for a corner of a void box
+				// throws an exception.
+				return false;
+			}
+
 			auto lower = large_ortho_faces_.lower_bound(0.);
 			auto upper = large_ortho_faces_.upper_bound(min_d);
 
