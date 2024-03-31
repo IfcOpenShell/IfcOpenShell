@@ -20,6 +20,8 @@ class Search(blenderbim.core.tool.Search):
             return bpy.context.scene.BIMSearchProperties.filter_groups
         elif module == "csv":
             return bpy.context.scene.CsvProperties.filter_groups
+        elif module == "diff":
+            return bpy.context.scene.DiffProperties.filter_groups
         elif module == "drawing_include":
             return bpy.context.active_object.data.BIMCameraProperties.include_filter_groups
         elif module == "drawing_exclude":
