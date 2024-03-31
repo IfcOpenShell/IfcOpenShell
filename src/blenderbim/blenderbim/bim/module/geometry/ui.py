@@ -212,7 +212,7 @@ class BIM_PT_representation_items(Panel):
         if props.is_editing_item_style:
             # NOTE: we currently support 1 item having just 1 style
             # when IfcStyledItem can actually have multiple styles
-            row.prop(props, "representation_item_style", icon="SHADING_RENDERED", text="")
+            prop_with_search(row, props, "representation_item_style", icon="SHADING_RENDERED", text="")
             row.operator("bim.edit_representation_item_style", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_representation_item_style", icon="CANCEL", text="")
         else:
