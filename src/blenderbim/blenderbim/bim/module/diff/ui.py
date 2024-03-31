@@ -95,7 +95,6 @@ class BIM_PT_diff(Panel):
 
         row = layout.row(align=True)
         row.prop(props, "diff_filter_elements")
-        row.operator("bim.ifc_selector", icon="FILTER", text="")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")
