@@ -54,7 +54,7 @@ class IfcDiff:
         that comparisons will take longer.
     :type is_shallow: bool
     :param filter_elements: An IFC filter query if you only want to compare a
-        subset of elements. For example: ``.IfcWall`` to only compare walls.
+        subset of elements. For example: ``IfcWall`` to only compare walls.
     :type filter_elements: string
 
     Example::
@@ -83,9 +83,12 @@ class IfcDiff:
         self.precision = self.get_precision()
 
         if self.filter_elements:
-            selector = ifcopenshell.util.selector.Selector()
-            old_elements = set(e.GlobalId for e in selector.parse(self.old, self.filter_elements))
-            new_elements = set(e.GlobalId for e in selector.parse(self.new, self.filter_elements))
+            old_elements = set(
+                e.GlobalId for e in ifcopenshell.util.selector.filter_elements(self.old, self.filter_elements)
+            )
+            new_elements = set(
+                e.GlobalId for e in ifcopenshell.util.selector.filter_elements(self.new, self.filter_elements)
+            )
         else:
             old_elements = self.old.by_type("IfcElement")
             if self.old.schema == "IFC2X3":
