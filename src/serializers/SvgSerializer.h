@@ -402,7 +402,7 @@ namespace {
 
 			if (box.IsVoid()) {
 				// false or true, it doesn't really matter, just don't
-				// proceed because asking for a corner of a void box
+				// proceed, because asking for a corner of a void box
 				// throws an exception.
 				return false;
 			}
