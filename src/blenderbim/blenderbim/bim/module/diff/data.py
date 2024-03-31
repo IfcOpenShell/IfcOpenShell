@@ -38,6 +38,7 @@ class DiffData:
         cls.data["total_deleted"] = cls.total_deleted()
         cls.data["total_changed"] = cls.total_changed()
         cls.data["changes"] = cls.changes()
+        cls.data["saved_searches"] = cls.saved_searches()
         cls.is_loaded = True
 
     @classmethod
@@ -84,3 +85,18 @@ class DiffData:
         elif element.GlobalId in diff["deleted"]:
             changes["Deleted"] = True
         return changes
+
+    @classmethod
+    def saved_searches(cls):
+        if not tool.Ifc.get():
+            return []
+        groups = tool.Ifc.get().by_type("IfcGroup")
+        results = []
+        for group in groups:
+            try:
+                data = json.loads(group.Description)
+                if isinstance(data, dict) and data.get("type", None) == "BBIM_Search" and data.get("query", None):
+                    results.append(group)
+            except:
+                pass
+        return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
