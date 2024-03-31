@@ -53,15 +53,29 @@ class Usecase:
         if hasattr(self.settings["product"], "PredefinedType"):
             if hasattr(self.settings["product"], "ElementType"):
                 if (
-                    not self.settings["product"].ElementType
+                    self.settings["product"].ElementType is None
                     and self.settings["product"].PredefinedType == "USERDEFINED"
                 ):
                     self.settings["product"].PredefinedType = "NOTDEFINED"
+                elif (
+                    self.settings["product"].ElementType
+                    and self.settings["product"].PredefinedType != "USERDEFINED"
+                ):
+                    self.settings["product"].PredefinedType = "USERDEFINED"
             elif hasattr(self.settings["product"], "ObjectType"):
-                if (
-                    not self.settings["product"].ObjectType
+                relating_type = ifcopenshell.util.element.get_type(self.settings["product"])
+                if relating_type and relating_type.PredefinedType != "NOTDEFINED":
+                    self.settings["product"].ObjectType = None
+                    self.settings["product"].PredefinedType = None
+                elif (
+                    self.settings["product"].ObjectType is None
                     and self.settings["product"].PredefinedType == "USERDEFINED"
                 ):
                     self.settings["product"].PredefinedType = "NOTDEFINED"
+                elif (
+                    self.settings["product"].ObjectType
+                    and self.settings["product"].PredefinedType != "USERDEFINED"
+                ):
+                    self.settings["product"].PredefinedType = "USERDEFINED"
         if hasattr(self.settings["product"], "OwnerHistory"):
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
