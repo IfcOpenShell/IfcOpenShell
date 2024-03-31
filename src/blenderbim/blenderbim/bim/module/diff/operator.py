@@ -135,6 +135,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
     bl_label = "Execute IFC Diff"
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
@@ -162,7 +163,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
             new = ifcopenshell.open(self.props.new_file)
 
         relationships = [r.relationship for r in self.props.diff_relationships]
-        query = self.props.diff_filter_elements
+        query = tool.Search.export_filter_query(self.props.filter_groups) or None
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=relationships, filter_elements=query)
         ifc_diff.diff()
