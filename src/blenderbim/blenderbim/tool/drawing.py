@@ -18,6 +18,7 @@
 
 import os
 import re
+import collections
 import bpy
 import math
 import json
@@ -33,6 +34,7 @@ import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
+import ifcopenshell.api
 import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
@@ -42,14 +44,14 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
+import blenderbim.core.root
 from shapely.ops import unary_union
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-import collections
-from typing import Optional, Union
+from typing import Optional, Union, Iterable
 from pathlib import Path
 
 
@@ -250,7 +252,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.data.collections.remove(collection, do_unlink=True)
 
     @classmethod
-    def delete_drawing_elements(cls, elements):
+    def delete_drawing_elements(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
@@ -261,7 +263,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     tool.Blender.remove_data_block(obj_data)
 
     @classmethod
-    def delete_object(cls, obj):
+    def delete_object(cls, obj: bpy.types.Object) -> None:
         bpy.data.objects.remove(obj)
 
     @classmethod
@@ -873,7 +875,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         should_add_representation=True,
         context=None,
         ifc_representation_class=None,
-    ):
+    ) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -1220,7 +1222,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             mat.translation += annotation_offset
             return mat
 
-        def clip_to_camera_boundary(mesh, bounds):
+        def clip_to_camera_boundary(mesh: bpy.types.Mesh, bounds: tuple[float, float, float, float, float, float]) -> Union[bpy.types.Mesh, None]:
             mesh.verts.ensure_lookup_table()
             points = [v.co for v in mesh.verts[0:2]]
             points = helper.clip_segment(bounds, points)
