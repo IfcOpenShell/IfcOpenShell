@@ -271,25 +271,29 @@ class ColourByProperty(Operator):
         colourscheme = {}
 
         if len(props.colourscheme):
-            colourscheme = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
+            colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": 0} for cs in props.colourscheme}
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
             value = str(ifcopenshell.util.selector.get_element_value(element, query))
-            if value not in colourscheme:
-                colourscheme[value] = next(colours)[0:3]
-            obj.color = (*colourscheme[value], 1)
+            if value in colourscheme:
+                colourscheme[value]["total"] += 1
+            else:
+                colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
+            obj.color = (*colourscheme[value]["colour"], 1)
         areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
         if areas:
             areas[0].spaces[0].shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
-        for value, colour in colourscheme.items():
+        for value in sorted(colourscheme.keys()):
+            data = colourscheme[value]
             new = props.colourscheme.add()
             new.name = str(value)
-            new.colour = colour[0:3]
+            new.total = data["total"]
+            new.colour = data["colour"][0:3]
         return {"FINISHED"}
 
     def store_state(self, context):
@@ -351,16 +355,16 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
         query = props.colourscheme_query
 
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
-        coulour_scheme = {cs.name: cs.colour[0:3] for cs in props.colourscheme}
+        colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": cs.total} for cs in props.colourscheme}
         if group:
             group = group[0]
             description = json.loads(group.Description)
-            description["colourscheme"] = coulour_scheme
+            description["colourscheme"] = colourscheme
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
             description = json.dumps(
-                {"type": "BBIM_Search", "colourscheme": coulour_scheme, "colourscheme_query": query}
+                {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
             )
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
 
@@ -380,10 +384,11 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
         description = json.loads(group.Description)
         props.colourscheme_query = description.get("colourscheme_query")
         props.colourscheme.clear()
-        for name, colour in description.get("colourscheme", {}).items():
+        for name, data in description.get("colourscheme", {}).items():
             new = props.colourscheme.add()
             new.name = name
-            new.colour = colour
+            new.total = data["total"]
+            new.colour = data["colour"]
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties

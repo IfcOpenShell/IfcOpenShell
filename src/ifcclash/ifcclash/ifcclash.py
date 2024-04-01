@@ -117,7 +117,7 @@ class Clasher:
     def add_collision_objects(self, name, ifc_file, mode=None, selector=None):
         start = time.time()
         self.settings.logger.info("Creating iterator")
-        if not mode or not selector:
+        if not mode or mode == "a" or not selector:
             elements = set(ifc_file.by_type("IfcElement"))
             elements -= set(ifc_file.by_type("IfcFeatureElement"))
         elif mode == "e":
