@@ -264,11 +264,11 @@ class Specification:
                 is_pass = bool(result)
                 if facet.cardinality == "prohibited":
                     is_pass = not is_pass
-                if self.maxOccurs != 0: # This is a required or optional specification
+                if self.maxOccurs != 0:  # This is a required or optional specification
                     if not is_pass:
                         self.failed_entities.add(element)
                         facet.failures.append({"element": element, "reason": str(result)})
-                else: # This is a prohibited specification
+                else:  # This is a prohibited specification
                     if is_pass:
                         self.failed_entities.add(element)
                         facet.failures.append({"element": element, "reason": str(result)})
@@ -279,12 +279,12 @@ class Specification:
             if not facet.status:
                 self.status = False
 
-        if self.minOccurs != 0: # Required specification
+        if self.minOccurs != 0:  # Required specification
             if not self.applicable_entities:
                 self.status = False
                 for facet in self.requirements:
                     facet.status = False
-        elif self.maxOccurs == 0: # Prohibited specification
+        elif self.maxOccurs == 0:  # Prohibited specification
             if self.applicable_entities and not self.requirements:
                 self.status = False
 
@@ -295,3 +295,14 @@ class Specification:
             return "optional"
         elif self.maxOccurs == 0:
             return "prohibited"
+
+    def set_usage(self, usage: Cardinality) -> None:
+        if usage == "optional":
+            self.minOccurs = 0
+            self.maxOccurs = "unbounded"
+        elif usage == "prohibited":
+            self.minOccurs = 0
+            self.maxOccurs = 0
+        else:  # required
+            self.minOccurs = 1
+            self.maxOccurs = "unbounded"
