@@ -125,7 +125,7 @@ class BIM_UL_colourscheme(bpy.types.UIList):
         if not item:
             return
         row = layout.row(align=True)
-        row.label(text=item.name)
+        row.label(text=f"{item.name} ({item.total})")
         row.prop(item, "colour", text="")
 
 

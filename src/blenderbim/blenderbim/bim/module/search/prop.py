@@ -100,6 +100,7 @@ class BIMFilterBuildingStoreys(PropertyGroup):
 
 class BIMColour(PropertyGroup):
     name: StringProperty(name="Name")
+    total: IntProperty(name="Total")
     colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
 
 
