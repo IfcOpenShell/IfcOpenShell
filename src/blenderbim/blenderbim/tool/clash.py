@@ -37,8 +37,9 @@ class Clash(blenderbim.core.tool.Clash):
             for ab in ["a", "b"]:
                 for data in getattr(clash_set, ab):
                     clash_source = {"file": data.name}
-                    if data.selector:
-                        clash_source["selector"] = data.selector
+                    query = tool.Search.export_filter_query(data.filter_groups)
+                    if query and data.mode != "a":
+                        clash_source["selector"] = query
                         clash_source["mode"] = data.mode
                     if ab == "a":
                         a.append(clash_source)
