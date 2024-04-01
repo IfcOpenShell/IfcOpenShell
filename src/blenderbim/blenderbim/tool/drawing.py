@@ -27,7 +27,6 @@ import shutil
 import logging
 import shapely
 import platform
-from shapely.ops import unary_union
 import mathutils
 import subprocess
 import numpy as np
@@ -43,6 +42,7 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
+from shapely.ops import unary_union
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from lxml import etree
@@ -50,6 +50,7 @@ from mathutils import Vector, Matrix
 from fractions import Fraction
 import collections
 from typing import Optional, Union
+from pathlib import Path
 
 
 class Drawing(blenderbim.core.tool.Drawing):
@@ -385,7 +386,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_document_uri(cls, document, description=None):
+    def get_document_uri(
+        cls, document: ifcopenshell.entity_instance, description: Optional[str] = None
+    ) -> Union[str, None]:
         if getattr(document, "Location", None):
             if os.path.isabs(document.Location):
                 return document.Location
@@ -430,7 +433,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 return rel.RelatingGroup
 
     @classmethod
-    def get_drawing_document(cls, drawing):
+    def get_drawing_document(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument"):
                 return rel.RelatingDocument
@@ -1103,7 +1106,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
 
@@ -1991,3 +1993,60 @@ class Drawing(blenderbim.core.tool.Drawing):
             rotate180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
             return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4() @ rotate180z
         return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
+
+    @classmethod
+    def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
+        import ezdxf
+        import xml.etree.ElementTree as ET
+
+        SVG = "{http://www.w3.org/2000/svg}"
+        IFC = "{http://www.ifcopenshell.org/ns}"
+
+        doc = ezdxf.new("R2010")
+        msp = doc.modelspace()
+        svg = ET.parse(svg_filepath).getroot()
+
+        def finalize_dxf():
+            doc.saveas(dxf_filepath)
+
+        drawing = svg.findall(f"{SVG}g[@{IFC}name]")
+        if not drawing:
+            finalize_dxf()
+            return
+        drawing = drawing[0]
+
+        NUMBER = r"-?\d+\.?\d+"
+        COORD = rf"{NUMBER},{NUMBER}"
+        POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
+        MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
+
+        for element_g in drawing.findall(f"{SVG}g"):
+            paths = element_g.findall(f"{SVG}path")
+
+            for path in paths:
+                path = path.attrib["d"]
+
+                if not re.match(MULTI_POLYLINE_PATTERN, path):
+                    # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
+                    continue
+
+                for polyline_path in re.findall(POLYLINE_PATTERN, path):
+                    points = re.findall(rf"{NUMBER}", polyline_path)
+                    points = [float(p) for p in points]
+                    POINT_SIZE = 2
+
+                    grouped_points = []
+                    for i in range(0, len(points), POINT_SIZE):
+                        point = points[i : i + POINT_SIZE]
+                        point[1] *= -1
+                        grouped_points.append(point)
+                    points = grouped_points
+
+                    # Z marks closed polylines
+                    is_closed_polyline = polyline_path.rstrip().endswith("Z")
+                    if is_closed_polyline or len(points) > 2:
+                        msp.add_lwpolyline(points, close=is_closed_polyline)
+                    else:  # LINE
+                        msp.add_line(*points)
+
+        finalize_dxf()
