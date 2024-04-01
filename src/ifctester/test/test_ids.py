@@ -146,7 +146,7 @@ class TestIds:
         )
 
         spec.ifcVersion = []
-        spec.minOccurs = 1
+        spec.set_usage("required")
         model = ifcopenshell.file()
         waldo = model.createIfcWall(Name="Waldo")
         run("Required specifications need at least one applicable entity 1/2", specs, model, True, [waldo])
@@ -154,13 +154,12 @@ class TestIds:
         waldo = model.createIfcSlab(Name="Waldo")
         run("Required specifications need at least one applicable entity 2/2", specs, model, False)
 
-        spec.minOccurs = 0
+        spec.set_usage("optional")
         model = ifcopenshell.file()
         waldo = model.createIfcSlab(Name="Waldo")
         run("Optional specifications may still pass if nothing is applicable", specs, model, True)
 
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
+        spec.set_usage("prohibited")
         model = ifcopenshell.file()
         wall = model.createIfcSlab(Name="Waldo")
         run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
@@ -185,8 +184,7 @@ class TestIds:
             [wall],
         )
 
-        spec.minOccurs = 0
-        spec.maxOccurs = "unbounded"
+        spec.set_usage("optional")
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
         spec.requirements.append(description_attr := ids.Attribute(name="Description", value="Foobar"))
@@ -201,8 +199,7 @@ class TestIds:
         # run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
 
         # double negative / required attributes
-        # spec.minOccurs = 0
-        # spec.maxOccurs = 0
+        # spec.set_usage("prohibited")
         # name_attr.minOccurs = 0
         # name_attr.maxOccurs = 0
         # description_attr.minOccurs = 0
@@ -292,7 +289,7 @@ class TestSpecification:
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 1
+        spec.set_usage("required")
         run(
             "A specification that is required and has at least one applicable entity but no requirements shall pass",
             test_ids,
@@ -305,7 +302,7 @@ class TestSpecification:
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
-        spec.minOccurs = 1
+        spec.set_usage("required")
         run(
             "A specification that is required but has no applicable entities or requirements shall fail",
             test_ids,
@@ -319,7 +316,7 @@ class TestSpecification:
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
+        spec.set_usage("optional")
         run(
             "A specification that is optional and has at least one applicable entity but no requirements shall pass",
             test_ids,
@@ -333,8 +330,7 @@ class TestSpecification:
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
+        spec.set_usage("prohibited")
         run(
             "A specification that is prohibited and has at least one applicable entity but no requirements shall fail",
             test_ids,
@@ -347,8 +343,7 @@ class TestSpecification:
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
+        spec.set_usage("prohibited")
         run(
             "A specification that is prohibited but has no applicable entities or requirements shall pass",
             test_ids,
