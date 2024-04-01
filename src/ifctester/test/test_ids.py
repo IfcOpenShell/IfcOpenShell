@@ -352,3 +352,22 @@ class TestSpecification:
             None,
             None,
         )
+
+    def test_prohibited_facet(self):
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo", cardinality="prohibited"))
+        specs.specifications.append(spec)
+
+        spec.set_usage("required")
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Wally")
+        run(
+            "Prohibited facet not to fail if no entity passes it",
+            specs,
+            model,
+            True,
+            [wall],
+            [],
+        )

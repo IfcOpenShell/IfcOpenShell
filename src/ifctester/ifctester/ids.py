@@ -262,8 +262,6 @@ class Specification:
             for facet in self.requirements:
                 result = facet(element)
                 is_pass = bool(result)
-                if facet.cardinality == "prohibited":
-                    is_pass = not is_pass
                 if self.maxOccurs != 0:  # This is a required or optional specification
                     if not is_pass:
                         self.failed_entities.add(element)
