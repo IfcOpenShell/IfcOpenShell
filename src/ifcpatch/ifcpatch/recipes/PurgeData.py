@@ -96,17 +96,25 @@ class Patcher:
             element.Name = "Rabbit"
             element.Description = "Rabbit"
 
-        for element in self.file.by_type("IfcContext"):
+        if self.file.schema == "IFC2X3":
+            elements = self.file.by_type("IfcProject")
+        else:
+            elements = self.file.by_type("IfcContext")
+        for element in elements:
             element.ObjectType = None
             element.LongName = None
             element.Phase = None
 
-        for element in self.file.by_type("IfcSpatialElement"):
+        if self.file.schema == "IFC2X3":
+            elements = self.file.by_type("IfcSpatialStructureElement")
+        else:
+            elements = self.file.by_type("IfcSpatialElement")
+        for element in elements:
             element.LongName = None
 
         for element in self.file.by_type("IfcOwnerHistory"):
             element.State = None
-            element.ChangeAction = None
+            element.ChangeAction = "NOCHANGE" if self.file.schema == "IFC2X3" else None
             element.LastModifiedDate = None
             element.LastModifyingUser = None
             element.LastModifyingApplication = None
@@ -125,7 +133,11 @@ class Patcher:
         for element in self.file.by_type("IfcPropertyDefinition"):
             self.file.remove(element)
 
-        for element in self.file.by_type("IfcPropertyAbstraction"):
+        if self.file.schema == "IFC2X3":
+            elements = self.file.by_type("IfcProperty")
+        else:
+            elements = self.file.by_type("IfcPropertyAbstraction")
+        for element in elements:
             self.file.remove(element)
 
         for element in self.file.by_type("IfcPhysicalQuantity"):
@@ -134,13 +146,27 @@ class Patcher:
         for element in self.file.by_type("IfcRelAssociates"):
             self.file.remove(element)
 
-        for element in self.file.by_type("IfcMaterialDefinition"):
+        if self.file.schema == "IFC2X3":
+            elements = (
+                self.file.by_type("IfcMaterial")
+                + self.file.by_type("IfcMaterialLayer")
+                + self.file.by_type("IfcMaterialLayerSet")
+                + self.file.by_type("IfcMaterialLayerSetUsage")
+                + self.file.by_type("IfcMaterialList")
+            )
+        else:
+            elements = self.file.by_type("IfcMaterialDefinition")
+        for element in elements:
             self.file.remove(element)
 
         for element in self.file.by_type("IfcMaterialDefinitionRepresentation"):
             self.file.remove(element)
 
-        for element in self.file.by_type("IfcMaterialUsageDefinition"):
+        if self.file.schema == "IFC2X3":
+            elements = []
+        else:
+            elements = self.file.by_type("IfcMaterialUsageDefinition")
+        for element in elements:
             self.file.remove(element)
 
         for element in self.file.by_type("IfcMaterialList"):
@@ -155,10 +181,40 @@ class Patcher:
         for element in self.file.by_type("IfcPresentationStyle"):
             self.file.remove(element)
 
-        for element in self.file.by_type("IfcPresentationItem"):
+        if self.file.schema == "IFC2X3":
+            elements = (
+                self.file.by_type("IfcColourSpecification")
+                + self.file.by_type("IfcCurveStyleFont")
+                + self.file.by_type("IfcCurveStyleFontAndScaling")
+                + self.file.by_type("IfcCurveStyleFontPattern")
+                + self.file.by_type("IfcPreDefinedItem")
+                + self.file.by_type("IfcSurfaceStyleLighting")
+                + self.file.by_type("IfcSurfaceStyleRefraction")
+                + self.file.by_type("IfcSurfaceStyleShading")
+                + self.file.by_type("IfcSurfaceStyleWithTextures")
+                + self.file.by_type("IfcSurfaceTexture")
+                + self.file.by_type("IfcTextStyleForDefinedFont")
+                + self.file.by_type("IfcTextStyleTextModel")
+                + self.file.by_type("IfcTextStyleWithBoxCharacteristics")
+                + self.file.by_type("IfcTextureCoordinate")
+                + self.file.by_type("IfcTextureVertex")
+                + self.file.by_type("IfcTextStyleForDefinedFont")
+                + self.file.by_type("IfcTextStyleForDefinedFont")
+            )
+        else:
+            elements = self.file.by_type("IfcPresentationItem")
+        for element in elements:
             self.file.remove(element)
 
-        for element in self.file.by_type("IfcExternalInformation"):
+        if self.file.schema == "IFC2X3":
+            elements = (
+                self.file.by_type("IfcClassification")
+                + self.file.by_type("IfcDocumentInformation")
+                + self.file.by_type("IfcLibraryInformation")
+            )
+        else:
+            elements = self.file.by_type("IfcExternalInformation")
+        for element in elements:
             self.file.remove(element)
 
         for element in self.file.by_type("IfcExternalReference"):
