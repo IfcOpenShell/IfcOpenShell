@@ -41,6 +41,7 @@ classes = (
     operator.CleanWireframes,
     operator.ContractSheet,
     operator.ContractTargetView,
+    operator.ConvertSVGToDXF,
     operator.CreateDrawing,
     operator.CreateSheets,
     operator.DisableAddAnnotationType,

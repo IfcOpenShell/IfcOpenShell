@@ -363,6 +363,8 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
 	# Provides Brickschema functionality
 	cd dist/working && . env/bin/activate && $(PIP) install "brickschema[persistence]==0.7.6a2" --target=./site-packages
+	# Required for SVG to DXF conversion
+	cd dist/working && . env/bin/activate && $(PIP) install "ezxdf" --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 

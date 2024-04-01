@@ -44,7 +44,7 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Union
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
@@ -2685,3 +2685,50 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
+
+
+class ConvertSVGToDXF(bpy.types.Operator):
+    bl_idname = "bim.convert_svg_to_dxf"
+    bl_label = "Convert SVG to DXF"
+    bl_options = {"REGISTER", "UNDO"}
+    view: bpy.props.StringProperty()
+    bl_description = "Convert current drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all selected drawings"
+    convert_all: bpy.props.BoolProperty(name="Convert All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # convert all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.open_all = True
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.convert_all:
+            drawings = [
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+            ]
+        else:
+            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
+
+        drawing_uris: list[Path] = []
+        drawings_not_found: list[str] = []
+
+        for drawing in drawings:
+            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+            if drawing_uri is None or not os.path.exists(drawing_uri):
+                drawings_not_found.append(drawing.Name)
+            else:
+                drawing_uris.append(Path(drawing_uri))
+
+        if drawings_not_found:
+            msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
+                "\n".join(drawings_not_found)
+            )
+            self.report({"ERROR"}, msg)
+            return {"CANCELLED"}
+
+        for drawing_uri in drawing_uris:
+            tool.Drawing.convert_svg_to_dxf(drawing_uri, drawing_uri.with_suffix(".dxf"))
+
+        self.report({"INFO"}, f"{len(drawing_uris)} drawings were converted to .dxf.")
+        return {"FINISHED"}
