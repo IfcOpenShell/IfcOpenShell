@@ -17,138 +17,36 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.date
-import ifcopenshell.util.classification
+import json
+import ifcopenshell.util.element
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
 
 
 def refresh():
-    ClassificationsData.is_loaded = False
-    ClassificationReferencesData.is_loaded = False
-    MaterialClassificationsData.is_loaded = False
-    CostClassificationsData.is_loaded = False
+    ClashData.is_loaded = False
 
 
-class ClassificationsData:
+class ClashData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data["has_classification_file"] = cls.has_classification_file()
-        cls.data["classifications"] = cls.classifications()
-        cls.data["available_classifications"] = cls.available_classifications()
+        cls.data = {}
+        cls.data["saved_searches"] = cls.saved_searches()
 
     @classmethod
-    def has_classification_file(cls):
-        return bool(IfcStore.classification_file)
-
-    @classmethod
-    def classifications(cls):
-        results = []
-        for element in tool.Ifc.get().by_type("IfcClassification"):
-            data = element.get_info()
-            if tool.Ifc.get().schema == "IFC2X3" and element.EditionDate:
-                data["EditionDate"] = ifcopenshell.util.date.ifc2datetime(data["EditionDate"])
-            results.append(data)
-        return results
-
-    @classmethod
-    def available_classifications(cls):
-        if not IfcStore.classification_file:
+    def saved_searches(cls):
+        if not tool.Ifc.get():
             return []
-        return [(str(e.id()), e.Name, "") for e in IfcStore.classification_file.by_type("IfcClassification")]
-
-
-class ReferencesData:
-    @classmethod
-    def active_classification_library(cls):
-        if not IfcStore.classification_file or not IfcStore.classification_file.by_type("IfcClassification"):
-            return False
-        props = bpy.context.scene.BIMClassificationProperties
-        name = IfcStore.classification_file.by_id(int(props.available_classifications)).Name
-        if name in [e.Name for e in tool.Ifc.get().by_type("IfcClassification")]:
-            return name
-
-    @classmethod
-    def classifications(cls):
-        return [(str(e.id()), e.Name, "") for e in tool.Ifc.get().by_type("IfcClassification")]
-
-
-class ClassificationReferencesData(ReferencesData):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.is_loaded = True
-        cls.data["references"] = cls.references()
-        cls.data["active_classification_library"] = cls.active_classification_library()
-        cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "OBJECT"
-
-    @classmethod
-    def references(cls):
+        groups = tool.Ifc.get().by_type("IfcGroup")
         results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            for reference in ifcopenshell.util.classification.get_references(element):
-                data = reference.get_info()
-                del data["ReferencedSource"]
-                results.append(data)
-        return results
-
-
-class MaterialClassificationsData(ReferencesData):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.is_loaded = True
-        cls.data["references"] = cls.references()
-        cls.data["active_classification_library"] = cls.active_classification_library()
-        cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "MATERIAL"
-
-    @classmethod
-    def references(cls):
-        results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object.active_material)
-        if element:
-            for reference in ifcopenshell.util.classification.get_references(element):
-                data = reference.get_info()
-                del data["ReferencedSource"]
-                results.append(data)
-        return results
-
-
-class CostClassificationsData(ReferencesData):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.is_loaded = True
-        cls.data["references"] = cls.references()
-        cls.data["active_classification_library"] = cls.active_classification_library()
-        cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "COST"
-
-    @classmethod
-    def references(cls):
-        results = []
-        element = tool.Ifc.get().by_id(
-            bpy.context.scene.BIMCostProperties.cost_items[
-                bpy.context.scene.BIMCostProperties.active_cost_item_index
-            ].ifc_definition_id
-        )
-        if element:
-            for reference in ifcopenshell.util.classification.get_references(element):
-                data = reference.get_info()
-                del data["ReferencedSource"]
-                results.append(data)
-        return results
+        for group in groups:
+            try:
+                data = json.loads(group.Description)
+                if isinstance(data, dict) and data.get("type", None) == "BBIM_Search" and data.get("query", None):
+                    results.append(group)
+            except:
+                pass
+        return [(str(g.id()), g.Name or "Unnamed", "") for g in sorted(results, key=lambda x: x.Name or "Unnamed")]
