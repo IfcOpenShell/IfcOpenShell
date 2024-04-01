@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import StrProperty, Attribute, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,11 +33,12 @@ from bpy.props import (
 
 class ClashSource(PropertyGroup):
     name: StringProperty(name="File")
-    selector: StringProperty(name="Selector")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     mode: EnumProperty(
         items=[
-            ("i", "Include", "Only the selected objects are included for clashing"),
-            ("e", "Exclude", "All objects except the selected objects are included for clashing"),
+            ("a", "All Elements", "All elements will be used for clashing"),
+            ("i", "Include", "Only the selected elements are included for clashing"),
+            ("e", "Exclude", "All elements except the selected elements are included for clashing"),
         ],
         name="Mode",
     )

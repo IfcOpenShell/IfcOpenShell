@@ -86,14 +86,14 @@ class ImportClashSets(bpy.types.Operator):
                 new_source = new.a.add()
                 new_source.name = clash_source["file"]
                 if "selector" in clash_source:
-                    new_source.selector = clash_source["selector"]
+                    tool.Search.import_filter_query(clash_source["selector"], new_source.filter_groups)
                     new_source.mode = clash_source["mode"]
             if "b" in clash_set and clash_set["b"]:
                 for clash_source in clash_set["b"]:
                     new_source = new.b.add()
                     new_source.name = clash_source["file"]
                     if "selector" in clash_source:
-                        new_source.selector = clash_source["selector"]
+                        tool.Search.import_filter_query(clash_source["selector"], new_source.filter_groups)
                         new_source.mode = clash_source["mode"]
         tool.Clash.import_active_clashes()
         return {"FINISHED"}
@@ -209,8 +209,11 @@ class ExecuteIfcClash(bpy.types.Operator):
 
     def invoke(self, context, event):
         _, extension = os.path.splitext(self.filepath)
-        if extension != ".json":
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
+        if extension != ".bcf":
+            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
+        # TODO Temporarily until BCF support comes back
+        # if extension != ".json":
+        #     self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -221,6 +224,9 @@ class ExecuteIfcClash(bpy.types.Operator):
         self.props = context.scene.BIMClashProperties
 
         _, extension = os.path.splitext(self.filepath)
+        if extension != ".bcf":
+            self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+        # TODO Temporarily until BCF support comes back
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
 
