@@ -388,10 +388,10 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         should_delete_existing_annotation = False
         should_create_annotation = False
 
+        # remove annotation only if the reference object was changed
+        # otherwise we rely on the existing annotation
         if annotation:
             if reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
-                should_delete_existing_annotation = True
-            elif not reference_obj:
                 should_delete_existing_annotation = True
 
         if (should_delete_existing_annotation or not annotation):
