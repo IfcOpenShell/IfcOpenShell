@@ -120,20 +120,46 @@ class EditAttributes(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class GenerateGlobalId(bpy.types.Operator):
+class GenerateGlobalId(bpy.types.Operator, Operator):
     bl_idname = "bim.generate_global_id"
     bl_label = "Regenerate GlobalId"
+    bl_description = "Regenerate GlobalId\n\nSHIFT+CLICK to regenerate GlobalIds for all selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        index = context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
-        if index >= 0:
-            global_id = context.active_object.BIMAttributeProperties.attributes[index]
+    use_selected: bpy.props.BoolProperty(name="Use All Selected Objects", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # using all selected objects on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.use_selected = True
+        return self.execute(context)
+
+    def _execute(self, context):
+        if self.use_selected:
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element or not element.is_a("IfcRoot"):
+                    continue
+                element.GlobalId = ifcopenshell.guid.new()
+
+        obj = context.active_object
+        if not obj or not obj.BIMAttributeProperties.is_editing_attributes:
+            return {"FINISHED"}
+
+        props = obj.BIMAttributeProperties
+        element = tool.Ifc.get_entity(obj)
+
+        if not element.is_a("IfcRoot"):
+            return {"FINISHED"}
+
+        if self.use_selected and obj in context.selected_objects:
+            # guid value was already regenerated, just update the ui prop
+            guid_value = element.GlobalId
         else:
-            global_id = context.active_object.BIMAttributeProperties.attributes.add()
-        global_id.name = "GlobalId"
-        global_id.data_type = "string"
-        global_id.string_value = ifcopenshell.guid.new()
+            guid_value = ifcopenshell.guid.new()
+
+        props.attributes["GlobalId"].string_value = guid_value
         return {"FINISHED"}
 
 
