@@ -350,9 +350,27 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         log_internal_cpp_errors(filename, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
+    used_guids: dict[str, ifcopenshell.entity_instance] = dict()
+
     for inst in f:
         if hasattr(logger, "set_state"):
             logger.set_state("instance", inst)
+
+        if hasattr(inst, "GlobalId"):
+            guid = inst.GlobalId
+            if guid is not None and guid in used_guids:
+                rule = "Rule IfcRoot.UR1:\n    The attribute GlobalId should be unique"
+                previous_element = used_guids[guid]
+                logger.error(
+                    "On instance:\n    %s\n   %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, 0),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, 0),
+                )
+            else:
+                used_guids[guid] = inst
 
         entity, attrs = get_entity_attributes(schema, inst.is_a())
 
