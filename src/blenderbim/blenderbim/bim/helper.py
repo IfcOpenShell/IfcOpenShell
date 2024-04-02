@@ -75,6 +75,10 @@ def draw_attribute(attribute, layout, copy_operator=None):
         op.data_path = attribute.path_from_id("string_value")
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    if attribute.name == "GlobalId":
+        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
@@ -319,7 +323,6 @@ def draw_filter(layout, filter_groups, data, module):
             op.group_index = i
             op.index = j
             op.module = module
-
 
 
 # TODO this should move into ifcopenshell.util
