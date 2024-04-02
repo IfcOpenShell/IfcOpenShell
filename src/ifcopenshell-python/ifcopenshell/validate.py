@@ -26,8 +26,11 @@ import json
 import functools
 
 from collections import namedtuple
+from typing import Union, Iterator, Any, Optional
+from logging import Logger
 
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.express.rule_executor
 
 named_type = ifcopenshell.ifcopenshell_wrapper.named_type
@@ -38,6 +41,10 @@ enumeration_type = ifcopenshell.ifcopenshell_wrapper.enumeration_type
 entity_type = ifcopenshell.ifcopenshell_wrapper.entity
 select_type = ifcopenshell.ifcopenshell_wrapper.select_type
 attribute = ifcopenshell.ifcopenshell_wrapper.attribute
+inverse_attribute = ifcopenshell.ifcopenshell_wrapper.inverse_attribute
+schema_definition = ifcopenshell.ifcopenshell_wrapper.schema_definition
+
+attribute_types = Union[simple_type, named_type, enumeration_type, select_type, aggregation_type, type_declaration]
 
 
 class ValidationError(Exception):
@@ -76,8 +83,8 @@ simple_type_python_mapping = {
 }
 
 
-def annotate_inst_attr_pos(inst, pos):
-    def get_pos():
+def annotate_inst_attr_pos(inst: ifcopenshell.entity_instance, pos: int) -> str:
+    def get_pos() -> Iterator[int]:
         depth = 0
         idx = -1
         for c in str(inst):
@@ -104,14 +111,16 @@ def annotate_inst_attr_pos(inst, pos):
     return "".join(" ^"[i == pos] for i in get_pos())
 
 
-def format(val):
+def format(val: Any) -> str:
     if isinstance(val, tuple) and val and isinstance(val[0], ifcopenshell.entity_instance):
         return "[\n%s\n    ]" % "\n".join("      {}. {}".format(*x) for x in enumerate(val, start=1))
     else:
         return repr(val)
 
 
-def assert_valid_inverse(attr, val, schema):
+def assert_valid_inverse(
+    attr: inverse_attribute, val: tuple[ifcopenshell.entity_instance], schema: schema_definition
+) -> bool:
     b1, b2 = attr.bound1(), attr.bound2()
 
     if (b1, b2) == (-1, -1):
@@ -137,16 +146,16 @@ def assert_valid_inverse(attr, val, schema):
     return True
 
 
-select_members_cache = {}
+select_members_cache: dict[tuple[str, str], set[str]] = {}
 
 
-def get_select_members(schema, ty):
+def get_select_members(schema: schema_definition, ty: select_type) -> set[str]:
     cache_key = schema.name(), ty.name()
     from_cache = select_members_cache.get(cache_key)
     if from_cache:
         return from_cache
 
-    def inner(ty):
+    def inner(ty: select_type) -> Iterator[str]:
         if isinstance(ty, select_type):
             for st in ty.select_list():
                 yield from inner(st)
@@ -167,7 +176,13 @@ def get_select_members(schema, ty):
     return v
 
 
-def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
+def assert_valid(
+    attr_type: attribute_types,
+    val: Any,
+    schema: schema_definition,
+    no_throw=False,
+    attr: Optional[attribute] = None,
+):
     type_wrappers = (named_type,)
     if not isinstance(val, ifcopenshell.entity_instance):
         # If val is not an entity instance we need to
@@ -229,7 +244,7 @@ def assert_valid(attr_type, val, schema, no_throw=False, attr=None):
         return True
 
 
-def log_internal_cpp_errors(filename, logger):
+def log_internal_cpp_errors(filename: str, logger: Logger) -> None:
     import re
     import bisect
 
@@ -260,10 +275,10 @@ def log_internal_cpp_errors(filename, logger):
                     logger.error("For instance:\n    %s\n%s", line, m)
 
 
-entity_attribute_map = {}
+entity_attribute_map: dict[tuple[str, str], tuple[entity_type, tuple[attribute]]] = {}
 
 
-def get_entity_attributes(schema, entity):
+def get_entity_attributes(schema: schema_definition, entity: str) -> tuple[entity_type, tuple[attribute]]:
     cache_key = schema.name(), entity
     from_cache = entity_attribute_map.get(cache_key)
     if from_cache:
@@ -278,7 +293,7 @@ def get_entity_attributes(schema, entity):
     return entity_attrs
 
 
-def validate(f, logger, express_rules=False):
+def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=False) -> None:
     """
     For an IFC population model `f` (or filepath to such a file) validate whether the entity attribute values are correctly supplied. As this
     is a function that is applied after a file has been parsed, certain types of errors in syntax, duplicate
