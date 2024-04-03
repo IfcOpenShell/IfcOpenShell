@@ -296,17 +296,10 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    for panel, poll in tuple(original_scene_panels_polls.items()):
-        if poll is None:
-            del panel.poll
-        else:
-            panel.poll = poll
-        # panel might be already unregisterd during blender exit
-        # or if it's addon was disabled
-        if panel.is_registered:
-            # reregister to activate new poll
-            bpy.utils.unregister_class(panel)
-            bpy.utils.register_class(panel)
-        del original_scene_panels_polls[panel]
+    import blenderbim.tool as tool
+
+    # use tuple() as method will be removing keys from dict
+    for panel in tuple(original_scene_panels_polls.keys()):
+        tool.Blender.remove_scene_panel_override(panel)
 
     bpy.app.translations.unregister("blenderbim")

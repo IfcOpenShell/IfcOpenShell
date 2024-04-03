@@ -934,3 +934,46 @@ class Blender(blenderbim.core.tool.Blender):
 
         assert set(items) == set(final_items), "Sorted list doesn't match original"
         return final_items
+
+    @classmethod
+    def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
+        @classmethod
+        def poll_check_blender_tab(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+        polls = blenderbim.bim.original_scene_panels_polls
+
+        # override poll method
+        if not hasattr(original_panel, "poll"):
+            polls[original_panel] = None
+            original_panel.poll = poll_check_blender_tab
+        else:
+            polls[original_panel] = original_panel.poll
+
+            @classmethod
+            def wrapped_poll(cls, context):
+                return polls[cls](context) and poll_check_blender_tab.__func__(cls, context)
+
+            original_panel.poll = wrapped_poll
+
+        # reregister to activate new poll
+        bpy.utils.unregister_class(original_panel)
+        bpy.utils.register_class(original_panel)
+
+    @classmethod
+    def remove_scene_panel_override(cls, panel: bpy.types.Panel) -> None:
+        polls = blenderbim.bim.original_scene_panels_polls
+
+        poll = polls[panel]
+        if poll is None:
+            del panel.poll
+        else:
+            panel.poll = poll
+
+        # panel might be already unregistered during blender exit
+        # or if it's addon was disabled
+        if panel.is_registered:
+            # reregister to activate new poll
+            bpy.utils.unregister_class(panel)
+            bpy.utils.register_class(panel)
+        del polls[panel]
