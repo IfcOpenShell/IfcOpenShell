@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import pytest
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.blender import Blender as subject
 
@@ -44,3 +45,17 @@ class TestCopyNodeGraph(NewFile):
 
         subject.copy_node_graph(material_to, material_from)
         assert len(material_to_nodes) == 2
+
+
+class TestSortPanelsForRegister(NewFile):
+    def test_run(self):
+        items = ["A", "B", "C", "D"]
+        items_to_parents = {"A": "D", "D": "C", "C": "B"}
+        sorted_items = subject.sort_panels_for_register(items, items_to_parents)
+        assert tuple(sorted_items) == ("B", "C", "D", "A")
+
+        with pytest.raises(AssertionError):
+            subject.sort_panels_for_register(items, {"A": "K"})
+
+        with pytest.raises(AssertionError):
+            subject.sort_panels_for_register(items, {"J": "A"})
