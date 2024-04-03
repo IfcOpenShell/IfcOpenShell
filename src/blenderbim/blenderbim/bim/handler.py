@@ -31,6 +31,7 @@ from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
+from typing import Union
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -286,26 +287,7 @@ def get_override_scene_panel(panel_name):
     return override_panel
 
 
-# TODO: possibly override scene panels from other addons too?
-# list can be updated from
-# https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
-OVERRIDE_SCENE_PANELS = (
-    "SCENE_PT_scene",
-    "SCENE_PT_unit",
-    "SCENE_PT_physics",
-    "SCENE_PT_rigid_body_world",
-    "SCENE_PT_rigid_body_world_settings",
-    "SCENE_PT_rigid_body_cache",
-    "SCENE_PT_rigid_body_field_weights",
-    "SCENE_PT_audio",
-    "SCENE_PT_keying_sets",
-    "SCENE_PT_custom_props",
-    # after SCENE_PT_keying_sets
-    "SCENE_PT_keying_set_paths",
-    "SCENE_PT_keyframing_settings",
-)
-if bpy.app.version >= (4, 0):
-    OVERRIDE_SCENE_PANELS += ("SCENE_PT_simulation",)
+OVERRIDE_SCENE_PANELS = tool.Blender.get_scene_panels_list()
 
 
 @persistent
