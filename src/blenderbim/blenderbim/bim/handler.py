@@ -343,15 +343,15 @@ def load_post(scene):
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
-        # To improve usability for new users, we hijack the scene properties
-        # tab. We override default scene properties panels with our own poll
-        # to hide them unless the user has chosen to view Blender properties.
-        for panel in OVERRIDE_SCENE_PANELS:
-            if panel in blenderbim.bim.overridden_scene_panels:
-                continue
-            override_panel = get_override_scene_panel(panel)
-            original_panel = getattr(bpy.types, panel)
-            bpy.utils.register_class(override_panel)
-            bpy.utils.unregister_class(original_panel)
-            blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
+    # To improve usability for new users, we hijack the scene properties
+    # tab. We override default scene properties panels with our own poll
+    # to hide them unless the user has chosen to view Blender properties.
+    for panel in OVERRIDE_SCENE_PANELS:
+        if panel in blenderbim.bim.overridden_scene_panels:
+            continue
+        override_panel = get_override_scene_panel(panel)
+        original_panel = getattr(bpy.types, panel)
+        bpy.utils.register_class(override_panel)
+        bpy.utils.unregister_class(original_panel)
+        blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
     tool.Blender.setup_tabs()
