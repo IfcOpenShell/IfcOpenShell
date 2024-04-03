@@ -255,32 +255,6 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-@classmethod
-def poll_check_blender_tab(cls, context):
-    return tool.Blender.is_tab(context, "BLENDER")
-
-
-def override_scene_panel(original_panel: bpy.types.Panel) -> None:
-    polls = blenderbim.bim.original_scene_panels_polls
-
-    # override poll method
-    if not hasattr(original_panel, "poll"):
-        polls[original_panel] = None
-        original_panel.poll = poll_check_blender_tab
-    else:
-        polls[original_panel] = original_panel.poll
-
-        @classmethod
-        def wrapped_poll(cls, context):
-            return polls[cls](context) and poll_check_blender_tab.__func__(cls, context)
-
-        original_panel.poll = wrapped_poll
-
-    # reregister to activate new poll
-    bpy.utils.unregister_class(original_panel)
-    bpy.utils.register_class(original_panel)
-
-
 @persistent
 def load_post(scene):
     global global_subscription_owner
@@ -322,5 +296,5 @@ def load_post(scene):
     for panel in tool.Blender.get_scene_panels_list():
         if panel in blenderbim.bim.original_scene_panels_polls:
             continue
-        override_scene_panel(panel)
+        tool.Blender.override_scene_panel(panel)
     tool.Blender.setup_tabs()
