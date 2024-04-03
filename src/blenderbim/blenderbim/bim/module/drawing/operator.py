@@ -1596,8 +1596,14 @@ class ReloadDrawingStyles(bpy.types.Operator):
 
         json_path = Path(tool.Ifc.resolve_uri(rel_path))
         if not json_path.exists():
-            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
-            return {"CANCELLED"}
+            ootb_resource = Path(context.scene.BIMProperties.data_dir) / "assets" / "shading_styles.json"
+            print(
+                f"WARNING. Couldn't find shading_styles for the drawing by the path: {json_path}. "
+                f"Default BBIM resource will be copied from {ootb_resource}"
+            )
+            if ootb_resource.exists():
+                os.makedirs(json_path.parent, exist_ok=True)
+                shutil.copy(ootb_resource, json_path)
 
         with open(json_path, "r") as fi:
             shading_styles_json = json.load(fi)
