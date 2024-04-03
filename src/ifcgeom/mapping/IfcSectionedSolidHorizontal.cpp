@@ -177,6 +177,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 
 				if (should_interpolate2) {
 					if (profile_a->children.size() != profile_b->children.size()) {
+						Logger::Warning("Mismatching number of face boundaries: " +
+							std::to_string(profile_a->children.size()) + " vs " +
+							std::to_string(profile_b->children.size()),
+							inst
+						);
 						return nullptr;
 					}
 					interpolated = taxonomy::make<taxonomy::face>();
@@ -186,6 +191,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 					for (auto tmp_ : boost::combine(profile_a->children, profile_b->children)) {
 						boost::tie(w1, w2) = tmp_;
 						if (w1->children.size() != w2->children.size()) {
+							Logger::Warning("Mismatching number of edges for face boundary: " +
+								std::to_string(w1->children.size()) + " vs " +
+								std::to_string(w2->children.size()),
+								inst
+							);
 							return nullptr;
 						}
 						std::vector<taxonomy::point3::ptr> points;
