@@ -1294,6 +1294,8 @@ class LoadLinkedProject(bpy.types.Operator):
                     if len(shape.geometry.faces) > 1000 and self.is_local(shape):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
+                            if not chunked_verts:
+                                break
                             mats = np.concatenate(chunked_materials)
                             midx = np.concatenate(chunked_material_ids)
                             mats, mapping = np.unique(mats, axis=0, return_inverse=True)
