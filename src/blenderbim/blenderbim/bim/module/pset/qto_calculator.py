@@ -246,43 +246,56 @@ class QtoCalculator:
             return self.get_net_side_area(obj)
 
     def get_finish_ceiling_height(self, obj: bpy.types.Object) -> float:
-        space_height = self.get_height(obj)
         floor_height = self.get_finish_floor_height(obj)
         ceiling_height = self.get_ceiling_height(obj)
-        finish_ceiling_height = space_height - floor_height - ceiling_height
+        finish_ceiling_height = ceiling_height - floor_height
         return finish_ceiling_height
+
+    def get_max_global_z(self, obj: bpy.types.Object) -> float:
+        z_values = [(obj.matrix_world @ Vector(co))[2] for co in obj.bound_box]
+        return max(z_values)
+
+    def get_min_global_z(self, obj: bpy.types.Object) -> float:
+        z_values = [(obj.matrix_world @ Vector(co))[2] for co in obj.bound_box]
+        return min(z_values)
 
     def get_finish_floor_height(self, obj: bpy.types.Object) -> float:
+        space_min_z_value = self.get_min_global_z(obj)
+        space_max_z_value = self.get_max_global_z(obj)
+
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
-        finish_floor_height = 0
+        flooring_max_z_value = space_min_z_value
         for decomposition in decompositions:
             if (
-                decomposition.get_info()["PredefinedType"] == "FLOORING"
-                and decomposition.get_info()["type"] == "IfcCovering"
+                decomposition.is_a() == "IfcCovering"
+                and ifcopenshell.util.element.get_predefined_type(decomposition) == "FLOORING"
             ):
-                floor_obj = tool.Ifc.get_object(decomposition)
-                new_finish_floor_height = self.get_height(floor_obj)
-                if new_finish_floor_height > finish_floor_height:
-                    finish_floor_height = new_finish_floor_height
+                flooring_obj = tool.Ifc.get_object(decomposition)
+                flooring_z_value = self.get_max_global_z(flooring_obj)
+                if flooring_z_value > space_min_z_value:
+                    flooring_max_z_value = flooring_z_value
 
-        return finish_floor_height
+        return flooring_max_z_value - space_min_z_value
 
     def get_ceiling_height(self, obj: bpy.types.Object) -> float:
+        space_min_z_value = self.get_min_global_z(obj)
+        space_max_z_value = self.get_max_global_z(obj)
+
         element = tool.Ifc.get_entity(obj)
         decompositions = ifcopenshell.util.element.get_decomposition(element)
-        finish_ceiling_height = 0
+        ceiling_min_z_value = space_max_z_value
         for decomposition in decompositions:
             if (
-                decomposition.get_info()["PredefinedType"] == "CEILING"
-                and decomposition.get_info()["type"] == "IfcCovering"
+                decomposition.is_a() == "IfcCovering"
+                and ifcopenshell.util.element.get_predefined_type(decomposition) == "CEILING"
             ):
                 ceiling_obj = tool.Ifc.get_object(decomposition)
-                new_finish_ceiling_height = self.get_height(ceiling_obj)
-                if new_finish_ceiling_height > finish_ceiling_height:
-                    finish_ceiling_height = new_finish_ceiling_height
+                ceiling_z_value = self.get_min_global_z(ceiling_obj)
+                if ceiling_z_value < space_max_z_value:
+                    ceiling_min_z_value = ceiling_z_value
 
-        return finish_ceiling_height
+        return ceiling_min_z_value - space_min_z_value
 
     def get_net_perimeter(self, o: bpy.types.Object) -> float:
         parsed_edges = []
@@ -377,9 +390,9 @@ class QtoCalculator:
         total_gross_ceiling_area = 0
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()["type"]
-            decomposition_predefined_type = decomposition.get_info()["PredefinedType"]
-            if decomposition_type == "IfcCovering" and decomposition_predefined_type == "CEILING":
+            decomposition_class = decomposition.is_a()
+            decomposition_predefined_type = ifcopenshell.util.element.get_predefined_type(decomposition)
+            if decomposition_class == "IfcCovering" and decomposition_predefined_type == "CEILING":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_gross_ceiling_area += self.get_gross_footprint_area(decomposition_obj)
 
@@ -393,13 +406,13 @@ class QtoCalculator:
         total_net_ceiling_area = 0
 
         for decomposition in decompositions:
-            decomposition_type = decomposition.get_info()["type"]
-            decomposition_predefined_type = decomposition.get_info()["PredefinedType"]
-            if decomposition_type == "IfcCovering" and decomposition_predefined_type == "CEILING":
+            decomposition_class = decomposition.is_a()
+            decomposition_predefined_type = ifcopenshell.util.element.get_predefined_type(decomposition)
+            if decomposition_class == "IfcCovering" and decomposition_predefined_type == "CEILING":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_net_ceiling_area += self.get_net_footprint_area(decomposition_obj)
 
-            if decomposition_type == "IfcWall" or decomposition_type == "IfcColumn":
+            if decomposition_class == "IfcWall" or decomposition_class == "IfcColumn":
                 decomposition_obj = tool.Ifc.get_object(decomposition)
                 total_net_ceiling_area -= self.get_net_roofprint_area(decomposition_obj)
 

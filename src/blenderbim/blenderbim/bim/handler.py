@@ -31,6 +31,7 @@ from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
+from typing import Union
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -254,60 +255,6 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-@classmethod
-def poll_check_blender_tab(cls, context):
-    return tool.Blender.is_tab(context, "BLENDER")
-
-
-def get_override_scene_panel(panel_name):
-    original_panel = getattr(bpy.types, panel_name)
-
-    override_panel = type(f"Override_{panel_name}", (original_panel,), {})
-    override_panel.bl_idname = f"{panel_name}_override"
-
-    # some blender panel depend on other and register_class will throw an error
-    # if we won't override their `bl_parent_id`
-    bl_parent_id = getattr(override_panel, "bl_parent_id", None)
-    if bl_parent_id is not None:
-        override_panel.bl_parent_id = f"{bl_parent_id}_override"
-
-    # override poll method
-    poll = getattr(override_panel, "poll", None)
-    if poll is None:
-        override_panel.poll = poll_check_blender_tab
-    else:
-
-        @classmethod
-        def wrapped_poll(cls, context):
-            return super(override_panel, cls).poll(context) and poll_check_blender_tab.__func__(cls, context)
-
-        override_panel.poll = wrapped_poll
-
-    return override_panel
-
-
-# TODO: possibly override scene panels from other addons too?
-# list can be updated from
-# https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
-OVERRIDE_SCENE_PANELS = (
-    "SCENE_PT_scene",
-    "SCENE_PT_unit",
-    "SCENE_PT_physics",
-    "SCENE_PT_rigid_body_world",
-    "SCENE_PT_rigid_body_world_settings",
-    "SCENE_PT_rigid_body_cache",
-    "SCENE_PT_rigid_body_field_weights",
-    "SCENE_PT_audio",
-    "SCENE_PT_keying_sets",
-    "SCENE_PT_custom_props",
-    # after SCENE_PT_keying_sets
-    "SCENE_PT_keying_set_paths",
-    "SCENE_PT_keyframing_settings",
-)
-if bpy.app.version >= (4, 0):
-    OVERRIDE_SCENE_PANELS += ("SCENE_PT_simulation",)
-
-
 @persistent
 def load_post(scene):
     global global_subscription_owner
@@ -343,15 +290,11 @@ def load_post(scene):
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
-        # To improve usability for new users, we hijack the scene properties
-        # tab. We override default scene properties panels with our own poll
-        # to hide them unless the user has chosen to view Blender properties.
-        for panel in OVERRIDE_SCENE_PANELS:
-            if panel in blenderbim.bim.overridden_scene_panels:
-                continue
-            override_panel = get_override_scene_panel(panel)
-            original_panel = getattr(bpy.types, panel)
-            bpy.utils.register_class(override_panel)
-            bpy.utils.unregister_class(original_panel)
-            blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
+    # To improve usability for new users, we hijack the scene properties
+    # tab. We override default scene properties panels with our own poll
+    # to hide them unless the user has chosen to view Blender properties.
+    for panel in tool.Blender.get_scene_panels_list():
+        if panel in blenderbim.bim.original_scene_panels_polls:
+            continue
+        tool.Blender.override_scene_panel(panel)
     tool.Blender.setup_tabs()

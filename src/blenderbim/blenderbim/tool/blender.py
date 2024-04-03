@@ -875,3 +875,105 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.unregister_tool(ws_covering.CoveringTool)
         except:
             pass
+
+    @classmethod
+    def get_scene_panels_list(cls) -> tuple[bpy.types.Panel, ...]:
+        # example default blender scene panels can be found in
+        # https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
+        scene_panels: list[str] = []
+        panels_to_parents: dict[str, str] = dict()
+        for item_name in dir(bpy.types):
+            item = getattr(bpy.types, item_name)
+            # filter only panels
+            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
+                continue
+            # ignore bbim panels
+            if item.__module__.startswith("blenderbim"):
+                continue
+            # filter scene panels
+            if getattr(item, "bl_context", None) != "scene":
+                continue
+            scene_panels.append(item_name)
+            parent_panel = getattr(item, "bl_parent_id", None)
+            if parent_panel is not None:
+                panels_to_parents[item_name] = parent_panel
+
+        scene_panels = cls.sort_panels_for_register(scene_panels, panels_to_parents)
+        final_panels = [getattr(bpy.types, p) for p in scene_panels]
+        return tuple(final_panels)
+
+    @classmethod
+    def sort_panels_for_register(cls, items: list[str], items_to_parents: dict[str, str]) -> list[str]:
+        """sort panels ensuring parents panels will be registered first
+        as otherwise we'll get errors unregistering them all and registering child panel"""
+        final_items = []
+        unsorted = items.copy()
+
+        # first, add items without parents
+        for item in unsorted[:]:
+            if item not in items_to_parents:
+                final_items.append(item)
+                unsorted.remove(item)
+
+        # store children for each parent
+        children: dict[str, list[str]] = dict()
+        for item in items_to_parents:
+            children.setdefault(items_to_parents[item], []).append(item)
+
+        # add children recursively, ensuring parents are added first
+        keep_looking = True
+        while keep_looking:
+            keep_looking = False
+            for item in list(children.keys()):
+                # check if parent panel was already added
+                if item not in final_items:
+                    continue
+                final_items.extend(children[item])
+                del children[item]
+                keep_looking = True
+
+        assert set(items) == set(final_items), "Sorted list doesn't match original"
+        return final_items
+
+    @classmethod
+    def override_scene_panel(cls, original_panel: bpy.types.Panel) -> None:
+        @classmethod
+        def poll_check_blender_tab(cls, context):
+            return tool.Blender.is_tab(context, "BLENDER")
+
+        polls = blenderbim.bim.original_scene_panels_polls
+
+        # override poll method
+        if not hasattr(original_panel, "poll"):
+            polls[original_panel] = None
+            original_panel.poll = poll_check_blender_tab
+        else:
+            polls[original_panel] = original_panel.poll
+
+            @classmethod
+            def wrapped_poll(cls, context):
+                return polls[cls](context) and poll_check_blender_tab.__func__(cls, context)
+
+            original_panel.poll = wrapped_poll
+
+        # reregister to activate new poll
+        bpy.utils.unregister_class(original_panel)
+        bpy.utils.register_class(original_panel)
+
+    @classmethod
+    def remove_scene_panel_override(cls, panel: bpy.types.Panel) -> None:
+        polls = blenderbim.bim.original_scene_panels_polls
+
+        poll = polls[panel]
+        if poll is None:
+            del panel.poll
+        else:
+            panel.poll = poll
+
+        # panel might be already unregistered during blender exit
+        # or if it's addon was disabled
+        if panel.is_registered:
+            # reregister to activate new poll
+            bpy.utils.unregister_class(panel)
+            bpy.utils.register_class(panel)
+        del polls[panel]
