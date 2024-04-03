@@ -877,7 +877,7 @@ class Blender(blenderbim.core.tool.Blender):
             pass
 
     @classmethod
-    def get_scene_panels_list(cls) -> tuple[str, ...]:
+    def get_scene_panels_list(cls) -> tuple[bpy.types.Panel, ...]:
         # example default blender scene panels can be found in
         # https://projects.blender.org/blender/blender/src/branch/main/scripts/startup/bl_ui/properties_scene.py#L421
         scene_panels: list[str] = []
@@ -886,6 +886,9 @@ class Blender(blenderbim.core.tool.Blender):
             item = getattr(bpy.types, item_name)
             # filter only panels
             if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
+                continue
+            # ignore bbim panels
+            if item.__module__.startswith("blenderbim"):
                 continue
             # filter scene panels
             if getattr(item, "bl_context", None) != "scene":
@@ -896,7 +899,8 @@ class Blender(blenderbim.core.tool.Blender):
                 panels_to_parents[item_name] = parent_panel
 
         scene_panels = cls.sort_panels_for_register(scene_panels, panels_to_parents)
-        return tuple(scene_panels)
+        final_panels = [getattr(bpy.types, p) for p in scene_panels]
+        return tuple(final_panels)
 
     @classmethod
     def sort_panels_for_register(cls, items: list[str], items_to_parents: dict[str, str]) -> list[str]:

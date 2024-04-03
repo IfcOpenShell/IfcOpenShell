@@ -260,34 +260,25 @@ def poll_check_blender_tab(cls, context):
     return tool.Blender.is_tab(context, "BLENDER")
 
 
-def get_override_scene_panel(panel_name):
-    original_panel = getattr(bpy.types, panel_name)
-
-    override_panel = type(f"Override_{panel_name}", (original_panel,), {})
-    override_panel.bl_idname = f"{panel_name}_override"
-
-    # some blender panel depend on other and register_class will throw an error
-    # if we won't override their `bl_parent_id`
-    bl_parent_id = getattr(override_panel, "bl_parent_id", None)
-    if bl_parent_id is not None:
-        override_panel.bl_parent_id = f"{bl_parent_id}_override"
+def override_scene_panel(original_panel: bpy.types.Panel) -> None:
+    polls = blenderbim.bim.original_scene_panels_polls
 
     # override poll method
-    poll = getattr(override_panel, "poll", None)
-    if poll is None:
-        override_panel.poll = poll_check_blender_tab
+    if not hasattr(original_panel, "poll"):
+        polls[original_panel] = None
+        original_panel.poll = poll_check_blender_tab
     else:
+        polls[original_panel] = original_panel.poll
 
         @classmethod
         def wrapped_poll(cls, context):
-            return super(override_panel, cls).poll(context) and poll_check_blender_tab.__func__(cls, context)
+            return polls[cls](context) and poll_check_blender_tab.__func__(cls, context)
 
-        override_panel.poll = wrapped_poll
+        original_panel.poll = wrapped_poll
 
-    return override_panel
-
-
-OVERRIDE_SCENE_PANELS = tool.Blender.get_scene_panels_list()
+    # reregister to activate new poll
+    bpy.utils.unregister_class(original_panel)
+    bpy.utils.register_class(original_panel)
 
 
 @persistent
@@ -328,12 +319,8 @@ def load_post(scene):
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
-    for panel in OVERRIDE_SCENE_PANELS:
-        if panel in blenderbim.bim.overridden_scene_panels:
+    for panel in tool.Blender.get_scene_panels_list():
+        if panel in blenderbim.bim.original_scene_panels_polls:
             continue
-        override_panel = get_override_scene_panel(panel)
-        original_panel = getattr(bpy.types, panel)
-        bpy.utils.register_class(override_panel)
-        bpy.utils.unregister_class(original_panel)
-        blenderbim.bim.overridden_scene_panels[panel] = (original_panel, override_panel)
+        override_scene_panel(panel)
     tool.Blender.setup_tabs()
