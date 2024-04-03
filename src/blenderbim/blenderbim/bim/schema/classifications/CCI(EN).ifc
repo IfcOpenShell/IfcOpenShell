@@ -8,7 +8,6 @@ DATA;
 #1=IFCPROJECTLIBRARY($,$,'CCI',$,$,$,$,$,$);
 #2=IFCCLASSIFICATION('CCIC','2022-11-09','2022-11-09','CCI','The CCI classification tables','https://cci-collaboration.org/the-standard',$);
 #3=IFCRELASSOCIATESCLASSIFICATION('30b4e$ts223eGUqY6ZfKw5',$,$,$,(#1),#2);
-
 #100=IFCCLASSIFICATIONREFERENCE($,'CC - Construction complex',' ',#2,' ',$);
 #101=IFCCLASSIFICATIONREFERENCE($,'[CC]A','Residential complex',#100,'construction complex for dwelling',$);
 #102=IFCCLASSIFICATIONREFERENCE($,'[CC]B','Health and care complex',#100,'construction complex for promotion of wellness and/or treatment of illness',$);
@@ -26,7 +25,6 @@ DATA;
 #114=IFCCLASSIFICATIONREFERENCE($,'[CC]T','Land use complex',#100,'construction complex for land-based production or management',$);
 #115=IFCCLASSIFICATIONREFERENCE($,'[CC]U','Water use complex',#100,'construction complex for water-based production or management',$);
 #116=IFCCLASSIFICATIONREFERENCE($,'[CC]X','Ruins complex',#100,'construction complex being remains',$);
-
 #200=IFCCLASSIFICATIONREFERENCE($,'CE - Construction entity',' ',#2,' ',$);
 #201=IFCCLASSIFICATIONREFERENCE($,'[CE]A?','Residential building',#200,'construction entity for human living',$);
 #202=IFCCLASSIFICATIONREFERENCE($,'[CE]AA','Single-dwelling house',#201,'residential building for one household',$);
@@ -213,7 +211,6 @@ DATA;
 #383=IFCCLASSIFICATIONREFERENCE($,'[CE]YC','Statue',#380,'ornamental entity in freestanding sculptural form',$);
 #384=IFCCLASSIFICATIONREFERENCE($,'[CE]Z?','Unknown construction entity',#200,'construction entity with unknown use',$);
 #385=IFCCLASSIFICATIONREFERENCE($,'[CE]ZZ','Unknown construction entity',#384,'unknown construction entity',$);
-
 #400=IFCCLASSIFICATIONREFERENCE($,'CS - Built space',' ',#2,' ',$);
 #401=IFCCLASSIFICATIONREFERENCE($,'[CS]A??','Space for human dwelling',#400,'space designed for human dwelling and related activities',$);
 #402=IFCCLASSIFICATIONREFERENCE($,'[CS]AA?','Occupiable space',#401,'space for human dwelling for rest, relaxation, recreation or waiting',$);
@@ -384,7 +381,6 @@ DATA;
 #615=IFCCLASSIFICATIONREFERENCE($,'[CF]Q','Lighting system',#600,'installation system for light management',$);
 #616=IFCCLASSIFICATIONREFERENCE($,'[CF]R','Railroad system',#600,'installation system guiding and directing track-bound vehicles',$);
 #617=IFCCLASSIFICATIONREFERENCE($,'[CF]S','Arrangement system',#600,'fit-out system which equips a construction entity and its spaces with fittings and equipment',$);
-
 #700=IFCCLASSIFICATIONREFERENCE($,'CT - Technical system',' ',#2,' ',$);
 #701=IFCCLASSIFICATIONREFERENCE($,'[CT]A?','Assembly system',#700,'technical system which constitutes a layered construction',$);
 #702=IFCCLASSIFICATIONREFERENCE($,'[CT]AA','Pavement construction',#701,'assembly system forming areas for transport',$);
@@ -488,7 +484,6 @@ DATA;
 #800=IFCCLASSIFICATIONREFERENCE($,'[CT]RA','Planting system',#799,'furnishing system in the form of vegetation',$);
 #801=IFCCLASSIFICATIONREFERENCE($,'[CT]RB','Furniture system',#799,'furnishing system in the form of fixed or moveable construction elements',$);
 #802=IFCCLASSIFICATIONREFERENCE($,'[CT]RC','Equipment system',#799,'furnishing system in the form of tools used in a particular situation',$);
-
 #900=IFCCLASSIFICATIONREFERENCE($,'CO - Construction component',' ',#2,' ',$);
 #901=IFCCLASSIFICATIONREFERENCE($,'[CO]B??','Sensing object',#900,'object for picking up information and providing a representation',$);
 #902=IFCCLASSIFICATIONREFERENCE($,'[CO]BA?','Electric potential sensing object',#901,'sensing object for electric potential',$);
@@ -1289,3 +1284,5 @@ DATA;
 #1697=IFCCLASSIFICATIONREFERENCE($,'[CO]XTB','Box-out',#1695,'space linking object in the form of cavity',$);
 #1698=IFCCLASSIFICATIONREFERENCE($,'[CO]XZ?','Multiple flow connector object',#1643,'interfacing object with multiple kinds of flows',$);
 #1699=IFCCLASSIFICATIONREFERENCE($,'[CO]XZA','Multi connector',#1698,'multiple flow connector object of electric energy, electrical signal, optical signals and/or fluid',$);
+ENDSEC;
+END-ISO-10303-21;
