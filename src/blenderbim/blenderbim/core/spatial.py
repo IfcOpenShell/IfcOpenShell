@@ -149,6 +149,7 @@ def select_decomposed_elements(spatial):
     if container:
         spatial.select_products(spatial.get_decomposed_elements(container))
 
+
 #HERE STARTS SPATIAL TOOL
 def generate_space(ifc, spatial, model, Type):
     active_obj = spatial.get_active_obj()
@@ -163,7 +164,7 @@ def generate_space(ifc, spatial, model, Type):
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj) ##mat
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)  ##mat
         element = ifc.get_entity(active_obj)
 
     else:
@@ -174,9 +175,9 @@ def generate_space(ifc, spatial, model, Type):
     if not space_polygon:
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h) ##mat
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h)  ##mat
 
-    mesh = spatial.get_named_mesh_from_bmesh(name = "Space", bmesh = bm)
+    mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
 
     if element and element.is_a("IfcSpace"):
         mesh = spatial.get_transformed_mesh_from_local_to_global(mesh)
@@ -197,6 +198,7 @@ def generate_space(ifc, spatial, model, Type):
         if relating_type:
             spatial.assign_relating_type_to_element(ifc, Type, element, relating_type)
 
+
 def generate_spaces_from_walls(ifc, spatial, collector):
     z = spatial.get_active_obj_z()
     h = spatial.get_active_obj_height()
@@ -210,7 +212,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
 
         name = "Space" + str(i)
 
-        obj = spatial.get_named_obj_from_bmesh(name, bmesh = bm)
+        obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
 
         spatial.set_obj_origin_to_bboxcenter(obj)
         spatial.traslate_obj_to_z_location(obj, z)
@@ -226,6 +228,7 @@ def toggle_space_visibility(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_spaces_visibility_wired_and_textured(spaces)
+
 
 def toggle_hide_spaces(ifc, spatial):
     model = ifc.get()
