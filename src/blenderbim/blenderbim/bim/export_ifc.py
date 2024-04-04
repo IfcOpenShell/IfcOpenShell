@@ -102,6 +102,8 @@ class IfcExporter:
                 if result:
                     results.append(result)
                 result = self.sync_object_material(obj)
+                # TODO: sync_object_material always returns None
+                # so it's never really appended
                 if result:
                     results.append(result)
             except ReferenceError:
@@ -142,7 +144,6 @@ class IfcExporter:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
-        blender_matrix = np.array(obj.matrix_world)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
