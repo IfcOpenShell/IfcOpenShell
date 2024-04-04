@@ -751,6 +751,8 @@ class ShapeBuilder:
                 representation_type = "AdvancedSweptSolid"
             elif "IfcExtrudedAreaSolid" in item_types:
                 representation_type = "SweptSolid"
+            elif "IfcCsgSolid" in item_types:
+                representation_type = "CSG"
             elif items[0].is_a("IfcTessellatedItem"):
                 representation_type = "Tessellation"
             elif items[0].is_a("IfcCurve") and items[0].Dim == 3:
