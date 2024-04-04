@@ -199,6 +199,11 @@ class CreateDrawing(bpy.types.Operator):
         + "SHIFT+CLICK to print all selected drawings"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
+    sync: bpy.props.BoolProperty(
+        name="Sync Before Creating Drawing",
+        description="Could save some time if you're sure IFC and current Blender session are already in sync",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -220,7 +225,8 @@ class CreateDrawing(bpy.types.Operator):
         else:
             drawings_to_print = [self.props.active_drawing_id]
 
-        for drawing_id in drawings_to_print:
+        for drawing_i, drawing_id in enumerate(drawings_to_print):
+            self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, camera_view_point=False)
 
@@ -485,13 +491,17 @@ class CreateDrawing(bpy.types.Operator):
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        with profile("sync"):
-            # All very hackish whilst prototyping
-            exporter = blenderbim.bim.export_ifc.IfcExporter(None)
-            exporter.file = tool.Ifc.get()
-            invalidated_elements = exporter.sync_all_objects()
-            invalidated_elements += exporter.sync_edited_objects()
-            invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
+        # in case of printing multiple drawings we need to sync just once
+        if self.sync and self.drawing_index == 0:
+            with profile("sync"):
+                # All very hackish whilst prototyping
+                exporter = blenderbim.bim.export_ifc.IfcExporter(None)
+                exporter.file = tool.Ifc.get()
+                invalidated_elements = exporter.sync_all_objects()
+                invalidated_elements += exporter.sync_edited_objects()
+                invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
+                cache = IfcStore.get_cache()
+                [cache.remove(guid) for guid in invalidated_guids]
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -525,8 +535,6 @@ class CreateDrawing(bpy.types.Operator):
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc, target_view)
-            cache = IfcStore.get_cache()
-            [cache.remove(guid) for guid in invalidated_guids]
             tree = ifcopenshell.geom.tree()
             tree.enable_face_styles(True)
 
