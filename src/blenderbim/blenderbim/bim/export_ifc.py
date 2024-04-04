@@ -35,6 +35,7 @@ import blenderbim.core.spatial
 import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector
+from typing import Union
 
 
 class IfcExporter:
@@ -86,8 +87,8 @@ class IfcExporter:
             self.get_application_name(), tool.Blender.get_blenderbim_version()
         )
 
-    def sync_all_objects(self):
-        results = []
+    def sync_all_objects(self) -> list[ifcopenshell.entity_instance]:
+        results: list[ifcopenshell.entity_instance] = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for ifc_definition_id in list(IfcStore.id_map.keys()):
             obj = IfcStore.id_map[ifc_definition_id]
@@ -107,8 +108,8 @@ class IfcExporter:
                 pass  # The object is likely deleted
         return results
 
-    def sync_edited_objects(self):
-        results = []
+    def sync_edited_objects(self) -> list[ifcopenshell.entity_instance]:
+        results: list[ifcopenshell.entity_instance] = []
         for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
@@ -126,7 +127,7 @@ class IfcExporter:
         IfcStore.edited_objs.clear()
         return results
 
-    def sync_object_material(self, obj):
+    def sync_object_material(self, obj: bpy.types.Object) -> None:
         if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
             return
         if not self.has_changed_materials(obj):
@@ -137,7 +138,7 @@ class IfcExporter:
         checksum = obj.data.BIMMeshProperties.material_checksum
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
-    def sync_object_placement(self, obj):
+    def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
@@ -152,7 +153,7 @@ class IfcExporter:
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
-    def sync_grid_axis_object_placement(self, obj, element):
+    def sync_grid_axis_object_placement(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
         grid_obj = tool.Ifc.get_object(grid)
         if grid_obj:
