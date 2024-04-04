@@ -512,6 +512,7 @@ class CreateDrawing(bpy.types.Operator):
 
         for ifc_path, ifc in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
+            # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
             ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
 
