@@ -24,6 +24,7 @@ classes = (
     operator.CopyDebugInformation,
     operator.CreateAllShapes,
     operator.CreateShapeFromStepId,
+    operator.DebugActiveDrawing,
     operator.InspectFromObject,
     operator.InspectFromStepId,
     operator.OverrideDisplayType,
