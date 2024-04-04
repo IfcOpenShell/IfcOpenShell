@@ -16,18 +16,42 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
+import blenderbim.core.tool as tool
 
-def reference_structure(ifc, spatial, structure=None, element=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+
+
+def reference_structure(
+    ifc: tool.Ifc,
+    spatial: tool.Spatial,
+    structure: Optional[ifcopenshell.entity_instance] = None,
+    element: Optional[ifcopenshell.entity_instance] = None,
+) -> Union[ifcopenshell.entity_instance, None]:
     if spatial.can_reference(structure, element):
         return ifc.run("spatial.reference_structure", product=element, relating_structure=structure)
 
 
-def dereference_structure(ifc, spatial, structure=None, element=None):
+def dereference_structure(
+    ifc: tool.Ifc,
+    spatial: tool.Spatial,
+    structure: Optional[ifcopenshell.entity_instance] = None,
+    element: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     if spatial.can_reference(structure, element):
         return ifc.run("spatial.dereference_structure", product=element, relating_structure=structure)
 
 
-def assign_container(ifc, collector, spatial, structure_obj=None, element_obj=None):
+def assign_container(
+    ifc: tool.Ifc,
+    collector: tool.Collector,
+    spatial: tool.Spatial,
+    structure_obj: Optional[bpy.types.Object] = None,
+    element_obj: Optional[bpy.types.Object] = None,
+) -> Union[ifcopenshell.entity_instance, None]:
     if not spatial.can_contain(structure_obj, element_obj):
         return
     rel = ifc.run(

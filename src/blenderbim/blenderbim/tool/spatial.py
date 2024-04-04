@@ -34,7 +34,7 @@ from shapely import Polygon, MultiPolygon
 
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
-    def can_contain(cls, structure_obj, element_obj):
+    def can_contain(cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object) -> bool:
         structure = tool.Ifc.get_entity(structure_obj)
         element = tool.Ifc.get_entity(element_obj)
         if not structure or not element:
@@ -52,7 +52,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return True
 
     @classmethod
-    def can_reference(cls, structure, element):
+    def can_reference(cls, structure: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
         if not structure or not element:
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
