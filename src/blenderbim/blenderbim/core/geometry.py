@@ -16,10 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import blenderbim.core.style
+from typing import TYPE_CHECKING, Optional
+import blenderbim.core.tool as tool
+
+if TYPE_CHECKING:
+    import bpy
 
 
-def edit_object_placement(ifc, geometry, surveyor, obj=None):
+def edit_object_placement(
+    ifc: tool.Ifc, geometry: tool.Geometry, surveyor: tool.Surveyor, obj: Optional[bpy.types.Object] = None
+) -> None:
     element = ifc.get_entity(obj)
     if not element:
         return
