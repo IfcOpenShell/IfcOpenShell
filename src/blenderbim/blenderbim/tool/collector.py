@@ -57,20 +57,22 @@ class Collector(blenderbim.core.tool.Collector):
         for collection in obj.users_collection:
             if parent_collection:
                 break
+            # skip Types and non-BIM collections
             if not collection.BIMCollectionProperties.obj:
                 continue
+            # for objects that own collections we search for the first parent collection
             if collection.BIMCollectionProperties.obj == obj:
+                collection_name = collection.name
                 for bpy_collection in bpy.data.collections:
-                    if bpy_collection.children.find(collection.name) != -1:
+                    if bpy_collection.children.get(collection_name) and bpy_collection.BIMCollectionProperties.obj:
                         parent_collection = bpy_collection
+                        parent_obj = bpy_collection.BIMCollectionProperties.obj
+                        break
             else:
                 parent_collection = collection
+                parent_obj = collection.BIMCollectionProperties.obj
 
         if not parent_collection:
-            return
-
-        parent_obj = parent_collection.BIMCollectionProperties.obj
-        if not parent_obj:
             return
 
         parent = tool.Ifc.get_entity(parent_obj)
@@ -147,10 +149,8 @@ class Collector(blenderbim.core.tool.Collector):
             grid_obj = tool.Ifc.get_object(grid)
             if grid_obj:
                 grid_col = cls._get_own_collection(grid, grid_obj)
-                axes_col = [c for c in grid_col.children if axes in c.name]
-                if axes_col:
-                    return axes_col[0]
-                return bpy.data.collections.new(axes)
+                axes_col = next((c for c in grid_col.children if axes in c.name), None)
+                return axes_col or bpy.data.collections.new(axes)
 
         if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return cls._create_own_collection(obj)
@@ -165,7 +165,7 @@ class Collector(blenderbim.core.tool.Collector):
             return cls._create_own_collection(obj)
 
         if getattr(element, "IsNestedBy", None):
-            if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
+            if any(e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")):
                 return cls._create_own_collection(obj)
 
     @classmethod
@@ -232,9 +232,7 @@ class Collector(blenderbim.core.tool.Collector):
 
         project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         if project_obj:
-            collection = bpy.data.collections.get(project_obj.name)
-            if collection:
-                return collection
+            return project_obj.BIMObjectProperties.collection
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:
