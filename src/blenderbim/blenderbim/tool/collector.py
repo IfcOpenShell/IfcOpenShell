@@ -20,6 +20,8 @@ import bpy
 import ifcopenshell.util.element
 
 import blenderbim.core.tool
+import blenderbim.core.spatial
+import blenderbim.core.aggregate
 import blenderbim.tool as tool
 from typing import Union
 

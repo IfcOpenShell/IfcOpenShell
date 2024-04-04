@@ -44,7 +44,7 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from typing import NamedTuple, List, Union
+from typing import NamedTuple, List, Union, Optional
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
@@ -445,8 +445,14 @@ class CreateDrawing(bpy.types.Operator):
         return LineworkContexts(body_contexts, annotation_contexts)
 
     def serialize_contexts_elements(
-        self, ifc, tree: ifcopenshell.geom.tree, contexts: LineworkContexts, context_type, drawing_elements, target_view
-    ):
+        self,
+        ifc: ifcopenshell.file,
+        tree: ifcopenshell.geom.tree,
+        contexts: LineworkContexts,
+        context_type: str,
+        drawing_elements: set[ifcopenshell.entity_instance],
+        target_view: str,
+    ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts = getattr(contexts, context_type)
         for context in contexts:
@@ -472,7 +478,7 @@ class CreateDrawing(bpy.types.Operator):
                     tree.add_element(elem)
                 drawing_elements -= processed
 
-    def generate_linework(self, context):
+    def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
@@ -1115,14 +1121,14 @@ class CreateDrawing(bpy.types.Operator):
                     continue
                 return space
 
-    def get_material_name(self, element):
+    def get_material_name(self, element: ifcopenshell.entity_instance) -> str:
         if hasattr(element, "Name") and element.Name:
             return element.Name
         elif hasattr(element, "LayerSetName") and element.LayerSetName:
             return element.LayerSetName
         return "mat-" + str(element.id())
 
-    def get_svg_path(self, cache_type=None):
+    def get_svg_path(self, cache_type: Optional[str] = None) -> str:
         drawing_path = tool.Drawing.get_document_uri(self.camera_document)
         drawings_dir = os.path.dirname(drawing_path)
 
