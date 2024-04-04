@@ -29,6 +29,11 @@ from typing import Union
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
     def sync(cls, obj: bpy.types.Object) -> None:
+        """Sync object IFC state (assigned containter / aggregate) with the collection it's currently in.
+
+        Then subsequently run `Collector.assign` (if state has changed)
+        to link them to collections / unlink from anything unrelated collections.
+        """
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
 
@@ -43,14 +48,9 @@ class Collector(blenderbim.core.tool.Collector):
         if not obj.users_collection:
             return
 
-        object_collection = None
-        collection_collection = None
-
-        object_collection = cls._get_own_collection(element, obj)
-        if object_collection:
-            collection_collection = cls._get_collection(element, obj)
-        else:
-            object_collection = cls._get_collection(element, obj)
+        # create related collections
+        cls._get_own_collection(element, obj)
+        cls._get_collection(element, obj)
 
         parent_collection = None
 
@@ -90,6 +90,8 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def assign(cls, obj: bpy.types.Object) -> None:
+        """link object and it's owned collection to the proper collection
+        and unlink them from any other"""
         element = tool.Ifc.get_entity(obj)
 
         object_collection = None
@@ -101,12 +103,17 @@ class Collector(blenderbim.core.tool.Collector):
         else:
             object_collection = cls._get_collection(element, obj)
 
+        # NOTE: calling `obj.users_collection` is expensive in large projects
+        # since it's iterating over all collections under the hood
+
+        # ensure object is linked only to object_collection
         if obj.users_collection != (object_collection,):
             for collection in obj.users_collection:
                 collection.objects.unlink(obj)
             if object_collection is not None:
                 object_collection.objects.link(obj)
 
+        # ensure object_collection is linked only to collection_collection
         if collection_collection and collection_collection.children.find(object_collection.name) == -1:
             if bpy.context.scene.collection.children.find(object_collection.name) != -1:
                 bpy.context.scene.collection.children.unlink(object_collection)
@@ -123,6 +130,7 @@ class Collector(blenderbim.core.tool.Collector):
     def _get_own_collection(
         cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object
     ) -> Union[bpy.types.Collection, None]:
+        """get or create own collection for the element if it's neccessary for it's type"""
         if element.is_a("IfcProject"):
             return cls._create_own_collection(obj)
 
@@ -170,6 +178,7 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def _get_collection(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> bpy.types.Collection:
+        """get or create collection for the element based on it's type"""
         if element.is_a("IfcTypeObject"):
             return cls._create_project_child_collection("Types")
 
@@ -236,6 +245,7 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:
+        """get or create new collection inside project"""
         collection = bpy.data.collections.get(name)
         if not collection:
             collection = bpy.data.collections.new(name)
@@ -246,6 +256,7 @@ class Collector(blenderbim.core.tool.Collector):
 
     @classmethod
     def _create_own_collection(cls, obj: bpy.types.Object) -> bpy.types.Collection:
+        """get or create own collection for the element"""
         if obj.BIMObjectProperties.collection:
             return obj.BIMObjectProperties.collection
         collection = bpy.data.collections.new(obj.name)
