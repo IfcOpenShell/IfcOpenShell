@@ -234,7 +234,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_containment_relationships_of_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(list(self.file)) == total_entities - 2
@@ -245,7 +245,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_containment_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
         assert len(list(self.file)) == total_entities - 2

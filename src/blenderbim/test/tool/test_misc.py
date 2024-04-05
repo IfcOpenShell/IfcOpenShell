@@ -40,7 +40,7 @@ class TestGetObjectStorey(test.bim.bootstrap.NewFile):
         wall = ifc.createIfcWall()
         tool.Ifc.link(wall, obj)
         storey = ifc.createIfcBuildingStorey()
-        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=storey)
+        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=storey)
         assert subject.get_object_storey(obj) == storey
 
     def test_only_returning_a_building_storey(self):
@@ -50,7 +50,7 @@ class TestGetObjectStorey(test.bim.bootstrap.NewFile):
         wall = ifc.createIfcWall()
         tool.Ifc.link(wall, obj)
         building = ifc.createIfcBuilding()
-        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=building)
         assert subject.get_object_storey(obj) is None
 
     def test_returning_nothing_if_uncontained(self):

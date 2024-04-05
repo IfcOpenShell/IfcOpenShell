@@ -698,14 +698,14 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
     def test_getting_the_spatial_container_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
         assert subject.get_container(element) == building
 
     def test_getting_an_indirect_spatial_container_of_an_element(self):
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert subject.get_container(subelement) == building
 
@@ -713,7 +713,7 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert subject.get_container(subelement, should_get_direct=True) is None
 
@@ -735,7 +735,7 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         results = subject.get_decomposition(building)
         assert element in results

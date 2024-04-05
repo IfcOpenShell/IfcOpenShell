@@ -56,7 +56,7 @@ class Usecase:
             column = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # The column is contained in the lowermost storey
-            ifcopenshell.api.run("spatial.assign_container", model, product=column, relating_structure=storey1)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[column], relating_structure=storey1)
 
             # And referenced in the others
             ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey2)
