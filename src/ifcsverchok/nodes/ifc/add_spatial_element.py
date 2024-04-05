@@ -142,7 +142,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                     ifcopenshell.api.run(
                         "spatial.assign_container",
                         self.file,
-                        product=items,
+                        products=[items],
                         relating_structure=result,
                     )
             SvIfcStore.id_map.setdefault(self.node_id, []).append(result.id())
@@ -195,7 +195,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                             ifcopenshell.api.run(
                                 "spatial.assign_container",
                                 self.file,
-                                product=added_element,
+                                products=[added_element],
                                 relating_structure=result,
                             )
             spatial_ids.append(result.id())

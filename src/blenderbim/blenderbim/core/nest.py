@@ -47,7 +47,7 @@ def unassign_object(ifc, nest, collector, relating_obj=None, related_obj=None):
     if relating_obj:
         ifc.run("nest.unassign_object", related_object=related_element)
         if container:
-            ifc.run("spatial.assign_container", product=related_element, relating_structure=container)
+            ifc.run("spatial.assign_container", products=[related_element], relating_structure=container)
         collector.assign(relating_obj)
         collector.assign(related_obj)
 

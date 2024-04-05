@@ -34,7 +34,7 @@ class TestCopyClass(test.bootstrap.IFC4):
         ifcopenshell.api.run("unit.assign_unit", self.file)
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         matrix = numpy.identity(4)
         ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy())
         ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=subelement, matrix=matrix.copy())
@@ -74,7 +74,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_a_container_only_and_not_its_contents(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert element.ContainsElements
         assert not new.ContainsElements
@@ -82,7 +82,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_contents_of_a_container_and_maintaining_the_containment_relationship(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=subelement)
         assert new.ContainedInStructure[0].RelatingStructure == element
 
