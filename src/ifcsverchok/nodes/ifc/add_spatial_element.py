@@ -180,7 +180,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                             ifcopenshell.api.run(
                                 "spatial.unassign_container",
                                 self.file,
-                                product=removed_element,
+                                products=[removed_element],
                                 relating_object=result,
                             )
                     for added_element in element_set - subelements:

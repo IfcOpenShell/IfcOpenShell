@@ -28,8 +28,9 @@ class TestAssignContainer(test.bootstrap.IFC4):
     def test_unassigning_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
-        ifcopenshell.api.run("spatial.unassign_container", self.file, product=subelement)
+        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement, subelement2], relating_structure=element)
+        ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement, subelement2])
         assert not self.file.by_type("IfcRelContainedInSpatialStructure")
 
     def test_unassigning_a_container_with_other_elements(self):
@@ -38,6 +39,6 @@ class TestAssignContainer(test.bootstrap.IFC4):
         subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement2], relating_structure=element)
-        ifcopenshell.api.run("spatial.unassign_container", self.file, product=subelement)
+        ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement])
         rel = self.file.by_type("IfcRelContainedInSpatialStructure")[0]
         assert list(rel.RelatedElements) == [subelement2]
