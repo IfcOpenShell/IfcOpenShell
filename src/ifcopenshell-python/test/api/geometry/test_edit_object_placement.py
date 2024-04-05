@@ -402,7 +402,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 "GlobalId": ifcopenshell.guid.new(),
                 "RelatingElement": element,
                 "RelatedFeatureElement": subelement,
-            }
+            },
         )
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
@@ -572,7 +572,9 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
             should_transform_children=False,
         )
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), submatrix)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix)
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix
+        )
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
         # old placement should be removed to avoid orphaned entities
         with pytest.raises(RuntimeError):
@@ -609,7 +611,9 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
             should_transform_children=False,
         )
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), submatrix)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix)
+        assert numpy.array_equal(
+            ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), shifted_submatrix
+        )
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
         # old placement should be removed to avoid orphaned entities
         with pytest.raises(RuntimeError):
