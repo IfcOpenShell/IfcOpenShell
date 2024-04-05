@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import shapely
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.core.type
 import blenderbim.core.tool
 import blenderbim.core.root

@@ -19,6 +19,8 @@
 from os.path import abspath, splitext
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty, BoolProperty

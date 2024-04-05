@@ -22,6 +22,7 @@ import uuid
 import pytest
 import functools
 import ifcopenshell
+import ifcopenshell.api
 import ifctester
 import test_facet
 import test_ids
