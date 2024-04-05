@@ -190,7 +190,10 @@ class IFC_Sv_write_file(bpy.types.Operator):
         for element in elements:
             if element not in elements_in_buildings:
                 ifcopenshell.api.run(
-                    "spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0]
+                    "spatial.assign_container",
+                    file,
+                    products=[element],
+                    relating_structure=file.by_type("IfcBuilding")[0],
                 )
 
         for building in file.by_type("IfcBuilding"):

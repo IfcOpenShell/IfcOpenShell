@@ -114,6 +114,6 @@ class TestAssignObject(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         container = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=container)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=container)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert not ifcopenshell.util.element.get_container(subelement, should_get_direct=True)

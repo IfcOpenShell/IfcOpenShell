@@ -41,7 +41,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=wall_element,
+            products=[wall_element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         subject.assign(wall_obj)
@@ -196,7 +196,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         ifcopenshell.api.run(
@@ -236,7 +236,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         bpy.context.scene.collection.objects.link(element_obj)
@@ -255,7 +255,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         bpy.context.scene.collection.objects.link(element_obj)

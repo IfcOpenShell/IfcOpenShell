@@ -154,7 +154,7 @@ class TestGetContainer(NewFile):
         ifc = ifcopenshell.file()
         site = ifc.createIfcSite()
         wall = ifc.createIfcWall()
-        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=site)
         assert subject.get_container(wall) == site
 
 
@@ -163,7 +163,7 @@ class TestGetDecomposedElements(NewFile):
         ifc = ifcopenshell.file()
         site = ifc.createIfcSite()
         wall = ifc.createIfcWall()
-        ifcopenshell.api.run("spatial.assign_container", ifc, product=wall, relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", ifc, products=[wall], relating_structure=site)
         assert subject.get_decomposed_elements(site) == [wall]
 
 

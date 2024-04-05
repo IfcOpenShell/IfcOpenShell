@@ -234,8 +234,8 @@ class TestFilterElements(test.bootstrap.IFC4):
         storey = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey", name="G")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding", name="Building")
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name="Project")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=space)
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element2, relating_structure=storey)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=space)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element2], relating_structure=storey)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=space, relating_object=storey)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=storey, relating_object=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=building, relating_object=project)
@@ -468,7 +468,7 @@ class TestSelector(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcMember")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
         assert set(subject.Selector.parse(self.file, "@ .IfcBuilding")) == {element, subelement}
 

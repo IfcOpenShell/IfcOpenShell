@@ -172,7 +172,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         ifcopenshell.api.run("unit.assign_unit", self.file)
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         matrix1 = numpy.array(
             (
                 (1.0, 0.0, 0.0, 1.0),
@@ -221,7 +221,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -301,7 +301,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         site = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=element, relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=site)
         matrix = numpy.array(
             (
                 (1.0, 0.0, 0.0, 1.0),
@@ -336,8 +336,8 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcOpeningElement")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoor")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=wall, relating_structure=site)
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[wall], relating_structure=site)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=site)
         matrix = numpy.array(
             (
                 (1.0, 0.0, 0.0, 1.0),
@@ -435,7 +435,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -478,7 +478,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -528,7 +528,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -631,7 +631,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         storey = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
         ifcopenshell.api.run("aggregate.assign_object", self.file, product=storey, relating_object=building)
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=wall, relating_structure=storey)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[wall], relating_structure=storey)
 
         matrix = np_matrix_translation((1, 1, 1))
         submatrix = np_matrix_translation((1, 2, 3))
