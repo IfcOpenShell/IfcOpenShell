@@ -432,7 +432,7 @@ endif
 	# Required by brickschema
 	# This is a bit of a dodgy one, it should be provided by setuptools which Blender doesn't ship.
 	mkdir dist/working
-	cd dist/working && wget https://blenderbim.org/builds/pkg_resources.tar.gz
+	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/raw/v0.7.0/src/blenderbim/scripts/pkg_resources.tar.gz
 	cd dist/working && tar -xzvf pkg_resources*
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working
