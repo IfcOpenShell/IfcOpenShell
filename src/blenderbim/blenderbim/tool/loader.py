@@ -63,11 +63,18 @@ class Loader(blenderbim.core.tool.Loader):
             representation_id = int(re.sub(r"\D", "", representation_id))
         representation = tool.Ifc.get().by_id(representation_id)
         context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-        return "{}/{}".format(context_id, representation_id)
+        return cls.get_name_layout(context_id, representation_id)
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
-        return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
+        return cls.get_name_layout(element.is_a(), getattr(element, "Name", "None"))
+
+    @classmethod
+    def get_name_layout(cls, type, name) -> str:
+        # TODO: use some user setting to change name layout
+        return "{}/{}".format(type, name)  # standard BBIM
+        # return "{}: {}".format(type, name)
+        # return "{}".format(name)
 
     @classmethod
     def link_mesh(cls, shape, mesh: OBJECT_DATA_TYPE) -> None:
