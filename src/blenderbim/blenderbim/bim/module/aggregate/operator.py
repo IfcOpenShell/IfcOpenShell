@@ -283,7 +283,7 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
             if r.is_a("IfcRelAssignsToGroup")
             if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
         ]
-        tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], product=aggregate)
+        tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[aggregate])
 
         return {"FINISHED"}
 
