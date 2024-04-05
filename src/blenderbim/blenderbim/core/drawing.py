@@ -251,7 +251,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
     drawing_tool.copy_representation(drawing, new_drawing)
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
-    ifc.run("group.unassign_group", group=group, product=new_drawing)
+    ifc.run("group.unassign_group", group=group, products=[new_drawing])
     new_group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
@@ -261,7 +261,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
                 continue
             new_annotation = ifc.run("root.copy_class", product=annotation)
             drawing_tool.copy_representation(annotation, new_annotation)
-            ifc.run("group.unassign_group", group=group, product=new_annotation)
+            ifc.run("group.unassign_group", group=group, products=[new_annotation])
             ifc.run("group.assign_group", group=new_group, products=[new_annotation])
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)

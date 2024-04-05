@@ -22,13 +22,13 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None, group=None):
-        """Unassigns a product from a group
+    def __init__(self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance], group: ifcopenshell.entity_instance):
+        """Unassigns products from a group
 
         If the product isn't assigned to the group, nothing will happen.
 
-        :param product: A IfcProduct element to unassign from the group
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: A list of IfcProduct elements to unassign from the group
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param group: The IfcGroup to unassign from
         :type group: ifcopenshell.entity_instance.entity_instance
         :return: None
@@ -43,21 +43,22 @@ class Usecase:
             ifcopenshell.api.run("group.assign_group", model, products=furniture, group=group)
 
             bad_furniture = furniture[0]
-            ifcopenshell.api.run("group.unassign_group", model, product=bad_furniture, group=group)
+            ifcopenshell.api.run("group.unassign_group", model, products=[bad_furniture], group=group)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "group": group,
         }
 
-    def execute(self):
+    def execute(self) -> None:
         if not self.settings["group"].IsGroupedBy:
             return
         rel = self.settings["group"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()
-        related_objects.remove(self.settings["product"])
-        if len(related_objects):
+        products = set(self.settings["products"])
+        related_objects -= products
+        if related_objects:
             rel.RelatedObjects = list(related_objects)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         else:
