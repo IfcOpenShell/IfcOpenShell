@@ -378,7 +378,7 @@ class TestDuplicateDrawing:
         drawing.copy_representation("drawing", "new_drawing").should_be_called()
         drawing.set_name("new_drawing", "unique_name").should_be_called()
         drawing.get_drawing_group("new_drawing").should_be_called().will_return("group")
-        ifc.run("group.unassign_group", group="group", product="new_drawing").should_be_called()
+        ifc.run("group.unassign_group", group="group", products=["new_drawing"]).should_be_called()
         ifc.run("group.add_group").should_be_called().will_return("new_group")
         ifc.run(
             "group.edit_group", group="new_group", attributes={"Name": "unique_name", "ObjectType": "DRAWING"}
@@ -387,7 +387,7 @@ class TestDuplicateDrawing:
         drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
         ifc.run("root.copy_class", product="annotation").should_be_called().will_return("new_annotation")
         drawing.copy_representation("annotation", "new_annotation").should_be_called()
-        ifc.run("group.unassign_group", group="group", product="new_annotation").should_be_called()
+        ifc.run("group.unassign_group", group="group", products=["new_annotation"]).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
 
         drawing.get_drawing_document("new_drawing").should_be_called().will_return("old_reference")
