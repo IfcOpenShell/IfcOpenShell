@@ -51,7 +51,7 @@ from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable
+from typing import Optional, Union, Iterable, Any
 from pathlib import Path
 
 
@@ -342,7 +342,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return identification
 
     @classmethod
-    def export_text_literal_attributes(cls, obj):
+    def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
         for literal_props in obj.BIMTextProperties.literals:
             literal_data = blenderbim.bim.helper.export_attributes(literal_props.attributes)
@@ -350,7 +350,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
-    def create_annotation_context(cls, target_view, object_type=None):
+    def create_annotation_context(
+        cls, target_view: str, object_type: Optional[str] = None
+    ) -> ifcopenshell.entity_instance:
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
             "FALL",
@@ -596,7 +598,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifc_literal
 
     @classmethod
-    def get_assigned_product(cls, element):
+    def get_assigned_product(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
@@ -1222,7 +1224,9 @@ class Drawing(blenderbim.core.tool.Drawing):
             mat.translation += annotation_offset
             return mat
 
-        def clip_to_camera_boundary(mesh: bpy.types.Mesh, bounds: tuple[float, float, float, float, float, float]) -> Union[bpy.types.Mesh, None]:
+        def clip_to_camera_boundary(
+            mesh: bpy.types.Mesh, bounds: tuple[float, float, float, float, float, float]
+        ) -> Union[bpy.types.Mesh, None]:
             mesh.verts.ensure_lookup_table()
             points = [v.co for v in mesh.verts[0:2]]
             points = helper.clip_segment(bounds, points)
@@ -1461,7 +1465,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return bool(a_tree.overlap(b_tree))
 
     @classmethod
-    def replace_text_literal_variables(cls, text, product):
+    def replace_text_literal_variables(cls, text: str, product: Optional[ifcopenshell.entity_instance] = None) -> str:
         if not product:
             return text
 

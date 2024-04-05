@@ -21,7 +21,9 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, products=None, group=None):
+    def __init__(
+        self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance], group: ifcopenshell.entity_instance
+    ):
         """Assigns products to a group
 
         If a product is already assigned to the group, it will not be assigned
@@ -48,7 +50,7 @@ class Usecase:
             "group": group,
         }
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         if not self.settings["group"].IsGroupedBy:
             return self.file.create_entity(
                 "IfcRelAssignsToGroup",
@@ -65,3 +67,4 @@ class Usecase:
             related_objects.add(obj)
         rel.RelatedObjects = list(related_objects)
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+        return rel

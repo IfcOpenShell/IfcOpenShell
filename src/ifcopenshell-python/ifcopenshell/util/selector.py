@@ -258,7 +258,7 @@ class GetElementTransformer(lark.Transformer):
         return args[1:-1].replace("\\", "")
 
 
-def format(query):
+def format(query: str) -> str:
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
