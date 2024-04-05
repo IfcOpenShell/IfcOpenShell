@@ -124,6 +124,37 @@ class Patcher:
                     elif not isinstance(value, str):
                         value = str(value)
                     properties.append([i, pset_name, prop_name, value])
+            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
+            if material:
+                name = getattr(material, "Name", getattr(material, "LayerSetName", None)) or "Unnamed"
+                properties.append([i, "IFC Material", "Name", name])
+                properties.append([i, "IFC Material", "Class", material.is_a()])
+                if material.is_a("IfcMaterial"):
+                    materials = []
+                elif material.is_a("IfcMaterialLayerSet"):
+                    for idx, item in enumerate(material.MaterialLayers):
+                        properties.append([i, "IFC Material", f"Layer {idx + 1} Name", item.Name])
+                        properties.append([i, "IFC Material", f"Layer {idx + 1} Material", item.material.Name])
+                        if getattr(item.material, "Category"):
+                            properties.append([i, "IFC Material", f"Layer {idx + 1} Category", item.material.Category])
+                elif material.is_a("IfcMaterialProfileSet"):
+                    for idx, item in enumerate(material.MaterialProfiles):
+                        properties.append([i, "IFC Material", f"Profile {idx + 1} Name", item.Name])
+                        properties.append([i, "IFC Material", f"Profile {idx + 1} Material", item.material.Name])
+                        if getattr(item.material, "Category"):
+                            properties.append([i, "IFC Material", f"Profile {idx + 1} Category", item.material.Category])
+                elif material.is_a("IfcMaterialConstituentSet"):
+                    for idx, item in enumerate(material.MaterialConstituents):
+                        properties.append([i, "IFC Material", f"Constituent {idx + 1} Name", item.Name])
+                        properties.append([i, "IFC Material", f"Constituent {idx + 1} Material", item.material.Name])
+                        if getattr(item.material, "Category"):
+                            properties.append([i, "IFC Material", f"Constituent {idx + 1} Category", item.material.Category])
+                elif material.is_a("IfcMaterialList"):
+                    for idx, material in enumerate(material.Materials):
+                        properties.append([i, "IFC Material", f"Material {idx + 1} Name", material.Name])
+                        if getattr(material, "Category"):
+                            properties.append([i, "IFC Material", f"Material {idx + 1} Category", item.material.Category])
+
             relating_type = ifcopenshell.util.element.get_type(element)
             if relating_type and relating_type != element:
                 relationships.append([i, "IfcRelDefinesByType", id_map[relating_type.id()]])
