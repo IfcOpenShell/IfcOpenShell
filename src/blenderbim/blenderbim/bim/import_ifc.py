@@ -785,7 +785,8 @@ class IfcImporter:
         for axis in axes:
             shape = self.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
-            obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
+            obj_name = tool.Loader.get_name_layout("IfcGridAxis", axis.AxisTag)
+            obj = bpy.data.objects.new(obj_name, mesh)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 obj.lock_location = (True, True, True)
                 obj.lock_rotation = (True, True, True)
@@ -1039,11 +1040,11 @@ class IfcImporter:
             if not vertex or not context or not representation:
                 continue  # TODO implement non cartesian point vertexes
 
-            mesh_name = f"{context.id()}/{representation.id()}"
+            mesh_name = tool.Loader.get_name_layout(context.id(), representation.id())
             mesh = bpy.data.meshes.new(mesh_name)
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
-            obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+            obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
@@ -1104,12 +1105,13 @@ class IfcImporter:
         if len(vertex_list) == 0:
             return None
 
-        mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
+
+        mesh_name = tool.Loader.get_name_layout(representation.ContextOfItems.id(), representation.id())
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
         tool.Ifc.link(representation, mesh)
 
-        obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
+        obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
         self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)
         return product
@@ -1569,9 +1571,7 @@ class IfcImporter:
             self.project["blender"] = obj.BIMObjectProperties.collection
             self.has_existing_project = True
             return
-        self.project["blender"] = bpy.data.collections.new(
-            "{}/{}".format(self.project["ifc"].is_a(), self.project["ifc"].Name)
-        )
+        self.project["blender"] = bpy.data.collections.new(tool.Loader.get_name(self.project["ifc"]))
         obj = self.create_product(self.project["ifc"])
         obj.hide_select = True
         self.project["blender"].objects.link(obj)
