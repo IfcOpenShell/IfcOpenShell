@@ -124,6 +124,7 @@ class Patcher:
                     elif not isinstance(value, str):
                         value = str(value)
                     properties.append([i, pset_name, prop_name, value])
+
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
             if material:
                 name = getattr(material, "Name", getattr(material, "LayerSetName", None)) or "Unnamed"
@@ -154,6 +155,10 @@ class Patcher:
                         properties.append([i, "IFC Material", f"Material {idx + 1} Name", material.Name])
                         if getattr(material, "Category"):
                             properties.append([i, "IFC Material", f"Material {idx + 1} Category", item.material.Category])
+
+            layers = ifcopenshell.util.element.get_layers(element)
+            for idx, layer in enumerate(layers):
+                properties.append([i, "IFC Presentation Layer Assignment", f"Layer {idx + 1}", layer.Name])
 
             relating_type = ifcopenshell.util.element.get_type(element)
             if relating_type and relating_type != element:
