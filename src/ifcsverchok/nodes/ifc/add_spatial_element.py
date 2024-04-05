@@ -36,9 +36,7 @@ from sverchok.data_structure import (
 )
 
 
-class SvIfcAddSpatialElement(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAddSpatialElement"
     bl_label = "IFC Add Spatial Element"
     node_dict = {}
@@ -68,16 +66,14 @@ class SvIfcAddSpatialElement(
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Add IfcElements to an IfcSpatialElement."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Add IfcElements to an IfcSpatialElement."
+        )
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]
         if hash(self) not in self.node_dict:
-            self.node_dict[
-                hash(self)
-            ] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
 
@@ -86,9 +82,7 @@ class SvIfcAddSpatialElement(
         edit = False
         edit_elements = False
         for i in range(len(self.inputs)):
-            input = self.inputs[self.sv_input_names[i]].sv_get(
-                deepcopy=True, default=[]
-            )
+            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default=[])
             if (
                 isinstance(self.node_dict[hash(self)][self.inputs[i].name], list)
                 and input != self.node_dict[hash(self)][self.inputs[i].name]
@@ -99,9 +93,7 @@ class SvIfcAddSpatialElement(
             self.node_dict[hash(self)][self.inputs[i].name] = input.copy()
 
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
-        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[
-            0
-        ]
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
         self.elements = ensure_min_nesting(self.inputs["Elements"].sv_get(), 2)
         if isinstance(self.elements[0][0], list):
             self.elements = [list(chain.from_iterable(el)) for el in self.elements]
@@ -109,18 +101,13 @@ class SvIfcAddSpatialElement(
             raise Exception('Mandatory input "Element(s)" is missing.')
             return
         self.file = SvIfcStore.get_file()
-        self.elements = [
-            [self.file.by_id(step_id) for step_id in element]
-            for element in self.elements
-        ]
+        self.elements = [[self.file.by_id(step_id) for step_id in element] for element in self.elements]
 
         if "len" not in self.node_dict[hash(self)]:
             self.node_dict[hash(self)]["len"] = 0
         self.names = self.repeat_input_unique(self.names, len(self.elements))
 
-        if (self.node_id not in SvIfcStore.id_map) or (
-            len(self.elements) != self.node_dict[hash(self)]["len"]
-        ):
+        if (self.node_id not in SvIfcStore.id_map) or (len(self.elements) != self.node_dict[hash(self)]["len"]):
             self.remove()
             elements = self.create()
             self.node_dict[hash(self)]["len"] = len(self.elements)
@@ -144,9 +131,7 @@ class SvIfcAddSpatialElement(
                 ifc_class=self.ifc_class,
             )
             for items in self.elements[i]:
-                if items.is_a("IfcSpatialElement") or items.is_a(
-                    "IfcSpatialStructureElement"
-                ):
+                if items.is_a("IfcSpatialElement") or items.is_a("IfcSpatialStructureElement"):
                     ifcopenshell.api.run(
                         "aggregate.assign_object",
                         self.file,
@@ -182,9 +167,9 @@ class SvIfcAddSpatialElement(
                 for element in self.elements[i]:
                     element_set = set([element])
                     for removed_element in subelements - element_set:
-                        if removed_element.is_a(
-                            "IfcSpatialElement"
-                        ) or removed_element.is_a("IfcSpatialStructureElement"):
+                        if removed_element.is_a("IfcSpatialElement") or removed_element.is_a(
+                            "IfcSpatialStructureElement"
+                        ):
                             ifcopenshell.api.run(
                                 "aggregate.unassign_object",
                                 self.file,
@@ -199,9 +184,7 @@ class SvIfcAddSpatialElement(
                                 relating_object=result,
                             )
                     for added_element in element_set - subelements:
-                        if added_element.is_a(
-                            "IfcSpatialElement"
-                        ) or added_element.is_a("IfcSpatialStructureElement"):
+                        if added_element.is_a("IfcSpatialElement") or added_element.is_a("IfcSpatialStructureElement"):
                             ifcopenshell.api.run(
                                 "aggregate.assign_object",
                                 self.file,
@@ -230,8 +213,7 @@ class SvIfcAddSpatialElement(
         input = repeat_last_for_length(input, count, deepcopy=False)
         if input[0]:
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}"
-                for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 

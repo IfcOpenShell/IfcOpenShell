@@ -28,9 +28,7 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data
 
 
-class SvIfcWriteFile(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: Ifc write to file
     Tooltip: Write active Sverchok Ifc file to path
@@ -41,9 +39,7 @@ class SvIfcWriteFile(
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(
-        name="Write", description="Write to file", update=refresh_node_local
-    )
+    refresh_local: BoolProperty(name="Write", description="Write to file", update=refresh_node_local)
 
     bl_idname = "SvIfcWriteFile"
     bl_label = "IFC Write File"
@@ -59,9 +55,12 @@ class SvIfcWriteFile(
 
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
-        row.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Writes active Ifc file to path.\n It will overwrite an existing file.\n N.B.! It's recommended to create a fresh IFC File using the 're-run all nodes' button in IfcSverchok panel before saving."
+        tooltip = (
+            "Writes active Ifc file to path.\n "
+            "It will overwrite an existing file.\n"
+            "N.B.! It's recommended to create a fresh IFC File using the 're-run all nodes' button in IfcSverchok panel before saving."
+        )
+        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = tooltip
         row.prop(self, "refresh_local", icon="FILE_REFRESH")
 
     def process(self):
@@ -81,21 +80,15 @@ class SvIfcWriteFile(
     def ensure_hirarchy(self, file):
         elements_in_buildings = []
         if not 0 <= 0 < len(file.by_type("IfcBuilding")):
-            my_building = ifcopenshell.api.run(
-                "root.create_entity", file, ifc_class="IfcBuilding", name="My Building"
-            )
+            my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
             elements = ifcopenshell.util.element.get_decomposition(my_building)
         else:
             for building in file.by_type("IfcBuilding"):
                 elements = ifcopenshell.util.element.get_decomposition(building)
                 elements_in_buildings.extend(elements)
 
-        for spatial in file.by_type("IfcSpatialElement") or file.by_type(
-            "IfcSpatialStructureElement"
-        ):
-            if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (
-                spatial not in elements_in_buildings
-            ):
+        for spatial in file.by_type("IfcSpatialElement") or file.by_type("IfcSpatialStructureElement"):
+            if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
@@ -123,9 +116,7 @@ class SvIfcWriteFile(
             elements = ifcopenshell.util.element.get_decomposition(building)
             if not building.Decomposes:
                 if not 0 <= 0 < len(file.by_type("IfcSite")):
-                    ifcopenshell.api.run(
-                        "root.create_entity", file, ifc_class="IfcSite", name="My Site"
-                    )
+                    ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
@@ -133,11 +124,7 @@ class SvIfcWriteFile(
                     relating_object=file.by_type("IfcSite")[0],
                 )
                 try:
-                    if (
-                        file.by_type("IfcSite")[0]
-                        .Decomposes[0]
-                        .RelatingObject.is_a("IfcProject")
-                    ):
+                    if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
                         continue
                 except IndexError:
                     pass
