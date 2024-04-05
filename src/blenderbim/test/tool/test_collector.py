@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.tool.collector import Collector as subject

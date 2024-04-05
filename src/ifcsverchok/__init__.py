@@ -117,6 +117,8 @@ reload_event = False
 import bpy
 from os.path import splitext
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 from ifcsverchok.ifcstore import SvIfcStore
 
 

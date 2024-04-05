@@ -21,6 +21,8 @@ import bpy
 from itertools import chain
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 
