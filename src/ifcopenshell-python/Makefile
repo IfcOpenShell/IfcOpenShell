@@ -18,15 +18,6 @@ SED:=sed -i '' -e
 endif
 endif
 
-ifeq ($(PYVERSION), py36)
-PYNUMBER:=36
-endif
-ifeq ($(PYVERSION), py37)
-PYNUMBER:=37
-endif
-ifeq ($(PYVERSION), py38)
-PYNUMBER:=38
-endif
 ifeq ($(PYVERSION), py39)
 PYNUMBER:=39
 endif
@@ -35,6 +26,9 @@ PYNUMBER:=310
 endif
 ifeq ($(PYVERSION), py311)
 PYNUMBER:=311
+endif
+ifeq ($(PYVERSION), py312)
+PYNUMBER:=312
 endif
 
 ifeq ($(PLATFORM), linux)
@@ -48,20 +42,6 @@ PLATFORMTAG:=macosx_11_0_arm64
 endif
 ifeq ($(PLATFORM), win)
 PLATFORMTAG:=win_amd64
-endif
-
-ifeq ($(PLATFORM), macosm1)
-ifeq ($(PYVERSION), py36)
-# Pure Evil. Let me know if you're the first to file a bug report.
-PYNUMBER:=37
-endif
-endif
-
-ifeq ($(PLATFORM), macos)
-ifeq ($(PYVERSION), py311)
-# Pure Evil. Let me know if you're the first to file a bug report.
-PYNUMBER:=310
-endif
 endif
 
 .PHONY: test
