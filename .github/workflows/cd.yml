@@ -81,7 +81,7 @@ jobs:
         path: build/assets/Ifc*
 
   deliver:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: build
     name: Docker Build, Tag, Push
 
