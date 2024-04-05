@@ -29,6 +29,7 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from typing import Optional, Callable, Any
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
@@ -182,7 +183,7 @@ def add_attribute_description(attribute_blender, attribute_ifc=None):
         attribute_blender.description = description
 
 
-def export_attributes(props, callback=None):
+def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, Any]:
     attributes = {}
     for prop in props:
         is_handled_by_callback = callback(attributes, prop) if callback else False
