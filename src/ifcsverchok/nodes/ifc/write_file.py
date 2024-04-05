@@ -108,7 +108,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                 ifcopenshell.api.run(
                     "spatial.assign_container",
                     file,
-                    product=element,
+                    products=[element],
                     relating_structure=file.by_type("IfcBuilding")[0],
                 )
 

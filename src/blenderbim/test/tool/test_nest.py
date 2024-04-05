@@ -70,5 +70,5 @@ class TestGetContainer(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
         container = ifc.createIfcBuildingStorey()
-        ifcopenshell.api.run("spatial.assign_container", ifc, product=element, relating_structure=container)
+        ifcopenshell.api.run("spatial.assign_container", ifc, products=[element], relating_structure=container)
         assert subject.get_container(element) == container

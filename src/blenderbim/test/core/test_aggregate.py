@@ -53,7 +53,7 @@ class TestUnassignObject:
     def test_run(self, ifc, aggregate, collector):
         ifc.get_entity("related_obj").should_be_called().will_return("element")
         aggregate.get_container("element").should_be_called().will_return("container")
-        ifc.run("spatial.assign_container", product="element", relating_structure="container").should_be_called()
+        ifc.run("spatial.assign_container", products=["element"], relating_structure="container").should_be_called()
         ifc.run("aggregate.unassign_object", product="element").should_be_called().will_return("rel")
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()

@@ -347,6 +347,6 @@ for i in range(0, 4):
     location = np.eye(4)
     location[1][3] += i * 1
     ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
-    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, product=wall)
+    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, products=[wall])
 
 model.write(os.path.join(outdir, "library", "sample.ifc"))

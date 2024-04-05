@@ -85,7 +85,9 @@ class Obj2Ifc:
                 Name=mesh.label() or self.basename,
                 Representation=representation,
             )
-            ifcopenshell.api.run("spatial.assign_container", self.file, product=product, relating_structure=self.storey)
+            ifcopenshell.api.run(
+                "spatial.assign_container", self.file, products=[product], relating_structure=self.storey
+            )
             product.ObjectPlacement = self.placement
 
         self.file.write(self.outfile)

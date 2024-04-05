@@ -20,11 +20,17 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, relating_structure=None):
-        """Assigns a product to be contained hierarchically in a space
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        relating_structure: ifcopenshell.entity_instance,
+    ):
+        """Assigns products to be contained hierarchically in a space
 
         All physical IFC model elements must be part of a hierarchical tree
         called the "spatial decomposition", where large things are made up of
@@ -61,13 +67,14 @@ class Usecase:
         decomposition" tree, assigning an aggregate relationship will remove any
         previous aggregation, containment, or nesting relationships it may have.
 
-        :param product: The physical IfcElement that exists in the space.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: A list of physical IfcElements existing in the space.
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_structure: The IfcSpatialStructureElement element, such
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
         :return: The IfcRelContainedInSpatialStructure relationship instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if nothing was changed.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -80,76 +87,98 @@ class Usecase:
             space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
 
             # The project contains a site (note that project aggregation is a special case in IFC)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
 
             # The site has a building, the building has a storey, and the storey has a space
-            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=space, relating_object=storey)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[space], relating_object=storey)
 
             # Create a wall and furniture
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
             furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
 
             # The wall is in the storey, and the furniture is in the space
-            ifcopenshell.api.run("spatial.assign_container", model, product=wall, relating_structure=storey)
-            ifcopenshell.api.run("spatial.assign_container", model, product=furniture, relating_structure=space)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[wall], relating_structure=storey)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[furniture], relating_structure=space)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "relating_structure": relating_structure,
         }
 
-    def execute(self):
-        contained_in_structure = self.settings["product"].ContainedInStructure
-        contains_elements = self.settings["relating_structure"].ContainsElements
-
-        if contains_elements and contained_in_structure and contained_in_structure[0] == contains_elements[0]:
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["products"]:
             return
 
-        aggregate = ifcopenshell.util.element.get_aggregate(self.settings["product"])
-        if aggregate:
-            ifcopenshell.api.run(
-                "aggregate.unassign_object", self.file, product=self.settings["product"]
-            )
+        products = set(self.settings["products"])
+        relating_structure = self.settings["relating_structure"]
+        structure_rel = next(iter(relating_structure.ContainsElements), None)
 
-        if contained_in_structure:
-            related_elements = list(contained_in_structure[0].RelatedElements)
-            related_elements.remove(self.settings["product"])
+        previous_containers_rels: set[ifcopenshell.entity_instance] = set()
+        products_without_containers: list[ifcopenshell.entity_instance] = []
+        products_with_containers: list[ifcopenshell.entity_instance] = []
+
+        # check if there is anything to change
+        for product in products:
+            product_rel = next(iter(product.ContainedInStructure), None)
+
+            if product_rel is None:
+                products_without_containers.append(product)
+                continue
+
+            if product_rel != structure_rel:
+                previous_containers_rels.add(product_rel)
+                products_with_containers.append(product)
+
+        # nothing to change
+        if not products_without_containers and not products_with_containers:
+            return
+
+        # can be either only aggregated or only contained at the same time
+        for product in products_without_containers:
+            aggregate = ifcopenshell.util.element.get_aggregate(product)
+            if aggregate:
+                ifcopenshell.api.run("aggregate.unassign_object", self.file, product=product)
+
+        # unassign elements from previous container
+        for rel in previous_containers_rels:
+            related_elements = set(rel.RelatedElements) - products
             if related_elements:
-                contained_in_structure[0].RelatedElements = related_elements
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contained_in_structure[0]})
+                rel.RelatedElements = list(related_elements)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
             else:
-                history = contained_in_structure[0].OwnerHistory
-                self.file.remove(contained_in_structure[0])
+                history = rel.OwnerHistory
+                self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
 
-        if contains_elements:
-            related_elements = list(contains_elements[0].RelatedElements)
-            related_elements.append(self.settings["product"])
-            contains_elements[0].RelatedElements = related_elements
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": contains_elements[0]})
+        # assign elements to a new container
+        if structure_rel:
+            structure_rel.RelatedElements = list(set(structure_rel.RelatedElements) | products)
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": structure_rel})
         else:
-            contains_elements = self.file.create_entity(
+            structure_rel = self.file.create_entity(
                 "IfcRelContainedInSpatialStructure",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedElements": [self.settings["product"]],
+                    "RelatedElements": list(products),
                     "RelatingStructure": self.settings["relating_structure"],
                 }
             )
 
-        placement = getattr(self.settings["product"], "ObjectPlacement", None)
-        if placement and placement.is_a("IfcLocalPlacement"):
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement",
-                self.file,
-                product=self.settings["product"],
-                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
-                is_si=False,
-            )
+        # localize placement relative to a new container for affected products
+        for product in products_without_containers + products_with_containers:
+            placement = getattr(product, "ObjectPlacement", None)
+            if placement and placement.is_a("IfcLocalPlacement"):
+                ifcopenshell.api.run(
+                    "geometry.edit_object_placement",
+                    self.file,
+                    product=product,
+                    matrix=ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),
+                    is_si=False,
+                )
 
-        return contains_elements
+        return structure_rel

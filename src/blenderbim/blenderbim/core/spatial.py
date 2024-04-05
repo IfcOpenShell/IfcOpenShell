@@ -56,7 +56,7 @@ def assign_container(
         return
     rel = ifc.run(
         "spatial.assign_container",
-        product=ifc.get_entity(element_obj),
+        products=[ifc.get_entity(element_obj)],
         relating_structure=ifc.get_entity(structure_obj),
     )
     spatial.disable_editing(element_obj)

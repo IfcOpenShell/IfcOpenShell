@@ -52,7 +52,7 @@ class Usecase:
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # The wall is in the storey
-            ifcopenshell.api.run("spatial.assign_container", model, product=wall, relating_structure=storey)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[wall], relating_structure=storey)
 
             # Not anymore!
             ifcopenshell.api.run("spatial.remove_container", model, product=wall)
