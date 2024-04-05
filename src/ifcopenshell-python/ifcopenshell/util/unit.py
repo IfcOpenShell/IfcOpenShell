@@ -668,7 +668,7 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
+    content_type: Union[ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration],
     ifc_unit_type_name: str,
 ) -> Union[ifcopenshell.ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
