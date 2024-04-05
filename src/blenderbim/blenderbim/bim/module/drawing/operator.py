@@ -497,7 +497,7 @@ class CreateDrawing(bpy.types.Operator):
                 # All very hackish whilst prototyping
                 exporter = blenderbim.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
-                invalidated_elements = exporter.sync_all_objects()
+                invalidated_elements = exporter.sync_all_objects(skip_unlinking=True)
                 invalidated_elements += exporter.sync_edited_objects()
                 invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
                 cache = IfcStore.get_cache()

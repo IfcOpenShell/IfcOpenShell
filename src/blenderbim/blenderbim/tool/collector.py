@@ -28,11 +28,15 @@ from typing import Union
 
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
-    def sync(cls, obj: bpy.types.Object) -> None:
+    def sync(cls, obj: bpy.types.Object, skip_unlinking=False) -> None:
         """Sync object IFC state (assigned containter / aggregate) with the collection it's currently in.
 
         Then subsequently run `Collector.assign` (if state has changed)
         to link them to collections / unlink from anything unrelated collections.
+
+        If `skip_unlinking` is `True` then method won't try to assign parent object
+        if it's already assigned in IFC saving some time.
+        But it has a downside not unlinking object from unrelated collections.
         """
         # This is the reverse of assign. It reads the Blender collection and figures out its IFC hierarchy
         element = tool.Ifc.get_entity(obj)
@@ -76,6 +80,13 @@ class Collector(blenderbim.core.tool.Collector):
             return
 
         parent = tool.Ifc.get_entity(parent_obj)
+        if skip_unlinking:
+            previous_parent = ifcopenshell.util.element.get_container(
+                element, should_get_direct=True
+            ) or ifcopenshell.util.element.get_aggregate(element)
+            if parent == previous_parent:
+                return
+
         if parent:
             # This is lazy, but works. One of these will succeed, the other will fail silently.
             blenderbim.core.spatial.assign_container(
