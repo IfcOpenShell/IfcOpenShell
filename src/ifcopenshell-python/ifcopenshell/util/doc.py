@@ -151,7 +151,7 @@ def get_predefined_type_doc(version, entity, predefined_type):
     if db:
         entity = db["entities"].get(entity)
         if entity:
-            return entity["predefined_types"].get(predefined_type)
+            return entity.get("predefined_types", {}).get(predefined_type)
 
 
 def get_property_set_doc(version, pset):
