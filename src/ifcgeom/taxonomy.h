@@ -166,6 +166,7 @@ typedef item const* ptr;
 				}
 
 				virtual item::ptr evaluate() const;
+            item::ptr evaluate(double ustart, double uend,unsigned nsteps) const;
 
 				Eigen::Matrix4d evaluate(double u) const;
 			};
