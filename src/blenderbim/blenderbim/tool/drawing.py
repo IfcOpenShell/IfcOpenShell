@@ -671,8 +671,7 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             camera.angle = fov
 
-        psets = ifcopenshell.util.element.get_psets(drawing)
-        pset = psets.get("EPset_Drawing")
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
             if "TargetView" in pset:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
@@ -1124,8 +1123,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     cls.import_annotations_in_group(cls.get_drawing_group(drawing))
                     tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
 
-            psets = ifcopenshell.util.element.get_psets(reference_element)
-            target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
+            target_view = ifcopenshell.util.element.get_pset(reference_element, "EPset_Drawing", "TargetView")
             if target_view == "ELEVATION_VIEW":
                 ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
