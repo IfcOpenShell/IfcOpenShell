@@ -154,7 +154,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
             if "pset" in arg:
                 new2.pset = arg["pset"]
             if "comparison" in arg:
-                new2.comparison = arg["comparison"]
+                new2.comparison = arg["comparison"] or "="
 
     def facet(self, args):
         return args[0]
@@ -196,8 +196,6 @@ class ImportFilterQueryTransformer(lark.Transformer):
 
     def query(self, args):
         keys, comparison, value = args
-        if comparison == "=":
-            comparison = ""
         return {"type": "query", "name": keys, "value": f"{comparison}{value}"}
 
     def comparison(self, args):
@@ -211,7 +209,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return (
             is_not
             + {
-                "equals": "=",
+                "equals": "",  # Blank because it's the default situation
                 "morethanequalto": ">=",
                 "lessthanequalto": "<=",
                 "morethan": ">",
