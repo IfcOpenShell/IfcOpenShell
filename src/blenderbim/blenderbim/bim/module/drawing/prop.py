@@ -194,7 +194,7 @@ def update_document_name(self, context):
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
     # making sure that camera is active
-    if self.has_underlay and (context.active_object and context.active_object.data == self.id_data):
+    if self.has_underlay and (context.scene.camera and context.scene.camera.data == self.id_data):
         bpy.ops.bim.reload_drawing_styles()
         bpy.ops.bim.activate_drawing_style()
 
@@ -208,10 +208,12 @@ def update_has_annotation(self, context):
 
 
 def update_layer(self, context, name, value):
-    element = tool.Ifc.get_entity(context.active_object)
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
     if not element:
         return
-    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
