@@ -18,10 +18,10 @@ and many other libraries, CLI apps, and more. Support is also provided for auxil
 For more information, see:
 
 * [IfcOpenShell Website](http://ifcopenshell.org)
-* [IfcOpenShell Documentation](https://ios-docs.blenderbim.org/index.html)
-  * [IfcOpenShell C++ Installation](https://ios-docs.blenderbim.org/ifcopenshell/installation.html)
-  * [IfcOpenShell Python Installation](https://ios-docs.blenderbim.org/ifcopenshell-python/installation.html)
-  * [IfcOpenShell Python Hello World Tutorial](https://ios-docs.blenderbim.org/ifcopenshell-python/hello_world.html)
+* [IfcOpenShell Documentation](https://docs.ifcopenshell.org)
+  * [IfcOpenShell C++ Installation](https://docs.ifcopenshell.org/ifcopenshell/installation.html)
+  * [IfcOpenShell Python Installation](https://docs.ifcopenshell.org/ifcopenshell-python/installation.html)
+  * [IfcOpenShell Python Hello World Tutorial](https://docs.ifcopenshell.org/ifcopenshell-python/hello_world.html)
 * [BlenderBIM Add-on Website](https://blenderbim.org)
 * [BlenderBIM Add-on Documentation](https://docs.blenderbim.org/index.html)
   * [Add-on Installation](https://docs.blenderbim.org/users/installation.html)
