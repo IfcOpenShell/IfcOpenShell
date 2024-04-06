@@ -454,37 +454,40 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate() const {
-	// @todo configure resolution
     double curve_length = length();
 
    std::vector<taxonomy::point3::ptr> polygon;
 	
 	auto param_type = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepType>().get() : ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE;
    auto param = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get() : 0.5;
-   int num_steps = 0;
+   unsigned num_steps = 0;
    if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
 	   // parameter is max step size
-        num_steps = (int)std::ceil(curve_length / param);
+       num_steps = (unsigned)std::ceil(curve_length / param);
    } else {
 	   // parameter is minimum number of steps
-      num_steps = (int)std::ceil(param);
+       num_steps = (unsigned)std::ceil(param);
     }
-   auto resolution = curve_length / num_steps;
 
-	 for (int i = 0; i <= num_steps; ++i) {
-		auto u = resolution * i;
-      Eigen::Matrix4d m = evaluate(u);
-      polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
-	}
+	return evaluate(0.0, curve_length, num_steps);
+}
 
-	// @nb temporary debugging - can be removed later.
-	std::ostringstream oss;
-	for (auto it = polygon.begin(); it != polygon.end() && std::distance(polygon.begin(), it) < 5; ++it) {
-		(**it).print(oss);
-	}
-	Logger::Notice("Evaluated points: " + oss.str(), instance);
+item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double ustart, double uend,unsigned nsteps) const {
+    double curve_length = length();
+    ustart = std::max(0.0, ustart);
+    uend = std::min(uend, curve_length);
 
-	return polygon_from_points(polygon);
+ 	 auto resolution = (uend - ustart)/ nsteps;
+
+    std::vector<taxonomy::point3::ptr> polygon;
+
+    for (int i = 0; i <= nsteps; ++i) {
+        auto u = resolution * i + ustart;
+        Eigen::Matrix4d m = evaluate(u);
+        polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
+    }
+
+    return polygon_from_points(polygon);
 }
 
 Eigen::Matrix4d ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double u) const {
