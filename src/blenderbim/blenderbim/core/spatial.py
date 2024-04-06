@@ -214,7 +214,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
 
         obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
 
-        spatial.set_obj_origin_to_bboxcenter(obj)
+        spatial.set_obj_origin_to_bboxcenter_and_zero_elevation(obj)
         spatial.traslate_obj_to_z_location(obj, z)
 
         spatial.link_obj_to_active_collection(obj)

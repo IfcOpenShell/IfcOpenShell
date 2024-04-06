@@ -583,6 +583,24 @@ class Spatial(blenderbim.core.tool.Spatial):
         obj.location = newLoc
 
     @classmethod
+    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj):
+        mat = obj.matrix_world
+        inverted = mat.inverted()
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
+        global_bbox_center = mat @ local_bbox_center
+        global_obj_origin = global_bbox_center
+        global_obj_origin.z = 0
+
+        oldLoc = obj.location
+        newLoc = global_obj_origin
+        diff = newLoc - oldLoc
+        for vert in obj.data.vertices:
+            aux_vector = mat @ vert.co
+            aux_vector = aux_vector - diff
+            vert.co = inverted @ aux_vector
+        obj.location = newLoc
+
+    @classmethod
     def set_obj_origin_to_cursor_position(cls, obj):
         mat = obj.matrix_world
         inverted = mat.inverted()
