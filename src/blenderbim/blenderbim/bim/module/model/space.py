@@ -27,7 +27,7 @@ import blenderbim.core.type
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_space"
-    bl_label = "Generate Space"
+    bl_label = "Generate Space from Cursor"
     bl_options = {"REGISTER"}
     bl_description = (
         "Create a space from the cursor position. "
@@ -35,30 +35,34 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         "select the right space collection and run the operator"
     )
 
-    @classmethod
-    def poll(cls, context):
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        active_obj = context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        return tool.Ifc.get_entity(collection_obj) and not element.is_a("IfcWall")
+#    @classmethod
+#    def poll(cls, context):
+#        print(context)
+#        collection = context.view_layer.active_layer_collection.collection
+#        collection_obj = collection.BIMCollectionProperties.obj
+#        active_obj = context.active_object
+#        element = tool.Ifc.get_entity(active_obj)
+#        return tool.Ifc.get_entity(collection_obj) and not element.is_a("IfcWall")
 
     def _execute(self, context):
         # This works as a 2.5 extruded polygon based on a cutting plane. Note
         # that rooms exclude walls (i.e. not to wall midpoint or exterior /
         # exterior edge.
 
-        def msg(self, context):
-            self.layout.label(text="NO ACTIVE STOREY")
+        def msg_no_collection(self, context):
+            self.layout.label(text="NO ACTIVE COLLECTION. PLEASE SELECT A SPATIAL COLLECTION OBJECT OR A WALL")
+
+        def msg_no_active_storey(self, context):
+            self.layout.label(text="NO ACTIVE STOREY. PLEASE SELECT A SPATIAL COLLECTION OBJECT")
 
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
         if not collection_obj:
-            context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            context.window_manager.popup_menu(msg_no_collection, title="Error", icon="ERROR")
             return
         spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element:
-            context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+        if not spatial_element or not spatial_element.is_a("IfcBuildingStorey"):
+            context.window_manager.popup_menu(msg_no_active_storey, title="Error", icon="ERROR")
             return
 
         core.generate_space(tool.Ifc, tool.Spatial, tool.Model, tool.Type)
@@ -70,12 +74,12 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Generate spaces from selected walls. The active object must be a wall"
 
-    @classmethod
-    def poll(cls, context):
-        active_obj = context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        if element:
-            return context.selected_objects and element.is_a("IfcWall")
+#    @classmethod
+#    def poll(cls, context):
+#        active_obj = context.active_object
+#        element = tool.Ifc.get_entity(active_obj)
+#        if element:
+#            return context.selected_objects and element.is_a("IfcWall")
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -87,19 +91,30 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(active_obj)
         container = tool.Spatial.get_container(element)
 
+        def msg_no_active_object(self, context):
+            self.layout.label(text="No active object. Please select a wall")
+        def msg_no_active_wall(self, context):
+            self.layout.label(text="The active object is not a wall. Please select a wall.")
+        def msg_no_container(self, context):
+            self.layout.label(text="The wall is not contained. Please the selected wall in a building container")
+        def msg_no_selected_objects(self, context):
+            self.layout.label(text="No selected objects found. Please select walls.")
+
         if not active_obj:
-            self.report({"ERROR"}, "No active object. Please select a wall")
+            context.window_manager.popup_menu(msg_no_active_object, title="Error", icon="ERROR")
             return
 
         element = tool.Ifc.get_entity(active_obj)
         if element and not element.is_a("IfcWall"):
-            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
+            context.window_manager.popup_menu(msg_no_active_wall, title="Error", icon="ERROR")
+            return
 
         if not container:
-            self.report({"ERROR"}, "The wall is not contained.")
+            context.window_manager.popup_menu(msg_no_container, title="Error", icon="ERROR")
+            return
 
         if not context.selected_objects:
-            self.report({"ERROR"}, "No selected objects found. Please select walls.")
+            context.window_manager.popup_menu(msg_no_selected_objects, title="Error", icon="ERROR")
             return
 
         core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
