@@ -385,13 +385,36 @@ class curve_segment_evaluator {
         if (segment_type_ == ST_HORIZONTAL) {
             auto start = start_;
             projected_length_ = length_;
-            auto segment_type = segment_type_;
+            auto spiral = inst_->ParentCurve()->as<IfcSchema::IfcSpiral>();
+            auto position = spiral->Position()->as<IfcSchema::IfcAxis2Placement2D>();
+            auto location = position->Location()->as<IfcSchema::IfcCartesianPoint>();
+
+            // start point of the parent curve
+            auto pcCenterX = location->Coordinates()[0];
+            auto pcCenterY = location->Coordinates()[1];
+
+            // normalize the direction ratios
+            auto ref_direction = position->RefDirection();
+            double pcDx = 1.0, pcDy = 0.0;
+            if (ref_direction) {
+                auto dr = ref_direction->DirectionRatios();
+                double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
+                double m = sqrt(m_squared);
+                std::for_each(dr.begin(), dr.end(), [m](auto& d) { return d / m; });
+                // dx,dy of the parent curve X-axis
+                pcDx = dr[0];
+                pcDy = dr[1];
+            }
+
+            double pcStartX = 0.0, pcStartY = 0.0;
+            if (start)
+            {
+                pcStartX = boost::math::quadrature::trapezoidal(fnX, 0.0, start / s);
+                pcStartY = boost::math::quadrature::trapezoidal(fnY, 0.0, start / s);
+            }
+
             geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
-            auto start_x = s ? boost::math::quadrature::trapezoidal(fnX, 0.0, start / s) : 0.0;
-            auto start_y = s ? boost::math::quadrature::trapezoidal(fnY, 0.0, start / s) : 0.0;
-            auto start_dx = s ? fnX(start / s)/s : 0.0;
-            auto start_dy = s ? fnY(start / s)/s : 0.0;
-            eval_ = [start, s, start_x, start_y, start_dx,start_dy,fnX, fnY, segment_type, geometry_adjuster = geometry_adjuster_](double u) {
+            eval_ = [start, s, pcCenterX, pcCenterY, pcStartX, pcStartY, pcDx, pcDy,fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
 
                 u += start;
 
@@ -399,26 +422,29 @@ class curve_segment_evaluator {
                 auto a = 0.0;
                 auto b = s ? u / s : 0.0;
 
-                auto x = boost::math::quadrature::trapezoidal(fnX, a, b) - start_x;
-                auto y = boost::math::quadrature::trapezoidal(fnY, a, b) - start_y;
+                // point on parent curve
+                auto pcX = boost::math::quadrature::trapezoidal(fnX, a, b) + pcCenterX;
+                auto pcY = boost::math::quadrature::trapezoidal(fnY, a, b) + pcCenterY;
 
-                auto x1 = x * start_dx + y * start_dy;
-                auto y1 = -x * start_dy + y * start_dx;
-                x = x1;
-                y = y1;
+               // translate parent curve point to the origin
+                pcX -= pcStartX;
+                pcY -= pcStartY;
+
+                auto rotate = -atan2(pcDy, pcDx);
+                auto csX = pcX * cos(rotate) - pcY * sin(rotate);
+                auto csY = pcX * sin(rotate) + pcY * cos(rotate);
 
                 // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
                 // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
-                auto dx = s ? fnX(b)/s : 1.0;
-                auto dy = s ? fnY(b)/s : 0.0;
+                auto dx = s ? fnX(b) / s : 1.0;
+                auto dy = s ? fnY(b) / s : 0.0;
 
-                // rotate about the Z-axis
-                Eigen::Matrix4d m;
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);  // vector tangent to the curve, in the direction of the curve
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0); // vector perpendicular to the curve, towards the left when looking from start to end along the curve (this is used for IfcAxis2PlacementLinear.RefDirection when it is not provided)
-                m.col(2) = Eigen::Vector4d(0, 0, 1.0, 0);  // cross product of x and y and will always be up (this is used for IfcAxis2PlacementLinear.Axis when it is not provided)
-                m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-                return geometry_adjuster->transform_and_adjust(u,m);
+
+               Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+                m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
+                return geometry_adjuster->transform_and_adjust(u, m);
             };
         } else if (segment_type_ == ST_VERTICAL) {
 
@@ -735,34 +761,67 @@ class curve_segment_evaluator {
    {
       if (segment_type_ == ST_HORIZONTAL) {
          auto R = c->Radius() * length_unit_;
+         auto position = c->Position()->as<IfcSchema::IfcAxis2Placement2D>();
+         auto location = position->Location()->as<IfcSchema::IfcCartesianPoint>();
+
+         // center point of the parent curve
+         auto pcCenterX = location->Coordinates()[0];
+         auto pcCenterY = location->Coordinates()[1];
+          
+         // normalize the direction ratios
+         auto ref_direction = position->RefDirection();
+         auto pcDx = 1.0, pcDy = 0.0;
+         if (ref_direction) {
+             auto dr = ref_direction->DirectionRatios();
+             double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
+             double m = sqrt(m_squared);
+             std::for_each(dr.begin(), dr.end(), [m](auto& d) { return d / m; });
+             // dx,dy of the parent curve X-axis
+             pcDx = dr[0];
+             pcDy = dr[1];
+         }
+
+         // angle from X = 0 to the first point on the trimmed curve
+         auto start_angle = atan2(pcDy, pcDx);
+
+         // first point on the trimmed curve
+         auto pcStartX = pcCenterX + R * cos(start_angle);
+         auto pcStartY = pcCenterY + R * sin(start_angle);
 
          auto sign_l = sign(length_);
-         auto start_angle = start_/R;
-
-         auto start_x = R * cos(start_angle);
-         auto start_y = R * sin(start_angle);
-
-         auto segment_type = segment_type_;
 
          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
 
          projected_length_ = length_;
-         eval_ = [R, start_x, start_y, start_angle, sign_l, segment_type, geometry_adjuster = geometry_adjuster_](double u)
+         eval_ = [R, pcCenterX, pcCenterY, pcStartX, pcStartY, start_angle, sign_l, geometry_adjuster = geometry_adjuster_](double u)
          {
             // u is measured along the circle
+            // angle from the parent curve X-axis to the current point
             auto angle = start_angle + sign_l * u / R;
 
-            auto dx = cos(angle);
-            auto dy = sin(angle);
+            // point on the parent curve
+            auto pcX = R * cos(angle) + pcCenterX;
+            auto pcY = R * sin(angle) + pcCenterY;
 
-            auto x = R * dx - start_x;
-            auto y = R * dy - start_y;
+            // translate parent curve point so it is relative to the parent curve start point
+            pcX -= pcStartX;
+            pcY -= pcStartY;
 
-            Eigen::Matrix4d m;
+            // rotate the parent curve point about its start point
+            // to eliminate the orientation of the parent curve axes
+            auto rotate = -(sign_l*PI / 2 + start_angle);
+            auto csX = pcX * cos(rotate) - pcY * sin(rotate);
+            auto csY = pcX * sin(rotate) + pcY * cos(rotate);
+
+            // slope of the parent curve
+            auto dx = cos(angle + rotate);
+            auto dy = sin(angle + rotate);
+
+            // transform the point into the curve segment coordinate system
+            Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
-            m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
-            m.col(3) = Eigen::Vector4d(y * sign_l, -x * sign_l, 0.0, 1.0);
+            m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
             return geometry_adjuster->transform_and_adjust(u, m);
          };
       }
@@ -925,7 +984,51 @@ class curve_segment_evaluator {
    void operator()(const IfcSchema::IfcLine* l) {
       projected_length_ = length_;
 
-      if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
+      if (segment_type_ == ST_HORIZONTAL) {
+          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+
+          auto s = l->Pnt();
+          auto c = s->Coordinates();
+          auto v = l->Dir();
+
+          // 8.9.3.75 IfcVector https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcVector.htm
+          // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
+          // "The IfcDirection does not imply a vector length, and the direction ratios does not have to be normalized."
+          //
+          // Therefore, the direction ratios need to be normalized to compute points on the line. Magnitude is not used
+          // because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment
+          auto dr = v->Orientation()->DirectionRatios();
+
+          // normalize the direction ratios
+          double m_squared = std::inner_product(dr.begin(), dr.end(), dr.begin(), 0.0);
+          double m = sqrt(m_squared);
+          std::for_each(dr.begin(), dr.end(), [m](auto& d) { return d / m; });
+          auto pcDx = dr[0];
+          auto pcDy = dr[1];
+
+          auto pcStartX = c[0] * length_unit_;
+          auto pcStartY = c[1] * length_unit_;
+
+          eval_ = [pcStartX, pcStartY, pcDx, pcDy, geometry_adjuster = geometry_adjuster_](double u) {
+              auto pcX = pcStartX + pcDx*u;
+              auto pcY = pcStartY + pcDy*u;
+
+              // translate parent curve point to the origin
+              pcX -= pcStartX;
+              pcY -= pcStartY;
+
+              auto rotate = -atan2(pcDy, pcDx);
+              auto csX = pcX * cos(rotate) - pcY * sin(rotate);
+              auto csY = pcX * sin(rotate) + pcY * cos(rotate);
+
+              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0) = Eigen::Vector4d(1, 0, 0, 0);
+              m.col(1) = Eigen::Vector4d(0, 1, 0, 0);
+              m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
+              return geometry_adjuster->transform_and_adjust(u, m);
+          };
+      }
+      else if (segment_type_ == ST_VERTICAL) {
          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
 
          auto s = l->Pnt();
