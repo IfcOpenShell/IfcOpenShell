@@ -28,7 +28,7 @@ import numbers
 import zipfile
 import functools
 from pathlib import Path
-from typing import Tuple, List
+from typing import List, Optional
 
 import ifcopenshell.util.element
 import ifcopenshell.util.file
@@ -199,7 +199,12 @@ class file(object):
 
     wrapped_data: ifcopenshell_wrapper.file
 
-    def __init__(self, f: ifcopenshell_wrapper.file = None, schema: str = None, schema_version: Tuple[int] = None):
+    def __init__(
+        self,
+        f: Optional[ifcopenshell_wrapper.file] = None,
+        schema: Optional[str] = None,
+        schema_version: Optional[tuple[int, int, int, int]] = None,
+    ):
         """Create a new blank IFC model
 
         This IFC model does not have any entities in it yet. See the
@@ -223,7 +228,7 @@ class file(object):
             ADD2 TC1, which is the official version approved by ISO when people
             refer to "IFC4". Generally you should not use this argument unless
             you are testing non-ISO IFC releases.
-        :type schema_version: tuple[int]
+        :type schema_version: tuple[int, int, int, int]
 
         Example:
 
