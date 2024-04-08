@@ -68,7 +68,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 1
@@ -84,7 +84,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         subject.assign(space_obj)
@@ -103,7 +103,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 1
@@ -121,7 +121,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(element_obj)
         assert len(element_obj.users_collection) == 1
@@ -161,7 +161,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert bpy.context.scene.collection.children.find(space_collection.name) == -1
@@ -180,7 +180,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(element_obj)
         subject.assign(subelement_obj)
@@ -203,7 +203,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(subelement_obj)
         assert subelement_obj.users_collection[0].name == "IfcSite/My Site"

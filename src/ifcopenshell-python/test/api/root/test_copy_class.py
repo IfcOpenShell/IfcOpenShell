@@ -89,7 +89,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_a_container_only_and_not_its_decomposition(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert element.IsDecomposedBy
         assert not new.IsDecomposedBy
@@ -97,7 +97,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_an_aggregate_only_and_not_its_decomposition(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=element)
         assert element.IsDecomposedBy
         assert not new.IsDecomposedBy
@@ -105,7 +105,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_an_aggregate_decomposition_and_maintaining_the_aggregate_relationship(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=subelement)
         assert new.Decomposes[0].RelatingObject == element
 

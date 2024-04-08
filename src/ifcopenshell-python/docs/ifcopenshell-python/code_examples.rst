@@ -236,9 +236,9 @@ Create a simple model from scratch
 
     # Since the site is our top level location, assign it to the project
     # Then place our building on the site, and our storey in the building
-    run("aggregate.assign_object", model, relating_object=project, product=site)
-    run("aggregate.assign_object", model, relating_object=site, product=building)
-    run("aggregate.assign_object", model, relating_object=building, product=storey)
+    run("aggregate.assign_object", model, relating_object=project, products=[site])
+    run("aggregate.assign_object", model, relating_object=site, products=[building])
+    run("aggregate.assign_object", model, relating_object=building, products=[storey])
 
     # Let's create a new wall
     wall = run("root.create_entity", model, ifc_class="IfcWall")
