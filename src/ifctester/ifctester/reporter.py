@@ -21,11 +21,9 @@ import sys
 import math
 import logging
 import datetime
-import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-import ifcopenshell.util.placement
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -431,6 +429,8 @@ class Bcf(Json):
         ]
 
     def to_file(self, filepath: str) -> None:
+        import numpy as np
+        import ifcopenshell.util.placement
         from bcf.v2.bcfxml import BcfXml
 
         unit_scale = None
