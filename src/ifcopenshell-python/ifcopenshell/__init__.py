@@ -97,10 +97,19 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
     You can specify a file format. If no format is given, it is guessed from its extension.
     Currently supported specified format : .ifc | .ifcZIP | .ifcXML
 
-    Examples:
+    You can then filter by element ID, class, etc, and subscript by id or guid.
+
+    Example:
+
+    .. code:: python
+
         model = ifcopenshell.open("/path/to/model.ifc")
         model = ifcopenshell.open("/path/to/model.ifcXML")
         model = ifcopenshell.open("/path/to/model.any_extension", ".ifc")
+
+        products = model.by_type("IfcProduct")
+        print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
+        print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
     if format is None:
