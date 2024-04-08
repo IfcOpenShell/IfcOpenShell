@@ -191,10 +191,10 @@ class file(object):
 
     .. code:: python
 
-        ifc_file = ifcopenshell.open(file_path)
-        products = ifc_file.by_type("IfcProduct")
+        model = ifcopenshell.open(file_path)
+        products = model.by_type("IfcProduct")
         print(products[0].id(), products[0].GlobalId) # 122 2XQ$n5SLP5MBLyL442paFx
-        print(products[0] == ifc_file[122] == ifc_file["2XQ$n5SLP5MBLyL442paFx"]) # True
+        print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
 
     wrapped_data: ifcopenshell_wrapper.file
@@ -244,7 +244,7 @@ class file(object):
             prefixes = ("IFC", "X", "_ADD", "_TC")
             schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
         else:
-            schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+            schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
         if f is not None:
             self.wrapped_data = f
         else:
