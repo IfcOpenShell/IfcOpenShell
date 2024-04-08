@@ -16,7 +16,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Data validation module"""
+"""Data validation module
+
+
+Can be used to run validation on IFC file from the command line:
+
+.. code-block:: bash
+
+    python -m ifcopenshell.validate /path/to/model.ifc --rules
+
+Available flags:
+
+- ``--rules``: Also check express rules.
+- ``--json``: Produce JSON output.
+- ``--fields``: Output more detailed information about failed entities (available only with ``--json``).
+"""
 
 from __future__ import print_function
 
@@ -311,6 +325,15 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
 
     It is recommended to supply the path to the file, so that internal C++ errors reported during the parse stage
     are also captured.
+
+    Example:
+
+    .. code:: python
+
+        logger = ifcopenshell.validate.json_logger()
+        ifcopenshell.validate.validate("/path/to/model.ifc", logger, express_rules=True)
+        from pprint import pprint
+        pprint(logger.statements)
     """
 
     # Originally there was no way in Python to distinguish on an entity instance attribute value whether the
