@@ -690,7 +690,7 @@ class DebugActiveDrawing(bpy.types.Operator):
             pass
         else:
             self.report({"INFO"}, "No errors creating drawing, nothing to investigate.")
-            return
+            return {"FINISHED"}
 
         all_elements = [e for obj in context.visible_objects if (e := tool.Ifc.get_entity(obj))]
         all_elements = set(all_elements)
@@ -715,14 +715,24 @@ class DebugActiveDrawing(bpy.types.Operator):
 
         def test_elements(elements: list[ifcopenshell.entity_instance], attempts: int = ATTEMPS) -> None:
             print(f"{CYAN}processing {len(elements)} elements{END}")
+            if not elements:
+                print(f"Empty list of elements, will stop...")
+                return
+
             n_elements = len(elements)
             middle = int(n_elements / 2)
             chunk1, chunk2 = elements[:middle], elements[middle:]
             test_chunk_1 = drawing_fails_to_load(set(chunk1))
             test_chunk_2 = drawing_fails_to_load(set(chunk2))
 
-            if not test_chunk_1 and not test_chunk_2:
-                if attempts == 0 or n_elements == 2:
+            if (
+                # both chunks do not fail anymore
+                (not test_chunk_1 and not test_chunk_2)
+                # or we have 1 element chunk that is still failing
+                or (test_chunk_1 and not chunk2)
+                or (test_chunk_2 and not chunk1)
+            ):
+                if attempts == 0 or n_elements in (1, 2):
                     print(f"{GREEN}Couldn't narrow it down any further.{END}")
                     print(f"It's some of the {n_elements} elements:")
                     print(elements)
@@ -731,19 +741,19 @@ class DebugActiveDrawing(bpy.types.Operator):
                     for element in elements:
                         test = drawing_fails_to_load(all_elements - {element})
                         if test:
-                            print(f"{GREEN}Excluding element fixed the drawing: {END}")
+                            print(f"{CYAN}Excluding element didn't fixed the drawing: {END}")
                             print(element)
                         else:
-                            print(f"{CYAN}Excluding element didn't fixed the drawing: {END}")
+                            print(f"{GREEN}Excluding element fixed the drawing: {END}")
                             print(element)
                 else:
                     print(f"{CYAN}Will try to reshuffle elements and try again, attempt {ATTEMPS-attempts+1}/{ATTEMPS}")
                     attempts -= 1
                     random.shuffle(elements)
                     test_elements(elements, attempts)
-
                 return
 
+            # if chunk fails we need to investigate it further
             if test_chunk_1:
                 test_elements(chunk1)
 
