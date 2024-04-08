@@ -42,8 +42,8 @@ class TestExtractElements:
         building = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcBuilding")
         storey = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcBuildingStorey")
         wall = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcWall")
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=building, relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=storey, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[building], relating_object=site)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[storey], relating_object=building)
         ifcopenshell.api.run("spatial.assign_container", ifc_file, products=[wall], relating_structure=storey)
 
         output = ifcpatch.execute({"file": ifc_file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
@@ -61,7 +61,7 @@ class TestExtractElements:
         container = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcBuildingStorey")
         subelement = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcWall")
         ifcopenshell.api.run("spatial.assign_container", ifc_file, products=[element], relating_structure=container)
-        ifcopenshell.api.run("aggregate.assign_object", ifc_file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", ifc_file, products=[subelement], relating_object=element)
 
         output = ifcpatch.execute({"file": ifc_file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 

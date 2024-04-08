@@ -179,7 +179,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
             if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0]
+                    "aggregate.assign_object", file, products=[spatial], relating_object=file.by_type("IfcBuilding")[0]
                 )
 
         for building in file.by_type("IfcBuilding"):
@@ -202,7 +202,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 if len(file.by_type("IfcSite")) == 0:
                     ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0]
+                    "aggregate.assign_object", file, products=[building], relating_object=file.by_type("IfcSite")[0]
                 )
                 try:
                     if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
@@ -212,7 +212,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=file.by_type("IfcSite")[0],
+                    products=[file.by_type("IfcSite")[0]],
                     relating_object=file.by_type("IfcProject")[0],
                 )
         self.file = file

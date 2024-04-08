@@ -20,11 +20,17 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, relating_object=None):
-        """Assigns an object as an aggregate to a product
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        relating_object: ifcopenshell.entity_instance,
+    ):
+        """Assigns object as an aggregate to the products
 
         All physical IFC model elements must be part of a hierarchical tree
         called the "spatial decomposition", where large things are made up of
@@ -55,14 +61,15 @@ class Usecase:
         its parent in the spatial hierarchy. If your product has a placement,
         its placement will be recalculated to follow this convention.
 
-        :param product: The part of the aggregate, typically an IfcElement or
+        :param products: The list of parts of the aggregate, typically of IfcElement or
             IfcSpatialStructureElement subclass
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_object: The whole of the aggregate, typically an
             IfcElement or IfcSpatialStructureElement subclass
         :type relating_object: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAggregate relationship instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -73,40 +80,59 @@ class Usecase:
             subelement = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
 
             # The project contains a site (note that project aggregation is a special case in IFC)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=element, relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[element], relating_object=project)
 
             # The site has a building
-            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement, relating_object=element)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement], relating_object=element)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "relating_object": relating_object,
         }
 
-    def execute(self):
-        decomposes = None
-        if self.settings["product"].Decomposes:
-            decomposes = self.settings["product"].Decomposes[0]
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["products"]:
+            return
 
-        is_decomposed_by = None
-        for rel in self.settings["relating_object"].IsDecomposedBy:
-            if rel.is_a("IfcRelAggregates"):
-                is_decomposed_by = rel
-                break
+        products = set(self.settings["products"])
+        relating_object = self.settings["relating_object"]
+        is_decomposed_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelAggregates")), None)
 
-        if decomposes and decomposes == is_decomposed_by:
-            return decomposes
+        previous_aggregates_rels: set[ifcopenshell.entity_instance] = set()
+        products_without_aggregates: list[ifcopenshell.entity_instance] = []
+        products_with_aggregates: list[ifcopenshell.entity_instance] = []
 
-        container = ifcopenshell.util.element.get_container(self.settings["product"], should_get_direct=True)
-        if container:
-            ifcopenshell.api.run("spatial.remove_container", self.file, product=self.settings["product"])
+        # check if there is anything to change
+        for product in products:
+            product_rel = next(iter(product.Decomposes), None)
 
-        if decomposes:
-            related_objects = list(decomposes.RelatedObjects)
-            related_objects.remove(self.settings["product"])
+            if product_rel is None:
+                products_without_aggregates.append(product)
+                continue
+
+            # either is_decomposed_by is None or product is part of different rel
+            if product_rel != is_decomposed_by:
+                previous_aggregates_rels.add(product_rel)
+                products_with_aggregates.append(product)
+
+            # products with already assigned aggregates will be skipped
+
+        products_to_change = products_without_aggregates + products_with_aggregates
+        # nothing to change
+        if not products_to_change:
+            return is_decomposed_by
+
+        # can be either only aggregated or only contained at the same time
+        # some product might not be able to have a container
+        possibly_contained_products = [p for p in products_without_aggregates if hasattr(p, "ContainedInStructure")]
+        ifcopenshell.api.run("spatial.unassign_container", self.file, products=possibly_contained_products)
+
+        # unassign elements from previous aggregates
+        for decomposes in previous_aggregates_rels:
+            related_objects = set(decomposes.RelatedObjects) - products
             if related_objects:
-                decomposes.RelatedObjects = related_objects
+                decomposes.RelatedObjects = list(related_objects)
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": decomposes})
             else:
                 history = decomposes.OwnerHistory
@@ -114,10 +140,9 @@ class Usecase:
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
 
+        # assign elements to a new aggregate
         if is_decomposed_by:
-            related_objects = set(is_decomposed_by.RelatedObjects)
-            related_objects.add(self.settings["product"])
-            is_decomposed_by.RelatedObjects = list(related_objects)
+            is_decomposed_by.RelatedObjects = list(set(is_decomposed_by.RelatedObjects) | products)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_decomposed_by})
         else:
             is_decomposed_by = self.file.create_entity(
@@ -125,19 +150,21 @@ class Usecase:
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["product"]],
-                    "RelatingObject": self.settings["relating_object"],
+                    "RelatedObjects": list(products),
+                    "RelatingObject": relating_object,
                 }
             )
 
-        placement = getattr(self.settings["product"], "ObjectPlacement", None)
-        if placement and placement.is_a("IfcLocalPlacement"):
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement",
-                self.file,
-                product=self.settings["product"],
-                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["product"].ObjectPlacement),
-                is_si=False,
-            )
+        # localize placement relative to a new aggregate for affected products
+        for product in products_to_change:
+            placement = getattr(product, "ObjectPlacement", None)
+            if placement and placement.is_a("IfcLocalPlacement"):
+                ifcopenshell.api.run(
+                    "geometry.edit_object_placement",
+                    self.file,
+                    product=product,
+                    matrix=ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),
+                    is_si=False,
+                )
 
         return is_decomposed_by

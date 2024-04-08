@@ -73,7 +73,7 @@ class Usecase:
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
         :return: The IfcRelContainedInSpatialStructure relationship instance
-            or `None` if nothing was changed.
+            or `None` if `products` was empty list.
         :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
@@ -128,13 +128,17 @@ class Usecase:
                 products_without_containers.append(product)
                 continue
 
+            # either structure_rel is None or product is part of different rel
             if product_rel != structure_rel:
                 previous_containers_rels.add(product_rel)
                 products_with_containers.append(product)
 
+            # products with already assigned containers will be skipped
+
+        products_to_change = products_without_containers + products_with_containers
         # nothing to change
-        if not products_without_containers and not products_with_containers:
-            return
+        if not products_to_change:
+            return structure_rel
 
         # can be either only aggregated or only contained at the same time
         for product in products_without_containers:
@@ -142,7 +146,7 @@ class Usecase:
             if aggregate:
                 ifcopenshell.api.run("aggregate.unassign_object", self.file, product=product)
 
-        # unassign elements from previous container
+        # unassign elements from previous containers
         for rel in previous_containers_rels:
             related_elements = set(rel.RelatedElements) - products
             if related_elements:
@@ -170,7 +174,7 @@ class Usecase:
             )
 
         # localize placement relative to a new container for affected products
-        for product in products_without_containers + products_with_containers:
+        for product in products_to_change:
             placement = getattr(product, "ObjectPlacement", None)
             if placement and placement.is_a("IfcLocalPlacement"):
                 ifcopenshell.api.run(

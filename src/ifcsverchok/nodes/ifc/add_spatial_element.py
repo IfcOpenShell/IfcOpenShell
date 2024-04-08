@@ -135,7 +135,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                     ifcopenshell.api.run(
                         "aggregate.assign_object",
                         self.file,
-                        product=items,
+                        products=[items],
                         relating_object=result,
                     )
                 else:
@@ -188,7 +188,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                             ifcopenshell.api.run(
                                 "aggregate.assign_object",
                                 self.file,
-                                product=added_element,
+                                products=[added_element],
                                 relating_object=result,
                             )
                         else:

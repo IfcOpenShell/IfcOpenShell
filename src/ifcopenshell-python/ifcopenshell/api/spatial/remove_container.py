@@ -42,11 +42,11 @@ class Usecase:
             storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
 
             # The project contains a site (note that project aggregation is a special case in IFC)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
 
             # The site has a building, the building has a storey, and the storey has a space
-            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
 
             # Create a wall
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")

@@ -51,8 +51,8 @@ class Usecase:
             element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
             subelement1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
             subelement2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement1, relating_object=element)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=subelement2, relating_object=element)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement1], relating_object=element)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement2], relating_object=element)
             # The relationship is returned as element still has subelement2
             rel = ifcopenshell.api.run("aggregate.unassign_object", model, product=subelement1)
             # Nothing is returned, as element is now empty

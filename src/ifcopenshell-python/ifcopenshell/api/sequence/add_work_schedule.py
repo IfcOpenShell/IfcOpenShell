@@ -107,7 +107,7 @@ class Usecase:
                 "aggregate.assign_object",
                 self.file,
                 **{
-                    "product": work_schedule,
+                    "products": [work_schedule],
                     "relating_object": self.settings["work_plan"],
                 }
             )
