@@ -23,3 +23,10 @@ test:
 .PHONY: qa
 qa:
 	black .
+
+.PHONY: dist
+dist:
+	rm -rf dist
+	$(SED) "s/999999/$(VERSION)/" pyproject.toml
+	python -m build
+	$(SED) "s/$(VERSION)/999999/" pyproject.toml
