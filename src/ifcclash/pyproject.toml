@@ -3,14 +3,14 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ifcpatch"
+name = "ifcclash"
 version = "0.0.999999"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
-description = "IFC patching utility"
+description = "IFC clash detection library to handle intersections, collisions, and clearance checks"
 readme = "README.md"
-keywords = ["IFC", "BIM"]
+keywords = ["IFC", "clash", "BIM"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
@@ -25,5 +25,5 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifcpatch"]
+include = ["ifcclash"]
 exclude = ["test*"]
