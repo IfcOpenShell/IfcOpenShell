@@ -99,15 +99,18 @@ class Root(blenderbim.core.tool.Root):
             if not element:
                 continue
             if hasattr(element, "ConnectedTo") and element.ConnectedTo:
-                paths = [connection for connection in element.ConnectedTo if connection.is_a("IfcRelConnectsPathElements")]
+                paths = [
+                    connection for connection in element.ConnectedTo if connection.is_a("IfcRelConnectsPathElements")
+                ]
                 for path in paths:
-                    relationships[element] = {"type": "path",
-                         "related_connection_type": path.RelatedConnectionType,
-                         "related_element": path.RelatedElement,
-                         "related_priorities": path.RelatedPriorities,
-                         "relating_connection_type": path.RelatingConnectionType,
-                         "relating_element": path.RelatingElement,
-                         "relating_priorities": path.RelatingPriorities,
+                    relationships[element] = {
+                        "type": "path",
+                        "related_connection_type": path.RelatedConnectionType,
+                        "related_element": path.RelatedElement,
+                        "related_priorities": path.RelatedPriorities,
+                        "relating_connection_type": path.RelatingConnectionType,
+                        "relating_element": path.RelatingElement,
+                        "relating_priorities": path.RelatingPriorities,
                     }
         return relationships
 
@@ -236,7 +239,6 @@ class Root(blenderbim.core.tool.Root):
                 related_connection=data["related_connection_type"],
             )
 
-    
     @classmethod
     def recreate_aggregate(cls, old_to_new):
         for old, new in old_to_new.items():
@@ -246,35 +248,34 @@ class Root(blenderbim.core.tool.Root):
                     new_aggregate = old_to_new[old_aggregate]
                 except:
                     blenderbim.core.aggregate.unassign_object(
-                                                tool.Ifc,
-                                                tool.Aggregate,
-                                                tool.Collector,
-                                                relating_obj=tool.Ifc.get_object(old_aggregate),
-                                                related_obj=tool.Ifc.get_object(new[0]),
-                                            )
+                        tool.Ifc,
+                        tool.Aggregate,
+                        tool.Collector,
+                        relating_obj=tool.Ifc.get_object(old_aggregate),
+                        related_obj=tool.Ifc.get_object(new[0]),
+                    )
                     continue
-                
+
                 blenderbim.core.aggregate.assign_object(
-                                            tool.Ifc,
-                                            tool.Aggregate,
-                                            tool.Collector,
-                                            relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                                            related_obj=tool.Ifc.get_object(new[0]),
-                                        )
-                
+                    tool.Ifc,
+                    tool.Aggregate,
+                    tool.Collector,
+                    relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                    related_obj=tool.Ifc.get_object(new[0]),
+                )
+
                 # Make sure that the array children also get reassigned to the correct aggregate
                 pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Array")
                 if pset:
                     array_children = tool.Blender.Modifier.Array.get_all_children_objects(new[0])
                     for obj in array_children:
                         blenderbim.core.aggregate.assign_object(
-                                                    tool.Ifc,
-                                                    tool.Aggregate,
-                                                    tool.Collector,
-                                                    relating_obj=tool.Ifc.get_object(new_aggregate[0]),
-                                                    related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
-                                                )
-    
+                            tool.Ifc,
+                            tool.Aggregate,
+                            tool.Collector,
+                            relating_obj=tool.Ifc.get_object(new_aggregate[0]),
+                            related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
+                        )
 
     @classmethod
     def run_geometry_add_representation(
