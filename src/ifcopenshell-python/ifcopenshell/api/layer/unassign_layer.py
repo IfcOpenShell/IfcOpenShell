@@ -16,16 +16,23 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+import ifcopenshell.util.element
+
 
 class Usecase:
-    def __init__(self, file, item=None, layer=None):
-        """Unassigns an item from a layer
+    def __init__(
+        self, file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
+    ):
+        """Unassigns representation items from a layer
 
         If the representation item isn't assigned to the layer, nothing will
         happen.
+        If after unassignment layer won't have any assigned items it will be
+        removed to keep IFC valid.
 
-        :param item: An IfcRepresentationItem element to unassign
-        :type item: ifcopenshell.entity_instance.entity_instance
+        :param items: A list IfcRepresentationItem elements to unassign
+        :type items: list[ifcopenshell.entity_instance.entity_instance]
         :param layer: The IfcPresentationLayerAssignment to unassign from
         :type layer: ifcopenshell.entity_instance.entity_instance
         :return: None
@@ -57,15 +64,24 @@ class Usecase:
             ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
 
             # Let's undo it!
-            ifcopenshell.api.run("layer.unassign_layer", model, item=representation.Items[0], layer=layer)
+            ifcopenshell.api.run("layer.unassign_layer", model, items=[representation.Items[0]], layer=layer)
         """
         self.file = file
         self.settings = {
-            "item": item,
+            "items": items,
             "layer": layer,
         }
 
     def execute(self):
-        assigned_items = set(self.settings["layer"].AssignedItems) or set()
-        assigned_items.remove(self.settings["item"])
-        self.settings["layer"].AssignedItems = list(assigned_items)
+        layer = self.settings["layer"]
+        assigned_items = set(layer.AssignedItems) or set()
+        items = set(self.settings["items"])
+        if not items.issubset(assigned_items):
+            return
+        assigned_items = list(assigned_items - items)
+
+        # keep IFC valid in case if there are no items left
+        if assigned_items:
+            layer.AssignedItems = assigned_items
+        else:
+            self.file.remove(layer)
