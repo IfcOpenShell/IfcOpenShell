@@ -16,6 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+VERSION:=`date '+%y%m%d'`
+SED:=sed -i
+ifeq ($(UNAME_S),Darwin)
+SED:=sed -i '' -e
+endif
+
 .PHONY: test
 test:
 	pytest -p no:pytest-blender test
