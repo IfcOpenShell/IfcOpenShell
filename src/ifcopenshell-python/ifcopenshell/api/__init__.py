@@ -23,14 +23,19 @@ import numpy
 import importlib
 import ifcopenshell
 import ifcopenshell.api
-from typing import Callable, Any
+from typing import Callable, Any, Optional
 
 
 pre_listeners = {}
 post_listeners = {}
 
 
-def run(usecase_path: str, ifc_file: ifcopenshell.file = None, should_run_listeners=True, **settings) -> Any:
+def run(
+    usecase_path: str,
+    ifc_file: Optional[ifcopenshell.file] = None,
+    should_run_listeners=True,
+    **settings: Any,
+) -> Any:
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
