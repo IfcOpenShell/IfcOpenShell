@@ -54,7 +54,7 @@ class Usecase:
 
             # And assign our wall representation item (in this example, there is
             # only one item) to the layer.
-            ifcopenshell.api.run("layer.assign_layer", model, item=representation.Items[0], layer=layer)
+            ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
 
             # Let's undo it!
             ifcopenshell.api.run("layer.unassign_layer", model, item=representation.Items[0], layer=layer)

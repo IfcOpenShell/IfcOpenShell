@@ -20,8 +20,10 @@ import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, item=None, layer=None):
-        """Assigns a representation item to a layer
+    def __init__(
+        self, file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
+    ):
+        """Assigns representation items to a layer
 
         In IFC, instead of objects being assigned to layers, representation
         items are assigned to layers. Representation items are portions of the
@@ -30,9 +32,9 @@ class Usecase:
         its frame) assigned to one layer, and another portion (e.g. the glazing
         panels) assigned to another layer.
 
-        :param item: The IfcRepresentationItem to assign to the layer. This
-            should be one of the items in the object's IfcShapeRepresentation.
-        :type item: ifcopenshell.entity_instance.entity_instance
+        :param items: The list of IfcRepresentationItems to assign to the layer. This
+            should be the items from the object's IfcShapeRepresentation.
+        :type items: list[ifcopenshell.entity_instance.entity_instance]
         :param layer: The IfcPresentationLayerAssignment layer to assign the
             item to.
         :type layer: ifcopenshell.entity_instance.entity_instance
@@ -62,15 +64,19 @@ class Usecase:
 
             # And assign our wall representation item (in this example, there is
             # only one item) to the layer.
-            ifcopenshell.api.run("layer.assign_layer", model, item=representation.Items[0], layer=layer)
+            ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
         """
         self.file = file
         self.settings = {
-            "item": item,
+            "items": items,
             "layer": layer,
         }
 
-    def execute(self):
-        assigned_items = set(self.settings["layer"].AssignedItems or [])
-        assigned_items.add(self.settings["item"])
-        self.settings["layer"].AssignedItems = list(assigned_items)
+    def execute(self) -> None:
+        # support AssignedItems == None since layer might just got created
+        layer = self.settings["layer"]
+        assigned_items = set(layer.AssignedItems or [])
+        items = set(self.settings["items"])
+        if items.issubset(assigned_items):
+            return
+        layer.AssignedItems = list(assigned_items | items)

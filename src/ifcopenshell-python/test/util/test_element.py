@@ -634,7 +634,7 @@ class TestGetElementsByLayer(test.bootstrap.IFC4):
         layer = ifcopenshell.api.run("layer.add_layer", self.file)
         representation = self.file.createIfcShapeRepresentation()
         element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=representation, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
         assert list(subject.get_elements_by_layer(self.file, layer)) == [element]
 
 
@@ -644,7 +644,7 @@ class TestGetlayers(test.bootstrap.IFC4):
         layer = ifcopenshell.api.run("layer.add_layer", self.file)
         representation = self.file.createIfcShapeRepresentation()
         element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=representation, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
     def test_getting_the_layer_of_a_product_item(self):
@@ -653,7 +653,7 @@ class TestGetlayers(test.bootstrap.IFC4):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
     def test_getting_the_layer_of_a_type_product_representation(self):
@@ -661,7 +661,7 @@ class TestGetlayers(test.bootstrap.IFC4):
         layer = ifcopenshell.api.run("layer.add_layer", self.file)
         representation = self.file.createIfcShapeRepresentation()
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=representation, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
     def test_getting_the_layer_of_a_type_product_item(self):
@@ -670,7 +670,7 @@ class TestGetlayers(test.bootstrap.IFC4):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
 
@@ -681,7 +681,7 @@ class TestGetlayersIFC2X3(test.bootstrap.IFC2X3):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
     def test_getting_the_layer_of_a_type_product_item(self):
@@ -690,7 +690,7 @@ class TestGetlayersIFC2X3(test.bootstrap.IFC2X3):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
-        ifcopenshell.api.run("layer.assign_layer", self.file, item=item, layer=layer)
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
 
