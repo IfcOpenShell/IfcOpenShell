@@ -83,3 +83,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         ifcopenshell.api.run("layer.unassign_layer", self.file, item=items[2], layer=layer)
         assert len(layer.AssignedItems) == 2
         assert set(layer.AssignedItems) == set(items[:2])
+
+    @deprecation_check
+    def test_assigning_an_aggregate(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        rel = ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        assert ifcopenshell.util.element.get_aggregate(subelement) == element
+        assert rel.is_a("IfcRelAggregates")

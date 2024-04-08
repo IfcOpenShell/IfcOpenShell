@@ -38,7 +38,7 @@ class TestAssignObject:
         ifc.get_entity("relating_obj").should_be_called().will_return("relating_object")
         ifc.get_entity("related_obj").should_be_called().will_return("related_object")
         ifc.run(
-            "aggregate.assign_object", product="related_object", relating_object="relating_object"
+            "aggregate.assign_object", products=["related_object"], relating_object="relating_object"
         ).should_be_called().will_return("rel")
         aggregate.disable_editing("related_obj").should_be_called()
         collector.assign("relating_obj").should_be_called()

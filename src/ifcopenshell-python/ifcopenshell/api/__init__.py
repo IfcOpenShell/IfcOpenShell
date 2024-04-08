@@ -50,6 +50,7 @@ ARGUMENTS_DEPRECATION = {
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
     "group.unassign_group": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "aggregate.assign_object": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
     "layer.assign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
     "layer.unassign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
 }
