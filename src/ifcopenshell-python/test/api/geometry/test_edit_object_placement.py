@@ -253,7 +253,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         ifcopenshell.api.run(
             "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
         )
@@ -629,7 +629,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
 
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         storey = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=storey, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[storey], relating_object=building)
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[wall], relating_structure=storey)
 

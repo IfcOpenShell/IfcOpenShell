@@ -706,7 +706,7 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         assert subject.get_container(subelement) == building
 
     def test_getting_nothing_if_we_enforce_only_getting_direct_spatial_containers(self):
@@ -714,7 +714,7 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         assert subject.get_container(subelement, should_get_direct=True) is None
 
 
@@ -736,7 +736,7 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         results = subject.get_decomposition(building)
         assert element in results
         assert subelement in results
@@ -756,7 +756,7 @@ class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcCovering")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         assert subject.get_aggregate(subelement) == element
 
 

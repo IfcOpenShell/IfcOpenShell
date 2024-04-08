@@ -236,9 +236,9 @@ class TestFilterElements(test.bootstrap.IFC4):
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name="Project")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=space)
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element2], relating_structure=storey)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=space, relating_object=storey)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=storey, relating_object=building)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=building, relating_object=project)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[space], relating_object=storey)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[building], relating_object=project)
         assert subject.filter_elements(self.file, "IfcWall, location=NULL") == set()
         assert subject.filter_elements(self.file, "IfcWall, location=Space") == {element}
         assert subject.filter_elements(self.file, "IfcWall, location=G") == {element, element2}
@@ -469,7 +469,7 @@ class TestSelector(test.bootstrap.IFC4):
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcMember")
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=building)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         assert set(subject.Selector.parse(self.file, "@ .IfcBuilding")) == {element, subelement}
 
     def test_selecting_elements_from_a_prefiltered_list(self):

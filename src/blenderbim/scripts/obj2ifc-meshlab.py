@@ -127,9 +127,9 @@ class Obj2Ifc:
         self.storey = ifcopenshell.api.run(
             "root.create_entity", self.file, ifc_class="IfcBuildingStorey", name="My Storey"
         )
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=site, relating_object=project)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=building, relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=self.storey, relating_object=building)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[site], relating_object=project)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[building], relating_object=site)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[self.storey], relating_object=building)
 
         ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=site)
         ifcopenshell.api.run("geometry.edit_object_placement", self.file, product=building)

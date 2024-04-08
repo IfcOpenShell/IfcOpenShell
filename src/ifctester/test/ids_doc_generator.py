@@ -320,9 +320,9 @@ site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", na
 building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
 storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, product=site)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, product=building)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, product=storey)
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, products=[site])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, products=[building])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, products=[storey])
 
 wall_types = []
 for i in range(0, 4):

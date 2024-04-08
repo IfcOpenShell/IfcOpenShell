@@ -93,7 +93,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=spatial,
+                    products=[spatial],
                     relating_object=file.by_type("IfcBuilding")[0],
                 )
 
@@ -120,7 +120,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=building,
+                    products=[building],
                     relating_object=file.by_type("IfcSite")[0],
                 )
                 try:
@@ -131,7 +131,7 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=file.by_type("IfcSite")[0],
+                    products=[file.by_type("IfcSite")[0]],
                     relating_object=file.by_type("IfcProject")[0],
                 )
         self.file = file
