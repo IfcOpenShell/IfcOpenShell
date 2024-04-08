@@ -127,6 +127,40 @@ class BIM_PT_section_with_cappings(Panel):
         row.operator("bim.clipping_plane_cut_with_cappings", icon="XRAY", text="Cut")
         row.operator("bim.revert_clipping_plane_cut", icon="FILE_REFRESH", text="Revert Cut")
 
+        props = context.scene.BIMProjectProperties
+        box = layout.box()
+        header = box.row(align=True)
+        header.label(text="Clipping Planes")
+        header.operator("bim.create_clipping_plane", text="", icon="ADD")
+
+        box.template_list(
+            "BIM_UL_clipping_plane",
+            "",
+            props,
+            "clipping_planes",
+            props,
+            "clipping_planes_active",
+        )
+
+        if props.clipping_planes_active < len(props.clipping_planes):
+            active_clipping_plane_obj = props.clipping_planes[props.clipping_planes_active].obj
+            box.prop(active_clipping_plane_obj, "location")
+            box.prop(active_clipping_plane_obj, "rotation_euler")
+
+
+class BIM_UL_clipping_plane(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            obj = item.obj
+            row = layout.row(align=True)
+            row.prop(obj, "name", text="", emboss=False)
+            row.operator("bim.select_object", text="", icon="RESTRICT_SELECT_OFF").obj_name = obj.name
+            row.context_pointer_set("active_object", obj)
+            row.operator("bim.flip_clipping_plane", text="", icon="PASTEFLIPDOWN")
+            row.operator("bim.delete_object", text="", icon="TRASH").obj_name = obj.name
+        else:
+            layout.label(text="", translate=False)
+
 
 class BIM_UL_generic(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
