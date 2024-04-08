@@ -689,6 +689,14 @@ class Blender(blenderbim.core.tool.Blender):
 
         return collections_mapping
 
+    @classmethod
+    def object_supports_edit_mode(cls, obj):
+        if not obj.data:
+            return False, "Can't Edit Empty Object"
+        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+            return False, "Can't Edit Clipping Plane Geometry"
+        return True, ""
+
     class Modifier:
         @classmethod
         def is_eligible_for_railing_modifier(cls, obj):
@@ -790,8 +798,7 @@ class Blender(blenderbim.core.tool.Blender):
             @classmethod
             def get_modifiers_data(cls, parent_element):
                 array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
-                for modifier_data in json.loads(array_pset["Data"]):
-                    yield modifier_data
+                yield from json.loads(array_pset["Data"])
 
             @classmethod
             def get_children_objects(cls, modifier_data):
@@ -838,7 +845,9 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.register_tool(ws_model.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_model.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_drawing.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
-            bpy.utils.register_tool(ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
+            bpy.utils.register_tool(
+                ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False
+            )
             bpy.utils.register_tool(
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )
