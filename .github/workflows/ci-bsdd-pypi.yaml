@@ -1,4 +1,4 @@
-name: ci-ifctester-pypi
+name: ci-bsdd-pypi
 
 on:
   schedule:
