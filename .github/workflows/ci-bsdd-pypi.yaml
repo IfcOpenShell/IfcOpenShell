@@ -38,11 +38,11 @@ jobs:
       - name: Compile
         run: |
           pip install build
-          cd src/ifctester &&
+          cd src/bsdd &&
           make dist
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: src/ifctester/dist
+          packages_dir: src/bsdd/dist
