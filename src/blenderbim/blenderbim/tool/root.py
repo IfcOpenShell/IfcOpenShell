@@ -18,8 +18,11 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
 import blenderbim.core.tool
+import blenderbim.core.aggregate
 import blenderbim.core.geometry
 import blenderbim.core.material
 import blenderbim.core.style
