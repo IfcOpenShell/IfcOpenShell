@@ -21,7 +21,7 @@ import ifcopenshell.api
 
 
 class TestAssignGroup(test.bootstrap.IFC4):
-    def test_unassignment(self):
+    def test_group_unassignment(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
         element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")

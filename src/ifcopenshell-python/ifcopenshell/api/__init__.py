@@ -24,10 +24,35 @@ import importlib
 import ifcopenshell
 import ifcopenshell.api
 from typing import Callable, Any, Optional
+from functools import partial
 
 
 pre_listeners = {}
 post_listeners = {}
+
+
+def batching_argument_deprecation(usecase_path: str, settings: dict, prev_argument: str, new_argument: str) -> dict:
+    if prev_argument in settings:
+        print(
+            f"WARNING. `{prev_argument}` argument is deprecated for API method "
+            f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+        )
+        settings = settings | {new_argument: [settings[prev_argument]]}
+        settings.pop(prev_argument)
+    return settings
+
+
+ARGUMENTS_DEPRECATION = {
+    "spatial.assign_container": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.unassign_container": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "group.unassign_group": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "layer.assign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
+    "layer.unassign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
+}
 
 
 def run(
@@ -39,6 +64,10 @@ def run(
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
+
+    # see #4531
+    if usecase_path in ARGUMENTS_DEPRECATION:
+        settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
 
     # TODO: settings serialization for client-server systems
     # def serialise_entity_instance(entity):
