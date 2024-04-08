@@ -1015,7 +1015,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 return
 
             linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.group_name)
-            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group)
+            ifcopenshell.api.run(
+                "group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group
+            )
 
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
@@ -1267,7 +1269,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
                 tool.Ifc.get_object(base_instance).select_set(True)
 
-                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
+                old_to_new = DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(
+                    self, context
+                )
                 for old, new in old_to_new.items():
                     new_obj = tool.Ifc.get_object(new[0])
                     new_base_matrix = Matrix.LocRotScale(*duplicate_matrix)
@@ -1439,7 +1443,9 @@ class OverrideModeSetEdit(bpy.types.Operator):
         for obj in selected_objs:
             if not obj:
                 continue
-            if not obj.data:
+            obj_supports_edit_mode, message = tool.Blender.object_supports_edit_mode(obj)
+            if not obj_supports_edit_mode:
+                self.report({"INFO"}, message)
                 obj.select_set(False)
                 continue
             element = tool.Ifc.get_entity(obj)

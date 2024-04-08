@@ -1920,32 +1920,32 @@ class CreateClippingPlane(bpy.types.Operator):
     bl_label = "Create Clipping Plane"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return context.area.type == "VIEW_3D"
-
     def execute(self, context):
         from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 
         # Clean up deleted planes
 
-        if len(bpy.context.scene.BIMProjectProperties.clipping_planes) > 5:
+        if len(context.scene.BIMProjectProperties.clipping_planes) > 5:
             self.report({"INFO"}, "Maximum of six clipping planes allowed.")
             return {"FINISHED"}
 
-        for area in bpy.context.screen.areas:
+        for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
         region = context.region
         rv3d = context.region_data
-        coord = (self.mouse_x, self.mouse_y)
-        origin = region_2d_to_origin_3d(region, rv3d, coord)
-        direction = region_2d_to_vector_3d(region, rv3d, coord)
-        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
-        if not hit:
-            self.report({"INFO"}, "No object found.")
-            return {"FINISHED"}
+        if rv3d:  # Called from a 3D viewport
+            coord = (self.mouse_x, self.mouse_y)
+            origin = region_2d_to_origin_3d(region, rv3d, coord)
+            direction = region_2d_to_vector_3d(region, rv3d, coord)
+            hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+            if not hit:
+                self.report({"INFO"}, "No object found.")
+                return {"FINISHED"}
+        else:  # Not Called from a 3D viewport
+            location = (0, 0, 1)
+            normal = (0, 0, 1)
 
         vertices = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (0.5, 0.5, 0), (-0.5, 0.5, 0)]
 
@@ -1956,20 +1956,20 @@ class CreateClippingPlane(bpy.types.Operator):
         mesh.update()
 
         plane_obj = bpy.data.objects.new("ClippingPlane", mesh)
-        bpy.context.collection.objects.link(plane_obj)
+        context.collection.objects.link(plane_obj)
         z_axis = Vector((0, 0, 1))
         rotation_matrix = z_axis.rotation_difference(normal).to_matrix().to_4x4()
         plane_obj.matrix_world = rotation_matrix
         plane_obj.matrix_world.translation = location
 
-        bpy.context.scene.cursor.location = location
+        context.scene.cursor.location = location
 
-        new = bpy.context.scene.BIMProjectProperties.clipping_planes.add()
+        new = context.scene.BIMProjectProperties.clipping_planes.add()
         new.obj = plane_obj
 
         tool.Blender.set_active_object(plane_obj)
 
-        ClippingPlaneDecorator.install(bpy.context)
+        ClippingPlaneDecorator.install(context)
         bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
         return {"FINISHED"}
 
@@ -1991,11 +1991,11 @@ class FlipClippingPlane(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.area.type == "VIEW_3D"
+        return context.active_object
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        if obj in [cp.obj for cp in bpy.context.scene.BIMProjectProperties.clipping_planes]:
+        obj = context.active_object
+        if obj in context.scene.BIMProjectProperties.clipping_planes_objs:
             obj.rotation_euler[0] += radians(180)
-            bpy.context.view_layer.update()
+            context.view_layer.update()
         return {"FINISHED"}
