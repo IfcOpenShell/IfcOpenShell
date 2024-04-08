@@ -305,12 +305,13 @@ def filter_elements(
         # {#1=IfcWall(...), #2=IfcDoor(...)}
         print(elements)
     """
+    if not query:
+        return elements or set()
     if elements and not edit_in_place:
         elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
-    return transformer.elements
 
 
 def set_element_value(
