@@ -141,10 +141,7 @@ class Usecase:
             return structure_rel
 
         # can be either only aggregated or only contained at the same time
-        for product in products_without_containers:
-            aggregate = ifcopenshell.util.element.get_aggregate(product)
-            if aggregate:
-                ifcopenshell.api.run("aggregate.unassign_object", self.file, product=product)
+        ifcopenshell.api.run("aggregate.unassign_object", self.file, products=products_without_containers)
 
         # unassign elements from previous containers
         for rel in previous_containers_rels:
