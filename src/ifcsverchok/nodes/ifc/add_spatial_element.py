@@ -173,7 +173,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                             ifcopenshell.api.run(
                                 "aggregate.unassign_object",
                                 self.file,
-                                product=removed_element,
+                                products=[removed_element],
                                 relating_object=result,
                             )
                         else:

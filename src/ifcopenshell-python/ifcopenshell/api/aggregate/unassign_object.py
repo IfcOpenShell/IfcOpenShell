@@ -22,8 +22,8 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None):
-        """Unassigns a product from its aggregate
+    def __init__(self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]):
+        """Unassigns products from their aggregate
 
         A product (i.e. a smaller part of a whole) may be aggregated into zero
         or one larger space or element. This function will remove that
@@ -37,12 +37,11 @@ class Usecase:
         If the product is not part of an aggregation relationship, nothing will
         happen.
 
-        :param product: The part of the aggregate, typically an IfcElement or
+        :param products: The list of parts of the aggregate, typically of IfcElements or
             IfcSpatialStructureElement subclass
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :return: The IfcRelAggregate relationship instance, only returned if the
-            whole still contains any other parts.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :return: None
+        :rtype: None
 
         Example:
 
@@ -53,26 +52,29 @@ class Usecase:
             subelement2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
             ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement1], relating_object=element)
             ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement2], relating_object=element)
-            # The relationship is returned as element still has subelement2
-            rel = ifcopenshell.api.run("aggregate.unassign_object", model, product=subelement1)
-            # Nothing is returned, as element is now empty
-            ifcopenshell.api.run("aggregate.unassign_object", model, product=subelement2)
+            # nothing is returned
+            ifcopenshell.api.run("aggregate.unassign_object", model, products=[subelement1])
+            # nothing is returned, relationship is removed
+            ifcopenshell.api.run("aggregate.unassign_object", model, products=[subelement2])
         """
         self.file = file
-        self.settings = { "product": product }
+        self.settings = {"products": products}
 
-    def execute(self):
-        for rel in self.settings["product"].Decomposes or []:
-            if not rel.is_a("IfcRelAggregates"):
-                continue
-            if len(rel.RelatedObjects) == 1:
+    def execute(self) -> None:
+        products = set(self.settings["products"])
+        rels = set(
+            rel
+            for product in products
+            if (rel := next((rel for rel in product.Decomposes if rel.is_a("IfcRelAggregates")), None))
+        )
+
+        for rel in rels:
+            related_objects = set(rel.RelatedObjects) - products
+            if related_objects:
+                rel.RelatedObjects = list(related_objects)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+            else:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-                return
-            related_objects = list(rel.RelatedObjects)
-            related_objects.remove(self.settings["product"])
-            rel.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-            return rel

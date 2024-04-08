@@ -65,7 +65,7 @@ def assign_work_schedule(ifc, work_plan=None, work_schedule=None):
 
 
 def unassign_work_schedule(ifc, work_schedule=None):
-    ifc.run("aggregate.unassign_object", product=work_schedule)
+    ifc.run("aggregate.unassign_object", products=[work_schedule])
 
 
 def enable_editing_work_schedule(sequence, work_schedule=None):
