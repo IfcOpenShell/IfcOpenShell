@@ -97,8 +97,10 @@ for name in modules.keys():
 classes = [
     operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
+    operator.BIM_OT_delete_object,
     operator.BIM_OT_open_webbrowser,
     operator.BIM_OT_remove_section_plane,
+    operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.ClippingPlaneCutWithCappings,
     operator.EditBlenderCollection,
@@ -131,6 +133,7 @@ classes = [
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
+    ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
     ui.BIM_ADDON_preferences,

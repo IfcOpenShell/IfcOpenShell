@@ -187,6 +187,11 @@ class BIMProjectProperties(PropertyGroup):
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
+    clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+
+    @property
+    def clipping_planes_objs(self):
+        return list({cp.obj for cp in self.clipping_planes if cp.obj})
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
