@@ -24,6 +24,5 @@ Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
-[tool.setuptools.packages.find]
-include = ["ifccsv"]
-exclude = ["test*"]
+[tool.setuptools]
+py-modules = ["ifccsv"]
