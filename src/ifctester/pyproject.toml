@@ -1,6 +1,7 @@
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
 [project]
 name = "ifctester"
 version = "0.0.999999"
@@ -17,11 +18,15 @@ classifiers = [
 dependencies = [
     "ifcopenshell",
 ]
+
 [project.urls]
-"Homepage" = "http://ifcopenshell.org"
-"Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
+
 [tool.setuptools.packages.find]
 include = ["ifctester"]
 exclude = ["test*"]
+
 [tool.setuptools.package-data]
 ifctester = ["*.xsd", "templates/*.html"]
