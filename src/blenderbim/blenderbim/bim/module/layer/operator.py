@@ -151,7 +151,10 @@ class AssignPresentationLayer(bpy.types.Operator):
         ifcopenshell.api.run(
             "layer.assign_layer",
             self.file,
-            **{"item": self.file.by_id(item.BIMMeshProperties.ifc_definition_id), "layer": self.file.by_id(self.layer)}
+            **{
+                "items": [self.file.by_id(item.BIMMeshProperties.ifc_definition_id)],
+                "layer": self.file.by_id(self.layer),
+            }
         )
         return {"FINISHED"}
 
