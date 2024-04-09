@@ -115,3 +115,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         rel = ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
         assert ifcopenshell.util.element.get_nest(subelement) == element
         assert rel.is_a("IfcRelNests")
+
+    @deprecation_check
+    def test_unassigning_an_nesting(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        subelement1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        ifcopenshell.api.run("nest.assign_object", self.file, related_objects=[subelement1], relating_object=element)
+        ifcopenshell.api.run("nest.unassign_object", self.file, related_object=subelement1)
+        assert ifcopenshell.util.element.get_nest(subelement1) is None

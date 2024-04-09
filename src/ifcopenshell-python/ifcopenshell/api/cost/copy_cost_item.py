@@ -77,14 +77,13 @@ class Usecase:
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_cost_items
-                    for cost_item in new_cost_items:
-                        ifcopenshell.api.run("nest.unassign_object", self.file, related_object=cost_item)
-                        rel = ifcopenshell.api.run(
-                            "nest.assign_object",
-                            self.file,
-                            related_objects=[cost_item],
-                            relating_object=to_element,
-                        )
+                    ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=new_cost_items)
+                    ifcopenshell.api.run(
+                        "nest.assign_object",
+                        self.file,
+                        related_objects=new_cost_items,
+                        relating_object=to_element,
+                    )
             # elif inverse.is_a("IfcRelAssignsToProduct"):
             #     continue
             #     to_element.IsDefinedBy = inverse.RelatingOrder
