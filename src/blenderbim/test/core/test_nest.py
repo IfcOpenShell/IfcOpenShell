@@ -38,7 +38,7 @@ class TestAssignObject:
         ifc.get_entity("relating_obj").should_be_called().will_return("relating_object")
         ifc.get_entity("related_obj").should_be_called().will_return("related_object")
         ifc.run(
-            "nest.assign_object", related_object="related_object", relating_object="relating_object"
+            "nest.assign_object", related_objects=["related_object"], relating_object="relating_object"
         ).should_be_called().will_return("rel")
         nest.disable_editing("related_obj").should_be_called()
         collector.assign("relating_obj").should_be_called()

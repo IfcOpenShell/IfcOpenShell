@@ -19,11 +19,17 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, related_object=None, relating_object=None):
-        """Assigns an object as a nested child to a parent host
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        related_objects: list[ifcopenshell.entity_instance],
+        relating_object: ifcopenshell.entity_instance,
+    ):
+        """Assigns objects as nested children to a parent host
 
         All physical IFC model elements must be part of a hierarchical tree
         called the "spatial decomposition", where large things are made up of
@@ -72,14 +78,15 @@ class Usecase:
         ifcopenshell.api.cost.add_cost_item or
         ifcopenshell.api.sequence.add_task.
 
-        :param related_object: The child of the nesting relationship, typically
-            an IfcElement.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :param related_objects: The list of children of the nesting relationship,
+            typically IfcElements.
+        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_object: The host parent of the nesting relationship,
             typically an IfcElement.
         :type relating_object: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelNests relationship instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `related_objects` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -90,30 +97,50 @@ class Usecase:
                 ifc_class="IfcSanitaryTerminal", predefined_type="SINK")
             faucet = ifcopenshell.api.run("root.create_entity", model,
                 ifc_class="IfcValve", predefined_type="FAUCET")
-            ifcopenshell.api.run("nest.assign_object", model, related_object=faucet, relating_object=sink)
+            ifcopenshell.api.run("nest.assign_object", model, related_objects=[faucet], relating_object=sink)
         """
         self.file = file
-        self.settings = {"related_object": related_object, "relating_object": relating_object}
+        self.settings = {"related_objects": related_objects, "relating_object": relating_object}
 
-    def execute(self):
-        nests = None
-        if self.settings["related_object"].Nests:
-            nests = self.settings["related_object"].Nests[0]
-
-        is_nested_by = None
-        for rel in self.settings["relating_object"].IsNestedBy:
-            if rel.is_a("IfcRelNests"):
-                is_nested_by = rel
-                break
-
-        if nests and nests == is_nested_by:
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["related_objects"]:
             return
 
-        if nests:
-            related_objects = list(nests.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
+        related_objects = set(self.settings["related_objects"])
+        relating_object = self.settings["relating_object"]
+        is_nested_by = next((i for i in relating_object.IsNestedBy), None)
+
+        previous_nests_rels: set[ifcopenshell.entity_instance] = set()
+        objects_without_nests: list[ifcopenshell.entity_instance] = []
+        objects_with_nests: list[ifcopenshell.entity_instance] = []
+
+        # check if there is anything to change
+        for object in related_objects:
+            object_rel = next(iter(object.Nests), None)
+
+            if object_rel is None:
+                objects_without_nests.append(object)
+                continue
+
+            # either is_nested_by is None or product is part of different rel
+            if object_rel != is_nested_by:
+                previous_nests_rels.add(object_rel)
+                objects_with_nests.append(object)
+
+            # products with already assigned nestings will be skipped
+
+        objects_to_change = objects_without_nests + objects_with_nests
+        # nothing to change
+        if not objects_to_change:
+            return is_nested_by
+
+        # NOTE: An object can both be nested and assigned to a container or aggregate.
+
+        # unassign elements from previous nests
+        for nests in previous_nests_rels:
+            related_objects = set(nests.RelatedObjects) - related_objects
             if related_objects:
-                nests.RelatedObjects = related_objects
+                nests.RelatedObjects = list(related_objects)
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
             else:
                 history = nests.OwnerHistory
@@ -121,10 +148,9 @@ class Usecase:
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
 
+        # assign elements to a new nesting
         if is_nested_by:
-            related_objects = list(is_nested_by.RelatedObjects)
-            related_objects.append(self.settings["related_object"])
-            is_nested_by.RelatedObjects = related_objects
+            is_nested_by.RelatedObjects = list(set(is_nested_by.RelatedObjects) | related_objects)
             ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_nested_by})
         else:
             is_nested_by = self.file.create_entity(
@@ -132,8 +158,12 @@ class Usecase:
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["related_object"]],
-                    "RelatingObject": self.settings["relating_object"],
+                    "RelatedObjects": list(related_objects),
+                    "RelatingObject": relating_object,
                 }
             )
+
+        # NOTE: Creating a nesting relationship doesn't localize the object's placement,
+        # unlike assigning it to an aggregate or a container.
+
         return is_nested_by

@@ -44,6 +44,6 @@ class Usecase:
         ifcopenshell.api.run(
             "nest.assign_object",
             self.file,
-            related_object=self.settings["item"],
+            related_objects=[self.settings["item"]],
             relating_object=self.settings["new_parent"],
         )

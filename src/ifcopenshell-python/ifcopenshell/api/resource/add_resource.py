@@ -97,7 +97,7 @@ class Usecase:
             ifcopenshell.api.run(
                 "nest.assign_object",
                 self.file,
-                related_object=resource,
+                related_objects=[resource],
                 relating_object=self.settings["parent_resource"],
             )
         else:
