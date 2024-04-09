@@ -72,7 +72,7 @@ class TestChangeSpatialLevel:
 class TestRemoveContainer:
     def test_run(self, ifc, collector):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        ifc.run("spatial.remove_container", product="element").should_be_called()
+        ifc.run("spatial.unassign_container", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
         subject.remove_container(ifc, collector, obj="obj")
 
