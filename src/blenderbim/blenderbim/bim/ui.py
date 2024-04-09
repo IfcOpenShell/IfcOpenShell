@@ -446,7 +446,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
         row.operator("bim.open_uri", text="", icon="HELP").uri = \
-            "https://blenderbim.org/docs-python/ifcopenshell-python/selector_syntax.html"
+            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):
