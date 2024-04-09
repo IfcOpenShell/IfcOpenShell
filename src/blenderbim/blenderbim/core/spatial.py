@@ -78,7 +78,7 @@ def change_spatial_level(spatial, parent=None):
 
 
 def remove_container(ifc, collector, obj=None):
-    ifc.run("spatial.remove_container", product=ifc.get_entity(obj))
+    ifc.run("spatial.unassign_container", products=[ifc.get_entity(obj)])
     collector.assign(obj)
 
 
