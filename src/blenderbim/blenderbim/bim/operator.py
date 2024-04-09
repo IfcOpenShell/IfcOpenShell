@@ -1099,6 +1099,3 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)
-
-
-
