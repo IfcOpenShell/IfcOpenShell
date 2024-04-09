@@ -522,11 +522,12 @@ class BimToolUI:
                 row.label(text=f"No {AuthoringData.data['ifc_element_type']} Found", icon="ERROR")
                 row = cls.layout.row()
                 row.prop(cls.props, "type_name")
-                row = cls.layout.row()
+                row = cls.layout.row(align=True)
                 op = row.operator(
                     "bim.add_default_type", icon="ADD", text=f"Add {AuthoringData.data['ifc_element_type']}"
                 )
                 op.ifc_element_type = AuthoringData.data["ifc_element_type"]
+                row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="")
             else:
                 row.label(text="No Element Types Found", icon="ERROR")
                 row.operator("bim.launch_type_manager", icon=tool.Blender.TYPE_MANAGER_ICON, text="Launch Type Manager")
