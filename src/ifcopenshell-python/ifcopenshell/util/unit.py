@@ -18,7 +18,7 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Tuple, Iterable, Any, Union, Literal, Optional
+from typing import Iterable, Any, Union, Literal, Optional
 
 import ifcopenshell
 import ifcopenshell.api
@@ -696,7 +696,7 @@ def is_attr_type(
 
 def iter_element_and_attributes_per_type(
     ifc_file: ifcopenshell.file, attr_type_name: str
-) -> Iterable[Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
+) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
 
     for element in ifc_file:
