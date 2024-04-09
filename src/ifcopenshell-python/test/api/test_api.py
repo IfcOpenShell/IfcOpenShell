@@ -107,3 +107,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run("spatial.remove_container", self.file, product=subelement)
         assert ifcopenshell.util.element.get_container(subelement) is None
+
+    @deprecation_check
+    def test_assigning_a_nesting(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSanitaryTerminal")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcValve")
+        rel = ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
+        assert ifcopenshell.util.element.get_nest(subelement) == element
+        assert rel.is_a("IfcRelNests")

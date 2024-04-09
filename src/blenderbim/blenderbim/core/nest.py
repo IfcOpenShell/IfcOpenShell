@@ -29,7 +29,9 @@ def assign_object(ifc, nest, collector, relating_obj=None, related_obj=None):
     if not nest.can_nest(relating_obj, related_obj):
         return
     rel = ifc.run(
-        "nest.assign_object", related_object=ifc.get_entity(related_obj), relating_object=ifc.get_entity(relating_obj)
+        "nest.assign_object",
+        related_objects=[ifc.get_entity(related_obj)],
+        relating_object=ifc.get_entity(relating_obj),
     )
     collector.assign(relating_obj)
     collector.assign(related_obj)
