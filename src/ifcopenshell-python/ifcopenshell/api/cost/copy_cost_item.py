@@ -82,7 +82,7 @@ class Usecase:
                         rel = ifcopenshell.api.run(
                             "nest.assign_object",
                             self.file,
-                            related_object=cost_item,
+                            related_objects=[cost_item],
                             relating_object=to_element,
                         )
             # elif inverse.is_a("IfcRelAssignsToProduct"):

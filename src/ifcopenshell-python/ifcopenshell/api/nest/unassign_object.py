@@ -42,8 +42,8 @@ class Usecase:
             task = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
             subtask1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
             subtask2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-            ifcopenshell.api.run("nest.assign_object", model, related_object=subtask1, relating_object=task)
-            ifcopenshell.api.run("nest.assign_object", model, related_object=subtask2, relating_object=task)
+            ifcopenshell.api.run("nest.assign_object", model, related_objects=[subtask1], relating_object=task)
+            ifcopenshell.api.run("nest.assign_object", model, related_objects=[subtask2], relating_object=task)
             # The relationship is returned as task still has subtask2
             rel = ifcopenshell.api.run("nest.unassign_object", model, related_object=subtask1)
             # Nothing is returned, as the relationship has no related objects

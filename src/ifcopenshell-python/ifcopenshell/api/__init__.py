@@ -67,10 +67,14 @@ ARGUMENTS_DEPRECATION = {
         new_argument="products",
         replace_usecase="spatial.unassign_container",
     ),
+    "nest.assign_object": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
 }
 
 
 CACHED_USECASE_CLASSES = dict()
+
 
 def run(
     usecase_path: str,
