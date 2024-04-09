@@ -70,6 +70,8 @@ ARGUMENTS_DEPRECATION = {
 }
 
 
+CACHED_USECASE_CLASSES = dict()
+
 def run(
     usecase_path: str,
     ifc_file: Optional[ifcopenshell.file] = None,
@@ -108,9 +110,12 @@ def run(
         # except:
         #    print(usecase_path, vcs_settings)
 
-    importlib.import_module(f"ifcopenshell.api.{usecase_path}")
-    module, usecase = usecase_path.split(".")
-    usecase_class = getattr(getattr(getattr(ifcopenshell.api, module), usecase), "Usecase")
+    usecase_class = CACHED_USECASE_CLASSES.get(usecase_path)
+    if usecase_class is None:
+        importlib.import_module(f"ifcopenshell.api.{usecase_path}")
+        module, usecase = usecase_path.split(".")
+        usecase_class = getattr(getattr(getattr(ifcopenshell.api, module), usecase), "Usecase")
+        CACHED_USECASE_CLASSES[usecase_path] = usecase_class
 
     if ifc_file:
         result = usecase_class(ifc_file, **settings).execute()
