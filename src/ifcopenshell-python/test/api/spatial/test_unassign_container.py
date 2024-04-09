@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
-class TestAssignContainer(test.bootstrap.IFC4):
+class TestUnassignContainer(test.bootstrap.IFC4):
     def test_unassigning_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -35,7 +35,12 @@ class TestAssignContainer(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement, subelement2])
         assert not self.file.by_type("IfcRelContainedInSpatialStructure")
 
-    def test_unassigning_a_container_with_other_elements(self):
+    def test_doing_nothing_if_no_container(self):
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement])
+        assert ifcopenshell.util.element.get_container(subelement) is None
+
+    def test_updating_the_rel_when_a_container_is_removed_with_multipled_elements(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -45,3 +50,10 @@ class TestAssignContainer(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement])
         rel = self.file.by_type("IfcRelContainedInSpatialStructure")[0]
         assert list(rel.RelatedElements) == [subelement2]
+
+    def test_deleting_the_rel_when_a_container_is_removed_with_no_elements(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
+        ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement])
+        assert len(self.file.by_type("IfcRelContainedInSpatialStructure")) == 0

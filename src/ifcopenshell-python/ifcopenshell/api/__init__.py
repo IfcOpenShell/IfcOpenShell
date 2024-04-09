@@ -31,7 +31,12 @@ pre_listeners = {}
 post_listeners = {}
 
 
-def batching_argument_deprecation(usecase_path: str, settings: dict, prev_argument: str, new_argument: str) -> dict:
+def batching_argument_deprecation(
+    usecase_path: str, settings: dict, prev_argument: str, new_argument: str, replace_usecase: Optional[str] = None
+) -> tuple[str, dict]:
+    if replace_usecase is not None:
+        print(f"WARNING. `{usecase_path}` api method is deprecated and should be replaced with `{replace_usecase}`.")
+
     if prev_argument in settings:
         print(
             f"WARNING. `{prev_argument}` argument is deprecated for API method "
@@ -39,7 +44,7 @@ def batching_argument_deprecation(usecase_path: str, settings: dict, prev_argume
         )
         settings = settings | {new_argument: [settings[prev_argument]]}
         settings.pop(prev_argument)
-    return settings
+    return (replace_usecase or usecase_path, settings)
 
 
 ARGUMENTS_DEPRECATION = {
@@ -51,9 +56,17 @@ ARGUMENTS_DEPRECATION = {
     ),
     "group.unassign_group": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
     "aggregate.assign_object": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
-    "aggregate.unassign_object": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "aggregate.unassign_object": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
     "layer.assign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
     "layer.unassign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
+    "spatial.remove_container": partial(
+        batching_argument_deprecation,
+        prev_argument="product",
+        new_argument="products",
+        replace_usecase="spatial.unassign_container",
+    ),
 }
 
 
@@ -69,7 +82,7 @@ def run(
 
     # see #4531
     if usecase_path in ARGUMENTS_DEPRECATION:
-        settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
+        usecase_path, settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
 
     # TODO: settings serialization for client-server systems
     # def serialise_entity_instance(entity):
