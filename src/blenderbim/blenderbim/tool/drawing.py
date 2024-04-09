@@ -1716,15 +1716,20 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
+        # Hide everything first, then selectively show. This is significantly faster.
+        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+            bpy.ops.object.hide_view_set(unselected=False)
+            bpy.ops.object.hide_view_set(unselected=True)
 
-        # hide non-filtered elemenets
         for view_layer_object in bpy.context.view_layer.objects:
             element = tool.Ifc.get_entity(view_layer_object)
             if not element or element.is_a("IfcTypeProduct"):
                 continue
-            hide = element not in filtered_elements
-            view_layer_object.hide_set(hide)
-            view_layer_object.hide_render = hide
+            if element in filtered_elements:
+                view_layer_object.hide_set(False)
+                view_layer_object.hide_render = False
+            elif view_layer_object.hide_render is not True:
+                view_layer_object.hide_render = True
 
         subcontexts: list[ifcopenshell.entity_instance] = []
         target_view = cls.get_drawing_target_view(drawing)
