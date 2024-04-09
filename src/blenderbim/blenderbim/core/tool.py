@@ -872,7 +872,7 @@ class Spatial:
     def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
     def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
-    def set_obj_origin_to_cursor_position(cls, obj): pass
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
     def get_active_obj_z(cls): pass
