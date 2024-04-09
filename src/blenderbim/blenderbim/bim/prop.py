@@ -273,6 +273,8 @@ class Attribute(PropertyGroup):
     def get_value(self):
         if self.is_optional and self.is_null:
             return None
+        if self.data_type == "string":
+            return self.string_value.replace("\\n", "\n")
         return getattr(self, str(self.get_value_name()), None)
 
     def get_value_default(self):
