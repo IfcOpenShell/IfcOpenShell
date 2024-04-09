@@ -121,7 +121,7 @@ def import_attribute(attribute, props, data, callback=None):
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
-        new.string_value = "" if new.is_null else str(data[attribute.name()])
+        new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
     elif data_type == "boolean":
