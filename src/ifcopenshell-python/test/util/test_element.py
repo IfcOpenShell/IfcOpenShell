@@ -760,6 +760,14 @@ class TestGetAggregateIFC4(test.bootstrap.IFC4):
         assert subject.get_aggregate(subelement) == element
 
 
+class TestGetNestIFC4(test.bootstrap.IFC4):
+    def test_getting_the_nest_parent_of_an_element(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        ifcopenshell.api.run("nest.assign_object", self.file, related_objects=[subelement], relating_object=element)
+        assert subject.get_nest(subelement) == element
+
+
 class TestReplaceAttributeIFC4(test.bootstrap.IFC4):
     def test_replacing_an_elements_attribute(self):
         element = self.file.createIfcWall("foo")
