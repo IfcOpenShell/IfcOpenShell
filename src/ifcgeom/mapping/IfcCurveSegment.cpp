@@ -34,7 +34,7 @@ using namespace ifcopenshell::geometry;
 
 namespace {
 // @todo: rb is there a common math library these functions can be moved to?
-auto sign = [](double v) -> int { return v < 0 ? -1 : 1; };                      // returns -1 or 1
+auto sign = [](double v) -> double { return v ? v/fabs(v) : 1.0; };
 
 // @todo change the calculation at end of this to std::lerp when upgrading to C++ 20
 template <typename T>
@@ -389,10 +389,12 @@ class curve_segment_evaluator {
             auto position = spiral->Position()->as<IfcSchema::IfcAxis2Placement2D>();
             auto location = position->Location()->as<IfcSchema::IfcCartesianPoint>();
 
-            // start point of the parent curve
+            // center point of the parent curve
+            // this is the inflection point of the spiral
             auto pcCenterX = location->Coordinates()[0];
             auto pcCenterY = location->Coordinates()[1];
 
+            // orientation of the coordinate system at the center point
             // normalize the direction ratios
             auto ref_direction = position->RefDirection();
             double pcDx = 1.0, pcDy = 0.0;
@@ -407,14 +409,21 @@ class curve_segment_evaluator {
             }
 
             double pcStartX = 0.0, pcStartY = 0.0;
+            double pcStartDx = 1.0, pcStartDy = 0.0;
             if (start)
             {
+               // the spiral doesn't start at the inflection point
+               // compute the point where it starts
                 pcStartX = boost::math::quadrature::trapezoidal(fnX, 0.0, start / s);
                 pcStartY = boost::math::quadrature::trapezoidal(fnY, 0.0, start / s);
+
+                // compute the slope of the spiral at the start point
+                pcStartDx = s ? fnX(start/s) / s : 1.0;
+                pcStartDy = s ? fnY(start/s) / s : 0.0;
             }
 
             geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
-            eval_ = [start, s, pcCenterX, pcCenterY, pcStartX, pcStartY, pcDx, pcDy,fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
+            eval_ = [start, s, pcStartX, pcStartY, pcStartDx, pcStartDy, pcCenterX, pcCenterY, pcDx, pcDy, fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
 
                 u += start;
 
@@ -423,16 +432,14 @@ class curve_segment_evaluator {
                 auto b = s ? u / s : 0.0;
 
                 // point on parent curve
-                auto pcX = boost::math::quadrature::trapezoidal(fnX, a, b) + pcCenterX;
-                auto pcY = boost::math::quadrature::trapezoidal(fnY, a, b) + pcCenterY;
+                auto pcX = boost::math::quadrature::trapezoidal(fnX, a, b) + pcCenterX - pcStartX;
+                auto pcY = boost::math::quadrature::trapezoidal(fnY, a, b) + pcCenterY - pcStartY;
 
-               // translate parent curve point to the origin
-                pcX -= pcStartX;
-                pcY -= pcStartY;
-
-                auto rotate = -atan2(pcDy, pcDx);
-                auto csX = pcX * cos(rotate) - pcY * sin(rotate);
-                auto csY = pcX * sin(rotate) + pcY * cos(rotate);
+                auto angle1 = atan2(pcStartDy, pcStartDx);
+                auto angle2 = atan2(pcDy, pcDx);
+                auto angle = angle2 - angle1;
+                auto csX = pcX * cos(angle) - pcY * sin(angle);
+                auto csY = pcX * sin(angle) + pcY * cos(angle);
 
                 // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
                 // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
@@ -440,7 +447,7 @@ class curve_segment_evaluator {
                 auto dy = s ? fnY(b) / s : 0.0;
 
 
-               Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
                 m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
                 m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
                 m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
@@ -814,8 +821,8 @@ class curve_segment_evaluator {
             auto csY = pcX * sin(rotate) + pcY * cos(rotate);
 
             // slope of the parent curve
-            auto dx = cos(angle + rotate);
-            auto dy = sin(angle + rotate);
+            auto dx = -sin(angle + rotate);
+            auto dy =  cos(angle + rotate);
 
             // transform the point into the curve segment coordinate system
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
@@ -843,14 +850,14 @@ class curve_segment_evaluator {
              //auto y = ys + R * (sin(theta) - sin(start_angle));
              auto y = ys - sign_l*(sqrt(R * R - pow(R * cos(start_angle) + u, 2)) - sqrt(R * R - pow(R * cos(start_angle), 2)));
 
-             auto dx = sin(theta);
-             auto dy = -cos(theta);
+             auto dx = -sin(theta);
+             auto dy =  cos(theta);
 
              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
              m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
              m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
              m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
-             m.col(3) = Eigen::Vector4d(u, y, 0.0, 1.0);
+             m.col(3) = Eigen::Vector4d(0.0/*u*/, y, 0.0, 1.0);
              return m;
          };
       } else if (segment_type_ == ST_CANT) {
