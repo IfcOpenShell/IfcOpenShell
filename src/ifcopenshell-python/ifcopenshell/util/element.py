@@ -19,7 +19,7 @@
 from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.util.element
-from typing import List, Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 
 def get_pset(
@@ -379,7 +379,7 @@ def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
                 return relationship.RelatingType
 
 
-def get_types(type: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Get all the occurrences of a type element
 
     :param type: The type element
@@ -401,7 +401,7 @@ def get_types(type: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_in
     return []
 
 
-def get_shape_aspects(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Gets element shape aspects
 
     :param element: The element to get the shape aspects of.
@@ -471,7 +471,7 @@ def get_material(
             return get_material(relating_type, should_skip_usage)
 
 
-def get_materials(element: ifcopenshell.entity_instance, should_inherit=True) -> List[ifcopenshell.entity_instance]:
+def get_materials(element: ifcopenshell.entity_instance, should_inherit=True) -> list[ifcopenshell.entity_instance]:
     """Gets individual materials of an element
 
     If the element has a material set, the individual materials of that set are
@@ -506,7 +506,7 @@ def get_materials(element: ifcopenshell.entity_instance, should_inherit=True) ->
         return list(material.Materials)
 
 
-def get_styles(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves the styles used in an element's representation.
 
     Styles may be retreived from the material or the body representation.
@@ -552,7 +552,7 @@ def get_styles(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entit
 
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
-) -> List[ifcopenshell.entity_instance]:
+) -> list[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
     This includes elements using the material as part of a material set or set
@@ -596,7 +596,7 @@ def get_elements_by_material(
 
 def get_elements_by_style(
     ifc_file: ifcopenshell.file, style: ifcopenshell.entity_instance
-) -> List[ifcopenshell.entity_instance]:
+) -> list[ifcopenshell.entity_instance]:
     """Retrieves the elements whose geometric representation uses a style
 
     :param ifc_file: The IFC file
@@ -638,7 +638,7 @@ def get_elements_by_style(
 
 def get_elements_by_representation(
     ifc_file: ifcopenshell.file, representation: ifcopenshell.entity_instance
-) -> List[ifcopenshell.entity_instance]:
+) -> list[ifcopenshell.entity_instance]:
     """Gets all elements using a geometric representation
 
     :param ifc_file: The IFC file
@@ -672,7 +672,7 @@ def get_elements_by_representation(
 
 def get_elements_by_layer(
     ifc_file: ifcopenshell.file, layer: ifcopenshell.entity_instance
-) -> List[ifcopenshell.entity_instance]:
+) -> list[ifcopenshell.entity_instance]:
     """Get all the elements that are used by a presentation layer
 
     :param ifc_file: The IFC file
@@ -695,7 +695,7 @@ def get_elements_by_layer(
 
 def get_layers(
     ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
-) -> List[ifcopenshell.entity_instance]:
+) -> list[ifcopenshell.entity_instance]:
     """Get the CAD layers that an element is part of
 
     An element may have portions or all of its geometry assigned to a
@@ -784,7 +784,7 @@ def get_container(
                 container = get_aggregate(container)
 
 
-def get_referenced_structures(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retreives a list of referenced spatial elements
 
     Typically useful for multistorey elements, such as columns or facade
@@ -808,7 +808,7 @@ def get_referenced_structures(element: ifcopenshell.entity_instance) -> List[ifc
     return []
 
 
-def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> List[ifcopenshell.entity_instance]:
+def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
@@ -850,7 +850,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     return results
 
 
-def get_grouped_by(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
     :param element: The IFC element
@@ -920,7 +920,7 @@ def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
             return element.Decomposes[0].RelatingObject
 
 
-def get_parts(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the parts of an element that have an aggregation relationship.
 
@@ -941,7 +941,7 @@ def get_parts(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity
             return element.IsDecomposedBy[0].RelatedObjects
 
 
-def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> List[ifcopenshell.entity_instance]:
+def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the components of an element that have an nest relationship.
 
@@ -1069,8 +1069,8 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
 def remove_deep2(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
-    also_consider: List[ifcopenshell.entity_instance] = [],
-    do_not_delete: List[ifcopenshell.entity_instance] = [],
+    also_consider: list[ifcopenshell.entity_instance] = [],
+    do_not_delete: list[ifcopenshell.entity_instance] = [],
 ) -> None:
     """Recursively purges a subgraph safely, starting at an element
 
@@ -1170,7 +1170,7 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
 def copy_deep(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
-    exclude: Optional[List[str]] = None,
+    exclude: Optional[list[str]] = None,
     exclude_callback: Optional[Callable[[ifcopenshell.entity_instance], bool]] = None,
     copied_entities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
 ) -> ifcopenshell.entity_instance:
