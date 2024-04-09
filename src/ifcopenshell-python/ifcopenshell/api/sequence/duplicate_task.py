@@ -52,9 +52,7 @@ class Usecase:
     def execute(self):
         self.tracker = {"current": [], "duplicate": []}
         self.duplicate_task(self.settings["task"])
-        self.copy_sequence_relationship(
-            self.tracker["current"], self.tracker["duplicate"]
-        )
+        self.copy_sequence_relationship(self.tracker["current"], self.tracker["duplicate"])
         return self.tracker["current"], self.tracker["duplicate"]
 
     def duplicate_task(self, task):
@@ -69,9 +67,7 @@ class Usecase:
             if inverse.is_a("IfcRelDefinesByProperties"):
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
                 inverse.RelatedObjects = [to_element]
-                pset = ifcopenshell.util.element.copy_deep(
-                    self.file, inverse.RelatingPropertyDefinition
-                )
+                pset = ifcopenshell.util.element.copy_deep(self.file, inverse.RelatingPropertyDefinition)
                 inverse.RelatingPropertyDefinition = pset
             elif inverse.is_a("IfcRelNests") and inverse.RelatingObject == from_element:
                 nested_tasks = [e for e in inverse.RelatedObjects]
@@ -83,24 +79,19 @@ class Usecase:
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_tasks
-                    for t in new_tasks:
-                        ifcopenshell.api.run(
-                            "nest.unassign_object", self.file, related_object=t
-                        )
-                        rel = ifcopenshell.api.run(
-                            "nest.assign_object",
-                            self.file,
-                            related_object=t,
-                            relating_object=to_element,
-                        )
+                    ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=new_tasks)
+                    ifcopenshell.api.run(
+                        "nest.assign_object",
+                        self.file,
+                        related_objects=new_tasks,
+                        relating_object=to_element,
+                    )
+
             elif inverse.is_a("IfcRelSequence") and (
-                inverse.RelatingProcess == from_element
-                or inverse.RelatedProcess == from_element
+                inverse.RelatingProcess == from_element or inverse.RelatedProcess == from_element
             ):
                 continue
-            elif inverse.is_a(
-                "IfcRelAssignsToControl"
-            ) and inverse.RelatingControl.is_a("IfcWorkSchedule"):
+            elif inverse.is_a("IfcRelAssignsToControl") and inverse.RelatingControl.is_a("IfcWorkSchedule"):
                 continue
             elif inverse.is_a("IfcRelDefinesByObject"):
                 continue
@@ -118,8 +109,7 @@ class Usecase:
         for i, original_task in enumerate(original_tasks):
             for inverse in self.file.get_inverse(original_task):
                 if inverse.is_a("IfcRelSequence") and (
-                    inverse.RelatingProcess == original_task
-                    or inverse.RelatedProcess == original_task
+                    inverse.RelatingProcess == original_task or inverse.RelatedProcess == original_task
                 ):
                     original_task_index = original_tasks.index(original_task)
                     duplicated_task = duplicated_tasks[original_task_index]
@@ -129,16 +119,12 @@ class Usecase:
                     else:
                         related_process = duplicated_task
                     if inverse.RelatedProcess in original_tasks:
-                        related_process_index = original_tasks.index(
-                            inverse.RelatedProcess
-                        )
+                        related_process_index = original_tasks.index(inverse.RelatedProcess)
                         related_process = duplicated_tasks[related_process_index]
                     else:  # thus the related process is not part of the duplicated tasks
                         related_process = inverse.RelatedProcess
                     if inverse.RelatingProcess in original_tasks:
-                        relating_process_index = original_tasks.index(
-                            inverse.RelatingProcess
-                        )
+                        relating_process_index = original_tasks.index(inverse.RelatingProcess)
                         relating_process = duplicated_tasks[relating_process_index]
                     else:  # thus the relating process is not part of the duplicated tasks
                         relating_process = inverse.RelatingProcess
@@ -154,11 +140,11 @@ class Usecase:
                                 "sequence.assign_lag_time",
                                 self.file,
                                 rel_sequence=rel,
-                                lag_value=ifcopenshell.util.date.ifc2datetime(
-                                    inverse.TimeLag.LagValue.wrappedValue
-                                )
-                                if inverse.TimeLag.LagValue
-                                else None,
+                                lag_value=(
+                                    ifcopenshell.util.date.ifc2datetime(inverse.TimeLag.LagValue.wrappedValue)
+                                    if inverse.TimeLag.LagValue
+                                    else None
+                                ),
                                 duration_type=inverse.TimeLag.DurationType,
                             )
 
@@ -170,17 +156,13 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run(
-                "owner.update_owner_history", self.file, **{"element": referenced_by}
-            )
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run(
-                        "owner.create_owner_history", self.file
-                    ),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
                 }
