@@ -189,7 +189,8 @@ def generate_space(ifc, spatial, model, Type):
             name = "Space"
 
         obj = spatial.get_named_obj_from_mesh(name, mesh)
-        spatial.set_obj_origin_to_cursor_position(obj)
+        spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
+        spatial.traslate_obj_to_z_location(obj, z)
         spatial.link_obj_to_active_collection(obj)
         spatial.assign_ifcspace_class_to_obj(obj)
 
