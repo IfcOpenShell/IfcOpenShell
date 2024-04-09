@@ -606,7 +606,7 @@ class BaseDecorator:
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
 
-            for line in literal_data["CurrentValue"].split("\\n"):
+            for line in literal_data["CurrentValue"].split("\n"):
                 self.draw_label(
                     context,
                     line,
