@@ -32,7 +32,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import List, Union
+from typing import Union
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -889,7 +889,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                         return inverse
 
     @classmethod
-    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> List[ifcopenshell.entity_instance]:
+    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> list[ifcopenshell.entity_instance]:
         """update `representation_item` style based on styles connected to the `shape_aspect`
         through material constituents with the same name
         """

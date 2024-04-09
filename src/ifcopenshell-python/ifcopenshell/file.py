@@ -448,7 +448,7 @@ class file(object):
             [self.transaction.store_create(e) for e in reversed(added_elements)]
         return result
 
-    def by_type(self, type: str, include_subtypes=True) -> List[ifcopenshell.entity_instance]:
+    def by_type(self, type: str, include_subtypes=True) -> list[ifcopenshell.entity_instance]:
         """Return IFC objects filtered by IFC Type and wrapped with the entity_instance class.
 
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
@@ -458,7 +458,7 @@ class file(object):
         :param include_subtypes: Whether or not to return subtypes of the IFC class
         :type include_subtypes: bool
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list
+        :rtype: list[ifcopenshell.entity_instance.entity_instance]
         """
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
@@ -466,7 +466,7 @@ class file(object):
 
     def traverse(
         self, inst: ifcopenshell.entity_instance, max_levels=None, breadth_first=False
-    ) -> List[ifcopenshell.entity_instance]:
+    ) -> list[ifcopenshell.entity_instance]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
@@ -476,7 +476,7 @@ class file(object):
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
         :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list
+        :rtype: list[ifcopenshell.entity_instance.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -490,7 +490,7 @@ class file(object):
 
     def get_inverse(
         self, inst: ifcopenshell.entity_instance, allow_duplicate=False, with_attribute_indices=False
-    ) -> List[ifcopenshell.entity_instance]:
+    ) -> list[ifcopenshell.entity_instance]:
         """Return a list of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
@@ -499,7 +499,7 @@ class file(object):
         :param with_attribute_indices: Returns pairs of <i, idx>
            where i[idx] is inst or contains inst. Requires allow_duplicate=True
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list
+        :rtype: list[ifcopenshell.entity_instance.entity_instance]
         """
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
