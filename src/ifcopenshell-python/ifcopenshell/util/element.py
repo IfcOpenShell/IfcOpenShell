@@ -75,12 +75,12 @@ def get_pset(
             if definition.Name == name:
                 pset = definition
                 break
-    elif hasattr(element, "IsDefinedBy"):
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
                 type_pset = get_pset(element_type, name, prop, should_inherit=False, verbose=verbose)
-        for relationship in element.IsDefinedBy:
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
                 if definition.Name == name:
@@ -157,12 +157,12 @@ def get_psets(
             if qtos_only:
                 continue
             psets[definition.Name] = get_property_definition(definition, verbose=verbose)
-    elif hasattr(element, "IsDefinedBy"):
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
                 psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
-        for relationship in element.IsDefinedBy:
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
                 if psets_only and not definition.is_a("IfcPropertySet"):
@@ -345,9 +345,12 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     if element_type:
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
+            predefined_type = getattr(element_type, "ElementType", ...)
+            if predefined_type == ...:
+                predefined_type = getattr(element_type, "ProcessType", None)
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
+
     predefined_type = getattr(element, "PredefinedType", None)
     if predefined_type == "USERDEFINED" or not predefined_type:
         predefined_type = getattr(element, "ObjectType", None)
@@ -371,10 +374,10 @@ def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
     """
     if element.is_a("IfcTypeObject"):
         return element
-    elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
-        return element.IsTypedBy[0].RelatingType
-    elif hasattr(element, "IsDefinedBy") and element.IsDefinedBy:  # IFC2X3
-        for relationship in element.IsDefinedBy:
+    elif (is_typed_by := getattr(element, "IsTypedBy", None)) is not None and is_typed_by:
+        return is_typed_by[0].RelatingType
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None and is_defined_by:  # IFC2X3
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByType"):
                 return relationship.RelatingType
 
@@ -418,8 +421,8 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
     """
 
     # IfcProduct
-    if hasattr(element, "Representation"):
-        return element.Representation.HasShapeAspects
+    if (representation := getattr(element, "Representation", ...)) != ...:
+        return representation.HasShapeAspects
 
     # IfcTypeProduct
     shape_aspects = []
@@ -456,18 +459,19 @@ def get_material(
         element = ifcopenshell.by_type("IfcWall")[0]
         material = ifcopenshell.util.element.get_material(element)
     """
-    if hasattr(element, "HasAssociations") and element.HasAssociations:
-        for relationship in element.HasAssociations:
+    if (has_associations := getattr(element, "HasAssociations", None)) is not None and has_associations:
+        for relationship in has_associations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
                 if should_skip_usage:
-                    if relationship.RelatingMaterial.is_a("IfcMaterialLayerSetUsage"):
-                        return relationship.RelatingMaterial.ForLayerSet
-                    elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
-                        return relationship.RelatingMaterial.ForProfileSet
+                    relating_material = relationship.RelatingMaterial
+                    if relating_material.is_a("IfcMaterialLayerSetUsage"):
+                        return relating_material.ForLayerSet
+                    elif relating_material.is_a("IfcMaterialProfileSetUsage"):
+                        return relating_material.ForProfileSet
                 return relationship.RelatingMaterial
     if should_inherit:
         relating_type = get_type(element)
-        if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+        if relating_type != element and (has_associations := getattr(relating_type, "HasAssociations", None)):
             return get_material(relating_type, should_skip_usage)
 
 
@@ -717,10 +721,10 @@ def get_layers(
     """
     layers = []
     representations = []
-    if getattr(element, "Representation", None):
-        representations = [element.Representation]
-    elif getattr(element, "RepresentationMaps", None):
-        representations = element.RepresentationMaps
+    if representation := getattr(element, "Representation", None):
+        representations = [representation]
+    elif representation_maps := getattr(element, "RepresentationMaps", None):
+        representations = representation_maps
     for representation in representations:
         for subelement in ifc_file.traverse(representation):
             if subelement.is_a("IfcShapeRepresentation"):
@@ -761,8 +765,10 @@ def get_container(
         container = ifcopenshell.util.element.get_container(element)
     """
     if should_get_direct:
-        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
+        if (
+            contained_in_structure := getattr(element, "ContainedInStructure", None)
+        ) is not None and contained_in_structure:
+            container = contained_in_structure[0].RelatingStructure
             if not ifc_class:
                 return container
             if container.is_a(ifc_class):
@@ -774,8 +780,10 @@ def get_container(
         nest = get_nest(element)
         if nest:
             return get_container(nest, should_get_direct)
-        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
+        if (
+            contained_in_structure := getattr(element, "ContainedInStructure", None)
+        ) is not None and contained_in_structure:
+            container = contained_in_structure[0].RelatingStructure
             if not ifc_class:
                 return container
             while container:
@@ -803,9 +811,7 @@ def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifc
         element = file.by_type("IfcWall")[0]
         print(ifcopenshell.util.element.get_referenced_structures(element))
     """
-    if hasattr(element, "ReferencedInStructures"):
-        return [r.RelatingStructure for r in element.ReferencedInStructures]
-    return []
+    return [r.RelatingStructure for r in getattr(element, "ReferencedInStructures", [])]
 
 
 def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
@@ -831,20 +837,25 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     while queue:
         element = queue.pop()
         for rel in getattr(element, "ContainsElements", []):
-            queue.extend(rel.RelatedElements)
-            results.extend(rel.RelatedElements)
+            related = rel.RelatedElements
+            queue.extend(related)
+            results.extend(related)
         for rel in getattr(element, "IsDecomposedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related = rel.RelatedObjects
+            queue.extend(related)
+            results.extend(related)
         for rel in getattr(element, "HasOpenings", []):
-            queue.append(rel.RelatedOpeningElement)
-            results.append(rel.RelatedOpeningElement)
+            related = rel.RelatedOpeningElement
+            queue.append(related)
+            results.append(related)
         for rel in getattr(element, "HasFillings", []):
-            queue.append(rel.RelatedBuildingElement)
-            results.append(rel.RelatedBuildingElement)
+            related = rel.RelatedBuildingElement
+            queue.append(related)
+            results.append(related)
         for rel in getattr(element, "IsNestedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related = rel.RelatedObjects
+            queue.extend(related)
+            results.extend(related)
         if not is_recursive:
             break
     return results
@@ -870,8 +881,9 @@ def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     while queue:
         element = queue.pop()
         for rel in getattr(element, "IsGroupedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related_objects = rel.RelatedObjects
+            queue.extend(related_objects)
+            results.extend(related_objects)
     return results
 
 
@@ -891,9 +903,9 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
-    if hasattr(element, "Decomposes") and element.Decomposes:
-        if element.Decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
-            return element.Decomposes[0].RelatingObject
+    if decomposes := getattr(element, "Decomposes", None):
+        if decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
+            return decomposes[0].RelatingObject
 
 
 def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -912,12 +924,12 @@ def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_nest(element)
     """
-    if hasattr(element, "Nests"):
-        if element.Nests:
-            return element.Nests[0].RelatingObject
-    elif hasattr(element, "Decomposes") and element.Decomposes:  # IFC2X3
-        if element.Decomposes[0].is_a("IfcRelNests"):
-            return element.Decomposes[0].RelatingObject
+    if (nests := getattr(element, "Nests", None)) is not None:
+        if nests:
+            return nests[0].RelatingObject
+    elif (decomposes := getattr(element, "Decomposes", None)) is not None and decomposes:  # IFC2X3
+        if decomposes[0].is_a("IfcRelNests"):
+            return decomposes[0].RelatingObject
 
 
 def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -936,9 +948,9 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
         element = file.by_type("IfcElementAssembly")[0]
         parts = ifcopenshell.util.element.get_parts(element)
     """
-    if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        if element.IsDecomposedBy[0].is_a("IfcRelAggregates"):
-            return element.IsDecomposedBy[0].RelatedObjects
+    if (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
+        if is_decomposed_by[0].is_a("IfcRelAggregates"):
+            return is_decomposed_by[0].RelatedObjects
 
 
 def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
@@ -960,14 +972,14 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
         element = file.by_type("IfcElementAssembly")[0]
         components = ifcopenshell.util.element.get_components(element)
     """
-    if hasattr(element, "IsNestedBy"):
-        if element.IsNestedBy:
+    if (is_nested_by := getattr(element, "IsNestedBy", None)) is not None:
+        if is_nested_by:
             if include_ports:
-                return element.IsNestedBy[0].RelatedObjects
-            return [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]
-    elif hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        if element.IsDecomposedBy[0].is_a("IfcRelNests"):
-            return element.IsDecomposedBy[0].RelatedObjects
+                return is_nested_by[0].RelatedObjects
+            return [e for e in is_nested_by[0].RelatedObjects if not e.is_a("IfcPort")]
+    elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
+        if is_decomposed_by[0].is_a("IfcRelNests"):
+            return is_decomposed_by[0].RelatedObjects
 
 
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
