@@ -53,7 +53,7 @@ class TestUnassignObject:
         ifc.get_entity("related_obj").should_be_called().will_return("element")
         nest.get_container("element").should_be_called().will_return("container")
         ifc.run("spatial.assign_container", products=["element"], relating_structure="container").should_be_called()
-        ifc.run("nest.unassign_object", related_object="element").should_be_called().will_return("rel")
+        ifc.run("nest.unassign_object", related_objects=["element"]).should_be_called().will_return("rel")
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, nest, collector, relating_obj="relating_obj", related_obj="related_obj")
