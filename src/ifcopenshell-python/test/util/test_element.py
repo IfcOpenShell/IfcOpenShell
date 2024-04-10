@@ -775,6 +775,10 @@ class TestGetNestIFC4(test.bootstrap.IFC4):
         assert subject.get_nest(subelement) == element
 
 
+class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
+    pass
+
+
 class TestReplaceAttributeIFC4(test.bootstrap.IFC4):
     def test_replacing_an_elements_attribute(self):
         element = self.file.createIfcWall("foo")
