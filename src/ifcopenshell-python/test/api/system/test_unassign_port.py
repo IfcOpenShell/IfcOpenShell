@@ -24,16 +24,11 @@ import ifcopenshell.util.system
 class TestAssignPort(test.bootstrap.IFC4):
     def test_assigning_a_port_once_only(self):
         port = self.file.createIfcDistributionPort()
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        ifcopenshell.api.run("system.unassign_port", self.file, element=element, port=port)
-        assert ifcopenshell.util.system.get_ports(element) == []
-
-
-class TestAssignPortIFC2X3(test.bootstrap.IFC2X3):
-    def test_assigning_a_port_once_only(self):
-        port = self.file.createIfcDistributionPort()
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
         ifcopenshell.api.run("system.unassign_port", self.file, element=element, port=port)
         assert ifcopenshell.util.system.get_ports(element) == []
+
+
+class TestAssignPortIFC2X3(test.bootstrap.IFC2X3, TestAssignPort):
+    pass

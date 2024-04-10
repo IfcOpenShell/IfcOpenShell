@@ -26,52 +26,13 @@ import ifcopenshell.util.system
 class TestAssignPort(test.bootstrap.IFC4):
     def test_assigning_a_port_once_only(self):
         port = self.file.createIfcDistributionPort()
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        assert element.IsNestedBy[0].RelatedObjects == (port,)
-        assert ifcopenshell.util.system.get_ports(element) == [port]
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        assert ifcopenshell.util.system.get_ports(element) == [port]
-
-    def test_updating_the_placement_to_be_relative_if_it_exists(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        ifcopenshell.api.run("unit.assign_unit", self.file)
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
-        subelement = ifcopenshell.api.run("system.add_port", self.file)
-        matrix = numpy.array(
-            (
-                (1.0, 0.0, 0.0, 1.0),
-                (0.0, 1.0, 0.0, 1.0),
-                (0.0, 0.0, 1.0, 1.0),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
-        submatrix = numpy.array(
-            (
-                (1.0, 0.0, 0.0, 1.0),
-                (0.0, 1.0, 0.0, 2.0),
-                (0.0, 0.0, 1.0, 3.0),
-                (0.0, 0.0, 0.0, 1.0),
-            )
-        )
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement", self.file, product=element, matrix=matrix.copy(), is_si=False
-        )
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement", self.file, product=subelement, matrix=submatrix.copy(), is_si=False
-        )
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=subelement)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
-        assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
-        assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
-
-
-class TestAssignPortIFC2X3(test.bootstrap.IFC2X3):
-    def test_assigning_a_port_once_only(self):
-        port = self.file.createIfcDistributionPort()
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        assert element.HasPorts[0].RelatingPort == port
+        ifc2x3 = self.file.schema == "IFC2X3"
+        if ifc2x3:
+            assert element.HasPorts[0].RelatingPort == port
+        else:
+            assert element.IsNestedBy[0].RelatedObjects == (port,)
         assert ifcopenshell.util.system.get_ports(element) == [port]
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
         assert ifcopenshell.util.system.get_ports(element) == [port]
@@ -107,3 +68,7 @@ class TestAssignPortIFC2X3(test.bootstrap.IFC2X3):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement), matrix)
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(subelement.ObjectPlacement), submatrix)
         assert subelement.ObjectPlacement.PlacementRelTo == element.ObjectPlacement
+
+
+class TestAssignPortIFC2X3(test.bootstrap.IFC2X3, TestAssignPort):
+    pass
