@@ -76,6 +76,7 @@ def get_pset(
                 pset = definition
                 break
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
+        # other IfcObjectDefinition
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
@@ -99,7 +100,7 @@ def get_pset(
         elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
             type_pset = None
 
-    if not pset and type_pset is None:
+    if pset is None and type_pset is None:
         return
 
     if not prop:
@@ -160,6 +161,7 @@ def get_psets(
                 continue
             psets[definition.Name] = get_property_definition(definition, verbose=verbose)
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
+        # other IfcObjectDefinition
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
@@ -202,29 +204,33 @@ def get_property_definition(
         elif ifc_class == "IfcPropertySet":
             return get_property(definition.HasProperties, prop, verbose=verbose)
         elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
+            # IfcExtendedProperties
             return get_property(definition.Properties, prop, verbose=verbose)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for i in range(4, len(definition)):
-                if definition[i] is not None:
-                    if definition.attribute_name(i) == prop:
-                        return definition[i]
+                if definition.attribute_name(i) == prop:
+                    if (v := definition[i]) is not None:
+                        return v
         return
 
     props = {}
     if ifc_class == "IfcElementQuantity":
+        # 5 IfcElementQuantity.Quantities
         props.update(get_quantities(definition[5], verbose=verbose))
     elif ifc_class == "IfcPropertySet":
+        # 5 IfcPropertySet.HasProperties
         props.update(get_properties(definition[4], verbose=verbose))
     elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
+        # 2 IfcExtendedProperties.Properties
         props.update(get_properties(definition[2], verbose=verbose))
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
         for prop_i in range(4, len(definition)):
-            if definition[prop_i] is not None:
-                props[definition.attribute_name(prop_i)] = definition[prop_i]
+            if (v := definition[prop_i]) is not None:
+                props[definition.attribute_name(prop_i)] = v
     props["id"] = definition.id()
     return props
 
@@ -239,9 +245,11 @@ def get_quantity(
     quantities: list[ifcopenshell.entity_instance], name: str, verbose=False
 ) -> Union[Any, dict[str, Any]]:
     for quantity in quantities or []:
+        # 0 IfcPhysicalQuantity.Name
         if quantity[0] != name:
             continue
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
+            # 3 IfcPhysicalSimpleQuantity.Unit
             result = quantity[3]
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
@@ -266,24 +274,27 @@ def get_quantities(
 ) -> dict[str, Union[Any, dict[str, Any]]]:
     results = {}
     for quantity in quantities or []:
+        # 0 IfcPhysicalQuantity.Name
+        quantity_name = quantity[0]
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
-            results[quantity[0]] = quantity[3]
+            # 3 IfcPhysicalSimpleQuantity.Unit
+            results[quantity_name] = quantity[3]
             if verbose:
-                results[quantity[0]] = {
+                results[quantity_name] = {
                     "id": quantity.id(),
                     "class": quantity.is_a(),
-                    "value": results[quantity[0]],
+                    "value": results[quantity_name],
                 }
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
-            results[quantity[0]] = data
+            results[quantity_name] = data
             if verbose:
-                results[quantity[0]] = {
-                    "id": quantity.id(),
-                    "class": quantity.is_a(),
-                    "value": results[quantity[0]],
+                results[quantity_name] = {
+                    "id": data["id"],
+                    "class": data["class"],
+                    "value": results[quantity_name],
                 }
     return results
 
@@ -301,11 +312,14 @@ def get_property(
         if prop.Name != name:
             continue
         if prop.is_a("IfcPropertySingleValue"):
-            result = prop[2].wrappedValue if prop[2] else None
+            # 2 IfcPropertySingleValue.NominalValue
+            result = v.wrappedValue if (v := prop[2]) else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            result = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+            # 2 IfcPropertyEnumeratedValue.EnumerationValues
+            result = [v.wrappedValue for v in values] if (values := prop[2]) else None
         elif prop.is_a("IfcPropertyListValue"):
-            result = [v.wrappedValue for v in prop.ListValues] or None
+            # 2 IfcPropertyListValue.ListValues
+            result = [v.wrappedValue for v in values] if (values := prop[2]) else None
         elif prop.is_a("IfcPropertyBoundedValue"):
             data = prop.get_info()
             del data["Unit"]
@@ -336,35 +350,60 @@ def get_properties(
     results = {}
     for prop in properties or []:
         ifc_class = prop.is_a()
+        prop_name = prop[0]  # 0 IfcProperty.Name
         if ifc_class == "IfcPropertySingleValue":
-            results[prop[0]] = prop[2].wrappedValue if prop[2] else None
+            # 2 IfcPropertySingleValue.NominalValue
+            results[prop_name] = v.wrappedValue if (v := prop[2]) else None
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
         elif ifc_class == "IfcPropertyEnumeratedValue":
-            results[prop[0]] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+            # 2 IfcPropertyEnumeratedValue.EnumerationValues
+            results[prop_name] = [v.wrappedValue for v in values] if (values := prop[2]) else None
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
         elif ifc_class == "IfcPropertyListValue":
-            results[prop[0]] = [v.wrappedValue for v in prop.ListValues] or None
+            # 2 IfcPropertyListValue.ListValues
+            results[prop_name] = [v.wrappedValue for v in values] if (values := prop[2]) else None
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
         elif ifc_class == "IfcPropertyBoundedValue":
             data = prop.get_info()
             del data["Unit"]
-            results[prop[0]] = data
+            results[prop_name] = data
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {
+                    "id": data["id"],
+                    "class": data["type"],
+                    "value": results[prop_name],
+                }
         elif ifc_class == "IfcPropertyTableValue":
-            results[prop[0]] = prop.get_info()
+            data = prop.get_info()
+            results[prop_name] = data
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {
+                    "id": data["id"],
+                    "class": data["type"],
+                    "value": results[prop_name],
+                }
         elif ifc_class == "IfcComplexProperty":
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
             data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
-            results[prop[0]] = data
+            results[prop_name] = data
             if verbose:
-                results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
+                results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
     return results
 
 
