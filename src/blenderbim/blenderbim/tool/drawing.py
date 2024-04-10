@@ -1716,20 +1716,6 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
-        # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
-            bpy.ops.object.hide_view_set(unselected=False)
-            bpy.ops.object.hide_view_set(unselected=True)
-
-        for view_layer_object in bpy.context.view_layer.objects:
-            element = tool.Ifc.get_entity(view_layer_object)
-            if not element or element.is_a("IfcTypeProduct"):
-                continue
-            if element in filtered_elements:
-                view_layer_object.hide_set(False)
-                view_layer_object.hide_render = False
-            elif view_layer_object.hide_render is not True:
-                view_layer_object.hide_render = True
 
         subcontexts: list[ifcopenshell.entity_instance] = []
         target_view = cls.get_drawing_target_view(drawing)
@@ -1764,6 +1750,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             if subcontext:
                 subcontexts.append(context_filter)
 
+        # Hide everything first, then selectively show. This is significantly faster.
+        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+            bpy.ops.object.hide_view_set(unselected=False)
+            bpy.ops.object.hide_view_set(unselected=True)
+
         # switch representations and hide elements without representations
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
@@ -1793,11 +1784,10 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            # don't hide IfcAnnotations as some of them might exist without representations
-            # e.g. with ObjectType = SYMBOL
-            if not has_context and not element.is_a("IfcAnnotation"):
-                obj.hide_set(True)
-                obj.hide_render = True
+            # Don't hide IfcAnnotations as some of them might exist without representations
+            if has_context or element.is_a("IfcAnnotation"):
+                # Note that render visibility is only set on drawing generation time for speed.
+                obj.hide_set(False)
 
     @classmethod
     def get_elements_in_camera_view(
