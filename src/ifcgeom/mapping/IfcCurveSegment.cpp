@@ -127,6 +127,7 @@ class segment_geometry_adjuster {
     // To determine the geometry adjustments the curve segment needs to be evaluated
     // without adjustments. This function toggles the application of geometry adjustments
     void enable_adjustments(bool adjustments) { adjustments_ = adjustments; }
+    bool enable_adjustments() const { return adjustments_; }
 
     // This object doesn't have access to the eval_ property of the curve_segment_evaluator.
     // The end point of the segment being adjusted, without adjustments, is computed externally
@@ -765,7 +766,7 @@ class curve_segment_evaluator {
 
    void operator()(const IfcSchema::IfcCircle* c)
    {
-      if (segment_type_ == ST_HORIZONTAL) {
+      if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
          auto R = c->Radius() * length_unit_;
          auto position = c->Position()->as<IfcSchema::IfcAxis2Placement2D>();
          auto location = position->Location()->as<IfcSchema::IfcCartesianPoint>();
@@ -787,8 +788,12 @@ class curve_segment_evaluator {
              pcDy = dr[1];
          }
 
+         // angle from X = 0 to the parent curve X-axis
+         auto pc_axis_angle = atan2(pcDy, pcDx);
+         // sweep angle from the parent curve X-axis to the first point on the trimmed curve
+         auto sweep_start_angle = start_ / R;
          // angle from X = 0 to the first point on the trimmed curve
-         auto start_angle = atan2(pcDy, pcDx);
+         auto start_angle = pc_axis_angle + sweep_start_angle;
 
          // first point on the trimmed curve
          auto pcStartX = pcCenterX + R * cos(start_angle);
@@ -799,11 +804,30 @@ class curve_segment_evaluator {
          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
 
          projected_length_ = length_;
-         eval_ = [R, pcCenterX, pcCenterY, pcStartX, pcStartY, start_angle, sign_l, geometry_adjuster = geometry_adjuster_](double u)
+         eval_ = [R, pcCenterX, pcCenterY, pcStartX, pcStartY, pc_axis_angle, start_angle, sign_l, segment_type=segment_type_, geometry_adjuster = geometry_adjuster_](double u)
          {
+             // If segment_type == ST_VERTICAL and adjustments are enabled the input u is measured along the horizontal.
+             // u needs to be the arc length along the circle. If adjustments are disabled u is one of the end points so its arc length
+             if (segment_type == ST_VERTICAL && geometry_adjuster->enable_adjustments()) {
+                 // x and y are distance from center of circle as if circle was centered at (0,0)
+                 auto x = pcStartX + u - pcCenterX;
+                 auto y = -sign_l*sqrt(R * R - x * x);
+                 // move x and y so they are relative to the center of the circle
+                 x += pcCenterX;
+                 y += pcCenterY;
+                 // compute the distance between the start point and (x,y)
+                 auto c = sqrt(pow(x - pcStartX,2.0) + pow(y - pcStartY,2.0));
+                 // compute the subtended angle
+                 // c = 2R*sin(delta/2)
+                 auto delta = 2 * asin(c / (2 * R));
+                 // compute the arc length (this will always be a positive value)
+                 u = R * fabs(delta);
+             }
+
             // u is measured along the circle
-            // angle from the parent curve X-axis to the current point
-            auto angle = start_angle + sign_l * u / R;
+            // angle from the X=0 axis to the current point
+            auto delta = sign_l * u / R;
+            auto angle = start_angle + delta;
 
             // point on the parent curve
             auto pcX = R * cos(angle) + pcCenterX;
@@ -819,9 +843,12 @@ class curve_segment_evaluator {
             auto csX = pcX * cos(rotate) - pcY * sin(rotate);
             auto csY = pcX * sin(rotate) + pcY * cos(rotate);
 
-            // slope of the parent curve
-            auto dx = -sin(angle + rotate);
-            auto dy =  cos(angle + rotate);
+            // direction of vector tangent to the curve segment
+            // at this point the curve has been rotated so the start is
+            // tangent to [1,0] so dx, dy in that coordinate system
+            // is dependent only on delta
+            auto dx = cos(delta);
+            auto dy = sin(delta);
 
             // transform the point into the curve segment coordinate system
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
@@ -831,35 +858,7 @@ class curve_segment_evaluator {
             return geometry_adjuster->transform_and_adjust(u, m);
          };
       }
-      else if (segment_type_ == ST_VERTICAL) {
-         auto R = c->Radius() * length_unit_;
-         auto start_angle = start_/R;
-         auto end_angle = start_angle + length_ / R;
-         auto u_end = R * (cos(end_angle)-cos(start_angle));
-         auto sign_l = sign(length_);
-
-         const auto& p = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
-         auto ys = p.col(3)(1) * length_unit_;
-
-         projected_length_ = u_end;
-
-         eval_ = [ys,R,u_end,start_angle,end_angle,sign_l](double u) -> Eigen::Matrix4d {
-            // u is measured along the x-axis, not along the circle
-             auto theta = start_angle + u * (end_angle - start_angle) / u_end;
-             //auto y = ys + R * (sin(theta) - sin(start_angle));
-             auto y = ys - sign_l*(sqrt(R * R - pow(R * cos(start_angle) + u, 2)) - sqrt(R * R - pow(R * cos(start_angle), 2)));
-
-             auto dx = -sin(theta);
-             auto dy =  cos(theta);
-
-             Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-             m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
-             m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
-             m.col(2) = Eigen::Vector4d(0, 0, 1, 0);
-             m.col(3) = Eigen::Vector4d(0.0/*u*/, y, 0.0, 1.0);
-             return m;
-         };
-      } else if (segment_type_ == ST_CANT) {
+      else if (segment_type_ == ST_CANT) {
          Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
          eval_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
       } else {
