@@ -20,7 +20,7 @@ import blenderbim.core.geometry
 
 
 def assign_type(ifc, type_tool, element=None, type=None):
-    ifc.run("type.assign_type", related_object=element, relating_type=type)
+    ifc.run("type.assign_type", related_objects=[element], relating_type=type)
     obj = ifc.get_object(element)
     if type_tool.has_material_usage(element):
         pass # for now, representation regeneration handled by API listeners

@@ -37,6 +37,7 @@ from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from typing import Optional
 
 
 class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
@@ -608,7 +609,7 @@ class DumbWallGenerator:
             should_add_representation=False,
             context=self.body_context,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
         if self.axis_context:
             representation = ifcopenshell.api.run(
                 "geometry.add_axis_representation",
@@ -729,18 +730,29 @@ class DumbWallPlaner:
         DumbWallRecalculator().recalculate([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        obj = tool.Ifc.get_object(settings["related_object"])
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
-            return
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        relating_type = settings["relating_type"]
+
+        new_material = ifcopenshell.util.element.get_material(relating_type)
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
-        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
+
+        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
         layer_set_direction = None
         if parametric:
             layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-        material = ifcopenshell.util.element.get_material(settings["related_object"])
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        for related_object in settings["related_objects"]:
+            self._regenerate_from_type(related_object, layer_set_direction)
+
+    def _regenerate_from_type(
+        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str]
+    ) -> None:
+        obj = tool.Ifc.get_object(related_object)
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
+
+        material = ifcopenshell.util.element.get_material(related_object)
         if not material or not material.is_a("IfcMaterialLayerSetUsage"):
             return
         if layer_set_direction:

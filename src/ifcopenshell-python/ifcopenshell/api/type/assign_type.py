@@ -19,11 +19,18 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, related_object=None, relating_type=None, should_map_representations=True):
-        """Assigns a type to an occurrence of an object
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        related_objects: list[ifcopenshell.entity_instance],
+        relating_type: ifcopenshell.entity_instance,
+        should_map_representations=True,
+    ):
+        """Assigns a type to occurrences of an object
 
         IFC supports the concept of occurrences and types. An occurrence is an
         actual physical product in the real world: like a wall, a chair, a door,
@@ -83,8 +90,8 @@ class Usecase:
         as-built or dilapidation models, where existing conditions are
         ambiguous, unknown or are so bespoke as to have no logical type.
 
-        :param related_object: The IfcElement occurrence.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :param related_objects: The IfcElement occurrences.
+        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_type: The IfcElementType type.
         :type relating_type: ifcopenshell.entity_instance.entity_instance
         :param should_map_representations: If a type has a representation map,
@@ -93,7 +100,8 @@ class Usecase:
             yourself. In this scenario, you may set this to False.
         :type should_map_representations: bool
         :return: The IfcRelDefinesByType relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `related_objects` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -111,7 +119,7 @@ class Usecase:
             # had a representation, the furniture occurrence will also now have
             # the exact same representation. This is highly efficient as you
             # don't need to define the representation for every occurrence.
-            ifcopenshell.api.run("type.assign_type", model, related_object=furniture, relating_type=furniture_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
 
             # Let's imagine a parametric material layer set
             wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
@@ -146,7 +154,7 @@ class Usecase:
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # The wall is a WAL01 wall type.
-            ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
 
             # A bit of preparation, let's create some geometric contexts since
             # we want to create some geometry for our wall.
@@ -167,81 +175,101 @@ class Usecase:
         """
         self.file = file
         self.settings = {
-            "related_object": related_object,
+            "related_objects": related_objects,
             "relating_type": relating_type,
             "should_map_representations": should_map_representations,
         }
 
-    def execute(self):
-        if self.file.schema == "IFC2X3":
-            is_typed_by = None
-            is_defined_by = self.settings["related_object"].IsDefinedBy
-            for rel in is_defined_by:
-                if rel.is_a("IfcRelDefinesByType"):
-                    is_typed_by = [rel]
-                    break
-            types = self.settings["relating_type"].ObjectTypeOf
-        else:
-            is_typed_by = self.settings["related_object"].IsTypedBy
-            types = self.settings["relating_type"].Types
-
-        if types and is_typed_by == types:
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["related_objects"]:
             return
 
-        if is_typed_by:
-            related_objects = list(is_typed_by[0].RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            if related_objects:
-                is_typed_by[0].RelatedObjects = related_objects
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_typed_by[0]})
+        related_objects = set(self.settings["related_objects"])
+        relating_type = self.settings["relating_type"]
+
+        ifc2x3 = self.file.schema == "IFC2X3"
+
+        related_objects = set(self.settings["related_objects"])
+        relating_type = self.settings["relating_type"]
+        if ifc2x3:
+            types = next(iter(relating_type.ObjectTypeOf), None)
+        else:
+            types = next(iter(relating_type.Types), None)
+
+        previous_types_rels: set[ifcopenshell.entity_instance] = set()
+        objects_without_types: list[ifcopenshell.entity_instance] = []
+        objects_with_types: list[ifcopenshell.entity_instance] = []
+
+        # check if there is anything to change
+        for object in related_objects:
+            if ifc2x3:
+                object_rel = next((i for i in object.IsDefinedBy if i.is_a("IfcRelDefinesByType")), None)
             else:
-                history = is_typed_by[0].OwnerHistory
-                self.file.remove(is_typed_by[0])
+                object_rel = next(iter(object.IsTypedBy), None)
+
+            if object_rel is None:
+                objects_without_types.append(object)
+                continue
+
+            # either is_nested_by is None or product is part of different rel
+            if object_rel != types:
+                previous_types_rels.add(object_rel)
+                objects_with_types.append(object)
+
+        objects_to_change = objects_without_types + objects_with_types
+        # nothing to change
+        if not objects_to_change:
+            return types
+
+        # unassign from previous types
+        for is_typed_by in previous_types_rels:
+            cur_related_objects = set(is_typed_by.RelatedObjects) - related_objects
+            if cur_related_objects:
+                is_typed_by.RelatedObjects = list(cur_related_objects)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_typed_by})
+            else:
+                history = is_typed_by.OwnerHistory
+                self.file.remove(is_typed_by)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
 
+        # assign objects to a new type
         if types:
-            related_objects = list(types[0].RelatedObjects)
-            related_objects.append(self.settings["related_object"])
-            types[0].RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": types[0]})
+            types.RelatedObjects = list(set(types.RelatedObjects) | related_objects)
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": types})
         else:
             types = self.file.create_entity(
                 "IfcRelDefinesByType",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["related_object"]],
-                    "RelatingType": self.settings["relating_type"],
-                }
+                    "RelatedObjects": list(related_objects),
+                    "RelatingType": relating_type,
+                },
             )
 
         if self.settings["should_map_representations"]:
-            if getattr(self.settings["relating_type"], "RepresentationMaps", None):
-                ifcopenshell.api.run(
-                    "type.map_type_representations",
-                    self.file,
-                    related_object=self.settings["related_object"],
-                    relating_type=self.settings["relating_type"],
-                )
-            self.map_material_usages()
+            if getattr(relating_type, "RepresentationMaps", None):
+                for related_object in related_objects:
+                    ifcopenshell.api.run(
+                        "type.map_type_representations",
+                        self.file,
+                        related_object=related_object,
+                        relating_type=relating_type,
+                    )
+            self.map_material_usages(related_objects)
         return types
 
-    def map_material_usages(self):
+    def map_material_usages(self, related_objects: set[ifcopenshell.entity_instance]) -> None:
         type_material = ifcopenshell.util.element.get_material(self.settings["relating_type"])
         if not type_material:
             return
-        if type_material.is_a("IfcMaterialLayerSet"):
-            ifcopenshell.api.run(
-                "material.assign_material",
-                self.file,
-                product=self.settings["related_object"],
-                type="IfcMaterialLayerSetUsage",
-            )
-        elif type_material.is_a("IfcMaterialProfileSet"):
-            ifcopenshell.api.run(
-                "material.assign_material",
-                self.file,
-                product=self.settings["related_object"],
-                type="IfcMaterialProfileSetUsage",
-            )
+        ifc_class = type_material.is_a()
+        if ifc_class in ("IfcMaterialLayerSet", "IfcMaterialProfileSet"):
+            for related_object in related_objects:
+                ifcopenshell.api.run(
+                    "material.assign_material",
+                    self.file,
+                    product=related_object,
+                    type=f"{ifc_class}Usage",
+                )

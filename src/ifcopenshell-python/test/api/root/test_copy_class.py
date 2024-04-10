@@ -210,7 +210,7 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_a_type_and_purging_type_relationships(self):
         type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=type)
         new = ifcopenshell.api.run("root.copy_class", self.file, product=type)
         assert not new.Types
 

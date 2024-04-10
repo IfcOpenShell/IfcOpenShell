@@ -154,7 +154,7 @@ class TestGetTypeOccurrences(NewFile):
         tool.Ifc.set(ifc)
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         assert subject.get_type_occurrences(wall_type) == (wall,)
 
 

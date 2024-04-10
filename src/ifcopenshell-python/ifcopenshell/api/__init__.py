@@ -73,6 +73,9 @@ ARGUMENTS_DEPRECATION = {
     "nest.unassign_object": partial(
         batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
     ),
+    "type.assign_type": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
 }
 
 
