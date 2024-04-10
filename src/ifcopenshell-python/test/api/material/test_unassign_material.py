@@ -62,7 +62,7 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
     def test_unassign_material_layer_set_usage_from_element(self):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
         ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
         ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSetUsage")
@@ -78,8 +78,8 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
         ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
         rel = ifcopenshell.api.run(
@@ -114,7 +114,7 @@ class TestUnassignMaterial(test.bootstrap.IFC4):
     def test_unassign_material_profile_set_usage_from_element(self):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
         ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialProfileSet")
         ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialProfileSetUsage")

@@ -47,7 +47,7 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
     def test_assigning_to_a_type_will_map_representations_to_instances(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         walltype = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=wall, relating_type=walltype)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[wall], relating_type=walltype)
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         rep2 = self.file.createIfcShapeRepresentation(ContextOfItems=context)
@@ -69,7 +69,7 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=walltype, representation=rep)
 
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=wall, relating_type=walltype)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[wall], relating_type=walltype)
 
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall, representation=rep2)
         assert wall.Representation.Representations[0].RepresentationType == "MappedRepresentation"
@@ -84,7 +84,7 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         walltype = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=wall, relating_type=walltype)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[wall], relating_type=walltype)
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall, representation=rep)
         assert wall.Representation.Representations[0].RepresentationType != "MappedRepresentation"
         assert wall.Representation.Representations[0] == rep

@@ -54,9 +54,9 @@ class TestReassignClass(test.bootstrap.IFC4):
     def test_reassign_class_for_type_occurrences(self):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type)
 
         element_type = ifcopenshell.api.run(
             "root.reassign_class", self.file, product=element_type, ifc_class="IfcSlabType"
@@ -74,9 +74,9 @@ class TestReassignClass(test.bootstrap.IFC4):
     def test_reassigning_type_class_and_its_occurrences_classes_if_entity_was_typed(self):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type)
 
         element1 = ifcopenshell.api.run("root.reassign_class", self.file, product=element1, ifc_class="IfcSlab")
 

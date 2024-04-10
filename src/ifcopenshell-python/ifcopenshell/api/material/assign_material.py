@@ -85,8 +85,8 @@ class Usecase:
             # automatically inherit the material from the type.
             bench1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
             bench2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-            ifcopenshell.api.run("type.assign_type", model, related_object=bench1, relating_type=bench_type)
-            ifcopenshell.api.run("type.assign_type", model, related_object=bench2, relating_type=bench_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[bench1], relating_type=bench_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[bench2], relating_type=bench_type)
 
             # If we have a concrete wall, we should use a layer set. Again,
             # let's start with a wall type, not occurrences.
@@ -106,7 +106,7 @@ class Usecase:
 
             # Let's imagine an occurrence of this wall type.
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-            ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
 
             # Our wall occurrence needs to have a "set usage" which describes
             # how the layers relate to a reference line (typically a 2D line

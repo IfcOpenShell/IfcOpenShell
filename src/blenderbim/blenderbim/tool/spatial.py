@@ -690,7 +690,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        tool.Ifc.run("type.assign_type", related_object=element, relating_type=relating_type)
+        tool.Ifc.run("type.assign_type", related_objects=[element], relating_type=relating_type)
 
     @classmethod
     def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):

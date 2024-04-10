@@ -328,7 +328,7 @@ wall_types = []
 for i in range(0, 4):
     wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
     wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
-    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
     representation = ifcopenshell.api.run(
         "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
     )

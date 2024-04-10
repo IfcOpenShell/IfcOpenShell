@@ -42,7 +42,7 @@ class Usecase:
             furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
 
             # Assign the furniture to the furniture type.
-            ifcopenshell.api.run("type.assign_type", model, related_object=furniture, relating_type=furniture_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
 
             # Change our mind. Maybe it's a different type?
             ifcopenshell.api.run("type.unassign_type", model, related_object=furniture)

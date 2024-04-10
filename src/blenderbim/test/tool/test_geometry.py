@@ -199,7 +199,7 @@ class TestGetElementType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
         assert subject.get_element_type(element) == type
 
 
@@ -209,7 +209,7 @@ class TestGetElementsOfType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
         assert subject.get_elements_of_type(type) == (element,)
 
 
