@@ -555,7 +555,10 @@ class DumbWallGenerator:
                 for face in sibling_obj.data.polygons:
                     normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                     face_center = sibling_obj.matrix_world @ face.center
-                    if normal.z != 0 or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01:
+                    if (
+                        normal.z != 0
+                        or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01
+                    ):
                         continue
 
                     rotation = math.atan2(normal[1], normal[0])
@@ -854,11 +857,11 @@ class DumbWallJoiner:
             if (location_on_base - location).length < (location_on_side - location).length:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_base - location
-                opening_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
+                opening_matrix.translation = location_on_base - axis_offset - offset_from_axis
             else:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_side - location
-                opening_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
+                opening_matrix.translation = location_on_side - axis_offset - offset_from_axis
             opening_matrixes[opening] = opening_matrix
 
             for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
@@ -871,11 +874,11 @@ class DumbWallJoiner:
                 if (location_on_base - location).length < (location_on_side - location).length:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_base - location
-                    filling_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
+                    filling_matrix.translation = location_on_base - axis_offset - offset_from_axis
                 else:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_side - location
-                    filling_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
+                    filling_matrix.translation = location_on_side - axis_offset - offset_from_axis
                 filling_matrixes[filling] = filling_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -1120,13 +1123,8 @@ class DumbWallJoiner:
                 other = tool.Ifc.get_object(rel.RelatedElement)
                 if connection not in ["ATPATH", "NOTDEFINED"]:
                     self.join(
-                        obj,
-                        other,
-                        connection,
-                        rel.RelatedConnectionType,
-                        is_relating=True,
-                        description=rel.Description
-                  )
+                        obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                    )
         for rel in element.ConnectedFrom:
             if rel.is_a("IfcRelConnectsPathElements"):
                 connection = rel.RelatedConnectionType
