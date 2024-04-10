@@ -39,7 +39,6 @@ auto sign = [](double v) -> double { return v ? v/fabs(v) : 1.0; };
 // @todo change the calculation at end of this to std::lerp when upgrading to C++ 20
 template <typename T>
 auto compute_adjustment = [](double u, const T& a, const T& b, double l) -> double { return l == 0.0 ? 0.0 : u * (b - a) / l; };
-} // namespace
 
 
 enum segment_type_t {
@@ -1240,6 +1239,7 @@ class curve_segment_evaluator {
       return eval_;
    }
 };
+} // namespace
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
    // Find the next segment after inst
