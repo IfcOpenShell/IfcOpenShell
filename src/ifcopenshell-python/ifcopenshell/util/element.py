@@ -19,7 +19,7 @@
 from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.util.element
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional, Union, Literal, overload
 
 
 def get_pset(
@@ -53,13 +53,13 @@ def get_pset(
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
         property is specified.
-    :rtype: dict[str, Any]
+    :rtype: Union[Any, dict[str, Any]]
 
     Example:
 
     .. code:: python
 
-        element = ifcopenshell.by_type("IfcWall")[0]
+        element = ifc_file.by_type("IfcWall")[0]
         psets_and_qtos = ifcopenshell.util.element.get_pset(element, "Pset_WallCommon")
     """
     pset = None
@@ -132,6 +132,8 @@ def get_psets(
     :type qtos_only: bool,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
+    :param verbose: More detailed prop values, defaults to False.
+    :type verbose: bool,optional
     :return: Key, value pair of psets' names and their properties' names & values
     :rtype: dict[str, dict[str, Any]]
 
@@ -139,7 +141,7 @@ def get_psets(
 
     .. code:: python
 
-        element = ifcopenshell.by_type("IfcWall")[0]
+        element = ifc_file.by_type("IfcWall")[0]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
@@ -173,9 +175,20 @@ def get_psets(
     return psets
 
 
+@overload
 def get_property_definition(
-    definition: ifcopenshell.entity_instance, prop: Optional[str] = None, verbose=False
+    definition: Optional[ifcopenshell.entity_instance], prop: None = None, verbose=False
+) -> dict[str, Any]: ...
+@overload
+def get_property_definition(definition: Optional[ifcopenshell.entity_instance], prop: str, verbose=False) -> Any: ...
+@overload
+def get_property_definition(definition: None, prop: None = None, verbose: bool = False) -> None: ...
+def get_property_definition(
+    definition: Optional[ifcopenshell.entity_instance], prop: Optional[str] = None, verbose=False
 ) -> Union[Any, dict[str, Any]]:
+    """if prop name is not provided in `prop`, will return dict of all available properties
+    otherwise will return the value of the specified `prop`.
+    """
     if not definition:
         return
 
@@ -214,6 +227,12 @@ def get_property_definition(
     return props
 
 
+@overload
+def get_quantity(quantities: list[ifcopenshell.entity_instance], name: str, verbose: Literal[False] = False) -> Any: ...
+@overload
+def get_quantity(
+    quantities: list[ifcopenshell.entity_instance], name: str, verbose: Literal[True]
+) -> dict[str, Any]: ...
 def get_quantity(
     quantities: list[ifcopenshell.entity_instance], name: str, verbose=False
 ) -> Union[Any, dict[str, Any]]:
@@ -232,7 +251,17 @@ def get_quantity(
         return result
 
 
-def get_quantities(quantities: list[ifcopenshell.entity_instance], verbose=False) -> dict[str, dict[str, Any]]:
+@overload
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose: Literal[False] = False
+) -> dict[str, Any]: ...
+@overload
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose: Literal[True]
+) -> dict[str, dict[str, Any]]: ...
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose=False
+) -> dict[str, Union[Any, dict[str, Any]]]:
     results = {}
     for quantity in quantities or []:
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
@@ -257,6 +286,12 @@ def get_quantities(quantities: list[ifcopenshell.entity_instance], verbose=False
     return results
 
 
+@overload
+def get_property(properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[False] = False) -> Any: ...
+@overload
+def get_property(
+    properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[True]
+) -> dict[str, Any]: ...
 def get_property(
     properties: list[ifcopenshell.entity_instance], name: str, verbose=False
 ) -> Union[Any, dict[str, Any]]:
@@ -285,7 +320,17 @@ def get_property(
         return result
 
 
-def get_properties(properties: list[ifcopenshell.entity_instance], verbose=False) -> dict[str, dict[str, Any]]:
+@overload
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose: Literal[False] = False
+) -> dict[str, Any]: ...
+@overload
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose: Literal[True]
+) -> dict[str, dict[str, Any]]: ...
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose=False
+) -> dict[str, Union[Any, dict[str, Any]]]:
     results = {}
     for prop in properties or []:
         ifc_class = prop.is_a()
@@ -433,7 +478,7 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
 
 def get_material(
     element: ifcopenshell.entity_instance, should_skip_usage=False, should_inherit=True
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the material of the element
 
     The material may be a single material, material set (layered, profiled, or
@@ -449,8 +494,8 @@ def get_material(
     :param should_inherit: If True, any inherited materials from associated
         types will be considered.
     :type should_inherit: bool
-    :return: The associated material of the element.
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :return: The associated material of the element or `None`.
+    :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
     Example:
 
