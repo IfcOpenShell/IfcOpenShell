@@ -24,7 +24,7 @@ class TestMapTypeRepresentations(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_type_has_no_representation_maps(self):
         element = self.file.createIfcWall()
         type = self.file.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=type)
         total_elements = len([e for e in self.file])
         ifcopenshell.api.run("type.map_type_representations", self.file, related_object=element, relating_type=type)
         assert len([e for e in self.file]) == total_elements

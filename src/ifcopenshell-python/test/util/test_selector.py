@@ -168,7 +168,7 @@ class TestFilterElements(test.bootstrap.IFC4):
     def test_selecting_by_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         assert subject.filter_elements(self.file, "IfcWall, type=Foo") == set()
         element_type.Name = "Foo"
         assert subject.filter_elements(self.file, "IfcWall, type=Foo") == {element}
@@ -465,10 +465,10 @@ class TestSelector(test.bootstrap.IFC4):
     def test_getting_occurrences_of_a_filtered_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type2)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type2)
         assert set(subject.Selector.parse(self.file, "* .IfcWallType")) == {element, element2}
 
     def test_getting_decomposition_of_a_filtered_type(self):
@@ -505,7 +505,7 @@ class TestSelector(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         element_type.Name = "Foo"
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         assert set(subject.Selector.parse(self.file, '.IfcWall[type.Name="Foo"]')) == {element}
 
     def test_selecting_via_a_material(self):

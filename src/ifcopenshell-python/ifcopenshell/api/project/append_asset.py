@@ -204,7 +204,7 @@ class Usecase:
                 "type.assign_type",
                 self.file,
                 should_run_listeners=False,
-                related_object=element,
+                related_objects=[element],
                 relating_type=new_type,
                 should_map_representations=False,
             )

@@ -111,7 +111,7 @@ class FilledOpeningGenerator:
                 # Equivalent to "side Z" for a wall axis, so that stuff like skylights appear on the top.
                 local_position_on_voided_obj.z = layers["offset"] + layers["thickness"]
                 new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
-                rotation_matrix = Matrix.Rotation(radians(-90), 4, 'X')
+                rotation_matrix = Matrix.Rotation(radians(-90), 4, "X")
                 new_matrix @= rotation_matrix
 
             filling_obj.matrix_world = new_matrix
@@ -188,7 +188,13 @@ class FilledOpeningGenerator:
                 )
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        filling = settings["related_object"]
+        relating_type = settings["relating_type"]
+
+        for related_object in settings["related_objects"]:
+            self._regenerate_from_type(related_object)
+
+    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
+        filling = related_object
         if not getattr(filling, "FillsVoids", None):
             return
 

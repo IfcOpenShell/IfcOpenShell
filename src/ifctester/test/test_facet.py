@@ -168,7 +168,7 @@ class TestEntity:
         ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="X")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         facet = Entity(name="IFCWALL", predefinedType="X")
         run("Inherited predefined types should pass", facet=facet, inst=wall, expected=True)
 
@@ -177,7 +177,7 @@ class TestEntity:
         wall_type = ifcopenshell.api.run(
             "root.create_entity", ifc, ifc_class="IfcWallType", predefined_type="NOTDEFINED"
         )
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         facet = Entity(name="IFCWALL", predefinedType="X")
         run("Overridden predefined types should pass", facet=facet, inst=wall, expected=True)
 
@@ -637,7 +637,7 @@ class TestAttribute:
         ifc = ifcopenshell.file()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         wall_type.Description = "Foobar"
         facet = Attribute(name="Description", value="Foobar")
         run("Attributes are not inherited by the occurrence", facet=facet, inst=wall, expected=False)
@@ -808,7 +808,7 @@ class TestClassification:
         # https://github.com/buildingSMART/IFC4.3.x-development/issues/475
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         ifcopenshell.api.run(
             "classification.add_reference", ifc, product=wall, reference=ref11, classification=system_a
         )
@@ -1209,7 +1209,7 @@ class TestProperty:
         ifc = self.setup_ifc()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL")
@@ -1219,7 +1219,7 @@ class TestProperty:
         ifc = self.setup_ifc()
         wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=wall, relating_type=wall_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall_type, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Baz"})
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=wall, name="Foo_Bar")
@@ -1374,7 +1374,7 @@ class TestMaterial:
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
         material.Name = "Foo"
@@ -1384,7 +1384,7 @@ class TestMaterial:
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", ifc, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
         material.Name = "Bar"

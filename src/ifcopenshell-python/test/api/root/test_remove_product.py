@@ -98,7 +98,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         rep_map = self.file.createIfcRepresentationMap(
             MappingOrigin=self.file.createIfcAxis2Placement3D(),
             MappedRepresentation=self.file.createIfcShapeRepresentation(
@@ -377,7 +377,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_type_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelDefinesByType")
         assert self.file.by_type("IfcWallType")
@@ -386,8 +386,8 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type)
         ifcopenshell.api.run("root.remove_product", self.file, product=element_type)
         assert not self.file.by_type("IfcRelDefinesByType")
         assert self.file.by_type("IfcWall")
