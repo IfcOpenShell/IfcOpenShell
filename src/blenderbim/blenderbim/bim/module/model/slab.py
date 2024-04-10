@@ -29,6 +29,7 @@ import ifcopenshell.util.type
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.root
 import blenderbim.tool as tool
 from math import radians
 from mathutils import Vector, Matrix
@@ -113,7 +114,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
 
 
 class DumbSlabGenerator:
-    def __init__(self, relating_type):
+    def __init__(self, relating_type: ifcopenshell.entity_instance):
         self.relating_type = relating_type
 
     def generate(self):

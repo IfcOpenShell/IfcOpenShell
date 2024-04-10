@@ -21,14 +21,18 @@ import copy
 import bmesh
 import mathutils.geometry
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.material
+import blenderbim.core.root
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
