@@ -163,7 +163,9 @@ def get_psets(
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
+                psets = get_psets(
+                    element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False, verbose=verbose
+                )
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
@@ -243,7 +245,7 @@ def get_quantity(
             result = quantity[3]
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_quantities(quantity.HasQuantities)
+            data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
             result = data
         if verbose:
@@ -274,7 +276,7 @@ def get_quantities(
                 }
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_quantities(quantity.HasQuantities)
+            data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
             results[quantity[0]] = data
             if verbose:
@@ -312,7 +314,7 @@ def get_property(
             result = prop.get_info()
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_properties(prop.HasProperties)
+            data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
             result = data
         if verbose:
@@ -358,7 +360,7 @@ def get_properties(
                 results[prop[0]] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop[0]]}
         elif ifc_class == "IfcComplexProperty":
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_properties(prop.HasProperties)
+            data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
             results[prop[0]] = data
             if verbose:
