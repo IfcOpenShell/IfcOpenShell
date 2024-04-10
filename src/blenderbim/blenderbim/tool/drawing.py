@@ -747,10 +747,10 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
                 new = props.drawings.add()
-                new.ifc_definition_id = drawing.id()
                 new.name = drawing.Name or "Unnamed"
                 new.is_selected = current_drawings_selection.get(drawing.id(), True)
                 new.is_drawing = True
+                new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
     @classmethod
     def import_documents(cls, document_type):
