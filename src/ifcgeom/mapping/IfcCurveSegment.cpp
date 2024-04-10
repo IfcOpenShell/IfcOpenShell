@@ -272,7 +272,7 @@ class cant_adjuster : public GEOMETRY_ADJUSTER {
        // compute h is greater than PI/2 and the tangent of that angle is negative.
        // For this reason, use fabs(h) so tilt is between 0 and PI
        double cant = parent_curve_point.col(3)(1);
-       auto tilt = atan2(fabs(h), cant);
+       auto tilt = -atan2(fabs(h), cant);
 
        // Create a transformation matrix
        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
