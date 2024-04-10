@@ -49,3 +49,6 @@ class TestUnassignObject(test.bootstrap.IFC4):
         ifcopenshell.api.run("nest.assign_object", self.file, related_objects=[subelement], relating_object=element)
         ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=[subelement])
         assert len(self.file.by_type("IfcRelNests")) == 0
+
+class TestUnassignObjectIFC2X3(test.bootstrap.IFC2X3, TestUnassignObject):
+    pass

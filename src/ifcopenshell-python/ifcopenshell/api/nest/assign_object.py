@@ -106,9 +106,14 @@ class Usecase:
         if not self.settings["related_objects"]:
             return
 
+        ifc2x3 = self.file.schema == "IFC2X3"
+
         related_objects = set(self.settings["related_objects"])
         relating_object = self.settings["relating_object"]
-        is_nested_by = next((i for i in relating_object.IsNestedBy), None)
+        if ifc2x3:
+            is_nested_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelNests")), None)
+        else:
+            is_nested_by = next((i for i in relating_object.IsNestedBy), None)
 
         previous_nests_rels: set[ifcopenshell.entity_instance] = set()
         objects_without_nests: list[ifcopenshell.entity_instance] = []
@@ -116,7 +121,10 @@ class Usecase:
 
         # check if there is anything to change
         for object in related_objects:
-            object_rel = next(iter(object.Nests), None)
+            if ifc2x3:
+                object_rel = next((i for i in object.Decomposes if i.is_a("IfcRelNests")), None)
+            else:
+                object_rel = next(iter(object.Nests), None)
 
             if object_rel is None:
                 objects_without_nests.append(object)
@@ -134,7 +142,7 @@ class Usecase:
         if not objects_to_change:
             return is_nested_by
 
-        # NOTE: An object can both be nested and assigned to a container or aggregate.
+        # NOTE: An object can both be nested and assigned to a container or an aggregate.
 
         # unassign elements from previous nests
         for nests in previous_nests_rels:
