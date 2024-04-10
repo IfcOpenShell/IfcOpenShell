@@ -341,6 +341,8 @@ class CreateDrawing(bpy.types.Operator):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
+        if os.path.isfile(svg_path) and self.props.should_use_underlay_cache:
+            return svg_path
 
         visible_object_names = {obj.name for obj in bpy.context.visible_objects}
         for obj in bpy.context.view_layer.objects:
