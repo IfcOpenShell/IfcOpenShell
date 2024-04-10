@@ -22,7 +22,12 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, related_object=None, relating_type=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        related_object: ifcopenshell.entity_instance,
+        relating_type: ifcopenshell.entity_instance,
+    ):
         """Ensures that all occurrences has the same representation as the type
 
         If a type has a representation, all occurrences must have the same
@@ -87,7 +92,7 @@ class Usecase:
             "relating_type": relating_type,
         }
 
-    def execute(self):
+    def execute(self) -> None:
         if not self.settings["relating_type"].RepresentationMaps:
             return
         representations = []

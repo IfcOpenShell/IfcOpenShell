@@ -19,6 +19,7 @@
 import numpy
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.placement
 import ifcopenshell.util.system
 
 

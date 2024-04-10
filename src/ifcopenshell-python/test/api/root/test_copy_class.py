@@ -19,6 +19,8 @@
 import numpy
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util
+import ifcopenshell.util.system
 
 
 class TestCopyClass(test.bootstrap.IFC4):
