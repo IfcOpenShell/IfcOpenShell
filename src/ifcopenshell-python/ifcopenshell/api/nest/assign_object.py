@@ -146,9 +146,9 @@ class Usecase:
 
         # unassign elements from previous nests
         for nests in previous_nests_rels:
-            related_objects = set(nests.RelatedObjects) - related_objects
-            if related_objects:
-                nests.RelatedObjects = list(related_objects)
+            cur_related_objects = set(nests.RelatedObjects) - related_objects
+            if cur_related_objects:
+                nests.RelatedObjects = list(cur_related_objects)
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
             else:
                 history = nests.OwnerHistory
