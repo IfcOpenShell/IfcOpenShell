@@ -130,29 +130,7 @@ directory in your Blender add-ons directory.
 FAQ
 ---
 
-1. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.7'"**
-
-   Check which BlenderBIM Add-on build you are using. The zip will have either
-   ``py39`` or ``py310`` in the name. If you are using a Mac, also make sure
-   you are using the M1 version if you have a newer Mac. See the instructions
-   in the :ref:`devs/installation:unstable installation` section to check that
-   you have installed the correct version.
-
-2. **I am on Ubuntu and get an error similar to "ImportError:
-   /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
-
-   Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
-   If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
-   or you'll need to compile IfcOpenShell yourself.
-
-3. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
-
-   If you have installed Blender from another source instead of from
-   `Blender.org <https://www.blender.org/download/>`__, such as from your
-   distro's package repositories, then you may be missing some modules like
-   ``numpy``. Try installing it manually like ``apt install python-numpy``.
-
-4. **Some other error prevents me from installing or doing basic functions with
+1. **Some other error prevents me from installing or doing basic functions with
    the add-on. Is it specific to my environment?**
 
    Sometimes it is helpful to try installing and using the BlenderBIM Add-on on
@@ -166,6 +144,31 @@ FAQ
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
+
+2. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.10'"**
+
+   If you are using a Mac, be sure to use the Mac Silicon version if you have a
+   newer Mac. The only exception is if you have installed Blender using Steam
+   on a Mac, in which case you need to use the Mac Intel download.
+
+   For all other scenarios, check the BlenderBIM Add-on zip file which you
+   downloaded. The zip will have either ``py39``, ``py310``, or ``py311`` in
+   the name. See the instructions in the :ref:`devs/installation:unstable
+   installation` section to check that you have installed the correct version.
+
+3. **I am on Ubuntu and get an error similar to "ImportError:
+   /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
+
+   Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
+   If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
+   or you'll need to compile IfcOpenShell yourself.
+
+4. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
+
+   If you have installed Blender from another source instead of from
+   `Blender.org <https://www.blender.org/download/>`__, such as from your
+   distro's package repositories, then you may be missing some modules like
+   ``numpy``. Try installing it manually like ``apt install python-numpy``.
 
 5. **I get an error similar to RuntimeError: Instance #1234 not found**
 
