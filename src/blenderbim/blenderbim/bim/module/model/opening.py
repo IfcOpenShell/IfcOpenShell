@@ -24,10 +24,14 @@ import shapely
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc

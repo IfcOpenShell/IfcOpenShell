@@ -25,9 +25,13 @@ import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
+import blenderbim.core.aggregate
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.spatial
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
@@ -273,7 +277,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             obj.location[2] = collection_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
 
     @staticmethod
-    def generate_layered_element(ifc_class, relating_type):
+    def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
         layer_set_direction = None
 
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -297,6 +301,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
             material.LayerSetDirection = layer_set_direction
             return True
+        return False
 
 
 class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
