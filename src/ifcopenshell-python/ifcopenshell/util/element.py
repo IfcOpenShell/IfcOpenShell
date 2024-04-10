@@ -94,11 +94,13 @@ def get_pset(
         elif qtos_only and not pset.is_a("IfcElementQuantity"):
             pset = None
 
-    if type_pset is not None:
-        if psets_only and not type_pset.is_a("IfcPropertySet"):
-            type_pset = None
-        elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
-            type_pset = None
+    if type_pset is not None and not prop:
+        if psets_only or qtos_only:
+            type_pset_element = element.file.by_id(type_pset["id"])
+            if psets_only and not type_pset_element.is_a("IfcPropertySet"):
+                type_pset = None
+            elif qtos_only and not type_pset_element.is_a("IfcElementQuantity"):
+                type_pset = None
 
     if pset is None and type_pset is None:
         return
