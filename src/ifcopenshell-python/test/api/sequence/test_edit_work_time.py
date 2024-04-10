@@ -38,8 +38,8 @@ class TestEditWorkTime(test.bootstrap.IFC4):
         assert work_time.DataOrigin == attributes["DataOrigin"]
         assert work_time.UserDefinedDataOrigin == attributes["UserDefinedDataOrigin"]
         assert work_time.RecurrencePattern == attributes["RecurrencePattern"]
-        assert work_time.Start == "2020-01-01"
-        assert work_time.Finish == "2020-02-01"
+        assert work_time[4] == "2020-01-01"
+        assert work_time[5] == "2020-02-01"
 
 
 class TestEditWorkTimeIFC4X3(test.bootstrap.IFC4X3):

@@ -129,9 +129,10 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
+    number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -211,6 +212,15 @@ class FormatTransformer(lark.Transformer):
         if nearest % 1 == 0:
             return str(int(result))
         return str(result)
+
+    def number(self, args):
+        if isinstance(args[0], str):
+            args[0] = float(args[0]) if "." in args[0] else int(args[0])
+        if len(args) >= 3 and args[2]:
+            return "{:,}".format(args[0]).replace(".", "*").replace(",", args[2]).replace("*", args[1])
+        elif len(args) >= 2 and args[1]:
+            return "{}".format(args[0]).replace(".", args[1])
+        return "{:,}".format(args[0])
 
     def format_length(self, args):
         return args[0]
