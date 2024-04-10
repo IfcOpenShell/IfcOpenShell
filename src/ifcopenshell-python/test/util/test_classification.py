@@ -69,7 +69,7 @@ class TestGetReferences(test.bootstrap.IFC4):
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
         ifcopenshell.api.run(
             "classification.add_reference",
@@ -98,7 +98,7 @@ class TestGetReferences(test.bootstrap.IFC4):
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
         ifcopenshell.api.run(
             "classification.add_reference",

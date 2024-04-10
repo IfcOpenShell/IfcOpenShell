@@ -648,7 +648,7 @@ efficient and implies that the type is interchangable (e.g. for maintenance).
 
     # Assign our furniture occurrence to the type.
     # That's it! The representation will automatically be mapped!
-    run("type.assign_type", model, related_object=element, relating_type=element_type)
+    run("type.assign_type", model, related_objects=[element], relating_type=element_type)
 
 Material layer sets
 -------------------
@@ -693,7 +693,7 @@ responsibility to make sure the geometry is correct.
     ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
 
     # The wall is a WAL01 wall type. The material layer set is inherited.
-    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
 
     # It's now our responsibility to create a compatible representation.
     # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
@@ -749,7 +749,7 @@ responsibility to make sure the geometry is correct.
     ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
 
     # The beam is a B1 beam type. The material profile set is inherited.
-    ifcopenshell.api.run("type.assign_type", model, related_object=beam, relating_type=beam_type)
+    ifcopenshell.api.run("type.assign_type", model, related_objects=[beam], relating_type=beam_type)
 
     # It's now our responsibility to create a compatible representation.
     # Notice how we reuse our profile instead of creating a new profile.

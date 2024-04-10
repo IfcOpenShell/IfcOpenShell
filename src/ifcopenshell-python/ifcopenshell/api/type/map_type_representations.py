@@ -60,7 +60,7 @@ class Usecase:
             # furniture type has no representation, so the furniture may also
             # have no representation, or any arbitrary representation that may
             # vary from occurrence to occurrence.
-            ifcopenshell.api.run("type.assign_type", model, related_object=furniture, relating_type=furniture_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
 
             # A bit of preparation, let's create some geometric contexts since
             # we want to create some geometry for our furniture type.
