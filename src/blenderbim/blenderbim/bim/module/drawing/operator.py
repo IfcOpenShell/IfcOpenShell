@@ -341,6 +341,11 @@ class CreateDrawing(bpy.types.Operator):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
+
+        visible_object_names = {obj.name for obj in bpy.context.visible_objects}
+        for obj in bpy.context.view_layer.objects:
+            obj.hide_render = obj.name not in visible_object_names
+
         context.scene.render.filepath = svg_path[0:-4] + ".png"
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
