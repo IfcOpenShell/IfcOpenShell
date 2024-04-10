@@ -55,7 +55,15 @@ class Usecase:
 
     def execute(self) -> None:
         related_objects = set(self.settings["related_objects"])
-        rels = set(rel for object in related_objects if (rel := next((rel for rel in object.Nests), None)))
+        ifc2x3 = self.file.schema == "IFC2X3"
+        if ifc2x3:
+            rels = set(
+                rel
+                for object in related_objects
+                if (rel := next((rel for rel in object.Decomposes if rel.is_a("IfcRelNests")), None))
+            )
+        else:
+            rels = set(rel for object in related_objects if (rel := next((rel for rel in object.Nests), None)))
 
         for rel in rels:
             related_objects = set(rel.RelatedObjects) - related_objects
