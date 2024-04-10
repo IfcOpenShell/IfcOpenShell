@@ -72,6 +72,10 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"z": False})
         assert subject.get_pset(element, "name2", "z") is False
 
+        # test filters with inherited psets
+        assert subject.get_pset(element, "name", psets_only=True) == result
+        assert subject.get_pset(element, "name", qtos_only=True) == None
+
     def test_excluding_inherited_psets(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
