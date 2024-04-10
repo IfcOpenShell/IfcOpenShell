@@ -301,13 +301,8 @@ class TestGetTypeIFC4(test.bootstrap.IFC4):
         assert subject.get_type(element_type) == element_type
 
 
-class TestGetTypeIFC2X3(test.bootstrap.IFC2X3):
-    def test_getting_the_type_of_a_product(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
-        assert subject.get_type(element) == element_type
-        assert subject.get_type(element_type) == element_type
+class TestGetTypeIFC2X3(test.bootstrap.IFC2X3, TestGetTypeIFC4):
+    pass
 
 
 class TestGetTypes(test.bootstrap.IFC4):
@@ -318,12 +313,8 @@ class TestGetTypes(test.bootstrap.IFC4):
         assert subject.get_types(element_type) == (element,)
 
 
-class TestGetTypesIFC2X3(test.bootstrap.IFC2X3):
-    def test_getting_the_type_of_a_product(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
-        assert subject.get_types(element_type) == (element,)
+class TestGetTypesIFC2X3(test.bootstrap.IFC2X3, TestGetTypes):
+    pass
 
 
 class TestGetShapeAspects(test.bootstrap.IFC4):
@@ -645,42 +636,6 @@ class TestGetElementsByLayer(test.bootstrap.IFC4):
         assert list(subject.get_elements_by_layer(self.file, layer)) == [element]
 
 
-class TestGetlayers(test.bootstrap.IFC4):
-    def test_getting_the_layer_of_a_product_representation(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        layer = ifcopenshell.api.run("layer.add_layer", self.file)
-        representation = self.file.createIfcShapeRepresentation()
-        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
-        assert subject.get_layers(self.file, element) == [layer]
-
-    def test_getting_the_layer_of_a_product_item(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        layer = ifcopenshell.api.run("layer.add_layer", self.file)
-        item = self.file.createIfcExtrudedAreaSolid()
-        representation = self.file.createIfcShapeRepresentation(Items=[item])
-        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
-        assert subject.get_layers(self.file, element) == [layer]
-
-    def test_getting_the_layer_of_a_type_product_representation(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        layer = ifcopenshell.api.run("layer.add_layer", self.file)
-        representation = self.file.createIfcShapeRepresentation()
-        element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
-        assert subject.get_layers(self.file, element) == [layer]
-
-    def test_getting_the_layer_of_a_type_product_item(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        layer = ifcopenshell.api.run("layer.add_layer", self.file)
-        item = self.file.createIfcExtrudedAreaSolid()
-        representation = self.file.createIfcShapeRepresentation(Items=[item])
-        element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
-        assert subject.get_layers(self.file, element) == [layer]
-
-
 class TestGetlayersIFC2X3(test.bootstrap.IFC2X3):
     def test_getting_the_layer_of_a_product_item(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -698,6 +653,24 @@ class TestGetlayersIFC2X3(test.bootstrap.IFC2X3):
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         ifcopenshell.api.run("layer.assign_layer", self.file, items=[item], layer=layer)
+        assert subject.get_layers(self.file, element) == [layer]
+
+
+class TestGetlayers(test.bootstrap.IFC4, TestGetlayersIFC2X3):
+    def test_getting_the_layer_of_a_product_representation(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        representation = self.file.createIfcShapeRepresentation()
+        element.Representation = self.file.createIfcProductDefinitionShape(Representations=[representation])
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
+        assert subject.get_layers(self.file, element) == [layer]
+
+    def test_getting_the_layer_of_a_type_product_representation(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        representation = self.file.createIfcShapeRepresentation()
+        element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
+        ifcopenshell.api.run("layer.assign_layer", self.file, items=[representation], layer=layer)
         assert subject.get_layers(self.file, element) == [layer]
 
 
