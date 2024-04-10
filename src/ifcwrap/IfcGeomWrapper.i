@@ -398,9 +398,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 */
 
 %extend IfcGeom::Transformation {
+	PyObject* matrix_() const {
+		auto result = PyTuple_New(16);
+		for (int i = 0; i < 16; ++i) {
+			PyTuple_SET_ITEM(result, i, PyFloat_FromDouble(self->data()->ccomponents().data()[i]));
+		}
+		return result;
+	}
 	%pythoncode %{
         # Hide the getters with read-only property implementations
-        matrix = property(data)
+        matrix = property(matrix_)
 	%}
 };
 
