@@ -59,17 +59,13 @@ class TestGetElementSystems(test.bootstrap.IFC4):
 class TestGetPorts(test.bootstrap.IFC4):
     def test_run(self):
         port = self.file.createIfcDistributionPort()
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        assert subject.get_ports(element) == [port]
-
-
-class TestGetPortsIFC2X3(test.bootstrap.IFC2X3):
-    def test_run(self):
-        port = self.file.createIfcDistributionPort()
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
         assert subject.get_ports(element) == [port]
+
+
+class TestGetPortsIFC2X3(test.bootstrap.IFC2X3, TestGetPorts):
+    pass
 
 
 class TestGetConnectedPort(test.bootstrap.IFC4):
@@ -104,6 +100,5 @@ class TestGetConnectedToFrom(test.bootstrap.IFC4):
         assert subject.get_connected_from(element2) == []
 
 
-class TestGetConnectedToFromIFC2X3(test.bootstrap.IFC2X3):
-    def test_run(self):
-        TestGetConnectedToFrom.test_run(self)
+class TestGetConnectedToFromIFC2X3(test.bootstrap.IFC2X3, TestGetConnectedToFrom):
+    pass
