@@ -93,13 +93,13 @@ def get_pset(
         elif qtos_only and not pset.is_a("IfcElementQuantity"):
             pset = None
 
-    if type_pset:
+    if type_pset is not None:
         if psets_only and not type_pset.is_a("IfcPropertySet"):
             type_pset = None
         elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
             type_pset = None
 
-    if not pset and not type_pset:
+    if not pset and type_pset is None:
         return
 
     if not prop:

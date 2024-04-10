@@ -68,6 +68,9 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
         assert subject.get_pset(element, "name", "a") == 2
         assert subject.get_pset(element, "name", "x") == 1
         assert subject.get_pset(element, "name", "b") == 3
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=type_element, name="name2")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"z": False})
+        assert subject.get_pset(element, "name2", "z") is False
 
     def test_excluding_inherited_psets(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")

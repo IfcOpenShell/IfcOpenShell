@@ -209,7 +209,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return (
             is_not
             + {
-                "equals": "",  # Blank because it's the default situation
+                "equals": "=" if is_not else "",  # Blank because it's the default situation
                 "morethanequalto": ">=",
                 "lessthanequalto": "<=",
                 "morethan": ">",
