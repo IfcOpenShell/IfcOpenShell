@@ -23,6 +23,11 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcDerivedProfileDef* inst) {
 	auto it = map(inst->ParentProfile());
+	if (it == nullptr) {
+		return nullptr;
+	}
+	// @todo we mutate it so we need to clone otherwise we alter the cached item.
+	it = taxonomy::item::ptr(it->clone_());
 	taxonomy::matrix4::ptr m = taxonomy::cast<taxonomy::matrix4>(map(inst->Operator()));
 	if (!taxonomy::cast<taxonomy::geom_item>(it)->matrix) {
 		// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
