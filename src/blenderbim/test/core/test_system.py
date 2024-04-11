@@ -80,7 +80,7 @@ class TestAssignSystem:
 
 class TestUnassignSystem:
     def test_run(self, ifc):
-        ifc.run("system.unassign_system", product="product", system="system").should_be_called()
+        ifc.run("system.unassign_system", products=["product"], system="system").should_be_called()
         subject.unassign_system(ifc, system="system", product="product")
 
 

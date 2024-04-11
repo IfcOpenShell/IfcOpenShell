@@ -19,6 +19,7 @@
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.system
 from datetime import datetime
 
 
@@ -151,3 +152,15 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         rel = rels[0]
         assert rel.RelatingGroup == system
         assert rel.RelatedObjects == (element,)
+
+    @deprecation_check
+    def test_unassign_system(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
+        system = ifcopenshell.api.run("system.add_system", self.file)
+        ifcopenshell.api.run("system.assign_system", self.file, products=[element, element2], system=system)
+        ifcopenshell.api.run("system.unassign_system", self.file, product=element, system=system)
+        assert ifcopenshell.util.system.get_system_elements(system) == [element2]
+
+        ifcopenshell.api.run("system.unassign_system", self.file, product=element2, system=system)
+        assert ifcopenshell.util.system.get_system_elements(system) == []

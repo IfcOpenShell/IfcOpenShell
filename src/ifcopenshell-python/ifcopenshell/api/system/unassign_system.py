@@ -22,11 +22,16 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None, system=None):
-        """Unassigns a product from a system
+    def __init__(
+        self,
+        file: ifcopenshell.entity_instance,
+        products: list[ifcopenshell.entity_instance],
+        system: ifcopenshell.entity_instance,
+    ):
+        """Unassigns list of products from a system
 
-        :param product: The IfcDistributionElement to unassign from the system.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: The list of IfcDistributionElements to unassign from the system.
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param system: The IfcSystem you want to unassign the element from.
         :type system: ifcopenshell.entity_instance.entity_instance
         :return: None
@@ -47,25 +52,15 @@ class Usecase:
             ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
 
             # Not anymore!
-            ifcopenshell.api.run("system.unassign_system", model, product=duct, system=system)
+            ifcopenshell.api.run("system.unassign_system", model, products=[duct], system=system)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "system": system,
         }
 
     def execute(self):
-        if not self.settings["system"].IsGroupedBy:
-            return
-        rel = self.settings["system"].IsGroupedBy[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        related_objects.remove(self.settings["product"])
-        if len(related_objects):
-            rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-        else:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
+        ifcopenshell.api.run(
+            "group.unassign_group", self.file, products=self.settings["products"], group=self.settings["system"]
+        )
