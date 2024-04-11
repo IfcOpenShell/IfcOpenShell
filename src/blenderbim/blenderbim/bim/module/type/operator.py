@@ -78,7 +78,7 @@ class UnassignType(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or element.is_a("IfcElementType"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
             active_representation = tool.Geometry.get_active_representation(obj)
             active_context = active_representation.ContextOfItems
