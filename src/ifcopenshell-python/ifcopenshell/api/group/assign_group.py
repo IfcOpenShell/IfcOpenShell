@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Union
 
 
 class Usecase:
@@ -34,7 +35,8 @@ class Usecase:
         :param group: The IfcGroup to assign the products to
         :type group: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -50,7 +52,10 @@ class Usecase:
             "group": group,
         }
 
-    def execute(self) -> ifcopenshell.entity_instance:
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["products"]:
+            return
+
         if not self.settings["group"].IsGroupedBy:
             return self.file.create_entity(
                 "IfcRelAssignsToGroup",

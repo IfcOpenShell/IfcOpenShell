@@ -139,3 +139,15 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
         assert ifcopenshell.util.element.get_type(element) is None
+
+    @deprecation_check
+    def test_assign_system(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        system = ifcopenshell.api.run("system.add_system", self.file)
+
+        # assign group for multiple elements
+        ifcopenshell.api.run("system.assign_system", self.file, product=element, system=system)
+        assert len(rels := self.file.by_type("IfcRelAssignsToGroup")) == 1
+        rel = rels[0]
+        assert rel.RelatingGroup == system
+        assert rel.RelatedObjects == (element,)
