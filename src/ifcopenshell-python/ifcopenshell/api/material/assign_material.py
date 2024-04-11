@@ -20,11 +20,20 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+from typing import Optional, Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, type="IfcMaterial", material=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        product: ifcopenshell.entity_instance,
+        type: str = "IfcMaterial",
+        material: Optional[ifcopenshell.entity_instance] = None,
+    ):
         """Assigns a material to a product
+
+        Will unassign previously assigned material.
 
         When a material is assigned to a product, it means that the product is
         made out of that material. In its simplest form, a single material may
@@ -60,10 +69,12 @@ class Usecase:
             "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage",
             "IfcMaterialProfileSet", "IfcMaterialProfileSetUsage", or
             "IfcMaterialList". Note that "Set Usages" may only be assigned to
-            occurrences, not types.
+            occurrences, not types. Defaults to "IfcMaterial".
         :type type: str
         :param material: The IfcMaterial or material set you are assigning here.
-        :type material: ifcopenshell.entity_instance.entity_instance
+            If type is Usage then no need to provide `material`, it will be deduced
+            from the element type automatically.
+        :type material: ifcopenshell.entity_instance.entity_instance, optional
         :return: The IfcRelAssociatesMaterial entity
         :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -132,7 +143,7 @@ class Usecase:
         self.file = file
         self.settings = {"product": product, "type": type, "material": material}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         material = ifcopenshell.util.element.get_material(self.settings["product"])
         if material:
             ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
@@ -140,12 +151,15 @@ class Usecase:
             self.settings["material"] and not self.settings["material"].is_a("IfcMaterial")
         ):
             return self.assign_ifc_material()
+
         elif self.settings["type"] == "IfcMaterialConstituentSet":
             material_set = self.file.create_entity(self.settings["type"])
             return self.create_material_association(material_set)
+
         elif self.settings["type"] == "IfcMaterialLayerSet":
             material_set = self.file.create_entity(self.settings["type"])
             return self.create_material_association(material_set)
+
         elif self.settings["type"] == "IfcMaterialLayerSetUsage":
             element_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if element_type:
@@ -158,9 +172,11 @@ class Usecase:
                 material_set = self.file.create_entity("IfcMaterialLayerSet")
             material_set_usage = self.create_layer_set_usage(material_set)
             return self.create_material_association(material_set_usage)
+
         elif self.settings["type"] == "IfcMaterialProfileSet":
             material_set = self.file.create_entity(self.settings["type"])
             return self.create_material_association(material_set)
+
         elif self.settings["type"] == "IfcMaterialProfileSetUsage":
             element_type = ifcopenshell.util.element.get_type(self.settings["product"])
             if element_type:
@@ -175,12 +191,13 @@ class Usecase:
             self.update_representation_profile(material_set)
             material_set_usage = self.create_profile_set_usage(material_set)
             return self.create_material_association(material_set_usage)
+
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])
             material_set.Materials = [self.settings["material"]]
             return self.create_material_association(material_set)
 
-    def update_representation_profile(self, material_set):
+    def update_representation_profile(self, material_set: ifcopenshell.entity_instance) -> None:
         profile = material_set.CompositeProfile
         if not profile and material_set.MaterialProfiles:
             profile = material_set.MaterialProfiles[0].Profile
@@ -195,7 +212,7 @@ class Usecase:
             if subelement.is_a("IfcSweptAreaSolid"):
                 subelement.SweptArea = profile
 
-    def create_layer_set_usage(self, material_set):
+    def create_layer_set_usage(self, material_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if self.settings["product"].is_a() in [
             "IfcSlab",
             "IfcSlabStandardCase",
@@ -218,10 +235,10 @@ class Usecase:
             }
         )
 
-    def create_profile_set_usage(self, material_set):
+    def create_profile_set_usage(self, material_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return self.file.create_entity("IfcMaterialProfileSetUsage", **{"ForProfileSet": material_set})
 
-    def assign_ifc_material(self):
+    def assign_ifc_material(self) -> ifcopenshell.entity_instance:
         rel = self.get_rel_associates_material(self.settings["material"])
         if not rel:
             return self.create_material_association(self.settings["material"])
@@ -230,7 +247,9 @@ class Usecase:
         rel.RelatedObjects = related_objects
         return rel
 
-    def create_material_association(self, relating_material):
+    def create_material_association(
+        self, relating_material: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         return self.file.create_entity(
             "IfcRelAssociatesMaterial",
             **{
@@ -240,7 +259,9 @@ class Usecase:
             }
         )
 
-    def get_rel_associates_material(self, material):
+    def get_rel_associates_material(
+        self, material: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if self.file.schema == "IFC2X3" or material.is_a("IfcMaterialList"):
             rel = [
                 r

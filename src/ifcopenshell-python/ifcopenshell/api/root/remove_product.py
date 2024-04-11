@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None):
+    def __init__(self, file: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance):
         """Removes a product
 
         This is effectively a smart delete function that not only removes a
@@ -58,7 +59,7 @@ class Usecase:
         self.file = file
         self.settings = {"product": product}
 
-    def execute(self):
+    def execute(self) -> None:
         representations = []
         if self.settings["product"].is_a("IfcProduct"):
             if self.settings["product"].Representation:
