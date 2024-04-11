@@ -21,7 +21,7 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, ifc_class="IfcDistributionSystem"):
+    def __init__(self, file: ifcopenshell.entity_instance, ifc_class: str = "IfcDistributionSystem"):
         """Add a new distribution system
 
         A distribution system is a group of distribution elements, like ducts,
@@ -48,9 +48,14 @@ class Usecase:
         self.file = file
         self.settings = {"ifc_class": ifc_class}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
+        ifc_class = self.settings["ifc_class"]
+        # workaround for failing default argument in ifc2x3
+        if self.file.schema == "IFC2X3" and ifc_class == "IfcDistributionSystem":
+            ifc_class = "IfcSystem"
+
         return self.file.create_entity(
-            self.settings["ifc_class"],
+            ifc_class,
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
