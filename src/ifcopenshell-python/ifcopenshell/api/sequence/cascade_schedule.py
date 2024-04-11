@@ -154,7 +154,7 @@ class Usecase:
                 duration_type = "WORKTIME"
                 if rel.TimeLag:
                     # updated to handle IfcRatioMeasure as a TimeLag value
-                    days += self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
+                    days += self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.LagValue.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
                     duration_type = rel.TimeLag.DurationType
                 if days:
                     starts.append(
@@ -183,7 +183,7 @@ class Usecase:
                 if not start:
                     continue
                 if rel.TimeLag:
-                    days = self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
+                    days = self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.LagValue.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
                     duration_type = rel.TimeLag.DurationType
                     starts.append(
                         self.offset_date(
@@ -202,7 +202,7 @@ class Usecase:
                 if not finish:
                     continue
                 if rel.TimeLag:
-                    days = self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
+                    days = self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.LagValue.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
                     duration_type = rel.TimeLag.DurationType
                     finishes.append(
                         self.offset_date(
@@ -223,7 +223,7 @@ class Usecase:
                 days = -1
                 duration_type = "WORKTIME"
                 if rel.TimeLag:
-                    days += self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
+                    days += self.get_lag_time_days(rel.TimeLag) if rel.TimeLag.LagValue.is_a("IfcDuration") else predecessor_duration.days * rel.TimeLag.LagValue.wrappedValue
                     duration_type = rel.TimeLag.DurationType
                 if days or rel.TimeLag:
                     finishes.append(
