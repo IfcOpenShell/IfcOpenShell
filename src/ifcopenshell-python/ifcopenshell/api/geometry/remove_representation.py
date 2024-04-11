@@ -20,7 +20,7 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file: ifcopenshell.file, representation: ifcopenshell.entity_instance):
         """Remove a representation.
 
         Also purges representation items and their related elements
@@ -35,11 +35,9 @@ class Usecase:
         :rtype: None
         """
         self.file = file
-        self.settings = {"representation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+        self.settings = {"representation": representation}
 
-    def execute(self):
+    def execute(self) -> None:
         styled_items = set()
         presentation_layer_assignments = set()
         textures = set()
