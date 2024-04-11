@@ -214,7 +214,7 @@ class DumbProfileRegenerator:
         relating_type = settings["relating_type"]
 
         new_material = ifcopenshell.util.element.get_material(relating_type)
-        if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
+        if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
             return
 
         for related_object in settings["related_objects"]:
