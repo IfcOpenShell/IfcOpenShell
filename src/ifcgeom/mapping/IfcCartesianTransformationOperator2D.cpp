@@ -34,7 +34,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpera
 		axis1 << *ax1->components_, 0.0;
 	}
 	if (inst->Axis2()) {
-		taxonomy::direction3::ptr ax2 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis1()));
+		taxonomy::direction3::ptr ax2 = taxonomy::cast<taxonomy::direction3>(map(inst->Axis2()));
 		axis2 << *ax2->components_, 0.0;
 	}
 
