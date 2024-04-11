@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.api
 import blenderbim.tool as tool
