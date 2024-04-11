@@ -55,7 +55,7 @@ def disable_editing_system(system):
 
 
 def assign_system(ifc, system=None, product=None):
-    ifc.run("system.assign_system", product=product, system=system)
+    ifc.run("system.assign_system", products=[product], system=system)
 
 
 def unassign_system(ifc, system=None, product=None):

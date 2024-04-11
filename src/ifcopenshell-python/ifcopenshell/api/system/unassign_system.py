@@ -44,7 +44,7 @@ class Usecase:
                 ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
             # This duct is part of the system
-            ifcopenshell.api.run("system.assign_system", model, product=duct, system=system)
+            ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
 
             # Not anymore!
             ifcopenshell.api.run("system.unassign_system", model, product=duct, system=system)

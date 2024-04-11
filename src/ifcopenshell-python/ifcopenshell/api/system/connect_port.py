@@ -77,8 +77,8 @@ class Usecase:
                 ifc_class="IfcDuctFitting", predefined_type="BEND")
 
             # The duct and fitting is part of the system
-            ifcopenshell.api.run("system.assign_system", model, product=duct, system=system)
-            ifcopenshell.api.run("system.assign_system", model, product=fitting, system=system)
+            ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
+            ifcopenshell.api.run("system.assign_system", model, products=[fitting], system=system)
 
             # Create 2 ports, one for either end of both the duct and fitting.
             duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
