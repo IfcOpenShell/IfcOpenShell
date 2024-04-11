@@ -732,6 +732,23 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         assert subsubelement in results
 
 
+class TestGetGroupsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        group1 = ifcopenshell.api.run("group.add_group", self.file)
+        group2 = ifcopenshell.api.run("group.add_group", self.file)
+
+        # assign group for multiple elements
+        ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group1)
+        ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group2)
+
+        assert set(subject.get_groups(element)) == set([group1, group2])
+
+
+class TestGetGroupsIFC2X3(test.bootstrap.IFC2X3, TestGetGroupsIFC4):
+    pass
+
+
 class TestGetAggregateIFC4(test.bootstrap.IFC4):
     def test_getting_the_containing_aggregate_of_a_subelement(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
