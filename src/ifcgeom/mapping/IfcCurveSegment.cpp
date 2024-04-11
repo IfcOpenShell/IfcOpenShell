@@ -389,10 +389,9 @@ class curve_segment_evaluator {
             auto position = spiral->Position()->as<IfcSchema::IfcAxis2Placement2D>();
             auto location = position->Location()->as<IfcSchema::IfcCartesianPoint>();
 
-            // center point of the parent curve
-            // this is the inflection point of the spiral
-            auto pcCenterX = location->Coordinates()[0];
-            auto pcCenterY = location->Coordinates()[1];
+            // parent curve placement information
+            auto pcX = location->Coordinates()[0];
+            auto pcY = location->Coordinates()[1];
 
             // orientation of the coordinate system at the center point
             // normalize the direction ratios
@@ -408,50 +407,76 @@ class curve_segment_evaluator {
                 pcDy = dr[1];
             }
 
+            // start of trimmed curve
             double pcStartX = 0.0, pcStartY = 0.0;
             double pcStartDx = 1.0, pcStartDy = 0.0;
             if (start)
             {
                // the spiral doesn't start at the inflection point
                // compute the point where it starts
-                pcStartX = boost::math::quadrature::trapezoidal(fnX, 0.0, start / s);
-                pcStartY = boost::math::quadrature::trapezoidal(fnY, 0.0, start / s);
+                auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, start / s);
+                auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, start / s);
 
                 // compute the slope of the spiral at the start point
-                pcStartDx = s ? fnX(start/s) / s : 1.0;
-                pcStartDy = s ? fnY(start/s) / s : 0.0;
+                auto dx = s ? fnX(start/s) / s : 1.0;
+                auto dy = s ? fnY(start/s) / s : 0.0;
+
+                pcStartX = x * pcDx - y * pcDy + pcX;
+                pcStartY = x * pcDy + y * pcDx + pcY;
+                pcStartDx = dx * pcDx - dy * pcDy;
+                pcStartDy = dx * pcDy + dy * pcDx;
             }
 
             geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
-            eval_ = [start, s, pcStartX, pcStartY, pcStartDx, pcStartDy, pcCenterX, pcCenterY, pcDx, pcDy, fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
+            eval_ = [start, s, pcX, pcY, pcDx, pcDy, pcStartX, pcStartY, pcStartDx, pcStartDy, fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
 
                 u += start;
 
                 // integration limits, integrate from a to b
-                auto a = 0.0;
                 auto b = s ? u / s : 0.0;
 
                 // point on parent curve
-                auto pcX = boost::math::quadrature::trapezoidal(fnX, a, b) + pcCenterX - pcStartX;
-                auto pcY = boost::math::quadrature::trapezoidal(fnY, a, b) + pcCenterY - pcStartY;
-
-                auto angle1 = atan2(pcStartDy, pcStartDx);
-                auto angle2 = atan2(pcDy, pcDx);
-                auto angle = angle2 - angle1;
-                auto csX = pcX * cos(angle) - pcY * sin(angle);
-                auto csY = pcX * sin(angle) + pcY * cos(angle);
-
-                // From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
-                // The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
+                auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, b);
+                auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, b);
                 auto dx = s ? fnX(b) / s : 1.0;
                 auto dy = s ? fnY(b) / s : 0.0;
 
+                auto x1 = x * pcDx - y * pcDy + pcX;
+                auto y1 = x * pcDy + y * pcDx + pcY;
+                auto dx1 = dx * pcDx - dy * pcDy;
+                auto dy1 = dx * pcDy + dy * pcDx;
+
+                auto x2 = (x1 - pcStartX) * pcStartDx - (y1 - pcStartY) * (-pcStartDy);
+                auto y2 = (x1 - pcStartX) * (-pcStartDy) + (y1 - pcStartY) * pcStartDx;
+                auto dx2 = dx1 * pcStartDx + dy1 * (-pcStartDy);
+                auto dy2 = dx1 * (-pcStartDy) + dy1 * pcStartDx;
 
                 Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
-                m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
+                m.col(0) = Eigen::Vector4d(dx2, dy2, 0, 0);
+                m.col(1) = Eigen::Vector4d(-dy2, dx2, 0, 0);
+                m.col(3) = Eigen::Vector4d(x2, y2, 0.0, 1.0);
                 return geometry_adjuster->transform_and_adjust(u, m);
+
+                //auto pcX = boost::math::quadrature::trapezoidal(fnX, 0.0, b) + pcCenterX - pcStartX;
+                //auto pcY = boost::math::quadrature::trapezoidal(fnY, 0.0, b) + pcCenterY - pcStartY;
+
+                //auto angle1 = atan2(pcStartDy, pcStartDx);
+                //auto angle2 = atan2(pcDy, pcDx);
+                //auto angle = angle2 - angle1;
+                //auto csX = pcX * cos(angle) - pcY * sin(angle);
+                //auto csY = pcX * sin(angle) + pcY * cos(angle);
+
+                //// From https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcSpiral.htm, x = Integral(fnX du), y = Integral(fnY du)
+                //// The tangent slope of a curve is the derivate of the curve, so the derivitive of an integral, is just the function
+                //auto dx = s ? fnX(b) / s : 1.0;
+                //auto dy = s ? fnY(b) / s : 0.0;
+
+
+                //Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                //m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+                //m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+                //m.col(3) = Eigen::Vector4d(csX, csY, 0.0, 1.0);
+                //return geometry_adjuster->transform_and_adjust(u, m);
             };
         } else if (segment_type_ == ST_VERTICAL) {
 
