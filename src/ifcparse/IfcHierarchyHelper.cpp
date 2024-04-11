@@ -1013,6 +1013,29 @@ typename Schema::IfcGeometricRepresentationContext* IfcHierarchyHelper<Schema>::
     return contexts_[s] = context;
 }
 
+template <typename Schema>
+typename Schema::IfcGeometricRepresentationSubContext* IfcHierarchyHelper<Schema>::getRepresentationSubContext(const std::string& ident, const std::string& type) {
+    auto geometric_representation_context = getRepresentationContext(type); // creates the representation context if it doesn't already exist
+
+    // search for a subcontext that matches the ContextIdentifier
+    auto subcontexts = geometric_representation_context->HasSubContexts();
+    typename Schema::IfcGeometricRepresentationSubContext* rep_subcontext = nullptr;
+    for (auto subcontext : *subcontexts) {
+        if (subcontext->ContextIdentifier().get_value_or("") == ident) {
+            rep_subcontext = subcontext;
+            break; // found it, break out of the loop
+        }
+    }
+
+    if (rep_subcontext == nullptr) {
+       // didn't find the subcontext, create it
+        rep_subcontext = new typename Schema::IfcGeometricRepresentationSubContext(ident, type, geometric_representation_context, boost::none, Schema::IfcGeometricProjectionEnum::IfcGeometricProjection_MODEL_VIEW, boost::none);
+        addEntity(rep_subcontext);
+    }
+
+    return rep_subcontext;
+}
+
 #ifdef HAS_SCHEMA_2x3
 template IFC_PARSE_API class IfcHierarchyHelper<Ifc2x3>;
 #endif
