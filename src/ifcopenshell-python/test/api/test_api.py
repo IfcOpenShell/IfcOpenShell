@@ -131,3 +131,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         rel = ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
         assert ifcopenshell.util.element.get_type(element1) == element_type
         assert rel.is_a("IfcRelDefinesByType")
+
+    @deprecation_check
+    def test_unassigning_a_type(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+        assert ifcopenshell.util.element.get_type(element) is None
