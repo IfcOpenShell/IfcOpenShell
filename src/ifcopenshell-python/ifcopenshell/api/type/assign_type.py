@@ -19,7 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
-from typing import Union
+from typing import Union, Iterable
 
 
 class Usecase:
@@ -98,6 +98,7 @@ class Usecase:
             IFC requires all occurrences to map those representations. Some IFC
             vendors might disobey this, or you might want to handle it
             yourself. In this scenario, you may set this to False.
+            This also enabled adding material usages mapping.
         :type should_map_representations: bool
         :return: The IfcRelDefinesByType relationship
             or `None` if `related_objects` was empty list.
@@ -250,17 +251,17 @@ class Usecase:
 
         if self.settings["should_map_representations"]:
             if getattr(relating_type, "RepresentationMaps", None):
-                for related_object in related_objects:
+                for related_object in objects_to_change:
                     ifcopenshell.api.run(
                         "type.map_type_representations",
                         self.file,
                         related_object=related_object,
                         relating_type=relating_type,
                     )
-            self.map_material_usages(related_objects)
+            self.map_material_usages(objects_to_change)
         return types
 
-    def map_material_usages(self, related_objects: set[ifcopenshell.entity_instance]) -> None:
+    def map_material_usages(self, related_objects: Iterable[ifcopenshell.entity_instance]) -> None:
         type_material = ifcopenshell.util.element.get_material(self.settings["relating_type"])
         if not type_material:
             return
