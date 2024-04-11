@@ -975,6 +975,28 @@ def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     return results
 
 
+def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the groups of an element.
+
+    :param element: The IFC element
+    :return: List of IfcGroups element is assigned to.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        wall = file.by_type("IfcWall")[0]
+        group = ifcopenshell.util.element.get_groups(element)[0]
+    """
+    groups = []
+    for rel in element.HasAssignments:
+        if rel.is_a("IfcRelAssignsToGroup"):
+            groups.append(rel.RelatingGroup)
+    return groups
+
+
 def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """
     Retrieves the aggregate parent of an element.
