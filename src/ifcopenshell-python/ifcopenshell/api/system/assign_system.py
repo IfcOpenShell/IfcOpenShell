@@ -22,17 +22,23 @@ import ifcopenshell.util.system
 
 
 class Usecase:
-    def __init__(self, file, product=None, system=None):
-        """Assigns a distribution element to a system
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        system: ifcopenshell.entity_instance,
+    ):
+        """Assigns distribution elements to a system
 
         Note that it is not necessary to assign distribution ports to a system.
 
-        :param product: The IfcDistributionElement to assign to the system.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: The list of IfcDistributionElements to assign to the system.
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param system: The IfcSystem you want to assign the element to.
         :type system: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was empty list.
+        :rtype: [ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -46,32 +52,20 @@ class Usecase:
                 ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
             # This duct is part of the system
-            ifcopenshell.api.run("system.assign_system", model, product=duct, system=system)
+            ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "system": system,
         }
 
     def execute(self):
         system = self.settings["system"]
-        product = self.settings["product"]
-        if not ifcopenshell.util.system.is_assignable(product, system):
-            raise TypeError(f"You cannot assign an {product.is_a()} to an {system.is_a()}")
+        products = self.settings["products"]
 
-        if not self.settings["system"].IsGroupedBy:
-            return self.file.create_entity(
-                "IfcRelAssignsToGroup",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["product"]],
-                    "RelatingGroup": self.settings["system"],
-                },
-            )
-        rel = self.settings["system"].IsGroupedBy[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        related_objects.add(self.settings["product"])
-        rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+        if not all(ifcopenshell.util.system.is_assignable(failed_product := product, system) for product in products):
+            raise TypeError(f"You cannot assign an {failed_product.is_a()} to an {system.is_a()}")
+
+        rel = ifcopenshell.api.run("group.assign_group", self.file, products=products, group=system)
+        return rel

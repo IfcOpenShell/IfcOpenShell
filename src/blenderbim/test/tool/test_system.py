@@ -262,7 +262,7 @@ class TestSelectSystemProducts(NewFile):
         tool.Ifc().set(ifc)
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.assign_system", ifc, product=element, system=system)
+        ifcopenshell.api.run("system.assign_system", ifc, products=[element], system=system)
         obj = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj)
         tool.Ifc.link(element, obj)
