@@ -18,28 +18,30 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class TestAssignGroup(test.bootstrap.IFC4):
     def test_assign_group_for_multiple_elements(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         group = ifcopenshell.api.run("group.add_group", self.file)
 
         # assign group for multiple elements
         ifcopenshell.api.run("group.assign_group", self.file, products=[element, element2], group=group)
-        assert len(rels := self.file.by_type("IfcRelAssignsToGroup")) == 1
-        rel = rels[0]
-        assert rel.RelatingGroup == group
-        assert rel.RelatedObjects == (element, element2)
+        assert len(self.file.by_type("IfcRelAssignsToGroup")) == 1
+        assert set(ifcopenshell.util.element.get_grouped_by(group)) == set(self.file.by_type("IfcWall"))
 
     def test_reuse_existing_relationship(self):
         self.test_assign_group_for_multiple_elements()
         rel = self.file.by_type("IfcRelAssignsToGroup")[0]
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         group = self.file.by_type("IfcGroup")[0]
         ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group)
 
         assert len(self.file.by_type("IfcRelAssignsToGroup")) == 1
-        assert rel.RelatingGroup == group
-        assert set(rel.RelatedObjects) == set(self.file.by_type("IfcPump"))
+        assert set(ifcopenshell.util.element.get_grouped_by(group)) == set(self.file.by_type("IfcWall"))
+
+
+class TestAssignGroupIFC2X3(test.bootstrap.IFC2X3, TestAssignGroup):
+    pass

@@ -79,6 +79,9 @@ ARGUMENTS_DEPRECATION = {
     "type.unassign_type": partial(
         batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
     ),
+    "system.assign_system": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 
