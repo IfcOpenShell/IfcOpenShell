@@ -19,6 +19,7 @@
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import pytest
 
 
@@ -64,6 +65,83 @@ class TestAssignType(test.bootstrap.IFC4):
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type2)
         with pytest.raises(RuntimeError):
             self.file.by_id(rel_id)
+
+    def test_map_representation_disabled(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        context = self.file.createIfcGeometricRepresentationContext()
+        rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
+        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "type.assign_type",
+            self.file,
+            related_objects=[element],
+            relating_type=element_type,
+            should_map_representations=False,
+        )
+
+        # no representation mapping and no material usage
+        assert ifcopenshell.util.representation.get_representation(element, context=context) == None
+        assert ifcopenshell.util.element.get_material(element, should_inherit=False) == None
+
+    def test_map_representation(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        context = self.file.createIfcGeometricRepresentationContext()
+        rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        mapped_rep = ifcopenshell.util.representation.get_representation(element, context=context)
+        assert mapped_rep.RepresentationType == "MappedRepresentation"
+        assert mapped_rep.Items[0].MappingSource.MappedRepresentation == rep
+
+    def test_map_representation(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        context = self.file.createIfcGeometricRepresentationContext()
+        rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
+        ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        assert (mapped_rep := ifcopenshell.util.representation.get_representation(element1, context=context))
+        mapped_rep_id = mapped_rep.id()
+
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type
+        )
+        assert (mapped_rep := ifcopenshell.util.representation.get_representation(element1, context=context))
+        assert mapped_rep.id() == mapped_rep_id
+
+    def test_map_material_usages(self):
+        material_types = ("IfcMaterialLayerSet",)
+        if self.file.schema != "IFC2X3":
+            material_types += ("IfcMaterialProfileSet",)
+        for material_type in material_types:
+            element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+            ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type=material_type)
+            element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+            ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+            material = ifcopenshell.util.element.get_material(element)
+            assert material
+            assert material.is_a(f"{material_type}Usage")
+
+    def test_do_not_reassign_material_if_it_was_assigned_previously(self):
+        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        assert (material := ifcopenshell.util.element.get_material(element1))
+        material_id = material.id()
+
+        # use 2 elements to trigger material assignment code block
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "type.assign_type", self.file, related_objects=[element1, element2], relating_type=element_type
+        )
+        assert (material := ifcopenshell.util.element.get_material(element1))
+        assert material.id() == material_id
 
 
 class TestAssignTypeIFC2X3(test.bootstrap.IFC2X3, TestAssignType):
