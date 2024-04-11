@@ -59,7 +59,7 @@ def assign_system(ifc, system=None, product=None):
 
 
 def unassign_system(ifc, system=None, product=None):
-    ifc.run("system.unassign_system", product=product, system=system)
+    ifc.run("system.unassign_system", products=[product], system=system)
 
 
 def select_system_products(system_tool, system=None):
