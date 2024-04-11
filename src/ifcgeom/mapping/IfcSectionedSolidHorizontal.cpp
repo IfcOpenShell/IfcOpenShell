@@ -185,6 +185,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 						return nullptr;
 					}
 					interpolated = taxonomy::make<taxonomy::face>();
+					// @todo should_interpolate should also be informed based by different face matrices.
+					if (profile_a->matrix || profile_b->matrix) {
+						interpolated->matrix = taxonomy::make<taxonomy::matrix4>();
+						Eigen::Matrix4d m4a = Eigen::Matrix4d::Identity();
+						Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
+						if (profile_a->matrix) {
+							m4a = profile_a->matrix->ccomponents();
+						}
+						if (profile_b->matrix) {
+							m4b = profile_b->matrix->ccomponents();
+						}
+						interpolated->matrix->components() = lerp(m4a, m4b, relative_dist_along);
+					}
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
 					taxonomy::loop::ptr w1, w2;
 					taxonomy::edge::ptr e1, e2;
@@ -232,8 +245,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 				loft->children.push_back(interpolated);
 			} else {
 				loft->children.push_back(taxonomy::face::ptr(profile_a->clone_()));
+				if (profile_a->matrix) {
+					loft->children.back()->matrix = taxonomy::matrix4::ptr(profile_a->matrix->clone_());
+				}
 			}
-			loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>(m4b);
+			if (!loft->children.back()->matrix) {
+				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
+				loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+			}
+			// @todo why do we do a transpose here, that doesn't seem right.
+			auto m = (m4b * loft->children.back()->matrix->ccomponents().transpose()).eval();
+			loft->children.back()->matrix->components() = m;
 		}
 	}
 
