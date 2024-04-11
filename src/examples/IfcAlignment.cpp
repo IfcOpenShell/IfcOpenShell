@@ -23,6 +23,9 @@
 // https://www.fhwa.dot.gov/bridge/pubs/hif22034.pdf
 //
 // Sections and page number for this document are cited in the code comments.
+//
+// This examples differs from IfcSimplifiedAlignment because it builds the
+// alignment explicitly
 
 // Disable warnings coming from IfcOpenShell
 #pragma warning(disable : 4018 4267 4250 4984 4985)
@@ -409,6 +412,7 @@ int main() {
 
     // start by defining a gradient curve composed of the vertical curve segments and associated with the horizontal composite curve
     auto gradient_curve = new Schema::IfcGradientCurve(vertical_curve_segments, false, composite_curve, nullptr);
+    file.addEntity(gradient_curve);
 
     // the gradient curve is a representation item
     typename aggregate_of<typename Schema::IfcRepresentationItem>::ptr profile_representation_items(new aggregate_of<typename Schema::IfcRepresentationItem>());
