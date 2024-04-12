@@ -55,7 +55,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCartesianTransformationOpera
 		axis3,
 		origin;
 
-	m->components().transposeInPlace();
+	// @todo why was this here
+	// m->components().transposeInPlace();
 
 	return m;
 }
