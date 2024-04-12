@@ -29,7 +29,7 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
     def test_removing_material_with_associations(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material)
         ifcopenshell.api.run("material.remove_material", self.file, material=material)
         assert len(self.file.by_type("IfcMaterial")) == 0
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 0
@@ -41,7 +41,7 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
             "material.add_material_set", self.file, set_type="IfcMaterialLayerSet"
         )
         ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material_set)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material_set)
         assert len(self.file.by_type("IfcMaterialLayerSet")[0].MaterialLayers) == 1
         ifcopenshell.api.run("material.remove_material", self.file, material=material)
         assert len(self.file.by_type("IfcMaterial")) == 0
@@ -55,7 +55,7 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
             "material.add_material_set", self.file, set_type="IfcMaterialProfileSet"
         )
         ifcopenshell.api.run("material.add_profile", self.file, profile_set=material_set, material=material)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material_set)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material_set)
         assert len(self.file.by_type("IfcMaterialProfileSet")[0].MaterialProfiles) == 1
         ifcopenshell.api.run("material.remove_material", self.file, material=material)
         assert len(self.file.by_type("IfcMaterial")) == 0
@@ -69,7 +69,7 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
             "material.add_material_set", self.file, set_type="IfcMaterialConstituentSet"
         )
         ifcopenshell.api.run("material.add_constituent", self.file, constituent_set=material_set, material=material)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material_set)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material_set)
         assert len(self.file.by_type("IfcMaterialConstituentSet")[0].MaterialConstituents) == 1
         ifcopenshell.api.run("material.remove_material", self.file, material=material)
         assert len(self.file.by_type("IfcMaterial")) == 0
@@ -83,7 +83,7 @@ class TestRemoveMaterial(test.bootstrap.IFC4):
             "material.add_material_set", self.file, set_type="IfcMaterialList"
         )
         ifcopenshell.api.run("material.add_list_item", self.file, material_list=material_set, material=material)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material_set)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material_set)
         assert len(self.file.by_type("IfcMaterialList")[0].Materials) == 1
         ifcopenshell.api.run("material.remove_material", self.file, material=material)
         assert len(self.file.by_type("IfcMaterial")) == 0

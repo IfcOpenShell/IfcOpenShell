@@ -65,7 +65,7 @@ class Usecase:
             wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
             concrete = ifcopenshell.api.run("material.add_material", self.file, name="CON", category="concrete")
             rel = ifcopenshell.api.run("material.assign_material", library,
-                product=wall_type, type="IfcMaterialLayerSet")
+                products=[wall_type], type="IfcMaterialLayerSet")
             layer = ifcopenshell.api.run("material.add_layer", library,
                 layer_set=rel.RelatingMaterial, material=concrete)
             layer.Name = "Structure"

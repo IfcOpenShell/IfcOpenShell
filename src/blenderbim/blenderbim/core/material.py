@@ -102,7 +102,7 @@ def assign_material(ifc, material_tool, material_type, objects):
         element = ifc.get_entity(obj)
         if not element:
             continue
-        ifc.run("material.assign_material", product=element, type=material_type, material=material)
+        ifc.run("material.assign_material", products=[element], type=material_type, material=material)
         assigned_material = material_tool.get_material(element)
         if material_tool.is_a_material_set(assigned_material):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)

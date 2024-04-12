@@ -48,7 +48,7 @@ class TestUnassignType(test.bootstrap.IFC4):
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type="IfcMaterialLayerSet")
 
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)

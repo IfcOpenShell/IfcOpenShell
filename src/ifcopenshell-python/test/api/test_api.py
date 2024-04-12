@@ -164,3 +164,13 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
 
         ifcopenshell.api.run("system.unassign_system", self.file, product=element2, system=system)
         assert ifcopenshell.util.system.get_system_elements(system) == []
+
+    @deprecation_check
+    def test_assign_element_single_material(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, product=element, type="IfcMaterial", material=material
+        )
+        assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 1
+        assert element.HasAssociations[0].RelatingMaterial == material

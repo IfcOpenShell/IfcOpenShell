@@ -68,7 +68,7 @@ class Usecase:
 
             # Assign the concrete material to that bench. Note that no colour
             # "Style" has been specified.
-            ifcopenshell.api.run("material.assign_material", model, product=concrete_bench, material=concrete)
+            ifcopenshell.api.run("material.assign_material", model, products=[concrete_bench], material=concrete)
         """
         self.file = file
         self.settings = {"name": name or "Unnamed", "category": category}
