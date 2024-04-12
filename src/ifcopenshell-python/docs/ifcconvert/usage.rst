@@ -40,6 +40,17 @@ If your IFC uses large map coordinates and your desired format cannot handle it:
     # Or you can specify a manual offset in X;Y;Z format
     $ IfcConvert --model-offset "10000;10000;0" /path/to/input.ifc /path/to/output.glb
 
+IfcConvert can be used to convert only specific elements.
+
+::
+
+    # Convert only walls and slabs
+    $ IfcConvert  --include entities IfcWall IfcSlab /path/to/input.ifc /path/to/output.glb
+    # Convert only these two particular elements filtered by GlobalId
+    $ IfcConvert  --include attribute GlobalId 1yETHMphv6LwABqR4Pbs5g attribute GlobalId 1yETHMphv6LwABqR0Pbs5g /path/to/input.ifc /path/to/output.glb
+    # Convert all objects on level 1. Note how "+" is used.
+    $ IfcConvert  --include+=attribute Name "Level 1" /path/to/input.ifc /path/to/output.glb
+
 IfcConvert can also be used to generate SVG floorplans:
 
 ::
