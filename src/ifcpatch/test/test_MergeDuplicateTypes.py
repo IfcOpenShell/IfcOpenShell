@@ -34,7 +34,7 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
         wall_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type1, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall_type1, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type1], type="IfcMaterialLayerSet")
         ifcopenshell.api.run(
             "type.assign_type",
             self.file,
@@ -47,7 +47,7 @@ class TestMergeDuplicateTypes(test.bootstrap.IFC4):
         wall_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="WallType")
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall_type2, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall_type2, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall_type2], type="IfcMaterialLayerSet")
         ifcopenshell.api.run(
             "type.assign_type",
             self.file,

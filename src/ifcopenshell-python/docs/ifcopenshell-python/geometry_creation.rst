@@ -686,7 +686,7 @@ responsibility to make sure the geometry is correct.
     ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
 
     # Great! Let's assign our material set to our wall type.
-    ifcopenshell.api.run("material.assign_material", model, product=wall_type, material=material_set)
+    ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
 
     # Now, let's create a wall at the origin.
     wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
@@ -742,7 +742,7 @@ responsibility to make sure the geometry is correct.
     ifcopenshell.api.run("material.add_profile", model, profile_set=material_set, material=steel, profile=hea100)
 
     # Great! Let's assign our material set to our beam type.
-    ifcopenshell.api.run("material.assign_material", model, product=beam_type, material=material_set)
+    ifcopenshell.api.run("material.assign_material", model, products=[beam_type], material=material_set)
 
     # Now, let's create a beam at the origin.
     beam = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeam")

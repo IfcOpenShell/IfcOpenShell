@@ -44,7 +44,7 @@ class Usecase:
             # Let's imagine a concrete bench made out of concrete.
             bench_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
             ifcopenshell.api.run("material.assign_material", model,
-                product=bench_type, type="IfcMaterial", material=concrete)
+                products=[bench_type], type="IfcMaterial", material=concrete)
 
             # Let's change our mind and remove the concrete assignment. The
             # concrete material still exists, but the bench is no longer made

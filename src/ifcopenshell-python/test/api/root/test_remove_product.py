@@ -369,7 +369,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_material_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="Foo")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element], material=material)
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelAssociatesMaterial")
         assert self.file.by_type("IfcMaterial")

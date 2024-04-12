@@ -85,6 +85,9 @@ ARGUMENTS_DEPRECATION = {
     "system.unassign_system": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "material.assign_material": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

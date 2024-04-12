@@ -283,7 +283,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = self.add_default_material()
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialLayerSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialLayerSet"
             )
             layer_set = rel.RelatingMaterial
             layer = ifcopenshell.api.run("material.add_layer", ifc_file, layer_set=layer_set, material=material)
@@ -361,7 +361,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                     )
 
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
             )
             profile_set = rel.RelatingMaterial
             material_profile = ifcopenshell.api.run(
