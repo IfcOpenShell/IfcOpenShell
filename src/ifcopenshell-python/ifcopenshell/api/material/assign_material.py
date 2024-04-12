@@ -245,6 +245,7 @@ class Usecase:
         related_objects = list(rel.RelatedObjects)
         related_objects.append(self.settings["product"])
         rel.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         return rel
 
     def create_material_association(
@@ -254,6 +255,7 @@ class Usecase:
             "IfcRelAssociatesMaterial",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                 "RelatedObjects": [self.settings["product"]],
                 "RelatingMaterial": relating_material,
             }
