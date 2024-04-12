@@ -253,8 +253,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 				// @todo should this not be initialized by default? matrix4 already has a 'lazy identity' mechanism.
 				loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
 			}
-			// @todo why do we do a transpose here, that doesn't seem right.
-			auto m = (m4b * loft->children.back()->matrix->ccomponents().transpose()).eval();
+			auto m = (m4b * loft->children.back()->matrix->ccomponents()).eval();
 			loft->children.back()->matrix->components() = m;
 		}
 	}
