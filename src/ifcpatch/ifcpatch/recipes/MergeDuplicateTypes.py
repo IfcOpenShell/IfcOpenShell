@@ -19,10 +19,11 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, attribute="Tag"):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag"):
         """Merge duplicate element types via the Tag or another attribute
 
         Revit is notorious for creating many duplicate element types. Element
@@ -78,7 +79,9 @@ class Patcher:
             else:
                 keys[getattr(element_type, key)] = element_type
 
-    def assign_type(self, related_object, relating_type):
+    def assign_type(
+        self, related_object: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance
+    ) -> None:
         # This is basically a portion of the type.assign_type API which only
         # affects the IfcRelDefinesByType relationship. To be conservative, we
         # don't use the API directly since that would do other things like

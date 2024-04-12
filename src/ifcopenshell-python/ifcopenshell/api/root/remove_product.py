@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance):
+    def __init__(self, file: ifcopenshell.file, product: ifcopenshell.entity_instance):
         """Removes a product
 
         This is effectively a smart delete function that not only removes a

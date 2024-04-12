@@ -21,7 +21,7 @@ import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file: ifcopenshell.entity_instance, ifc_class: str = "IfcDistributionSystem"):
+    def __init__(self, file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"):
         """Add a new distribution system
 
         A distribution system is a group of distribution elements, like ducts,
