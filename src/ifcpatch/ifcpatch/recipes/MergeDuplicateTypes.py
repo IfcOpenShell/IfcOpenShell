@@ -71,8 +71,9 @@ class Patcher:
         for element_type in self.file.by_type("IfcTypeObject"):
             original_type = keys.get(getattr(element_type, key), None)
             if original_type:
-                for element in ifcopenshell.util.element.get_types(element_type):
-                    self.assign_type(element, original_type)
+                elements = ifcopenshell.util.element.get_types(element_type)
+                if elements:
+                    self.assign_type(elements, original_type)
                 for inverse in self.file.get_inverse(element_type):
                     ifcopenshell.util.element.replace_attribute(inverse, element_type, original_type)
                 self.file.remove(element_type)
@@ -80,49 +81,16 @@ class Patcher:
                 keys[getattr(element_type, key)] = element_type
 
     def assign_type(
-        self, related_object: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance
+        self, related_objects: list[ifcopenshell.entity_instance], relating_type: ifcopenshell.entity_instance
     ) -> None:
-        # This is basically a portion of the type.assign_type API which only
-        # affects the IfcRelDefinesByType relationship. To be conservative, we
-        # don't use the API directly since that would do other things like
+        # To be conservative, we disable `should_map_representations`
+        # since that would do other things like
         # map type representations or recalculate material set usages which is
         # risky when we're patching an existing dataset.
-        if self.file.schema == "IFC2X3":
-            is_typed_by = None
-            is_defined_by = related_object.IsDefinedBy
-            for rel in is_defined_by:
-                if rel.is_a("IfcRelDefinesByType"):
-                    is_typed_by = [rel]
-                    break
-            types = relating_type.ObjectTypeOf
-        else:
-            is_typed_by = related_object.IsTypedBy
-            types = relating_type.Types
-
-        if types and is_typed_by == types:
-            return
-
-        if is_typed_by:
-            related_objects = list(is_typed_by[0].RelatedObjects)
-            related_objects.remove(related_object)
-            if related_objects:
-                is_typed_by[0].RelatedObjects = related_objects
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_typed_by[0]})
-            else:
-                self.file.remove(is_typed_by[0])
-
-        if types:
-            related_objects = list(types[0].RelatedObjects)
-            related_objects.append(related_object)
-            types[0].RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": types[0]})
-        else:
-            types = self.file.create_entity(
-                "IfcRelDefinesByType",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [related_object],
-                    "RelatingType": relating_type,
-                }
-            )
+        ifcopenshell.api.run(
+            "type.assign_type",
+            self.file,
+            relating_type=relating_type,
+            related_objects=related_objects,
+            should_map_representations=False,
+        )
