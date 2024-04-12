@@ -27,11 +27,11 @@ class Usecase:
     def __init__(
         self,
         file: ifcopenshell.file,
-        product: ifcopenshell.entity_instance,
+        products: list[ifcopenshell.entity_instance],
         type: str = "IfcMaterial",
         material: Optional[ifcopenshell.entity_instance] = None,
     ):
-        """Assigns a material to a product
+        """Assigns a material to the list of products
 
         Will unassign previously assigned material.
 
@@ -62,9 +62,9 @@ class Usecase:
         This allows individual occurrences to override the layered or profiled
         construction offset from a reference line.
 
-        :param product: The IfcProduct to assign the material or material set
+        :param products: The list of IfcProducts to assign the material or material set
             to.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param type: Choose from "IfcMaterial", "IfcMaterialConstituentSet",
             "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage",
             "IfcMaterialProfileSet", "IfcMaterialProfileSetUsage", or
@@ -75,8 +75,14 @@ class Usecase:
             If type is Usage then no need to provide `material`, it will be deduced
             from the element type automatically.
         :type material: ifcopenshell.entity_instance.entity_instance, optional
-        :return: The IfcRelAssociatesMaterial entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :return: IfcRelAssociatesMaterial entity
+            or a list of IfcRelAssociatesMaterial entities
+            (possible if `type` is Usage
+            and `products` require different Usages)
+            or `None` if `products` was empty list.
+        :rtype: Union[
+            ifcopenshell.entity_instance.entity_instance,
+            list[ifcopenshell.entity_instance.entity_instance], None]
 
         Example:
 
@@ -89,7 +95,7 @@ class Usecase:
             # material. Let's assign it to the type.
             bench_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
             ifcopenshell.api.run("material.assign_material", model,
-                product=bench_type, type="IfcMaterial", material=concrete)
+                products=[bench_type], type="IfcMaterial", material=concrete)
 
             # Let's imagine there are a two occurrences of this bench.  It's not
             # necessary to assign any material to these benches as they
@@ -113,7 +119,7 @@ class Usecase:
 
             # Our wall type now has the layer set assigned to it
             ifcopenshell.api.run("material.assign_material", model,
-                product=wall_type, type="IfcMaterialLayerSet", material=material_set)
+                products=[wall_type], type="IfcMaterialLayerSet", material=material_set)
 
             # Let's imagine an occurrence of this wall type.
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
@@ -125,7 +131,7 @@ class Usecase:
             # they automatically detect the inherited material set from the
             # type. You'd write similar code for a profile set.
             ifcopenshell.api.run("material.assign_material", model,
-                product=wall, type="IfcMaterialLayerSetUsage")
+                products=[wall], type="IfcMaterialLayerSetUsage")
 
             # To be complete, let's create the wall's axis and body
             # representation. Notice how the axis guides the walls "reference
@@ -141,12 +147,19 @@ class Usecase:
             ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
         """
         self.file = file
-        self.settings = {"product": product, "type": type, "material": material}
+        self.settings = {"products": products, "type": type, "material": material}
 
-    def execute(self) -> ifcopenshell.entity_instance:
-        material = ifcopenshell.util.element.get_material(self.settings["product"])
-        if material:
-            ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
+    def execute(self) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance], None]:
+        self.products: set[ifcopenshell.entity_instance] = set(self.settings["products"])
+        if not self.products:
+            return
+
+        # NOTE: we always reassign material, even if it might be assigned before
+        for product in self.products:
+            material = ifcopenshell.util.element.get_material(product)
+            if material:
+                ifcopenshell.api.run("material.unassign_material", self.file, product=product)
+
         if self.settings["type"] == "IfcMaterial" or (
             self.settings["material"] and not self.settings["material"].is_a("IfcMaterial")
         ):
@@ -161,71 +174,104 @@ class Usecase:
             return self.create_material_association(material_set)
 
         elif self.settings["type"] == "IfcMaterialLayerSetUsage":
-            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
-            if element_type:
-                element_type_material = ifcopenshell.util.element.get_material(element_type)
-                if element_type_material and element_type_material.is_a("IfcMaterialLayerSet"):
-                    material_set = element_type_material
+            # NOTE: might return list of rels
+            types_to_products_layers_sets: dict[
+                tuple[Union[ifcopenshell.entity_instance, None], str], tuple[ifcopenshell.entity_instance, list]
+            ] = dict()
+
+            AXIS3_CLASSES = [
+                "IfcSlab",
+                "IfcSlabStandardCase",
+                "IfcSlabElementedCase",
+                "IfcRoof",
+                "IfcRamp",
+                "IfcPlate",
+                "IfcPlateStandardCase",
+            ]
+            for product in self.products:
+                element_type = ifcopenshell.util.element.get_type(product)
+                layer_set_direction = "AXIS3" if product.is_a() in AXIS3_CLASSES else "AXIS2"
+                material_layer_type = (element_type, layer_set_direction)
+
+                if material_layer_type in types_to_products_layers_sets:
+                    types_to_products_layers_sets[material_layer_type][1].append(product)
+                    continue
+
+                if element_type:
+                    element_type_material = ifcopenshell.util.element.get_material(element_type)
+                    if element_type_material and element_type_material.is_a("IfcMaterialLayerSet"):
+                        material_set = element_type_material
+                    else:
+                        material_set = self.file.create_entity("IfcMaterialLayerSet")
                 else:
                     material_set = self.file.create_entity("IfcMaterialLayerSet")
-            else:
-                material_set = self.file.create_entity("IfcMaterialLayerSet")
-            material_set_usage = self.create_layer_set_usage(material_set)
-            return self.create_material_association(material_set_usage)
+                types_to_products_layers_sets[material_layer_type] = (material_set, [product])
+
+            rels = [
+                self.create_layer_set_usage(material_set, layer_set_direction, products)
+                for (_, layer_set_direction), (material_set, products) in types_to_products_layers_sets.items()
+            ]
+            return rels[0] if len(rels) == 1 else rels
 
         elif self.settings["type"] == "IfcMaterialProfileSet":
             material_set = self.file.create_entity(self.settings["type"])
             return self.create_material_association(material_set)
 
         elif self.settings["type"] == "IfcMaterialProfileSetUsage":
-            element_type = ifcopenshell.util.element.get_type(self.settings["product"])
-            if element_type:
-                element_type_material = ifcopenshell.util.element.get_material(element_type)
-                if element_type_material and element_type_material.is_a("IfcMaterialProfileSet"):
-                    material_set = element_type_material
+            # NOTE: might return list of rels
+            types_to_products_profile_sets: dict[
+                Union[ifcopenshell.entity_instance, None], tuple[ifcopenshell.entity_instance, list]
+            ] = dict()
+            for product in self.products:
+                element_type = ifcopenshell.util.element.get_type(product)
+                if element_type in types_to_products_profile_sets:
+                    types_to_products_profile_sets[element_type][1].append(product)
+                    continue
+                if element_type:
+                    element_type_material = ifcopenshell.util.element.get_material(element_type)
+                    if element_type_material and element_type_material.is_a("IfcMaterialProfileSet"):
+                        material_set = element_type_material
+                    else:
+                        material_set = self.file.create_entity("IfcMaterialProfileSet")
                 else:
                     material_set = self.file.create_entity("IfcMaterialProfileSet")
-            else:
-                material_set = self.file.create_entity("IfcMaterialProfileSet")
+                types_to_products_profile_sets[element_type] = (material_set, [product])
 
-            self.update_representation_profile(material_set)
-            material_set_usage = self.create_profile_set_usage(material_set)
-            return self.create_material_association(material_set_usage)
+            rels = []
+            for _, (material_set, products) in types_to_products_profile_sets.items():
+                self.update_representation_profile(material_set, products)
+                material_set_usage = self.create_profile_set_usage(material_set)
+                rels.append(self.create_material_association(material_set_usage, products))
+            return rels[0] if len(rels) == 1 else rels
 
         elif self.settings["type"] == "IfcMaterialList":
             material_set = self.file.create_entity(self.settings["type"])
             material_set.Materials = [self.settings["material"]]
             return self.create_material_association(material_set)
 
-    def update_representation_profile(self, material_set: ifcopenshell.entity_instance) -> None:
+    def update_representation_profile(
+        self, material_set: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+    ) -> None:
         profile = material_set.CompositeProfile
         if not profile and material_set.MaterialProfiles:
             profile = material_set.MaterialProfiles[0].Profile
         if not profile:
             return
-        representation = ifcopenshell.util.representation.get_representation(
-            self.settings["product"], "Model", "Body", "MODEL_VIEW"
-        )
-        if not representation:
-            return
-        for subelement in self.file.traverse(representation):
-            if subelement.is_a("IfcSweptAreaSolid"):
-                subelement.SweptArea = profile
+        for product in products:
+            representation = ifcopenshell.util.representation.get_representation(product, "Model", "Body", "MODEL_VIEW")
+            if not representation:
+                return
+            for subelement in self.file.traverse(representation):
+                if subelement.is_a("IfcSweptAreaSolid"):
+                    subelement.SweptArea = profile
 
-    def create_layer_set_usage(self, material_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        if self.settings["product"].is_a() in [
-            "IfcSlab",
-            "IfcSlabStandardCase",
-            "IfcSlabElementedCase",
-            "IfcRoof",
-            "IfcRamp",
-            "IfcPlate",
-            "IfcPlateStandardCase",
-        ]:
-            layer_set_direction = "AXIS3"
-        else:
-            layer_set_direction = "AXIS2"
-        return self.file.create_entity(
+    def create_layer_set_usage(
+        self,
+        material_set: ifcopenshell.entity_instance,
+        layer_set_direction: str,
+        products: list[ifcopenshell.entity_instance],
+    ) -> ifcopenshell.entity_instance:
+        usage = self.file.create_entity(
             "IfcMaterialLayerSetUsage",
             **{
                 "ForLayerSet": material_set,
@@ -234,29 +280,34 @@ class Usecase:
                 "OffsetFromReferenceLine": 0,
             }
         )
+        return self.create_material_association(usage, products)
 
     def create_profile_set_usage(self, material_set: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return self.file.create_entity("IfcMaterialProfileSetUsage", **{"ForProfileSet": material_set})
 
     def assign_ifc_material(self) -> ifcopenshell.entity_instance:
-        rel = self.get_rel_associates_material(self.settings["material"])
+        material = self.settings["material"] or self.file.create_entity("IfcMaterial")
+        rel = self.get_rel_associates_material(material)
         if not rel:
-            return self.create_material_association(self.settings["material"])
-        related_objects = list(rel.RelatedObjects)
-        related_objects.append(self.settings["product"])
-        rel.RelatedObjects = related_objects
+            return self.create_material_association(material)
+        previous_related_objects = set(rel.RelatedObjects)
+        rel.RelatedObjects = list(previous_related_objects | self.products)
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         return rel
 
     def create_material_association(
-        self, relating_material: ifcopenshell.entity_instance
+        self,
+        relating_material: ifcopenshell.entity_instance,
+        products: Optional[list[ifcopenshell.entity_instance]] = None,
     ) -> ifcopenshell.entity_instance:
+        if products is None:
+            products = list(self.products)
         return self.file.create_entity(
             "IfcRelAssociatesMaterial",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "RelatedObjects": [self.settings["product"]],
+                "RelatedObjects": products,
                 "RelatingMaterial": relating_material,
             }
         )
@@ -265,11 +316,12 @@ class Usecase:
         self, material: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
         if self.file.schema == "IFC2X3" or material.is_a("IfcMaterialList"):
-            rel = [
-                r
-                for r in self.file.by_type("IfcRelAssociatesMaterial")
-                if r.RelatingMaterial == self.settings["material"]
-            ]
-            return rel[0] if rel else None
-        if self.settings["material"].AssociatedTo:
-            return self.settings["material"].AssociatedTo[0]
+            return next(
+                (
+                    r
+                    for r in self.file.by_type("IfcRelAssociatesMaterial")
+                    if r.RelatingMaterial == self.settings["material"]
+                ),
+                None,
+            )
+        return next(iter(material.AssociatedTo), None)

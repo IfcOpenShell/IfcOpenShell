@@ -79,7 +79,7 @@ class TestGetElementsByMaterial(NewFile):
         tool.Ifc.set(ifc)
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
         assert subject.get_elements_by_material(material) == {element}
 
 

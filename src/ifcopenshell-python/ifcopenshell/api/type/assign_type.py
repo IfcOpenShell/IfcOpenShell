@@ -149,7 +149,7 @@ class Usecase:
             ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": .013})
 
             # Great! Let's assign our material set to our wall type.
-            ifcopenshell.api.run("material.assign_material", model, product=wall_type, material=material_set)
+            ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
 
             # Now, let's create a wall.
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
@@ -267,10 +267,9 @@ class Usecase:
             return
         ifc_class = type_material.is_a()
         if ifc_class in ("IfcMaterialLayerSet", "IfcMaterialProfileSet"):
-            for related_object in related_objects:
-                ifcopenshell.api.run(
-                    "material.assign_material",
-                    self.file,
-                    product=related_object,
-                    type=f"{ifc_class}Usage",
-                )
+            ifcopenshell.api.run(
+                "material.assign_material",
+                self.file,
+                products=related_objects,
+                type=f"{ifc_class}Usage",
+            )

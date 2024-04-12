@@ -515,7 +515,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
     if usecase_path == "material.assign_material":
         if not settings.get("material", None):
             return
-        elements = [settings["product"]]
+        elements = settings["products"]
     else:
         elements = []
         for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
