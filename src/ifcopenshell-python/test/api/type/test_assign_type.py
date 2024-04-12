@@ -97,7 +97,7 @@ class TestAssignType(test.bootstrap.IFC4):
         assert mapped_rep.RepresentationType == "MappedRepresentation"
         assert mapped_rep.Items[0].MappingSource.MappedRepresentation == rep
 
-    def test_map_representation(self):
+    def test_do_not_map_representation_if_type_was_assigned_previously(self):
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
