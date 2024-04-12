@@ -55,7 +55,7 @@ class Usecase:
 
             # Our wall type now has the layer set assigned to it
             ifcopenshell.api.run("material.assign_material", model,
-                product=wall_type, type="IfcMaterialLayerSet", material=material_set)
+                products=[wall_type], type="IfcMaterialLayerSet", material=material_set)
 
             # Let's imagine an occurrence of this wall type.
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
@@ -67,7 +67,7 @@ class Usecase:
             # they automatically detect the inherited material set from the
             # type. You'd write similar code for a profile set.
             rel = ifcopenshell.api.run("material.assign_material", model,
-                product=wall, type="IfcMaterialLayerSetUsage")
+                products=[wall], type="IfcMaterialLayerSetUsage")
 
             # Let's change the offset from the reference line to be 200mm
             # instead of the default of 0mm.

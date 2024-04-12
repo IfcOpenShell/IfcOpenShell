@@ -542,7 +542,7 @@ class MEPGenerator:
             ifc_representation_class=None,
         )
 
-        rel = ifcopenshell.api.run("material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet")
+        rel = ifcopenshell.api.run("material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
         material_profile = ifcopenshell.api.run(
             "material.add_profile", ifc_file, profile_set=profile_set, material=material

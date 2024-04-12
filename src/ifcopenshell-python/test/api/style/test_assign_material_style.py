@@ -75,7 +75,7 @@ class TestAssignMaterialStyle(test.bootstrap.IFC4):
             "material.add_constituent", self.file, constituent_set=material_set, material=material
         )
         constituent.Name = name
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material_set)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element], material=material_set)
 
         ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=context)
 

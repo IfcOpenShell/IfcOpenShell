@@ -205,7 +205,7 @@ class LibraryGenerator:
 
     def create_layer_type(self, ifc_class, name, thickness):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet")
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
@@ -214,7 +214,7 @@ class LibraryGenerator:
 
     def create_profile_type(self, ifc_class, name, profile):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, product=element, type="IfcMaterialProfileSet")
+        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
         material_profile = ifcopenshell.api.run(
             "material.add_profile", self.file, profile_set=profile_set, material=self.material

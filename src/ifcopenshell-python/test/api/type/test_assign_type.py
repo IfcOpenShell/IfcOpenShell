@@ -71,7 +71,7 @@ class TestAssignType(test.bootstrap.IFC4):
         context = self.file.createIfcGeometricRepresentationContext()
         rep = self.file.createIfcShapeRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("geometry.assign_representation", self.file, product=element_type, representation=rep)
-        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type="IfcMaterialLayerSet")
 
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run(
@@ -120,7 +120,7 @@ class TestAssignType(test.bootstrap.IFC4):
             material_types += ("IfcMaterialProfileSet",)
         for material_type in material_types:
             element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-            ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type=material_type)
+            ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type=material_type)
             element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
             ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
             material = ifcopenshell.util.element.get_material(element)
@@ -130,7 +130,7 @@ class TestAssignType(test.bootstrap.IFC4):
     def test_do_not_reassign_material_if_it_was_assigned_previously(self):
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element_type, type="IfcMaterialLayerSet")
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], type="IfcMaterialLayerSet")
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
         assert (material := ifcopenshell.util.element.get_material(element1))
         material_id = material.id()

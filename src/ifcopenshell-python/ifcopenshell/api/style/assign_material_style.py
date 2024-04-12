@@ -82,7 +82,7 @@ class Usecase:
 
             # Assign our concrete material to our wall
             ifcopenshell.api.run("material.assign_material", model,
-                product=wall, type="IfcMaterial", material=concrete)
+                products=[wall], type="IfcMaterial", material=concrete)
 
             # Create a new surface style
             style = ifcopenshell.api.run("style.add_style", model)

@@ -219,7 +219,7 @@ class Material(blenderbim.core.tool.Material):
             material = tool.Ifc.get().by_type("IfcMaterial")[0]
         else:
             blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
-        tool.Ifc.run("material.assign_material", product=element, type="IfcMaterialProfileSet", material=material)
+        tool.Ifc.run("material.assign_material", products=[element], type="IfcMaterialProfileSet", material=material)
         assinged_material = cls.get_material(element)
         material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)
         return material_profile

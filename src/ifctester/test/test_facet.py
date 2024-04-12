@@ -1260,7 +1260,7 @@ class TestMaterial:
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         run("Elements without a material always fail", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
         run("Elements with any material will pass an empty material facet", facet=facet, inst=element, expected=True)
 
         run("A required facet checks all parameters as normal", facet=facet, inst=element, expected=True)
@@ -1275,7 +1275,7 @@ class TestMaterial:
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
         material.Name = "Foo"
         run("A material name may pass the value check", facet=facet, inst=element, expected=True)
         material.Name = "Bar"
@@ -1286,7 +1286,7 @@ class TestMaterial:
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialList")
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material_set)
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.add_list_item", ifc, material_list=material_set, material=material)
         material.Name = "Foo"
@@ -1299,7 +1299,7 @@ class TestMaterial:
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialLayerSet")
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material_set)
         material = ifcopenshell.api.run("material.add_material", ifc)
         layer = ifcopenshell.api.run("material.add_layer", ifc, layer_set=material_set, material=material)
         layer.Name = "Foo"
@@ -1318,7 +1318,7 @@ class TestMaterial:
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialProfileSet")
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material_set)
         material = ifcopenshell.api.run("material.add_material", ifc)
         profile = ifcopenshell.api.run("material.add_profile", ifc, profile_set=material_set, material=material)
         profile.Name = "Foo"
@@ -1338,7 +1338,7 @@ class TestMaterial:
         facet = Material(value="Foo")
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         material_set = ifcopenshell.api.run("material.add_material_set", ifc, set_type="IfcMaterialConstituentSet")
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material_set)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material_set)
         run("A constituent set with no data will fail a value check", facet=facet, inst=element, expected=False)
         material = ifcopenshell.api.run("material.add_material", ifc)
         constituent = ifcopenshell.api.run(
@@ -1376,7 +1376,7 @@ class TestMaterial:
         element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element_type], material=material)
         material.Name = "Foo"
         facet = Material(value="Foo")
         run("Occurrences can inherit materials from their types", facet=facet, inst=element, expected=True)
@@ -1386,10 +1386,10 @@ class TestMaterial:
         element_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element_type, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element_type], material=material)
         material.Name = "Bar"
         material = ifcopenshell.api.run("material.add_material", ifc)
-        ifcopenshell.api.run("material.assign_material", ifc, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
         material.Name = "Foo"
         facet = Material(value="Foo")
         run("Occurrences can override materials from their types", facet=facet, inst=element, expected=True)

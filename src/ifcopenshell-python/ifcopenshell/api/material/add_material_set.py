@@ -100,7 +100,7 @@ class Usecase:
             ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
 
             # Great! Let's assign our material set to our wall type.
-            ifcopenshell.api.run("material.assign_material", model, product=wall_type, material=material_set)
+            ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
         """
         self.file = file
         self.settings = {"name": name or "Unnamed", "set_type": set_type or "IfcMaterialConstituentSet"}

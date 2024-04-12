@@ -79,7 +79,7 @@ class Usecase:
                 profile_set=material_set, material=steel, profile=hea100)
 
             # Great! Let's assign our material set to our beam type.
-            ifcopenshell.api.run("material.assign_material", model, product=beam_type, material=material_set)
+            ifcopenshell.api.run("material.assign_material", model, products=[beam_type], material=material_set)
         """
         self.file = file
         self.settings = {"profile_set": profile_set, "material": material, "profile": profile}
