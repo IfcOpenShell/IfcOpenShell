@@ -324,8 +324,8 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
                 # We are explicitly casting to a tessellation, so remove all parametric materials.
                 element_type = ifcopenshell.util.element.get_type(product)
                 if element_type:  # Some invalid IFCs use material sets without a type.
-                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=element_type)
-                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), product=product)
+                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[element_type])
+                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[product])
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
                 return

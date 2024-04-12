@@ -126,7 +126,7 @@ class Usecase:
                     pset=inverse.RelatingPropertyDefinition,
                 )
             elif inverse.is_a("IfcRelAssociatesMaterial"):
-                ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
+                ifcopenshell.api.run("material.unassign_material", self.file, products=[self.settings["product"]])
             elif inverse.is_a("IfcRelDefinesByType"):
                 if inverse.RelatingType == self.settings["product"]:
                     ifcopenshell.api.run("type.unassign_type", self.file, related_objects=inverse.RelatedObjects)
