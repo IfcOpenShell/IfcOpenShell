@@ -424,9 +424,7 @@ class Ods(Json):
 
 class Bcf(Json):
     def report_failed_entities(self, requirement):
-        return [
-            {"reason": requirement.failed_reasons[i], "element": e} for i, e in enumerate(requirement.failed_entities)
-        ]
+        return [{"reason": f["reason"], "element": f["element"]} for f in requirement.failures]
 
     def to_file(self, filepath: str) -> None:
         import numpy as np
