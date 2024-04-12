@@ -155,10 +155,9 @@ class Usecase:
             return
 
         # NOTE: we always reassign material, even if it might be assigned before
-        for product in self.products:
-            material = ifcopenshell.util.element.get_material(product)
-            if material:
-                ifcopenshell.api.run("material.unassign_material", self.file, product=product)
+        products_to_unassign_material = [p for p in self.products if ifcopenshell.util.element.get_material(p)]
+        if products_to_unassign_material:
+            ifcopenshell.api.run("material.unassign_material", self.file, products=products_to_unassign_material)
 
         if self.settings["type"] == "IfcMaterial" or (
             self.settings["material"] and not self.settings["material"].is_a("IfcMaterial")

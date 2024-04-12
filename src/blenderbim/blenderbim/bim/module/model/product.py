@@ -551,7 +551,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
 
 
 def ensure_material_unassigned(usecase_path, ifc_file, settings):
-    elements = [settings["product"]]
+    elements = settings["products"]
     if elements[0].is_a("IfcElementType"):
         elements.extend(ifcopenshell.util.element.get_types(elements[0]))
     for element in elements:
