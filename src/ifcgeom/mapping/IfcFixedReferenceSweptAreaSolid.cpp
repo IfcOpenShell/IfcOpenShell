@@ -74,22 +74,43 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 			std::wcout << s.c_str() << std::endl;
 			*/
 
-			Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
-			Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
-			proj.normalize();
-			auto ref = proj.cross(tangent);
+			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
+			bool is_directrix_derived = false;
+			
+#ifdef SCHEMA_HAS_IfcDirectrixDerivedReferenceSweptAreaSolid
+			if (inst->as<IfcSchema::IfcDirectrixDerivedReferenceSweptAreaSolid>()) {
+				is_directrix_derived = true;
+			}
+#endif
 			auto pos = m4.col(3).head<3>();
 
-			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
-			m4b.col(0).head<3>() = ref;
-			m4b.col(1).head<3>() = proj;
-			m4b.col(2).head<3>() = tangent;
-			m4b.col(3).head<3>() = pos;
+			if (is_directrix_derived) {
+				m4b.col(0).head<3>() = m4.col(2).head<3>().cross(m4.col(0).head<3>());
+				m4b.col(1).head<3>() = m4.col(2).head<3>();
+				m4b.col(2).head<3>() = m4.col(0).head<3>();
+				m4b.col(3).head<3>() = pos;
+			} else {
+				Eigen::Vector3d tangent = m4.col(0).head<3>().normalized();
+				Eigen::Vector3d proj = (ref->components() - tangent * tangent.dot(ref->components()));
+				proj.normalize();
+				auto ref = proj.cross(tangent);
+
+				m4b.col(0).head<3>() = ref;
+				m4b.col(1).head<3>() = proj;
+				m4b.col(2).head<3>() = tangent;
+				m4b.col(3).head<3>() = pos;
+			}
 
 			// @todo taxonomy::clone() does not actually clone. That's really confusing.
 			// loft->children.push_back(taxonomy::clone(profile));
 			loft->children.push_back(taxonomy::face::ptr(profile->clone_()));
-			loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>(m4b);
+			loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+			
+			if (profile->matrix) {
+				loft->children.back()->matrix->components() = (m4b * profile->matrix->ccomponents()).eval();
+			} else {
+				loft->children.back()->matrix->components() = m4b;
+			}
 		}
 	}
 
