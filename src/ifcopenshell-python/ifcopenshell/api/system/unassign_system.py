@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 class Usecase:
     def __init__(
         self,
-        file: ifcopenshell.entity_instance,
+        file: ifcopenshell.file,
         products: list[ifcopenshell.entity_instance],
         system: ifcopenshell.entity_instance,
     ):
