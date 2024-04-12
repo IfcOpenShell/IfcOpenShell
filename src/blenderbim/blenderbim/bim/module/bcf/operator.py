@@ -1045,7 +1045,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             for acomponent in acoloring.component:
                 global_id_colours.setdefault(acomponent.ifc_guid, acoloring.color)
         for global_id, color in global_id_colours.items():
-            # print("{}: color: {}".format(global_id, self.hex_to_rgb(color)))
+            # print("{}: color: {}: {}".format(global_id, color, self.hex_to_rgb(color)))
             obj = IfcStore.get_element(global_id)
             if obj:
                 # print("  obj found   ")
@@ -1132,8 +1132,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def hex_to_rgb(self, value):
         value = value.lstrip("#")
         lv = len(value)
-        t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
-        return [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
+        # https://github.com/buildingSMART/BCF-XML/tree/release_3_0/Documentation#coloring
+        if lv == 8:
+            t = tuple(int(value[i : i + lv // 4], 16) for i in range(0, lv, lv // 4))
+            col = [t[1] / 255.0, t[2] / 255.0, t[3] / 255.0,  t[0] / 255.0]
+        else:
+            t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
+            col = [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
+        return col
 
 
 class OpenBcfReferenceLink(bpy.types.Operator):
