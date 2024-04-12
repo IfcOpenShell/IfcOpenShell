@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, reference=None):
+    def __init__(self, file: ifcopenshell.file, reference: ifcopenshell.entity_instance):
         """Remove a document reference
 
         All associations with objects are removed.
@@ -42,7 +42,7 @@ class Usecase:
         self.file = file
         self.settings = {"reference": reference}
 
-    def execute(self):
+    def execute(self) -> None:
         for rel in self.settings["reference"].DocumentRefForObjects or []:
             history = rel.OwnerHistory
             self.file.remove(rel)

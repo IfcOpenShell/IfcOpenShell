@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, reference=None):
+    def __init__(self, file: ifcopenshell.file, reference: ifcopenshell.entity_instance):
         """Removes a library reference
 
         Any products which have relationships to this reference will not be
@@ -44,7 +44,7 @@ class Usecase:
         self.file = file
         self.settings = {"reference": reference}
 
-    def execute(self):
+    def execute(self) -> None:
         for rel in self.settings["reference"].LibraryRefForObjects:
             history = rel.OwnerHistory
             self.file.remove(rel)

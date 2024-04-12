@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+
 
 class Usecase:
-    def __init__(self, file, library=None):
+    def __init__(self, file: ifcopenshell.file, library: ifcopenshell.entity_instance):
         """Adds a new reference to a library
 
         A library represents an external data source, such as a database,
@@ -54,7 +56,7 @@ class Usecase:
             "library": library,
         }
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         if self.file.schema == "IFC2X3":
             reference = self.file.createIfcLibraryReference()
             references = list(self.settings["library"].LibraryReference or [])
