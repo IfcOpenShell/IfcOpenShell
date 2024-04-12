@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+
 
 class Usecase:
-    def __init__(self, file, information=None):
+    def __init__(self, file: ifcopenshell.file, information: ifcopenshell.entity_instance):
         """Creates a new reference to a document to assign to products
 
         A document may be associated with physical products, tasks, cost items,
@@ -65,7 +67,7 @@ class Usecase:
         self.file = file
         self.settings = {"information": information}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         if self.file.schema == "IFC2X3":
             reference = self.file.create_entity("IfcDocumentReference")
             if self.settings["information"]:
