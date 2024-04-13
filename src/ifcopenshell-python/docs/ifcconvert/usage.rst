@@ -45,11 +45,16 @@ IfcConvert can be used to convert only specific elements.
 ::
 
     # Convert only walls and slabs
-    $ IfcConvert  --include entities IfcWall IfcSlab /path/to/input.ifc /path/to/output.glb
+    $ IfcConvert  --include entities IfcWall IfcSlab -v /path/to/input.ifc /path/to/output.glb
     # Convert only these two particular elements filtered by GlobalId
-    $ IfcConvert  --include attribute GlobalId 1yETHMphv6LwABqR4Pbs5g attribute GlobalId 1yETHMphv6LwABqR0Pbs5g /path/to/input.ifc /path/to/output.glb
+    $ IfcConvert  --include attribute GlobalId 1yETHMphv6LwABqR4Pbs5g attribute GlobalId 1yETHMphv6LwABqR0Pbs5g -v /path/to/input.ifc /path/to/output.glb
     # Convert all objects on level 1. Note how "+" is used.
-    $ IfcConvert  --include+=attribute Name "Level 1" /path/to/input.ifc /path/to/output.glb
+    $ IfcConvert  --include+=attribute Name "Level 1" -v /path/to/input.ifc /path/to/output.glb
+
+.. warning::
+
+    The include (or exclude) arguments cannot be placed right before input file
+    argument and only single of each argument supported for now.
 
 IfcConvert can also be used to generate SVG floorplans:
 
