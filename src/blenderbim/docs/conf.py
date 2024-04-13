@@ -40,7 +40,7 @@ copyright = "2020-2024 IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.231104"
+release = "0.0.240402"
 
 
 # -- General configuration ---------------------------------------------------
