@@ -27,7 +27,7 @@ bl_info = {
     "blender": (3, 1, 0),
     "version": (0, 0, 999999),
     "location": "File Menu, Scene Properties Tab. See documentation for more.",
-    "doc_url": "https://blenderbim.org/docs",
+    "doc_url": "https://docs.blenderbim.org/",
     "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
     "category": "System",
 }
