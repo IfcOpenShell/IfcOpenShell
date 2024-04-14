@@ -1756,8 +1756,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             bpy.ops.object.hide_view_set(unselected=True)
 
         # switch representations and hide elements without representations
+        element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
+            element_obj_names.add(obj.name)
             current_representation = tool.Geometry.get_active_representation(obj)
             if current_representation:
                 subcontext = current_representation.ContextOfItems
@@ -1789,6 +1791,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 # Note that render visibility is only set on drawing generation time for speed.
                 obj.hide_set(False)
 
+        [obj.hide_set(False) for obj in bpy.context.view_layer.objects if obj.name not in element_obj_names]
     @classmethod
     def get_elements_in_camera_view(
         cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
