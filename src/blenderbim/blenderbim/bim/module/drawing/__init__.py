@@ -127,7 +127,7 @@ def register():
     bpy.types.Object.BIMAssignedProductProperties = bpy.props.PointerProperty(type=prop.BIMAssignedProductProperties)
     bpy.types.Object.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
     bpy.types.TextCurve.BIMTextProperties = bpy.props.PointerProperty(type=prop.BIMTextProperties)
-    bpy.app.handlers.load_post.append(handler.toggleDecorationsOnLoad)
+    bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.append(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.append(ui.add_object_button)
 
@@ -141,6 +141,6 @@ def unregister():
     del bpy.types.Object.BIMAssignedProductProperties
     del bpy.types.Object.BIMTextProperties
     del bpy.types.TextCurve.BIMTextProperties
-    bpy.app.handlers.load_post.remove(handler.toggleDecorationsOnLoad)
+    bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.depsgraph_update_pre.remove(handler.depsgraph_update_pre_handler)
     bpy.types.VIEW3D_MT_image_add.remove(ui.add_object_button)
