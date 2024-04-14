@@ -59,6 +59,20 @@ class LoadBcfProject(bpy.types.Operator):
         if self.filepath:
             bcfstore.BcfStore.set_by_filepath(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        # a  BCFv2.1 does not need to have a project, but BBIM likes to have one
+        # https://github.com/buildingSMART/BCF-XML/tree/release_2_1/Documentation#bcf-file-structure
+        nameless = "Unknown"
+        if bcfxml.project is None:
+            if bcfxml.version.version_id.startswith("2"):
+                print("No project, we will create one for BBIM.")
+                bcfxml.project_info = bcf.v2.model.ProjectExtension(
+                    project=bcf.v2.model.Project(
+                        name=nameless,
+                        project_id=str(uuid.uuid4())
+                    ), extension_schema=""
+                )
+        if bcfxml.project.name is None:
+            bcfxml.project.name = nameless
         context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
