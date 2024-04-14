@@ -46,7 +46,8 @@ def add_instance_flooring_covering_from_cursor(ifc, spatial, model, Type, geomet
 
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
-    spatial.set_obj_origin_to_cursor_position(obj)
+    spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
+    spatial.traslate_obj_to_z_location(obj, z)
     spatial.link_obj_to_active_collection(obj)
     points = spatial.get_2d_vertices_from_obj(obj)
     points = spatial.get_scaled_2d_vertices(points)
@@ -74,7 +75,7 @@ def add_instance_ceiling_covering_from_cursor(ifc, spatial, model, Type, geometr
 
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
-        z = covering.get_z_from_ceiling_height()
+        ceiling_height = covering.get_z_from_ceiling_height()
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
@@ -87,8 +88,8 @@ def add_instance_ceiling_covering_from_cursor(ifc, spatial, model, Type, geometr
 
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
-    spatial.set_obj_origin_to_cursor_position(obj)
-    spatial.traslate_obj_to_z_location(obj, z)
+    spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
+    spatial.traslate_obj_to_z_location(obj, z+ceiling_height)
     spatial.link_obj_to_active_collection(obj)
     points = spatial.get_2d_vertices_from_obj(obj)
     points = spatial.get_scaled_2d_vertices(points)

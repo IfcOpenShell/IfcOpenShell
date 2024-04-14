@@ -32,7 +32,9 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
     def poll(cls, context):
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
-        return tool.Ifc.get_entity(collection_obj)
+        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
+        return tool.Ifc.get_entity(collection_obj) and relating_type == "FLOORING"
 
     def _execute(self, context):
 
@@ -61,7 +63,9 @@ class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator
     def poll(cls, context):
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
-        return tool.Ifc.get_entity(collection_obj)
+        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
+        return tool.Ifc.get_entity(collection_obj) and relating_type == "CEILING"
 
     def _execute(self, context):
 
@@ -116,9 +120,11 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
     def poll(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
+        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         if element:
             if element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-                return context.selected_objects
+                return context.selected_objects and relating_type == "FLOORING"
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -147,7 +153,7 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
 
 class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_ceiling_coverings_from_walls"
-    bl_label = "Add Ceilings From Walls"
+    bl_label = "Add Ceiling From Walls"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add instance ceiling coverings from selected walls. The active object must be a wall and layered vertically"
 
@@ -155,9 +161,11 @@ class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator
     def poll(cls, context):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
+        relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
+        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
         if element:
             if element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-                return context.selected_objects
+                return context.selected_objects and relating_type == "CEILING"
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
