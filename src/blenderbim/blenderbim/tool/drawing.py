@@ -671,6 +671,39 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             camera.angle = fov
 
+        tool.Loader.link_mesh(shape, camera)
+
+        obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        cls.import_camera_props(drawing, obj)
+        tool.Ifc.link(drawing, obj)
+
+        m = shape.transformation.matrix.data
+        mat = mathutils.Matrix(
+            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+        )
+        obj.matrix_world = mat
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
+
+        tool.Geometry.record_object_position(obj)
+        tool.Collector.assign(obj)
+
+        return obj
+
+    @classmethod
+    def import_camera_props(cls, drawing, obj):
+        # Temporarily clear the definition id to prevent prop update callbacks to IFC.
+        ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+        obj.BIMObjectProperties.ifc_definition_id = 0
+
+        camera = obj.data
+        camera.BIMCameraProperties.has_underlay = False
+        camera.BIMCameraProperties.has_linework = True
+        camera.BIMCameraProperties.has_annotation = True
+        camera.BIMCameraProperties.target_view = "PLAN_VIEW"
+        camera.BIMCameraProperties.is_nts = False
+
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
             if "TargetView" in pset:
@@ -698,24 +731,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             if "IsNTS" in pset:
                 camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
 
-        tool.Loader.link_mesh(shape, camera)
+        obj.BIMObjectProperties.ifc_definition_id = ifc_definition_id
 
-        obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
-        tool.Ifc.link(drawing, obj)
-
-        m = shape.transformation.matrix.data
-        mat = mathutils.Matrix(
-            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-        )
-        obj.matrix_world = mat
-
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
-
-        tool.Geometry.record_object_position(obj)
-        tool.Collector.assign(obj)
-
-        return obj
 
     @classmethod
     def import_drawings(cls):
@@ -1792,6 +1809,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 obj.hide_set(False)
 
         [obj.hide_set(False) for obj in bpy.context.view_layer.objects if obj.name not in element_obj_names]
+
+        cls.import_camera_props(drawing, camera)
+
     @classmethod
     def get_elements_in_camera_view(
         cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
