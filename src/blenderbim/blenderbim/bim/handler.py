@@ -192,6 +192,8 @@ def refresh_ui_data():
     if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
         tool.Ifc.get().clear_cache()
 
+    bpy.context.scene.DocProperties.should_draw_decorations = bpy.context.scene.DocProperties.should_draw_decorations
+
 
 @persistent
 def loadIfcStore(scene):
