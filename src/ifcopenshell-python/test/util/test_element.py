@@ -291,6 +291,16 @@ class TestGetPredefinedTypeIFC4(test.bootstrap.IFC4):
         element_type.ProcessType = "FOOBAR"
         assert subject.get_predefined_type(element) == "FOOBAR"
 
+    def test_getting_an_element_type_predefined_type(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "PARTITIONING"
+        assert subject.get_predefined_type(element_type) == "PARTITIONING"
+
+    def test_getting_an_element_type_null_predefined_type(self):
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "NOTDEFINED"
+        assert subject.get_predefined_type(element_type) == "NOTDEFINED"
+
 
 class TestGetTypeIFC4(test.bootstrap.IFC4):
     def test_getting_the_type_of_a_product(self):

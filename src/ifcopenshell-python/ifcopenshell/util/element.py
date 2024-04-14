@@ -26,10 +26,10 @@ def get_pset(
     element: ifcopenshell.entity_instance,
     name: str,
     prop: Optional[str] = None,
-    psets_only=False,
-    qtos_only=False,
-    should_inherit=True,
-    verbose=False,
+    psets_only: bool = False,
+    qtos_only: bool = False,
+    should_inherit: bool = True,
+    verbose: bool = False,
 ) -> Union[Any, dict[str, Any]]:
     """Retrieve a single property set or single property
 
@@ -429,8 +429,7 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
         element = ifcopenshell.by_type("IfcWall")[0]
         predefined_type = ifcopenshell.util.element.get_predefined_type(element)
     """
-    element_type = get_type(element)
-    if element_type:
+    if element_type := get_type(element):
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
             predefined_type = getattr(element_type, "ElementType", ...)
@@ -563,7 +562,9 @@ def get_material(
             return get_material(relating_type, should_skip_usage)
 
 
-def get_materials(element: ifcopenshell.entity_instance, should_inherit=True) -> list[ifcopenshell.entity_instance]:
+def get_materials(
+    element: ifcopenshell.entity_instance, should_inherit: bool = True
+) -> list[ifcopenshell.entity_instance]:
     """Gets individual materials of an element
 
     If the element has a material set, the individual materials of that set are
@@ -826,7 +827,7 @@ def get_layers(
 
 
 def get_container(
-    element: ifcopenshell.entity_instance, should_get_direct=False, ifc_class: Optional[str] = None
+    element: ifcopenshell.entity_instance, should_get_direct: bool = False, ifc_class: Optional[str] = None
 ) -> ifcopenshell.entity_instance:
     """
     Retrieves the spatial structure container of an element.
