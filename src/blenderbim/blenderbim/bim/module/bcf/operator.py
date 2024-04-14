@@ -100,7 +100,19 @@ class LoadBcfTopics(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         context.scene.BCFProperties.topics.clear()
-        for index, topic_guid in enumerate(bcfxml.topics.keys()):
+        # workaround, one non standard topic would break reading entire bcf
+        # ignored these topics ATM
+        # happens on non standard nodes or on missing nodes in markup
+        topics2use = []
+        for topic_guid in bcfxml.topics.keys():
+            # print("topic guid: {}".format(topic_guid))
+            try:
+                topic_titel = bcfxml.topics[topic_guid].topic.title
+                topics2use.append(topic_guid)
+            except:
+                print("Problems on reading topic, thus ignored: {}".format(topic_guid))
+                continue
+        for index, topic_guid in enumerate(topics2use):
             new = context.scene.BCFProperties.topics.add()
             bpy.ops.bim.load_bcf_topic(topic_guid=topic_guid, topic_index=index)
         return {"FINISHED"}
