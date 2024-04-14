@@ -42,6 +42,7 @@ class IfcClassData:
         cls.data["contexts"] = cls.contexts()
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
+        cls.data["has_inherited_predefined_type"] = cls.has_inherited_predefined_type()
         cls.data["ifc_class"] = cls.ifc_class()
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
         cls.data["can_reassign_class"] = cls.can_reassign_class()
@@ -161,6 +162,15 @@ class IfcClassData:
         if predefined_type:
             name += f"[{predefined_type}]"
         return name
+
+    @classmethod
+    def has_inherited_predefined_type(cls):
+        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+        if not element:
+            return
+        if element_type := ifcopenshell.util.element.get_type(element):
+            return ifcopenshell.util.element.get_predefined_type(element_type) != "NOTDEFINED"
+        return False
 
     @classmethod
     def ifc_class(cls):

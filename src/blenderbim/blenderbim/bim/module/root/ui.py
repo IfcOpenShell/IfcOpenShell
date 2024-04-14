@@ -61,7 +61,10 @@ class BIM_PT_class(Panel):
                 self.layout.prop(context.scene.BIMRootProperties, "relating_class_object", icon="COPYDOWN")
             else:
                 row = self.layout.row(align=True)
-                row.label(text=IfcClassData.data["name"])
+                row.label(
+                    text=IfcClassData.data["name"],
+                    icon="CON_CHILDOF" if IfcClassData.data["has_inherited_predefined_type"] else "NONE",
+                )
                 row.operator("bim.select_ifc_class", text="", icon="RESTRICT_SELECT_OFF")
                 row.operator("bim.unlink_object", icon="UNLINKED", text="")
                 if IfcClassData.data["can_reassign_class"]:
