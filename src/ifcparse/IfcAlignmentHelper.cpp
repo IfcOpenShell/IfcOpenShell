@@ -76,10 +76,12 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr horizontal_curve_segments(include_geometry ? new aggregate_of<Ifc4x3_add2::IfcSegment>() : nullptr);             // geometry
 
     auto point_iter = points.begin();
-    auto [xBT, yBT] = *point_iter;
+    double xBT, yBT, xPI, yPI;
+
+    boost::tie(xBT, yBT) = *point_iter;
 
     point_iter++;
-    auto [xPI, yPI] = *point_iter;
+    boost::tie(xPI, yPI) = *point_iter;
 
     double xFT, yFT;
     for (auto radius : radii) {
@@ -227,10 +229,12 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     typename aggregate_of<Ifc4x3_add2::IfcSegment>::ptr vertical_curve_segments(new aggregate_of<Ifc4x3_add2::IfcSegment>());             // geometry
 
     auto point_iter = vpoints.begin();
-    auto [xPBG, yPBG] = *point_iter;
+    double xPBG, yPBG, xPVI, yPVI;
+
+    boost::tie(xPBG, yPBG) = *point_iter;
 
     point_iter++;
-    auto [xPVI, yPVI] = *point_iter;
+    boost::tie(xPVI, yPVI) = *point_iter;
 
     double xPFG, yPFG;
     for (auto length : vclengths) {
