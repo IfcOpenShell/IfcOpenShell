@@ -231,9 +231,8 @@ def update_titleblocks(self, context):
     SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
-def toggleDecorations(self, context):
-    toggle = self.should_draw_decorations
-    if toggle:
+def update_should_draw_decorations(self, context):
+    if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
         collection = context.scene.camera.BIMObjectProperties.collection
         for obj in collection.objects:
@@ -345,7 +344,7 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
-    should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
+    should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
     sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
     layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
     titleblocks_dir: StringProperty(
