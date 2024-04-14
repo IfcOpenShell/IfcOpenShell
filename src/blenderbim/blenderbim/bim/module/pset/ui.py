@@ -208,12 +208,15 @@ class BIM_PT_object_psets(Panel):
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
 
         if ObjectPsetsData.data["psets"]:
-            self.layout.label(text="Instance:")
+            if ObjectPsetsData.data["is_occurrence"]:
+                self.layout.label(text="Occurrence Properties:")
+            else:
+                self.layout.label(text="Type Properties:")
             for pset in ObjectPsetsData.data["psets"]:
                 draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
         if ObjectPsetsData.data["inherited_psets"]:
-            self.layout.label(text="Type:")
+            self.layout.label(text="Inherited Type Properties:", icon="CON_CHILDOF")
             for pset in ObjectPsetsData.data["inherited_psets"]:
                 draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object", allow_removing=False)
 
@@ -252,12 +255,15 @@ class BIM_PT_object_qtos(Panel):
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
 
         if ObjectQtosData.data["qtos"]:
-            self.layout.label(text="Instance:")
+            if ObjectQtosData.data["is_occurrence"]:
+                self.layout.label(text="Occurrence Quantities:")
+            else:
+                self.layout.label(text="Type Quantities:")
             for qto in ObjectQtosData.data["qtos"]:
                 draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
 
         if ObjectQtosData.data["inherited_qsets"]:
-            self.layout.label(text="Type:")
+            self.layout.label(text="Inherited Type Quantities:", icon="CON_CHILDOF")
             for qset in ObjectQtosData.data["inherited_qsets"]:
                 draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object", allow_removing=False)
 
