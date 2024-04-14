@@ -952,22 +952,42 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
+        self.set_exceptions(viewpoint, context)
+        self.set_view_setup_hints(viewpoint, context)
+        # set selection at the end not to conflict with .hide_spaces
+        self.set_selection(viewpoint)
+        self.set_colours(viewpoint)
+
+    def set_exceptions(self, viewpoint, context):
+        if (
+            not hasattr(viewpoint.visualization_info.components, "visibility")
+            or not hasattr(viewpoint.visualization_info.components.visibility.exceptions, "component")
+        ):
+            return
+
         exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []}
 
+        # print("default_visibility: {}".format(viewpoint.visualization_info.components.visibility.default_visibility))
         if viewpoint.visualization_info.components.visibility.default_visibility:
+            # default_visibility is True: show all objs, hide the exceptions
             old = context.area.type
             context.area.type = "VIEW_3D"
             bpy.ops.object.hide_view_clear()
             context.area.type = old
             for global_id in exception_global_ids:
+                # print("{}: hide".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj and bpy.context.view_layer.objects.get(obj.name):
+                    # print("  obj found")
                     obj.hide_set(True)
         else:
+            # default_visibility is False: hide all objs, show the exceptions
             objs = []
             for global_id in exception_global_ids:
+                # print("{}: show".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj:
+                    # print("  obj found")
                     objs.append(obj)
             if objs:
                 old = context.area.type
@@ -981,6 +1001,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                     bpy.data.objects["Viewpoint"].hide_set(False)
                 context.area.type = old
 
+    def set_view_setup_hints(self, viewpoint, context):
         if viewpoint.visualization_info.components.view_setup_hints:
             if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
                 self.hide_spaces(context)
@@ -991,10 +1012,6 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         else:
             self.hide_spaces(context)
             self.set_openings_visibility(False, context)
-
-        # set selection at the end not to conflict with .hide_spaces
-        self.set_selection(viewpoint)
-        self.set_colours(viewpoint)
 
     def hide_spaces(self, context):
         old = context.area.type
@@ -1013,19 +1030,25 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
+            # print("{}: selected".format(global_id))
             obj = IfcStore.get_element(global_id)
             if obj:
+                # print("  obj found")
                 obj.select_set(True)
                 obj.hide_set(False)
 
     def set_colours(self, viewpoint):
+        if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
+            return
         global_id_colours = {}
-        for coloring in viewpoint.visualization_info.components.coloring or []:
-            for component in coloring.components:
-                global_id_colours.setdefault(component.ifc_guid, coloring.color)
+        for acoloring in viewpoint.visualization_info.components.coloring.color:
+            for acomponent in acoloring.component:
+                global_id_colours.setdefault(acomponent.ifc_guid, acoloring.color)
         for global_id, color in global_id_colours.items():
+            # print("{}: color: {}".format(global_id, self.hex_to_rgb(color)))
             obj = IfcStore.get_element(global_id)
             if obj:
+                # print("  obj found   ")
                 obj.color = self.hex_to_rgb(color)
 
     def draw_lines(self, viewpoint, context):
