@@ -93,6 +93,9 @@ ARGUMENTS_DEPRECATION = {
     "classification.remove_reference": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "library.assign_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

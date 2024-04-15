@@ -236,3 +236,13 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         ifcopenshell.api.run("classification.remove_reference", self.file, product=element, reference=reference)
         assert len(ifcopenshell.util.classification.get_references(element)) == 0
         assert len(self.file.by_type("IfcClassificationReference")) == 0
+
+    @deprecation_check
+    def test_assigning_a_reference(self):
+        reference = self.file.createIfcLibraryReference()
+        product = self.file.createIfcWall()
+        product2 = self.file.createIfcWall()
+        ifcopenshell.api.run("library.assign_reference", self.file, product=product, reference=reference)
+        assert reference.LibraryRefForObjects[0].RelatedObjects == (product,)
+        ifcopenshell.api.run("library.assign_reference", self.file, product=product2, reference=reference)
+        assert set(reference.LibraryRefForObjects[0].RelatedObjects) == set((product, product2))

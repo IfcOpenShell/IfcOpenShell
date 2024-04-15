@@ -788,7 +788,6 @@ class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
 class TestGetReferencedElements(test.bootstrap.IFC4):
     # TODO: test other references:
     # IfcDocumentReference
-    # IfcLibraryReference
     # IfcExternallyDefinedHatchStyle
     # IfcExternallyDefinedSurfaceStyle
     # IfcExternallyDefinedTextFont
@@ -806,6 +805,15 @@ class TestGetReferencedElements(test.bootstrap.IFC4):
             name="Foobar",
             classification=result,
         )
+        assert subject.get_referenced_elements(reference) == set(elements)
+
+    def test_get_elements_referenced_by_library_reference(self):
+        reference = self.file.createIfcLibraryReference()
+        elements = [
+            ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall"),
+            ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall"),
+        ]
+        ifcopenshell.api.run("library.assign_reference", self.file, reference=reference, products=elements)
         assert subject.get_referenced_elements(reference) == set(elements)
 
 
