@@ -275,10 +275,10 @@ class cant_adjuster : public GEOMETRY_ADJUSTER {
        double cant = parent_curve_point.col(3)(1);
        auto tilt = -atan2(fabs(h), cant);
 
-       // Create a transformation matrix
+       // Create a transformation matrix for twist about the RefDirection (x-axis)
        Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-       m.col(2)(1) = cos(tilt);
-       m.col(2)(2) = sin(tilt);
+       m.col(2)(2) = cos(tilt);
+       m.col(2)(3) = sin(tilt);
 
        // apply cant tilt to the parent curve point
        Eigen::Matrix4d p = m * parent_curve_point;
