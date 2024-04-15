@@ -726,6 +726,10 @@ class TestGetReferencedStructures(test.bootstrap.IFC4):
         assert subject.get_referenced_structures(element) == [building, building2]
 
 
+class TestGetReferencedStructuresIFC2X3(test.bootstrap.IFC2X3, TestGetReferencedStructures):
+    pass
+
+
 class TestGetStructureReferencedElements(test.bootstrap.IFC4):
     def test_getting_references_of_an_element(self):
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
