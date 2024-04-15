@@ -113,4 +113,4 @@ def assign_document(ifc, product=None, document=None):
 
 
 def unassign_document(ifc, product=None, document=None):
-    ifc.run("document.unassign_document", product=product, document=document)
+    ifc.run("document.unassign_document", products=[product], document=document)

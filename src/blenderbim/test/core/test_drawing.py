@@ -391,7 +391,7 @@ class TestDuplicateDrawing:
         ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
 
         drawing.get_drawing_document("new_drawing").should_be_called().will_return("old_reference")
-        ifc.run("document.unassign_document", product="new_drawing", document="old_reference").should_be_called()
+        ifc.run("document.unassign_document", products=["new_drawing"], document="old_reference").should_be_called()
 
         ifc.run("document.add_information").should_be_called().will_return("information")
         ifc.run("document.add_reference", information="information").should_be_called().will_return("reference")

@@ -17,16 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None, document=None):
-        """Unassigns a document and a product association
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        document: ifcopenshell.entity_instance,
+    ):
+        """Unassigns a document and an association to the list of products
 
-        :param product: The object that the document reference or information is
+        :param product: The list of objects that the document reference or information is
             related to.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: list[ifcopenshell.entity_instance.entity_instance]
         :param document: The IfcDocumentReference (typically) or in rare cases
             the IfcDocumentInformation that is associated with the product
         :type document: ifcopenshell.entity_instance.entity_instance
@@ -48,21 +54,36 @@ class Usecase:
             ifcopenshell.api.run("document.assign_document", model, products=[storey], document=reference)
 
             # Now let's change our mind and remove the association
-            ifcopenshell.api.run("document.unassign_document", model, product=storey, document=reference)
+            ifcopenshell.api.run("document.unassign_document", model, products=[storey], document=reference)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "document": document,
         }
 
     def execute(self):
-        for rel in self.settings["product"].HasAssociations:
-            if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == self.settings["document"]:
-                if len(rel.RelatedObjects) == 1:
-                    history = rel.OwnerHistory
-                    self.file.remove(rel)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                else:
-                    rel.RelatedObjects = [o for o in rel.RelatedObjects if o != self.settings["product"]]
+        # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
+        # NOTE: reuses code from `library.un assign_reference`
+
+        reference_rels: set[ifcopenshell.entity_instance] = set()
+        products = set(self.settings["products"])
+        for product in products:
+            reference_rels.update(product.HasAssociations)
+
+        reference_rels = {
+            rel
+            for rel in reference_rels
+            if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == self.settings["document"]
+        }
+
+        for rel in reference_rels:
+            related_objects = set(rel.RelatedObjects) - products
+            if related_objects:
+                rel.RelatedObjects = list(related_objects)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+            else:
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)

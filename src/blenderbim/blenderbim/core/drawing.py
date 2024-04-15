@@ -265,7 +265,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
             ifc.run("group.assign_group", group=new_group, products=[new_annotation])
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
-    ifc.run("document.unassign_document", product=new_drawing, document=old_reference)
+    ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
 
     information = ifc.run("document.add_information")
     uri = drawing_tool.get_default_drawing_path(drawing_name)

@@ -102,6 +102,9 @@ ARGUMENTS_DEPRECATION = {
     "document.assign_document": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "document.unassign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 
