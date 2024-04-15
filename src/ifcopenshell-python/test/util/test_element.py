@@ -785,6 +785,34 @@ class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
     pass
 
 
+class TestGetReferencedElements(test.bootstrap.IFC4):
+    # TODO: test other references:
+    # IfcDocumentReference
+    # IfcLibraryReference
+    # IfcExternallyDefinedHatchStyle
+    # IfcExternallyDefinedSurfaceStyle
+    # IfcExternallyDefinedTextFont
+    def test_get_elements_referenced_by_classification_reference(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        elements = [ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")]
+        if self.file.schema != "IFC2X3":
+            elements.append(self.file.create_entity("IfcCostValue"))
+        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        reference = ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            products=elements,
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        assert subject.get_referenced_elements(reference) == set(elements)
+
+
+class TestGetReferencedElementsIFC2X3(test.bootstrap.IFC2X3, TestGetReferencedElements):
+    pass
+
+
 class TestReplaceAttributeIFC4(test.bootstrap.IFC4):
     def test_replacing_an_elements_attribute(self):
         element = self.file.createIfcWall("foo")
