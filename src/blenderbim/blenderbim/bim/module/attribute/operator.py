@@ -47,9 +47,17 @@ class EnableEditingAttributes(bpy.types.Operator):
             obj = bpy.data.objects.get(self.obj)
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
+
+        element = tool.Ifc.get_entity(obj)
+        has_inherited_predefined_type = False
+        if not element.is_a("IfcTypeObject") and (element_type := ifcopenshell.util.element.get_type(element)):
+            # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
+            has_inherited_predefined_type = ifcopenshell.util.element.get_predefined_type(element_type) not in (
+                "NOTDEFINED",
+                None,
+            )
 
         def callback(name, prop, data):
             if name in ("RefLatitude", "RefLongitude"):
@@ -62,10 +70,11 @@ class EnableEditingAttributes(bpy.types.Operator):
                 new.string_value = "" if new.is_null else json.dumps(data[name])
                 blenderbim.bim.helper.add_attribute_description(new)
                 new.description += " The degrees, minutes and seconds should follow this format : [12,34,56]"
+            if name in ("PredefinedType", "ObjectType") and has_inherited_predefined_type:
+                props.attributes.remove(len(props.attributes) - 1)
+                return True
 
-        blenderbim.bim.helper.import_attributes2(
-            tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes, callback=callback
-        )
+        blenderbim.bim.helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
         return {"FINISHED"}
 

@@ -64,7 +64,8 @@ class Usecase:
                     self.settings["product"].PredefinedType = "USERDEFINED"
             elif hasattr(self.settings["product"], "ObjectType"):
                 relating_type = ifcopenshell.util.element.get_type(self.settings["product"])
-                if relating_type and relating_type.PredefinedType != "NOTDEFINED":
+                # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
+                if relating_type and relating_type.PredefinedType not in ("NOTDEFINED", None):
                     self.settings["product"].ObjectType = None
                     self.settings["product"].PredefinedType = None
                 elif (
