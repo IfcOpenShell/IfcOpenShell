@@ -733,7 +733,6 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         obj.BIMObjectProperties.ifc_definition_id = ifc_definition_id
 
-
     @classmethod
     def import_drawings(cls):
         props = bpy.context.scene.DocProperties
@@ -1808,7 +1807,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                 # Note that render visibility is only set on drawing generation time for speed.
                 obj.hide_set(False)
 
-        [obj.hide_set(False) for obj in bpy.context.view_layer.objects if obj.name not in element_obj_names]
+        [
+            obj.hide_set(False)
+            for obj in bpy.context.view_layer.objects
+            if obj.name not in element_obj_names and tool.Ifc.get_entity(obj)
+        ]
 
         cls.import_camera_props(drawing, camera)
 
