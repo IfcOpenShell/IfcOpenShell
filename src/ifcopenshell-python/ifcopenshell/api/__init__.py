@@ -90,6 +90,9 @@ ARGUMENTS_DEPRECATION = {
     "classification.add_reference": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "classification.remove_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

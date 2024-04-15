@@ -219,3 +219,20 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         assert list(ifcopenshell.util.classification.get_references(element2))[0].Identification == "X"
         assert list(ifcopenshell.util.classification.get_references(element2))[0].Name == "Foobar"
         assert list(ifcopenshell.util.classification.get_references(element2))[0] == references[0]
+
+    @deprecation_check
+    def test_removing_a_reference(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        reference = ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            products=[element],
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        ifcopenshell.api.run("classification.remove_reference", self.file, product=element, reference=reference)
+        assert len(ifcopenshell.util.classification.get_references(element)) == 0
+        assert len(self.file.by_type("IfcClassificationReference")) == 0
