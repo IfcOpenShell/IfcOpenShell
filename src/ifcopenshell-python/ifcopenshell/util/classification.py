@@ -23,10 +23,10 @@ from typing import Optional
 def get_references(element: ifcopenshell.entity_instance, should_inherit=True) -> set[ifcopenshell.entity_instance]:
     results = set()
     if not element.is_a("IfcRoot"):
-        if hasattr(element, "HasExternalReferences"):
-            return {r.RelatingReference for r in element.HasExternalReferences or []}
-        elif hasattr(element, "HasExternalReference"):  # Seriously, IFC?
-            return {r.RelatingReference for r in element.HasExternalReference or []}
+        if (references := getattr(element, "HasExternalReferences", None)) is not None or (
+            references := getattr(element, "HasExternalReference", None)
+        ) is not None:
+            return {r.RelatingReference for r in references}
     if should_inherit:
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
