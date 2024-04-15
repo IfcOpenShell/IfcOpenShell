@@ -87,6 +87,9 @@ ARGUMENTS_DEPRECATION = {
     "material.unassign_material": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "classification.add_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

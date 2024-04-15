@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 from datetime import datetime
@@ -186,3 +187,35 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 0
         assert len(self.file.by_type("IfcWall")) == 1
         assert len(self.file.by_type("IfcMaterial")) == 1
+
+    @deprecation_check
+    def test_adding_a_reference(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            product=element,
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        references = list(ifcopenshell.util.classification.get_references(element))
+        assert len(references) == 1
+        assert references[0].Identification == "X"
+        assert references[0].Name == "Foobar"
+        assert references[0].ReferencedSource == self.file.by_type("IfcClassification")[0]
+
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "classification.add_reference",
+            self.file,
+            product=element2,
+            identification="X",
+            name="Foobar",
+            classification=result,
+        )
+        assert list(ifcopenshell.util.classification.get_references(element2))[0].Identification == "X"
+        assert list(ifcopenshell.util.classification.get_references(element2))[0].Name == "Foobar"
+        assert list(ifcopenshell.util.classification.get_references(element2))[0] == references[0]

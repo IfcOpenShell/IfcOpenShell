@@ -88,7 +88,7 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         reference = ifcopenshell.api.run(
             "classification.add_reference",
             tool.Ifc.get(),
-            product=product,
+            products=[product],
             classification=classification,
             identification="X",
             name="Unnamed",
@@ -358,15 +358,18 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 classification = element
                 break
 
-        for obj in objects:
-            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
-            if not ifc_definition_id:
-                continue
+        ifc_file = tool.Ifc.get()
+        products = [
+            ifc_file.by_id(ifc_definition_id)
+            for obj in objects
+            if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
+        ]
+        if products:
             ifcopenshell.api.run(
                 "classification.add_reference",
                 tool.Ifc.get(),
                 reference=IfcStore.classification_file.by_id(self.reference),
-                product=tool.Ifc.get().by_id(ifc_definition_id),
+                products=products,
                 classification=classification,
             )
 
@@ -414,7 +417,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             reference = ifcopenshell.api.run(
                 "classification.add_reference",
                 tool.Ifc.get(),
-                product=element,
+                products=[element],
                 classification=classification,
                 identification=bsdd_classification.reference_code,
                 name=bsdd_classification.name,
