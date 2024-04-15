@@ -20,6 +20,7 @@ from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.util.element
 from typing import Any, Callable, Optional, Union, Literal, overload
+from collections import namedtuple
 
 
 def get_pset(
@@ -1091,6 +1092,66 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
     elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
         if is_decomposed_by[0].is_a("IfcRelNests"):
             return is_decomposed_by[0].RelatedObjects
+
+
+ReferenceData = namedtuple("ReferenceData", "inverse_attribute, rel_class, relating_element_attribute")
+
+# References below are omitted because they do not introduce
+# any additional referenced objects besides the objects
+# from their supertype IfcExternalReference
+# - IfcExternallyDefinedHatchStyle
+# - IfcExternallyDefinedSurfaceStyle
+# - IfcExternallyDefinedTextFont
+
+REFERENCE_TYPES: dict[str, ReferenceData] = {
+    "IfcClassificationReference": ReferenceData(
+        "ClassificationRefForObjects",
+        "IfcRelAssociatesClassification",
+        "RelatingClassification",
+    ),
+    "IfcDocumentReference": ReferenceData("DocumentRefForObjects", "IfcRelAssociatesDocument", "RelatingDocument"),
+    "IfcLibraryReference": ReferenceData("LibraryRefForObjects", "IfcRelAssociatesLibrary", "RelatingLibrary"),
+}
+
+
+def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Get all elements with assigned `reference`
+
+    :param reference: IfcExternalReference subtype reference
+    :type reference: ifcopenshell.entity_instance.entity_instance
+    :return: The elements with assigned `reference`
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        reference = file.by_type("IfcClassificationReference")[0]
+        elements = ifcopenshell.util.element.get_referenced_elements(reference)
+    """
+
+    related_objects: set[ifcopenshell.entity_instance] = set()
+    ifc_file = reference.file
+    ifc_class = reference.is_a()
+
+    if ifc_file.schema == "IFC2X3":
+        reference_data = REFERENCE_TYPES.get(ifc_class)
+        if reference_data:
+            for rel in ifc_file.by_type(reference_data.rel_class):
+                if getattr(rel, reference_data.relating_element_attribute) == reference:
+                    related_objects.update(rel.RelatedObjects)
+
+    else:
+        # IfcExternalReference
+        for external_rel in reference.ExternalReferenceForResources:
+            related_objects.update(external_rel.RelatedResourceObjects)
+
+        reference_data = REFERENCE_TYPES.get(ifc_class)
+        if reference_data:
+            for rel in getattr(reference, reference_data.inverse_attribute):
+                related_objects.update(rel.RelatedObjects)
+
+    return related_objects
 
 
 def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
