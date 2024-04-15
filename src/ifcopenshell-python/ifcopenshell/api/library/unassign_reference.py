@@ -49,7 +49,7 @@ class Usecase:
                 ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
             # And now assign the IFC model's AHU with its Brickschema counterpart
-            ifcopenshell.api.run("library.assign_reference", model, reference=reference, product=ahu)
+            ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
 
             # Let's change our mind and unassign it.
             ifcopenshell.api.run("library.unassign_reference", model, reference=reference, product=ahu)
