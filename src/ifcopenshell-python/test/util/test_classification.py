@@ -34,14 +34,14 @@ class TestGetReferences(test.bootstrap.IFC4):
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             reference=reference2,
             classification=classification,
         )
@@ -54,7 +54,7 @@ class TestGetReferences(test.bootstrap.IFC4):
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             identification="X",
             name="Foobar",
             classification=result,
@@ -74,14 +74,14 @@ class TestGetReferences(test.bootstrap.IFC4):
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element_type,
+            products=[element_type],
             reference=reference2,
             classification=classification,
         )
@@ -103,14 +103,14 @@ class TestGetReferences(test.bootstrap.IFC4):
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element_type,
+            products=[element_type],
             reference=reference2,
             classification=classification,
         )

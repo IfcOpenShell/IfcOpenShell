@@ -44,7 +44,7 @@ class Usecase:
             classification = ifcopenshell.api.run("classification.add_classification",
                 model, classification="MyCustomClassification")
             reference = ifcopenshell.api.run("classification.add_reference", model,
-                product=wall_type, classification=classification,
+                products=[wall_type], classification=classification,
                 identification="W_01", name="Interior Walls")
             ifcopenshell.api.run("classification.remove_reference", model,
                 reference=reference, product=wall_type)

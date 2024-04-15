@@ -29,7 +29,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         reference = ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             identification="X",
             name="Foobar",
             classification=result,
@@ -45,7 +45,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         reference = ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             identification="X",
             name="Foobar",
             classification=result,
@@ -62,7 +62,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         reference = ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element,
+            products=[element],
             identification="X",
             name="Foobar",
             classification=result,
@@ -70,7 +70,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         reference2 = ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
-            product=element2,
+            products=[element2],
             identification="X",
             name="Foobar",
             classification=result,
