@@ -365,7 +365,7 @@ class TestAddDrawing:
             attributes={"Identification": "X", "Name": "name", "Scope": "DRAWING"},
         ).should_be_called()
         ifc.run("document.edit_reference", reference="reference", attributes={"Location": "uri"}).should_be_called()
-        ifc.run("document.assign_document", product="element", document="reference").should_be_called()
+        ifc.run("document.assign_document", products=["element"], document="reference").should_be_called()
         drawing.import_drawings().should_be_called()
         subject.add_drawing(ifc, collector, drawing, target_view="target_view", location_hint="location_hint")
 
@@ -405,7 +405,7 @@ class TestDuplicateDrawing:
         ifc.run(
             "document.edit_reference", reference="reference", attributes={"Location": "drawing_path"}
         ).should_be_called()
-        ifc.run("document.assign_document", product="new_drawing", document="reference").should_be_called()
+        ifc.run("document.assign_document", products=["new_drawing"], document="reference").should_be_called()
 
         drawing.import_drawings().should_be_called()
         subject.duplicate_drawing(ifc, drawing, drawing="drawing", should_duplicate_annotations=True)

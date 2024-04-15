@@ -133,7 +133,7 @@ class TestRemoveDocument:
 
 class TestAssignDocument:
     def test_run(self, ifc):
-        ifc.run("document.assign_document", product="product", document="document").should_be_called()
+        ifc.run("document.assign_document", products=["product"], document="document").should_be_called()
         subject.assign_document(ifc, product="product", document="document")
 
 

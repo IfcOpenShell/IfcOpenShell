@@ -45,7 +45,7 @@ class Usecase:
             reference = ifcopenshell.api.run("document.add_reference", model, information=document)
 
             # Let's imagine storey represents an IfcBuildingStorey for the ground floor
-            ifcopenshell.api.run("document.assign_document", model, product=storey, document=reference)
+            ifcopenshell.api.run("document.assign_document", model, products=[storey], document=reference)
 
             # Now let's change our mind and remove the association
             ifcopenshell.api.run("document.unassign_document", model, product=storey, document=reference)
