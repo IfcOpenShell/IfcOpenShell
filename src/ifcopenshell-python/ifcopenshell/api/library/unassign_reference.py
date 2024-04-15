@@ -18,18 +18,24 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.api
 
 
 class Usecase:
-    def __init__(self, file, reference=None, product=None):
-        """Unassigns a product from a reference
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        reference: ifcopenshell.entity_instance,
+        products: list[ifcopenshell.entity_instance],
+    ):
+        """Unassigns a product of products from a reference
 
         If the product isn't assigned to the reference, nothing will happen.
 
         :param reference: The IfcLibraryReference to unassign from
         :type reference: ifcopenshell.entity_instance.entity_instance
-        :param product: A IfcProduct element to unassign from the reference
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: A list of IfcProduct elements to unassign from the reference
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :return: None
         :rtype: None
 
@@ -52,24 +58,33 @@ class Usecase:
             ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
 
             # Let's change our mind and unassign it.
-            ifcopenshell.api.run("library.unassign_reference", model, reference=reference, product=ahu)
+            ifcopenshell.api.run("library.unassign_reference", model, reference=reference, products=[ahu])
         """
 
         self.file = file
-        self.settings = {"reference": reference, "product": product}
+        self.settings = {"reference": reference, "products": products}
 
     def execute(self):
-        rels = self.settings["reference"].LibraryRefForObjects
-        if not rels:
-            return
-        for rel in rels:
-            if self.settings["product"] in rel.RelatedObjects:
-                if len(rel.RelatedObjects) == 1:
-                    history = rel.OwnerHistory
-                    self.file.remove(rel)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                    continue
-                related_objects = list(rel.RelatedObjects)
-                related_objects.remove(self.settings["product"])
-                rel.RelatedObjects = related_objects
+        # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
+
+        reference_rels: set[ifcopenshell.entity_instance] = set()
+        products = set(self.settings["products"])
+        for product in products:
+            reference_rels.update(product.HasAssociations)
+
+        reference_rels = {
+            rel
+            for rel in reference_rels
+            if rel.is_a("IfcRelAssociatesLibrary") and rel.RelatingLibrary == self.settings["reference"]
+        }
+
+        for rel in reference_rels:
+            related_objects = set(rel.RelatedObjects) - products
+            if related_objects:
+                rel.RelatedObjects = list(related_objects)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+            else:
+                history = rel.OwnerHistory
+                self.file.remove(rel)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(self.file, history)

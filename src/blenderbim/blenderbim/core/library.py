@@ -87,4 +87,4 @@ def assign_library_reference(ifc, obj=None, reference=None):
 
 
 def unassign_library_reference(ifc, obj=None, reference=None):
-    ifc.run("library.unassign_reference", product=ifc.get_entity(obj), reference=reference)
+    ifc.run("library.unassign_reference", products=[ifc.get_entity(obj)], reference=reference)
