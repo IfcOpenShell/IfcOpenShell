@@ -1775,7 +1775,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
-            element_obj_names.add(obj.name)
             current_representation = tool.Geometry.get_active_representation(obj)
             if current_representation:
                 subcontext = current_representation.ContextOfItems
@@ -1804,13 +1803,13 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             # Don't hide IfcAnnotations as some of them might exist without representations
             if has_context or element.is_a("IfcAnnotation"):
-                # Note that render visibility is only set on drawing generation time for speed.
-                obj.hide_set(False)
+                element_obj_names.add(obj.name)
 
+        # Note that render visibility is only set on drawing generation time for speed.
         [
-            obj.hide_set(False)
+            obj.hide_set(False)  # Show the object
             for obj in bpy.context.view_layer.objects
-            if obj.name not in element_obj_names and tool.Ifc.get_entity(obj)
+            if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
         ]
 
         cls.import_camera_props(drawing, camera)
