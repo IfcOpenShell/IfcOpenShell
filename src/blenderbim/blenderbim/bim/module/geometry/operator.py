@@ -1216,10 +1216,6 @@ class RefreshLinkedAggregate(bpy.types.Operator):
 
             return list(set(linked_aggregate_groups)), selected_parents
 
-        
-
-        selected_objs = context.selected_objects
-        selected_elements = [tool.Ifc.get_entity(selected_obj) for selected_obj in selected_objs]
         active_element = tool.Ifc.get_entity(context.active_object)
         if not active_element:
             self.report({"INFO"}, "Object has no Ifc metadata.")
