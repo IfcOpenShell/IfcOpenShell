@@ -362,12 +362,16 @@ class TestGetMaterial(test.bootstrap.IFC4):
 
     def test_getting_a_material_layer_set_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
+        )
         assert subject.get_material(element) == rel.RelatingMaterial
 
     def test_getting_a_material_profile_set_of_a_product(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet"
+        )
         assert subject.get_material(element) == rel.RelatingMaterial
 
     def test_getting_a_material_layer_set_usage_of_a_product(self):
@@ -522,7 +526,9 @@ class TestGetElementsByMaterial(test.bootstrap.IFC4):
         material_set = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialProfileSet")
         ifcopenshell.api.run("material.add_profile", self.file, profile_set=material_set, material=material)
         ifcopenshell.api.run("material.assign_material", self.file, products=[element_type], material=material_set)
-        ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSetUsage")
+        ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSetUsage"
+        )
         usage = self.file.by_type("IfcMaterialProfileSetUsage")[0]
         assert subject.get_elements_by_material(self.file, material) == {element, element_type}
         assert subject.get_elements_by_material(self.file, material_set) == {element, element_type}
