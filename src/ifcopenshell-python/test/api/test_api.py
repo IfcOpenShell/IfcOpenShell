@@ -246,3 +246,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         assert reference.LibraryRefForObjects[0].RelatedObjects == (product,)
         ifcopenshell.api.run("library.assign_reference", self.file, product=product2, reference=reference)
         assert set(reference.LibraryRefForObjects[0].RelatedObjects) == set((product, product2))
+
+    @deprecation_check
+    def test_unassigning_a_reference(self):
+        reference = self.file.createIfcLibraryReference()
+        product = self.file.createIfcWall()
+        ifcopenshell.api.run("library.assign_reference", self.file, products=[product], reference=reference)
+        ifcopenshell.api.run("library.unassign_reference", self.file, product=product, reference=reference)
+        assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
