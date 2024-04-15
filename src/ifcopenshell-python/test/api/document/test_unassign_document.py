@@ -24,7 +24,7 @@ class TestUnassignDocument(test.bootstrap.IFC4):
     def test_unassigning_a_document(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         reference = ifcopenshell.api.run("document.add_reference", self.file, information=None)
-        ifcopenshell.api.run("document.assign_document", self.file, product=element, document=reference)
+        ifcopenshell.api.run("document.assign_document", self.file, products=[element], document=reference)
         ifcopenshell.api.run("document.unassign_document", self.file, product=element, document=reference)
         assert not element.HasAssociations
         assert not len(self.file.by_type("IfcRelAssociatesDocument"))
@@ -33,8 +33,8 @@ class TestUnassignDocument(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         reference = ifcopenshell.api.run("document.add_reference", self.file, information=None)
-        ifcopenshell.api.run("document.assign_document", self.file, product=element, document=reference)
-        ifcopenshell.api.run("document.assign_document", self.file, product=element2, document=reference)
+        ifcopenshell.api.run("document.assign_document", self.file, products=[element], document=reference)
+        ifcopenshell.api.run("document.assign_document", self.file, products=[element2], document=reference)
         ifcopenshell.api.run("document.unassign_document", self.file, product=element, document=reference)
         assert not element.HasAssociations
         assert element2.HasAssociations[0].RelatingDocument == reference

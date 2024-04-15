@@ -241,7 +241,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
         attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
     ifc.run("document.edit_information", information=information, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    ifc.run("document.assign_document", product=element, document=reference)
+    ifc.run("document.assign_document", products=[element], document=reference)
     drawing.import_drawings()
 
 
@@ -276,7 +276,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
         attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
     ifc.run("document.edit_information", information=information, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    ifc.run("document.assign_document", product=new_drawing, document=reference)
+    ifc.run("document.assign_document", products=[new_drawing], document=reference)
 
     drawing_tool.import_drawings()
     return new_drawing

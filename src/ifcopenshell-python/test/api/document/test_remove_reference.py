@@ -35,7 +35,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         wall = self.file.createIfcWall()
         information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         reference = ifcopenshell.api.run("document.add_reference", self.file, information=information)
-        ifcopenshell.api.run("document.assign_document", self.file, product=wall, document=reference)
+        ifcopenshell.api.run("document.assign_document", self.file, products=[wall], document=reference)
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 2
         ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
         assert len(self.file.by_type("IfcDocumentReference")) == 0

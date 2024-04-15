@@ -254,3 +254,10 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         ifcopenshell.api.run("library.assign_reference", self.file, products=[product], reference=reference)
         ifcopenshell.api.run("library.unassign_reference", self.file, product=product, reference=reference)
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
+
+    @deprecation_check
+    def test_assigning_a_document(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        reference = ifcopenshell.api.run("document.add_reference", self.file, information=None)
+        ifcopenshell.api.run("document.assign_document", self.file, product=element, document=reference)
+        assert element.HasAssociations[0].RelatingDocument == reference

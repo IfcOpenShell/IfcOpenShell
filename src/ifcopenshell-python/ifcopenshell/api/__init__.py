@@ -99,6 +99,9 @@ ARGUMENTS_DEPRECATION = {
     "library.unassign_reference": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "document.assign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 
