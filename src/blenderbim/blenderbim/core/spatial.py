@@ -150,7 +150,7 @@ def select_decomposed_elements(spatial):
         spatial.select_products(spatial.get_decomposed_elements(container))
 
 
-#HERE STARTS SPATIAL TOOL
+# HERE STARTS SPATIAL TOOL
 def generate_space(ifc, spatial, model, Type):
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
@@ -168,7 +168,7 @@ def generate_space(ifc, spatial, model, Type):
         element = ifc.get_entity(active_obj)
 
     else:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor() ##mat
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()  ##mat
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
@@ -221,6 +221,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         spatial.assign_ifcspace_class_to_obj(obj)
 
         spatial.assign_container_to_obj(obj)
+
 
 def toggle_space_visibility(ifc, spatial):
     model = ifc.get()

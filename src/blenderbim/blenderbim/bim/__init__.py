@@ -269,21 +269,10 @@ def unregister():
     bpy.utils.previews.remove(icons)
 
     for cls in reversed(classes):
-        # GizmoGroup, Gizmo and Macro doesn't have cls.is_registered attribute
-        if set((bpy.types.GizmoGroup, bpy.types.Gizmo)) & set(cls.__bases__):
-            if bpy.data.scenes["Scene"].BIMProperties.module_visibility["drawing"].is_visible:
-                bpy.utils.unregister_class(cls)
-            continue
-
-        if bpy.types.Macro in cls.__bases__:
-            bpy.utils.unregister_class(cls)
-            continue
-
         if getattr(cls, "is_registered", None) is None:
             bpy.utils.unregister_class(cls)
-        else:
-            if cls.is_registered is not False:
-                bpy.utils.unregister_class(cls)
+        elif cls.is_registered:
+            bpy.utils.unregister_class(cls)
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.app.handlers.load_post.remove(handler.loadIfcStore)
