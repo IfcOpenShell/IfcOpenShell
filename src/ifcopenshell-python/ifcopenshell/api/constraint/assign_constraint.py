@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 
 
 class Usecase:
@@ -50,6 +51,7 @@ class Usecase:
         related_objects = set(rel.RelatedObjects) if rel.RelatedObjects else set()
         related_objects.add(self.settings["product"])
         rel.RelatedObjects = list(related_objects)
+        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
         return rel
 
     def get_constraint_rel(self):
@@ -60,7 +62,7 @@ class Usecase:
             "IfcRelAssociatesConstraint",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                # TODO: owner history
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                 "RelatingConstraint": self.settings["constraint"],
             }
         )
