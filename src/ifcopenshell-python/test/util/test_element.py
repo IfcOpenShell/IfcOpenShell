@@ -726,6 +726,22 @@ class TestGetReferencedStructures(test.bootstrap.IFC4):
         assert subject.get_referenced_structures(element) == [building, building2]
 
 
+class TestGetStructureReferencedElements(test.bootstrap.IFC4):
+    def test_getting_references_of_an_element(self):
+        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        assert subject.get_structure_referenced_elements(building) == set()
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building)
+        assert subject.get_structure_referenced_elements(building) == {element}
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element2, relating_structure=building)
+        assert subject.get_structure_referenced_elements(building) == {element, element2}
+
+
+class TestGetStructureReferencedElementsIFC2X3(test.bootstrap.IFC2X3, TestGetStructureReferencedElements):
+    pass
+
+
 class TestGetDecompositionIFC4(test.bootstrap.IFC4):
     def test_getting_decomposed_subelements_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")

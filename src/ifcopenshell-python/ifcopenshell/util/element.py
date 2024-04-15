@@ -904,6 +904,27 @@ def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifc
     return [r.RelatingStructure for r in getattr(element, "ReferencedInStructures", [])]
 
 
+def get_structure_referenced_elements(structure: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Retreives a set of elements referenced by a structure
+
+    :param structure: IfcSpatialElement
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :return: A set of referenced elements, IfcSpatialReferenceSelect
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcBuildingStorey")[0]
+        print(ifcopenshell.util.element.get_structure_referenced_elements(element))
+    """
+    referenced = set()
+    for rel in structure.ReferencesElements:
+        referenced.update(rel.RelatedElements)
+    return referenced
+
+
 def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves all subelements of an element based on the spatial decomposition
