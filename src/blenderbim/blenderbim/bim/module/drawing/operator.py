@@ -2570,8 +2570,16 @@ class EnableEditingElementFilter(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = bpy.context.scene.camera
-        if obj:
-            obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+        if not obj:
+            return
+        obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+        element = tool.Ifc.get_entity(obj)
+        if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
+            filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
+            try:
+                tool.Search.import_filter_query(query, filter_groups)
+            except:
+                pass
 
 
 class EditElementFilter(bpy.types.Operator, Operator):
