@@ -188,7 +188,7 @@ class TestImportReferences(NewFile):
         assert len(props.documents) == 1
         assert props.documents[0].ifc_definition_id == reference.id()
         assert props.documents[0].name == "Unnamed"
-        assert props.documents[0].identification == "*"
+        assert props.documents[0].identification == "X"
         assert props.documents[0].is_information is False
 
 
