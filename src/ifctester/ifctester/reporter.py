@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 import os
+import re
 import sys
 import math
 import logging
@@ -386,14 +387,42 @@ class Html(Json):
 
 
 class Ods(Json):
-    def __init__(self, ids: Ids):
+    def __init__(self, ids: Ids, excel_safe=False):
         super().__init__(ids)
+        self.excel_safe = excel_safe
         self.colours = {
             "h": "cccccc",  # Header
             "p": "97cc64",  # Pass
             "f": "fb5a3e",  # Fail
             "t": "ffffff",  # Regular text
         }
+
+    def excel_safe_spreadsheet_name(self, name: str) -> str:
+        if not self.excel_safe:
+            return name
+
+        warning = (
+            f'WARNING. Sheet name "{name}" is not valid for Excel and will be changed. '
+            "See: https://support.microsoft.com/en-us/office/rename-a-worksheet-3f1f7148-ee83-404d-8ef0-9ff99fbad1f9"
+        )
+
+        if not name or name == "History":
+            print(warning)
+            return "placeholder spreadsheet name"
+
+        if name.startswith("'") or name.endswith("'"):
+            print(warning)
+            name = name.strip("'")
+
+        pattern = r"[\\\/\?\*\:\[\]]"
+        if re.search(pattern, name):
+            name = re.sub(pattern, "", name)
+            print(warning)
+
+        if len(name) > 31:
+            name = name[:31]
+            print(warning)
+        return name
 
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
@@ -410,7 +439,7 @@ class Ods(Json):
             self.doc.automaticstyles.addElement(style)
             self.cell_formats[key] = style
 
-        table = Table(name=self.results["title"])
+        table = Table(name=self.excel_safe_spreadsheet_name(self.results["title"]))
         tr = TableRow()
         for header in ["Specification", "Status", "Total Pass", "Total Checks", "Percentage Pass"]:
             tc = TableCell(valuetype="string", stylename="h")
@@ -447,7 +476,7 @@ class Ods(Json):
         for specification in self.results["specifications"]:
             if specification["status"]:
                 continue
-            table = Table(name=specification["name"])
+            table = Table(name=self.excel_safe_spreadsheet_name(specification["name"]))
             tr = TableRow()
             for header in [
                 "Requirement",

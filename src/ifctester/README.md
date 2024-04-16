@@ -16,6 +16,7 @@ Available flags:
 
 - ``-r`` / ``--reporter``: The reporting method to view audit results. Availabe reporters: Console, Txt, Json, Html, Ods, Bcf
 - ``--no-color``: Disable colour output (supported by Console reporting).
+- ``--excel-safe``: Make sure exported ODS is safely exported for Excel.
 - ``-o`` / ``--output``: Output file (supported for all types of reporting except Console).
 
 ### Code example
