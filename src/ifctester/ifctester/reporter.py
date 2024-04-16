@@ -495,7 +495,7 @@ class Ods(Json):
                     table.addElement(tr)
             self.doc.spreadsheet.addElement(table)
 
-        self.doc.save(filepath, addsuffix=filepath.lower().endswith(".ods"))
+        self.doc.save(filepath, addsuffix=not filepath.lower().endswith(".ods"))
 
 
 class Bcf(Json):
