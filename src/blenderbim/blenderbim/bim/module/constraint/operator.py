@@ -114,7 +114,7 @@ class EditObjective(bpy.types.Operator):
         ifcopenshell.api.run(
             "constraint.edit_objective",
             self.file,
-            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes}
+            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes},
         )
         bpy.ops.bim.load_objectives()
         return {"FINISHED"}
@@ -191,7 +191,7 @@ class AssignConstraint(bpy.types.Operator):
                 **{
                     "product": self.file.by_id(obj_id),
                     "constraint": self.file.by_id(self.constraint),
-                }
+                },
             )
         return {"FINISHED"}
 
