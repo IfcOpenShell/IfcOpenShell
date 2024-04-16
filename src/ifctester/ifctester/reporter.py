@@ -218,7 +218,7 @@ class Txt(Console):
         self.text = ""
 
     def print(self, txt: str, end: Optional[str] = None):
-        self.text += txt + "\n" if end is None else txt
+        self.text += txt + "\n" if end is None else end
 
     def to_string(self) -> None:
         print(self.text)
