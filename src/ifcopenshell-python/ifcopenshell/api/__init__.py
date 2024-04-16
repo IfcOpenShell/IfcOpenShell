@@ -105,6 +105,9 @@ ARGUMENTS_DEPRECATION = {
     "document.unassign_document": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "spatial.reference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

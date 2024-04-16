@@ -32,7 +32,7 @@ def reference_structure(
     element: Optional[ifcopenshell.entity_instance] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
     if spatial.can_reference(structure, element):
-        return ifc.run("spatial.reference_structure", product=element, relating_structure=structure)
+        return ifc.run("spatial.reference_structure", products=[element], relating_structure=structure)
 
 
 def dereference_structure(
