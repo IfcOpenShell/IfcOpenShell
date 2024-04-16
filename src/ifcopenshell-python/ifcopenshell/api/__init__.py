@@ -108,6 +108,9 @@ ARGUMENTS_DEPRECATION = {
     "spatial.reference_structure": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "spatial.dereference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

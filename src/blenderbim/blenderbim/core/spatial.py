@@ -42,7 +42,7 @@ def dereference_structure(
     element: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
     if spatial.can_reference(structure, element):
-        return ifc.run("spatial.dereference_structure", product=element, relating_structure=structure)
+        return ifc.run("spatial.dereference_structure", products=[element], relating_structure=structure)
 
 
 def assign_container(

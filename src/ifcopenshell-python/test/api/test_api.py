@@ -280,3 +280,11 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         )
         assert ifcopenshell.util.element.get_referenced_structures(subelement) == [element]
         assert rel.is_a("IfcRelReferencedInSpatialStructure")
+
+    @deprecation_check
+    def test_removing_a_container(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[subelement], relating_structure=element)
+        ifcopenshell.api.run("spatial.dereference_structure", self.file, product=subelement, relating_structure=element)
+        assert ifcopenshell.util.element.get_referenced_structures(subelement) == []
