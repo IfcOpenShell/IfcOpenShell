@@ -294,7 +294,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         active_reference = tool.Ifc.get().by_id(self.reference)
         identification = active_reference[1]
 
-        elements_by_references: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = []
+        elements_by_references: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
         for obj in objects:
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             element = tool.Ifc.get().by_id(ifc_definition_id)
