@@ -719,10 +719,10 @@ class TestGetReferencedStructures(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         assert subject.get_referenced_structures(element) == []
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[element], relating_structure=building)
         assert subject.get_referenced_structures(element) == [building]
         building2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building2)
+        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[element], relating_structure=building2)
         assert subject.get_referenced_structures(element) == [building, building2]
 
 
@@ -735,10 +735,10 @@ class TestGetStructureReferencedElements(test.bootstrap.IFC4):
         building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         assert subject.get_structure_referenced_elements(building) == set()
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element, relating_structure=building)
+        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[element], relating_structure=building)
         assert subject.get_structure_referenced_elements(building) == {element}
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=element2, relating_structure=building)
+        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[element2], relating_structure=building)
         assert subject.get_structure_referenced_elements(building) == {element, element2}
 
 

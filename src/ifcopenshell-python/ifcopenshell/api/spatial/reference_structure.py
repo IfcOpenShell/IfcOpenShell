@@ -18,11 +18,18 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, relating_structure=None):
-        """Denote that a product is related to a spatial structure
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        relating_structure: ifcopenshell.entity_instance,
+    ):
+        """Denote that a list products is related to a list of spatial structures
 
         This is similar to ifcopenshell.api.spatial.assign_container, except
         that containment can only occur between a product and a single spatial
@@ -39,13 +46,15 @@ class Usecase:
         Referencing is non-hierarchical, so a door may be referenced in multiple
         spaces simultaneously.
 
-        :param product: The physical IfcElement that exists in the space.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: The list of physical IfcElements that exists in the space.
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_structure: The IfcSpatialStructureElement element, such
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
+        :type relating_structure: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelReferencedInSpatialStructure relationship instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was an empty list.
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 
@@ -73,37 +82,43 @@ class Usecase:
             ifcopenshell.api.run("spatial.assign_container", model, products=[column], relating_structure=storey1)
 
             # And referenced in the others
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey2)
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey3)
+            ifcopenshell.api.run(
+                "spatial.reference_structure", model, products=[column], relating_structure=[storey2, storey3]
+            )
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "relating_structure": relating_structure,
         }
 
-    def execute(self):
-        referenced_in_structures = self.settings["product"].ReferencedInStructures
-        references_elements = self.settings["relating_structure"].ReferencesElements
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        structure = self.settings["relating_structure"]
+        products = set(self.settings["products"])
 
-        for rel in referenced_in_structures:
-            if rel.RelatingStructure == self.settings["relating_structure"]:
-                return
+        if not products:
+            return
 
-        if references_elements:
-            related_elements = list(references_elements[0].RelatedElements)
-            related_elements.append(self.settings["product"])
-            references_elements[0].RelatedElements = related_elements
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": references_elements[0]})
-        else:
-            references_elements = self.file.create_entity(
+        referenced = ifcopenshell.util.element.get_structure_referenced_elements(structure)
+        products_to_assign = products - referenced
+        rel = next(iter(structure.ReferencesElements), None)
+
+        if not products_to_assign:
+            return rel
+
+        if rel is None:
+            rel = self.file.create_entity(
                 "IfcRelReferencedInSpatialStructure",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
                     "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedElements": [self.settings["product"]],
-                    "RelatingStructure": self.settings["relating_structure"],
+                    "RelatedElements": list(products_to_assign),
+                    "RelatingStructure": structure,
                 }
             )
+        else:
+            related_elements = set(rel.RelatedElements) | products_to_assign
+            rel.RelatedElements = list(related_elements)
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
 
-        return references_elements
+        return rel

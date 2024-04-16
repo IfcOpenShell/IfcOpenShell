@@ -59,8 +59,8 @@ class Usecase:
             ifcopenshell.api.run("spatial.assign_container", model, products=[column], relating_structure=storey1)
 
             # And referenced in the others
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey2)
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey3)
+            ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey2)
+            ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey3)
 
             # Actually, it only goes up to storey 2.
             ifcopenshell.api.run("spatial.dereference_structure", model, product=column, relating_structure=storey3)
