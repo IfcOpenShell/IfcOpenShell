@@ -38,6 +38,22 @@ def get_constraints(product: ifcopenshell.entity_instance) -> list[ifcopenshell.
     return constraints
 
 
+def get_constrained_elements(constraint: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """
+    Retrieves the elements constrained by a `constraint`.
+
+    :param product: The IFC element.
+    :type product: ifcopenshell.entity_instance.entity_instance
+    :return: Set of elements constrained by a `constrant`.
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+    """
+    elements = set()
+    for rel in constraint.file.get_inverse(constraint):
+        if rel.is_a("IfcRelAssociatesConstraint"):
+            elements.update(rel.RelatedObjects)
+    return elements
+
+
 def get_metrics(constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the list of nested constraints for a IfcObjective `constraint`.
