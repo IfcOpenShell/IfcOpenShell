@@ -31,10 +31,10 @@ parser.add_argument(
     "-r", "--reporter", type=str, help="The reporting method to view audit results", default="Console"
 )
 parser.add_argument(
-    "--no-color", help="Disable colour output supported by Console reporting", action="store_true"
+    "--no-color", help="Disable colour output (supported by Console reporting)", action="store_true"
 )
 parser.add_argument(
-    "-o", "--output", help="Output file supported by Json reporting"
+    "-o", "--output", help="Output file (supported for all types of reporting except Console)"
 )
 args = parser.parse_args()
 
