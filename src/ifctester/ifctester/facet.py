@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from functools import lru_cache
 from xmlschema.validators import identities
-from typing import Union, Optional, Any, Literal, TYPE_CHECKING
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING, TypedDict
 from logging import Logger
 
 if TYPE_CHECKING:
@@ -61,12 +61,17 @@ def get_psets(element):
 Cardinality = Literal["required", "optional", "prohibited"]
 
 
+class FacetFailure(TypedDict):
+    element: ifcopenshell.entity_instance
+    reason: str
+
+
 class Facet:
     cardinality: Cardinality
 
     def __init__(self, *parameters):
         self.status = None
-        self.failures = []
+        self.failures: list[FacetFailure] = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
@@ -105,7 +110,7 @@ class Facet:
         clause_type: str,
         specification: Optional[Specification] = None,
         requirement: Optional[Facet] = None,
-    ):
+    ) -> str:
         if clause_type == "applicability":
             templates = self.applicability_templates
         elif clause_type == "requirement":
