@@ -195,7 +195,7 @@ def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None)
         },
     )
     ifc.run("constraint.add_metric_reference", metric=metric, reference_path=reference_path)
-    ifc.run("constraint.assign_constraint", product=resource, constraint=objective)
+    ifc.run("constraint.assign_constraint", products=[resource], constraint=objective)
 
 
 def remove_usage_constraint(ifc, resource_tool, resource, reference_path):

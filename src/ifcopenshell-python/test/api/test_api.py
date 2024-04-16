@@ -19,6 +19,7 @@
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.classification
+import ifcopenshell.util.constraint
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 from datetime import datetime
@@ -285,6 +286,15 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
     def test_removing_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, products=[subelement], relating_structure=element)
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement], relating_structure=element
+        )
         ifcopenshell.api.run("spatial.dereference_structure", self.file, product=subelement, relating_structure=element)
         assert ifcopenshell.util.element.get_referenced_structures(subelement) == []
+
+    @deprecation_check
+    def test_assign_a_constraint(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        constraint = ifcopenshell.api.run("constraint.add_objective", self.file)
+        ifcopenshell.api.run("constraint.assign_constraint", self.file, product=element, constraint=constraint)
+        assert ifcopenshell.util.constraint.get_constrained_elements(constraint) == {element}

@@ -111,6 +111,9 @@ ARGUMENTS_DEPRECATION = {
     "spatial.dereference_structure": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "constraint.assign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 
