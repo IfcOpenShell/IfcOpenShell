@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import datetime
 import ifcopenshell
@@ -34,14 +35,19 @@ from .facet import (
     get_pset,
     get_psets,
     Cardinality,
+    FacetFailure,
 )
-from typing import List, Optional, Union
+from typing import List, Optional, Union, overload, Literal
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
-def open(filepath, validate=False):
+@overload
+def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
+@overload
+def open(filepath: str, validate: Literal[True]) -> None: ...
+def open(filepath: str, validate=False) -> Union[Ids, None]:
     if validate:
         get_schema().validate(filepath)
     return Ids().parse(
@@ -265,11 +271,11 @@ class Specification:
                 if self.maxOccurs != 0:  # This is a required or optional specification
                     if not is_pass:
                         self.failed_entities.add(element)
-                        facet.failures.append({"element": element, "reason": str(result)})
+                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
                 else:  # This is a prohibited specification
                     if is_pass:
                         self.failed_entities.add(element)
-                        facet.failures.append({"element": element, "reason": str(result)})
+                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
 
         self.status = True
         for facet in self.requirements:
