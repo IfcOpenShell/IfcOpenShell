@@ -206,7 +206,7 @@ def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
             reference = resource_tool.get_metric_reference(metric, is_deep=True)
             if reference == reference_path:
                 ifc.run("constraint.remove_metric", metric=metric)
-                ifc.run("constraint.unassign_constraint", product=resource, constraint=constraint)
+                ifc.run("constraint.unassign_constraint", products=[resource], constraint=constraint)
                 ifc.run("constraint.remove_constraint", constraint=constraint)
 
 

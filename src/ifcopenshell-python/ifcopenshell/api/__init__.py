@@ -114,6 +114,9 @@ ARGUMENTS_DEPRECATION = {
     "constraint.assign_constraint": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "constraint.unassign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 

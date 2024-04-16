@@ -298,3 +298,16 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         constraint = ifcopenshell.api.run("constraint.add_objective", self.file)
         ifcopenshell.api.run("constraint.assign_constraint", self.file, product=element, constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(constraint) == {element}
+
+    @deprecation_check
+    def test_unassigning_a_constraint(self):
+        constraint = ifcopenshell.api.run("constraint.add_objective", self.file)
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "constraint.assign_constraint", self.file, product=element, constraint=constraint
+        )
+        ifcopenshell.api.run(
+            "constraint.unassign_constraint", self.file, product=element, constraint=constraint
+        )
+        assert ifcopenshell.util.constraint.get_constrained_elements(element) == set()
+        assert len(self.file.by_type("IfcRelAssociatesConstraint")) == 0
