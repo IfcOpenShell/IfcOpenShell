@@ -205,18 +205,16 @@ class UnassignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        for obj in objs:
-            obj_id = obj.BIMObjectProperties.ifc_definition_id
-            if not obj_id:
-                continue
+        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        if products:
             ifcopenshell.api.run(
                 "constraint.unassign_constraint",
                 self.file,
                 **{
-                    "product": self.file.by_id(obj_id),
+                    "products": products,
                     "constraint": self.file.by_id(self.constraint),
-                }
+                },
             )
         return {"FINISHED"}
