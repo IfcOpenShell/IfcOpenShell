@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import shapely
+import shapely.ops
 import numpy as np
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
