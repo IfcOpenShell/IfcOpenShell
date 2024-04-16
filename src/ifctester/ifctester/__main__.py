@@ -34,6 +34,9 @@ parser.add_argument(
     "--no-color", help="Disable colour output (supported by Console reporting)", action="store_true"
 )
 parser.add_argument(
+    "--excel-safe", help="Make sure exported ODS is safely exported for Excel", action="store_true"
+)
+parser.add_argument(
     "-o", "--output", help="Output file (supported for all types of reporting except Console)"
 )
 args = parser.parse_args()
@@ -56,7 +59,7 @@ elif args.reporter == "Json":
 elif args.reporter == "Html":
     engine = reporter.Html(specs)
 elif args.reporter == "Ods":
-    engine = reporter.Ods(specs)
+    engine = reporter.Ods(specs, excel_safe=args.excel_safe)
 elif args.reporter == "Bcf":
     engine = reporter.Bcf(specs)
 
