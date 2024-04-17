@@ -44,6 +44,9 @@
 #include <Geom_Plane.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepMesh_IncrementalMesh.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopoDS.hxx>
+#include <BRepGProp_Face.hxx>
 
 #if OCC_VERSION_HEX >= 0x70300
 #include <Bnd_OBB.hxx>
