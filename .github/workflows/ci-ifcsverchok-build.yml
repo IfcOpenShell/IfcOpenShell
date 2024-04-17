@@ -1,0 +1,53 @@
+name: Publish-ifcsverchok
+
+on:
+  push:
+    paths:
+      - '.github/workflows/ci-ifcsverchok-build.yml'
+      - 'src/ifcsverchok/*'
+    branches:
+      - v0.7.0
+
+env:
+  major: 0
+  minor: 0
+  name: ifcsverchok
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ifcsverchok
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+          python-version: '3.11'
+      - run: echo ${{ env.DATE }}
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%y%m%d')"
+      - name: Compile
+        run: |
+          cd src/ifcsverchok
+          make dist
+      - name: Upload Zip file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcsverchok/dist/ifcsverchok-${{steps.date.outputs.date}}.zip
+          asset_name: ifcsverchok-${{steps.date.outputs.date}}.zip
+          tag: "ifcsverchok-${{steps.date.outputs.date}}"
+          overwrite: true
+          body: "ifcsverchok build for ${{steps.date.outputs.date}}"
