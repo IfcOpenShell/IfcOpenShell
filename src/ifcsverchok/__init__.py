@@ -89,36 +89,15 @@ def nodes_index():
     ]
 
 
-node_categories = [
-    {
-        "IFC": [
-            "SvIfcCreateFile",
-            "SvIfcReadFile",
-            "SvIfcWriteFile",
-            "SvIfcCreateEntity",
-            "SvIfcCreateShape",
-            "SvIfcReadEntity",
-            "SvIfcPickIfcClass",
-            "SvIfcById",
-            "SvIfcByGuid",
-            "SvIfcByType",
-            "SvIfcByQuery",
-            "SvIfcAdd",
-            "SvIfcAddPset",
-            "SvIfcAddSpatialElement",
-            "SvIfcRemove",
-            "SvIfcGenerateGuid",
-            "SvIfcGetProperty",
-            "SvIfcGetAttribute",
-            "SvIfcSelectBlenderObjects",
-            "SvIfcApi",
-            "SvIfcBMeshToIfcRepr",
-            "SvIfcSverchokToIfcRepr",
-            "SvIfcCreateProject",
-            "SvIfcQuickProjectSetup",
-        ]
-    }
-]
+def make_node_categories() -> list[dict[str, list[str]]]:
+    node_categories = [{}]
+    for category, nodes in nodes_index():
+        nodes = [node_name for idname, node_name in nodes]
+        node_categories[0][category] = nodes
+    return node_categories
+
+
+node_categories = make_node_categories()
 
 
 def make_node_list():
