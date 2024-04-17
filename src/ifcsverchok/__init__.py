@@ -32,6 +32,26 @@ import importlib
 import logging
 
 logger = logging.getLogger("sverchok.ifc")
+
+
+def ensure_addons_are_enabled(*addon_names: str) -> None:
+    errors = []
+    for addon_name in addon_names:
+        try:
+            module = importlib.import_module(addon_name)
+            # `__addon_enabled__` is not present if addon wasn't enabled before
+            if not getattr(module, "__addon_enabled__", False):
+                errors.append(f"- Addon {addon_name} appears to be disabled, it should be enabled before IFC Sverchok.")
+        except ModuleNotFoundError:
+            errors.append(f"- Addon {addon_name} is not installed.")
+
+    if errors:
+        raise Exception("Some issues were found trying to enable IFC Sverchok:\n" + "\n".join(errors))
+
+
+ensure_addons_are_enabled("blenderbim", "sverchok")
+
+
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
