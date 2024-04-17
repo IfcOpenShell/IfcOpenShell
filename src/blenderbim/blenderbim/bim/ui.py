@@ -131,6 +131,8 @@ class BIM_PT_section_with_cappings(Panel):
         box = layout.box()
         header = box.row(align=True)
         header.label(text="Clipping Planes")
+        header.operator("bim.save_clipping_planes", text="", icon="EXPORT")
+        header.operator("bim.load_clipping_planes", text="", icon="IMPORT")
         header.operator("bim.create_clipping_plane", text="", icon="ADD")
 
         box.template_list(
@@ -150,7 +152,7 @@ class BIM_PT_section_with_cappings(Panel):
 
 class BIM_UL_clipping_plane(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
+        if item and item.obj:
             obj = item.obj
             row = layout.row(align=True)
             row.prop(obj, "name", text="", emboss=False)
