@@ -3,7 +3,7 @@
 
 N.B.! IfcSverchok nodes are WIP. You can experience Blender crashes while using them, especially if you're undoing (ctrl/cmd-Z) something in the node tree.
 
-## Packaged installation[](https://blenderbim.org/docs-python/ifcsverchok/installation.html#packaged-installation "Permalink to this headline")
+## Packaged installation[](https://docs.ifcopenshell.org/ifcsverchok/installation.html#packaged-installation "Permalink to this headline")
 
 IfcSverchok is packaged like a regular Blender add-on, so installation is the same as any other Blender add-on. [Download IfcSverchok here](https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcsverchok-240417/ifcsverchok-240417.zip).
 

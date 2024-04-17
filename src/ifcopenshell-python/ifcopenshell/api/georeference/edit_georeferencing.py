@@ -26,7 +26,7 @@ class Usecase:
         surveyor, and a third-party digital engineer with expertise in IFC to
         moderate. For more information, read the BlenderBIM Add-on documentation
         for Georeferencing:
-        https://blenderbim.org/docs/users/georeferencing.html
+        https://docs.blenderbim.org/users/georeferencing.html
 
         For more information about the attributes and data types of an
         IfcMapConversion, consult the IFC documentation.
