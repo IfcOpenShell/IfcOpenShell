@@ -124,21 +124,21 @@ class TestAssignBrickReference:
         ifc.run("library.add_reference", library="library").should_be_called().will_return("reference")
         brick.export_brick_attributes("brick_uri").should_be_called().will_return("attributes")
         ifc.run("library.edit_reference", reference="reference", attributes="attributes").should_be_called()
-        ifc.run("library.assign_reference", product="element", reference="reference").should_be_called()
+        ifc.run("library.assign_reference", products=["element"], reference="reference").should_be_called()
         brick.get_brickifc_project().should_be_called().will_return("project")
         brick.add_brickifc_reference("brick_uri", "element", "project").should_be_called()
         subject.assign_brick_reference(ifc, brick, element="element", library="library", brick_uri="brick_uri")
 
     def test_assigning_to_an_existing_reference(self, ifc, brick):
         brick.get_library_brick_reference("library", "brick_uri").should_be_called().will_return("reference")
-        ifc.run("library.assign_reference", product="element", reference="reference").should_be_called()
+        ifc.run("library.assign_reference", products=["element"], reference="reference").should_be_called()
         brick.get_brickifc_project().should_be_called().will_return("project")
         brick.add_brickifc_reference("brick_uri", "element", "project").should_be_called()
         subject.assign_brick_reference(ifc, brick, element="element", library="library", brick_uri="brick_uri")
 
     def test_adding_a_brickifc_project_if_it_doesnt_exist(self, ifc, brick):
         brick.get_library_brick_reference("library", "brick_uri").should_be_called().will_return("reference")
-        ifc.run("library.assign_reference", product="element", reference="reference").should_be_called()
+        ifc.run("library.assign_reference", products=["element"], reference="reference").should_be_called()
         brick.get_brickifc_project().should_be_called().will_return(None)
         brick.get_namespace("brick_uri").should_be_called().will_return("namespace")
         brick.add_brickifc_project("namespace").should_be_called().will_return("project")

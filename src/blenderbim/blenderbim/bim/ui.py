@@ -131,6 +131,8 @@ class BIM_PT_section_with_cappings(Panel):
         box = layout.box()
         header = box.row(align=True)
         header.label(text="Clipping Planes")
+        header.operator("bim.save_clipping_planes", text="", icon="EXPORT")
+        header.operator("bim.load_clipping_planes", text="", icon="IMPORT")
         header.operator("bim.create_clipping_plane", text="", icon="ADD")
 
         box.template_list(
@@ -150,7 +152,7 @@ class BIM_PT_section_with_cappings(Panel):
 
 class BIM_UL_clipping_plane(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
+        if item and item.obj:
             obj = item.obj
             row = layout.row(align=True)
             row.prop(obj, "name", text="", emboss=False)
@@ -202,6 +204,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
+    spatial_elements_unselectable: BoolProperty(name="Should Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -283,6 +286,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
+        row = layout.row()
+        row.prop(self, "spatial_elements_unselectable")
+
+
 
         row = layout.row()
         row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")

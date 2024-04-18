@@ -175,7 +175,7 @@ class BIM_PT_object_material(Panel):
 
         if ObjectMaterialData.data["type_material"]:
             row = self.layout.row(align=True)
-            row.label(text="Inherited Material: " + ObjectMaterialData.data["type_material"], icon="FILE_PARENT")
+            row.label(text="Inherited Material: " + ObjectMaterialData.data["type_material"], icon="CON_CHILDOF")
 
         if ObjectMaterialData.data["material_class"]:
             return self.draw_material_ui()

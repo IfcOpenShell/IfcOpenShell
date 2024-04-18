@@ -18,20 +18,59 @@
 #
 #
 
-def get_constraints(product):
+import ifcopenshell
+from typing import Union
+
+
+def get_constraints(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the constraints assigned to the `product`.
+
+    :param product: The IFC element.
+    :type product: ifcopenshell.entity_instance.entity_instance
+    :return: List of assigned constraints.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    """
     constraints = []
     for rel in product.HasAssociations or []:
         if rel.is_a("IfcRelAssociatesConstraint"):
             constraints.append(rel.RelatingConstraint)
     return constraints
 
-def get_metrics(constraint):
+
+def get_constrained_elements(constraint: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """
+    Retrieves the elements constrained by a `constraint`.
+
+    :param product: The IFC element.
+    :type product: ifcopenshell.entity_instance.entity_instance
+    :return: Set of elements constrained by a `constrant`.
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+    """
+    elements = set()
+    for rel in constraint.file.get_inverse(constraint):
+        if rel.is_a("IfcRelAssociatesConstraint"):
+            elements.update(rel.RelatedObjects)
+    return elements
+
+
+def get_metrics(constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the list of nested constraints for a IfcObjective `constraint`.
+
+    :param product: IfcObjective constraint.
+    :type product: ifcopenshell.entity_instance.entity_instance
+    :return: List of nested constraints.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    """
+
     metrics = []
     for metric in constraint.BenchmarkValues or []:
         metrics.append(metric)
     return metrics
 
-def get_metric_reference(metric, is_deep=True):
+
+def get_metric_reference(metric: ifcopenshell.entity_instance, is_deep=True):
     def get_reference_Attribute(ref, path):
         if ref:
             if is_deep:
@@ -47,7 +86,10 @@ def get_metric_reference(metric, is_deep=True):
     reference = metric.ReferencePath
     return get_reference_Attribute(reference, "")
 
-def get_metric_constraints(resource, attribute):
+
+def get_metric_constraints(
+    resource: ifcopenshell.entity_instance, attribute
+) -> Union[list[ifcopenshell.entity_instance], None]:
     metrics = []
     for constraint in get_constraints(resource) or []:
         for metric in get_metrics(constraint) or []:
@@ -60,15 +102,14 @@ def get_metric_constraints(resource, attribute):
         return metrics
     return None
 
-def is_hard_constraint(metric):
-    if metric.ConstraintGrade == "HARD" and metric.Benchmark == "EQUALTO":
-        return True
 
-def is_attribute_locked(product, attribute):
+def is_hard_constraint(metric: ifcopenshell.entity_instance) -> bool:
+    return metric.ConstraintGrade == "HARD" and metric.Benchmark == "EQUALTO"
+
+
+def is_attribute_locked(product: ifcopenshell.entity_instance, attribute) -> bool:
     is_locked = False
-    metrics = get_metric_constraints(
-        product, attribute
-    )
+    metrics = get_metric_constraints(product, attribute)
     for metric in metrics or []:
         if is_hard_constraint(metric):
             is_locked = True

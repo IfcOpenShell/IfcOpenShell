@@ -66,6 +66,11 @@ def get_location_hint(self, context):
 
 
 def update_diagram_scale(self, context):
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
     try:
         element = (
             tool.Ifc.get()
@@ -87,6 +92,11 @@ def update_diagram_scale(self, context):
 
 
 def update_is_nts(self, context):
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
     try:
         element = (
             tool.Ifc.get()

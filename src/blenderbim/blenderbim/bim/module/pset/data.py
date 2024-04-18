@@ -69,12 +69,17 @@ class ObjectPsetsData(Data):
     @classmethod
     def load(cls):
         cls.data = {
+            "is_occurrence": cls.is_occurrence(),
             "psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object), psets_only=True),
             "inherited_psets": cls.inherited_psets(),
             "pset_name": cls.pset_name(),
             "qto_name": cls.qto_name(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def is_occurrence(cls):
+        return not tool.Ifc.get_entity(bpy.context.active_object).is_a("IfcTypeObject")
 
     @classmethod
     def inherited_psets(cls):
@@ -126,10 +131,15 @@ class ObjectQtosData(Data):
     @classmethod
     def load(cls):
         cls.data = {
+            "is_occurrence": cls.is_occurrence(),
             "qtos": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object), qtos_only=True),
             "inherited_qsets": cls.inherited_qsets(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def is_occurrence(cls):
+        return not tool.Ifc.get_entity(bpy.context.active_object).is_a("IfcTypeObject")
 
     @classmethod
     def inherited_qsets(cls):

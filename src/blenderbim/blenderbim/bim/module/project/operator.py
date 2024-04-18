@@ -39,6 +39,8 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
+from collections import defaultdict
+import json
 from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
@@ -1998,4 +2000,62 @@ class FlipClippingPlane(bpy.types.Operator):
         if obj in context.scene.BIMProjectProperties.clipping_planes_objs:
             obj.rotation_euler[0] += radians(180)
             context.view_layer.update()
+        return {"FINISHED"}
+
+
+CLIPPING_PLANES_FILE_NAME = "ClippingPlanes.json"  # TODO un-hardcode :=
+
+
+class BIM_OT_save_clipping_planes(bpy.types.Operator):
+    bl_idname = "bim.save_clipping_planes"
+    bl_label = "Save Clipping Planes"
+    bl_description = "Save Clipping Planes to Disk"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if IfcStore.path:
+            return context.scene.BIMProjectProperties.clipping_planes
+        cls.poll_message_set("Please Save The IFC File")
+
+    def execute(self, context):
+        clipping_planes_to_serialize = defaultdict(dict)
+        clipping_planes = context.scene.BIMProjectProperties.clipping_planes
+        for clipping_plane in clipping_planes:
+            obj = clipping_plane.obj
+            name = obj.name
+            clipping_planes_to_serialize[name]["location"] = obj.location[0:3]
+            clipping_planes_to_serialize[name]["rotation"] = obj.rotation_euler[0:3]
+        with open(Path(IfcStore.path).with_name(CLIPPING_PLANES_FILE_NAME), "w") as file:
+            json.dump(clipping_planes_to_serialize, file, indent=4)
+        return {"FINISHED"}
+
+
+class BIM_OT_load_clipping_planes(bpy.types.Operator):
+    bl_idname = "bim.load_clipping_planes"
+    bl_label = "Load Clipping Planes"
+    bl_description = "Load Clipping Planes from Disk"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if filepath := IfcStore.path:
+            if Path(filepath).with_name(CLIPPING_PLANES_FILE_NAME).exists():
+                return True
+            else:
+                cls.poll_message_set(f"No Clipping Planes File in Folder {filepath}")
+        else:
+            cls.poll_message_set("Please Save The IFC File")
+
+    def execute(self, context):
+        bpy.data.batch_remove(context.scene.BIMProjectProperties.clipping_planes_objs)
+        context.scene.BIMProjectProperties.clipping_planes.clear()
+        with open(Path(IfcStore.path).with_name(CLIPPING_PLANES_FILE_NAME), "r") as file:
+            clipping_planes_dict = json.load(file)
+        for name, values in clipping_planes_dict.items():
+            bpy.ops.bim.create_clipping_plane()
+            obj = context.scene.BIMProjectProperties.clipping_planes_objs[-1]
+            obj.name = name
+            obj.location = values["location"]
+            obj.rotation_euler = values["rotation"]
         return {"FINISHED"}

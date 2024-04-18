@@ -30,7 +30,7 @@ import functools
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar
+from typing import Union, Any, Callable, TypeVar, overload
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -317,15 +317,25 @@ class entity_instance(object):
 
         return self.wrapped_data.to_string(valid_spf)
 
-    def is_a(self, *args) -> Union[str, bool]:
+    @overload
+    def is_a(self) -> str: ...
+    @overload
+    def is_a(self, ifc_class: str) -> bool: ...
+    @overload
+    def is_a(self, with_schema: bool) -> str: ...
+    def is_a(self, *args: Union[str, bool]) -> Union[str, bool]:
         """Return the IFC class name of an instance, or checks if an instance belongs to a class.
 
         The check will also return true if a parent class name is provided.
 
         :param args: If specified, is a case insensitive IFC class name to check
-        :type args: string
+            or if specified as a boolean then will define whether
+            returned IFC class name should include schema name
+            (e.g. "IFC4.IfcWall" if `True` and "IfcWall" if `False`).
+            If omitted will act as `False`.
+        :type args: Union[str, bool]
         :returns: Either the name of the class, or a boolean if it passes the check
-        :rtype: string|bool
+        :rtype: Union[str, bool]
 
         Example:
 

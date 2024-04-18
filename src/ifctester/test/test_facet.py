@@ -706,24 +706,24 @@ class TestClassification:
         element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element1, reference=ref1, classification=system_a
+            "classification.add_reference", ifc, products=[element1], reference=ref1, classification=system_a
         )
         element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcColumn")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element11, reference=ref11, classification=system_a
+            "classification.add_reference", ifc, products=[element11], reference=ref11, classification=system_a
         )
         element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run(
             "classification.add_reference",
             ifc,
-            product=element22,
+            products=[element22],
             reference=ref22,
             classification=system_a,
             is_lightweight=False,
         )
         material = ifc.createIfcMaterial(Name="Material")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=material, reference=ref1, classification=system_a
+            "classification.add_reference", ifc, products=[material], reference=ref1, classification=system_a
         )
 
         facet = Classification(system="Foobar")
@@ -810,15 +810,15 @@ class TestClassification:
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall, reference=ref11, classification=system_a
+            "classification.add_reference", ifc, products=[wall], reference=ref11, classification=system_a
         )
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system_a
+            "classification.add_reference", ifc, products=[wall_type], reference=ref22, classification=system_a
         )
 
         system_b = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_b)
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall_type, reference=refx, classification=system_b
+            "classification.add_reference", ifc, products=[wall_type], reference=refx, classification=system_b
         )
 
         facet = Classification(system="Foobar", value="11")

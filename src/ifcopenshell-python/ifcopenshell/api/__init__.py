@@ -87,6 +87,36 @@ ARGUMENTS_DEPRECATION = {
     "material.unassign_material": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
     ),
+    "classification.add_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "classification.remove_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "library.assign_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "library.unassign_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "document.assign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "document.unassign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.reference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.dereference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "constraint.assign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "constraint.unassign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
 }
 
 
