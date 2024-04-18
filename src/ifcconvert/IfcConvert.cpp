@@ -329,6 +329,10 @@ int main(int argc, char** argv) {
 		("exterior-only",
 			po::value<std::string>(&exterior_only_algo)->default_value("none")->implicit_value("minkowski-triangles"),
 			"Export only the exterior shell of the building found by geometric analysis. convex-decomposition, minkowski-triangles or halfspace-snapping")
+		("plan", "Specifies whether to include curves in the output result. Typically "
+			"these are representations of type Plan or Axis. Excluded by default.")
+		("model", "Specifies whether to include surfaces and solids in the output result. "
+			"Typically these are representations of type Body or Facetation. ")
 		;
 	
 	geometry_settings.define_options(geom_options);
@@ -975,6 +979,16 @@ int main(int argc, char** argv) {
         Logger::Notice(msg.str());
     }
 	*/
+
+	// backwards compatibility
+	if (vmap.count("plan") && vmap.count("model")) {
+		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::CURVES_SURFACES_AND_SOLIDS;
+	} else if (vmap.count("model")) {
+		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::SURFACES_AND_SOLIDS;
+	} else if (vmap.count("plan")) {
+		geometry_settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().value = ifcopenshell::geometry::settings::CURVES;
+	}
+
 	std::unique_ptr<IfcGeom::Iterator> context_iterator;
 	if (!elems_from_adaptor) {
 		context_iterator.reset(new IfcGeom::Iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads));

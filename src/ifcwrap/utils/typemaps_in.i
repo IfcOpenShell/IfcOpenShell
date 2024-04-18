@@ -372,3 +372,37 @@ CREATE_OPTIONAL_TYPEMAP_IN(std::string, string, str)
 %typemap(freearg) const std::vector<IfcGeom::OpaqueCoordinate<4>>& {
 	delete $1;
 }
+
+
+
+%define CREATE_SET_TYPEMAP_IN(template_type)
+
+	%typemap(in) std::set<template_type> {
+		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+			SWIG_exception(SWIG_TypeError, "Invalid");
+		}
+		$1 = python_sequence_as_set<template_type>($input);
+	}
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) std::set<template_type> {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
+
+	%typemap(typecheck,precedence=SWIG_TYPECHECK_INTEGER) const std::set<template_type>& {
+		$1 = check_aggregate_of_type($input, get_python_type<template_type>()) ? 1 : 0;
+	}
+	%typemap(arginit) const std::set<template_type>& {
+		$1 = new std::set<template_type>();
+	}
+	%typemap(in) const std::set<template_type>& {
+		if (!check_aggregate_of_type($input, get_python_type<template_type>())) {
+			SWIG_exception(SWIG_TypeError, "Invalid");
+		}
+		*$1 = python_sequence_as_set<template_type>($input);
+	}
+	%typemap(freearg) const std::set<template_type>& {
+		delete $1;
+	}
+%enddef
+
+CREATE_SET_TYPEMAP_IN(int)
+CREATE_SET_TYPEMAP_IN(std::string)

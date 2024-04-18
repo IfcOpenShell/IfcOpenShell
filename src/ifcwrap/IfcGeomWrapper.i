@@ -114,7 +114,13 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	}
 	void set_(const std::string& name, ifcopenshell::geometry::settings::IteratorOutputOptions val) {
 		return $self->set(name, val);
-	}	
+	}
+	void set_(const std::string& name, ifcopenshell::geometry::settings::PiecewiseStepMethod val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, ifcopenshell::geometry::settings::OutputDimensionalityTypes val) {
+		return $self->set(name, val);
+	}
 	void set_(const std::string& name, double val) {
 		return $self->set(name, val);
 	}
@@ -122,6 +128,9 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, const std::set<int>& val) {
+		return $self->set(name, val);
+	}
+	void set_(const std::string& name, const std::set<std::string>& val) {
 		return $self->set(name, val);
 	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
@@ -244,8 +253,8 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
     }
 
        std::vector<clash> clash_intersection_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, double tolerance, bool check_all) const {
-        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
-        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_b_entities;
         for (auto* e : set_a) {
             if (!e->declaration().is("IfcProduct")) {
                 throw IfcParse::IfcException("All instances should be of type IfcProduct");
@@ -262,8 +271,8 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
        }
 
        std::vector<clash> clash_collision_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, bool allow_touching) const {
-        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
-        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_b_entities;
         for (auto* e : set_a) {
             if (!e->declaration().is("IfcProduct")) {
                 throw IfcParse::IfcException("All instances should be of type IfcProduct");
@@ -280,8 +289,8 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
        }
 
        std::vector<clash> clash_clearance_many(const std::vector<IfcUtil::IfcBaseClass*>& set_a, const std::vector<IfcUtil::IfcBaseClass*>& set_b, double clearance, bool check_all) const {
-        std::vector<IfcUtil::IfcBaseEntity*> set_a_entities;
-        std::vector<IfcUtil::IfcBaseEntity*> set_b_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_a_entities;
+        std::vector<const IfcUtil::IfcBaseEntity*> set_b_entities;
         for (auto* e : set_a) {
             if (!e->declaration().is("IfcProduct")) {
                 throw IfcParse::IfcException("All instances should be of type IfcProduct");
@@ -597,13 +606,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
-					if (settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().get()) {
-						if (*rep->RepresentationIdentifier() == "Body") {
+					if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
+						if (*rep->RepresentationIdentifier() == "Body" || *rep->RepresentationIdentifier() == "Facetation") {
 							ifc_representation = rep;
 							break;
 						}
-					}
-					if (settings.get<ifcopenshell::geometry::settings::IncludeCurves>().get()) {
+					} else {
 						if (*rep->RepresentationIdentifier() == "Plan" || *rep->RepresentationIdentifier() == "Axis") {
 							ifc_representation = rep;
 							break;
@@ -621,13 +629,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->ContextType()) {
 						std::set<std::string> context_types;
-						if (settings.get<ifcopenshell::geometry::settings::IncludeSurfaces>().get()) {
+						if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
 							context_types.insert("detail view");
-						}
-						if (settings.get<ifcopenshell::geometry::settings::IncludeCurves>().get()) {
+						} else {
 							context_types.insert("plan");
 						}			
 
