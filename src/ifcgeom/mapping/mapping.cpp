@@ -952,7 +952,7 @@ void mapping::addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation
 	allowed_context_types.insert("notdefined");
 
 	std::set<std::string> context_types;
-	if (settings_.get<settings::IncludeSurfaces>().get()) {
+	if (this->settings_.get<settings::OutputDimensionality>().get() != settings::CURVES) {
 		// Really this should only be 'Model', as per
 		// the standard 'Design' is deprecated. So,
 		// just for backwards compatibility:
@@ -962,7 +962,7 @@ void mapping::addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation
 		context_types.insert("model view");
 		context_types.insert("detail view");
 	}
-	if (settings_.get<settings::IncludeCurves>().get()) {
+	if (this->settings_.get<settings::OutputDimensionality>().get() != settings::SURFACES_AND_SOLIDS) {
 		context_types.insert("plan");
 	}
 
@@ -1051,7 +1051,7 @@ IfcUtil::IfcBaseEntity* mapping::representation_of(const IfcUtil::IfcBaseEntity*
 		}
 	}
 
-	if (intersection->size() == 0 && settings_.get<settings::ContextIds>().has() && settings_.get<settings::IncludeCurves>().get() && !settings_.get<settings::IncludeSurfaces>().get()) {
+	if (intersection->size() == 0 && settings_.get<settings::ContextIds>().has() && this->settings_.get<settings::OutputDimensionality>().get() == settings::CURVES) {
 		for (auto& r : *of_product) {
 			if (r->RepresentationIdentifier() && *r->RepresentationIdentifier() == "Axis") {
 				intersection->push(r);
