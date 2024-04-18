@@ -22,7 +22,7 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRepresentation* inst) {
-	const bool items_to_include = !this->settings_.get<settings::OutputDimensionality>().get();
+	auto items_to_include = this->settings_.get<settings::OutputDimensionality>().get();
 
 	auto items = map_to_collection(this, inst->Items());
 	if (!items) {
