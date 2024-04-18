@@ -316,27 +316,19 @@ void IfcWriteArgument::set(IfcUtil::IfcBaseInterface* const& value) {
     }
 }
 
-void IfcWriteArgument::set(IfcUtil::IfcBaseInterface*const& v) {
-	if (v) {
-		container = v->as<IfcUtil::IfcBaseClass>();
-	} else {
-		container = boost::blank();
-	}
-}
-
 // Overloads to raise exceptions on non-finite values
 void IfcWriteArgument::set(const double& v) {
 	if (!std::isfinite(v)) {
 		throw IfcParse::IfcException("Only finite values are allowed");
 	}
-	container = v;
+	container_ = v;
 }
 
 void IfcWriteArgument::set(const std::vector<double>& v) {
 	if (std::any_of(v.begin(), v.end(), [](double v) {return !std::isfinite(v); })) {
 		throw IfcParse::IfcException("Only finite values are allowed");
 	}
-	container = v;
+    container_ = v;
 }
 
 void IfcWriteArgument::set(const std::vector< std::vector<double> >& v) {
@@ -345,5 +337,5 @@ void IfcWriteArgument::set(const std::vector< std::vector<double> >& v) {
 	})) {
 		throw IfcParse::IfcException("Only finite values are allowed");
 	}
-	container = v;
+    container_ = v;
 }
