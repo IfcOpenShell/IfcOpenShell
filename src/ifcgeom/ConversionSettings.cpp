@@ -10,14 +10,28 @@ double ifcopenshell::geometry::ConversionSettings::getValue(GeomValue var) const
 }
 */
 
-std::istream& std::operator>>(istream& in, set<int>& ints) {
-	string tokens;
+template <typename T>
+void istream_helper(std::istream& in, std::set<T>& ints) {
+	std::string tokens;
 	in >> tokens;
-	vector<string> strs;
+	std::vector<std::string> strs;
 	boost::split(strs, tokens, boost::is_any_of(","));
 	for (auto& s : strs) {
-		ints.insert(boost::lexical_cast<int>(s));
+		if constexpr (std::is_same_v<T, std::string>) {
+			ints.insert(s);
+		} else {
+			ints.insert(boost::lexical_cast<T>(s));
+		}
 	}
+}
+
+std::istream& std::operator>>(istream& in, set<int>& ints) {
+	istream_helper<int>(in, ints);
+	return in;
+}
+
+std::istream& std::operator>>(istream& in, set<string>& strs) {
+	istream_helper<std::string>(in, strs);
 	return in;
 }
 
@@ -50,4 +64,20 @@ std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, Pie
         in.setstate(std::ios_base::failbit);
     }
     return in;
+}
+
+std::istream& ifcopenshell::geometry::settings::operator>>(std::istream& in, OutputDimensionalityTypes& v) {
+	std::string token;
+	in >> token;
+	boost::to_upper(token);
+	if (token == "CURVES") {
+		v = CURVES;
+	} else if (token == "SURFACES_AND_SOLIDS") {
+		v = SURFACES_AND_SOLIDS;
+	} else if (token == "CURVES_SURFACES_AND_SOLIDS") {
+		v = CURVES_SURFACES_AND_SOLIDS;
+	} else {
+		in.setstate(std::ios_base::failbit);
+	}
+	return in;
 }

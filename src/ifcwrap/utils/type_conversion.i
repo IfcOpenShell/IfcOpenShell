@@ -85,16 +85,38 @@
 		return static_cast<IfcUtil::IfcBaseClass*>(SWIG_IsOK(res) ? arg : 0);
 	}
 
-	template <typename T>
-	std::vector<T> python_sequence_as_vector(PyObject* aggregate) {
-		std::vector<T> result_vector;
-		result_vector.reserve(PySequence_Size(aggregate));
+	template<typename T>
+	void add_to_container(std::vector<T>& container, const T& element) {
+		container.push_back(element);
+	}
+
+	template<typename T>
+	void add_to_container(std::set<T>& container, const T& element) {
+		container.insert(element);
+	}
+
+	template <typename T, template<typename> typename U>
+	U<T> python_sequence_as_cpp_container(PyObject* aggregate) {
+		U<T> result_vector;
+		if constexpr (std::is_same_v<U<T>, std::vector<T>>) {
+			result_vector.reserve(PySequence_Size(aggregate));
+		}
 		for(Py_ssize_t i = 0; i < PySequence_Size(aggregate); ++i) {
 			PyObject* element = PySequence_GetItem(aggregate, i);
 			T t = cast_pyobject<T>(element);
-			result_vector.push_back(t);
+			add_to_container(result_vector, t);
 		}
 		return result_vector;
+	}
+
+	template <typename T>
+	std::vector<T> python_sequence_as_vector(PyObject* aggregate) {
+		return python_sequence_as_cpp_container<T, std::vector>(aggregate);
+	}
+
+	template <typename T>
+	std::set<T> python_sequence_as_set(PyObject* aggregate) {
+		return python_sequence_as_cpp_container<T, std::set>(aggregate);
 	}
 
 	template <typename T>
@@ -196,7 +218,10 @@
 			if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<int>>) {
 				std::vector<int> vs(t.begin(), t.end());
 				return pythonize_vector(vs);
-			} else {
+			} else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<std::string>>) {
+                std::vector<std::string> vs(t.begin(), t.end());
+                return pythonize_vector(vs);
+            } else {
 				return pythonize(t);
 			}
 		}

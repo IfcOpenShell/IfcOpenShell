@@ -23,6 +23,7 @@ namespace po = boost::program_options;
 
 namespace std {
 	istream& operator>>(istream& in, set<int>& ints);
+	istream& operator>>(istream& in, set<string>& ints);
 }
 #endif
 
@@ -120,21 +121,6 @@ namespace ifcopenshell {
 				static constexpr double defaultvalue = 0.00001;
 			};
 
-			struct IncludeCurves : public SettingBase<IncludeCurves, bool> {
-				static constexpr const char* const name = "plan";
-				static constexpr const char* const description = "Specifies whether to include curves in the output result. Typically "
-					"these are representations of type Plan or Axis. Excluded by default.";
-				static constexpr bool defaultvalue = false;
-			};
-
-			struct IncludeSurfaces : public SettingBase<IncludeSurfaces, bool> {
-				static constexpr const char* const name = "model";
-				static constexpr const char* const description = "Specifies whether to include surfaces and solids in the output result. "
-					"Typically these are representations of type Body or Facetation. "
-					"Included by default.";
-				static constexpr bool defaultvalue = true;
-			};
-
 			struct LayersetFirst : public SettingBase<LayersetFirst, bool> {
 				static constexpr const char* const name = "layerset-first";
 				static constexpr const char* const description = "Assigns the first layer material of the layerset "
@@ -212,6 +198,30 @@ namespace ifcopenshell {
 			struct ContextIds : public SettingBase<ContextIds, std::set<int>> {
 				static constexpr const char* const name = "context-ids";
 				static constexpr const char* const description = "";
+			};
+
+			struct ContextTypes : public SettingBase<ContextIds, std::set<std::string>> {
+				static constexpr const char* const name = "context-types";
+				static constexpr const char* const description = "";
+			};
+
+			struct ContextIdentifiers : public SettingBase<ContextIds, std::set<std::string>> {
+				static constexpr const char* const name = "context-identifiers";
+				static constexpr const char* const description = "";
+			};
+
+			enum OutputDimensionalityTypes {
+				CURVES,
+				SURFACES_AND_SOLIDS,
+				CURVES_SURFACES_AND_SOLIDS
+			};
+
+			std::istream& operator>>(std::istream& in, OutputDimensionalityTypes& ioo);
+
+			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
+				static constexpr const char* const name = "dimensionality";
+				static constexpr const char* const description = "Specifies whether to include curves and/or surfaces and solids in the output result. Defaults to only surfaces and solids.";
+				static constexpr OutputDimensionalityTypes defaultvalue = CURVES_SURFACES_AND_SOLIDS;
 			};
 
 			enum IteratorOutputOptions {
@@ -336,7 +346,7 @@ namespace ifcopenshell {
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
 		public:
-         typedef boost::variant<bool, int, double, std::string, std::set<int>, IteratorOutputOptions, PiecewiseStepMethod> value_variant_t;
+         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, IteratorOutputOptions, PiecewiseStepMethod, OutputDimensionalityTypes> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -416,7 +426,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, IncludeCurves, IncludeSurfaces, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
 		>
 		{};
 }

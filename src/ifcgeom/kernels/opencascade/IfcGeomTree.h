@@ -80,8 +80,8 @@ namespace IfcGeom {
 
 	struct clash {
         int clash_type; // 0 = protrusion, 1 = pierce, 2 = collision, 3 = clearance
-		IfcUtil::IfcBaseClass* a;
-		IfcUtil::IfcBaseClass* b;
+		const IfcUtil::IfcBaseClass* a;
+		const IfcUtil::IfcBaseClass* b;
 		double distance;
 		std::array<double, 3> p1;
 		std::array<double, 3> p2;
