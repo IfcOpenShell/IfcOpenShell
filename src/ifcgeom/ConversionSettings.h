@@ -221,7 +221,7 @@ namespace ifcopenshell {
 			struct OutputDimensionality : public SettingBase<OutputDimensionality, OutputDimensionalityTypes> {
 				static constexpr const char* const name = "dimensionality";
 				static constexpr const char* const description = "Specifies whether to include curves and/or surfaces and solids in the output result. Defaults to only surfaces and solids.";
-				static constexpr OutputDimensionalityTypes defaultvalue = CURVES_SURFACES_AND_SOLIDS;
+				static constexpr OutputDimensionalityTypes defaultvalue = SURFACES_AND_SOLIDS;
 			};
 
 			enum IteratorOutputOptions {
