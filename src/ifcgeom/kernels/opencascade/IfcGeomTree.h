@@ -1438,12 +1438,12 @@ namespace IfcGeom {
 
             // Temporary structures for H5
             std::vector<IfcGeom::TriangulationElement*> triangulation_elements_;
-            std::map<IfcUtil::IfcBaseClass*, std::string> global_ids_;
-            std::map<IfcUtil::IfcBaseClass*, std::string> names_;
-            std::map<IfcUtil::IfcBaseClass*, std::vector<double>> placements_;
+            std::map<const IfcUtil::IfcBaseClass*, std::string> global_ids_;
+            std::map<const IfcUtil::IfcBaseClass*, std::string> names_;
+            std::map<const IfcUtil::IfcBaseClass*, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
             std::map<std::string, std::vector<double>> local_verts_;
             std::map<std::string, std::vector<int>> local_faces_;
-            std::map<std::string, std::vector<IfcGeom::Material>> local_materials_;
+            std::map<std::string, std::vector<ifcopenshell::geometry::taxonomy::style::ptr>> local_materials_;
             std::map<std::string, std::vector<int>> local_material_ids_;
 			
 			bool enable_face_styles_ = false;
@@ -1533,7 +1533,13 @@ namespace IfcGeom {
                 const auto geometry_id = elem->geometry().id();
 
                 const auto& placement = placements_[elem->product()];
-                matrices.emplace_back(placement.begin(), placement.end());
+                {
+                    decltype(matrices)::value_type m;
+                    for (size_t i = 0; i < 16; ++i) {
+                        m.push_back(static_cast<float>(placement->ccomponents().data()[i]));
+                    }
+                    matrices.push_back(m);
+                }
 
                 names.push_back(names_[elem->product()]);
                 global_ids.push_back(global_ids_[elem->product()]);
@@ -1596,16 +1602,16 @@ namespace IfcGeom {
                 std::vector<uint8_t> material_keys;
                 for (const auto& material : materials) {
                     float alpha = 1.0;
-                    if (material.hasTransparency() && material.transparency() > 0) {
-                        alpha = 1.0 - material.transparency();
+                    if (material->has_transparency() && material->transparency > 0) {
+                        alpha = 1.0 - material->transparency;
                     }
 
                     int i = 0;
                     bool is_existing_colour = false;
                     for (const auto& colour : colours) {
-                        if (std::abs(colour[0] - static_cast<float>(material.diffuse()[0])) < tolerance
-                                && std::abs(colour[1] - static_cast<float>(material.diffuse()[1])) < tolerance
-                                && std::abs(colour[2] - static_cast<float>(material.diffuse()[2])) < tolerance
+                        if (std::abs(colour[0] - static_cast<float>(material->diffuse.ccomponents()[0])) < tolerance
+                                && std::abs(colour[1] - static_cast<float>(material->diffuse.ccomponents()[1])) < tolerance
+                                && std::abs(colour[2] - static_cast<float>(material->diffuse.ccomponents()[2])) < tolerance
                                 && std::abs(colour[3] - alpha) < tolerance) {
                             is_existing_colour = true;
                             break;
@@ -1615,9 +1621,9 @@ namespace IfcGeom {
 
                     if ( ! is_existing_colour) {
                         colours.push_back({
-                            static_cast<float>(material.diffuse()[0]), 
-                            static_cast<float>(material.diffuse()[1]),
-                            static_cast<float>(material.diffuse()[2]),
+                            static_cast<float>(material->diffuse.ccomponents()[0]),
+                            static_cast<float>(material->diffuse.ccomponents()[1]),
+                            static_cast<float>(material->diffuse.ccomponents()[2]),
                             alpha});
                     }
                     material_keys.push_back(static_cast<decltype(material_keys)::value_type>(i));
@@ -1725,17 +1731,20 @@ namespace IfcGeom {
         }
 
         template <typename T>
-        void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const std::vector<T>& matrix, std::vector<T>& result) {
+        void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix, std::vector<T>& result) {
+            Eigen::Vector3d vin;
             result.clear();
             result.reserve(flat_list.size());
 
             for (size_t i = 0; i < flat_list.size(); i += 3) {
-                float x = flat_list[i];
-                float y = flat_list[i + 1];
-                float z = flat_list[i + 2];
-                result.push_back(x * matrix[0] + y * matrix[3] + z * matrix[6] + matrix[9]);
-                result.push_back(x * matrix[1] + y * matrix[4] + z * matrix[7] + matrix[10]);
-                result.push_back(x * matrix[2] + y * matrix[5] + z * matrix[8] + matrix[11]);
+                vin << 
+                    flat_list[i],
+                    flat_list[i + 1],
+                    flat_list[i + 2];
+                auto vout = matrix->ccomponents() * vin.homogeneous();
+                result.push_back(vout(0));
+                result.push_back(vout(1));
+                result.push_back(vout(2));
             }
         }
 
@@ -1773,21 +1782,24 @@ namespace IfcGeom {
             Bnd_OBB obb;
 
             {
-                auto& trsf = elem->transformation().data();
+                auto& m = elem->transformation().data()->ccomponents();
                 auto& vs = elem->geometry().verts();
                 auto& fs = elem->geometry().faces();
+
+                gp_Trsf tr;
+                tr.SetValues(
+                    m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+                    m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+                    m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+                );
 
                 std::vector<gp_Pnt> vs_transformed;
                 vs_transformed.reserve(vs.size() / 3);
                 for (size_t i = 0; i < vs.size(); i += 3) {
                     gp_Pnt p(vs[i + 0], vs[i + 1], vs[i + 2]);
-                    vs_transformed.push_back(p.Transformed(trsf));
+                    vs_transformed.push_back(p.Transformed(tr));
                     aabb.Add(vs_transformed.back());
                 }
-
-                std::cout << "aabb: ";
-                aabb.DumpJson(std::cout);
-                std::cout << std::endl;
             
                 std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, boost::hash<std::tuple<int, int, int>>> quantized_normal_counts;
 
@@ -1871,14 +1883,10 @@ namespace IfcGeom {
                 obb.SetYComponent(ax3.YDirection(), halfsize.Y());
                 obb.SetZComponent(ax3.Direction(), halfsize.Z());
                 obb.SetCenter(cent.Transformed(trsf2.Inverted()));
-
-                std::cout << "obb: ";
-                obb.DumpJson(std::cout);
-                std::cout << std::endl;
             }
             
             const auto& t = elem->product();
-            const std::vector<double>& matrix = elem->transformation().matrix().data();
+            const auto& matrix = elem->transformation().data();
             const std::vector<double>& elem_verts_local = elem->geometry().verts();
             const std::vector<int>& elem_faces = elem->geometry().faces();
             std::vector<double> elem_verts;
