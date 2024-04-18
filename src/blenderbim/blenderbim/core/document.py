@@ -109,8 +109,8 @@ def remove_document(ifc, document_tool, document=None):
 
 
 def assign_document(ifc, product=None, document=None):
-    ifc.run("document.assign_document", product=product, document=document)
+    ifc.run("document.assign_document", products=[product], document=document)
 
 
 def unassign_document(ifc, product=None, document=None):
-    ifc.run("document.unassign_document", product=product, document=document)
+    ifc.run("document.unassign_document", products=[product], document=document)

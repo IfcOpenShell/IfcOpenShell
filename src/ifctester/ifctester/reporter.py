@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
+import re
 import sys
 import math
 import logging
@@ -24,12 +26,15 @@ import datetime
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+from .ids import Specification, Ids
+from .facet import Facet, FacetFailure
+from typing import TypedDict, Union, Literal, Optional
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 
 class Reporter:
-    def __init__(self, ids):
+    def __init__(self, ids: Ids):
         self.ids = ids
 
     def report(self, ids):
@@ -42,8 +47,79 @@ class Reporter:
         pass
 
 
+ResultsPercent = Union[int, Literal["N/A"]]
+
+
+class Results(TypedDict):
+    title: str
+    date: str
+    filepath: str
+    filename: str
+    specifications: list[ResultsSpecification]
+    status: bool
+    total_specifications: int
+    total_specifications: int
+    total_specifications_pass: int
+    total_specifications_fail: int
+    percent_specifications_pass: ResultsPercent
+    total_requirements: int
+    total_requirements_pass: int
+    total_requirements_fail: int
+    percent_requirements_pass: ResultsPercent
+    total_checks: int
+    total_checks_pass: int
+    total_checks_fail: int
+    percent_checks_pass: ResultsPercent
+
+
+class ResultsSpecification(TypedDict):
+    name: str
+    description: str
+    instructions: str
+    status: bool
+    total_applicable: int
+    total_applicable_pass: int
+    total_applicable_fail: int
+    percent_applicable_pass: ResultsPercent
+    total_checks: int
+    total_checks_pass: int
+    total_checks_fail: int
+    percent_checks_pass: ResultsPercent
+    required: bool
+    applicability: list[str]
+    requirements: list[ResultsRequirement]
+
+
+class ResultsRequirement(TypedDict):
+    description: str
+    status: bool
+    failed_entities: list[ResultsFailedEntity]
+    total_applicable: int
+    total_pass: int
+    total_fail: int
+    percent_pass: ResultsPercent
+
+
+# use different syntax because of the "class" key
+ResultsFailedEntity = TypedDict(
+    "ResultsFailedEntity",
+    {
+        "reason": str,
+        "element": str,
+        "element_type": str,
+        "class": str,
+        "predefined_type": str,
+        "name": Union[str, None],
+        "description": Union[str, None],
+        "id": int,
+        "global_id": Union[str, None],
+        "tag": Union[str, None],
+    },
+)
+
+
 class Console(Reporter):
-    def __init__(self, ids, use_colour=True):
+    def __init__(self, ids: Ids, use_colour=True):
         super().__init__(ids)
         self.use_colour = use_colour
         self.colours = {
@@ -59,14 +135,14 @@ class Console(Reporter):
             "reverse": "\033[;7m",
         }
 
-    def report(self):
+    def report(self) -> None:
         self.set_style("bold", "blue")
         self.print(self.ids.info.get("title", "Untitled IDS"))
         for specification in self.ids.specifications:
             self.report_specification(specification)
         self.set_style("reset")
 
-    def report_specification(self, specification):
+    def report_specification(self, specification: Specification) -> None:
         if specification.status is True:
             self.set_style("bold", "green")
             self.print("[PASS] ", end="")
@@ -113,7 +189,7 @@ class Console(Reporter):
                 self.print(" " * 12 + f"... {len(requirement.failures)} in total ...")
         self.set_style("reset")
 
-    def report_reason(self, failure):
+    def report_reason(self, failure: FacetFailure) -> None:
         is_bold = False
         for substring in failure["reason"].split('"'):
             if is_bold:
@@ -126,11 +202,11 @@ class Console(Reporter):
         self.print(" - " + str(failure["element"]))
         self.set_style("reset")
 
-    def set_style(self, *colours):
+    def set_style(self, *colours: str):
         if self.use_colour:
             sys.stdout.write("".join([self.colours[c] for c in colours]))
 
-    def print(self, txt, end=None):
+    def print(self, txt: str, end: Optional[str] = None):
         if end is not None:
             print(txt, end=end)
         else:
@@ -138,14 +214,14 @@ class Console(Reporter):
 
 
 class Txt(Console):
-    def __init__(self, ids):
+    def __init__(self, ids: Ids):
         super().__init__(ids, use_colour=False)
         self.text = ""
 
-    def print(self, txt, end=None):
-        self.text += txt + "\n" if end is None else txt
+    def print(self, txt: str, end: Optional[str] = None):
+        self.text += txt + "\n" if end is None else end
 
-    def to_string(self):
+    def to_string(self) -> None:
         print(self.text)
 
     def to_file(self, filepath: str) -> None:
@@ -154,11 +230,11 @@ class Txt(Console):
 
 
 class Json(Reporter):
-    def __init__(self, ids):
+    def __init__(self, ids: Ids):
         super().__init__(ids)
-        self.results = {}
+        self.results = Results()
 
-    def report(self):
+    def report(self) -> Results:
         self.results["title"] = self.ids.info.get("title", "Untitled IDS")
         self.results["date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.results["filepath"] = self.ids.filepath
@@ -203,7 +279,7 @@ class Json(Reporter):
         )
         return self.results
 
-    def report_specification(self, specification):
+    def report_specification(self, specification: Specification) -> ResultsSpecification:
         applicability = [a.to_string("applicability") for a in specification.applicability]
         total_applicable = len(specification.applicable_entities)
         total_checks = 0
@@ -216,57 +292,60 @@ class Json(Reporter):
             total_checks += total_applicable
             total_checks_pass += total_pass
             requirements.append(
-                {
-                    "description": requirement.to_string("requirement", specification, requirement),
-                    "status": requirement.status,
-                    "failed_entities": self.report_failed_entities(requirement),
-                    "total_applicable": total_applicable,
-                    "total_pass": total_pass,
-                    "total_fail": total_fail,
-                    "percent_pass": percent_pass,
-                }
+                ResultsRequirement(
+                    description=requirement.to_string("requirement", specification, requirement),
+                    status=requirement.status,
+                    failed_entities=self.report_failed_entities(requirement),
+                    total_applicable=total_applicable,
+                    total_pass=total_pass,
+                    total_fail=total_fail,
+                    percent_pass=percent_pass,
+                )
             )
         total_applicable_pass = total_applicable - len(specification.failed_entities)
         percent_applicable_pass = (
             math.floor((total_applicable_pass / total_applicable) * 100) if total_applicable else "N/A"
         )
         percent_checks_pass = math.floor((total_checks_pass / total_checks) * 100) if total_checks else "N/A"
-        return {
-            "name": specification.name,
-            "description": specification.description,
-            "instructions": specification.instructions,
-            "status": specification.status,
-            "total_applicable": total_applicable,
-            "total_applicable_pass": total_applicable_pass,
-            "total_applicable_fail": total_applicable - total_applicable_pass,
-            "percent_applicable_pass": percent_applicable_pass,
-            "total_checks": total_checks,
-            "total_checks_pass": total_checks_pass,
-            "total_checks_fail": total_checks - total_checks_pass,
-            "percent_checks_pass": percent_checks_pass,
-            "required": specification.minOccurs != 0,
-            "applicability": applicability,
-            "requirements": requirements,
-        }
 
-    def report_failed_entities(self, requirement):
+        return ResultsSpecification(
+            name=specification.name,
+            description=specification.description,
+            instructions=specification.instructions,
+            status=specification.status,
+            total_applicable=total_applicable,
+            total_applicable_pass=total_applicable_pass,
+            total_applicable_fail=total_applicable - total_applicable_pass,
+            percent_applicable_pass=percent_applicable_pass,
+            total_checks=total_checks,
+            total_checks_pass=total_checks_pass,
+            total_checks_fail=total_checks - total_checks_pass,
+            percent_checks_pass=percent_checks_pass,
+            required=specification.minOccurs != 0,
+            applicability=applicability,
+            requirements=requirements,
+        )
+
+    def report_failed_entities(self, requirement: Facet) -> list[ResultsFailedEntity]:
         return [
-            {
-                "reason": f["reason"],
-                "element": str(f["element"]),
-                "element_type": str(ifcopenshell.util.element.get_type(f["element"])),
-                "class": f["element"].is_a(),
-                "predefined_type": ifcopenshell.util.element.get_predefined_type(f["element"]),
-                "name": getattr(f["element"], "Name", None),
-                "description": getattr(f["element"], "Description", None),
-                "id": f["element"].id(),
-                "global_id": getattr(f["element"], "GlobalId", None),
-                "tag": getattr(f["element"], "Tag", None),
-            }
+            ResultsFailedEntity(
+                {
+                    "reason": f["reason"],
+                    "element": str(f["element"]),
+                    "element_type": str(ifcopenshell.util.element.get_type(f["element"])),
+                    "class": f["element"].is_a(),
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(f["element"]),
+                    "name": getattr(f["element"], "Name", None),
+                    "description": getattr(f["element"], "Description", None),
+                    "id": f["element"].id(),
+                    "global_id": getattr(f["element"], "GlobalId", None),
+                    "tag": getattr(f["element"], "Tag", None),
+                }
+            )
             for f in requirement.failures
         ]
 
-    def to_string(self):
+    def to_string(self) -> str:
         import json
 
         return json.dumps(self.results)
@@ -279,11 +358,10 @@ class Json(Reporter):
 
 
 class Html(Json):
-    def __init__(self, ids):
+    def __init__(self, ids: Ids):
         super().__init__(ids)
-        self.results = {}
 
-    def report(self):
+    def report(self) -> None:
         super().report()
         entity_limit = 100
         for spec in self.results["specifications"]:
@@ -294,7 +372,7 @@ class Html(Json):
                 requirement["total_entities"] = total
                 requirement["total_omitted"] = total - entity_limit
 
-    def to_string(self):
+    def to_string(self) -> str:
         import pystache
 
         with open(os.path.join(cwd, "templates", "report.html"), "r") as file:
@@ -309,15 +387,42 @@ class Html(Json):
 
 
 class Ods(Json):
-    def __init__(self, ids):
+    def __init__(self, ids: Ids, excel_safe=False):
         super().__init__(ids)
+        self.excel_safe = excel_safe
         self.colours = {
             "h": "cccccc",  # Header
             "p": "97cc64",  # Pass
             "f": "fb5a3e",  # Fail
             "t": "ffffff",  # Regular text
         }
-        self.results = {}
+
+    def excel_safe_spreadsheet_name(self, name: str) -> str:
+        if not self.excel_safe:
+            return name
+
+        warning = (
+            f'WARNING. Sheet name "{name}" is not valid for Excel and will be changed. '
+            "See: https://support.microsoft.com/en-us/office/rename-a-worksheet-3f1f7148-ee83-404d-8ef0-9ff99fbad1f9"
+        )
+
+        if not name or name == "History":
+            print(warning)
+            return "placeholder spreadsheet name"
+
+        if name.startswith("'") or name.endswith("'"):
+            print(warning)
+            name = name.strip("'")
+
+        pattern = r"[\\\/\?\*\:\[\]]"
+        if re.search(pattern, name):
+            name = re.sub(pattern, "", name)
+            print(warning)
+
+        if len(name) > 31:
+            name = name[:31]
+            print(warning)
+        return name
 
     def to_file(self, filepath: str) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
@@ -334,7 +439,7 @@ class Ods(Json):
             self.doc.automaticstyles.addElement(style)
             self.cell_formats[key] = style
 
-        table = Table(name=self.results["title"])
+        table = Table(name=self.excel_safe_spreadsheet_name(self.results["title"]))
         tr = TableRow()
         for header in ["Specification", "Status", "Total Pass", "Total Checks", "Percentage Pass"]:
             tc = TableCell(valuetype="string", stylename="h")
@@ -371,7 +476,7 @@ class Ods(Json):
         for specification in self.results["specifications"]:
             if specification["status"]:
                 continue
-            table = Table(name=specification["name"])
+            table = Table(name=self.excel_safe_spreadsheet_name(specification["name"]))
             tr = TableRow()
             for header in [
                 "Requirement",
@@ -419,12 +524,12 @@ class Ods(Json):
                     table.addElement(tr)
             self.doc.spreadsheet.addElement(table)
 
-        self.doc.save(filepath, addsuffix=filepath.lower().endswith(".ods"))
+        self.doc.save(filepath, addsuffix=not filepath.lower().endswith(".ods"))
 
 
 class Bcf(Json):
-    def report_failed_entities(self, requirement):
-        return [{"reason": f["reason"], "element": f["element"]} for f in requirement.failures]
+    def report_failed_entities(self, requirement: Facet) -> list[FacetFailure]:
+        return [FacetFailure(f) for f in requirement.failures]
 
     def to_file(self, filepath: str) -> None:
         import numpy as np

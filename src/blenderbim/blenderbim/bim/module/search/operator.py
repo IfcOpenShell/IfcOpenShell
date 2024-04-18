@@ -235,7 +235,7 @@ class LoadSearch(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
         group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
-        query = tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
+        tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
         props = context.scene.BIMSearchProperties

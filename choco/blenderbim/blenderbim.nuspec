@@ -15,7 +15,7 @@
     <licenseUrl>https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/COPYING</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/IfcOpenShell/IfcOpenShell</projectSourceUrl>
-    <docsUrl>https://blenderbim.org/docs/</docsUrl>
+    <docsUrl>https://docs.blenderbim.org/</docsUrl>
     <!--<mailingListUrl></mailingListUrl>-->
     <bugTrackerUrl>https://github.com/IfcOpenShell/IfcOpenShell/issues</bugTrackerUrl>
     <tags>blender bim blenderbim ifc python opensource foss</tags>

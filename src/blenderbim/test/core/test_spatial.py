@@ -23,14 +23,14 @@ from test.core.bootstrap import ifc, collector, spatial
 class TestReferenceStructure:
     def test_run(self, ifc, spatial):
         spatial.can_reference("structure", "element").should_be_called().will_return(True)
-        ifc.run("spatial.reference_structure", product="element", relating_structure="structure").should_be_called()
+        ifc.run("spatial.reference_structure", products=["element"], relating_structure="structure").should_be_called()
         subject.reference_structure(ifc, spatial, structure="structure", element="element")
 
 
 class TestDereferenceStructure:
     def test_run(self, ifc, spatial):
         spatial.can_reference("structure", "element").should_be_called().will_return(True)
-        ifc.run("spatial.dereference_structure", product="element", relating_structure="structure").should_be_called()
+        ifc.run("spatial.dereference_structure", products=["element"], relating_structure="structure").should_be_called()
         subject.dereference_structure(ifc, spatial, structure="structure", element="element")
 
 

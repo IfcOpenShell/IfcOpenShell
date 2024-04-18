@@ -20,6 +20,8 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.classification
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from blenderbim.bim.ifc import IfcStore
@@ -87,7 +89,7 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         reference = ifcopenshell.api.run(
             "classification.add_reference",
             tool.Ifc.get(),
-            product=product,
+            products=[product],
             classification=classification,
             identification="X",
             name="Unnamed",
@@ -292,6 +294,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         active_reference = tool.Ifc.get().by_id(self.reference)
         identification = active_reference[1]
 
+        elements_by_references: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
         for obj in objects:
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             element = tool.Ifc.get().by_id(ifc_definition_id)
@@ -300,12 +303,16 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 if (identification and reference[1] == identification) or (
                     not identification and reference == active_reference
                 ):
-                    ifcopenshell.api.run(
-                        "classification.remove_reference",
-                        tool.Ifc.get(),
-                        reference=reference,
-                        product=element,
-                    )
+                    elements_by_references.setdefault(reference, []).append(element)
+
+        if elements_by_references:
+            for reference, products in elements_by_references.items():
+                ifcopenshell.api.run(
+                    "classification.remove_reference",
+                    tool.Ifc.get(),
+                    reference=reference,
+                    products=products,
+                )
 
 
 class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
@@ -357,15 +364,18 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 classification = element
                 break
 
-        for obj in objects:
-            ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
-            if not ifc_definition_id:
-                continue
+        ifc_file = tool.Ifc.get()
+        products = [
+            ifc_file.by_id(ifc_definition_id)
+            for obj in objects
+            if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
+        ]
+        if products:
             ifcopenshell.api.run(
                 "classification.add_reference",
                 tool.Ifc.get(),
                 reference=IfcStore.classification_file.by_id(self.reference),
-                product=tool.Ifc.get().by_id(ifc_definition_id),
+                products=products,
                 classification=classification,
             )
 
@@ -413,7 +423,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             reference = ifcopenshell.api.run(
                 "classification.add_reference",
                 tool.Ifc.get(),
-                product=element,
+                products=[element],
                 classification=classification,
                 identification=bsdd_classification.reference_code,
                 name=bsdd_classification.name,

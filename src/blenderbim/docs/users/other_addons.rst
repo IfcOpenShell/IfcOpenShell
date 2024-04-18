@@ -29,7 +29,9 @@ Some of these add-ons are not shipped with Blender:
 - `Sverchok <https://github.com/nortikin/sverchok/>`__ - Sverchok is a visual
   programming add-on for Blender that allows you to generate parametric
   geometry, create scripts for non-programmers, model solids from FreeCAD, and
-  much more.
+  much more. There is also
+  `IfcSverchok <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/ifcsverchok/README.md/>`__ 
+  that adds IFC features to Sverchok.
 - `BlenderGIS <https://github.com/domlysz/BlenderGIS>`__ - BlenderGIS lets you
   import GIS data, grab elevation data from the web, and generate TINs from
   survey points and contours.
