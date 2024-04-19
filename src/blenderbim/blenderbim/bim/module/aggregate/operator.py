@@ -195,9 +195,9 @@ class BIM_OT_select_parts(bpy.types.Operator):
         for obj in context.selected_objects:
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj))
             if parts:
-                p_objs = set(tool.Ifc.get_object(part) for part in parts)
-                selectable_p_objs = set(context.selectable_objects).intersection(p_objs)
-                for selectable_part_obj in selectable_p_objs:
+                parts_objs = set(tool.Ifc.get_object(part) for part in parts)
+                selectable_parts_objs = set(context.selectable_objects).intersection(parts_objs)
+                for selectable_part_obj in selectable_parts_objs:
                     selectable_part_obj.select_set(True)
             else:
                 obj.select_set(False)
