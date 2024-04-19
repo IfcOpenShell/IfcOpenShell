@@ -22,6 +22,7 @@ import uuid
 import pytest
 import functools
 import ifcopenshell
+import ifcopenshell.api
 import ifctester
 import test_facet
 import test_ids
@@ -83,7 +84,7 @@ class FacetDocGenerator:
         specs = ids.Ids(title=name)
 
         # todo: to resume IFC2X3 we need to ensure that entities and attributes are consistent with that schema in order to pass audit
-        spec = ids.Specification(name=name, minOccurs=1, ifcVersion=["IFC4"]) 
+        spec = ids.Specification(name=name, minOccurs=1, ifcVersion=["IFC4"])
         spec.applicability.append(ids.Entity(name=inst.is_a().upper()))
         spec.requirements.append(facet)
         specs.specifications.append(spec)
@@ -319,15 +320,15 @@ site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", na
 building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
 storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, product=site)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, product=building)
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, product=storey)
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, products=[site])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, products=[building])
+ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, products=[storey])
 
 wall_types = []
 for i in range(0, 4):
     wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
     wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
-    ifcopenshell.api.run("type.assign_type", model, related_object=wall, relating_type=wall_type)
+    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
     representation = ifcopenshell.api.run(
         "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
     )
@@ -346,6 +347,6 @@ for i in range(0, 4):
     location = np.eye(4)
     location[1][3] += i * 1
     ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
-    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, product=wall)
+    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, products=[wall])
 
 model.write(os.path.join(outdir, "library", "sample.ifc"))

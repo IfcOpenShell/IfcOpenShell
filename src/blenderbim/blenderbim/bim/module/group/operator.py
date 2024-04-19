@@ -212,7 +212,7 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
                 "group.unassign_group",
                 self.file,
                 **{
-                    "product": self.file.by_id(product.BIMObjectProperties.ifc_definition_id),
+                    "products": [self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
                     "group": self.file.by_id(self.group),
                 }
             )

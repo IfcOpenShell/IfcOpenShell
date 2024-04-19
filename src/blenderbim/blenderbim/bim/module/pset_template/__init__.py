@@ -34,6 +34,7 @@ classes = (
     operator.RemovePropTemplate,
     operator.RemovePsetTemplate,
     operator.RemovePsetTemplateFile,
+    operator.SavePsetTemplateFile,
     prop.PsetTemplate,
     prop.EnumerationValues,
     prop.PropTemplate,

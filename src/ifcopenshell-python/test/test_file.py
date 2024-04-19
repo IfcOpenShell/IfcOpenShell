@@ -162,8 +162,8 @@ class TestFile(test.bootstrap.IFC4):
     def test_creating_an_ifc4x3_file(self):
         f = ifcopenshell.file(schema="IFC4X3")
         assert f.schema == "IFC4X3"
-        assert f.schema_identifier == "IFC4X3_ADD1"
-        assert f.schema_version == (4, 3, 1, 0)
+        assert f.schema_identifier == "IFC4X3_ADD2"
+        assert f.schema_version == (4, 3, 2, 0)
 
     def test_creating_a_specific_version(self):
         f = ifcopenshell.file(schema_version=(4, 3, 1, 0))

@@ -23,14 +23,14 @@ from test.core.bootstrap import ifc, collector, spatial
 class TestReferenceStructure:
     def test_run(self, ifc, spatial):
         spatial.can_reference("structure", "element").should_be_called().will_return(True)
-        ifc.run("spatial.reference_structure", product="element", relating_structure="structure").should_be_called()
+        ifc.run("spatial.reference_structure", products=["element"], relating_structure="structure").should_be_called()
         subject.reference_structure(ifc, spatial, structure="structure", element="element")
 
 
 class TestDereferenceStructure:
     def test_run(self, ifc, spatial):
         spatial.can_reference("structure", "element").should_be_called().will_return(True)
-        ifc.run("spatial.dereference_structure", product="element", relating_structure="structure").should_be_called()
+        ifc.run("spatial.dereference_structure", products=["element"], relating_structure="structure").should_be_called()
         subject.dereference_structure(ifc, spatial, structure="structure", element="element")
 
 
@@ -40,7 +40,7 @@ class TestAssignContainer:
         ifc.get_entity("structure_obj").should_be_called().will_return("structure")
         ifc.get_entity("element_obj").should_be_called().will_return("element")
         ifc.run(
-            "spatial.assign_container", product="element", relating_structure="structure"
+            "spatial.assign_container", products=["element"], relating_structure="structure"
         ).should_be_called().will_return("rel")
         spatial.disable_editing("element_obj").should_be_called()
         collector.assign("element_obj").should_be_called()
@@ -72,7 +72,7 @@ class TestChangeSpatialLevel:
 class TestRemoveContainer:
     def test_run(self, ifc, collector):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        ifc.run("spatial.remove_container", product="element").should_be_called()
+        ifc.run("spatial.unassign_container", products=["element"]).should_be_called()
         collector.assign("obj").should_be_called()
         subject.remove_container(ifc, collector, obj="obj")
 

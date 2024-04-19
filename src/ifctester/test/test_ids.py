@@ -21,9 +21,17 @@ import pytest
 import xmlschema
 import ifcopenshell
 from ifctester import ids
+from typing import Optional
 
 
-def run(name, ids, ifc, expected, applicable_entities=None, failed_entities=None):
+def run(
+    name: str,
+    ids: ids.Ids,
+    ifc: ifcopenshell.file,
+    expected: bool,
+    applicable_entities: Optional[list[ifcopenshell.entity_instance]] = None,
+    failed_entities: Optional[list[ifcopenshell.entity_instance]] = None,
+):
     ids.validate(ifc)
     all_applicable = set()
     all_failures = set()
@@ -36,7 +44,7 @@ def run(name, ids, ifc, expected, applicable_entities=None, failed_entities=None
         all_applicable.update(spec.applicable_entities)
         for requirement in spec.requirements:
             if requirement.status is False:
-                all_failures.update(requirement.failed_entities)
+                all_failures.update([f["element"] for f in requirement.failures])
     assert set(all_applicable) == set(applicable_entities)
     assert set(all_failures) == set(failed_entities)
 
@@ -48,12 +56,11 @@ class TestIds:
 
     def test_create_an_ids_with_minimal_information(self):
         specs = ids.Ids()
-        print('AAA', specs.asdict())
         assert specs.asdict() == {
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -73,7 +80,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {
                 "title": "title",
                 "copyright": "copyright",
@@ -93,7 +100,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -117,7 +124,7 @@ class TestIds:
         specs = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
-        spec.requirements.append(name_attr := ids.Attribute(name="Name", value="Waldo"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
         specs.specifications.append(spec)
         assert "http://standards.buildingsmart.org/IDS" in specs.to_string()
         assert spec.status == None
@@ -135,11 +142,11 @@ class TestIds:
             specs,
             model,
             True,
-            [wall, waldo]
+            [wall, waldo],
         )
 
         spec.ifcVersion = []
-        spec.minOccurs = 1
+        spec.set_usage("required")
         model = ifcopenshell.file()
         waldo = model.createIfcWall(Name="Waldo")
         run("Required specifications need at least one applicable entity 1/2", specs, model, True, [waldo])
@@ -147,25 +154,37 @@ class TestIds:
         waldo = model.createIfcSlab(Name="Waldo")
         run("Required specifications need at least one applicable entity 2/2", specs, model, False)
 
-        spec.minOccurs = 0
+        spec.set_usage("optional")
         model = ifcopenshell.file()
         waldo = model.createIfcSlab(Name="Waldo")
         run("Optional specifications may still pass if nothing is applicable", specs, model, True)
 
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
+        spec.set_usage("prohibited")
         model = ifcopenshell.file()
         wall = model.createIfcSlab(Name="Waldo")
         run("Prohibited specifications fail if at least one entity passes all requirements 1/3", specs, model, True)
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Wally")
-        run("Prohibited specifications fail if at least one entity passes all requirements 2/3", specs, model, False, [wall], [wall])
+        run(
+            "Prohibited specifications fail if at least one entity passes all requirements 2/3",
+            specs,
+            model,
+            True,
+            [wall],
+            [],
+        )
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
-        run("Prohibited specifications fail if at least one entity passes all requirements 3/3", specs, model, False, [wall])
+        run(
+            "Prohibited specifications fail if at least one entity passes all requirements 3/3",
+            specs,
+            model,
+            False,
+            [wall],
+            [wall],
+        )
 
-        spec.minOccurs = 0
-        spec.maxOccurs = "unbounded"
+        spec.set_usage("optional")
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
         spec.requirements.append(description_attr := ids.Attribute(name="Description", value="Foobar"))
@@ -180,8 +199,7 @@ class TestIds:
         # run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
 
         # double negative / required attributes
-        # spec.minOccurs = 0
-        # spec.maxOccurs = 0
+        # spec.set_usage("prohibited")
         # name_attr.minOccurs = 0
         # name_attr.maxOccurs = 0
         # description_attr.minOccurs = 0
@@ -226,19 +244,18 @@ class TestIds:
 
         assert spec.status == False
         assert set(spec.applicable_entities) == {wall, waldo}
-        assert spec.requirements[0].failed_entities == [wall]
-        assert spec2.requirements[0].failed_entities == [wall]
+        assert len(spec.requirements[0].failures) == 1
+        assert len(spec2.requirements[0].failures) == 1
+        assert spec.requirements[0].failures[0]["element"] == wall
+        assert spec2.requirements[0].failures[0]["element"] == wall
 
 
 class TestSpecification:
     def test_create_specification_with_minimal_information(self):
         spec = ids.Specification()
-        print(spec.asdict())
         assert spec.asdict() == {
             "@name": "Unnamed",
             "@ifcVersion": ["IFC2X3", "IFC4"],
-            "@minOccurs": 0,
-            "@maxOccurs": "unbounded",
             "applicability": {},
             "requirements": {},
         }
@@ -255,8 +272,6 @@ class TestSpecification:
         )
         assert spec.asdict() == {
             "@name": "name",
-            "@minOccurs": 1,
-            "@maxOccurs": 1,
             "@ifcVersion": "IFC4",
             "@identifier": "identifier",
             "@description": "description",
@@ -264,43 +279,95 @@ class TestSpecification:
             "applicability": {},
             "requirements": {},
         }
-    
+
     def test_specification_has_no_requirements(self):
         model = ifcopenshell.file()
         wall = model.createIfcWall()
         waldo = model.createIfcWall(Name="Waldo")
-        
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 1
-        run("A specification that is required and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
-        
+        spec.set_usage("required")
+        run(
+            "A specification that is required and has at least one applicable entity but no requirements shall pass",
+            test_ids,
+            model,
+            True,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
-        spec.minOccurs = 1
-        run("A specification that is required but has no applicable entities or requirements shall fail", test_ids, model, False, None, None)
-        
+        spec.set_usage("required")
+        run(
+            "A specification that is required but has no applicable entities or requirements shall fail",
+            test_ids,
+            model,
+            False,
+            None,
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
-        run("A specification that is optional and has at least one applicable entity but no requirements shall pass", test_ids, model, True, [wall, waldo], None)
-        
+        spec.set_usage("optional")
+        run(
+            "A specification that is optional and has at least one applicable entity but no requirements shall pass",
+            test_ids,
+            model,
+            True,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         spec.applicability.append(ids.Entity(name="IFCWALL"))
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
-        run("A specification that is prohibited and has at least one applicable entity but no requirements shall fail", test_ids, model, False, [wall, waldo], None)
-        
+        spec.set_usage("prohibited")
+        run(
+            "A specification that is prohibited and has at least one applicable entity but no requirements shall fail",
+            test_ids,
+            model,
+            False,
+            [wall, waldo],
+            None,
+        )
+
         test_ids = ids.Ids(title="Title")
         spec = ids.Specification(name="Name")
         test_ids.specifications.append(spec)
-        spec.minOccurs = 0
-        spec.maxOccurs = 0
-        run("A specification that is prohibited but has no applicable entities or requirements shall pass", test_ids, model, True, None, None)
+        spec.set_usage("prohibited")
+        run(
+            "A specification that is prohibited but has no applicable entities or requirements shall pass",
+            test_ids,
+            model,
+            True,
+            None,
+            None,
+        )
+
+    def test_prohibited_facet(self):
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo", cardinality="prohibited"))
+        specs.specifications.append(spec)
+
+        spec.set_usage("required")
+        model = ifcopenshell.file()
+        wall = model.createIfcWall(Name="Wally")
+        run(
+            "Prohibited facet not to fail if no entity passes it",
+            specs,
+            model,
+            True,
+            [wall],
+            [],
+        )

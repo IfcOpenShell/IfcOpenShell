@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class TestAppendAsset(test.bootstrap.IFC4):
@@ -69,8 +70,8 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element2, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element2], material=material)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert len(self.file.by_type("IfcWallType")) == 1
 
@@ -78,7 +79,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert self.file.by_type("IfcWallType")[0].HasAssociations[0].RelatingMaterial.Name == "Material"
 
@@ -87,11 +88,11 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         element_type2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element_type, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element_type2, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element_type], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element_type2], material=material)
 
         # appending another type not connected to IfcWall directly
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element_type2)
@@ -110,8 +111,8 @@ class TestAppendAsset(test.bootstrap.IFC4):
         pset = ifcopenshell.api.run("pset.add_pset", library, product=material, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", library, pset=pset, properties={"Foo": "Bar"})
 
-        ifcopenshell.api.run("material.assign_material", library, product=element1, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element2, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element1], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element2], material=material)
         new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
         new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
 
@@ -138,8 +139,8 @@ class TestAppendAsset(test.bootstrap.IFC4):
         ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
         ifcopenshell.api.run("material.add_layer", library, layer_set=layer_set2, material=material)
 
-        ifcopenshell.api.run("material.assign_material", library, product=element1, material=layer_set1)
-        ifcopenshell.api.run("material.assign_material", library, product=element2, material=layer_set2)
+        ifcopenshell.api.run("material.assign_material", library, products=[element1], material=layer_set1)
+        ifcopenshell.api.run("material.assign_material", library, products=[element2], material=layer_set2)
 
         new1 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element1)
         new2 = ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
@@ -159,7 +160,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element.OwnerHistory = history
 
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        rel = ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        rel = ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
         # We share a history. This ensures that we continue to check all
         # whitelisted inverses even though one of the subelements (i.e. this
         # shared history) is already processed. See bug #2837.
@@ -185,7 +186,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element_type.RepresentationMaps = [library.createIfcRepresentationMap(MappedRepresentation=mapped_rep)]
 
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
 
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert len(self.file.by_type("IfcStyledItem")) == 1
@@ -200,7 +201,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
 
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
         style = ifcopenshell.api.run("style.add_style", library)
         ifcopenshell.api.run("style.assign_material_style", library, material=material, style=style, context=context)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
@@ -355,7 +356,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert ifcopenshell.util.element.get_type(self.file.by_type("IfcWall")[0]).is_a("IfcWallType")
 
@@ -365,9 +366,9 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element3 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", library, related_object=element2, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", library, related_object=element3, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element2], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element3], relating_type=element_type)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
         assert len(ifcopenshell.util.element.get_types(self.file.by_type("IfcWallType")[0])) == 2
@@ -377,7 +378,7 @@ class TestAppendAsset(test.bootstrap.IFC4):
         library = ifcopenshell.api.run("project.create_file")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert ifcopenshell.util.element.get_material(self.file.by_type("IfcWall")[0]).Name == "Material"
 
@@ -386,11 +387,11 @@ class TestAppendAsset(test.bootstrap.IFC4):
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
         element_type2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
         material = ifcopenshell.api.run("material.add_material", library, name="Material")
-        ifcopenshell.api.run("material.assign_material", library, product=element, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element_type, material=material)
-        ifcopenshell.api.run("material.assign_material", library, product=element_type2, material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element_type], material=material)
+        ifcopenshell.api.run("material.assign_material", library, products=[element_type2], material=material)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert [e.GlobalId for e in self.file.by_type("IfcWallType")] == [element_type.GlobalId]
 
@@ -418,7 +419,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         library = ifcopenshell.api.run("project.create_file", version="IFC2X3")
         element = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         assert ifcopenshell.util.element.get_type(self.file.by_type("IfcWall")[0]).is_a("IfcWallType")
 
@@ -428,9 +429,9 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         element2 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element3 = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", library, related_object=element, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", library, related_object=element2, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", library, related_object=element3, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element2], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", library, related_objects=[element3], relating_type=element_type)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element)
         ifcopenshell.api.run("project.append_asset", self.file, library=library, element=element2)
         assert len(ifcopenshell.util.element.get_types(self.file.by_type("IfcWallType")[0])) == 2

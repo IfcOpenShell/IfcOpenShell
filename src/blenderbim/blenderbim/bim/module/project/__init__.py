@@ -21,9 +21,12 @@ from . import ui, prop, operator, workspace, gizmo, decorator
 
 classes = (
     operator.AppendEntireLibrary,
+    operator.AppendInspectedLinkedElement,
     operator.AppendLibraryElement,
     operator.AppendLibraryElementByQuery,
     operator.AssignLibraryDeclaration,
+    operator.BIM_OT_load_clipping_planes,
+    operator.BIM_OT_save_clipping_planes,
     operator.ChangeLibraryElement,
     operator.CreateClippingPlane,
     operator.CreateProject,

@@ -12,6 +12,8 @@ Writing technical documentation
 All documentation is written in ReStructured Text and is available in the
 `BlenderBIM Add-on docs directory
 <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/docs>`_.
+You can press the edit button on the top right on any documentation page to
+quickly edit their content.
 
 You can link to `external websites
 <https://docs.readthedocs.io/en/stable/guides/cross-referencing-with-sphinx.html>`_.
@@ -86,3 +88,27 @@ Tables can be very annoying to format. You can use a CSV table instead.
 
     "ABC", "01", "02"
     "DEF", "03", "04"
+
+Building documentation
+----------------------
+
+If you want to build the documentation locally, the documentation system uses
+`Sphinx <https://www.sphinx-doc.org/en/master/>`_. First, install the theme and
+theme dependencies:
+
+.. code-block:: console
+
+    $ pip install furo
+    $ pip install sphinx-autoapi
+    $ pip install sphinx-copybutton
+
+Now you can generate the documentation:
+
+.. code-block:: console
+
+    $ cd /path/to/ifcopenshell/src/blenderbim/docs/
+    $ make html
+    $ cd _build/html
+    $ python -m http.server
+
+You will now have a local webserver running hosting the documentation.

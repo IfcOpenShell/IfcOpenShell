@@ -29,7 +29,7 @@ def assign_object(ifc, aggregator, collector, relating_obj=None, related_obj=Non
     if not aggregator.can_aggregate(relating_obj, related_obj):
         return
     rel = ifc.run(
-        "aggregate.assign_object", product=ifc.get_entity(related_obj), relating_object=ifc.get_entity(relating_obj)
+        "aggregate.assign_object", products=[ifc.get_entity(related_obj)], relating_object=ifc.get_entity(relating_obj)
     )
     collector.assign(relating_obj)
     collector.assign(related_obj)
@@ -45,9 +45,9 @@ def unassign_object(ifc, aggregate, collector, relating_obj=None, related_obj=No
         if related_element:
             relating_obj = ifc.get_object(relating_element)
     if relating_obj:
-        ifc.run("aggregate.unassign_object", product=related_element)
+        ifc.run("aggregate.unassign_object", products=[related_element])
         if container:
-            ifc.run("spatial.assign_container", product=related_element, relating_structure=container)
+            ifc.run("spatial.assign_container", products=[related_element], relating_structure=container)
         collector.assign(relating_obj)
         collector.assign(related_obj)
 

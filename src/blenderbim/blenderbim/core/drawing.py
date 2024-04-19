@@ -241,7 +241,7 @@ def add_drawing(ifc, collector, drawing, target_view=None, location_hint=None):
         attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
     ifc.run("document.edit_information", information=information, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    ifc.run("document.assign_document", product=element, document=reference)
+    ifc.run("document.assign_document", products=[element], document=reference)
     drawing.import_drawings()
 
 
@@ -251,7 +251,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
     drawing_tool.copy_representation(drawing, new_drawing)
     drawing_tool.set_name(new_drawing, drawing_name)
     group = drawing_tool.get_drawing_group(new_drawing)
-    ifc.run("group.unassign_group", group=group, product=new_drawing)
+    ifc.run("group.unassign_group", group=group, products=[new_drawing])
     new_group = ifc.run("group.add_group")
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
@@ -261,11 +261,11 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
                 continue
             new_annotation = ifc.run("root.copy_class", product=annotation)
             drawing_tool.copy_representation(annotation, new_annotation)
-            ifc.run("group.unassign_group", group=group, product=new_annotation)
+            ifc.run("group.unassign_group", group=group, products=[new_annotation])
             ifc.run("group.assign_group", group=new_group, products=[new_annotation])
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
-    ifc.run("document.unassign_document", product=new_drawing, document=old_reference)
+    ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
 
     information = ifc.run("document.add_information")
     uri = drawing_tool.get_default_drawing_path(drawing_name)
@@ -276,7 +276,7 @@ def duplicate_drawing(ifc, drawing_tool, drawing=None, should_duplicate_annotati
         attributes = {"Identification": "X", "Name": drawing_name, "Scope": "DRAWING"}
     ifc.run("document.edit_information", information=information, attributes=attributes)
     ifc.run("document.edit_reference", reference=reference, attributes={"Location": uri})
-    ifc.run("document.assign_document", product=new_drawing, document=reference)
+    ifc.run("document.assign_document", products=[new_drawing], document=reference)
 
     drawing_tool.import_drawings()
     return new_drawing
@@ -388,13 +388,13 @@ def sync_references(ifc, collector, drawing_tool, drawing=None):
         should_delete_existing_annotation = False
         should_create_annotation = False
 
+        # remove annotation only if the reference object was changed
+        # otherwise we rely on the existing annotation
         if annotation:
             if reference_obj and (ifc.is_moved(reference_obj) or ifc.is_edited(reference_obj)):
                 should_delete_existing_annotation = True
-            elif not reference_obj:
-                should_delete_existing_annotation = True
 
-        if reference_obj and (should_delete_existing_annotation or not annotation):
+        if should_delete_existing_annotation or not annotation:
             should_create_annotation = True
 
         if should_delete_existing_annotation:

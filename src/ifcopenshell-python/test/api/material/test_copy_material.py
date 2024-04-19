@@ -31,7 +31,7 @@ class TestCopyMaterial(test.bootstrap.IFC4):
     def test_assignments_are_not_copied(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element], material=material)
         new = ifcopenshell.api.run("material.copy_material", self.file, material=material)
         assert material.AssociatedTo
         assert not new.AssociatedTo

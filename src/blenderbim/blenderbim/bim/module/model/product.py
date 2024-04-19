@@ -25,9 +25,13 @@ import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
+import blenderbim.core.aggregate
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.spatial
 from . import wall, slab, profile, mep
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
@@ -273,7 +277,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             obj.location[2] = collection_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
 
     @staticmethod
-    def generate_layered_element(ifc_class, relating_type):
+    def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
         layer_set_direction = None
 
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
@@ -297,6 +301,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
             material = ifcopenshell.util.element.get_material(tool.Ifc.get_entity(obj))
             material.LayerSetDirection = layer_set_direction
             return True
+        return False
 
 
 class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
@@ -510,7 +515,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
     if usecase_path == "material.assign_material":
         if not settings.get("material", None):
             return
-        elements = [settings["product"]]
+        elements = settings["products"]
     else:
         elements = []
         for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
@@ -546,7 +551,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
 
 
 def ensure_material_unassigned(usecase_path, ifc_file, settings):
-    elements = [settings["product"]]
+    elements = settings["products"]
     if elements[0].is_a("IfcElementType"):
         elements.extend(ifcopenshell.util.element.get_types(elements[0]))
     for element in elements:

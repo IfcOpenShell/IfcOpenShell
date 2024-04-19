@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.tool.collector import Collector as subject
@@ -39,7 +41,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=wall_element,
+            products=[wall_element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         subject.assign(wall_obj)
@@ -66,7 +68,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 1
@@ -82,7 +84,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         subject.assign(space_obj)
@@ -101,7 +103,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 1
@@ -119,7 +121,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(element_obj)
         assert len(element_obj.users_collection) == 1
@@ -159,7 +161,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            product=space_element,
+            products=[space_element],
         )
         subject.assign(space_obj)
         assert bpy.context.scene.collection.children.find(space_collection.name) == -1
@@ -178,7 +180,7 @@ class TestAssign(NewFile):
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(element_obj)
         subject.assign(subelement_obj)
@@ -194,14 +196,14 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         ifcopenshell.api.run(
             "aggregate.assign_object",
             tool.Ifc.get(),
             relating_object=element,
-            product=subelement,
+            products=[subelement],
         )
         subject.assign(subelement_obj)
         assert subelement_obj.users_collection[0].name == "IfcSite/My Site"
@@ -234,7 +236,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         bpy.context.scene.collection.objects.link(element_obj)
@@ -253,7 +255,7 @@ class TestAssign(NewFile):
         ifcopenshell.api.run(
             "spatial.assign_container",
             tool.Ifc.get(),
-            product=element,
+            products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
         )
         bpy.context.scene.collection.objects.link(element_obj)

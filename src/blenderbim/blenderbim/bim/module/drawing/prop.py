@@ -66,6 +66,11 @@ def get_location_hint(self, context):
 
 
 def update_diagram_scale(self, context):
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
     try:
         element = (
             tool.Ifc.get()
@@ -87,6 +92,11 @@ def update_diagram_scale(self, context):
 
 
 def update_is_nts(self, context):
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
+    if not element:
+        return
     try:
         element = (
             tool.Ifc.get()
@@ -194,7 +204,7 @@ def update_document_name(self, context):
 def update_has_underlay(self, context):
     update_layer(self, context, "HasUnderlay", self.has_underlay)
     # making sure that camera is active
-    if self.has_underlay and (context.active_object and context.active_object.data == self.id_data):
+    if self.has_underlay and (context.scene.camera and context.scene.camera.data == self.id_data):
         bpy.ops.bim.reload_drawing_styles()
         bpy.ops.bim.activate_drawing_style()
 
@@ -208,10 +218,12 @@ def update_has_annotation(self, context):
 
 
 def update_layer(self, context, name, value):
-    element = tool.Ifc.get_entity(context.active_object)
+    if not context.scene.camera or context.scene.camera.data != self.id_data:
+        return
+    element = tool.Ifc.get_entity(context.scene.camera)
     if not element:
         return
-    pset = ifcopenshell.util.element.get_psets(element).get("EPset_Drawing")
+    pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
@@ -229,9 +241,8 @@ def update_titleblocks(self, context):
     SheetsData.data["titleblocks"] = SheetsData.titleblocks()
 
 
-def toggleDecorations(self, context):
-    toggle = self.should_draw_decorations
-    if toggle:
+def update_should_draw_decorations(self, context):
+    if self.should_draw_decorations:
         # TODO: design a proper text variable templating renderer
         collection = context.scene.camera.BIMObjectProperties.collection
         for obj in collection.objects:
@@ -343,7 +354,7 @@ class DocProperties(PropertyGroup):
     active_sheet_index: IntProperty(name="Active Sheet Index")
     ifc_files: CollectionProperty(name="IFCs", type=StrProperty)
     drawing_styles: CollectionProperty(name="Drawing Styles", type=DrawingStyle)
-    should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=toggleDecorations)
+    should_draw_decorations: BoolProperty(name="Should Draw Decorations", update=update_should_draw_decorations)
     sheets_dir: StringProperty(default=os.path.join("sheets") + os.path.sep, name="Default Sheets Directory")
     layouts_dir: StringProperty(default=os.path.join("layouts") + os.path.sep, name="Default Layouts Directory")
     titleblocks_dir: StringProperty(

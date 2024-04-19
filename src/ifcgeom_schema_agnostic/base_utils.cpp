@@ -39,6 +39,8 @@
 #include <ShapeFix_Shape.hxx>
 #include <BRepCheck_Analyzer.hxx>
 #include <BRepClass3d_SolidClassifier.hxx>
+#include <BRepCheck.hxx>
+#include <BRepTools.hxx>
 
 #include <TopTools_IndexedMapOfShape.hxx>
 
@@ -738,4 +740,44 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 	}
 
 	return valid_shell;
+}
+
+bool IfcGeom::util::validate_shape(const TopoDS_Shape& s) {
+	BRepCheck_Analyzer ana(s);
+	if (ana.IsValid()) {
+		return true;
+	}
+
+	std::stringstream str;
+	bool any_emitted = false;
+
+	std::function<void(const TopoDS_Shape&)> dump;
+	dump = [&ana, &str, &dump, &any_emitted](const TopoDS_Shape& s) {
+		if (!ana.Result(s).IsNull()) {
+			BRepCheck_ListIteratorOfListOfStatus itl;
+			itl.Initialize(ana.Result(s)->Status());
+			for (; itl.More(); itl.Next()) {
+				if (itl.Value() != BRepCheck_NoError) {
+					if (any_emitted) {
+						str << ", ";
+					}
+					BRepCheck::Print(itl.Value(), str);
+					str.seekp(str.tellp() - (std::streamoff)1);
+					str << " on ";
+					TopAbs::Print(s.ShapeType(), str);
+					BRepTools::Dump(s, str);
+					any_emitted = true;
+				}
+			}
+		}
+		for (TopoDS_Iterator it(s); it.More(); it.Next()) {
+			dump(it.Value());
+		}
+	};
+
+	dump(s);
+
+	Logger::Warning(str.str());
+
+	return false;
 }

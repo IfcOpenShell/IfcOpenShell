@@ -24,21 +24,15 @@ classes = (
     operator.ActivateIfcClassFilter,
     operator.AddFilter,
     operator.AddFilterGroup,
-    operator.AddToIfcGroup,
     operator.ColourByProperty,
     operator.EditFilterQuery,
-    operator.FilterModelElements,
-    operator.IfcSelector,
     operator.LoadColourscheme,
-    operator.LoadQuery,
     operator.LoadSearch,
-    operator.OpenQueryLibrary,
     operator.RemoveFilter,
     operator.RemoveFilterGroup,
     operator.ResetObjectColours,
     operator.SaveColourscheme,
     operator.SaveSearch,
-    operator.SaveSelectorQuery,
     operator.Search,
     operator.SelectByProperty,
     operator.SelectFilterElements,
@@ -51,11 +45,6 @@ classes = (
     prop.BIMFilterClasses,
     prop.BIMFilterBuildingStoreys,
     prop.BIMSearchProperties,
-    prop.SearchCollection,
-    prop.SearchQueryFilter,
-    prop.SearchQuery,
-    prop.SearchQueryGroup,
-    prop.IfcSelectorProperties,
     ui.BIM_PT_search,
     ui.BIM_PT_filter,
     ui.BIM_PT_colour_by_property,
@@ -63,15 +52,12 @@ classes = (
     ui.BIM_UL_colourscheme,
     ui.BIM_UL_ifc_class_filter,
     ui.BIM_UL_ifc_building_storey_filter,
-    ui.BIM_PT_IFCSelector,
 )
 
 
 def register():
     bpy.types.Scene.BIMSearchProperties = bpy.props.PointerProperty(type=prop.BIMSearchProperties)
-    bpy.types.Scene.IfcSelectorProperties = bpy.props.PointerProperty(type=prop.IfcSelectorProperties)
 
 
 def unregister():
     del bpy.types.Scene.BIMSearchProperties
-    del bpy.types.Scene.IfcSelectorProperties

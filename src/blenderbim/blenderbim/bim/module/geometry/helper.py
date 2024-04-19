@@ -21,12 +21,14 @@ import bmesh
 import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
+import blenderbim.tool as tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
+from typing import Union
 
 
 class Helper:
-    def __init__(self, file):
+    def __init__(self, file: ifcopenshell.file):
         self.file = file
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
@@ -34,7 +36,7 @@ class Helper:
     # edge that shares a single vertex only with that face to find the extrusion
     # edge. A face with the normal facing down is prioritised. A limited
     # dissolve ensure that faces are quads and not tris.
-    def auto_detect_rectangle_profile_extruded_area_solid(self, mesh):
+    def auto_detect_rectangle_profile_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -115,7 +117,9 @@ class Helper:
 
         return {"profile": profile, "extrusion": extrusion}
 
-    def auto_detect_arbitrary_profile_with_voids(self, obj, mesh):
+    def auto_detect_arbitrary_profile_with_voids(
+        self, obj: bpy.types.Object, mesh: bpy.types.Mesh
+    ) -> Union[tuple, dict]:
         groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
         for i, group in enumerate(obj.vertex_groups):
             if "IFCARCINDEX" in group.name:
@@ -138,28 +142,31 @@ class Helper:
             total_groups = 0
             is_circle = False
             for group_type, group_indices in groups.items():
-                for group_index in group_indices:
-                    if group_index in vert[deform_layer]:
-                        if group_type == "IFCCIRCLE":
-                            is_circle = True
-                        group_verts[group_type].setdefault(group_index, 0)
-                        group_verts[group_type][group_index] += 1
-                        total_groups += 0
+                if not group_indices:
+                    continue
+                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
+                if not is_special:
+                    continue
+                if group_type == "IFCCIRCLE":
+                    is_circle = True
+                group_verts[group_type].setdefault(group_index, 0)
+                group_verts[group_type][group_index] += 1
+                total_groups += 0
             if total_groups > 1:  # A vert can only belong to one group
                 return (False, "AMBIGUOUS_SPECIAL_VERTEX")
             elif is_circle:
-                pass # Circles are allowed to be unclosed
+                pass  # Circles are allowed to be unclosed
             elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
                 return (False, "UNCLOSED_LOOP")
 
         for group_type, group_counts in group_verts.items():
             if group_type == "IFCARCINDEX":
                 for group_count in group_counts.values():
-                    if group_count != 3: # Each arc needs 3 verts
+                    if group_count != 3:  # Each arc needs 3 verts
                         return (False, "3POINT_ARC")
             elif group_type == "IFCCIRCLE":
                 for group_count in group_counts.values():
-                    if group_count != 2: # Each circle needs 2 verts
+                    if group_count != 2:  # Each circle needs 2 verts
                         return (False, "CIRCLE")
 
         loop_edges = set(bm.edges)
@@ -269,7 +276,7 @@ class Helper:
         inner_loops.remove(outer_loop)
 
         # Copy vectors to prevent random data mangling after bmesh is freed.
-        points = [Vector(list(v.co)) for v in bm.verts]
+        points = [v.co.copy() for v in bm.verts]
 
         bm.to_mesh(mesh)
         mesh.update()

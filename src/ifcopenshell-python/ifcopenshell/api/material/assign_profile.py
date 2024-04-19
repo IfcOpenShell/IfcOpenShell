@@ -66,12 +66,12 @@ class Usecase:
                 profile_set=material_set, material=steel, profile=hea100)
 
             # Great! Let's assign our material set to our beam type.
-            ifcopenshell.api.run("material.assign_material", model, product=beam_type, material=material_set)
+            ifcopenshell.api.run("material.assign_material", model, products=[beam_type], material=material_set)
 
             # Let's create an occurrence of this beam.
             beam = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeam", name="B1.01")
             ifcopenshell.api.run("material.assign_material", model,
-                product=beam, type="IfcMaterialProfileSetUsage")
+                products=[beam], type="IfcMaterialProfileSetUsage")
 
             # Let's give a 1000mm long beam body representation.
             body = ifcopenshell.api.run("geometry.add_profile_representation",

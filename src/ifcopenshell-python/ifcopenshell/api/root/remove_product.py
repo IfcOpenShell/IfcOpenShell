@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None):
+    def __init__(self, file: ifcopenshell.file, product: ifcopenshell.entity_instance):
         """Removes a product
 
         This is effectively a smart delete function that not only removes a
@@ -58,7 +59,7 @@ class Usecase:
         self.file = file
         self.settings = {"product": product}
 
-    def execute(self):
+    def execute(self) -> None:
         representations = []
         if self.settings["product"].is_a("IfcProduct"):
             if self.settings["product"].Representation:
@@ -125,13 +126,12 @@ class Usecase:
                     pset=inverse.RelatingPropertyDefinition,
                 )
             elif inverse.is_a("IfcRelAssociatesMaterial"):
-                ifcopenshell.api.run("material.unassign_material", self.file, product=self.settings["product"])
+                ifcopenshell.api.run("material.unassign_material", self.file, products=[self.settings["product"]])
             elif inverse.is_a("IfcRelDefinesByType"):
                 if inverse.RelatingType == self.settings["product"]:
-                    for related_object in inverse.RelatedObjects:
-                        ifcopenshell.api.run("type.unassign_type", self.file, related_object=related_object)
+                    ifcopenshell.api.run("type.unassign_type", self.file, related_objects=inverse.RelatedObjects)
                 else:
-                    ifcopenshell.api.run("type.unassign_type", self.file, related_object=self.settings["product"])
+                    ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[self.settings["product"]])
             elif inverse.is_a("IfcRelSpaceBoundary"):
                 ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=inverse)
             elif inverse.is_a("IfcRelFillsElement"):

@@ -11,7 +11,7 @@ authors:
   - name: "IfcOpenShell contributors"authors:
 repository-code: >-
   https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcbimtester
-url: 'https://blenderbim.org/docs-python/bimtester.html'
+url: 'https://docs.ifcopenshell.org/bimtester.html'
 abstract: Wrapper for Gherkin based unit testing for IFC models
 keywords:
   - Gherkin

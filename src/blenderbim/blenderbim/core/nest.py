@@ -29,7 +29,9 @@ def assign_object(ifc, nest, collector, relating_obj=None, related_obj=None):
     if not nest.can_nest(relating_obj, related_obj):
         return
     rel = ifc.run(
-        "nest.assign_object", related_object=ifc.get_entity(related_obj), relating_object=ifc.get_entity(relating_obj)
+        "nest.assign_object",
+        related_objects=[ifc.get_entity(related_obj)],
+        relating_object=ifc.get_entity(relating_obj),
     )
     collector.assign(relating_obj)
     collector.assign(related_obj)
@@ -45,9 +47,9 @@ def unassign_object(ifc, nest, collector, relating_obj=None, related_obj=None):
         if related_element:
             relating_obj = ifc.get_object(relating_element)
     if relating_obj:
-        ifc.run("nest.unassign_object", related_object=related_element)
+        ifc.run("nest.unassign_object", related_objects=[related_element])
         if container:
-            ifc.run("spatial.assign_container", product=related_element, relating_structure=container)
+            ifc.run("spatial.assign_container", products=[related_element], relating_structure=container)
         collector.assign(relating_obj)
         collector.assign(related_obj)
 

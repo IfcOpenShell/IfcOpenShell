@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import StrProperty, Attribute, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,11 +33,12 @@ from bpy.props import (
 
 class ClashSource(PropertyGroup):
     name: StringProperty(name="File")
-    selector: StringProperty(name="Selector")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     mode: EnumProperty(
         items=[
-            ("i", "Include", "Only the selected objects are included for clashing"),
-            ("e", "Exclude", "All objects except the selected objects are included for clashing"),
+            ("a", "All Elements", "All elements will be used for clashing"),
+            ("i", "Include", "Only the selected elements are included for clashing"),
+            ("e", "Exclude", "All elements except the selected elements are included for clashing"),
         ],
         name="Mode",
     )
@@ -53,7 +54,24 @@ class Clash(PropertyGroup):
 
 class ClashSet(PropertyGroup):
     name: StringProperty(name="Name")
-    tolerance: FloatProperty(name="Tolerance")
+    mode: EnumProperty(
+        items=[
+            (
+                "intersection",
+                "Intersection",
+                "Detect objects that protrude or pierce another object",
+                "PIVOT_MEDIAN",
+                1,
+            ),
+            ("collision", "Collision", "Detect touching objects with any surface collision", "PIVOT_INDIVIDUAL", 2),
+            ("clearance", "Clearance", "Detect objects within a proximity threshold", "PIVOT_ACTIVE", 3),
+        ],
+        name="Mode",
+    )
+    tolerance: FloatProperty(name="Tolerance", default=0.002)
+    clearance: FloatProperty(name="Clearance", default=0.01)
+    allow_touching: BoolProperty(name="Allow Touching", default=False)
+    check_all: BoolProperty(name="Check All", default=False)
     a: CollectionProperty(name="Group A", type=ClashSource)
     b: CollectionProperty(name="Group B", type=ClashSource)
     clashes: CollectionProperty(name="Clashes", type=Clash)
@@ -78,22 +96,21 @@ class BIMClashProperties(PropertyGroup):
     smart_clash_grouping_max_distance: IntProperty(
         name="Smart Clash Grouping Max Distance", default=3, soft_min=1, soft_max=10
     )
-    sould_focus_on_clash: BoolProperty(name="Show Focus Clash", default=False)
+    p1: FloatVectorProperty(name="P1", default=(0.0, 0.0, 0.0), subtype="XYZ")
+    p2: FloatVectorProperty(name="P2", default=(0.0, 0.0, 0.0), subtype="XYZ")
+    active_clash_text: StringProperty(name="Active Clash Text")
 
     @property
     def active_clash_set(self):
-        if not self.clash_sets:
-            return None
-        return self.clash_sets[self.active_clash_set_index]
+        if self.active_clash_set_index < len(self.clash_sets):
+            return self.clash_sets[self.active_clash_set_index]
 
     @property
     def active_smart_group(self):
-        if not self.smart_clash_groups:
-            return None
-        return self.smart_clash_groups[self.active_smart_group_index]
+        if self.active_smart_group_index < len(self.smart_clash_groups):
+            return self.smart_clash_groups[self.active_smart_group_index]
 
     @property
     def active_clash(self):
-        if not self.active_clash_set:
-            return None
-        return self.active_clash_set.clashes[self.active_clash_index]
+        if self.active_clash_index < len(self.active_clash_set.clashes):
+            return self.active_clash_set.clashes[self.active_clash_index]

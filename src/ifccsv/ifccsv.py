@@ -29,6 +29,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
+from typing import Optional, Union
 
 try:
     from odf.namespaces import OFFICENS
@@ -239,12 +240,18 @@ class IfcCsv:
             index = attributes.index(data["name"])
             formatting_indices[index] = data["format"]
 
-        for row in self.results:
-            for index, format_query in formatting_indices.items():
+        for index, format_query in formatting_indices.items():
+            for row in self.results:
                 if row[index] == null:
                     continue
                 row[index] = '"' + str(row[index]).replace('"', '\\"') + '"'
                 row[index] = ifcopenshell.util.selector.format(format_query.replace("{{value}}", row[index]))
+
+            if self.summaries[index] is not None:
+                summary_label, summary_value = self.summaries[index].split(": ")
+                summary_value = '"' + str(summary_value).replace('"', '\\"') + '"'
+                summary_value = ifcopenshell.util.selector.format(format_query.replace("{{value}}", summary_value))
+                self.summaries[index] = summary_label + ": " + str(summary_value)
 
     def sort_results(self, sort, attributes, include_global_id):
         if not self.results:
@@ -269,7 +276,7 @@ class IfcCsv:
             elif not include_global_id:
                 self.results = sorted(self.results, key=lambda x: x[0])
 
-    def export_csv(self, output, delimiter=None):
+    def export_csv(self, output: str, delimiter: Optional[str] = None) -> None:
         with open(output, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f, delimiter=delimiter)
             writer.writerow(self.headers)
@@ -387,8 +394,16 @@ class IfcCsv:
             self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false)
 
     def import_csv(
-        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
-    ):
+        self,
+        ifc_file: ifcopenshell.file,
+        table: str,
+        attributes: Optional[list[Union[str, None]]] = None,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+    ) -> None:
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
             headers = []
@@ -421,7 +436,17 @@ class IfcCsv:
         for _, row in df.iterrows():
             self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false)
 
-    def process_row(self, ifc_file, row, headers, attributes, null, empty, bool_true, bool_false):
+    def process_row(
+        self,
+        ifc_file: ifcopenshell.file,
+        row: list[str],
+        headers: list[str],
+        attributes: list[Union[str, None]],
+        null: str,
+        empty: str,
+        bool_true: str,
+        bool_false: str,
+    ) -> None:
         try:
             element = ifc_file.by_guid(row[0])
         except:
@@ -448,9 +473,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--spreadsheet", type=str, default="data.csv", help="The spreadsheet file")
     parser.add_argument("-f", "--format", type=str, default="csv", help="The format, chosen from csv, ods, or xlsx")
     parser.add_argument("-d", "--delimiter", type=str, default=",", help="The delimiter in CSV. Defaults to a comma.")
-    parser.add_argument(
-        "-n", "--null", type=str, default="N/A", help="How to represent null values. Defaults to N/A."
-    )
+    parser.add_argument("-n", "--null", type=str, default="N/A", help="How to represent null values. Defaults to N/A.")
     parser.add_argument(
         "-e", "--empty", type=str, default="-", help="How to represent empty strings. Defaults to a hyphen."
     )

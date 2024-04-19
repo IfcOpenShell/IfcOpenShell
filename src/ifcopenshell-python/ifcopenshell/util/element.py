@@ -18,10 +18,20 @@
 
 from __future__ import annotations
 import ifcopenshell
-from typing import List
+import ifcopenshell.util.element
+from typing import Any, Callable, Optional, Union, Literal, overload
+from collections import namedtuple
 
 
-def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
+def get_pset(
+    element: ifcopenshell.entity_instance,
+    name: str,
+    prop: Optional[str] = None,
+    psets_only: bool = False,
+    qtos_only: bool = False,
+    should_inherit: bool = True,
+    verbose: bool = False,
+) -> Union[Any, dict[str, Any]]:
     """Retrieve a single property set or single property
 
     This is more efficient than ifcopenshell.util.element.get_psets if you know
@@ -44,13 +54,13 @@ def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should
     :type should_inherit: bool,optional
     :return: A dictionary of property names and values, or a single value if a
         property is specified.
-    :rtype: dict
+    :rtype: Union[Any, dict[str, Any]]
 
     Example:
 
     .. code:: python
 
-        element = ifcopenshell.by_type("IfcWall")[0]
+        element = ifc_file.by_type("IfcWall")[0]
         psets_and_qtos = ifcopenshell.util.element.get_pset(element, "Pset_WallCommon")
     """
     pset = None
@@ -66,12 +76,13 @@ def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should
             if definition.Name == name:
                 pset = definition
                 break
-    elif hasattr(element, "IsDefinedBy"):
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
+        # other IfcObjectDefinition
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
                 type_pset = get_pset(element_type, name, prop, should_inherit=False, verbose=verbose)
-        for relationship in element.IsDefinedBy:
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
                 if definition.Name == name:
@@ -84,13 +95,15 @@ def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should
         elif qtos_only and not pset.is_a("IfcElementQuantity"):
             pset = None
 
-    if type_pset:
-        if psets_only and not type_pset.is_a("IfcPropertySet"):
-            type_pset = None
-        elif qtos_only and not type_pset.is_a("IfcElementQuantity"):
-            type_pset = None
+    if type_pset is not None and not prop:
+        if psets_only or qtos_only:
+            type_pset_element = element.file.by_id(type_pset["id"])
+            if psets_only and not type_pset_element.is_a("IfcPropertySet"):
+                type_pset = None
+            elif qtos_only and not type_pset_element.is_a("IfcElementQuantity"):
+                type_pset = None
 
-    if not pset and not type_pset:
+    if pset is None and type_pset is None:
         return
 
     if not prop:
@@ -107,7 +120,9 @@ def get_pset(element, name, prop=None, psets_only=False, qtos_only=False, should
     return value
 
 
-def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True, verbose=False):
+def get_psets(
+    element: ifcopenshell.entity_instance, psets_only=False, qtos_only=False, should_inherit=True, verbose=False
+) -> dict[str, dict[str, Any]]:
     """Retrieve property sets, their related properties' names & values and ids.
 
     If should_inherit is true, the pset "id" only refers to the ID of the
@@ -121,14 +136,16 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True, v
     :type qtos_only: bool,optional
     :param should_inherit: Default as True. Set to false if you don't want to inherit property sets from the Type.
     :type should_inherit: bool,optional
+    :param verbose: More detailed prop values, defaults to False.
+    :type verbose: bool,optional
     :return: Key, value pair of psets' names and their properties' names & values
-    :rtype: dict
+    :rtype: dict[str, dict[str, Any]]
 
     Example:
 
     .. code:: python
 
-        element = ifcopenshell.by_type("IfcWall")[0]
+        element = ifc_file.by_type("IfcWall")[0]
         psets = ifcopenshell.util.element.get_psets(element, psets_only=True)
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
@@ -146,12 +163,15 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True, v
             if qtos_only:
                 continue
             psets[definition.Name] = get_property_definition(definition, verbose=verbose)
-    elif hasattr(element, "IsDefinedBy"):
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
+        # other IfcObjectDefinition
         if should_inherit:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                psets = get_psets(element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False)
-        for relationship in element.IsDefinedBy:
+                psets = get_psets(
+                    element_type, psets_only=psets_only, qtos_only=qtos_only, should_inherit=False, verbose=verbose
+                )
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 definition = relationship.RelatingPropertyDefinition
                 if psets_only and not definition.is_a("IfcPropertySet"):
@@ -162,52 +182,81 @@ def get_psets(element, psets_only=False, qtos_only=False, should_inherit=True, v
     return psets
 
 
-def get_property_definition(definition, prop=None, verbose=False):
+@overload
+def get_property_definition(
+    definition: Optional[ifcopenshell.entity_instance], prop: None = None, verbose=False
+) -> dict[str, Any]: ...
+@overload
+def get_property_definition(definition: Optional[ifcopenshell.entity_instance], prop: str, verbose=False) -> Any: ...
+@overload
+def get_property_definition(definition: None, prop: None = None, verbose: bool = False) -> None: ...
+def get_property_definition(
+    definition: Optional[ifcopenshell.entity_instance], prop: Optional[str] = None, verbose=False
+) -> Union[Any, dict[str, Any]]:
+    """if prop name is not provided in `prop`, will return dict of all available properties
+    otherwise will return the value of the specified `prop`.
+    """
     if not definition:
         return
 
+    ifc_class = definition.is_a()
+
     if prop:
-        if definition.is_a("IfcElementQuantity"):
+        if ifc_class == "IfcElementQuantity":
             return get_quantity(definition.Quantities, prop, verbose=verbose)
-        elif definition.is_a("IfcPropertySet"):
+        elif ifc_class == "IfcPropertySet":
             return get_property(definition.HasProperties, prop, verbose=verbose)
-        elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
+        elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
+            # IfcExtendedProperties
             return get_property(definition.Properties, prop, verbose=verbose)
         else:
             # Entity introduced in IFC4
             # definition.is_a('IfcPreDefinedPropertySet'):
             for i in range(4, len(definition)):
-                if definition[i] is not None:
-                    if definition.attribute_name(i) == prop:
-                        return definition[i]
+                if definition.attribute_name(i) == prop:
+                    if (v := definition[i]) is not None:
+                        return v
         return
 
     props = {}
-    if definition.is_a("IfcElementQuantity"):
-        props.update(get_quantities(definition.Quantities, verbose=verbose))
-    elif definition.is_a("IfcPropertySet"):
-        props.update(get_properties(definition.HasProperties, verbose=verbose))
-    elif definition.is_a("IfcMaterialProperties") or definition.is_a("IfcProfileProperties"):
-        props.update(get_properties(definition.Properties, verbose=verbose))
+    if ifc_class == "IfcElementQuantity":
+        # 5 IfcElementQuantity.Quantities
+        props.update(get_quantities(definition[5], verbose=verbose))
+    elif ifc_class == "IfcPropertySet":
+        # 5 IfcPropertySet.HasProperties
+        props.update(get_properties(definition[4], verbose=verbose))
+    elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
+        # 2 IfcExtendedProperties.Properties
+        props.update(get_properties(definition[2], verbose=verbose))
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
-        for prop in range(4, len(definition)):
-            if definition[prop] is not None:
-                props[definition.attribute_name(prop)] = definition[prop]
+        for prop_i in range(4, len(definition)):
+            if (v := definition[prop_i]) is not None:
+                props[definition.attribute_name(prop_i)] = v
     props["id"] = definition.id()
     return props
 
 
-def get_quantity(quantities, name, verbose=False):
+@overload
+def get_quantity(quantities: list[ifcopenshell.entity_instance], name: str, verbose: Literal[False] = False) -> Any: ...
+@overload
+def get_quantity(
+    quantities: list[ifcopenshell.entity_instance], name: str, verbose: Literal[True]
+) -> dict[str, Any]: ...
+def get_quantity(
+    quantities: list[ifcopenshell.entity_instance], name: str, verbose=False
+) -> Union[Any, dict[str, Any]]:
     for quantity in quantities or []:
-        if quantity.Name != name:
+        # 0 IfcPhysicalQuantity.Name
+        if quantity[0] != name:
             continue
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
+            # 3 IfcPhysicalSimpleQuantity.Unit
             result = quantity[3]
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_quantities(quantity.HasQuantities)
+            data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
             result = data
         if verbose:
@@ -215,41 +264,65 @@ def get_quantity(quantities, name, verbose=False):
         return result
 
 
-def get_quantities(quantities, verbose=False):
+@overload
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose: Literal[False] = False
+) -> dict[str, Any]: ...
+@overload
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose: Literal[True]
+) -> dict[str, dict[str, Any]]: ...
+def get_quantities(
+    quantities: list[ifcopenshell.entity_instance], verbose=False
+) -> dict[str, Union[Any, dict[str, Any]]]:
     results = {}
     for quantity in quantities or []:
+        # 0 IfcPhysicalQuantity.Name
+        quantity_name = quantity[0]
         if quantity.is_a("IfcPhysicalSimpleQuantity"):
-            results[quantity.Name] = quantity[3]
+            # 3 IfcPhysicalSimpleQuantity.Unit
+            results[quantity_name] = quantity[3]
             if verbose:
-                results[quantity.Name] = {
+                results[quantity_name] = {
                     "id": quantity.id(),
                     "class": quantity.is_a(),
-                    "value": results[quantity.Name],
+                    "value": results[quantity_name],
                 }
         elif quantity.is_a("IfcPhysicalComplexQuantity"):
             data = {k: v for k, v in quantity.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_quantities(quantity.HasQuantities)
+            data["properties"] = get_quantities(quantity.HasQuantities, verbose=verbose)
             del data["HasQuantities"]
-            results[quantity.Name] = data
+            results[quantity_name] = data
             if verbose:
-                results[quantity.Name] = {
-                    "id": quantity.id(),
-                    "class": quantity.is_a(),
-                    "value": results[quantity.Name],
+                results[quantity_name] = {
+                    "id": data["id"],
+                    "class": data["class"],
+                    "value": results[quantity_name],
                 }
     return results
 
 
-def get_property(properties, name, verbose=False):
+@overload
+def get_property(properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[False] = False) -> Any: ...
+@overload
+def get_property(
+    properties: list[ifcopenshell.entity_instance], name: str, verbose: Literal[True]
+) -> dict[str, Any]: ...
+def get_property(
+    properties: list[ifcopenshell.entity_instance], name: str, verbose=False
+) -> Union[Any, dict[str, Any]]:
     for prop in properties or []:
         if prop.Name != name:
             continue
         if prop.is_a("IfcPropertySingleValue"):
-            result = prop.NominalValue.wrappedValue if prop.NominalValue else None
+            # 2 IfcPropertySingleValue.NominalValue
+            result = v.wrappedValue if (v := prop[2]) else None
         elif prop.is_a("IfcPropertyEnumeratedValue"):
-            result = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+            # 2 IfcPropertyEnumeratedValue.EnumerationValues
+            result = [v.wrappedValue for v in values] if (values := prop[2]) else None
         elif prop.is_a("IfcPropertyListValue"):
-            result = [v.wrappedValue for v in prop.ListValues] or None
+            # 2 IfcPropertyListValue.ListValues
+            result = [v.wrappedValue for v in values] if (values := prop[2]) else None
         elif prop.is_a("IfcPropertyBoundedValue"):
             data = prop.get_info()
             del data["Unit"]
@@ -258,7 +331,7 @@ def get_property(properties, name, verbose=False):
             result = prop.get_info()
         elif prop.is_a("IfcComplexProperty"):
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_properties(prop.HasProperties)
+            data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
             result = data
         if verbose:
@@ -266,42 +339,78 @@ def get_property(properties, name, verbose=False):
         return result
 
 
-def get_properties(properties, verbose=False):
+@overload
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose: Literal[False] = False
+) -> dict[str, Any]: ...
+@overload
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose: Literal[True]
+) -> dict[str, dict[str, Any]]: ...
+def get_properties(
+    properties: list[ifcopenshell.entity_instance], verbose=False
+) -> dict[str, Union[Any, dict[str, Any]]]:
     results = {}
     for prop in properties or []:
-        if prop.is_a("IfcPropertySingleValue"):
-            results[prop.Name] = prop.NominalValue.wrappedValue if prop.NominalValue else None
+        ifc_class = prop.is_a()
+        prop_name = prop[0]  # 0 IfcProperty.Name
+        if ifc_class == "IfcPropertySingleValue":
+            # 2 IfcPropertySingleValue.NominalValue
+            results[prop_name] = v.wrappedValue if (v := prop[2]) else None
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
-        elif prop.is_a("IfcPropertyEnumeratedValue"):
-            results[prop.Name] = [v.wrappedValue for v in prop.EnumerationValues] if prop.EnumerationValues else None
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
+        elif ifc_class == "IfcPropertyEnumeratedValue":
+            # 2 IfcPropertyEnumeratedValue.EnumerationValues
+            results[prop_name] = [v.wrappedValue for v in values] if (values := prop[2]) else None
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
-        elif prop.is_a("IfcPropertyListValue"):
-            results[prop.Name] = [v.wrappedValue for v in prop.ListValues] or None
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
+        elif ifc_class == "IfcPropertyListValue":
+            # 2 IfcPropertyListValue.ListValues
+            results[prop_name] = [v.wrappedValue for v in values] if (values := prop[2]) else None
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
-        elif prop.is_a("IfcPropertyBoundedValue"):
+                results[prop_name] = {
+                    "id": prop.id(),
+                    "class": prop.is_a(),
+                    "value": results[prop_name],
+                }
+        elif ifc_class == "IfcPropertyBoundedValue":
             data = prop.get_info()
             del data["Unit"]
-            results[prop.Name] = data
+            results[prop_name] = data
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
-        elif prop.is_a("IfcPropertyTableValue"):
-            results[prop.Name] = prop.get_info()
+                results[prop_name] = {
+                    "id": data["id"],
+                    "class": data["type"],
+                    "value": results[prop_name],
+                }
+        elif ifc_class == "IfcPropertyTableValue":
+            data = prop.get_info()
+            results[prop_name] = data
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
-        elif prop.is_a("IfcComplexProperty"):
+                results[prop_name] = {
+                    "id": data["id"],
+                    "class": data["type"],
+                    "value": results[prop_name],
+                }
+        elif ifc_class == "IfcComplexProperty":
             data = {k: v for k, v in prop.get_info().items() if v is not None and k != "Name"}
-            data["properties"] = get_properties(prop.HasProperties)
+            data["properties"] = get_properties(prop.HasProperties, verbose=verbose)
             del data["HasProperties"]
-            results[prop.Name] = data
+            results[prop_name] = data
             if verbose:
-                results[prop.Name] = {"id": prop.id(), "class": prop.is_a(), "value": results[prop.Name]}
+                results[prop_name] = {"id": data["id"], "class": data["class"], "value": results[prop_name]}
     return results
 
 
-def get_predefined_type(element):
+def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     """Retrieves the PrefefinedType attribute of an element.
 
     If the predefined type is user defined, the custom type (such as object
@@ -321,20 +430,22 @@ def get_predefined_type(element):
         element = ifcopenshell.by_type("IfcWall")[0]
         predefined_type = ifcopenshell.util.element.get_predefined_type(element)
     """
-    element_type = get_type(element)
-    if element_type:
+    if element_type := get_type(element):
         predefined_type = getattr(element_type, "PredefinedType", None)
         if predefined_type == "USERDEFINED" or not predefined_type:
-            predefined_type = getattr(element_type, "ElementType", getattr(element_type, "ProcessType", None))
+            predefined_type = getattr(element_type, "ElementType", ...)
+            if predefined_type == ...:
+                predefined_type = getattr(element_type, "ProcessType", None)
         if predefined_type and predefined_type != "NOTDEFINED":
             return predefined_type
+
     predefined_type = getattr(element, "PredefinedType", None)
     if predefined_type == "USERDEFINED" or not predefined_type:
         predefined_type = getattr(element, "ObjectType", None)
     return predefined_type
 
 
-def get_type(element):
+def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Retrieves the construction type element of an element occurrence
 
     :param element: The element occurrence
@@ -351,15 +462,15 @@ def get_type(element):
     """
     if element.is_a("IfcTypeObject"):
         return element
-    elif hasattr(element, "IsTypedBy") and element.IsTypedBy:
-        return element.IsTypedBy[0].RelatingType
-    elif hasattr(element, "IsDefinedBy") and element.IsDefinedBy:  # IFC2X3
-        for relationship in element.IsDefinedBy:
+    elif (is_typed_by := getattr(element, "IsTypedBy", None)) is not None and is_typed_by:
+        return is_typed_by[0].RelatingType
+    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None and is_defined_by:  # IFC2X3
+        for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByType"):
                 return relationship.RelatingType
 
 
-def get_types(type):
+def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Get all the occurrences of a type element
 
     :param type: The type element
@@ -381,7 +492,7 @@ def get_types(type):
     return []
 
 
-def get_shape_aspects(element: ifcopenshell.entity_instance) -> List[ifcopenshell.entity_instance]:
+def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Gets element shape aspects
 
     :param element: The element to get the shape aspects of.
@@ -398,8 +509,8 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> List[ifcopenshel
     """
 
     # IfcProduct
-    if hasattr(element, "Representation"):
-        return element.Representation.HasShapeAspects
+    if (representation := getattr(element, "Representation", ...)) != ...:
+        return representation.HasShapeAspects
 
     # IfcTypeProduct
     shape_aspects = []
@@ -408,7 +519,9 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> List[ifcopenshel
     return shape_aspects
 
 
-def get_material(element, should_skip_usage=False, should_inherit=True):
+def get_material(
+    element: ifcopenshell.entity_instance, should_skip_usage=False, should_inherit=True
+) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the material of the element
 
     The material may be a single material, material set (layered, profiled, or
@@ -424,8 +537,8 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
     :param should_inherit: If True, any inherited materials from associated
         types will be considered.
     :type should_inherit: bool
-    :return: The associated material of the element.
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :return: The associated material of the element or `None`.
+    :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
     Example:
 
@@ -434,22 +547,25 @@ def get_material(element, should_skip_usage=False, should_inherit=True):
         element = ifcopenshell.by_type("IfcWall")[0]
         material = ifcopenshell.util.element.get_material(element)
     """
-    if hasattr(element, "HasAssociations") and element.HasAssociations:
-        for relationship in element.HasAssociations:
+    if (has_associations := getattr(element, "HasAssociations", None)) is not None and has_associations:
+        for relationship in has_associations:
             if relationship.is_a("IfcRelAssociatesMaterial"):
                 if should_skip_usage:
-                    if relationship.RelatingMaterial.is_a("IfcMaterialLayerSetUsage"):
-                        return relationship.RelatingMaterial.ForLayerSet
-                    elif relationship.RelatingMaterial.is_a("IfcMaterialProfileSetUsage"):
-                        return relationship.RelatingMaterial.ForProfileSet
+                    relating_material = relationship.RelatingMaterial
+                    if relating_material.is_a("IfcMaterialLayerSetUsage"):
+                        return relating_material.ForLayerSet
+                    elif relating_material.is_a("IfcMaterialProfileSetUsage"):
+                        return relating_material.ForProfileSet
                 return relationship.RelatingMaterial
     if should_inherit:
         relating_type = get_type(element)
-        if relating_type != element and hasattr(relating_type, "HasAssociations") and relating_type.HasAssociations:
+        if relating_type != element and (has_associations := getattr(relating_type, "HasAssociations", None)):
             return get_material(relating_type, should_skip_usage)
 
 
-def get_materials(element, should_inherit=True):
+def get_materials(
+    element: ifcopenshell.entity_instance, should_inherit: bool = True
+) -> list[ifcopenshell.entity_instance]:
     """Gets individual materials of an element
 
     If the element has a material set, the individual materials of that set are
@@ -484,7 +600,7 @@ def get_materials(element, should_inherit=True):
         return list(material.Materials)
 
 
-def get_styles(element):
+def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves the styles used in an element's representation.
 
     Styles may be retreived from the material or the body representation.
@@ -528,7 +644,9 @@ def get_styles(element):
     return styles
 
 
-def get_elements_by_material(ifc_file, material):
+def get_elements_by_material(
+    ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
     This includes elements using the material as part of a material set or set
@@ -570,7 +688,9 @@ def get_elements_by_material(ifc_file, material):
     return results
 
 
-def get_elements_by_style(ifc_file, style):
+def get_elements_by_style(
+    ifc_file: ifcopenshell.file, style: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     """Retrieves the elements whose geometric representation uses a style
 
     :param ifc_file: The IFC file
@@ -610,7 +730,9 @@ def get_elements_by_style(ifc_file, style):
     return results
 
 
-def get_elements_by_representation(ifc_file, representation):
+def get_elements_by_representation(
+    ifc_file: ifcopenshell.file, representation: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     """Gets all elements using a geometric representation
 
     :param ifc_file: The IFC file
@@ -642,7 +764,9 @@ def get_elements_by_representation(ifc_file, representation):
     return results
 
 
-def get_elements_by_layer(ifc_file, layer):
+def get_elements_by_layer(
+    ifc_file: ifcopenshell.file, layer: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     """Get all the elements that are used by a presentation layer
 
     :param ifc_file: The IFC file
@@ -663,7 +787,9 @@ def get_elements_by_layer(ifc_file, layer):
     return results
 
 
-def get_layers(ifc_file, element):
+def get_layers(
+    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
+) -> list[ifcopenshell.entity_instance]:
     """Get the CAD layers that an element is part of
 
     An element may have portions or all of its geometry assigned to a
@@ -685,10 +811,10 @@ def get_layers(ifc_file, element):
     """
     layers = []
     representations = []
-    if getattr(element, "Representation", None):
-        representations = [element.Representation]
-    elif getattr(element, "RepresentationMaps", None):
-        representations = element.RepresentationMaps
+    if representation := getattr(element, "Representation", None):
+        representations = [representation]
+    elif representation_maps := getattr(element, "RepresentationMaps", None):
+        representations = representation_maps
     for representation in representations:
         for subelement in ifc_file.traverse(representation):
             if subelement.is_a("IfcShapeRepresentation"):
@@ -701,7 +827,9 @@ def get_layers(ifc_file, element):
     return layers
 
 
-def get_container(element, should_get_direct=False, ifc_class=None):
+def get_container(
+    element: ifcopenshell.entity_instance, should_get_direct: bool = False, ifc_class: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """
     Retrieves the spatial structure container of an element.
 
@@ -715,8 +843,9 @@ def get_container(element, should_get_direct=False, ifc_class=None):
     :type should_get_direct: bool
     :param ifc_class: Optionally filter the type of container you're after. For
         example, you may be after the storey, not a space.
-    :type ifc_class: str
+    :type ifc_class: str, optional
     :return: The direct or indirect container of the element or None.
+    :rtype: ifcopenshell.entity_instance.entity_instance
 
     Example:
 
@@ -726,8 +855,10 @@ def get_container(element, should_get_direct=False, ifc_class=None):
         container = ifcopenshell.util.element.get_container(element)
     """
     if should_get_direct:
-        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
+        if (
+            contained_in_structure := getattr(element, "ContainedInStructure", None)
+        ) is not None and contained_in_structure:
+            container = contained_in_structure[0].RelatingStructure
             if not ifc_class:
                 return container
             if container.is_a(ifc_class):
@@ -739,8 +870,10 @@ def get_container(element, should_get_direct=False, ifc_class=None):
         nest = get_nest(element)
         if nest:
             return get_container(nest, should_get_direct)
-        if hasattr(element, "ContainedInStructure") and element.ContainedInStructure:
-            container = element.ContainedInStructure[0].RelatingStructure
+        if (
+            contained_in_structure := getattr(element, "ContainedInStructure", None)
+        ) is not None and contained_in_structure:
+            container = contained_in_structure[0].RelatingStructure
             if not ifc_class:
                 return container
             while container:
@@ -749,7 +882,7 @@ def get_container(element, should_get_direct=False, ifc_class=None):
                 container = get_aggregate(container)
 
 
-def get_referenced_structures(element):
+def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retreives a list of referenced spatial elements
 
     Typically useful for multistorey elements, such as columns or facade
@@ -758,6 +891,8 @@ def get_referenced_structures(element):
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance.entity_instance
+    :return: A list of IfcSpatialElement
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
 
     Example:
 
@@ -766,12 +901,31 @@ def get_referenced_structures(element):
         element = file.by_type("IfcWall")[0]
         print(ifcopenshell.util.element.get_referenced_structures(element))
     """
-    if hasattr(element, "ReferencedInStructures"):
-        return [r.RelatingStructure for r in element.ReferencedInStructures]
-    return []
+    return [r.RelatingStructure for r in getattr(element, "ReferencedInStructures", [])]
 
 
-def get_decomposition(element, is_recursive=True):
+def get_structure_referenced_elements(structure: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Retreives a set of elements referenced by a structure
+
+    :param structure: IfcSpatialElement
+    :type element: ifcopenshell.entity_instance.entity_instance
+    :return: A set of referenced elements, IfcSpatialReferenceSelect
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcBuildingStorey")[0]
+        print(ifcopenshell.util.element.get_structure_referenced_elements(element))
+    """
+    referenced = set()
+    for rel in structure.ReferencesElements:
+        referenced.update(rel.RelatedElements)
+    return referenced
+
+
+def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves all subelements of an element based on the spatial decomposition
     hierarchy. This includes all subspaces and elements contained in subspaces,
@@ -794,30 +948,37 @@ def get_decomposition(element, is_recursive=True):
     while queue:
         element = queue.pop()
         for rel in getattr(element, "ContainsElements", []):
-            queue.extend(rel.RelatedElements)
-            results.extend(rel.RelatedElements)
+            related = rel.RelatedElements
+            queue.extend(related)
+            results.extend(related)
         for rel in getattr(element, "IsDecomposedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related = rel.RelatedObjects
+            queue.extend(related)
+            results.extend(related)
         for rel in getattr(element, "HasOpenings", []):
-            queue.append(rel.RelatedOpeningElement)
-            results.append(rel.RelatedOpeningElement)
+            related = rel.RelatedOpeningElement
+            queue.append(related)
+            results.append(related)
         for rel in getattr(element, "HasFillings", []):
-            queue.append(rel.RelatedBuildingElement)
-            results.append(rel.RelatedBuildingElement)
+            related = rel.RelatedBuildingElement
+            queue.append(related)
+            results.append(related)
         for rel in getattr(element, "IsNestedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related = rel.RelatedObjects
+            queue.extend(related)
+            results.extend(related)
         if not is_recursive:
             break
     return results
 
 
-def get_grouped_by(element):
+def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
     :return: All subelements of the group
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
 
     Example:
 
@@ -831,17 +992,42 @@ def get_grouped_by(element):
     while queue:
         element = queue.pop()
         for rel in getattr(element, "IsGroupedBy", []):
-            queue.extend(rel.RelatedObjects)
-            results.extend(rel.RelatedObjects)
+            related_objects = rel.RelatedObjects
+            queue.extend(related_objects)
+            results.extend(related_objects)
     return results
 
 
-def get_aggregate(element):
+def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the groups of an element.
+
+    :param element: The IFC element
+    :return: List of IfcGroups element is assigned to.
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        wall = file.by_type("IfcWall")[0]
+        group = ifcopenshell.util.element.get_groups(element)[0]
+    """
+    groups = []
+    for rel in element.HasAssignments:
+        if rel.is_a("IfcRelAssignsToGroup"):
+            groups.append(rel.RelatingGroup)
+    return groups
+
+
+def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """
     Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
     :return: The aggregate of the element
+    :rtype: ifcopenshell.entity_instance.entity_instance
 
     Example:
 
@@ -850,17 +1036,19 @@ def get_aggregate(element):
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
-    if hasattr(element, "Decomposes") and element.Decomposes:
-        if element.Decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
-            return element.Decomposes[0].RelatingObject
+    if decomposes := getattr(element, "Decomposes", None):
+        if decomposes[0].is_a("IfcRelAggregates"):  # IFC2X3
+            return decomposes[0].RelatingObject
 
 
-def get_nest(element):
+def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """
     Retrieves the nest parent of an element.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
     :return: The nested whole of the element
+    :rtype: ifcopenshell.entity_instance.entity_instance
 
     Example:
 
@@ -869,20 +1057,22 @@ def get_nest(element):
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_nest(element)
     """
-    if hasattr(element, "Nests"):
-        if element.Nests:
-            return element.Nests[0].RelatingObject
-    elif hasattr(element, "Decomposes") and element.Decomposes:  # IFC2X3
-        if element.Decomposes[0].is_a("IfcRelNests"):
-            return element.Decomposes[0].RelatingObject
+    if (nests := getattr(element, "Nests", None)) is not None:
+        if nests:
+            return nests[0].RelatingObject
+    elif (decomposes := getattr(element, "Decomposes", None)) is not None and decomposes:  # IFC2X3
+        if decomposes[0].is_a("IfcRelNests"):
+            return decomposes[0].RelatingObject
 
 
-def get_parts(element):
+def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the parts of an element that have an aggregation relationship.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance.entity_instance
     :return: The parts of the element
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
 
     Example:
 
@@ -891,21 +1081,22 @@ def get_parts(element):
         element = file.by_type("IfcElementAssembly")[0]
         parts = ifcopenshell.util.element.get_parts(element)
     """
-    if hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        if element.IsDecomposedBy[0].is_a("IfcRelAggregates"):
-            return element.IsDecomposedBy[0].RelatedObjects
+    if (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
+        if is_decomposed_by[0].is_a("IfcRelAggregates"):
+            return is_decomposed_by[0].RelatedObjects
 
 
-def get_components(element, include_ports=False):
+def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the components of an element that have an nest relationship.
 
     For nested ports, see ifcopenshell.util.system.
 
     :param element: The IFC element
-    :return: The components of the element
     :param include_ports: Default as False. Set to true if you also want to get ports.
     :type include_ports: bool,optional
+    :return: The components of the element
+    :rtype: list[ifcopenshell.entity_instance.entity_instance]
 
     Example:
 
@@ -914,23 +1105,83 @@ def get_components(element, include_ports=False):
         element = file.by_type("IfcElementAssembly")[0]
         components = ifcopenshell.util.element.get_components(element)
     """
-    if hasattr(element, "IsNestedBy"):
-        if element.IsNestedBy:
+    if (is_nested_by := getattr(element, "IsNestedBy", None)) is not None:
+        if is_nested_by:
             if include_ports:
-                return element.IsNestedBy[0].RelatedObjects
-            return [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]
-    elif hasattr(element, "IsDecomposedBy") and element.IsDecomposedBy:
-        if element.IsDecomposedBy[0].is_a("IfcRelNests"):
-            return element.IsDecomposedBy[0].RelatedObjects
+                return is_nested_by[0].RelatedObjects
+            return [e for e in is_nested_by[0].RelatedObjects if not e.is_a("IfcPort")]
+    elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
+        if is_decomposed_by[0].is_a("IfcRelNests"):
+            return is_decomposed_by[0].RelatedObjects
 
 
-def replace_attribute(element, old, new):
-    for i, attribute in enumerate(element):
-        if has_element_reference(attribute, old):
-            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute)
+ReferenceData = namedtuple("ReferenceData", "inverse_attribute, rel_class, relating_element_attribute")
+
+# References below are omitted because they do not introduce
+# any additional referenced objects besides the objects
+# from their supertype IfcExternalReference
+# - IfcExternallyDefinedHatchStyle
+# - IfcExternallyDefinedSurfaceStyle
+# - IfcExternallyDefinedTextFont
+
+REFERENCE_TYPES: dict[str, ReferenceData] = {
+    "IfcClassificationReference": ReferenceData(
+        "ClassificationRefForObjects",
+        "IfcRelAssociatesClassification",
+        "RelatingClassification",
+    ),
+    "IfcDocumentReference": ReferenceData("DocumentRefForObjects", "IfcRelAssociatesDocument", "RelatingDocument"),
+    "IfcLibraryReference": ReferenceData("LibraryRefForObjects", "IfcRelAssociatesLibrary", "RelatingLibrary"),
+}
 
 
-def has_element_reference(value, element):
+def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Get all elements with assigned `reference`
+
+    :param reference: IfcExternalReference subtype reference
+    :type reference: ifcopenshell.entity_instance.entity_instance
+    :return: The elements with assigned `reference`
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        reference = file.by_type("IfcClassificationReference")[0]
+        elements = ifcopenshell.util.element.get_referenced_elements(reference)
+    """
+
+    related_objects: set[ifcopenshell.entity_instance] = set()
+    ifc_file = reference.file
+    ifc_class = reference.is_a()
+
+    if ifc_file.schema == "IFC2X3":
+        reference_data = REFERENCE_TYPES.get(ifc_class)
+        if reference_data:
+            for rel in ifc_file.by_type(reference_data.rel_class):
+                if getattr(rel, reference_data.relating_element_attribute) == reference:
+                    related_objects.update(rel.RelatedObjects)
+
+    else:
+        # IfcExternalReference
+        for external_rel in reference.ExternalReferenceForResources:
+            related_objects.update(external_rel.RelatedResourceObjects)
+
+        reference_data = REFERENCE_TYPES.get(ifc_class)
+        if reference_data:
+            for rel in getattr(reference, reference_data.inverse_attribute):
+                related_objects.update(rel.RelatedObjects)
+
+    return related_objects
+
+
+def replace_attribute(element: ifcopenshell.entity_instance, old: Any, new: Any) -> None:
+    for i, attribute_value in enumerate(element):
+        if has_element_reference(attribute_value, old):
+            element[i] = element.walk(lambda v: v == old, lambda v: new, attribute_value)
+
+
+def has_element_reference(value: Any, element: ifcopenshell.entity_instance) -> bool:
     if isinstance(value, (tuple, list)):
         for v in value:
             if has_element_reference(v, element):
@@ -939,7 +1190,7 @@ def has_element_reference(value, element):
     return value == element
 
 
-def remove_deep(ifc_file, element):
+def remove_deep(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> None:
     """Recursively purges a subgraph safely.
 
     Do not use, use remove_deep2() instead.
@@ -954,7 +1205,7 @@ def remove_deep(ifc_file, element):
     ifc_file.unbatch()
 
 
-def batch_remove_deep2(ifc_file):
+def batch_remove_deep2(ifc_file: ifcopenshell.file) -> None:
     """Enable batch removal after running remove_deep2 using serialisation
 
     See #944 and #3226. Removing elements in an IFC graph is slow as a lot of
@@ -990,7 +1241,7 @@ def batch_remove_deep2(ifc_file):
     ifc_file.to_delete = set()
 
 
-def unbatch_remove_deep2(ifc_file):
+def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
     """Finish removing elements batched from remove_deep2 using string replacement
 
     See documentation for batch_remove_deep2.
@@ -1020,7 +1271,12 @@ def unbatch_remove_deep2(ifc_file):
     return ifcopenshell.file.from_string("\n".join(result))
 
 
-def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
+def remove_deep2(
+    ifc_file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    also_consider: list[ifcopenshell.entity_instance] = [],
+    do_not_delete: list[ifcopenshell.entity_instance] = [],
+) -> None:
     """Recursively purges a subgraph safely, starting at an element
 
     This should always be used instead of remove_deep. See #1812. The start
@@ -1047,6 +1303,10 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
 
     :param ifc_file: The IFC file object
     :type ifc_file: ifcopenshell.file.file
+    :param also_consider: elements to also consider as a part of a subgraph
+    :type also_consider: list[ifcopenshell.entity_instance.entity_instance], optional
+    :param do_not_delete: elements to protect from deletion
+    :type do_not_delete: list[ifcopenshell.entity_instance.entity_instance], optional
     :param element: The starting element that defines the subgraph
     :type element: ifcopenshell.entity_instance.entity_instance
     """
@@ -1088,7 +1348,7 @@ def remove_deep2(ifc_file, element, also_consider=[], do_not_delete=[]):
     # ifc_file.unbatch()
 
 
-def copy(ifc_file, element):
+def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """
     Copy a single element. Any referenced elements are not copied.
 
@@ -1112,7 +1372,13 @@ def copy(ifc_file, element):
     return new
 
 
-def copy_deep(ifc_file, element, exclude=None, exclude_callback=None, copied_entities=None):
+def copy_deep(
+    ifc_file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    exclude: Optional[list[str]] = None,
+    exclude_callback: Optional[Callable[[ifcopenshell.entity_instance], bool]] = None,
+    copied_entities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+) -> ifcopenshell.entity_instance:
     """
     Recursively copy an element and all of its directly related subelements.
 
@@ -1132,7 +1398,7 @@ def copy_deep(ifc_file, element, exclude=None, exclude_callback=None, copied_ent
     :param copied_entities: A dictionary of IDs as keys and entities as values
         to reuse when coming across the same entity twice. This can typically
         be left as None.
-    :type copied_entities: dict[int:ifcopenshell.entity_instance.entity_instance]
+    :type copied_entities: dict[int:ifcopenshell.entity_instance.entity_instance], optional
     :return: The newly copied element
     :rtype: ifcopenshell.entity_instance.entity_instance
     """

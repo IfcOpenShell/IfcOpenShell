@@ -18,14 +18,14 @@ and many other libraries, CLI apps, and more. Support is also provided for auxil
 For more information, see:
 
 * [IfcOpenShell Website](http://ifcopenshell.org)
-* [IfcOpenShell Documentation](http://blenderbim.org/docs-python)
-  * [IfcOpenShell C++ Installation](https://blenderbim.org/docs-python/ifcopenshell/installation.html)
-  * [IfcOpenShell Python Installation](https://blenderbim.org/docs-python/ifcopenshell-python/installation.html)
-  * [IfcOpenShell Python Hello World Tutorial](https://blenderbim.org/docs-python/ifcopenshell-python/hello_world.html)
+* [IfcOpenShell Documentation](https://docs.ifcopenshell.org)
+  * [IfcOpenShell C++ Installation](https://docs.ifcopenshell.org/ifcopenshell/installation.html)
+  * [IfcOpenShell Python Installation](https://docs.ifcopenshell.org/ifcopenshell-python/installation.html)
+  * [IfcOpenShell Python Hello World Tutorial](https://docs.ifcopenshell.org/ifcopenshell-python/hello_world.html)
 * [BlenderBIM Add-on Website](https://blenderbim.org)
-* [BlenderBIM Add-on Documentation](http://blenderbim.org/docs)
-  * [Add-on Installation](https://blenderbim.org/docs/users/installation.html)
-  * [Exploring an IFC model](https://blenderbim.org/docs/users/exploring_an_ifc_model.html)
+* [BlenderBIM Add-on Documentation](https://docs.blenderbim.org/index.html)
+  * [Add-on Installation](https://docs.blenderbim.org/users/installation.html)
+  * [Exploring an IFC model](https://docs.blenderbim.org/users/exploring_an_ifc_model.html)
 
 | Service                                         | Status                                                                                                                                       |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |

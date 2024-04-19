@@ -23,7 +23,7 @@ from bpy.app.handlers import persistent
 
 
 @persistent
-def toggleDecorationsOnLoad(*args):
+def load_post(*args):
     if bpy.context.scene.DocProperties.should_draw_decorations:
         decoration.DecorationsHandler.install(bpy.context)
     else:

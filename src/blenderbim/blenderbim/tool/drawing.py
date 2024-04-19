@@ -18,6 +18,7 @@
 
 import os
 import re
+import collections
 import bpy
 import math
 import json
@@ -27,29 +28,36 @@ import shutil
 import logging
 import shapely
 import platform
-from shapely.ops import unary_union
 import mathutils
 import subprocess
 import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
+import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.util.representation
+import ifcopenshell.util.element
+import ifcopenshell.util.selector
+import blenderbim.bim.import_ifc
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.helper as helper
+import blenderbim.core.root
+from shapely.ops import unary_union
 from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
 from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from lxml import etree
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from fractions import Fraction
-import collections
+from typing import Optional, Union, Iterable, Any
+from pathlib import Path
 
 
 class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
-    def canonicalise_class_name(self, name):
+    def canonicalise_class_name(cls, name):
         return re.sub("[^0-9a-zA-Z]+", "", name)
 
     @classmethod
@@ -244,7 +252,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.data.collections.remove(collection, do_unlink=True)
 
     @classmethod
-    def delete_drawing_elements(cls, elements):
+    def delete_drawing_elements(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
@@ -255,7 +263,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     tool.Blender.remove_data_block(obj_data)
 
     @classmethod
-    def delete_object(cls, obj):
+    def delete_object(cls, obj: bpy.types.Object) -> None:
         bpy.data.objects.remove(obj)
 
     @classmethod
@@ -334,7 +342,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return identification
 
     @classmethod
-    def export_text_literal_attributes(cls, obj):
+    def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
         for literal_props in obj.BIMTextProperties.literals:
             literal_data = blenderbim.bim.helper.export_attributes(literal_props.attributes)
@@ -342,7 +350,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return literals
 
     @classmethod
-    def create_annotation_context(cls, target_view, object_type=None):
+    def create_annotation_context(
+        cls, target_view: str, object_type: Optional[str] = None
+    ) -> ifcopenshell.entity_instance:
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
             "FALL",
@@ -363,7 +373,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def get_annotation_context(cls, target_view, object_type=None):
+    def get_annotation_context(
+        cls, target_view: str, object_type: Optional[str] = None
+    ) -> Union[ifcopenshell.entity_instance, None]:
         # checking PLAN target view and annotation type that doesn't require 3d
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and object_type not in (
             "FALL",
@@ -378,7 +390,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_document_uri(cls, document, description=None):
+    def get_document_uri(
+        cls, document: ifcopenshell.entity_instance, description: Optional[str] = None
+    ) -> Union[str, None]:
         if getattr(document, "Location", None):
             if os.path.isabs(document.Location):
                 return document.Location
@@ -417,13 +431,13 @@ class Drawing(blenderbim.core.tool.Drawing):
             return obj.BIMObjectProperties.collection
 
     @classmethod
-    def get_drawing_group(cls, drawing):
+    def get_drawing_group(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
 
     @classmethod
-    def get_drawing_document(cls, drawing):
+    def get_drawing_document(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         for rel in drawing.HasAssociations:
             if rel.is_a("IfcRelAssociatesDocument"):
                 return rel.RelatingDocument
@@ -437,11 +451,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         return results
 
     @classmethod
-    def get_drawing_target_view(cls, drawing):
+    def get_drawing_target_view(cls, drawing: ifcopenshell.entity_instance) -> str:
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("TargetView", "MODEL_VIEW")
 
     @classmethod
-    def get_group_elements(cls, group):
+    def get_group_elements(cls, group: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         for rel in group.IsGroupedBy or []:
             return rel.RelatedObjects
 
@@ -584,13 +598,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifc_literal
 
     @classmethod
-    def get_assigned_product(cls, element):
+    def get_assigned_product(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for rel in element.HasAssignments:
             if rel.is_a("IfcRelAssignsToProduct"):
                 return rel.RelatingProduct
 
     @classmethod
-    def import_annotations_in_group(cls, group):
+    def import_annotations_in_group(cls, group: ifcopenshell.entity_instance) -> None:
         elements = set(
             [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
         )
@@ -600,6 +614,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
+        ifc_importer.load_existing_meshes()
         ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(elements)
         for obj in ifc_importer.added_data.values():
@@ -609,7 +624,7 @@ class Drawing(blenderbim.core.tool.Drawing):
     # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
     # therefore camera props can differ from pset if the user changed them from pset.
     @classmethod
-    def import_drawing(cls, drawing):
+    def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
         settings.set(settings.STRICT_TOLERANCE, True)
 
@@ -656,8 +671,40 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             camera.angle = fov
 
-        psets = ifcopenshell.util.element.get_psets(drawing)
-        pset = psets.get("EPset_Drawing")
+        tool.Loader.link_mesh(shape, camera)
+
+        obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
+        cls.import_camera_props(drawing, obj)
+        tool.Ifc.link(drawing, obj)
+
+        m = shape.transformation.matrix.data
+        mat = mathutils.Matrix(
+            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+        )
+        obj.matrix_world = mat
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            obj.matrix_world[1][1] *= -1
+
+        tool.Geometry.record_object_position(obj)
+        tool.Collector.assign(obj)
+
+        return obj
+
+    @classmethod
+    def import_camera_props(cls, drawing, obj):
+        # Temporarily clear the definition id to prevent prop update callbacks to IFC.
+        ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+        obj.BIMObjectProperties.ifc_definition_id = 0
+
+        camera = obj.data
+        camera.BIMCameraProperties.has_underlay = False
+        camera.BIMCameraProperties.has_linework = True
+        camera.BIMCameraProperties.has_annotation = True
+        camera.BIMCameraProperties.target_view = "PLAN_VIEW"
+        camera.BIMCameraProperties.is_nts = False
+
+        pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
             if "TargetView" in pset:
                 camera.BIMCameraProperties.target_view = pset["TargetView"]
@@ -684,24 +731,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             if "IsNTS" in pset:
                 camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
 
-        tool.Loader.link_mesh(shape, camera)
-
-        obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
-        tool.Ifc.link(drawing, obj)
-
-        m = shape.transformation.matrix.data
-        mat = mathutils.Matrix(
-            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-        )
-        obj.matrix_world = mat
-
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
-
-        tool.Geometry.record_object_position(obj)
-        tool.Collector.assign(obj)
-
-        return obj
+        obj.BIMObjectProperties.ifc_definition_id = ifc_definition_id
 
     @classmethod
     def import_drawings(cls):
@@ -733,10 +763,10 @@ class Drawing(blenderbim.core.tool.Drawing):
 
             for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
                 new = props.drawings.add()
-                new.ifc_definition_id = drawing.id()
                 new.name = drawing.Name or "Unnamed"
                 new.is_selected = current_drawings_selection.get(drawing.id(), True)
                 new.is_drawing = True
+                new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
     @classmethod
     def import_documents(cls, document_type):
@@ -862,7 +892,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         should_add_representation=True,
         context=None,
         ifc_representation_class=None,
-    ):
+    ) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -1048,7 +1078,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 shutil.copy(ootb_resource, resource_path)
 
     @classmethod
-    def get_potential_reference_elements(cls, drawing):
+    def get_potential_reference_elements(
+        cls, drawing: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         elements = []
         existing_references = cls.get_group_elements(cls.get_drawing_group(drawing))
         for element in tool.Ifc.get().by_type("IfcAnnotation"):
@@ -1069,7 +1101,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return elements
 
     @classmethod
-    def get_drawing_reference_annotation(cls, drawing, reference_element):
+    def get_drawing_reference_annotation(
+        cls, drawing: ifcopenshell.entity_instance, reference_element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, bool, None]:
         if drawing == reference_element:
             return True
         for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
@@ -1085,26 +1119,49 @@ class Drawing(blenderbim.core.tool.Drawing):
                             return element
 
     @classmethod
-    def generate_reference_annotation(cls, drawing, reference_element, context):
+    def generate_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         if reference_element.is_a("IfcGridAxis"):
             return cls.generate_grid_axis_reference_annotation(drawing, reference_element, context)
+
         elif reference_element.is_a("IfcAnnotation") and reference_element.ObjectType == "DRAWING":
-            psets = ifcopenshell.util.element.get_psets(reference_element)
-            target_view = psets.get("EPset_Drawing", {}).get("TargetView", None)
+
+            def ensure_referenced_drawing_obj_exists(drawing: ifcopenshell.entity_instance):
+                obj = tool.Ifc.get_object(drawing)
+                if obj is None:
+                    obj = cls.import_drawing(drawing)
+                    # there is no need for other drawing annotations in that case
+                    # but we import them anyway so we won't break that drawing activation
+                    cls.import_annotations_in_group(cls.get_drawing_group(drawing))
+                    tool.Blender.get_layer_collection(obj.users_collection[0]).hide_viewport = True
+
+            target_view = ifcopenshell.util.element.get_pset(reference_element, "EPset_Drawing", "TargetView")
             if target_view == "ELEVATION_VIEW":
+                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_elevation_reference_annotation(drawing, reference_element, context)
             elif target_view == "SECTION_VIEW":
+                ensure_referenced_drawing_obj_exists(reference_element)
                 return cls.generate_section_reference_annotation(drawing, reference_element, context)
+
         elif reference_element.is_a("IfcBuildingStorey"):
             return cls.generate_storey_annotation(drawing, reference_element, context)
 
     @classmethod
-    def generate_storey_annotation(cls, drawing, reference_element, context):
+    def generate_storey_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
         reference_obj = tool.Ifc.get_object(reference_element)
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1159,13 +1216,18 @@ class Drawing(blenderbim.core.tool.Drawing):
         return element
 
     @classmethod
-    def generate_section_reference_annotation(cls, drawing, reference_element, context):
+    def generate_section_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1176,7 +1238,9 @@ class Drawing(blenderbim.core.tool.Drawing):
             mat.translation += annotation_offset
             return mat
 
-        def clip_to_camera_boundary(mesh, bounds):
+        def clip_to_camera_boundary(
+            mesh: bpy.types.Mesh, bounds: tuple[float, float, float, float, float, float]
+        ) -> Union[bpy.types.Mesh, None]:
             mesh.verts.ensure_lookup_table()
             points = [v.co for v in mesh.verts[0:2]]
             points = helper.clip_segment(bounds, points)
@@ -1237,12 +1301,17 @@ class Drawing(blenderbim.core.tool.Drawing):
             return element
 
     @classmethod
-    def generate_elevation_reference_annotation(cls, drawing, reference_element, context):
+    def generate_elevation_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
 
-        def to_camera_coords(camera, reference_obj):
+        def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
             xyz = camera.matrix_world.inverted() @ reference_obj.matrix_world.translation
             xyz[2] = 0
@@ -1269,7 +1338,12 @@ class Drawing(blenderbim.core.tool.Drawing):
             return element
 
     @classmethod
-    def generate_grid_axis_reference_annotation(cls, drawing, reference_element, context):
+    def generate_grid_axis_reference_annotation(
+        cls,
+        drawing: ifcopenshell.entity_instance,
+        reference_element: ifcopenshell.entity_instance,
+        context: ifcopenshell.entity_instance,
+    ) -> ifcopenshell.entity_instance:
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
         camera = tool.Ifc.get_object(drawing)
@@ -1297,7 +1371,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             mesh.to_mesh(obj.data)
             return obj
 
-        def to_camera_coords(obj, mesh):
+        def to_camera_coords(obj: bpy.types.Object, mesh: bpy.types.Mesh) -> tuple[bpy.types.Object, bpy.types.Mesh]:
             mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
             obj.matrix_world = camera.matrix_world
             annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
@@ -1354,7 +1428,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return element
 
     @classmethod
-    def is_perpendicular(cls, a, b):
+    def is_perpendicular(cls, a: bpy.types.Object, b: bpy.types.Object) -> bool:
         axes = [mathutils.Vector((1, 0, 0)), mathutils.Vector((0, 1, 0)), mathutils.Vector((0, 0, 1))]
         a_quaternion = a.matrix_world.to_quaternion()
         b_quaternion = b.matrix_world.to_quaternion()
@@ -1364,7 +1438,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return False
 
     @classmethod
-    def get_camera_block(cls, obj):
+    def get_camera_block(cls, obj: bpy.types.Object) -> dict:
         raster_x = obj.data.BIMCameraProperties.raster_x
         raster_y = obj.data.BIMCameraProperties.raster_y
 
@@ -1397,7 +1471,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return {"verts": verts, "faces": faces}
 
     @classmethod
-    def is_intersecting(cls, a, b):
+    def is_intersecting(cls, a: bpy.types.Object, b: bpy.types.Object) -> bool:
         a_block = cls.get_camera_block(a)
         a_tree = mathutils.bvhtree.BVHTree.FromPolygons(a_block["verts"], a_block["faces"])
         b_block = cls.get_camera_block(b)
@@ -1405,7 +1479,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return bool(a_tree.overlap(b_tree))
 
     @classmethod
-    def replace_text_literal_variables(cls, text, product):
+    def replace_text_literal_variables(cls, text: str, product: Optional[ifcopenshell.entity_instance] = None) -> str:
         if not product:
             return text
 
@@ -1502,19 +1576,27 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_drawing_metadata(cls, drawing):
+        # fmt: off
         return [
             v.strip()
-            for v in (ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or "").split(",")
+            for v in (
+                ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or ""
+            ).split(",")
             if v
         ]
+        # fmt: on
 
     @classmethod
     def get_annotation_z_index(cls, drawing):
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "ZIndex") or 0
 
     @classmethod
-    def get_annotation_symbol(cls, drawing):
-        return ifcopenshell.util.element.get_pset(drawing, "EPset_Annotation", "Symbol")
+    def get_annotation_symbol(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
+        symbol = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Symbol")
+        if not symbol:
+            # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
+            symbol = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
+        return symbol
 
     @classmethod
     def has_linework(cls, drawing):
@@ -1525,7 +1607,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
 
     @classmethod
-    def get_drawing_elements(cls, drawing):
+    def get_drawing_elements(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         """returns a set of elements that are included in the drawing"""
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
@@ -1539,6 +1621,10 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
+
+        # exclude annotations to avoid including annotations from other drawings
+        elements = {i for i in elements if not i.is_a("IfcAnnotation")}
+        # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
 
@@ -1549,15 +1635,13 @@ class Drawing(blenderbim.core.tool.Drawing):
         return elements
 
     @classmethod
-    def get_drawing_spaces(cls, drawing):
+    def get_drawing_spaces(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
-        include = pset.get("Include", None)
         elements = cls.get_elements_in_camera_view(
             tool.Ifc.get_object(drawing), [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSpace")]
         )
-        if include:
-            elements = ifcopenshell.util.selector.filter_elements(ifc_file, include, elements=elements)
+        # NOTE: EPset_Drawing.Include is not used to avoid adding other elements besides spaces
         exclude = pset.get("Exclude", None)
         if exclude:
             elements -= ifcopenshell.util.selector.filter_elements(ifc_file, exclude)
@@ -1609,15 +1693,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.ops.bim.activate_model()
 
     @classmethod
-    def activate_drawing(cls, camera):
+    def activate_drawing(cls, camera: bpy.types.Object) -> None:
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
         if is_local_view:
-            #turn off local view before activating drawing, and then turn it on again.
+            # turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
-                if a.type == 'VIEW_3D':
+                if a.type == "VIEW_3D":
                     override = bpy.context.copy()
-                    override['area'] = a
+                    override["area"] = a
                     bpy.ops.view3d.localview(override)
             bpy.context.scene.camera = camera
             bpy.ops.view3d.localview(override)
@@ -1648,15 +1732,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
-        for view_layer_object in bpy.context.view_layer.objects:
-            element = tool.Ifc.get_entity(view_layer_object)
-            if not element or element.is_a("IfcTypeProduct"):
-                continue
-            hide = element not in filtered_elements
-            view_layer_object.hide_set(hide)
-            view_layer_object.hide_render = hide
 
-        subcontexts = []
+        subcontexts: list[ifcopenshell.entity_instance] = []
         target_view = cls.get_drawing_target_view(drawing)
 
         if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW"):
@@ -1689,6 +1766,13 @@ class Drawing(blenderbim.core.tool.Drawing):
             if subcontext:
                 subcontexts.append(context_filter)
 
+        # Hide everything first, then selectively show. This is significantly faster.
+        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+            bpy.ops.object.hide_view_set(unselected=False)
+            bpy.ops.object.hide_view_set(unselected=True)
+
+        # switch representations and hide elements without representations
+        element_obj_names = set()
         for element in filtered_elements:
             obj = tool.Ifc.get_object(element)
             current_representation = tool.Geometry.get_active_representation(obj)
@@ -1717,12 +1801,23 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            if not has_context:
-                obj.hide_set(True)
-                obj.hide_render = True
+            # Don't hide IfcAnnotations as some of them might exist without representations
+            if has_context or element.is_a("IfcAnnotation"):
+                element_obj_names.add(obj.name)
+
+        # Note that render visibility is only set on drawing generation time for speed.
+        [
+            obj.hide_set(False)  # Show the object
+            for obj in bpy.context.view_layer.objects
+            if obj.name in element_obj_names or not tool.Ifc.get_entity(obj)
+        ]
+
+        cls.import_camera_props(drawing, camera)
 
     @classmethod
-    def get_elements_in_camera_view(cls, camera, objs):
+    def get_elements_in_camera_view(
+        cls, camera: bpy.types.Object, objs: list[ifcopenshell.entity_instance]
+    ) -> set[ifcopenshell.entity_instance]:
         props = camera.data.BIMCameraProperties
         x = props.width
         y = props.height
@@ -1922,3 +2017,60 @@ class Drawing(blenderbim.core.tool.Drawing):
             rotate180z = mathutils.Matrix.Rotation(math.radians(180.0), 4, "Z")
             return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4() @ rotate180z
         return mathutils.Matrix.Translation(location) @ rotation.to_matrix().to_4x4()
+
+    @classmethod
+    def convert_svg_to_dxf(cls, svg_filepath: Path, dxf_filepath: Path) -> None:
+        import ezdxf
+        import xml.etree.ElementTree as ET
+
+        SVG = "{http://www.w3.org/2000/svg}"
+        IFC = "{http://www.ifcopenshell.org/ns}"
+
+        doc = ezdxf.new("R2010")
+        msp = doc.modelspace()
+        svg = ET.parse(svg_filepath).getroot()
+
+        def finalize_dxf():
+            doc.saveas(dxf_filepath)
+
+        drawing = svg.findall(f"{SVG}g[@{IFC}name]")
+        if not drawing:
+            finalize_dxf()
+            return
+        drawing = drawing[0]
+
+        NUMBER = r"-?\d+\.?\d+"
+        COORD = rf"{NUMBER},{NUMBER}"
+        POLYLINE_PATTERN = rf"M{COORD} (?:L{COORD} ?)+Z? ?"
+        MULTI_POLYLINE_PATTERN = rf"^({POLYLINE_PATTERN})+$"
+
+        for element_g in drawing.findall(f"{SVG}g"):
+            paths = element_g.findall(f"{SVG}path")
+
+            for path in paths:
+                path = path.attrib["d"]
+
+                if not re.match(MULTI_POLYLINE_PATTERN, path):
+                    # print(f'Path "{path}" doesn\'t match expected pattern {MULTI_POLYLINE_PATTERN}')
+                    continue
+
+                for polyline_path in re.findall(POLYLINE_PATTERN, path):
+                    points = re.findall(rf"{NUMBER}", polyline_path)
+                    points = [float(p) for p in points]
+                    POINT_SIZE = 2
+
+                    grouped_points = []
+                    for i in range(0, len(points), POINT_SIZE):
+                        point = points[i : i + POINT_SIZE]
+                        point[1] *= -1
+                        grouped_points.append(point)
+                    points = grouped_points
+
+                    # Z marks closed polylines
+                    is_closed_polyline = polyline_path.rstrip().endswith("Z")
+                    if is_closed_polyline or len(points) > 2:
+                        msp.add_lwpolyline(points, close=is_closed_polyline)
+                    else:  # LINE
+                        msp.add_line(*points)
+
+        finalize_dxf()

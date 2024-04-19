@@ -114,12 +114,12 @@ class TestEditLibraryReference:
 class TestAssignLibraryReference:
     def test_run(self, ifc):
         ifc.get_entity("obj").should_be_called().will_return("product")
-        ifc.run("library.assign_reference", product="product", reference="reference").should_be_called()
+        ifc.run("library.assign_reference", products=["product"], reference="reference").should_be_called()
         subject.assign_library_reference(ifc, obj="obj", reference="reference")
 
 
 class TestUnassignLibraryReference:
     def test_run(self, ifc):
         ifc.get_entity("obj").should_be_called().will_return("product")
-        ifc.run("library.unassign_reference", product="product", reference="reference").should_be_called()
+        ifc.run("library.unassign_reference", products=["product"], reference="reference").should_be_called()
         subject.unassign_library_reference(ifc, obj="obj", reference="reference")

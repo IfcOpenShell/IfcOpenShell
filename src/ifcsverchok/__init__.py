@@ -30,8 +30,30 @@ bl_info = {
 
 import importlib
 import logging
-logger = logging.getLogger('sverchok.ifc')
+
+logger = logging.getLogger("sverchok.ifc")
+
+
+def ensure_addons_are_enabled(*addon_names: str) -> None:
+    errors = []
+    for addon_name in addon_names:
+        try:
+            module = importlib.import_module(addon_name)
+            # `__addon_enabled__` is not present if addon wasn't enabled before
+            if not getattr(module, "__addon_enabled__", False):
+                errors.append(f"- Addon {addon_name} appears to be disabled, it should be enabled before IFC Sverchok.")
+        except ModuleNotFoundError:
+            errors.append(f"- Addon {addon_name} is not installed.")
+
+    if errors:
+        raise Exception("Some issues were found trying to enable IFC Sverchok:\n" + "\n".join(errors))
+
+
+ensure_addons_are_enabled("blenderbim", "sverchok")
+
+
 from sverchok.ui.nodeview_space_menu import add_node_menu
+
 
 def nodes_index():
     return [
@@ -67,36 +89,15 @@ def nodes_index():
     ]
 
 
-node_categories = [
-    {
-        "IFC": [
-            "SvIfcCreateFile",
-            "SvIfcReadFile",
-            "SvIfcWriteFile",
-            "SvIfcCreateEntity",
-            "SvIfcCreateShape",
-            "SvIfcReadEntity",
-            "SvIfcPickIfcClass",
-            "SvIfcById",
-            "SvIfcByGuid",
-            "SvIfcByType",
-            "SvIfcByQuery",
-            "SvIfcAdd",
-            "SvIfcAddPset",
-            "SvIfcAddSpatialElement",
-            "SvIfcRemove",
-            "SvIfcGenerateGuid",
-            "SvIfcGetProperty",
-            "SvIfcGetAttribute",
-            "SvIfcSelectBlenderObjects",
-            "SvIfcApi",
-            "SvIfcBMeshToIfcRepr",
-            "SvIfcSverchokToIfcRepr",
-            "SvIfcCreateProject",
-            "SvIfcQuickProjectSetup",
-        ]
-    }
-]
+def make_node_categories() -> list[dict[str, list[str]]]:
+    node_categories = [{}]
+    for category, nodes in nodes_index():
+        nodes = [node_name for idname, node_name in nodes]
+        node_categories[0][category] = nodes
+    return node_categories
+
+
+node_categories = make_node_categories()
 
 
 def make_node_list():
@@ -117,6 +118,8 @@ reload_event = False
 import bpy
 from os.path import splitext
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 from ifcsverchok.ifcstore import SvIfcStore
 
 
@@ -175,7 +178,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
             if not (spatial.is_a("IfcSite") or spatial.is_a("IfcBuilding")) and (spatial not in elements_in_buildings):
                 elements = ifcopenshell.util.element.get_decomposition(spatial)
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=spatial, relating_object=file.by_type("IfcBuilding")[0]
+                    "aggregate.assign_object", file, products=[spatial], relating_object=file.by_type("IfcBuilding")[0]
                 )
 
         for building in file.by_type("IfcBuilding"):
@@ -186,7 +189,10 @@ class IFC_Sv_write_file(bpy.types.Operator):
         for element in elements:
             if element not in elements_in_buildings:
                 ifcopenshell.api.run(
-                    "spatial.assign_container", file, product=element, relating_structure=file.by_type("IfcBuilding")[0]
+                    "spatial.assign_container",
+                    file,
+                    products=[element],
+                    relating_structure=file.by_type("IfcBuilding")[0],
                 )
 
         for building in file.by_type("IfcBuilding"):
@@ -195,7 +201,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 if len(file.by_type("IfcSite")) == 0:
                     ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcSite", name="My Site")
                 ifcopenshell.api.run(
-                    "aggregate.assign_object", file, product=building, relating_object=file.by_type("IfcSite")[0]
+                    "aggregate.assign_object", file, products=[building], relating_object=file.by_type("IfcSite")[0]
                 )
                 try:
                     if file.by_type("IfcSite")[0].Decomposes[0].RelatingObject.is_a("IfcProject"):
@@ -205,7 +211,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
                 ifcopenshell.api.run(
                     "aggregate.assign_object",
                     file,
-                    product=file.by_type("IfcSite")[0],
+                    products=[file.by_type("IfcSite")[0]],
                     relating_object=file.by_type("IfcProject")[0],
                 )
         self.file = file

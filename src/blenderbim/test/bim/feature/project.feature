@@ -313,49 +313,65 @@ Scenario: Unload project
 
 Scenario: Link IFC
     Given an empty IFC project
-    When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "True"
-    And the object "IfcWall/Wall" exists
-    And the object "IfcSlab/Slab" exists
-    And the object "IfcElementAssembly/Empty" exists
-    And the object "IfcBeam/Beam" exists
-    And the object "IfcBuildingStorey/Ground Floor" exists
-    And the object "IfcBuildingStorey/Level 1" exists
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
+    And the collection "IfcProject/basic.ifc" exists
+    And the object "Chunk" exists
+    And the object "Chunk" is placed in the collection "IfcProject/basic.ifc"
 
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='WIREFRAME')"
-    Then nothing happens
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='WIREFRAME')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "True"
+    And the object "Chunk" should display as "WIRE"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='WIREFRAME')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_wireframe" is "False"
+    And the object "Chunk" should display as "TEXTURED"
+
+Scenario: Toggle link selectability
+    Given an empty IFC project
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.toggle_link_selectability(link='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_selectable" is "False"
+    And the collection "IfcProject/basic.ifc" is unselectable
+    When I press "bim.toggle_link_selectability(link='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_selectable" is "True"
+    And the collection "IfcProject/basic.ifc" is selectable
 
 Scenario: Toggle link visibility - visible mode
     Given an empty IFC project
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.blend', mode='VISIBLE')"
-    Then nothing happens
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "True"
+    And the collection "IfcProject/basic.ifc" exclude status is "True"
+    When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "False"
+    And the collection "IfcProject/basic.ifc" exclude status is "False"
 
 Scenario: Unload link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "False"
-    And "scene.collection.children.get('IfcProject/My Project')" is "None"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "False"
+    And the collection "IfcProject/basic.ifc" does not exist
 
 Scenario: Load link
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.load_link(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.blend'].is_loaded" is "True"
-    And "scene.collection.children['IfcProject/My Project'].users" is "2"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.load_link(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
+    And the collection "IfcProject/basic.ifc" exists in viewlayer
 
 Scenario: Unlink IFC
     Given an empty Blender session
-    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.blend')"
-    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.blend')"
-    When I press "bim.unlink_ifc(filepath='{cwd}/test/files/basic.blend')"
-    Then "scene.BIMProjectProperties.links.get('{cwd}/test/files/basic.blend')" is "None"
-    And "scene.collection.children.get('IfcProject/My Project')" is "None"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
+    When I press "bim.unlink_ifc(filepath='{cwd}/test/files/basic.ifc')"
+    Then "scene.BIMProjectProperties.links.get('{cwd}/test/files/basic.ifc')" is "None"
+    And "scene.collection.children.get('IfcProject/basic.ifc')" is "None"
+    And the object "Chunk" does not exist
 
 Scenario: Export IFC - blank project
     Given an empty IFC project
