@@ -1627,27 +1627,27 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter:
             rel_aggregates = set()
             for element in self.elements:
-                if element.IsDecomposedBy:
-                    rel_aggregates.add(element.IsDecomposedBy[0])
-                elif element.Decomposes:
-                    rel_aggregates.add(element.Decomposes[0])
-                elif getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
-                    if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
-                        rel_aggregates.add(element.IsNestedBy[0])
-                elif getattr(element, "Nests", []):
-                    rel_aggregates.add(element.Nests[0])
+                if decomposed_by := element.IsDecomposedBy:
+                    rel_aggregates.add(decomposed_by[0])
+                elif decomposes := element.Decomposes:
+                    rel_aggregates.add(decomposes[0])
+                elif nested_by := getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
+                    if next((e for e in nested_by[0].RelatedObjects if not e.is_a("IfcPort")), None):
+                        rel_aggregates.add(nested_by[0])
+                elif nests := getattr(element, "Nests", []):
+                    rel_aggregates.add(nests[0])
         else:
             rel_aggregates = [
                 r
                 for r in self.file.by_type("IfcRelAggregates")
-                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
+                if (relating_obj := r.RelatingObject).is_a("IfcElement") or relating_obj.is_a("IfcElementType")
             ] + [
                 r
                 for r in self.file.by_type("IfcRelNests")
                 if (
-                    r.RelatingObject.is_a("IfcElement")
-                    or r.RelatingObject.is_a("IfcElementType")
-                    or (r.RelatingObject.is_a("IfcPositioningElement") and not r.RelatingObject.is_a("IfcGrid"))
+                    (relating_obj := r.RelatingObject).is_a("IfcElement")
+                    or relating_obj.is_a("IfcElementType")
+                    or (relating_obj.is_a("IfcPositioningElement") and not relating_obj.is_a("IfcGrid"))
                 )
                 and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
