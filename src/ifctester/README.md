@@ -4,6 +4,23 @@ With **IfcTester**, you can author and read **Information Delivery Specification
 
 ## How to use it
 
+### Command line use
+
+.. code-block:: bash
+
+    # run console reporter
+    python -m ifctester example.ids example.ifc
+    python -m ifctester example.ids example.ifc -r Html -o report.html
+
+Available flags:
+
+- ``-r`` / ``--reporter``: The reporting method to view audit results. Availabe reporters: Console, Txt, Json, Html, Ods, Bcf
+- ``--no-color``: Disable colour output (supported by Console reporting).
+- ``--excel-safe``: Make sure exported ODS is safely exported for Excel.
+- ``-o`` / ``--output``: Output file (supported for all types of reporting except Console).
+
+### Code example
+
 ```python
 import ifcopenshell
 from ifctester import ids, reporter
@@ -16,14 +33,13 @@ my_ids = ids.Ids(title="My IDS")
 my_spec = ids.Specification(name="My first specification")
 my_spec.applicability.append(ids.Entity(name="IFCWALL"))
 property = ids.Property(
-    name="IsExternal", 
+    baseName="IsExternal",
     value="TRUE", 
     propertySet="Pset_WallCommon", 
-    datatype="IfcBoolean",
+    dataType="IfcBoolean",
     uri="https://identifier.buildingsmart.org/uri/.../prop/LoadBearing", 
     instructions="Walls need to be load bearing.",
-    minOccurs=1,
-    maxOccurs="unbounded")
+    cardinality="required")
 my_spec.requirements.append(property)
 my_ids.specifications.append(my_spec)
 

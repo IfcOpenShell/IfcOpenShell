@@ -17,14 +17,24 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.geom
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import multiprocessing
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, query="IfcBeam"):
+    def __init__(
+        self,
+        src: str,
+        file: ifcopenshell.file,
+        logger: Logger,
+        query: str = "IfcBeam",
+        force_faceted_brep: bool = False,
+    ):
         """Convert element body representations to tessellations or faceted breps
 
         Some software have bugs that result in incorrect geometry being
@@ -35,20 +45,31 @@ class Patcher:
 
         See example bug: https://github.com/Autodesk/revit-ifc/issues/707
 
+        :param query: Query string to filter out elements to convert, defaults to "IfcBeam"
+        :type query: str
+        :param force_faceted_brep: Force using IfcFacetedBreps instead of IfcPolygonalFaceSets,
+            defaults to `False`
+        :type force_faceted_brep: bool
+
         Example:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam", False]})
         """
         self.src = src
         self.file = file
         self.logger = logger
         self.query = query
+        self.force_faceted_brep = force_faceted_brep
 
     def patch(self):
         context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
         elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
+
+        if not elements:
+            return
+
         settings = ifcopenshell.geom.settings()
         settings.set(settings.STRICT_TOLERANCE, True)
         settings.set_context_ids([context.id()])
@@ -68,7 +89,12 @@ class Patcher:
         for element, geometry in replacements.items():
             v, f = geometry
             mesh = ifcopenshell.api.run(
-                "geometry.add_mesh_representation", self.file, context=context, vertices=v, faces=f
+                "geometry.add_mesh_representation",
+                self.file,
+                context=context,
+                vertices=v,
+                faces=f,
+                force_faceted_brep=self.force_faceted_brep,
             )
             representations = element.Representation.Representations
             representations = [r for r in representations if r.ContextOfItems != context]

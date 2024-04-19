@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 from pathlib import Path
+from typing import Any, Union
 
 
 def refresh():
@@ -234,9 +235,9 @@ class DecoratorData:
     cut_cache = {}
     layerset_cache = {}
 
-    # used by Ifc Annotations with ObjectType = "BATTING"
     @classmethod
     def get_batting_thickness(cls, obj):
+        """used by IfcAnnotations with ObjectType = "BATTING" """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
@@ -248,9 +249,9 @@ class DecoratorData:
             cls.data[obj.name] = thickness
             return thickness
 
-    # used by Ifc Annotations with ObjectType = "SECTION"
     @classmethod
     def get_section_markers_display_data(cls, obj):
+        """used by IfcAnnotations with ObjectType = "SECTION" """
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
@@ -290,10 +291,10 @@ class DecoratorData:
         cls.data[obj.name] = display_data
         return display_data
 
-    # used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"
     @classmethod
-    def get_ifc_text_data(cls, obj):
-        """returns font size in mm for current ifc text object"""
+    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
+        """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
+        returns font size in mm for current ifc text object"""
         result = cls.data.get(obj.name, None)
         if result is not None:
             return result
@@ -317,7 +318,7 @@ class DecoratorData:
         font_size = FONT_SIZES[font_size_type]
 
         # get symbol
-        symbol = pset_data.get("Symbol", None)
+        symbol = tool.Drawing.get_annotation_symbol(element)
 
         # other attributes
         props_literals = props.literals
@@ -339,6 +340,11 @@ class DecoratorData:
         text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol}
         cls.data[obj.name] = text_data
         return text_data
+
+    @classmethod
+    def get_symbol(cls, obj: bpy.types.Object) -> Union[str, None]:
+        """used by IfcAnnotations with ObjectType MULTI_SYMBOL"""
+        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
 
     @classmethod
     def get_dimension_data(cls, obj):
@@ -412,10 +418,12 @@ class AnnotationData:
         relating_types = []
         for relating_type in tool.Ifc.get().by_type("IfcTypeProduct"):
             if tool.Drawing.is_annotation_object_type(relating_type, object_type):
-                relating_types.append({
-                    "id": relating_type.id(),
-                    "name": relating_type.Name or "Unnamed",
-                    "description": relating_type.Description or "No Description",
-                })
+                relating_types.append(
+                    {
+                        "id": relating_type.id(),
+                        "name": relating_type.Name or "Unnamed",
+                        "description": relating_type.Description or "No Description",
+                    }
+                )
 
         return sorted(relating_types, key=lambda x: x["name"])

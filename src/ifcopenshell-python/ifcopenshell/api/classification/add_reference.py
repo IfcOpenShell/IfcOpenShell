@@ -17,12 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
+from typing import Optional, Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, reference=None, identification=None, name=None, classification=None, is_lightweight=True):
-        """Adds a new classification reference and assigns it to a product
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        reference: Optional[ifcopenshell.entity_instance] = None,
+        identification: Optional[str] = None,
+        name: Optional[str] = None,
+        classification: Optional[ifcopenshell.entity_instance] = None,
+        is_lightweight=True,
+    ):
+        """Adds a new classification reference and assigns it to the list of products
 
         A classification reference is a single entry such as "Pr_12_23_34" that
         is part of an external classification system (such as Uniclass or
@@ -33,7 +45,7 @@ class Usecase:
         resources such as profiles, documents, libraries, and so on.
 
         Classification references can be added in two ways. Option 1) specify  a
-        custom arbitrary reference, where you have the manually specify the
+        custom arbitrary reference, where you have to manually specify the
         identification (e.g. "Pr_12_23_45") and name (e.g. "Door Products").
         Option 2) add a reference from an IFC classification library. The latter
         is preferred if you are using a common classification system such as
@@ -52,13 +64,13 @@ class Usecase:
         assigned to both the type and an occurrence, then the assignment at the
         occurrence will override the type classification.
 
-        :param product: The IFC object, property, or resource you want to
+        :param product: The list of IFC objects, properties, or resources you want to
             associate the classification reference to.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: list[ifcopenshell.entity_instance.entity_instance]
         :param reference: The classification reference entity taken from an
             IFC classification library. If you supply this parameter, you will
             use option 2.
-        :type product: ifcopenshell.entity_instance.entity_instance, optional
+        :type reference: ifcopenshell.entity_instance.entity_instance, optional
         :param identification: If you choose option 1 and do not specify a
             reference, you may manually specify an identification code. The code
             is typically a short identifier and may have punctuation to separate
@@ -70,7 +82,7 @@ class Usecase:
         :param classification: The IfcClassification entity in your IFC model
             (not the library, if you are doing option 2) that the reference is
             part of.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type classification: ifcopenshell.entity_instance.entity_instance
         :param is_lightweight: If you are doing option 2, choose whether or not
             to only add that particular reference (lighweight) or also add all
             of its parent references in the classification hierarchy (not
@@ -81,8 +93,12 @@ class Usecase:
             is generally unnecessary. Using lightweight classifications are
             recommended and is the default.
         :type is_lightweight: bool, optional
+
+        :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
+
         :return: The newly added IfcClassificationReference
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -93,7 +109,7 @@ class Usecase:
             classification = ifcopenshell.api.run("classification.add_classification",
                 model, classification="MyCustomClassification")
             ifcopenshell.api.run("classification.add_reference", model,
-                product=wall_type, classification=classification,
+                products=[wall_type], classification=classification,
                 identification="W_01", name="Interior Walls")
 
             # Option 2: adding a popular classification from a library
@@ -104,12 +120,12 @@ class Usecase:
             reference = [r for r in library.by_type("IfcClassificationReference")
                 if r.Identification == "XYZ"][0]
             ifcopenshell.api.run("classification.add_reference", model,
-                product=wall_type, classification=classification,
+                products=[wall_type], classification=classification,
                 reference=reference)
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "reference": reference,
             "identification": identification,
             "name": name,
@@ -117,8 +133,27 @@ class Usecase:
             "is_lightweight": is_lightweight,
         }
 
-    def execute(self):
-        self.is_rooted = self.settings["product"].is_a("IfcRoot")
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["products"]:
+            return
+
+        if self.settings["reference"]:
+            referenced = ifcopenshell.util.element.get_referenced_elements(self.settings["reference"])
+            if set(self.settings["products"]).issubset(referenced):
+                # nothing to do, all elements already have this reference assigned
+                return self.settings["reference"]
+
+        self.rooted_products: set[ifcopenshell.entity_instance] = set()
+        self.non_rooted_products: set[ifcopenshell.entity_instance] = set()
+        for product in self.settings["products"]:
+            if product.is_a("IfcRoot"):
+                self.rooted_products.add(product)
+            else:
+                self.non_rooted_products.add(product)
+
+        if self.non_rooted_products and self.file.schema == "IFC2X3":
+            raise TypeError(f"Cannot add reference to non-IfcRoot element in IFC2X3: {self.non_rooted_products}.")
+
         if self.settings["reference"]:
             return self.add_from_library()
         return self.add_from_identification()
@@ -134,14 +169,10 @@ class Usecase:
             else:
                 reference.Identification = self.settings["identification"]
 
-        relationship = self.get_existing_relationship(reference)
-        if relationship:
-            self.add_to_existing_relationship(relationship)
-        else:
-            self.add_new_relationship(reference)
+        self.update_relationships(reference)
         return reference
 
-    def add_from_library(self):
+    def add_from_library(self) -> ifcopenshell.entity_instance:
         if hasattr(self.settings["reference"], "ItemReference"):
             identification = self.settings["reference"].ItemReference  # IFC2X3
         else:
@@ -155,8 +186,9 @@ class Usecase:
                 old_referenced_source = self.settings["reference"].ReferencedSource
                 self.settings["reference"].ReferencedSource = None
             else:
+                classification_name = self.settings["classification"].Name
                 existing_classification = [
-                    c for c in self.file.by_type("IfcClassification") if c.Name == self.settings["classification"].Name
+                    c for c in self.file.by_type("IfcClassification") if c.Name == classification_name
                 ]
 
             reference = migrator.migrate(self.settings["reference"], self.file)
@@ -174,15 +206,10 @@ class Usecase:
                 for element in to_delete:
                     self.file.remove(element)
 
-        relationship = self.get_existing_relationship(reference)
-        if relationship:
-            self.add_to_existing_relationship(relationship)
-        else:
-            self.add_new_relationship(reference)
-
+        self.update_relationships(reference)
         return reference
 
-    def get_existing_reference(self, identification):
+    def get_existing_reference(self, identification: Optional[str] = None) -> Union[ifcopenshell.entity_instance, None]:
         for reference in self.file.by_type("IfcClassificationReference"):
             if self.file.schema == "IFC2X3":
                 if reference.ItemReference == identification:
@@ -191,39 +218,39 @@ class Usecase:
                 if reference.Identification == identification:
                     return reference
 
-    def add_new_relationship(self, reference):
-        if self.is_rooted:
-            self.file.create_entity(
-                "IfcRelAssociatesClassification",
-                GlobalId=ifcopenshell.guid.new(),
-                RelatedObjects=[self.settings["product"]],
-                RelatingClassification=reference,
-            )
-        else:
-            self.file.create_entity(
-                "IfcExternalReferenceRelationship",
-                RelatingReference=reference,
-                RelatedResourceObjects=[self.settings["product"]],
-            )
-
-    def add_to_existing_relationship(self, rel):
-        if self.is_rooted:
-            related_objects = set(rel.RelatedObjects)
-            related_objects.add(self.settings["product"])
-            rel.RelatedObjects = list(related_objects)
-        else:
-            related_objects = set(rel.RelatedResourceObjects)
-            related_objects.add(self.settings["product"])
-            rel.RelatedResourceObjects = list(related_objects)
-
-    def get_existing_relationship(self, reference):
-        if self.is_rooted:
+    def update_relationships(self, reference: ifcopenshell.entity_instance) -> None:
+        root_rel, non_root_rel = None, None
+        if self.rooted_products:
             if self.file.schema == "IFC2X3":
                 for rel in self.file.by_type("IfcRelAssociatesClassification"):
                     if rel.RelatingClassification == reference:
-                        return rel
-            elif reference.ClassificationRefForObjects:
-                return reference.ClassificationRefForObjects[0]
-        elif self.file.schema != "IFC2X3":
-            if reference.ExternalReferenceForResources:
-                return reference.ExternalReferenceForResources[0]
+                        root_rel = rel
+                        break
+            else:
+                root_rel = next(iter(reference.ClassificationRefForObjects), None)
+
+            if root_rel:
+                related_objects = set(root_rel.RelatedObjects) | self.rooted_products
+                root_rel.RelatedObjects = list(related_objects)
+                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": root_rel})
+            else:
+                self.file.create_entity(
+                    "IfcRelAssociatesClassification",
+                    OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    GlobalId=ifcopenshell.guid.new(),
+                    RelatedObjects=list(self.rooted_products),
+                    RelatingClassification=reference,
+                )
+
+        if self.non_rooted_products:
+            # NOTE: Only Ifc4+. Ifc2x3 is already handled by raising TypeError
+            non_root_rel = next(iter(reference.ExternalReferenceForResources), None)
+            if non_root_rel:
+                related_objects = set(non_root_rel.RelatedResourceObjects) | self.non_rooted_products
+                non_root_rel.RelatedResourceObjects = list(related_objects)
+            else:
+                self.file.create_entity(
+                    "IfcExternalReferenceRelationship",
+                    RelatingReference=reference,
+                    RelatedResourceObjects=list(self.non_rooted_products),
+                )

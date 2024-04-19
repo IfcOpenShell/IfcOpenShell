@@ -76,7 +76,7 @@ class Blender:
     def get_name(cls, ifc_class, name): pass
     def get_selected_objects(cls): pass
     def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
     def is_ifc_object(cls, obj): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def get_viewport_context(cls): pass
@@ -151,6 +151,17 @@ class Bsdd:
     def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities): pass
     def set_active_bsdd(cls, name, uri): pass
     def should_load_preview_domains(cls): pass
+
+
+@interface
+class Clash:
+    def export_clash_sets(cls): pass
+    def get_clash(cls, clash_set, a_global_id, b_global_id): pass
+    def get_clash_set(cls, name): pass
+    def get_clash_sets(cls): pass
+    def import_active_clashes(cls): pass
+    def load_clash_sets(cls, fn): pass
+    def look_at(cls, target, location): pass
 
 
 @interface
@@ -508,7 +519,7 @@ class Misc:
 class Model:
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
-    def export_curve(cls, position, edge_indices, points=None): pass
+    def export_curve(cls, position, edge_indices): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass

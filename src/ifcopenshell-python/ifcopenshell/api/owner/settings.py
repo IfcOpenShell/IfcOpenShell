@@ -19,7 +19,11 @@
 # Note: it is the intent for you to override these with your own functions
 
 
-def get_application(ifc):
+import ifcopenshell
+from typing import Union
+
+
+def get_application(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     """Returns the application representing the authoring software
 
     It is expected for you to overload this function with your own
@@ -34,12 +38,12 @@ def get_application(ifc):
     if not app and ifc.schema == "IFC2X3":
         raise Exception(
             "Please create an application to continue. See the owner.create_owner_history docs for more info."
-            "https://blenderbim.org/docs-python/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
+            "https://docs.ifcopenshell.org/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
         )
     return (app or [None])[0]
 
 
-def get_user(ifc):
+def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     """Returns the active authoring user
 
     It is expected for you to overload this function with your own
@@ -54,7 +58,7 @@ def get_user(ifc):
     if not pao and ifc.schema == "IFC2X3":
         raise Exception(
             "Please create a user to continue. See the owner.create_owner_history docs for more info."
-            "https://blenderbim.org/docs-python/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
+            "https://docs.ifcopenshell.org/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
         )
     return (pao or [None])[0]
 

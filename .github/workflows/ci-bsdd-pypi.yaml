@@ -1,0 +1,48 @@
+name: ci-bsdd-pypi
+
+on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron: "0 0 18 * *"
+  workflow_dispatch:
+
+env:
+  major: 0
+  minor: 0
+  name: ifcopenshell
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+      - name: Compile
+        run: |
+          pip install build
+          cd src/bsdd &&
+          make dist
+      - name: Publish a Python distribution to PyPI
+        uses: ortega2247/pypi-upload-action@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: src/bsdd/dist

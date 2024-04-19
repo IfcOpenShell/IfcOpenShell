@@ -81,6 +81,9 @@ src/blenderbim/blenderbim/translations.py
 
 # blenderbim test temp files
 src/blenderbim/test/files/temp
+src/blenderbim/test/files/basic.ifc.cache.blend
+src/blenderbim/test/files/basic.ifc.cache.sqlite
+
 src/blenderbim/drawings
 src/blenderbim/layouts
 

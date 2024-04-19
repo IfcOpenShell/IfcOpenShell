@@ -16,19 +16,38 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import datetime
+import ifcopenshell
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
-from .facet import Facet, Entity, Attribute, Classification, Property, PartOf, Material, Restriction, get_pset, get_psets
-from typing import List, Set
+from .facet import (
+    Facet,
+    Entity,
+    Attribute,
+    Classification,
+    Property,
+    PartOf,
+    Material,
+    Restriction,
+    get_pset,
+    get_psets,
+    Cardinality,
+    FacetFailure,
+)
+from typing import List, Optional, Union, overload, Literal
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
-def open(filepath, validate=False):
+@overload
+def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
+@overload
+def open(filepath: str, validate: Literal[True]) -> None: ...
+def open(filepath: str, validate=False) -> Union[Ids, None]:
     if validate:
         get_schema().validate(filepath)
     return Ids().parse(
@@ -46,7 +65,7 @@ def get_schema():
 class Ids:
     def __init__(
         self,
-        title="Untitled",
+        title: Optional[str] = "Untitled",
         copyright=None,
         version=None,
         description=None,
@@ -89,7 +108,7 @@ class Ids:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.6/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
             "info": info,
             "specifications": {"specification": []},
         }
@@ -120,7 +139,7 @@ class Ids:
         ET.ElementTree(get_schema().encode(self.asdict())).write(filepath, encoding="utf-8", xml_declaration=True)
         return get_schema().is_valid(filepath)
 
-    def validate(self, ifc_file, filter_version=False, filepath=None):
+    def validate(self, ifc_file: ifcopenshell.file, filter_version=False, filepath: Optional[str] = None) -> None:
         if filepath:
             self.filepath = filepath
             self.filename = os.path.basename(filepath)
@@ -147,14 +166,14 @@ class Specification:
         self.name = name or "Unnamed"
         self.applicability: List[Facet] = []
         self.requirements: List[Facet] = []
-        self.minOccurs = minOccurs
-        self.maxOccurs = maxOccurs
+        self.minOccurs: Union[int, str] = minOccurs
+        self.maxOccurs: Union[int, str] = maxOccurs
         self.ifcVersion = ifcVersion
         self.identifier = identifier
         self.description = description
         self.instructions = instructions
 
-        self.applicable_entities: List[Entity] = []
+        self.applicable_entities: list[ifcopenshell.entity_instance] = []
         self.status = None
 
     def asdict(self):
@@ -164,7 +183,7 @@ class Specification:
             "applicability": {},
             "requirements": {},
         }
-        for attribute in ["identifier", "description", "instructions", "minOccurs", "maxOccurs"]:
+        for attribute in ["identifier", "description", "instructions"]:
             value = getattr(self, attribute)
             if value is not None:
                 results[f"@{attribute}"] = value
@@ -181,20 +200,25 @@ class Specification:
             for facet_type in ("entity", "partOf", "classification", "attribute", "property", "material"):
                 if facet_type in facets:
                     results[clause_type][facet_type] = facets[facet_type]
+            if clause_type == "applicability":
+                for attribute in ["minOccurs", "maxOccurs"]:
+                    value = getattr(self, attribute)
+                    if value is not None:
+                        results[clause_type][f"@{attribute}"] = value
         return results
 
     def parse(self, ids_dict):
         self.name = ids_dict.get("@name", "")
         self.description = ids_dict.get("@description", "")
         self.instructions = ids_dict.get("@instructions", "")
-        self.minOccurs = ids_dict["@minOccurs"]
-        self.maxOccurs = ids_dict["@maxOccurs"]
+        self.minOccurs = ids_dict.get("applicability", {}).get("@minOccurs", 0)
+        self.maxOccurs = ids_dict.get("applicability", {}).get("@maxOccurs", "unbounded")
         self.ifcVersion = ids_dict["@ifcVersion"]
         self.applicability = (
-            self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability") is not None else []
+            self.parse_clause(ids_dict["applicability"]) if ids_dict.get("applicability", None) is not None else []
         )
         self.requirements = (
-            self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements") is not None else []
+            self.parse_clause(ids_dict["requirements"]) if ids_dict.get("requirements", None) is not None else []
         )
         return self
 
@@ -213,13 +237,13 @@ class Specification:
 
     def reset_status(self):
         self.applicable_entities.clear()
-        self.failed_entities: Set[Entity] = set()
+        self.failed_entities: set[ifcopenshell.entity_instance] = set()
         for facet in self.requirements:
             facet.status = None
-            facet.failed_entities.clear()
+            facet.failures.clear()
         self.status = None
 
-    def validate(self, ifc_file, filter_version=False):
+    def validate(self, ifc_file: ifcopenshell.file, filter_version=False) -> None:
         if filter_version and ifc_file.schema not in self.ifcVersion:
             return
 
@@ -243,42 +267,46 @@ class Specification:
             self.applicable_entities.append(element)
             for facet in self.requirements:
                 result = facet(element)
-                if self.maxOccurs == 0:
-                    prohibited = bool(result)
-                else:
-                    prohibited = not bool(result)
-                if prohibited:
-                    self.failed_entities.add(element)
-                    facet.failed_entities.append(element)
-                    facet.failed_reasons.append(str(result))
-
-        for facet in self.requirements:
-            if facet.minOccurs != 0:
-                facet.status = not bool(facet.failed_entities)
-            elif facet.minOccurs == 0 and facet.maxOccurs != 0:
-                facet.status = True
-            elif facet.maxOccurs == 0:
-                facet.status = bool(facet.failed_entities)
+                is_pass = bool(result)
+                if self.maxOccurs != 0:  # This is a required or optional specification
+                    if not is_pass:
+                        self.failed_entities.add(element)
+                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
+                else:  # This is a prohibited specification
+                    if is_pass:
+                        self.failed_entities.add(element)
+                        facet.failures.append(FacetFailure(element=element, reason=str(result)))
 
         self.status = True
-        if self.minOccurs != 0:
+        for facet in self.requirements:
+            facet.status = not bool(facet.failures)
+            if not facet.status:
+                self.status = False
+
+        if self.minOccurs != 0:  # Required specification
             if not self.applicable_entities:
                 self.status = False
                 for facet in self.requirements:
                     facet.status = False
-            elif self.failed_entities:
-                self.status = False
-        elif self.minOccurs == 0 and self.maxOccurs != 0:
-            if self.failed_entities:
-                self.status = False
-        elif self.maxOccurs == 0:
-            if (len(self.applicable_entities)) > 0:
+        elif self.maxOccurs == 0:  # Prohibited specification
+            if self.applicable_entities and not self.requirements:
                 self.status = False
 
-    def get_usage(self):
+    def get_usage(self) -> Cardinality:
         if self.minOccurs != 0:
             return "required"
         elif self.minOccurs == 0 and self.maxOccurs != 0:
             return "optional"
         elif self.maxOccurs == 0:
             return "prohibited"
+
+    def set_usage(self, usage: Cardinality) -> None:
+        if usage == "optional":
+            self.minOccurs = 0
+            self.maxOccurs = "unbounded"
+        elif usage == "prohibited":
+            self.minOccurs = 0
+            self.maxOccurs = 0
+        else:  # required
+            self.minOccurs = 1
+            self.maxOccurs = "unbounded"

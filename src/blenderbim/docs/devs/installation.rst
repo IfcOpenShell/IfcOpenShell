@@ -22,8 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=4.1, choose py311
 - If you are on Blender >=3.1 and <=4.0, choose py10
 - If you are on Blender >=2.93 and <3.1, choose py39
-- Choose ``linux``, ``macos``, ``macosm1`` (for Apple M1 devices), or ``win``
-  depending on your operating system
+- Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
+  ``win`` depending on your operating system
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
@@ -43,11 +43,11 @@ compile IfcOpenShell is out of scope of this document.
 
 You can create your own package by using the Makefile as shown below. You can
 choose between a ``PLATFORM`` of ``linux``, ``macos``, ``macosm1``, and ``win``.
-You can choose between a ``PYVERSION`` of ``py39``, or ``py310``.
+You can choose between a ``PYVERSION`` of ``py311``, ``py310``, or ``py39``.
 ::
 
     $ cd src/blenderbim
-    $ make dist PLATFORM=linux PYVERSION=py310
+    $ make dist PLATFORM=linux PYVERSION=py311
     $ ls dist/
 
 This will give you a fully packaged Blender add-on zip that you can distribute
@@ -258,10 +258,12 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     ifcclash
     bimtester
     ifccobie
-    ifcdiff
     ifccsv
+    ifcdiff
+    ifc4d
+    ifc5d
     ifcpatch
-    ifcp6
+    ifctester
     pystache
     svgwrite
     dateutil
@@ -276,17 +278,13 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     elementpath
     six
     lark-parser
-    hppfcl
     behave
     parse
     parse_type
     xlsxwriter
     odfpy
     defusedxml
-    boto3
-    botocore
     jmespath
-    s3transfer
     ifcjson
 
 Notes:

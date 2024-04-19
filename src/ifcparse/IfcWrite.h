@@ -142,7 +142,12 @@ namespace IfcWrite {
 
 		// Overload to detect null values
 		void set(IfcUtil::IfcBaseInterface*const & v);
-		
+
+		// Overloads to raise exceptions on non-finite values
+		void set(const double& v);
+		void set(const std::vector<double>& v);
+		void set(const std::vector< std::vector<double> >& v);
+
 		operator int() const;
 		operator bool() const;
 		operator boost::logic::tribool() const;

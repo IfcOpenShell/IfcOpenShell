@@ -127,6 +127,42 @@ class BIM_PT_section_with_cappings(Panel):
         row.operator("bim.clipping_plane_cut_with_cappings", icon="XRAY", text="Cut")
         row.operator("bim.revert_clipping_plane_cut", icon="FILE_REFRESH", text="Revert Cut")
 
+        props = context.scene.BIMProjectProperties
+        box = layout.box()
+        header = box.row(align=True)
+        header.label(text="Clipping Planes")
+        header.operator("bim.save_clipping_planes", text="", icon="EXPORT")
+        header.operator("bim.load_clipping_planes", text="", icon="IMPORT")
+        header.operator("bim.create_clipping_plane", text="", icon="ADD")
+
+        box.template_list(
+            "BIM_UL_clipping_plane",
+            "",
+            props,
+            "clipping_planes",
+            props,
+            "clipping_planes_active",
+        )
+
+        if props.clipping_planes_active < len(props.clipping_planes):
+            active_clipping_plane_obj = props.clipping_planes[props.clipping_planes_active].obj
+            box.prop(active_clipping_plane_obj, "location")
+            box.prop(active_clipping_plane_obj, "rotation_euler")
+
+
+class BIM_UL_clipping_plane(bpy.types.UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item and item.obj:
+            obj = item.obj
+            row = layout.row(align=True)
+            row.prop(obj, "name", text="", emboss=False)
+            row.operator("bim.select_object", text="", icon="RESTRICT_SELECT_OFF").obj_name = obj.name
+            row.context_pointer_set("active_object", obj)
+            row.operator("bim.flip_clipping_plane", text="", icon="PASTEFLIPDOWN")
+            row.operator("bim.delete_object", text="", icon="TRASH").obj_name = obj.name
+        else:
+            layout.label(text="", translate=False)
+
 
 class BIM_UL_generic(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
@@ -168,6 +204,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
+    spatial_elements_unselectable: BoolProperty(name="Should Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -249,6 +286,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
+        row = layout.row()
+        row.prop(self, "spatial_elements_unselectable")
+
+
 
         row = layout.row()
         row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
@@ -432,7 +473,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
+    bl_options = {"DEFAULT_CLOSED","HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
@@ -440,6 +481,13 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
     def draw(self, context):
         pass
+
+    def draw_header(self, context):
+        # Draws help button on the right
+        row = self.layout.row(align=True)
+        row.label(text="")  # empty text occupies the left of the row
+        row.operator("bim.open_uri", text="", icon="HELP").uri = \
+            "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
 
 
 class BIM_PT_tab_geometry(Panel):

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.element
@@ -23,7 +24,7 @@ import ifcopenshell.util.element
 
 class Aggregate(blenderbim.core.tool.Aggregate):
     @classmethod
-    def can_aggregate(cls, relating_obj, related_obj):
+    def can_aggregate(cls, relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
         relating_object = tool.Ifc.get_entity(relating_obj)
         related_object = tool.Ifc.get_entity(related_obj)
         if not relating_object or not related_object:

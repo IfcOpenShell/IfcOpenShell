@@ -18,14 +18,18 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.schema
+from typing import Union
 
 
 class Pset(blenderbim.core.tool.Pset):
     @classmethod
-    def get_element_pset(cls, element, pset_name):
+    def get_element_pset(
+        cls, element: ifcopenshell.entity_instance, pset_name: str
+    ) -> Union[ifcopenshell.entity_instance, None]:
         pset = ifcopenshell.util.element.get_pset(element, pset_name)
         if pset:
             return tool.Ifc.get().by_id(pset["id"])
@@ -50,13 +54,14 @@ class Pset(blenderbim.core.tool.Pset):
             return bpy.context.scene.WorkSchedulePsetProperties
         elif obj_type == "Group":
             return bpy.context.scene.GroupPsetProperties
+
     @classmethod
     def get_pset_name(cls, obj, obj_type):
         pset = cls.get_pset_props(obj, obj_type)
         return pset.pset_name
 
     @classmethod
-    def is_pset_applicable(cls, element, pset_name):
+    def is_pset_applicable(cls, element: ifcopenshell.entity_instance, pset_name: str) -> bool:
         return bool(
             pset_name
             in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(

@@ -29,13 +29,17 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.generate_space"
     bl_label = "Generate Space"
     bl_options = {"REGISTER"}
-    bl_description = "Create a space from the cursor position. Move the cursor position into the desired position, select the right space collection and run the operator"
+    bl_description = (
+        "Create a space from the cursor position. "
+        "Move the cursor position into the desired position, "
+        "select the right space collection and run the operator"
+    )
 
     @classmethod
     def poll(cls, context):
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
-        active_obj = bpy.context.active_object
+        active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
         return tool.Ifc.get_entity(collection_obj) and not element.is_a("IfcWall")
 
@@ -47,16 +51,14 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         def msg(self, context):
             self.layout.label(text="NO ACTIVE STOREY")
 
-#        props = context.scene.BIMModelProperties
-
         collection = context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
         if not collection_obj:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
         spatial_element = tool.Ifc.get_entity(collection_obj)
         if not spatial_element:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
+            context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
             return
 
         core.generate_space(tool.Ifc, tool.Spatial, tool.Model, tool.Type)
@@ -70,7 +72,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        active_obj = bpy.context.active_object
+        active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
         if element:
             return context.selected_objects and element.is_a("IfcWall")
@@ -81,7 +83,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         # In order to run, the active object must be a wall and
         # there must be selected walls
 
-        active_obj = bpy.context.active_object
+        active_obj = context.active_object
         element = tool.Ifc.get_entity(active_obj)
         container = tool.Spatial.get_container(element)
 
@@ -96,11 +98,12 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         if not container:
             self.report({"ERROR"}, "The wall is not contained.")
 
-        if not bpy.context.selected_objects:
+        if not context.selected_objects:
             self.report({"ERROR"}, "No selected objects found. Please select walls.")
             return
 
         core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
+
 
 class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_space_visibility"
@@ -108,9 +111,10 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Change the space visibility"
 
-    def execute(cls, context):
+    def execute(self, context):
         core.toggle_space_visibility(tool.Ifc, tool.Spatial)
         return {"FINISHED"}
+
 
 class ToggleHideSpaces(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_hide_spaces"
@@ -118,6 +122,6 @@ class ToggleHideSpaces(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER"}
     bl_description = "Hide or Unhide all spaces"
 
-    def execute(cls, context):
+    def execute(self, context):
         core.toggle_hide_spaces(tool.Ifc, tool.Spatial)
         return {"FINISHED"}

@@ -438,7 +438,7 @@ Scenario: Override duplicate move - copying an aggregate
     And the object "IfcElementAssembly/Assembly.001" exists
     And the object "IfcElementAssembly/Assembly.001" is in the collection "IfcElementAssembly/Assembly.001"
     And the collection "IfcElementAssembly/Assembly.001" is in the collection "IfcBuildingStorey/My Storey"
-    
+
 Scenario: Override duplicate move - copying objects with connection
     Given an empty IFC project
     And I load the demo construction library
@@ -467,7 +467,7 @@ Scenario: Override duplicate move - copying objects with connection
     Then the object "IfcSlab/Slab.001" exists
     And the variable "slab_name" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcSlab/Slab.001'][0]"
     Then the object "{wall_name}" has a connection with "{slab_name}"
-    
+
 Scenario: Override duplicate move - copying walls with mitre joint
     Given an empty IFC project
     And I load the demo construction library
@@ -477,24 +477,24 @@ Scenario: Override duplicate move - copying walls with mitre joint
     And I press "bim.hotkey(hotkey='S_A')"
     And the cursor is at "0.5,0,0"
     And I press "bim.hotkey(hotkey='S_A')"
-    And the object "IfcWall/Wall" is selected
-    And additionally the object "IfcWall/Wall.001" is selected
+    And the object "IfcWall/Wall.001" is selected
+    And additionally the object "IfcWall/Wall" is selected
     When I press "bim.hotkey(hotkey='S_Y')"
-    Then the object "IfcWall/Wall.001" dimensions are "0.5,0.1,3"
-    And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0,0"
-    And the object "IfcWall/Wall" dimensions are "1.1,0.1,3"
-    And the object "IfcWall/Wall" bottom left corner is at "0.5,0.1,0"
-    And the object "IfcWall/Wall" top right corner is at "0.6,-1,3"
+    Then the object "IfcWall/Wall" dimensions are "0.5,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0.5,0,0"
+    And the object "IfcWall/Wall.001" dimensions are "1.1,0.1,3"
+    And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0.1,0"
+    And the object "IfcWall/Wall.001" top right corner is at "0.6,-1,3"
     When I deselect all objects
-    And the object "IfcWall/Wall" is selected
-    And additionally the object "IfcWall/Wall.001" is selected
+    And the object "IfcWall/Wall.001" is selected
+    And additionally the object "IfcWall/Wall" is selected
     When I duplicate the selected objects
     Then the object "IfcWall/Wall.002" exists
     And the variable "wall_name1" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.002'][0]"
     Then the object "IfcWall/Wall.003" exists
     And the variable "wall_name2" is "[o.name for o in bpy.context.selected_objects if o.name == 'IfcWall/Wall.003'][0]"
     Then the object "{wall_name1}" has a connection with "{wall_name2}"
-    
+
 Scenario: Override duplicate move linked - without active IFC data
     Given an empty Blender session
     And I add a cube
@@ -544,14 +544,14 @@ Scenario: Override paste buffer - with active IFC data
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
     When I press "view3d.copybuffer"
+    # IFC elements unlinked on paste for safety
     And I press "bim.override_paste_buffer"
     Then the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
-    And the object "IfcWall/Cube.001" exists
-    And the object "IfcWall/Cube.001" is an "IfcWall"
-    And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    And the object "IfcBuildingStorey/My Storey.001" exists
-    And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
+    And the object "Cube.001" exists
+    And the object "Cube.001" is not an IFC element
+    And the object "My Storey.001" exists
+    And the object "My Storey.001" is not an IFC element
 
 Scenario: Duplicate linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
@@ -559,8 +559,8 @@ Scenario: Duplicate linked aggregate
     When I duplicate linked aggregate the selected objects
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
-    And the object "IfcElementAssembly/Assembly_02" exists
-    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_02" belong to the same Linked Aggregate Group
+    And the object "IfcElementAssembly/Assembly_01" exists
+    Then the object "IfcElementAssembly/Assembly" and "IfcElementAssembly/Assembly_01" belong to the same Linked Aggregate Group
 
 Scenario: Refresh linked aggregate
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
@@ -588,7 +588,7 @@ Scenario: Refresh linked aggregate - after deleting an object
     When I refresh linked aggregate the selected object
     Then the object "IfcWall/Wall_01" does not exist
     And the object "IfcWall/Wall_02" exists
-    
+
 Scenario: Refresh linked aggregate - after duplicating an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"
     And the object "IfcWall/Wall_01" is selected
@@ -606,4 +606,4 @@ Scenario: Refresh linked aggregate - after duplicating an object
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
-    
+

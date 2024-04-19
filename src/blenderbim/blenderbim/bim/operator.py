@@ -357,7 +357,7 @@ class OpenUpstream(bpy.types.Operator):
         if self.page == "home":
             webbrowser.open("https://blenderbim.org/")
         elif self.page == "docs":
-            webbrowser.open("https://blenderbim.org/docs/")
+            webbrowser.open("https://docs.blenderbim.org/")
         elif self.page == "wiki":
             webbrowser.open("https://wiki.osarch.org/index.php?title=Category:BlenderBIM_Add-on")
         elif self.page == "community":
@@ -934,6 +934,31 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             name=f"{key} > {name if name else predefined_type }",
                             predefined_type=predefined_type,
                         )
+
+
+class BIM_OT_select_object(bpy.types.Operator):
+    bl_idname = "bim.select_object"
+    bl_label = "Select Object"
+    bl_options = {"REGISTER", "UNDO"}
+    obj_name: bpy.props.StringProperty(description="Object Name To Select")
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        tool.Blender.set_objects_selection(context, obj, [obj], clear_previous_selection=True)
+        return {"FINISHED"}
+
+
+class BIM_OT_delete_object(bpy.types.Operator):
+    bl_idname = "bim.delete_object"
+    bl_label = "Delete Object"
+    bl_options = {"REGISTER", "UNDO"}
+    obj_name: bpy.props.StringProperty(description="Object Name To Delete")
+
+    def execute(self, context):
+        obj = bpy.data.objects[self.obj_name]
+        with context.temp_override(selected_objects=[obj], active_object=obj):
+            bpy.ops.bim.override_object_delete(is_batch=False)
+        return {"FINISHED"}
 
 
 class EditBlenderCollection(bpy.types.Operator):

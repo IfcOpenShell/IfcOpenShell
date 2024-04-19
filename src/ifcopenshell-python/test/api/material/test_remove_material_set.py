@@ -29,7 +29,7 @@ class TestRemoveMaterialSet(test.bootstrap.IFC4):
     def test_removing_material_set_with_associations(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialLayerSet")
-        ifcopenshell.api.run("material.assign_material", self.file, product=wall, material=material)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[wall], material=material)
         ifcopenshell.api.run("material.remove_material_set", self.file, material=material)
         assert len(self.file.by_type("IfcMaterialLayerSet")) == 0
         assert len(self.file.by_type("IfcRelAssociatesMaterial")) == 0

@@ -473,7 +473,7 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
             self.file,
             **{
                 "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.load_case),
+                "products": [self.file.by_id(self.load_case)],
             },
         )
         return {"FINISHED"}
@@ -492,7 +492,7 @@ class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
             self.file,
             **{
                 "relating_object": self.file.by_id(self.work_plan),
-                "product": self.file.by_id(self.load_case),
+                "products": [self.file.by_id(self.load_case)],
             },
         )
         return {"FINISHED"}

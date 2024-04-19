@@ -26,6 +26,8 @@ def get_primitive_type(attribute_or_data_type):
         return get_primitive_type(data_type[data_type[1:].find("<") + 1 :])
     elif data_type.find("<list") == 0:
         return ("list", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
+    elif data_type.find("<array") == 0:
+        return ("array", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
     elif data_type.find("<set") == 0:
         return ("set", get_primitive_type(data_type[data_type[1:].find("<") + 1 :]))
     elif data_type.find("<select") == 0:
@@ -44,6 +46,8 @@ def get_primitive_type(attribute_or_data_type):
         return "boolean"
     elif "<enumeration" in data_type:
         return "enum"
+    elif "<binary" in data_type:
+        return "binary"
 
 
 def get_enum_items(attribute):

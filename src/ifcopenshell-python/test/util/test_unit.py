@@ -20,6 +20,21 @@ import pytest
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.unit as subject
+from math import pi
+
+
+class TestCalculateUnitScale(test.bootstrap.IFC4):
+    def test_prefix_and_conversion_based_units_are_considered(self):
+        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.run("unit.add_conversion_based_unit", self.file, name="foot")
+        length.ConversionFactor.UnitComponent.Prefix = "MILLI"
+        ifcopenshell.api.run("unit.assign_unit", self.file, units=[length])
+        assert subject.calculate_unit_scale(self.file) == 0.3048 * 0.001
+
+        angle = ifcopenshell.api.run("unit.add_conversion_based_unit", self.file, name="degree")
+        angle.ConversionFactor.UnitComponent.Prefix = "MILLI"
+        ifcopenshell.api.run("unit.assign_unit", self.file, units=[angle])
+        assert subject.calculate_unit_scale(self.file, "PLANEANGLEUNIT") == pi / 180 * 0.001
 
 
 class TestFormatLength(test.bootstrap.IFC4):

@@ -38,7 +38,7 @@ class TestAssignObject:
         ifc.get_entity("relating_obj").should_be_called().will_return("relating_object")
         ifc.get_entity("related_obj").should_be_called().will_return("related_object")
         ifc.run(
-            "nest.assign_object", related_object="related_object", relating_object="relating_object"
+            "nest.assign_object", related_objects=["related_object"], relating_object="relating_object"
         ).should_be_called().will_return("rel")
         nest.disable_editing("related_obj").should_be_called()
         collector.assign("relating_obj").should_be_called()
@@ -52,8 +52,8 @@ class TestUnassignObject:
     def test_run(self, ifc, nest, collector):
         ifc.get_entity("related_obj").should_be_called().will_return("element")
         nest.get_container("element").should_be_called().will_return("container")
-        ifc.run("spatial.assign_container", product="element", relating_structure="container").should_be_called()
-        ifc.run("nest.unassign_object", related_object="element").should_be_called().will_return("rel")
+        ifc.run("spatial.assign_container", products=["element"], relating_structure="container").should_be_called()
+        ifc.run("nest.unassign_object", related_objects=["element"]).should_be_called().will_return("rel")
         collector.assign("relating_obj").should_be_called()
         collector.assign("related_obj").should_be_called()
         subject.unassign_object(ifc, nest, collector, relating_obj="relating_obj", related_obj="related_obj")

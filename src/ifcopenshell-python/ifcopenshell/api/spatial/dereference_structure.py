@@ -22,11 +22,16 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None, relating_structure=None):
-        """Dereferences the a product and space
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        products: list[ifcopenshell.entity_instance],
+        relating_structure: ifcopenshell.entity_instance,
+    ):
+        """Dereferences a list of products and space
 
-        :param product: The physical IfcElement that exists in the space.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: The list of physical IfcElements that exists in the space.
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param relating_structure: The IfcSpatialStructureElement element, such
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
@@ -45,37 +50,38 @@ class Usecase:
             storey3 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
 
             # The project contains a site (note that project aggregation is a special case in IFC)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
 
             # The site has a building, the building has a storey, and the storey has a space
-            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=space, relating_object=storey)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[space], relating_object=storey)
 
             # Create a column, this column spans 3 storeys
             column = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # The column is contained in the lowermost storey
-            ifcopenshell.api.run("spatial.assign_container", model, product=column, relating_structure=storey1)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[column], relating_structure=storey1)
 
             # And referenced in the others
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey2)
-            ifcopenshell.api.run("spatial.reference_structure", model, product=column, relating_structure=storey3)
+            ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey2)
+            ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey3)
 
             # Actually, it only goes up to storey 2.
-            ifcopenshell.api.run("spatial.dereference_structure", model, product=column, relating_structure=storey3)
+            ifcopenshell.api.run("spatial.dereference_structure", model, products=[column], relating_structure=storey3)
         """
         self.file = file
-        self.settings = {"product": product, "relating_structure": relating_structure}
+        self.settings = {"products": products, "relating_structure": relating_structure}
 
-    def execute(self):
-        for rel in self.settings["product"].ReferencedInStructures:
-            if rel.RelatingStructure != self.settings["relating_structure"]:
+    def execute(self) -> None:
+        products = set(self.settings["products"])
+        for rel in self.settings["relating_structure"].ReferencesElements:
+            related_elements = set(rel.RelatedElements)
+            if not related_elements.intersection(products):
                 continue
-            related_elements = list(rel.RelatedElements)
-            related_elements.remove(self.settings["product"])
+            related_elements = related_elements - products
             if related_elements:
-                rel.RelatedElements = related_elements
+                rel.RelatedElements = list(related_elements)
                 ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
             else:
                 history = rel.OwnerHistory

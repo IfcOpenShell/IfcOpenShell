@@ -176,7 +176,7 @@ class Usecase:
             rel = ifcopenshell.api.run(
                 "nest.assign_object",
                 self.file,
-                related_object=task,
+                related_objects=[task],
                 relating_object=self.settings["parent_task"],
             )
             if self.settings["parent_task"].Identification:

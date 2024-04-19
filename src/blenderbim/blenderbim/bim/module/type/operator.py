@@ -18,7 +18,9 @@
 
 import bpy
 import bmesh
+import ifcopenshell.util.element
 import ifcopenshell.util.schema
+import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.api
 import blenderbim.tool as tool
@@ -76,7 +78,7 @@ class UnassignType(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or element.is_a("IfcElementType"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
             active_representation = tool.Geometry.get_active_representation(obj)
             active_context = active_representation.ContextOfItems
@@ -171,15 +173,22 @@ class SelectSimilarType(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         objects = bpy.context.selected_objects
+
+        # store relating types to avoid selecting same elements multiple times
+        relating_types = set()
+
         for related_object in objects:
             relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(related_object))
             if not relating_type:
                 related_object.select_set(False)
                 continue
+            relating_types.add(relating_type)
+
+        for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
-            for obj in context.visible_objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element in related_objects:
+            for element in related_objects:
+                obj = tool.Ifc.get_object(element)
+                if obj and obj in context.visible_objects:
                     obj.select_set(True)
         return {"FINISHED"}
 
@@ -274,7 +283,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = self.add_default_material()
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialLayerSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialLayerSet"
             )
             layer_set = rel.RelatingMaterial
             layer = ifcopenshell.api.run("material.add_layer", ifc_file, layer_set=layer_set, material=material)
@@ -352,7 +361,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                     )
 
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
             )
             profile_set = rel.RelatingMaterial
             material_profile = ifcopenshell.api.run(

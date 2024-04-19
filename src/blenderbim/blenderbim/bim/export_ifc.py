@@ -27,6 +27,7 @@ import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.aggregate
@@ -34,6 +35,7 @@ import blenderbim.core.spatial
 import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector
+from typing import Union
 
 
 class IfcExporter:
@@ -85,8 +87,8 @@ class IfcExporter:
             self.get_application_name(), tool.Blender.get_blenderbim_version()
         )
 
-    def sync_all_objects(self):
-        results = []
+    def sync_all_objects(self, skip_unlinking=False) -> list[ifcopenshell.entity_instance]:
+        results: list[ifcopenshell.entity_instance] = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for ifc_definition_id in list(IfcStore.id_map.keys()):
             obj = IfcStore.id_map[ifc_definition_id]
@@ -95,19 +97,21 @@ class IfcExporter:
                     continue
                 if obj.library:
                     continue
-                tool.Collector.sync(obj)
+                tool.Collector.sync(obj, skip_unlinking)
                 result = self.sync_object_placement(obj)
                 if result:
                     results.append(result)
                 result = self.sync_object_material(obj)
+                # TODO: sync_object_material always returns None
+                # so it's never really appended
                 if result:
                     results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
         return results
 
-    def sync_edited_objects(self):
-        results = []
+    def sync_edited_objects(self) -> list[ifcopenshell.entity_instance]:
+        results: list[ifcopenshell.entity_instance] = []
         for obj in IfcStore.edited_objs.copy():
             if not obj:
                 continue
@@ -125,7 +129,7 @@ class IfcExporter:
         IfcStore.edited_objs.clear()
         return results
 
-    def sync_object_material(self, obj):
+    def sync_object_material(self, obj: bpy.types.Object) -> None:
         if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
             return
         if not self.has_changed_materials(obj):
@@ -136,11 +140,10 @@ class IfcExporter:
         checksum = obj.data.BIMMeshProperties.material_checksum
         return checksum != str([s.id() for s in tool.Geometry.get_styles(obj) if s])
 
-    def sync_object_placement(self, obj):
+    def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         if not tool.Ifc.is_moved(obj):
             return
-        blender_matrix = np.array(obj.matrix_world)
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             bpy.ops.bim.update_representation(obj=obj.name)
             return element
@@ -151,7 +154,7 @@ class IfcExporter:
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
-    def sync_grid_axis_object_placement(self, obj, element):
+    def sync_grid_axis_object_placement(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         grid = (element.PartOfU or element.PartOfV or element.PartOfW)[0]
         grid_obj = tool.Ifc.get_object(grid)
         if grid_obj:

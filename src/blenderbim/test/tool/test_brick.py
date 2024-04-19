@@ -320,8 +320,8 @@ class TestGetParentSpace(NewFile):
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingStorey")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
         project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("aggregate.assign_object", ifc, product=subelement, relating_object=element)
-        ifcopenshell.api.run("aggregate.assign_object", ifc, product=element, relating_object=project)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[subelement], relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[element], relating_object=project)
         assert subject.get_parent_space(subelement) == element
         assert subject.get_parent_space(element) is None
 

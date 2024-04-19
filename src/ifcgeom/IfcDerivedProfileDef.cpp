@@ -28,7 +28,19 @@
 bool IfcGeom::Kernel::convert(const IfcSchema::IfcDerivedProfileDef* l, TopoDS_Shape& face) {
 	TopoDS_Face f;
 	gp_Trsf2d trsf2d;
-	if (convert_face(l->ParentProfile(), f) && IfcGeom::Kernel::convert(l->Operator(), trsf2d)) {
+	bool is_mirror = false;
+#ifdef SCHEMA_HAS_IfcMirroredProfileDef
+	if (l->as<IfcSchema::IfcMirroredProfileDef>()) {
+		trsf2d.SetMirror(gp::Origin2d());
+		is_mirror = true;
+	}
+#endif
+	if (!is_mirror) {
+		if (!IfcGeom::Kernel::convert(l->Operator(), trsf2d)) {
+			return false;
+		}
+	}
+	if (convert_face(l->ParentProfile(), f)) {
 		gp_Trsf trsf = trsf2d;
 		face = BRepBuilderAPI_Transform(f, trsf).Shape();
 		return true;

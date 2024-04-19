@@ -47,9 +47,17 @@ class EnableEditingAttributes(bpy.types.Operator):
             obj = bpy.data.objects.get(self.obj)
         elif self.obj_type == "Material":
             obj = bpy.data.materials.get(self.obj)
-        oprops = obj.BIMObjectProperties
         props = obj.BIMAttributeProperties
         props.attributes.clear()
+
+        element = tool.Ifc.get_entity(obj)
+        has_inherited_predefined_type = False
+        if not element.is_a("IfcTypeObject") and (element_type := ifcopenshell.util.element.get_type(element)):
+            # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
+            has_inherited_predefined_type = ifcopenshell.util.element.get_predefined_type(element_type) not in (
+                "NOTDEFINED",
+                None,
+            )
 
         def callback(name, prop, data):
             if name in ("RefLatitude", "RefLongitude"):
@@ -62,10 +70,11 @@ class EnableEditingAttributes(bpy.types.Operator):
                 new.string_value = "" if new.is_null else json.dumps(data[name])
                 blenderbim.bim.helper.add_attribute_description(new)
                 new.description += " The degrees, minutes and seconds should follow this format : [12,34,56]"
+            if name in ("PredefinedType", "ObjectType") and has_inherited_predefined_type:
+                props.attributes.remove(len(props.attributes) - 1)
+                return True
 
-        blenderbim.bim.helper.import_attributes2(
-            tool.Ifc.get().by_id(oprops.ifc_definition_id), props.attributes, callback=callback
-        )
+        blenderbim.bim.helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -120,20 +129,46 @@ class EditAttributes(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class GenerateGlobalId(bpy.types.Operator):
+class GenerateGlobalId(bpy.types.Operator, Operator):
     bl_idname = "bim.generate_global_id"
     bl_label = "Regenerate GlobalId"
+    bl_description = "Regenerate GlobalId\n\nSHIFT+CLICK to regenerate GlobalIds for all selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
-        index = context.active_object.BIMAttributeProperties.attributes.find("GlobalId")
-        if index >= 0:
-            global_id = context.active_object.BIMAttributeProperties.attributes[index]
+    use_selected: bpy.props.BoolProperty(name="Use All Selected Objects", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # using all selected objects on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.use_selected = True
+        return self.execute(context)
+
+    def _execute(self, context):
+        if self.use_selected:
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element or not element.is_a("IfcRoot"):
+                    continue
+                element.GlobalId = ifcopenshell.guid.new()
+
+        obj = context.active_object
+        if not obj or not obj.BIMAttributeProperties.is_editing_attributes:
+            return {"FINISHED"}
+
+        props = obj.BIMAttributeProperties
+        element = tool.Ifc.get_entity(obj)
+
+        if not element.is_a("IfcRoot"):
+            return {"FINISHED"}
+
+        if self.use_selected and obj in context.selected_objects:
+            # guid value was already regenerated, just update the ui prop
+            guid_value = element.GlobalId
         else:
-            global_id = context.active_object.BIMAttributeProperties.attributes.add()
-        global_id.name = "GlobalId"
-        global_id.data_type = "string"
-        global_id.string_value = ifcopenshell.guid.new()
+            guid_value = ifcopenshell.guid.new()
+
+        props.attributes["GlobalId"].string_value = guid_value
         return {"FINISHED"}
 
 

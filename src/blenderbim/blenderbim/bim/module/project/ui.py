@@ -267,10 +267,9 @@ class BIM_PT_project_library(Panel):
             )
             row.operator("bim.append_library_element_by_query", text="", icon="APPEND_BLEND")
             row.operator("bim.save_library_file", text="", icon="EXPORT")
+            self.draw_library_ul()
         else:
             row.label(text="No Library Loaded", icon="ASSET_MANAGER")
-        if IfcStore.library_file:
-            self.draw_library_ul()
 
     def draw_library_ul(self):
         if not self.props.library_elements:
@@ -319,10 +318,15 @@ class BIM_PT_links(Panel):
             row = self.layout.row(align=True)
             row.label(text="Object Culling Enabled", icon="MOD_TRIANGULATE")
 
-        if not LinksData.linked_data:
-            row = self.layout.row(align=True)
-            row.label(text="No Object Selected", icon="QUESTION")
+        if not LinksData.linked_data or not self.props.links:
+            if self.props.links:
+                row = self.layout.row(align=True)
+                row.label(text="No Object Selected", icon="QUESTION")
             return
+
+        row = self.layout.row(align=True)
+        row.label(text="")
+        row.operator("bim.append_inspected_linked_element", icon="APPEND_BLEND", text="")
 
         for name, value in LinksData.linked_data["attributes"].items():
             row = self.layout.row(align=True)

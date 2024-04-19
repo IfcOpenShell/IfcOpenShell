@@ -400,6 +400,13 @@ namespace {
 			Bnd_Box box;
 			BRepBndLib::AddClose(s, box);
 
+			if (box.IsVoid()) {
+				// false or true, it doesn't really matter, just don't
+				// proceed, because asking for a corner of a void box
+				// throws an exception.
+				return false;
+			}
+
 			auto lower = large_ortho_faces_.lower_bound(0.);
 			auto upper = large_ortho_faces_.upper_bound(min_d);
 
@@ -550,6 +557,7 @@ protected:
 	bool unify_inputs_;
 	bool mirror_y_;
 	bool mirror_x_;
+	bool only_valid_;
 
 	int profile_threshold_;
 
@@ -715,6 +723,14 @@ public:
 
 	bool getUnifyInputs() const {
 		return unify_inputs_;
+	}
+
+	void setOnlyValid(bool b) {
+		only_valid_ = b;
+	}
+
+	bool getOnlyValid(bool b) const {
+		return only_valid_;
 	}
 
 	void setScale(double s) { scale_ = s; }

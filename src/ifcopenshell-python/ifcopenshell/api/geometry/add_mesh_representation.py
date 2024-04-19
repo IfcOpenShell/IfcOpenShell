@@ -20,7 +20,7 @@ import ifcopenshell.util.unit
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file: ifcopenshell.file, **settings):
         self.file = file
         self.settings = {
             "context": None,  # IfcGeometricRepresentationContext
@@ -33,6 +33,7 @@ class Usecase:
             "faces": None,  # A list of polygons, represented by vertex indices
             "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
             "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
+            "force_faceted_brep": False,  # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
         }
         for key, value in settings.items():
             self.settings[key] = value
@@ -43,7 +44,7 @@ class Usecase:
         return self.create_mesh_representation()
 
     def create_mesh_representation(self):
-        if self.file.schema == "IFC2X3":
+        if self.settings["force_faceted_brep"] or self.file.schema == "IFC2X3":
             return self.create_faceted_brep()
         return self.create_polygonal_face_set()
 

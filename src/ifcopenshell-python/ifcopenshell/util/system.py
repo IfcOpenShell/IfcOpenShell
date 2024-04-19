@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ifcopenshell.util
+import ifcopenshell.util.system
+from typing import Optional, Union, Literal
 
-group_types = {
+group_types: dict[str, tuple[str, ...]] = {
     "IfcZone": ("IfcZone", "IfcSpace", "IfcSpatialZone"),
     "IfcBuiltSystem": (
         "IfcBuiltElement",
@@ -39,22 +40,24 @@ group_types = {
     "IfcGroup": ("IfcObjectDefinition",),
 }
 
+FLOW_DIRECTION = Literal["SINK", "SOURCE", "SOURCEANDSINK", "NOTEDEFINED"]
 
-def is_assignable(product, system) -> bool:
+
+def is_assignable(product: ifcopenshell.entity_instance, system: ifcopenshell.entity_instance) -> bool:
     for assignable in group_types.get(system.is_a(), ()):
         if product.is_a(assignable):
             return True
     return False
 
 
-def get_system_elements(system):
+def get_system_elements(system: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     results = []
     for rel in system.IsGroupedBy:
         results.extend(rel.RelatedObjects)
     return results
 
 
-def get_element_systems(element):
+def get_element_systems(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     results = []
     for rel in element.HasAssignments:
         if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
@@ -67,7 +70,9 @@ def get_element_systems(element):
     return results
 
 
-def get_ports(element, flow_direction=None):
+def get_ports(
+    element: ifcopenshell.entity_instance, flow_direction: Optional[FLOW_DIRECTION] = None
+) -> list[ifcopenshell.entity_instance]:
     results = []
     for rel in getattr(element, "IsNestedBy", []) or []:
         for port in rel.RelatedObjects:
@@ -85,14 +90,14 @@ def get_ports(element, flow_direction=None):
     return results
 
 
-def get_connected_port(port):
+def get_connected_port(port: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     for rel in port.ConnectedTo:
         return rel.RelatedPort
     for rel in port.ConnectedFrom:
         return rel.RelatingPort
 
 
-def get_port_element(port):
+def get_port_element(port: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     if hasattr(port, "Nests"):
         for rel in port.Nests:
             return rel.RelatingObject
@@ -102,7 +107,9 @@ def get_port_element(port):
             return rel.RelatedElement
 
 
-def get_connected_to(element, flow_direction=None):
+def get_connected_to(
+    element: ifcopenshell.entity_instance, flow_direction: Optional[FLOW_DIRECTION] = None
+) -> list[ifcopenshell.entity_instance]:
     results = []
     for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
         for rel in port.ConnectedTo:
@@ -115,7 +122,9 @@ def get_connected_to(element, flow_direction=None):
     return results
 
 
-def get_connected_from(element, flow_direction=None):
+def get_connected_from(
+    element: ifcopenshell.entity_instance, flow_direction: Optional[FLOW_DIRECTION] = None
+) -> list[ifcopenshell.entity_instance]:
     results = []
     for port in ifcopenshell.util.system.get_ports(element, flow_direction=flow_direction):
         for rel in port.ConnectedFrom:

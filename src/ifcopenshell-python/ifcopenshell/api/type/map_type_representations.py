@@ -22,7 +22,12 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, related_object=None, relating_type=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        related_object: ifcopenshell.entity_instance,
+        relating_type: ifcopenshell.entity_instance,
+    ):
         """Ensures that all occurrences has the same representation as the type
 
         If a type has a representation, all occurrences must have the same
@@ -55,7 +60,7 @@ class Usecase:
             # furniture type has no representation, so the furniture may also
             # have no representation, or any arbitrary representation that may
             # vary from occurrence to occurrence.
-            ifcopenshell.api.run("type.assign_type", model, related_object=furniture, relating_type=furniture_type)
+            ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
 
             # A bit of preparation, let's create some geometric contexts since
             # we want to create some geometry for our furniture type.
@@ -87,7 +92,7 @@ class Usecase:
             "relating_type": relating_type,
         }
 
-    def execute(self):
+    def execute(self) -> None:
         if not self.settings["relating_type"].RepresentationMaps:
             return
         representations = []

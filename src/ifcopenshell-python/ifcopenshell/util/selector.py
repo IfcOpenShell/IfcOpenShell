@@ -18,6 +18,8 @@
 
 import re
 import lark
+import numpy as np
+import ifcopenshell.api
 import ifcopenshell.util
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
@@ -25,7 +27,10 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.classification
+import ifcopenshell.util.schema
+import ifcopenshell.util.shape
 from decimal import Decimal
+from typing import Optional, Any, Union
 
 
 filter_elements_grammar = lark.Lark(
@@ -124,9 +129,10 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
+    number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -207,6 +213,15 @@ class FormatTransformer(lark.Transformer):
             return str(int(result))
         return str(result)
 
+    def number(self, args):
+        if isinstance(args[0], str):
+            args[0] = float(args[0]) if "." in args[0] else int(args[0])
+        if len(args) >= 3 and args[2]:
+            return "{:,}".format(args[0]).replace(".", "*").replace(",", args[2]).replace("*", args[1])
+        elif len(args) >= 2 and args[1]:
+            return "{}".format(args[0]).replace(".", args[1])
+        return "{:,}".format(args[0])
+
     def format_length(self, args):
         return args[0]
 
@@ -253,25 +268,68 @@ class GetElementTransformer(lark.Transformer):
         return args[1:-1].replace("\\", "")
 
 
-def format(query):
+def format(query: str) -> str:
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
-def get_element_value(element, query):
-    keys = GetElementTransformer().transform(get_element_grammar.parse(query))
+def get_element_value(element: ifcopenshell.entity_instance, query: str) -> Any:
+    keys: list[str] = GetElementTransformer().transform(get_element_grammar.parse(query))
     return Selector.get_element_value(element, keys)
 
 
-def filter_elements(ifc_file, query, elements=None, edit_in_place=False):
+def filter_elements(
+    ifc_file: ifcopenshell.file,
+    query: str,
+    elements: Optional[set[ifcopenshell.entity_instance]] = None,
+    edit_in_place=False,
+) -> set[ifcopenshell.entity_instance]:
+    """
+    Filter elements based on the provided `query`.
+
+    :param ifc_file: The IFC file object
+    :type ifc_file: ifcopenshell.file.file
+    :param query: Query to execute
+    :type query: str
+    :param elements: Base set of IFC elements for the query.
+        If provided, new elements found for the current query will be added to `elements`.
+        Elements explicitly excluded in the `query` will also be excluded from `elements`
+    :type elements: set[ifcopenshell.entity_instance.entity_instance], optional
+    :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
+    :type edit_in_place: bool
+    :return: Set of filtered elements
+    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        # Select all walls in the file.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcWall, IfcSlab")
+
+        # Add doors to the elements too.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcDoor", elements)
+
+        # Changed our mind, exclude the slabs.
+        elements = ifcopenshell.util.selector.filter_elements(ifc_file, "! IfcSlab", elements)
+
+        # {#1=IfcWall(...), #2=IfcDoor(...)}
+        print(elements)
+    """
+    if not query:
+        return elements or set()
     if elements and not edit_in_place:
         elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
-    return transformer.elements
 
 
-def set_element_value(ifc_file, element, query, value):
+def set_element_value(
+    ifc_file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    query: Union[str, list[str]],
+    value: Optional[str],
+) -> Union[ifcopenshell.entity_instance, None]:
     if isinstance(query, (list, tuple)):
         keys = query
     else:
@@ -313,14 +371,57 @@ def set_element_value(ifc_file, element, query, value):
         elif key == "classification":
             element = ifcopenshell.util.classification.get_references(element)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(element, "ObjectPlacement"):
-            return
+            # TODO: add support
+            if key in ("easting", "northing", "elevation"):
+                return
+
+            placement = element.ObjectPlacement
+            if placement is None:
+                matrix = np.eye(4)
+            else:
+                matrix = ifcopenshell.util.placement.get_local_placement(placement)
+
+            # check if value is within tolerance to avoid api calls
+            coord_i = "xyz".index(key)
+            prev_value = matrix[coord_i][3]
+            new_value = float(value) if value else 0.0
+            if ifcopenshell.util.shape.is_x(new_value, prev_value):
+                return
+
+            matrix[coord_i][3] = new_value
+            ifcopenshell.api.run(
+                "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
+            )
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
             if isinstance(key, str) and hasattr(element, key):
                 if getattr(element, key) != value:
-                    return setattr(element, key, value)
+                    try:
+                        # Try our luck
+                        return setattr(element, key, value)
+                    except:
+                        # Try to cast
+                        data_type = ifcopenshell.util.attribute.get_primitive_type(
+                            element.wrapped_data.declaration()
+                            .as_entity()
+                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                        )
+                        if data_type == "string":
+                            value = str(value)
+                        elif data_type == "float":
+                            value = float(value)
+                        elif data_type == "integer":
+                            value = int(value)
+                        elif data_type == "boolean":
+                            if value in ("True", "true", "TRUE", "Yes", "1"):
+                                value = True
+                            elif value in ("False", "false", "FALSE", "No", "0"):
+                                value = True
+                            else:
+                                value = bool(value)
+                        return setattr(element, key, value)
             else:
                 # Try to extract pset
                 if isinstance(key, re.Pattern):
@@ -376,10 +477,10 @@ def set_element_value(ifc_file, element, query, value):
 
 
 class FacetTransformer(lark.Transformer):
-    def __init__(self, ifc_file, elements):
+    def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
-        self.elements = elements or set()
+        self.elements = set() if elements is None else elements
         self.container_parents = {}
         self.container_trees = {}
 
@@ -607,31 +708,37 @@ class FacetTransformer(lark.Transformer):
         if isinstance(element_value, (list, tuple)):
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):
-            if isinstance(element_value, int):
-                value = int(value)
-            elif isinstance(element_value, float):
-                value = float(value)
+            try:
+                if isinstance(element_value, int):
+                    value = int(value)
+                elif isinstance(element_value, float):
+                    value = float(value)
 
-            if isinstance(element_value, (int, float)):
-                operator = comparison.lstrip("!")
-                if operator == ">=":
-                    result = element_value >= value
-                elif operator == "<=":
-                    result = element_value <= value
-                elif operator == ">":
-                    result = element_value > value
-                elif operator == "<":
-                    result = element_value < value
-                else:
-                    result = element_value == value  # Tolerance?
-            elif isinstance(element_value, str):
-                operator = comparison.lstrip("!")
-                if operator == "*=":
-                    result = value in element_value
+                if isinstance(element_value, (int, float)):
+                    operator = comparison.lstrip("!")
+                    if operator == ">=":
+                        result = element_value >= value
+                    elif operator == "<=":
+                        result = element_value <= value
+                    elif operator == ">":
+                        result = element_value > value
+                    elif operator == "<":
+                        result = element_value < value
+                    else:
+                        result = element_value == value  # Tolerance?
+                elif isinstance(element_value, str):
+                    operator = comparison.lstrip("!")
+                    if operator == "*=":
+                        result = value in element_value
+                    else:
+                        result = element_value == value
                 else:
                     result = element_value == value
-            else:
-                result = element_value == value
+            except:
+                # Potentially they are trying to compare a value which cannot
+                # be legally casted to the element_value, or cannot use the
+                # `in` or more / less than comparison operators.
+                result = False
         elif isinstance(value, re.Pattern):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):
@@ -644,7 +751,9 @@ class FacetTransformer(lark.Transformer):
 
 class Selector:
     @classmethod
-    def parse(cls, ifc_file, query, elements=None):
+    def parse(
+        cls, ifc_file: ifcopenshell.file, query: str, elements: Optional[list[ifcopenshell.entity_instance]] = None
+    ) -> list[ifcopenshell.entity_instance]:
         cls.file = ifc_file
         cls.elements = elements
         l = lark.Lark(
@@ -847,7 +956,7 @@ class Selector:
         return {"keys": keys, "is_regex": is_regex}
 
     @classmethod
-    def get_element_value(cls, element, keys):
+    def get_element_value(cls, element: ifcopenshell.entity_instance, keys: list[str]) -> Any:
         value = element
         for key in keys:
             if value is None:

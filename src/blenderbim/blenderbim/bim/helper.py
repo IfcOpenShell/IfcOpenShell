@@ -29,6 +29,7 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from typing import Optional, Callable, Any
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
@@ -75,6 +76,10 @@ def draw_attribute(attribute, layout, copy_operator=None):
         op.data_path = attribute.path_from_id("string_value")
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    if attribute.name == "GlobalId":
+        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
@@ -116,7 +121,7 @@ def import_attribute(attribute, props, data, callback=None):
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
-        new.string_value = "" if new.is_null else str(data[attribute.name()])
+        new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
     elif data_type == "boolean":
@@ -178,7 +183,7 @@ def add_attribute_description(attribute_blender, attribute_ifc=None):
         attribute_blender.description = description
 
 
-def export_attributes(props, callback=None):
+def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, Any]:
     attributes = {}
     for prop in props:
         is_handled_by_callback = callback(attributes, prop) if callback else False
@@ -215,39 +220,6 @@ def get_enum_items(data, prop_name, context=None):
         items = items(data, context or bpy.context)
     return items
 
-
-def get_obj_ifc_definition_id(context, obj, obj_type):
-    if obj_type == "Object":
-        return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
-    elif obj_type == "Material":
-        return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
-    elif obj_type == "MaterialSet":
-        return ifcopenshell.util.element.get_material(
-            tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
-        ).id()
-    elif obj_type == "MaterialSetItem":
-        return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
-    elif obj_type == "Task":
-        return context.scene.BIMTaskTreeProperties.tasks[
-            context.scene.BIMWorkScheduleProperties.active_task_index
-        ].ifc_definition_id
-    elif obj_type == "Cost":
-        return context.scene.BIMCostProperties.cost_items[
-            context.scene.BIMCostProperties.active_cost_item_index
-        ].ifc_definition_id
-    elif obj_type == "Resource":
-        return context.scene.BIMResourceTreeProperties.resources[
-            context.scene.BIMResourceProperties.active_resource_index
-        ].ifc_definition_id
-    elif obj_type == "Profile":
-        return context.scene.BIMProfileProperties.profiles[
-            context.scene.BIMProfileProperties.active_profile_index
-        ].ifc_definition_id
-    elif obj_type == "WorkSchedule":
-        return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
-    elif obj_type == "Group":
-        prop = context.scene.BIMGroupProperties
-        return prop.groups[prop.active_group_index].ifc_definition_id
 
 # hack to close popup
 # https://blender.stackexchange.com/a/202576/130742
@@ -304,6 +276,9 @@ def draw_filter(layout, filter_groups, data, module):
         op.type = sprops.facet
         op.index = i
         op.module = module
+        op = row.operator("bim.remove_filter_group", text="", icon="X")
+        op.index = i
+        op.module = module
 
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
@@ -349,11 +324,6 @@ def draw_filter(layout, filter_groups, data, module):
             op.group_index = i
             op.index = j
             op.module = module
-
-        row = box.row()
-        op = row.operator("bim.remove_filter_group", icon="X")
-        op.index = i
-        op.module = module
 
 
 # TODO this should move into ifcopenshell.util

@@ -115,6 +115,7 @@ namespace IfcGeom {
 	private:
 
 		std::atomic<bool> finished_{ false };
+		std::atomic<bool> terminating_{ false };
 		std::atomic<int> progress_{ 0 };
 
 		std::vector<geometry_conversion_task> tasks_;
@@ -358,6 +359,10 @@ namespace IfcGeom {
 					std::ref(settings),
 					&rep);
 
+				if (terminating_) {
+					break;
+				}
+
 				threadpool.emplace_back(std::move(fu));
 			}
 
@@ -367,8 +372,10 @@ namespace IfcGeom {
 
 			finished_ = true;
 
-			Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
-				" objects)                                ");
+			if (!terminating_) {
+				Logger::Status("\rDone creating geometry (" + boost::lexical_cast<std::string>(all_processed_elements_.size()) +
+					" objects)                                ");
+			}
 		}
 
         /// Computes model's bounding box (bounds_min and bounds_max).
@@ -1208,6 +1215,14 @@ namespace IfcGeom {
 		}
 
 		~MAKE_TYPE_NAME(IteratorImplementation_)() {
+			if (num_threads_ != 1) {
+				terminating_ = true;
+
+				if (init_future_.valid()) {
+					init_future_.wait();
+				}
+			}
+
 			if (owns_ifc_file) {
 				delete ifc_file;
 			}

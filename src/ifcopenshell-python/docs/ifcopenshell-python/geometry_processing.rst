@@ -296,7 +296,9 @@ serialiser with Python to customise the conversion, such as by writing a script
 the modifies the IFC on the fly before converting it, or writing complex
 include and exclude filters.
 
-Here is a typical example to serialising to glTF / glb.
+Here is a typical example to serialising to glTF / glb. Example settings to
+serialise to other formats are shown commented out. Different serialisations
+may require different settings.
 
 .. code-block:: python
 
@@ -305,6 +307,8 @@ Here is a typical example to serialising to glTF / glb.
     import multiprocessing
 
     settings = ifcopenshell.geom.settings()
+
+    # Settings for glTF / glb
     settings.set(settings.STRICT_TOLERANCE, True)
     settings.set(settings.INCLUDE_CURVES, True)
     # Setting element GUIDs is optional, but useful to uniquely identify objects in non-semantic formats.
@@ -312,9 +316,19 @@ Here is a typical example to serialising to glTF / glb.
     # Note that applying default materials is required in glTF serialisation.
     settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
 
+    # Settings for obj
+    # settings.set(settings.STRICT_TOLERANCE, True)
+    # settings.set(settings.INCLUDE_CURVES, True)
+    # settings.set(settings.USE_ELEMENT_GUIDS, True)
+    # settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
+    # settings.set(settings.USE_WORLD_COORDS, True)
+
+    # Serialise to glTF / glb
     serialiser = ifcopenshell.geom.serializers.gltf("output.glb", settings)
-    # Alternatively, this is an example for OBJ
+
+    # Serialise to obj
     # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings)
+
     serialiser.setFile(self.file)
     serialiser.setUnitNameAndMagnitude("METER", 1.0)
     serialiser.writeHeader()

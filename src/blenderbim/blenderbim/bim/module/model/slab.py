@@ -20,17 +20,22 @@ import bpy
 import json
 import bmesh
 import ifcopenshell
-import ifcopenshell.util.type
-import ifcopenshell.util.unit
+import ifcopenshell.api
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
+import ifcopenshell.util.type
 import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.geometry
+import blenderbim.core.root
 import blenderbim.tool as tool
 from math import radians
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.decorator import ProfileDecorator
+from typing import Optional
 
 
 def calculate_quantities(usecase_path, ifc_file, settings):
@@ -110,7 +115,7 @@ def calculate_quantities(usecase_path, ifc_file, settings):
 
 
 class DumbSlabGenerator:
-    def __init__(self, relating_type):
+    def __init__(self, relating_type: ifcopenshell.entity_instance):
         self.relating_type = relating_type
 
     def generate(self):
@@ -173,7 +178,7 @@ class DumbSlabGenerator:
             should_add_representation=False,
             context=self.body_context,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
 
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
@@ -246,27 +251,38 @@ class DumbSlabPlaner:
                             self.change_thickness(element, total_thickness)
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        obj = tool.Ifc.get_object(settings["related_object"])
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
-            return
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        relating_type = settings["relating_type"]
+
+        new_material = ifcopenshell.util.element.get_material(relating_type)
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
+
         parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
         layer_set_direction = None
         if parametric:
             layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
         new_thickness = sum([l.LayerThickness for l in new_material.MaterialLayers])
-        material = ifcopenshell.util.element.get_material(settings["related_object"])
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        for related_object in settings["related_objects"]:
+            self._regenerate_from_type(related_object, layer_set_direction, new_thickness)
+
+    def _regenerate_from_type(
+        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str], new_thickness: float
+    ) -> None:
+        obj = tool.Ifc.get_object(related_object)
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
+
+        material = ifcopenshell.util.element.get_material(related_object)
         if not material or not material.is_a("IfcMaterialLayerSetUsage"):
             return
         if layer_set_direction:
             material.LayerSetDirection = layer_set_direction
         if material.LayerSetDirection == "AXIS3":
-            self.change_thickness(settings["related_object"], new_thickness)
+            self.change_thickness(related_object, new_thickness)
 
-    def change_thickness(self, element, thickness):
+    def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -698,9 +714,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         new_footprint = ifcopenshell.api.run(
             "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
         )
-        old_footprint = ifcopenshell.util.representation.get_representation(
-            element, "Plan", "FootPrint", "SKETCH_VIEW"
-        )
+        old_footprint = ifcopenshell.util.representation.get_representation(element, "Plan", "FootPrint", "SKETCH_VIEW")
         if old_footprint:
             for inverse in tool.Ifc.get().get_inverse(old_footprint):
                 ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)

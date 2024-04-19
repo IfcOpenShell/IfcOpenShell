@@ -30,47 +30,35 @@ the API.
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
    |             | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS Intel 64bit | MacOS Silicon 64bit |
    +=============+================+================+================+===================+=====================+
-   | Python 3.7  | py37-linux64_  | py37-win32_    | py37-win64_    | py37-macos64_     | py37-macosm164_     |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.8  | py38-linux64_  | py38-win32_    | py38-win64_    | py38-macos64_     | py38-macosm164_     |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
    | Python 3.9  | py39-linux64_  | py39-win32_    | py39-win64_    | py39-macos64_     | py39-macosm164_     |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
    | Python 3.10 | py310-linux64_ | py310-win32_   | py310-win64_   | py310-macos64_    | py310-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | N/A               | py311-macosm164_    |
+   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | py311-macos64_    | py311-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | N/A               | py312-macosm164_    |
+   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | py312-macos64_    | py312-macosm164_    |
    +-------------+----------------+----------------+----------------+-------------------+---------------------+
 
-.. _py37-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-linux64.zip
-.. _py38-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-linux64.zip
-.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-linux64.zip
-.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-linux64.zip
-.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-linux64.zip
-.. _py312-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-linux64.zip
-.. _py37-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-win32.zip
-.. _py38-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-win32.zip
-.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-win32.zip
-.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-win32.zip
-.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-win32.zip
-.. _py312-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-win32.zip
-.. _py37-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-win64.zip
-.. _py38-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-win64.zip
-.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-win64.zip
-.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-win64.zip
-.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-win64.zip
-.. _py312-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-win64.zip
-.. _py37-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-macos64.zip
-.. _py38-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-macos64.zip
-.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-macos64.zip
-.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-macos64.zip
-.. _py37-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-37-v0.7.0-eaa2aa0-macosm164.zip
-.. _py38-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-38-v0.7.0-eaa2aa0-macosm164.zip
-.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-eaa2aa0-macosm164.zip
-.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-eaa2aa0-macosm164.zip
-.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-eaa2aa0-macosm164.zip
-.. _py312-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-eaa2aa0-macosm164.zip
+.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-linux64.zip
+.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-linux64.zip
+.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-linux64.zip
+.. _py312-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-linux64.zip
+.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-win32.zip
+.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-win32.zip
+.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-win32.zip
+.. _py312-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-win32.zip
+.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-win64.zip
+.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-win64.zip
+.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-win64.zip
+.. _py312-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-win64.zip
+.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-macos64.zip
+.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-macos64.zip
+.. _py311-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-macos64.zip
+.. _py312-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-macos64.zip
+.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-macosm164.zip
+.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-macosm164.zip
+.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-macosm164.zip
+.. _py312-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-macosm164.zip
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -239,7 +227,7 @@ The BlenderBIM Add-on is available either as a stable build or a daily build.
 
 1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
    installation documentation
-   <https://blenderbim.org/docs/users/installation.html>`_.
+   <https://docs.blenderbim.org/users/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.
@@ -273,7 +261,7 @@ and run your script using the **Text > Run Script** menu or by clicking on the
    Blender.  This can help when learning how to write scripts as you can double
    check the results of your scripts with what you see in the graphical
    interface. `Read more
-   <https://blenderbim.org/docs/users/exploring_an_ifc_model.html>`_.
+   <https://docs.blenderbim.org/users/exploring_an_ifc_model.html>`_.
 
 From source with precompiled binaries
 -------------------------------------

@@ -4,31 +4,32 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bsdd"
-dynamic = ["version"]
-description = ''
+version = "0.0.999999"
+authors = [
+  { name="Dion Moult", email="dion@thinkmoult.com" },
+]
+description = "Library to interact with the buildingSMART Data Dictionary"
 readme = "README.md"
 requires-python = ">=3.8"
-keywords = ["building smart data dictionaries"]
+keywords = ["IFC", "bSDD", "BIM"]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
 dependencies = ["requests"]
 
 [project.urls]
-Documentation = "https://github.com/IfcOpenShell/src/bsdd#readme"
-Issues = "https://github.com/IfcOpenShell/issues"
-Source = "https://github.com/IfcOpenShell/src/bsdd"
-
-[tool.hatch.version]
-path = "__about__.py"
+Homepage = "http://ifcopenshell.org"
+Documentation = "https://docs.ifcopenshell.org"
+Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.hatch.envs.default]
 dependencies = [
@@ -38,7 +39,6 @@ dependencies = [
 
 [[tool.hatch.envs.all.matrix]]
 python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
