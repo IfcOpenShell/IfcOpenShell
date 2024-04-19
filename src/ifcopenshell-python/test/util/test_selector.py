@@ -165,6 +165,11 @@ class TestFilterElements(test.bootstrap.IFC4):
         element.Description = "Foobar"
         assert subject.filter_elements(self.file, "IfcWall, Name=Foo, Description=Foobar") == {element}
 
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        element_type.PredefinedType = "SOLIDWALL"
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
+        assert subject.filter_elements(self.file, "IfcWall, PredefinedType=SOLIDWALL") == {element}
+
     def test_selecting_by_type(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
