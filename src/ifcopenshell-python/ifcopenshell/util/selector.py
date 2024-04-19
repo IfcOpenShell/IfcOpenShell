@@ -233,7 +233,7 @@ class FormatTransformer(lark.Transformer):
 
     def imperial_length(self, args):
         if len(args) == 2:
-            input_unit = "foot"
+            input_unit, output_unit = "foot", "foot"
             value, precision = args
         else:
             value, precision, input_unit, output_unit = args
