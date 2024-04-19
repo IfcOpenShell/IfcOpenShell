@@ -343,11 +343,14 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return SWIG_Py_Void();
 		}
 	}
+	PyObject* operator()(IfcGeom::Transformation* transformation) const {
+		return SWIG_NewPointerObj(SWIG_as_voidptr(transformation), SWIGTYPE_p_IfcGeom__Transformation, SWIG_POINTER_OWN);
+	}
 };
 %}
 
 // Note that these elements ARE to be owned by SWIG/Python
-%typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> {
+%typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> {
 	// See which type is set and return appropriate
 	$result = boost::apply_visitor(ShapeRTTI(), $1);
 }
@@ -577,20 +580,18 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
 		IfcParse::IfcFile* file = instance->data().file;
 			
 		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
 			
-		if (instance->declaration().is(Schema::IfcProduct::Class())) {
+		if (typename Schema::IfcProduct* product = instance->as<typename Schema::IfcProduct>()) {
 			if (representation) {
 				if (!representation->declaration().is(Schema::IfcRepresentation::Class())) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
 		
-			typename Schema::IfcProduct* product = (typename Schema::IfcProduct*) instance;
-
 			if (!representation && !product->Representation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
@@ -673,6 +674,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			} else {
 				throw IfcParse::IfcException("No element to return based on provided settings");
 			}
+		} else if (instance->as<typename Schema::IfcPlacement>() != nullptr || instance->as<typename Schema::IfcObjectPlacement>()) {
+			auto item = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(kernel.mapping()->map(instance));
+			if (item == nullptr) {
+				throw IfcParse::IfcException("Failed to convert placement");
+			}
+			return new IfcGeom::Transformation(settings, item);
 		} else {
 			if (!representation) {
 				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || 
@@ -702,7 +709,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %}
 
 %inline %{
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance->declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3
