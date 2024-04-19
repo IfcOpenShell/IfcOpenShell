@@ -91,8 +91,8 @@ class aggregate_of {
     typename U::list::ptr as() {
         typename U::list::ptr result(new typename U::list);
         for (it i = begin(); i != end(); ++i) {
-            if ((*i)->as<U>()) {
-                result->push((*i)->as<U>());
+            if ((*i)->template as<U>()) {
+                result->push((*i)->template as<U>());
             }
         }
         return result;
