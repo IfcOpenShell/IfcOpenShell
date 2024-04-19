@@ -181,14 +181,16 @@ def is_day_in_work_time(day, work_time):
     is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-    if work_time[4]:
-        start = ifcopenshell.util.date.ifc2datetime(work_time[4])
+    # 4 IfcWorktime Start
+    if start := work_time[4]:
+        start = ifcopenshell.util.date.ifc2datetime(start)
         if day > start:
             is_day_in_work_time = True
         else:
             is_day_in_work_time = False
-    if work_time[5]:
-        finish = ifcopenshell.util.date.ifc2datetime(work_time[5])
+    # 5 IfcWorktime Finish
+    if finish := work_time[5]:
+        finish = ifcopenshell.util.date.ifc2datetime(finish)
         if day < finish:
             is_day_in_work_time = True
         else:
@@ -205,36 +207,39 @@ def is_work_time_applicable_to_day(work_time, day):
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
     recurrence = work_time.RecurrencePattern
-    if recurrence.RecurrenceType == "DAILY":
+    recurrence_type: RECURRENCE_TYPE = recurrence.RecurrenceType
+    if recurrence_type == "DAILY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return True
+        # 4 IfcWorktime Start
         if not work_time[4]:
             return False
         return False  # TODO
-    elif recurrence.RecurrenceType == "WEEKLY":
+    elif recurrence_type == "WEEKLY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent
+        # 4 IfcWorktime Start
         if not work_time[4]:
             return False
         return False  # TODO
-    elif recurrence.RecurrenceType == "MONTHLY_BY_DAY_OF_MONTH":
+    elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return day.day in recurrence.DayComponent
         return False  # TODO
-    elif recurrence.RecurrenceType == "MONTHLY_BY_POSITION":
+    elif recurrence_type == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(
                 day.day / 7
             ) + 1 == recurrence["Position"]
         return False  # TODO
-    elif recurrence.RecurrenceType == "YEARLY_BY_DAY_OF_MONTH":
+    elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
                 day.month in recurrence.MonthComponent
                 and day.day in recurrence.DayComponent
             )
         return False  # TODO
-    elif recurrence.RecurrenceType == "YEARLY_BY_POSITION":
+    elif recurrence_type == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
                 day.month in recurrence.MonthComponent
@@ -262,11 +267,9 @@ def get_nested_tasks(task):
 
 
 def get_parent_task(task):
-    return (
-        task.Nests[0].RelatingObject
-        if task.Nests and task.Nests[0].RelatingObject.is_a("IfcTask")
-        else None
-    )
+    nests = task.Nests
+    if nests and (obj := nests[0].RelatingObject).is_a("IfcTask"):
+        return obj
 
 
 def get_all_nested_tasks(task):
