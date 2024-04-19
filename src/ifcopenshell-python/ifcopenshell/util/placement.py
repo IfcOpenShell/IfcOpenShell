@@ -120,10 +120,10 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     """
     if placement is None:
         return np.eye(4)
-    if placement.PlacementRelTo is None:
+    if (rel_to := placement.PlacementRelTo) is None:
         parent = np.eye(4)
     else:
-        parent = get_local_placement(placement.PlacementRelTo)
+        parent = get_local_placement(rel_to)
     return np.dot(parent, get_axis2placement(placement.RelativePlacement))
 
 
