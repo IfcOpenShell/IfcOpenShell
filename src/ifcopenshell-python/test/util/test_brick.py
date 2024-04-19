@@ -36,5 +36,5 @@ class TestGetBrickTypeIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowController")
         type_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcAirTerminalBoxType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=type_element)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=type_element)
         assert subject.get_brick_type(element) == "https://brickschema.org/schema/Brick#TerminalUnit"

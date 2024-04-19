@@ -32,7 +32,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import List, Union
+from typing import Union
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -90,6 +90,17 @@ class Geometry(blenderbim.core.tool.Geometry):
             return blenderbim.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         if element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
+            return bpy.data.objects.remove(obj)
+        if element.is_a("IfcGridAxis"):
+            is_last_axis = False
+            # Deleting the last W axis is OK
+            if ((grid := element.PartOfU) and len(grid[0].UAxes) == 1) or (
+                (grid := element.PartOfV) and len(grid[0].VAxes) == 1
+            ):
+                is_last_axis = True
+            if is_last_axis:
+                return
+            ifcopenshell.api.run("grid.remove_grid_axis", tool.Ifc.get(), axis=element)
             return bpy.data.objects.remove(obj)
 
         collection = obj.BIMObjectProperties.collection
@@ -889,7 +900,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                         return inverse
 
     @classmethod
-    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> List[ifcopenshell.entity_instance]:
+    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> list[ifcopenshell.entity_instance]:
         """update `representation_item` style based on styles connected to the `shape_aspect`
         through material constituents with the same name
         """

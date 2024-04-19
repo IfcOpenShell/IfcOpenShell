@@ -17,23 +17,30 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, product=None, reference=None):
-        """Associates a product with a library reference
+    def __init__(
+        self, file: ifcopenshell.file, products: ifcopenshell.entity_instance, reference: ifcopenshell.entity_instance
+    ):
+        """Associates a list products with a library reference
 
         A product may be associated with zero, one, or many references across
         multiple libraries. See ifcopenshell.api.library.add_reference for more
         detail about how references work.
 
-        :param product: The IfcProduct you want to associate with the reference
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param products: The list of IfcProducts you want to associate with the reference
+        :type products: list[ifcopenshell.entity_instance.entity_instance]
         :param reference: The IfcLibraryReference you want the product to be
             associated with.
         :type reference: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAssociatesLibrary relationship entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was an empty list or all products were
+            already assigned to the `reference`.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -51,40 +58,46 @@ class Usecase:
                 ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
             # And now assign the IFC model's AHU with its Brickschema counterpart
-            ifcopenshell.api.run("library.assign_reference", model, reference=reference, product=ahu)
+            ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
             "reference": reference,
         }
 
-    def execute(self):
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
+
+        referenced_elements = ifcopenshell.util.element.get_referenced_elements(self.settings["reference"])
+        products: set[ifcopenshell.entity_instance] = set(self.settings["products"])
+        products = products - referenced_elements
+
+        if not products:
+            return
+
         if self.file.schema == "IFC2X3":
-            rels = self.get_ifc2x3_rels()
+            rel = next(
+                (
+                    r
+                    for r in self.file.by_type("IfcRelAssociatesLibrary")
+                    if r.RelatingLibrary == self.settings["reference"]
+                ),
+                None,
+            )
         else:
-            rels = self.settings["reference"].LibraryRefForObjects
-        if not rels:
+            rel = next(iter(self.settings["reference"].LibraryRefForObjects), None)
+
+        if not rel:
             return self.file.create_entity(
                 "IfcRelAssociatesLibrary",
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
-                RelatedObjects=[self.settings["product"]],
+                RelatedObjects=list(products),
                 RelatingLibrary=self.settings["reference"],
             )
 
-        for rel in rels:
-            if self.settings["product"] in rel.RelatedObjects:
-                return rel
-
-        rel = rels[0]
-        related_objects = list(rel.RelatedObjects)
-        related_objects.append(self.settings["product"])
-        rel.RelatedObjects = related_objects
+        related_objects = set(rel.RelatedObjects) | products
+        rel.RelatedObjects = list(related_objects)
         ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
         return rel
-
-    def get_ifc2x3_rels(self):
-        return [
-            r for r in self.file.by_type("IfcRelAssociatesLibrary") if r.RelatingLibrary == self.settings["reference"]
-        ]

@@ -21,14 +21,18 @@ import copy
 import bmesh
 import mathutils.geometry
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.material
+import blenderbim.core.root
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from blenderbim.bim.module.geometry.helper import Helper
@@ -92,7 +96,7 @@ class DumbProfileGenerator:
             should_add_representation=False,
             context=self.body_context,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
 
         material = ifcopenshell.util.element.get_material(element)
         material.CardinalPoint = self.cardinal_point
@@ -207,11 +211,18 @@ class DumbProfileRegenerator:
         return results
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        obj = tool.Ifc.get_object(settings["related_object"])
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
-            return
-        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        relating_type = settings["relating_type"]
+
+        new_material = ifcopenshell.util.element.get_material(relating_type)
         if not new_material or not new_material.is_a("IfcMaterialProfileSet"):
+            return
+
+        for related_object in settings["related_objects"]:
+            self._regenerate_from_type(related_object)
+
+    def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
+        obj = tool.Ifc.get_object(related_object)
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
             return
         DumbProfileRecalculator().recalculate([obj])
 

@@ -78,7 +78,7 @@ class Usecase:
             # our window too, but to keep this example simple, geometry is
             # optional and it is enough to say that this window is made out of
             # aluminium and glass.
-            ifcopenshell.api.run("material.assign_material", model, product=window_type, material=material_set)
+            ifcopenshell.api.run("material.assign_material", model, products=[window_type], material=material_set)
         """
         self.file = file
         self.settings = {"constituent_set": constituent_set, "material": material}

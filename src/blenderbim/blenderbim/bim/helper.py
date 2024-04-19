@@ -29,6 +29,7 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from typing import Optional, Callable, Any
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
@@ -75,6 +76,10 @@ def draw_attribute(attribute, layout, copy_operator=None):
         op.data_path = attribute.path_from_id("string_value")
     if attribute.is_optional:
         layout.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+
+    if attribute.name == "GlobalId":
+        layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
+
     if copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
@@ -116,7 +121,7 @@ def import_attribute(attribute, props, data, callback=None):
     elif is_handled_by_callback is False:
         props.remove(len(props) - 1)
     elif data_type == "string":
-        new.string_value = "" if new.is_null else str(data[attribute.name()])
+        new.string_value = "" if new.is_null else str(data[attribute.name()]).replace("\n", "\\n")
         if attribute.type_of_attribute().declared_type().name() == "IfcURIReference":
             new.is_uri = True
     elif data_type == "boolean":
@@ -178,7 +183,7 @@ def add_attribute_description(attribute_blender, attribute_ifc=None):
         attribute_blender.description = description
 
 
-def export_attributes(props, callback=None):
+def export_attributes(props, callback: Optional[Callable] = None) -> dict[str, Any]:
     attributes = {}
     for prop in props:
         is_handled_by_callback = callback(attributes, prop) if callback else False
@@ -271,6 +276,9 @@ def draw_filter(layout, filter_groups, data, module):
         op.type = sprops.facet
         op.index = i
         op.module = module
+        op = row.operator("bim.remove_filter_group", text="", icon="X")
+        op.index = i
+        op.module = module
 
         for j, ifc_filter in enumerate(filter_group.filters):
             if ifc_filter.type == "entity":
@@ -316,11 +324,6 @@ def draw_filter(layout, filter_groups, data, module):
             op.group_index = i
             op.index = j
             op.module = module
-
-        row = box.row()
-        op = row.operator("bim.remove_filter_group", icon="X")
-        op.index = i
-        op.module = module
 
 
 # TODO this should move into ifcopenshell.util

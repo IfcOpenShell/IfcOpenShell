@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, BIMFilterGroup
 from blenderbim.bim.module.diff.data import DiffData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -48,7 +48,7 @@ class DiffProperties(PropertyGroup):
     old_file: StringProperty(default="", name="Old IFC File")
     new_file: StringProperty(default="", name="New IFC File")
     diff_relationships: CollectionProperty(type=Relationships, name="Relationships")
-    diff_filter_elements: StringProperty(default="", name="Filter")
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     should_load_changed_elements: BoolProperty(name="Load Changed Elements", default=True)
     active_file: EnumProperty(
         items=[

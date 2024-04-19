@@ -18,10 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, ifc_class="IfcBuildingElementProxy", predefined_type=None, name=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        ifc_class: str = "IfcBuildingElementProxy",
+        predefined_type: Optional[str] = None,
+        name: Optional[str] = None,
+    ):
         """Create a new rooted product
 
         This is a critical function used to create almost any rooted product or
@@ -70,7 +77,7 @@ class Usecase:
             "name": name,
         }
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         element = self.file.create_entity(
             self.settings["ifc_class"],
             **{

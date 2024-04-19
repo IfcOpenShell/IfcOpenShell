@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import shapely
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.core.type
 import blenderbim.core.tool
 import blenderbim.core.root
@@ -34,7 +35,7 @@ from shapely import Polygon, MultiPolygon
 
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
-    def can_contain(cls, structure_obj, element_obj):
+    def can_contain(cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object) -> bool:
         structure = tool.Ifc.get_entity(structure_obj)
         element = tool.Ifc.get_entity(element_obj)
         if not structure or not element:
@@ -52,7 +53,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return True
 
     @classmethod
-    def can_reference(cls, structure, element):
+    def can_reference(cls, structure: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
         if not structure or not element:
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -689,7 +690,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         element = tool.Ifc.get_entity(obj)
-        tool.Ifc.run("type.assign_type", related_object=element, relating_type=relating_type)
+        tool.Ifc.run("type.assign_type", related_objects=[element], relating_type=relating_type)
 
     @classmethod
     def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):

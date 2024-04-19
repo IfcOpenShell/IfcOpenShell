@@ -47,7 +47,6 @@ def add_instance_flooring_covering_from_cursor(ifc, spatial, model, Type, geomet
     obj = spatial.get_named_obj_from_mesh(name, mesh)
 
     spatial.set_obj_origin_to_cursor_position(obj)
-#    spatial.traslate_obj_to_z_location(obj, z)
     spatial.link_obj_to_active_collection(obj)
     points = spatial.get_2d_vertices_from_obj(obj)
     points = spatial.get_scaled_2d_vertices(points)
@@ -153,7 +152,7 @@ def add_instance_flooring_coverings_from_walls(ifc, spatial, collector, geometry
         spatial.regen_obj_representation(ifc, geometry, obj, body)
 
 def add_instance_ceiling_coverings_from_walls(ifc, spatial, collector, geometry, covering):
-    z = covering.get_z_from_ceiling_height()
+    z = covering.get_z_from_ceiling_height() + spatial.get_active_obj_z()
     union = spatial.get_union_shape_from_selected_objects()
     for i, linear_ring in enumerate(union.interiors):
         poly = spatial.get_buffered_poly_from_linear_ring(linear_ring)

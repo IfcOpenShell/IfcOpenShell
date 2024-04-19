@@ -29,12 +29,14 @@ Some of these add-ons are not shipped with Blender:
 - `Sverchok <https://github.com/nortikin/sverchok/>`__ - Sverchok is a visual
   programming add-on for Blender that allows you to generate parametric
   geometry, create scripts for non-programmers, model solids from FreeCAD, and
-  much more.
+  much more. There is also
+  `IfcSverchok <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/ifcsverchok/README.md/>`__ 
+  that adds IFC features to Sverchok.
 - `BlenderGIS <https://github.com/domlysz/BlenderGIS>`__ - BlenderGIS lets you
   import GIS data, grab elevation data from the web, and generate TINs from
   survey points and contours.
 - `Ladybug Tools for Blender
-  <https://blenderbim.org/builds/ladybug-blender-220127.zip>`__ - Ladybug Tools
+  <https://github.com/Andrej730/ladybug-blender/releases/download/ladybug-blender-240419/ladybug-blender-240419.zip>`__ - Ladybug Tools
   is an extension of Sverchok for environmental analysis and building physics
   simulation. It allows analysis of solar, daylight, energy, and CFD.
 - `Topologic <https://topologic.app/>`__ - Perform spatial and topological

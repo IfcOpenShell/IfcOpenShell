@@ -114,7 +114,7 @@ class EditObjective(bpy.types.Operator):
         ifcopenshell.api.run(
             "constraint.edit_objective",
             self.file,
-            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes}
+            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes},
         )
         bpy.ops.bim.load_objectives()
         return {"FINISHED"}
@@ -179,19 +179,17 @@ class AssignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        for obj in objs:
-            obj_id = obj.BIMObjectProperties.ifc_definition_id
-            if not obj_id:
-                continue
+        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        if products:
             ifcopenshell.api.run(
                 "constraint.assign_constraint",
                 self.file,
                 **{
-                    "product": self.file.by_id(obj_id),
+                    "products": products,
                     "constraint": self.file.by_id(self.constraint),
-                }
+                },
             )
         return {"FINISHED"}
 
@@ -207,18 +205,16 @@ class UnassignConstraint(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        for obj in objs:
-            obj_id = obj.BIMObjectProperties.ifc_definition_id
-            if not obj_id:
-                continue
+        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        if products:
             ifcopenshell.api.run(
                 "constraint.unassign_constraint",
                 self.file,
                 **{
-                    "product": self.file.by_id(obj_id),
+                    "products": products,
                     "constraint": self.file.by_id(self.constraint),
-                }
+                },
             )
         return {"FINISHED"}

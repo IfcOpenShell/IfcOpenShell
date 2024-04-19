@@ -23,17 +23,119 @@ import numpy
 import importlib
 import ifcopenshell
 import ifcopenshell.api
-from typing import Callable, Any
+from typing import Callable, Any, Optional
+from functools import partial
 
 
 pre_listeners = {}
 post_listeners = {}
 
 
-def run(usecase_path: str, ifc_file: ifcopenshell.file = None, should_run_listeners=True, **settings) -> Any:
+def batching_argument_deprecation(
+    usecase_path: str, settings: dict, prev_argument: str, new_argument: str, replace_usecase: Optional[str] = None
+) -> tuple[str, dict]:
+    if replace_usecase is not None:
+        print(f"WARNING. `{usecase_path}` api method is deprecated and should be replaced with `{replace_usecase}`.")
+
+    if prev_argument in settings:
+        print(
+            f"WARNING. `{prev_argument}` argument is deprecated for API method "
+            f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+        )
+        settings = settings | {new_argument: [settings[prev_argument]]}
+        settings.pop(prev_argument)
+    return (replace_usecase or usecase_path, settings)
+
+
+ARGUMENTS_DEPRECATION = {
+    "spatial.assign_container": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.unassign_container": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "group.unassign_group": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "aggregate.assign_object": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "aggregate.unassign_object": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "layer.assign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
+    "layer.unassign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
+    "spatial.remove_container": partial(
+        batching_argument_deprecation,
+        prev_argument="product",
+        new_argument="products",
+        replace_usecase="spatial.unassign_container",
+    ),
+    "nest.assign_object": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
+    "nest.unassign_object": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
+    "type.assign_type": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
+    "type.unassign_type": partial(
+        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
+    ),
+    "system.assign_system": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "system.unassign_system": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
+    "material.assign_material": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "material.unassign_material": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "classification.add_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "classification.remove_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "library.assign_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "library.unassign_reference": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "document.assign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "document.unassign_document": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.reference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "spatial.dereference_structure": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "constraint.assign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+    "constraint.unassign_constraint": partial(
+        batching_argument_deprecation, prev_argument="product", new_argument="products"
+    ),
+}
+
+
+CACHED_USECASE_CLASSES = dict()
+
+
+def run(
+    usecase_path: str,
+    ifc_file: Optional[ifcopenshell.file] = None,
+    should_run_listeners=True,
+    **settings: Any,
+) -> Any:
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
+
+    # see #4531
+    if usecase_path in ARGUMENTS_DEPRECATION:
+        usecase_path, settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
 
     # TODO: settings serialization for client-server systems
     # def serialise_entity_instance(entity):
@@ -59,9 +161,12 @@ def run(usecase_path: str, ifc_file: ifcopenshell.file = None, should_run_listen
         # except:
         #    print(usecase_path, vcs_settings)
 
-    importlib.import_module(f"ifcopenshell.api.{usecase_path}")
-    module, usecase = usecase_path.split(".")
-    usecase_class = getattr(getattr(getattr(ifcopenshell.api, module), usecase), "Usecase")
+    usecase_class = CACHED_USECASE_CLASSES.get(usecase_path)
+    if usecase_class is None:
+        importlib.import_module(f"ifcopenshell.api.{usecase_path}")
+        module, usecase = usecase_path.split(".")
+        usecase_class = getattr(getattr(getattr(ifcopenshell.api, module), usecase), "Usecase")
+        CACHED_USECASE_CLASSES[usecase_path] = usecase_class
 
     if ifc_file:
         result = usecase_class(ifc_file, **settings).execute()

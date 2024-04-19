@@ -19,10 +19,11 @@
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.date
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, classification=None):
+    def __init__(self, file: ifcopenshell.file, classification: Union[str, ifcopenshell.entity_instance]):
         """Adds a new classification system to the project
 
         External classification systems such as Uniclass or Omniclass are
@@ -81,7 +82,7 @@ class Usecase:
             "classification": classification,
         }
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         if isinstance(self.settings["classification"], str):
             classification = self.file.createIfcClassification(Name=self.settings["classification"])
             self.relate_to_project(classification)

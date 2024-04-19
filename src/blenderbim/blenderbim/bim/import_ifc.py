@@ -857,7 +857,11 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
-        self.create_generic_elements(self.spatial_elements, unselectable=True)
+        if bpy.context.preferences.addons["blenderbim"].preferences.spatial_elements_unselectable:
+            self.create_generic_elements(self.spatial_elements, unselectable=True)
+        else:
+            self.create_generic_elements(self.spatial_elements, unselectable=False)
+
 
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
@@ -1163,6 +1167,9 @@ class IfcImporter:
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
 
         return obj
+
+    def load_existing_meshes(self) -> None:
+        self.meshes.update({m.name: m for m in bpy.data.meshes})
 
     def get_representation_item_material_name(self, item):
         if not item.StyledByItem:

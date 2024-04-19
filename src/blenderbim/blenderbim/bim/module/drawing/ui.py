@@ -268,6 +268,11 @@ class BIM_PT_drawings(Panel):
                 col = row.column()
                 col.alignment = "RIGHT"
 
+                convert_to_dxf = row.row(align=True)
+                op = convert_to_dxf.operator("bim.convert_svg_to_dxf", text="", icon="IMAGE_DATA")
+                op.view = active_drawing.name
+                convert_to_dxf.enabled = active_drawing.ifc_definition_id > 0
+
                 op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
 
                 open_drawing_button = row.row(align=True)

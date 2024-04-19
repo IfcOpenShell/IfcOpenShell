@@ -30,7 +30,7 @@ import functools
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable
+from typing import Union, Any, Callable, TypeVar, overload
 
 from . import ifcopenshell_wrapper
 from . import settings
@@ -39,6 +39,8 @@ try:
     import logging
 except ImportError as e:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
+
+T = TypeVar("T")
 
 
 def set_derived_attribute(*args):
@@ -272,16 +274,16 @@ class entity_instance(object):
         """
         return self.wrapped_data.get_argument_name(attr_idx)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         index = self.wrapped_data.get_argument_index(key)
         self[index] = value
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: int) -> Any:
         if key < 0 or key >= len(self):
             raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
         return entity_instance.wrap_value(self.wrapped_data.get_argument(key), self.wrapped_data.file)
 
-    def __setitem__(self, idx, value):
+    def __setitem__(self, idx: int, value: T) -> T:
         if self.wrapped_data.file and self.wrapped_data.file.transaction:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
@@ -315,15 +317,25 @@ class entity_instance(object):
 
         return self.wrapped_data.to_string(valid_spf)
 
-    def is_a(self, *args) -> Union[str, bool]:
+    @overload
+    def is_a(self) -> str: ...
+    @overload
+    def is_a(self, ifc_class: str) -> bool: ...
+    @overload
+    def is_a(self, with_schema: bool) -> str: ...
+    def is_a(self, *args: Union[str, bool]) -> Union[str, bool]:
         """Return the IFC class name of an instance, or checks if an instance belongs to a class.
 
         The check will also return true if a parent class name is provided.
 
         :param args: If specified, is a case insensitive IFC class name to check
-        :type args: string
+            or if specified as a boolean then will define whether
+            returned IFC class name should include schema name
+            (e.g. "IFC4.IfcWall" if `True` and "IfcWall" if `False`).
+            If omitted will act as `False`.
+        :type args: Union[str, bool]
         :returns: Either the name of the class, or a boolean if it passes the check
-        :rtype: string|bool
+        :rtype: Union[str, bool]
 
         Example:
 

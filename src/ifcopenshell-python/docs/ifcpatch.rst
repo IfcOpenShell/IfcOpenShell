@@ -41,9 +41,9 @@ utility:
 Exactly how it is run depends on the recipe. A recipe may require zero or more
 arguments which are specific to the recipe. Here's an example which runs the
 `ExtractElements` recipe, which, as the same suggests, extracts out elements.
-This recipe expects one argument, which uses the `IFC Query
-syntax <https://wiki.osarch.org/index.php?title=IfcOpenShell_code_examples#IFC_Query_Syntax>`_.
-In this example, we'll extract out all `IfcWall` elements.
+This recipe expects one argument, which uses the
+:ref:`ifcopenshell-python/selector_syntax:filtering elements` syntax.  In this
+example, we'll extract out all `IfcWall` elements.
 
 ::
 

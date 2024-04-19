@@ -18,7 +18,7 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Tuple, Iterable, Any, Union, Literal, Optional
+from typing import Iterable, Any, Union, Literal, Optional
 
 import ifcopenshell
 import ifcopenshell.api
@@ -604,8 +604,8 @@ def format_length(
     decimal_places: int = 2,
     suppress_zero_inches=True,
     unit_system: Literal["metric", "imperial"] = "imperial",
-    input_unit="foot",
-    output_unit="foot",
+    input_unit: Literal["foot", "inch"] = "foot",
+    output_unit: Literal["foot", "inch"] = "foot",
 ) -> str:
     """Formats a length for readability and imperial formatting
 
@@ -668,7 +668,7 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell.ifcopenshell_wrapper.named_type | ifcopenshell.ifcopenshell_wrapper.type_declaration,
+    content_type: Union[ifcopenshell.ifcopenshell_wrapper.named_type, ifcopenshell.ifcopenshell_wrapper.type_declaration],
     ifc_unit_type_name: str,
 ) -> Union[ifcopenshell.ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
@@ -696,7 +696,7 @@ def is_attr_type(
 
 def iter_element_and_attributes_per_type(
     ifc_file: ifcopenshell.file, attr_type_name: str
-) -> Iterable[Tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
+) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell.ifcopenshell_wrapper.attribute, Any, str]]:
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
 
     for element in ifc_file:

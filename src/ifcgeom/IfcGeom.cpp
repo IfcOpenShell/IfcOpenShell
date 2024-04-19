@@ -859,7 +859,9 @@ IfcSchema::IfcRepresentation* IfcGeom::Kernel::representation_mapped_to(const If
 			}
 		}
 	} catch (const IfcParse::IfcException& e) {
-		Logger::Error(e);
+		// @todo the remove_boundingboxes() in IfcConvert leave dangling IfcRepresentationMap
+		// causing this error to be logged.
+		Logger::Error(e, representation);
 		// @todo reset representation_mapped_to to zero?
 	}
 	return representation_mapped_to;

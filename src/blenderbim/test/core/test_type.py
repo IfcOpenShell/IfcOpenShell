@@ -22,7 +22,7 @@ from test.core.bootstrap import ifc, type
 
 class TestAssignType:
     def test_assigning_and_switching_to_an_existing_type_data(self, ifc, type):
-        ifc.run("type.assign_type", related_object="element", relating_type="type").should_be_called()
+        ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
         type.has_material_usage("element").should_be_called().will_return(False)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return("type_obj_data")
@@ -32,7 +32,7 @@ class TestAssignType:
         subject.assign_type(ifc, type, element="element", type="type")
 
     def test_assigning_and_not_changing_data_if_the_type_has_no_data(self, ifc, type):
-        ifc.run("type.assign_type", related_object="element", relating_type="type").should_be_called()
+        ifc.run("type.assign_type", related_objects=["element"], relating_type="type").should_be_called()
         type.has_material_usage("element").should_be_called().will_return(False)
         ifc.get_object("type").should_be_called().will_return("type_obj")
         type.get_object_data("type_obj").should_be_called().will_return(None)

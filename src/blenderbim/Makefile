@@ -137,7 +137,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-9838698-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-f7c03db-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
@@ -363,6 +363,8 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
 	# Provides Brickschema functionality
 	cd dist/working && . env/bin/activate && $(PIP) install "brickschema[persistence]==0.7.6a2" --target=./site-packages
+	# Required for SVG to DXF conversion
+	cd dist/working && . env/bin/activate && $(PIP) install "ezdxf" --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
@@ -430,7 +432,7 @@ endif
 	# Required by brickschema
 	# This is a bit of a dodgy one, it should be provided by setuptools which Blender doesn't ship.
 	mkdir dist/working
-	cd dist/working && wget https://blenderbim.org/builds/pkg_resources.tar.gz
+	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/raw/v0.7.0/src/blenderbim/scripts/pkg_resources.tar.gz
 	cd dist/working && tar -xzvf pkg_resources*
 	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working

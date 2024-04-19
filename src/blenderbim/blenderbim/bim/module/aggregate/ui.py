@@ -139,7 +139,10 @@ class BIM_PT_linked_aggregate(Panel):
         if type(AggregateData.data['total_linked_aggregate']) is int:
             if AggregateData.data['total_linked_aggregate'] > 0:
                 row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
-                row.operator("bim.select_linked_aggregates", text="", icon="RESTRICT_SELECT_OFF")
+                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
+                op.select_parts = False
+                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_OB_POINTCLOUD")
+                op.select_parts = True
                 row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
                 op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
         else:

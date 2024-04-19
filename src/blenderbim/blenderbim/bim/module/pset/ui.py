@@ -90,7 +90,7 @@ def get_active_pset_obj_name(context, obj_type):
     return ""
 
 
-def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
+def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_removing=True):
     box = layout.box()
     row = box.row(align=True)
     if "is_expanded" not in pset:
@@ -114,16 +114,20 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type):
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
-        op = row.operator("bim.remove_pset", icon="X", text="")
+        remove_pset_row = row.row(align=True)
+        op = remove_pset_row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
+        remove_pset_row.enabled = allow_removing
     elif props.active_pset_id != pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        op = row.operator("bim.remove_pset", icon="X", text="")
+        remove_pset_row = row.row(align=True)
+        op = remove_pset_row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
+        remove_pset_row.enabled = allow_removing
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
             for prop in props.properties:
@@ -204,14 +208,17 @@ class BIM_PT_object_psets(Panel):
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
 
         if ObjectPsetsData.data["psets"]:
-            self.layout.label(text="Instance:")
+            if ObjectPsetsData.data["is_occurrence"]:
+                self.layout.label(text="Occurrence Properties:")
+            else:
+                self.layout.label(text="Type Properties:")
             for pset in ObjectPsetsData.data["psets"]:
                 draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
 
         if ObjectPsetsData.data["inherited_psets"]:
-            self.layout.label(text="Type:")
+            self.layout.label(text="Inherited Type Properties:", icon="CON_CHILDOF")
             for pset in ObjectPsetsData.data["inherited_psets"]:
-                draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object")
+                draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Object", allow_removing=False)
 
 
 class BIM_PT_object_qtos(Panel):
@@ -246,16 +253,19 @@ class BIM_PT_object_qtos(Panel):
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
             draw_psetqto_ui(context, 0, {}, props, self.layout, "Object")
-        
+
         if ObjectQtosData.data["qtos"]:
-            self.layout.label(text="Instance:")
+            if ObjectQtosData.data["is_occurrence"]:
+                self.layout.label(text="Occurrence Quantities:")
+            else:
+                self.layout.label(text="Type Quantities:")
             for qto in ObjectQtosData.data["qtos"]:
                 draw_psetqto_ui(context, qto["id"], qto, props, self.layout, "Object")
 
         if ObjectQtosData.data["inherited_qsets"]:
-            self.layout.label(text="Type:")
+            self.layout.label(text="Inherited Type Quantities:", icon="CON_CHILDOF")
             for qset in ObjectQtosData.data["inherited_qsets"]:
-                draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object")
+                draw_psetqto_ui(context, qset["id"], qset, props, self.layout, "Object", allow_removing=False)
 
 
 class BIM_PT_material_psets(Panel):

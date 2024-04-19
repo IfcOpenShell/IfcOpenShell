@@ -18,10 +18,13 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, products=None, group=None):
+    def __init__(
+        self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance], group: ifcopenshell.entity_instance
+    ):
         """Assigns products to a group
 
         If a product is already assigned to the group, it will not be assigned
@@ -32,7 +35,8 @@ class Usecase:
         :param group: The IfcGroup to assign the products to
         :type group: ifcopenshell.entity_instance.entity_instance
         :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+            or `None` if `products` was empty list.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -48,7 +52,10 @@ class Usecase:
             "group": group,
         }
 
-    def execute(self):
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+        if not self.settings["products"]:
+            return
+
         if not self.settings["group"].IsGroupedBy:
             return self.file.create_entity(
                 "IfcRelAssignsToGroup",
@@ -61,7 +68,9 @@ class Usecase:
             )
         rel = self.settings["group"].IsGroupedBy[0]
         related_objects = set(rel.RelatedObjects) or set()
-        for obj in self.settings["products"]:
-            related_objects.add(obj)
-        rel.RelatedObjects = list(related_objects)
+        products = set(self.settings["products"])
+        if products.issubset(related_objects):
+            return rel
+        rel.RelatedObjects = list(related_objects | products)
         ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+        return rel

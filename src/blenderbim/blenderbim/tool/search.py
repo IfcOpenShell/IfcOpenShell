@@ -20,10 +20,17 @@ class Search(blenderbim.core.tool.Search):
             return bpy.context.scene.BIMSearchProperties.filter_groups
         elif module == "csv":
             return bpy.context.scene.CsvProperties.filter_groups
+        elif module == "diff":
+            return bpy.context.scene.DiffProperties.filter_groups
         elif module == "drawing_include":
             return bpy.context.active_object.data.BIMCameraProperties.include_filter_groups
         elif module == "drawing_exclude":
             return bpy.context.active_object.data.BIMCameraProperties.exclude_filter_groups
+        elif module.startswith("clash"):
+            _, clash_set_index, ab, clash_source_index = module.split("_")
+            return getattr(bpy.context.scene.BIMClashProperties.clash_sets[int(clash_set_index)], ab)[
+                int(clash_source_index)
+            ].filter_groups
 
     @classmethod
     def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:
@@ -147,7 +154,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
             if "pset" in arg:
                 new2.pset = arg["pset"]
             if "comparison" in arg:
-                new2.comparison = arg["comparison"]
+                new2.comparison = arg["comparison"] or "="
 
     def facet(self, args):
         return args[0]
@@ -202,7 +209,7 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return (
             is_not
             + {
-                "equals": "=",
+                "equals": "=" if is_not else "",  # Blank because it's the default situation
                 "morethanequalto": ">=",
                 "lessthanequalto": "<=",
                 "morethan": ">",

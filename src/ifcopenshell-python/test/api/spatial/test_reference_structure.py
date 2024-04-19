@@ -26,25 +26,39 @@ class TestReferenceStructure(test.bootstrap.IFC4):
     def test_referencing_a_structure(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, product=subelement, relating_structure=element
+        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
         )
-        assert ifcopenshell.util.element.get_referenced_structures(subelement) == [element]
-        assert rel.is_a("IfcRelReferencedInSpatialStructure")
+        assert ifcopenshell.util.element.get_structure_referenced_elements(element) == {subelement, subelement2}
 
     def test_doing_nothing_if_the_structure_is_already_referenced(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=subelement, relating_structure=element)
+        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
+        )
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
+        )
         assert len([e for e in self.file]) == total_elements
 
     def test_that_old_relationships_are_updated_if_they_still_contain_elements(self):
-        element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement1], relating_structure=element
+        )
         subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=subelement1, relating_structure=element1)
-        ifcopenshell.api.run("spatial.reference_structure", self.file, product=subelement2, relating_structure=element1)
+        subelement3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        ifcopenshell.api.run(
+            "spatial.reference_structure", self.file, products=[subelement2, subelement3], relating_structure=element
+        )
         rel = subelement1.ReferencedInStructures[0]
-        assert len(rel.RelatedElements) == 2
+        assert len(rel.RelatedElements) == 3
+
+
+class TestReferenceStructureIFC2X3(test.bootstrap.IFC2X3, TestReferenceStructure):
+    pass

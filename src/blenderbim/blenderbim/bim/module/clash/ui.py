@@ -17,7 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.bim.helper
 from bpy.types import Panel
+from blenderbim.bim.module.clash.data import ClashData
 
 
 class BIM_PT_ifcclash(Panel):
@@ -30,6 +32,9 @@ class BIM_PT_ifcclash(Panel):
     bl_parent_id = "BIM_PT_tab_clash_detection"
 
     def draw(self, context):
+        if not ClashData.is_loaded:
+            ClashData.load()
+
         layout = self.layout
 
         scene = context.scene
@@ -78,6 +83,7 @@ class BIM_PT_ifcclash(Panel):
         for index, source in enumerate(clash_set.a):
             row = layout.row(align=True)
             row.prop(source, "name", text="")
+            row.prop(source, "mode", text="")
             op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
             op.index = index
             op.group = "a"
@@ -85,9 +91,10 @@ class BIM_PT_ifcclash(Panel):
             op.index = index
             op.group = "a"
 
-            row = layout.row(align=True)
-            row.prop(source, "mode", text="")
-            row.prop(source, "selector", text="")
+            if source.mode != "a":
+                blenderbim.bim.helper.draw_filter(
+                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_a_{index}"
+                )
 
         row = layout.row(align=True)
         row.label(text="Group B:", icon="OUTLINER_OB_POINTCLOUD")
@@ -96,6 +103,7 @@ class BIM_PT_ifcclash(Panel):
         for index, source in enumerate(clash_set.b):
             row = layout.row(align=True)
             row.prop(source, "name", text="")
+            row.prop(source, "mode", text="")
             op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
             op.index = index
             op.group = "b"
@@ -103,9 +111,10 @@ class BIM_PT_ifcclash(Panel):
             op.index = index
             op.group = "b"
 
-            row = layout.row(align=True)
-            row.prop(source, "mode", text="")
-            row.prop(source, "selector", text="")
+            if source.mode != "a":
+                blenderbim.bim.helper.draw_filter(
+                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_b_{index}"
+                )
 
         row = layout.row()
         row.prop(props, "should_create_clash_snapshots")

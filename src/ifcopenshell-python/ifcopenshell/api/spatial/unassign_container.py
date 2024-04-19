@@ -22,11 +22,11 @@ import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, product=None):
-        """Unassigns a container from a product.
+    def __init__(self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]):
+        """Unassigns a container from products.
 
-        :param product: The IfcProduct to remove the containment from.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :param product: A list of IfcProducts to remove the containment from.
+        :type product: list[ifcopenshell.entity_instance.entity_instance]
         :return: None
         :rtype: None
 
@@ -40,32 +40,34 @@ class Usecase:
             storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
 
             # The project contains a site (note that project aggregation is a special case in IFC)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=site, relating_object=project)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
 
             # The site has a building, the building has a storey, and the storey has a space
-            ifcopenshell.api.run("aggregate.assign_object", model, product=building, relating_object=site)
-            ifcopenshell.api.run("aggregate.assign_object", model, product=storey, relating_object=building)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
+            ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
 
             # Create a wall
             wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
             # The wall is in the storey
-            ifcopenshell.api.run("spatial.assign_container", model, product=wall, relating_structure=storey)
+            ifcopenshell.api.run("spatial.assign_container", model, products=[wall], relating_structure=storey)
 
             # Not anymore!
-            ifcopenshell.api.run("spatial.unassign_container", model, product=wall)
+            ifcopenshell.api.run("spatial.unassign_container", model, products=[wall])
         """
         self.file = file
         self.settings = {
-            "product": product,
+            "products": products,
         }
 
-    def execute(self):
-        for rel in self.settings["product"].ContainedInStructure or []:
-            related_elements = list(rel.RelatedElements)
-            related_elements.remove(self.settings["product"])
+    def execute(self) -> None:
+        products = set(self.settings["products"])
+        rels = set(rel for product in products if (rel := next(iter(product.ContainedInStructure), None)))
+
+        for rel in rels:
+            related_elements = set(rel.RelatedElements) - products
             if related_elements:
-                rel.RelatedElements = related_elements
+                rel.RelatedElements = list(related_elements)
                 ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
             else:
                 history = rel.OwnerHistory

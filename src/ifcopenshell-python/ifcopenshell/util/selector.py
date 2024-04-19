@@ -129,9 +129,10 @@ get_element_grammar = lark.Lark(
 format_grammar = lark.Lark(
     """start: function
 
-    function: round | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
+    function: round | number | format_length | lower | upper | title | concat | substr | ESCAPED_STRING | NUMBER
 
     round: "round(" function "," NUMBER ")"
+    number: "number(" function ["," ESCAPED_STRING ["," ESCAPED_STRING]] ")"
     format_length: metric_length | imperial_length
     metric_length: "metric_length(" function "," NUMBER "," NUMBER ")"
     imperial_length: "imperial_length(" function "," NUMBER ["," ESCAPED_STRING "," ESCAPED_STRING] ")"
@@ -212,6 +213,15 @@ class FormatTransformer(lark.Transformer):
             return str(int(result))
         return str(result)
 
+    def number(self, args):
+        if isinstance(args[0], str):
+            args[0] = float(args[0]) if "." in args[0] else int(args[0])
+        if len(args) >= 3 and args[2]:
+            return "{:,}".format(args[0]).replace(".", "*").replace(",", args[2]).replace("*", args[1])
+        elif len(args) >= 2 and args[1]:
+            return "{}".format(args[0]).replace(".", args[1])
+        return "{:,}".format(args[0])
+
     def format_length(self, args):
         return args[0]
 
@@ -223,7 +233,7 @@ class FormatTransformer(lark.Transformer):
 
     def imperial_length(self, args):
         if len(args) == 2:
-            input_unit = "foot"
+            input_unit, output_unit = "foot", "foot"
             value, precision = args
         else:
             value, precision, input_unit, output_unit = args
@@ -258,7 +268,7 @@ class GetElementTransformer(lark.Transformer):
         return args[1:-1].replace("\\", "")
 
 
-def format(query):
+def format(query: str) -> str:
     return FormatTransformer().transform(format_grammar.parse(query))
 
 
@@ -305,12 +315,13 @@ def filter_elements(
         # {#1=IfcWall(...), #2=IfcDoor(...)}
         print(elements)
     """
+    if not query:
+        return elements or set()
     if elements and not edit_in_place:
         elements = elements.copy()
     transformer = FacetTransformer(ifc_file, elements)
     transformer.transform(filter_elements_grammar.parse(query))
     return transformer.get_results()
-    return transformer.elements
 
 
 def set_element_value(
@@ -387,7 +398,30 @@ def set_element_value(
 
             if isinstance(key, str) and hasattr(element, key):
                 if getattr(element, key) != value:
-                    return setattr(element, key, value)
+                    try:
+                        # Try our luck
+                        return setattr(element, key, value)
+                    except:
+                        # Try to cast
+                        data_type = ifcopenshell.util.attribute.get_primitive_type(
+                            element.wrapped_data.declaration()
+                            .as_entity()
+                            .attribute_by_index(element.wrapped_data.get_argument_index(key))
+                        )
+                        if data_type == "string":
+                            value = str(value)
+                        elif data_type == "float":
+                            value = float(value)
+                        elif data_type == "integer":
+                            value = int(value)
+                        elif data_type == "boolean":
+                            if value in ("True", "true", "TRUE", "Yes", "1"):
+                                value = True
+                            elif value in ("False", "false", "FALSE", "No", "0"):
+                                value = True
+                            else:
+                                value = bool(value)
+                        return setattr(element, key, value)
             else:
                 # Try to extract pset
                 if isinstance(key, re.Pattern):
@@ -490,7 +524,10 @@ class FacetTransformer(lark.Transformer):
         name = name.children[0].value
 
         def filter_function(element):
-            element_value = getattr(element, name, None)
+            if name == "PredefinedType":
+                element_value = ifcopenshell.util.element.get_predefined_type(element)
+            else:
+                element_value = getattr(element, name, None)
             return self.compare(element_value, comparison, value)
 
         self.elements = set(filter(filter_function, self.elements))
@@ -674,31 +711,37 @@ class FacetTransformer(lark.Transformer):
         if isinstance(element_value, (list, tuple)):
             return any(self.compare(ev, comparison, value) for ev in element_value)
         elif isinstance(value, str):
-            if isinstance(element_value, int):
-                value = int(value)
-            elif isinstance(element_value, float):
-                value = float(value)
+            try:
+                if isinstance(element_value, int):
+                    value = int(value)
+                elif isinstance(element_value, float):
+                    value = float(value)
 
-            if isinstance(element_value, (int, float)):
-                operator = comparison.lstrip("!")
-                if operator == ">=":
-                    result = element_value >= value
-                elif operator == "<=":
-                    result = element_value <= value
-                elif operator == ">":
-                    result = element_value > value
-                elif operator == "<":
-                    result = element_value < value
-                else:
-                    result = element_value == value  # Tolerance?
-            elif isinstance(element_value, str):
-                operator = comparison.lstrip("!")
-                if operator == "*=":
-                    result = value in element_value
+                if isinstance(element_value, (int, float)):
+                    operator = comparison.lstrip("!")
+                    if operator == ">=":
+                        result = element_value >= value
+                    elif operator == "<=":
+                        result = element_value <= value
+                    elif operator == ">":
+                        result = element_value > value
+                    elif operator == "<":
+                        result = element_value < value
+                    else:
+                        result = element_value == value  # Tolerance?
+                elif isinstance(element_value, str):
+                    operator = comparison.lstrip("!")
+                    if operator == "*=":
+                        result = value in element_value
+                    else:
+                        result = element_value == value
                 else:
                     result = element_value == value
-            else:
-                result = element_value == value
+            except:
+                # Potentially they are trying to compare a value which cannot
+                # be legally casted to the element_value, or cannot use the
+                # `in` or more / less than comparison operators.
+                result = False
         elif isinstance(value, re.Pattern):
             result = bool(value.match(element_value)) if element_value is not None else False
         elif value in (None, True, False):

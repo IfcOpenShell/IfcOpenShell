@@ -44,7 +44,7 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from typing import NamedTuple, List
+from typing import NamedTuple, List, Union, Optional
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
@@ -199,6 +199,11 @@ class CreateDrawing(bpy.types.Operator):
         + "SHIFT+CLICK to print all selected drawings"
     )
     print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
+    sync: bpy.props.BoolProperty(
+        name="Sync Before Creating Drawing",
+        description="Could save some time if you're sure IFC and current Blender session are already in sync",
+        default=True,
+    )
 
     @classmethod
     def poll(cls, context):
@@ -220,7 +225,8 @@ class CreateDrawing(bpy.types.Operator):
         else:
             drawings_to_print = [self.props.active_drawing_id]
 
-        for drawing_id in drawings_to_print:
+        for drawing_i, drawing_id in enumerate(drawings_to_print):
+            self.drawing_index = drawing_i
             if self.print_all:
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, camera_view_point=False)
 
@@ -335,6 +341,13 @@ class CreateDrawing(bpy.types.Operator):
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasUnderlay"):
             return
         svg_path = self.get_svg_path(cache_type="underlay")
+        if os.path.isfile(svg_path) and self.props.should_use_underlay_cache:
+            return svg_path
+
+        visible_object_names = {obj.name for obj in bpy.context.visible_objects}
+        for obj in bpy.context.view_layer.objects:
+            obj.hide_render = obj.name not in visible_object_names
+
         context.scene.render.filepath = svg_path[0:-4] + ".png"
         drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
 
@@ -445,8 +458,14 @@ class CreateDrawing(bpy.types.Operator):
         return LineworkContexts(body_contexts, annotation_contexts)
 
     def serialize_contexts_elements(
-        self, ifc, tree: ifcopenshell.geom.tree, contexts: LineworkContexts, context_type, drawing_elements, target_view
-    ):
+        self,
+        ifc: ifcopenshell.file,
+        tree: ifcopenshell.geom.tree,
+        contexts: LineworkContexts,
+        context_type: str,
+        drawing_elements: set[ifcopenshell.entity_instance],
+        target_view: str,
+    ) -> None:
         drawing_elements = drawing_elements.copy()
         contexts = getattr(contexts, context_type)
         for context in contexts:
@@ -472,20 +491,24 @@ class CreateDrawing(bpy.types.Operator):
                     tree.add_element(elem)
                 drawing_elements -= processed
 
-    def generate_linework(self, context):
+    def generate_linework(self, context: bpy.types.Context) -> Union[str, None]:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
         svg_path = self.get_svg_path(cache_type="linework")
         if os.path.isfile(svg_path) and self.props.should_use_linework_cache:
             return svg_path
 
-        with profile("sync"):
-            # All very hackish whilst prototyping
-            exporter = blenderbim.bim.export_ifc.IfcExporter(None)
-            exporter.file = tool.Ifc.get()
-            invalidated_elements = exporter.sync_all_objects()
-            invalidated_elements += exporter.sync_edited_objects()
-            invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
+        # in case of printing multiple drawings we need to sync just once
+        if self.sync and self.drawing_index == 0:
+            with profile("sync"):
+                # All very hackish whilst prototyping
+                exporter = blenderbim.bim.export_ifc.IfcExporter(None)
+                exporter.file = tool.Ifc.get()
+                invalidated_elements = exporter.sync_all_objects(skip_unlinking=True)
+                invalidated_elements += exporter.sync_edited_objects()
+                invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
+                cache = IfcStore.get_cache()
+                [cache.remove(guid) for guid in invalidated_guids]
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -506,6 +529,7 @@ class CreateDrawing(bpy.types.Operator):
 
         for ifc_path, ifc in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
+            # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
             ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
 
@@ -518,8 +542,6 @@ class CreateDrawing(bpy.types.Operator):
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
 
             self.setup_serialiser(ifc, target_view)
-            cache = IfcStore.get_cache()
-            [cache.remove(guid) for guid in invalidated_guids]
             tree = ifcopenshell.geom.tree()
             tree.enable_face_styles(True)
 
@@ -1115,14 +1137,14 @@ class CreateDrawing(bpy.types.Operator):
                     continue
                 return space
 
-    def get_material_name(self, element):
+    def get_material_name(self, element: ifcopenshell.entity_instance) -> str:
         if hasattr(element, "Name") and element.Name:
             return element.Name
         elif hasattr(element, "LayerSetName") and element.LayerSetName:
             return element.LayerSetName
         return "mat-" + str(element.id())
 
-    def get_svg_path(self, cache_type=None):
+    def get_svg_path(self, cache_type: Optional[str] = None) -> str:
         drawing_path = tool.Drawing.get_document_uri(self.camera_document)
         drawings_dir = os.path.dirname(drawing_path)
 
@@ -1596,8 +1618,14 @@ class ReloadDrawingStyles(bpy.types.Operator):
 
         json_path = Path(tool.Ifc.resolve_uri(rel_path))
         if not json_path.exists():
-            self.report({"ERROR"}, "Shading styles file not found: {}".format(json_path))
-            return {"CANCELLED"}
+            ootb_resource = Path(context.scene.BIMProperties.data_dir) / "assets" / "shading_styles.json"
+            print(
+                f"WARNING. Couldn't find shading_styles for the drawing by the path: {json_path}. "
+                f"Default BBIM resource will be copied from {ootb_resource}"
+            )
+            if ootb_resource.exists():
+                os.makedirs(json_path.parent, exist_ok=True)
+                shutil.copy(ootb_resource, json_path)
 
         with open(json_path, "r") as fi:
             shading_styles_json = json.load(fi)
@@ -2542,8 +2570,16 @@ class EnableEditingElementFilter(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         obj = bpy.context.scene.camera
-        if obj:
-            obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+        if not obj:
+            return
+        obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+        element = tool.Ifc.get_entity(obj)
+        if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
+            filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
+            try:
+                tool.Search.import_filter_query(query, filter_groups)
+            except:
+                pass
 
 
 class EditElementFilter(bpy.types.Operator, Operator):
@@ -2685,3 +2721,50 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         )
         tool.Style.reload_material_from_ifc(material)
         tool.Geometry.record_object_materials(obj)
+
+
+class ConvertSVGToDXF(bpy.types.Operator):
+    bl_idname = "bim.convert_svg_to_dxf"
+    bl_label = "Convert SVG to DXF"
+    bl_options = {"REGISTER", "UNDO"}
+    view: bpy.props.StringProperty()
+    bl_description = "Convert current drawing's .svg to .dxf.\n\nSHIFT+CLICK to convert all selected drawings"
+    convert_all: bpy.props.BoolProperty(name="Convert All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # convert all drawings on shift+click
+        # make sure to use SKIP_SAVE on property, otherwise it might get stuck
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.open_all = True
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.convert_all:
+            drawings = [
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in context.scene.DocProperties.drawings if d.is_selected
+            ]
+        else:
+            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
+
+        drawing_uris: list[Path] = []
+        drawings_not_found: list[str] = []
+
+        for drawing in drawings:
+            drawing_uri = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_document(drawing))
+            if drawing_uri is None or not os.path.exists(drawing_uri):
+                drawings_not_found.append(drawing.Name)
+            else:
+                drawing_uris.append(Path(drawing_uri))
+
+        if drawings_not_found:
+            msg = "Some drawings .svg files were not found, need to print them first: \n{}.".format(
+                "\n".join(drawings_not_found)
+            )
+            self.report({"ERROR"}, msg)
+            return {"CANCELLED"}
+
+        for drawing_uri in drawing_uris:
+            tool.Drawing.convert_svg_to_dxf(drawing_uri, drawing_uri.with_suffix(".dxf"))
+
+        self.report({"INFO"}, f"{len(drawing_uris)} drawings were converted to .dxf.")
+        return {"FINISHED"}

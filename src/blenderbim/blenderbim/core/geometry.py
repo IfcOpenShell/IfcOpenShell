@@ -16,10 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.style
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+import blenderbim.core.tool as tool
+
+if TYPE_CHECKING:
+    import bpy
 
 
-def edit_object_placement(ifc, geometry, surveyor, obj=None):
+def edit_object_placement(
+    ifc: tool.Ifc, geometry: tool.Geometry, surveyor: tool.Surveyor, obj: Optional[bpy.types.Object] = None
+) -> None:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -192,11 +199,13 @@ def select_connection(geometry, connection=None):
 def remove_connection(geometry, connection=None):
     geometry.remove_connection(connection)
 
+
 def get_similar_openings(ifc, opening):
     model = ifc.get()
     all_openings = model.by_type("IfcOpeningElement")
     similar_openings = [o for o in all_openings if o.ObjectPlacement == opening.ObjectPlacement and o != opening]
     return similar_openings
+
 
 def get_similar_openings_building_objs(ifc, similar_openings):
     building_objs = []
@@ -204,11 +213,11 @@ def get_similar_openings_building_objs(ifc, similar_openings):
         building_objs.append(ifc.get_object(similar_opening.VoidsElements[0].RelatingBuildingElement))
     return building_objs
 
-def edit_similar_opening_placement(geometry, opening = None, similar_openings = None):
+
+def edit_similar_opening_placement(geometry, opening=None, similar_openings=None):
     if not opening or not similar_openings:
         return
     for similar_opening in similar_openings:
         old_placement = similar_opening.ObjectPlacement
         similar_opening.ObjectPlacement = opening.ObjectPlacement
         geometry.delete_opening_object_placement(old_placement)
-

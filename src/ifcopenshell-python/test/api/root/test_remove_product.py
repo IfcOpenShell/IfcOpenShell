@@ -98,7 +98,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         context = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         rep_map = self.file.createIfcRepresentationMap(
             MappingOrigin=self.file.createIfcAxis2Placement3D(),
             MappedRepresentation=self.file.createIfcShapeRepresentation(
@@ -190,7 +190,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_nesting_relationships_of_a_whole(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
+        ifcopenshell.api.run("nest.assign_object", self.file, related_objects=[subelement], relating_object=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(list(self.file)) == total_entities - 2
@@ -201,7 +201,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_nesting_relationships_of_a_part(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("nest.assign_object", self.file, related_object=subelement, relating_object=element)
+        ifcopenshell.api.run("nest.assign_object", self.file, related_objects=[subelement], relating_object=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
         assert len(list(self.file)) == total_entities - 2
@@ -212,7 +212,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_aggregate_relationships_of_a_whole(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(list(self.file)) == total_entities - 2
@@ -223,7 +223,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_aggregate_relationships_of_a_part(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBeam")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, product=subelement, relating_object=element)
+        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
         assert len(list(self.file)) == total_entities - 2
@@ -234,7 +234,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_containment_relationships_of_a_container(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert len(list(self.file)) == total_entities - 2
@@ -245,7 +245,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_containment_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSpace")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, product=subelement, relating_structure=element)
+        ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         total_entities = len(list(self.file))
         ifcopenshell.api.run("root.remove_product", self.file, product=subelement)
         assert len(list(self.file)) == total_entities - 2
@@ -369,7 +369,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_material_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.run("material.add_material", self.file, name="Foo")
-        ifcopenshell.api.run("material.assign_material", self.file, product=element, material=material)
+        ifcopenshell.api.run("material.assign_material", self.file, products=[element], material=material)
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelAssociatesMaterial")
         assert self.file.by_type("IfcMaterial")
@@ -377,7 +377,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_type_relationships_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
         assert not self.file.by_type("IfcRelDefinesByType")
         assert self.file.by_type("IfcWallType")
@@ -386,8 +386,8 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         element1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element1, relating_type=element_type)
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element2, relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element1], relating_type=element_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element2], relating_type=element_type)
         ifcopenshell.api.run("root.remove_product", self.file, product=element_type)
         assert not self.file.by_type("IfcRelDefinesByType")
         assert self.file.by_type("IfcWall")

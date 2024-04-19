@@ -39,6 +39,8 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
+from collections import defaultdict
+import json
 from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
@@ -1294,6 +1296,8 @@ class LoadLinkedProject(bpy.types.Operator):
                     if len(shape.geometry.faces) > 1000 and self.is_local(shape):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
+                            if not chunked_verts:
+                                break
                             mats = np.concatenate(chunked_materials)
                             midx = np.concatenate(chunked_material_ids)
                             mats, mapping = np.unique(mats, axis=0, return_inverse=True)
@@ -1329,6 +1333,9 @@ class LoadLinkedProject(bpy.types.Operator):
 
                     ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
                     mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
+                    for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
+                        if not geom_material.has_diffuse:
+                            ms[geom_material_idx + 1] = (0.8, 0.8, 0.8, 1)
                     chunked_materials.append(ms)
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
@@ -1449,7 +1456,10 @@ class LoadLinkedProject(bpy.types.Operator):
                 alpha = 1.0
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
-                diffuse = material.diffuse + (alpha,)
+                if material.has_diffuse:
+                    diffuse = material.diffuse + (alpha,)
+                else:
+                    diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
                 material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
                 blender_mat = self.blender_mats.get(material_name, None)
                 if not blender_mat:
@@ -1912,32 +1922,32 @@ class CreateClippingPlane(bpy.types.Operator):
     bl_label = "Create Clipping Plane"
     bl_options = {"REGISTER", "UNDO"}
 
-    @classmethod
-    def poll(cls, context):
-        return context.area.type == "VIEW_3D"
-
     def execute(self, context):
         from bpy_extras.view3d_utils import region_2d_to_vector_3d, region_2d_to_origin_3d
 
         # Clean up deleted planes
 
-        if len(bpy.context.scene.BIMProjectProperties.clipping_planes) > 5:
+        if len(context.scene.BIMProjectProperties.clipping_planes) > 5:
             self.report({"INFO"}, "Maximum of six clipping planes allowed.")
             return {"FINISHED"}
 
-        for area in bpy.context.screen.areas:
+        for area in context.screen.areas:
             if area.type == "VIEW_3D":
                 area.tag_redraw()
 
         region = context.region
         rv3d = context.region_data
-        coord = (self.mouse_x, self.mouse_y)
-        origin = region_2d_to_origin_3d(region, rv3d, coord)
-        direction = region_2d_to_vector_3d(region, rv3d, coord)
-        hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
-        if not hit:
-            self.report({"INFO"}, "No object found.")
-            return {"FINISHED"}
+        if rv3d:  # Called from a 3D viewport
+            coord = (self.mouse_x, self.mouse_y)
+            origin = region_2d_to_origin_3d(region, rv3d, coord)
+            direction = region_2d_to_vector_3d(region, rv3d, coord)
+            hit, location, normal, face_index, obj, matrix = self.ray_cast(context, origin, direction)
+            if not hit:
+                self.report({"INFO"}, "No object found.")
+                return {"FINISHED"}
+        else:  # Not Called from a 3D viewport
+            location = (0, 0, 1)
+            normal = (0, 0, 1)
 
         vertices = [(-0.5, -0.5, 0), (0.5, -0.5, 0), (0.5, 0.5, 0), (-0.5, 0.5, 0)]
 
@@ -1948,20 +1958,20 @@ class CreateClippingPlane(bpy.types.Operator):
         mesh.update()
 
         plane_obj = bpy.data.objects.new("ClippingPlane", mesh)
-        bpy.context.collection.objects.link(plane_obj)
+        context.collection.objects.link(plane_obj)
         z_axis = Vector((0, 0, 1))
         rotation_matrix = z_axis.rotation_difference(normal).to_matrix().to_4x4()
         plane_obj.matrix_world = rotation_matrix
         plane_obj.matrix_world.translation = location
 
-        bpy.context.scene.cursor.location = location
+        context.scene.cursor.location = location
 
-        new = bpy.context.scene.BIMProjectProperties.clipping_planes.add()
+        new = context.scene.BIMProjectProperties.clipping_planes.add()
         new.obj = plane_obj
 
         tool.Blender.set_active_object(plane_obj)
 
-        ClippingPlaneDecorator.install(bpy.context)
+        ClippingPlaneDecorator.install(context)
         bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
         return {"FINISHED"}
 
@@ -1983,11 +1993,69 @@ class FlipClippingPlane(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.area.type == "VIEW_3D"
+        return context.active_object
 
     def execute(self, context):
-        obj = bpy.context.active_object
-        if obj in [cp.obj for cp in bpy.context.scene.BIMProjectProperties.clipping_planes]:
+        obj = context.active_object
+        if obj in context.scene.BIMProjectProperties.clipping_planes_objs:
             obj.rotation_euler[0] += radians(180)
-            bpy.context.view_layer.update()
+            context.view_layer.update()
+        return {"FINISHED"}
+
+
+CLIPPING_PLANES_FILE_NAME = "ClippingPlanes.json"  # TODO un-hardcode :=
+
+
+class BIM_OT_save_clipping_planes(bpy.types.Operator):
+    bl_idname = "bim.save_clipping_planes"
+    bl_label = "Save Clipping Planes"
+    bl_description = "Save Clipping Planes to Disk"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if IfcStore.path:
+            return context.scene.BIMProjectProperties.clipping_planes
+        cls.poll_message_set("Please Save The IFC File")
+
+    def execute(self, context):
+        clipping_planes_to_serialize = defaultdict(dict)
+        clipping_planes = context.scene.BIMProjectProperties.clipping_planes
+        for clipping_plane in clipping_planes:
+            obj = clipping_plane.obj
+            name = obj.name
+            clipping_planes_to_serialize[name]["location"] = obj.location[0:3]
+            clipping_planes_to_serialize[name]["rotation"] = obj.rotation_euler[0:3]
+        with open(Path(IfcStore.path).with_name(CLIPPING_PLANES_FILE_NAME), "w") as file:
+            json.dump(clipping_planes_to_serialize, file, indent=4)
+        return {"FINISHED"}
+
+
+class BIM_OT_load_clipping_planes(bpy.types.Operator):
+    bl_idname = "bim.load_clipping_planes"
+    bl_label = "Load Clipping Planes"
+    bl_description = "Load Clipping Planes from Disk"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if filepath := IfcStore.path:
+            if Path(filepath).with_name(CLIPPING_PLANES_FILE_NAME).exists():
+                return True
+            else:
+                cls.poll_message_set(f"No Clipping Planes File in Folder {filepath}")
+        else:
+            cls.poll_message_set("Please Save The IFC File")
+
+    def execute(self, context):
+        bpy.data.batch_remove(context.scene.BIMProjectProperties.clipping_planes_objs)
+        context.scene.BIMProjectProperties.clipping_planes.clear()
+        with open(Path(IfcStore.path).with_name(CLIPPING_PLANES_FILE_NAME), "r") as file:
+            clipping_planes_dict = json.load(file)
+        for name, values in clipping_planes_dict.items():
+            bpy.ops.bim.create_clipping_plane()
+            obj = context.scene.BIMProjectProperties.clipping_planes_objs[-1]
+            obj.name = name
+            obj.location = values["location"]
+            obj.rotation_euler = values["rotation"]
         return {"FINISHED"}

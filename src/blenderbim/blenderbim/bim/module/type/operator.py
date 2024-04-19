@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.api
 import blenderbim.tool as tool
@@ -77,7 +78,7 @@ class UnassignType(bpy.types.Operator):
             element = tool.Ifc.get_entity(obj)
             if not element or element.is_a("IfcElementType"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_object=element)
+            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
             active_representation = tool.Geometry.get_active_representation(obj)
             active_context = active_representation.ContextOfItems
@@ -282,7 +283,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = self.add_default_material()
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialLayerSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialLayerSet"
             )
             layer_set = rel.RelatingMaterial
             layer = ifcopenshell.api.run("material.add_layer", ifc_file, layer_set=layer_set, material=material)
@@ -360,7 +361,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                     )
 
             rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, product=element, type="IfcMaterialProfileSet"
+                "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
             )
             profile_set = rel.RelatingMaterial
             material_profile = ifcopenshell.api.run(

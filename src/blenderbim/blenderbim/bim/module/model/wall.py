@@ -24,7 +24,9 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.type
 import mathutils.geometry
 import blenderbim.bim.handler
 import blenderbim.core.type
@@ -35,6 +37,7 @@ from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees, radians
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from typing import Optional
 
 
 class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
@@ -555,7 +558,10 @@ class DumbWallGenerator:
                 for face in sibling_obj.data.polygons:
                     normal = (sibling_obj.matrix_world.to_quaternion() @ face.normal).normalized()
                     face_center = sibling_obj.matrix_world @ face.center
-                    if normal.z != 0 or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01:
+                    if (
+                        normal.z != 0
+                        or abs(mathutils.geometry.distance_point_to_plane(self.location, face_center, normal)) > 0.01
+                    ):
                         continue
 
                     rotation = math.atan2(normal[1], normal[0])
@@ -603,7 +609,7 @@ class DumbWallGenerator:
             should_add_representation=False,
             context=self.body_context,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_object=element, relating_type=self.relating_type)
+        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
         if self.axis_context:
             representation = ifcopenshell.api.run(
                 "geometry.add_axis_representation",
@@ -724,18 +730,29 @@ class DumbWallPlaner:
         DumbWallRecalculator().recalculate([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
-        obj = tool.Ifc.get_object(settings["related_object"])
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
-            return
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        new_material = ifcopenshell.util.element.get_material(settings["relating_type"])
+        relating_type = settings["relating_type"]
+
+        new_material = ifcopenshell.util.element.get_material(relating_type)
         if not new_material or not new_material.is_a("IfcMaterialLayerSet"):
             return
-        parametric = ifcopenshell.util.element.get_psets(settings["relating_type"]).get("EPset_Parametric")
+
+        parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
         layer_set_direction = None
         if parametric:
             layer_set_direction = parametric.get("LayerSetDirection", layer_set_direction)
-        material = ifcopenshell.util.element.get_material(settings["related_object"])
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        for related_object in settings["related_objects"]:
+            self._regenerate_from_type(related_object, layer_set_direction)
+
+    def _regenerate_from_type(
+        self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str]
+    ) -> None:
+        obj = tool.Ifc.get_object(related_object)
+        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+            return
+
+        material = ifcopenshell.util.element.get_material(related_object)
         if not material or not material.is_a("IfcMaterialLayerSetUsage"):
             return
         if layer_set_direction:
@@ -854,11 +871,11 @@ class DumbWallJoiner:
             if (location_on_base - location).length < (location_on_side - location).length:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_base - location
-                opening_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
+                opening_matrix.translation = location_on_base - axis_offset - offset_from_axis
             else:
                 axis_offset = location_on_side - location_on_base
                 offset_from_axis = location_on_side - location
-                opening_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
+                opening_matrix.translation = location_on_side - axis_offset - offset_from_axis
             opening_matrixes[opening] = opening_matrix
 
             for filling in [r.RelatedBuildingElement for r in opening.HasFillings]:
@@ -871,11 +888,11 @@ class DumbWallJoiner:
                 if (location_on_base - location).length < (location_on_side - location).length:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_base - location
-                    filling_matrix.translation = (location_on_base - axis_offset - offset_from_axis)
+                    filling_matrix.translation = location_on_base - axis_offset - offset_from_axis
                 else:
                     axis_offset = location_on_side - location_on_base
                     offset_from_axis = location_on_side - location
-                    filling_matrix.translation = (location_on_side - axis_offset - offset_from_axis)
+                    filling_matrix.translation = location_on_side - axis_offset - offset_from_axis
                 filling_matrixes[filling] = filling_matrix
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
@@ -1120,13 +1137,8 @@ class DumbWallJoiner:
                 other = tool.Ifc.get_object(rel.RelatedElement)
                 if connection not in ["ATPATH", "NOTDEFINED"]:
                     self.join(
-                        obj,
-                        other,
-                        connection,
-                        rel.RelatedConnectionType,
-                        is_relating=True,
-                        description=rel.Description
-                  )
+                        obj, other, connection, rel.RelatedConnectionType, is_relating=True, description=rel.Description
+                    )
         for rel in element.ConnectedFrom:
             if rel.is_a("IfcRelConnectsPathElements"):
                 connection = rel.RelatedConnectionType

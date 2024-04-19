@@ -313,7 +313,7 @@ class serializers:
     buffer = ifcopenshell_wrapper.buffer
     # gltf and hdf5 availability depend on IfcOpenShell configuration settings
     try:
-        gtlf = ifcopenshell_wrapper.GltfSerializer
+        gltf = ifcopenshell_wrapper.GltfSerializer
     except:
         pass
     try:
