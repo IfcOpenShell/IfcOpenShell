@@ -93,7 +93,7 @@ class SvgWriter:
 
     def setup_drawing_resource_paths(self, element):
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
-        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns"):
+        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
             resource_path = pset.get(resource)
             if not resource_path:
                 self.resource_paths[resource] = None
