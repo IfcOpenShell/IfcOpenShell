@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+
 
 def enable_editing_text(drawing, obj=None):
     drawing.enable_editing_text(obj)
@@ -87,6 +89,12 @@ def add_sheet(ifc, drawing, titleblock=None):
     )
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
+
+
+def regenerate_sheet(drawing, sheet=None):
+    titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
+    drawing.create_svg_sheet(sheet, drawing.sanitise_filename(Path(titleblock_uri).stem))
+    drawing.add_drawings(sheet)
 
 
 def open_sheet(drawing, sheet=None):
