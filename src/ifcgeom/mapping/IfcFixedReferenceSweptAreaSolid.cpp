@@ -67,11 +67,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 		for (size_t i = 0; i <= num_steps; ++i) {
 			auto m4 = pwf->evaluate(start + curve_length / num_steps * i);
 			
+			/*
 			std::stringstream ss;
 			ss << m4;
 			auto s = ss.str();
 			std::wcout << s.c_str() << std::endl;
             std::wcout << "determinant: " << m4.determinant() << std::endl;
+			*/
 
 			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
 			bool is_directrix_derived = false;
