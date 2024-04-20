@@ -95,7 +95,7 @@
 		container.insert(element);
 	}
 
-	template <typename T, template<typename> typename U>
+	template <typename T, template<typename...> typename U>
 	U<T> python_sequence_as_cpp_container(PyObject* aggregate) {
 		U<T> result_vector;
 		if constexpr (std::is_same_v<U<T>, std::vector<T>>) {
