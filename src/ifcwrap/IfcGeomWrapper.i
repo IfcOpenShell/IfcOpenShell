@@ -29,6 +29,8 @@
 	}
 }
 
+%template(material_vector) std::vector<ifcopenshell::geometry::taxonomy::style>;
+
 // SWIG does not support bool references in a meaningful way, so the
 // ifcopenshell::geometry::Settings functions degrade to return a read only value
 %typemap(out) double& {
@@ -104,6 +106,28 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
 
+%extend ifcopenshell::geometry::taxonomy::style {
+	size_t instance_id() const {
+		// @todo for some reason we have the IfcStyledItem/IfcMaterial here, but
+		// BlenderBIM expects IfcSurfaceStyle/IfcMaterial
+		if (self->instance == nullptr) {
+			return 0;
+		}
+		const IfcUtil::IfcBaseEntity* ent;
+		if ((ent = self->instance->as<IfcUtil::IfcBaseEntity>()) == nullptr) {
+			return 0;
+		}
+		if (ent->declaration().name() == "IfcStyledItem") {
+			aggregate_of_instance::ptr styles = *ent->get("Styles");
+			if (styles->size() == 1) {
+				ent = (*styles->begin())->as<IfcUtil::IfcBaseEntity>();
+			} else {
+				return 0;
+			}
+		}
+		return ent->data().id();
+	}
+}
 
 %extend ifcopenshell::geometry::Settings {
 	void set_(const std::string& name, bool val) {
