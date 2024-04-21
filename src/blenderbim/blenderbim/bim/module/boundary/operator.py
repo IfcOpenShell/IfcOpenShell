@@ -832,7 +832,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         settings = ifcopenshell.geom.settings()
                         settings.set(settings.STRICT_TOLERANCE, True)
                         shape = ifcopenshell.geom.create_shape(settings, opening)
-                        m = shape.transformation.matrix.data
+                        m = shape.transformation.matrix
                         mat = Matrix(
                             (
                                 [m[0], m[3], m[6], m[9]],
@@ -1035,7 +1035,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         settings.set(settings.STRICT_TOLERANCE, True)
         # geometry = ifcopenshell.geom.create_shape(settings, body)
         shape = ifcopenshell.geom.create_shape(settings, element)
-        m = shape.transformation.matrix.data
+        m = shape.transformation.matrix
         mat = Matrix(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
         verts = [space_matrix_i @ mat @ Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
         faces = ifcopenshell.util.shape.get_faces(shape.geometry)
