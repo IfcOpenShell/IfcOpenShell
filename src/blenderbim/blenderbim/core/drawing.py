@@ -94,7 +94,12 @@ def add_sheet(ifc, drawing, titleblock=None):
 def regenerate_sheet(drawing, sheet=None):
     titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
     drawing.create_svg_sheet(sheet, drawing.sanitise_filename(Path(titleblock_uri).stem))
-    drawing.add_drawings(sheet)
+    try:
+        drawing.add_drawings(sheet)
+    except FileNotFoundError:
+        path_layout = drawing.get_document_uri(sheet, "LAYOUT")
+        if drawing.does_file_exist(path_layout):
+            drawing.delete_file(path_layout)
 
 
 def open_sheet(drawing, sheet=None):
