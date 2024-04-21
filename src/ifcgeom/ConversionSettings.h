@@ -373,6 +373,13 @@ namespace ifcopenshell {
 			template <std::size_t Index>
 			void set_option_(const std::string& name, const value_variant_t& val) {
 				if (std::tuple_element_t<Index, settings_t>::name == name) {
+					if constexpr (std::is_enum_v<typename std::tuple_element_t<Index, settings_t>::base_type>) {
+						if (val.which() == 1) {
+							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) boost::get<int>(val);
+							std::get<Index>(settings).value = val_as_enum;
+							return;
+						}
+					}
 					std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
 				} else if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
 					set_option_<Index + 1>(name, val);
