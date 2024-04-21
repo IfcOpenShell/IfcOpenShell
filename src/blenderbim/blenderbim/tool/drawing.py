@@ -248,6 +248,21 @@ class Drawing(blenderbim.core.tool.Drawing):
         return uri
 
     @classmethod
+    def add_drawings(cls, sheet):
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        sheet_reference = None
+        drawing_names = []
+        for reference in cls.get_document_references(sheet):
+            if reference.Description == "LAYOUT":
+                sheet_reference = reference
+            elif reference.Description == "DRAWING":
+                drawing_names.append(Path(reference.Location).stem)
+        for annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
+            if annotation.Name in drawing_names:
+                sheet_builder.add_drawing(sheet_reference, annotation, sheet)
+
+    @classmethod
     def delete_collection(cls, collection):
         bpy.data.collections.remove(collection, do_unlink=True)
 

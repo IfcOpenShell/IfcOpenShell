@@ -2373,6 +2373,7 @@ class LoadSheets(bpy.types.Operator, Operator):
             if not filepath.is_file():
                 sheet_name = f"{sheet_prop.identification} - {sheet_prop.name}"
                 sheets_not_found.append(f'"{sheet_name}" - {document_uri}')
+                core.regenerate_sheet(tool.Drawing, sheet)
 
         if sheets_not_found:
             self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))

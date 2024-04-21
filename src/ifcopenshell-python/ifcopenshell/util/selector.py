@@ -233,7 +233,7 @@ class FormatTransformer(lark.Transformer):
 
     def imperial_length(self, args):
         if len(args) == 2:
-            input_unit = "foot"
+            input_unit, output_unit = "foot", "foot"
             value, precision = args
         else:
             value, precision, input_unit, output_unit = args
@@ -524,7 +524,10 @@ class FacetTransformer(lark.Transformer):
         name = name.children[0].value
 
         def filter_function(element):
-            element_value = getattr(element, name, None)
+            if name == "PredefinedType":
+                element_value = ifcopenshell.util.element.get_predefined_type(element)
+            else:
+                element_value = getattr(element, name, None)
             return self.compare(element_value, comparison, value)
 
         self.elements = set(filter(filter_function, self.elements))

@@ -604,8 +604,8 @@ def format_length(
     decimal_places: int = 2,
     suppress_zero_inches=True,
     unit_system: Literal["metric", "imperial"] = "imperial",
-    input_unit="foot",
-    output_unit="foot",
+    input_unit: Literal["foot", "inch"] = "foot",
+    output_unit: Literal["foot", "inch"] = "foot",
 ) -> str:
     """Formats a length for readability and imperial formatting
 

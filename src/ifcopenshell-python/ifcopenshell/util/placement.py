@@ -61,11 +61,22 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     :return: A 4x4 numpy matrix
     :rtype: np.ndarray[np.ndarray[float]]
     """
-    if placement.is_a("IfcAxis2Placement3D"):
+    ifc_class = placement.is_a()
+    if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
         z = np.array(placement.Axis.DirectionRatios if placement.Axis else (0, 0, 1))
         x = np.array(placement.RefDirection.DirectionRatios if placement.RefDirection else (1, 0, 0))
-        o = placement.Location.Coordinates
-    elif placement.is_a("IfcAxis2Placement2D"):
+        location = placement.Location
+        if coordinates := getattr(location, "Coordinates", None):
+            o = coordinates
+        else:
+            ifc_class = location.is_a("IfcPointByDistanceExpression")
+            print(
+                f'WARNING. Placement location of type "{ifc_class}" '
+                f'is not yet supported and placement {placement} may be placed incorrectly.'
+            )
+            o = (0.0, 0.0, 0.0)
+
+    elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
         if placement.RefDirection:
             x = np.array(placement.RefDirection.DirectionRatios)
@@ -73,6 +84,13 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         else:
             x = np.array((1, 0, 0))
         o = (*placement.Location.Coordinates, 0.0)
+
+    elif ifc_class == "IfcAxis1Placement":
+        axis = placement.Axis
+        z = np.array(axis.DirectionRatios if axis else (0, 0, 1))
+        x = np.array((1, 0, 0))
+        o = placement.Location.Coordinates
+
     return a2p(o, z, x)
 
 
