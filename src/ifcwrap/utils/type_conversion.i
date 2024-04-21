@@ -72,9 +72,16 @@
 
 	template <>
 	std::string cast_pyobject(PyObject* element) {
+	#if SWIG_VERSION >= 0x040200
+	    PyObject *pbytes = NULL;
+	    const char* str_data = SWIG_PyUnicode_AsUTF8AndSize(element, NULL, &pbytes);
+		std::string str = str_data;
+		Py_XDECREF(pbytes);
+	#else
 		char* str_data = SWIG_Python_str_AsChar(element);
 		std::string str = str_data;
 		SWIG_Python_str_DelForPy3(str_data);
+	#endif
 		return str;
 	}
 
