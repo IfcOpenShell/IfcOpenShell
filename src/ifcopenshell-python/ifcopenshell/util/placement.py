@@ -69,12 +69,11 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         if coordinates := getattr(location, "Coordinates", None):
             o = coordinates
         else:
-            ifc_class = location.is_a("IfcPointByDistanceExpression")
-            print(
-                f'WARNING. Placement location of type "{ifc_class}" '
-                f'is not yet supported and placement {placement} may be placed incorrectly.'
-            )
-            o = (0.0, 0.0, 0.0)
+            import ifcopenshell.geom
+            st = ifcopenshell.geom.settings()
+            st.set('convert-back-units', True)
+            shp = ifcopenshell.geom.create_shape(st, placement)
+            return np.array(shp.matrix).reshape((4,4))
 
     elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
