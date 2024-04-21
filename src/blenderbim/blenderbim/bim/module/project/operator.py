@@ -736,7 +736,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
-        blenderbim.bim.schema.reload(self.file.schema)
+        blenderbim.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -1427,7 +1427,7 @@ class LoadLinkedProject(bpy.types.Operator):
         return {"FINISHED"}
 
     def is_local(self, shape):
-        m = shape.transformation.matrix.data
+        m = shape.transformation.matrix
         if max([abs(co) for co in (m[9], m[10], m[11])]) > 1000:
             return False
         elif max([abs(co) for co in shape.geometry.verts[0:3]]) > 1000:
@@ -1436,13 +1436,13 @@ class LoadLinkedProject(bpy.types.Operator):
 
     def process_occurrence(self, shape):
         element = self.file.by_id(shape.id)
-        matrix = shape.transformation.matrix.data
+        matrix = shape.transformation.matrix
         faces = shape.geometry.faces
         verts = shape.geometry.verts
         materials = shape.geometry.materials
         material_ids = shape.geometry.material_ids
 
-        m = shape.transformation.matrix.data
+        m = shape.transformation.matrix
         mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
 
         mesh = self.meshes.get(shape.geometry.id, None)

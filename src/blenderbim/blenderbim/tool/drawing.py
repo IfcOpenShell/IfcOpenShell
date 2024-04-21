@@ -692,7 +692,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         cls.import_camera_props(drawing, obj)
         tool.Ifc.link(drawing, obj)
 
-        m = shape.transformation.matrix.data
+        m = shape.transformation.matrix
         mat = mathutils.Matrix(
             ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
         )

@@ -391,20 +391,20 @@ class IfcImporter:
 
         for context in self.contexts:
             settings = ifcopenshell.geom.settings()
-            settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-            settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-            settings.set(settings.STRICT_TOLERANCE, True)
-            settings.set(settings.INCLUDE_CURVES, True)
-            settings.set_context_ids([context.id()])
+            settings.set('mesher-linear-deflection', self.ifc_import_settings.deflection_tolerance)
+            settings.set('mesher-angular-deflection', self.ifc_import_settings.angular_tolerance)
+            # settings.set(settings.STRICT_TOLERANCE, True)
+            settings.set('dimensionality', ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            settings.set('context-ids', [context.id()])
             self.context_settings.append(settings)
 
             settings = ifcopenshell.geom.settings()
-            settings.set_deflection_tolerance(self.ifc_import_settings.deflection_tolerance)
-            settings.set_angular_tolerance(self.ifc_import_settings.angular_tolerance)
-            settings.set(settings.STRICT_TOLERANCE, True)
-            settings.set(settings.INCLUDE_CURVES, True)
-            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
-            settings.set_context_ids([context.id()])
+            settings.set('mesher-linear-deflection', self.ifc_import_settings.deflection_tolerance)
+            settings.set('mesher-angular-deflection', self.ifc_import_settings.angular_tolerance)
+            # settings.set(settings.STRICT_TOLERANCE, True)
+            settings.set('dimensionality', ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            settings.set('disable-opening-subtractions', True)
+            settings.set('context-ids', [context.id()])
             self.gross_context_settings.append(settings)
 
     def process_element_filter(self):
@@ -693,10 +693,7 @@ class IfcImporter:
             shape = self.create_generic_shape(element)
             if not shape:
                 continue
-            m = shape.transformation.matrix.data
-            mat = np.array(
-                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-            )
+            mat = np.array(shape.transformation.matrix).reshape((4,4))
             point = np.array(
                 (
                     shape.geometry.verts[0] / self.unit_scale,
@@ -1153,11 +1150,7 @@ class IfcImporter:
         self.link_element(element, obj)
 
         if shape:
-            m = shape.transformation.matrix.data
-            # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.array(
-                ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-            )
+            mat = np.array(shape.transformation.matrix).reshape((4,4))
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, mat))
             self.material_creator.create(element, obj, mesh)
         elif mesh:
@@ -1893,10 +1886,7 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
-                m = shape.transformation.matrix.data
-                mat = np.array(
-                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-                )
+                mat = np.array(shape.transformation.matrix).reshape((4,4))
                 offset_point = np.linalg.inv(mat) @ np.array(
                     (
                         float(props.blender_eastings),
@@ -1950,7 +1940,7 @@ class IfcImporter:
                 edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
                 mesh.from_pydata(vertices, edges, [])
 
-            mesh["ios_materials"] = [int(m.name.split("-")[2]) for m in geometry.materials]
+            mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
             mesh["ios_material_ids"] = geometry.material_ids
             return mesh
         except:
