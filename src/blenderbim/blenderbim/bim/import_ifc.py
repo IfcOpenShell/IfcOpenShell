@@ -693,7 +693,7 @@ class IfcImporter:
             shape = self.create_generic_shape(element)
             if not shape:
                 continue
-            mat = np.array(shape.transformation.matrix).reshape((4,4))
+            mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             point = np.array(
                 (
                     shape.geometry.verts[0] / self.unit_scale,
@@ -1150,7 +1150,8 @@ class IfcImporter:
         self.link_element(element, obj)
 
         if shape:
-            mat = np.array(shape.transformation.matrix).reshape((4,4))
+            # We use numpy here because Blender mathutils.Matrix is not accurate enough
+            mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, mat))
             self.material_creator.create(element, obj, mesh)
         elif mesh:
@@ -1886,7 +1887,7 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
-                mat = np.array(shape.transformation.matrix).reshape((4,4))
+                mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
                 offset_point = np.linalg.inv(mat) @ np.array(
                     (
                         float(props.blender_eastings),
