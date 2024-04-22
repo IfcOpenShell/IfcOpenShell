@@ -73,7 +73,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
             st = ifcopenshell.geom.settings()
             st.set('convert-back-units', True)
             shp = ifcopenshell.geom.create_shape(st, placement)
-            return np.array(shp.matrix).reshape((4,4))
+            return np.array(shp.matrix).reshape((4, 4), order="F")
 
     elif ifc_class == "IfcAxis2Placement2D":
         z = np.array((0, 0, 1))
