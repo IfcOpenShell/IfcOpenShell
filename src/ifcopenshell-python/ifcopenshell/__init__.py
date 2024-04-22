@@ -222,7 +222,7 @@ def schema_by_name(
         prefixes = ("IFC", "X", "_ADD", "_TC")
         schema = "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, schema_version))
     else:
-        schema = {"IFC4X3": "IFC4X3_ADD1"}.get(schema, schema)
+        schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
