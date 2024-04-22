@@ -622,7 +622,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.data.BIMMeshProperties.material_checksum = str([s.id() for s in cls.get_styles(obj) if s])
 
     @classmethod
-    def record_object_position(cls, obj):
+    def record_object_position(cls, obj: bpy.types.Object) -> None:
         # These are recorded separately because they have different numerical tolerances
         obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
