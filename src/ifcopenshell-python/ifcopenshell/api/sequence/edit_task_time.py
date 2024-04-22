@@ -17,12 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
+from typing import Any, Optional
 
 
 class Usecase:
-    def __init__(self, file, task_time=None, attributes=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        task_time: ifcopenshell.entity_instance,
+        attributes: Optional[dict[str, Any]] = None,
+    ):
         """Edits the attributes of an IfcTaskTime
 
         For more information about the attributes and data types of an
@@ -55,7 +62,7 @@ class Usecase:
         self.file = file
         self.settings = {"task_time": task_time, "attributes": attributes or {}}
 
-    def execute(self):
+    def execute(self) -> None:
         self.task = self.get_task()
         self.calendar = ifcopenshell.util.sequence.derive_calendar(self.task)
 
@@ -169,12 +176,12 @@ class Usecase:
             duration, "IfcDuration"
         )
 
-    def get_task(self):
-        return [
+    def get_task(self) -> ifcopenshell.entity_instance:
+        return next(
             e
             for e in self.file.get_inverse(self.settings["task_time"])
             if e.is_a("IfcTask")
-        ][0]
+        )
 
     def handle_resource_calculation(self):
         resources = ifcopenshell.util.sequence.get_task_resources(self.task, is_deep=False)

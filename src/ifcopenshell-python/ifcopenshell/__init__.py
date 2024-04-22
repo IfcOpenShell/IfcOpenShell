@@ -39,6 +39,7 @@ import sys
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Optional
 
 import ifcopenshell.util.file
 
@@ -197,12 +198,14 @@ def register_schema(schema):
     register_schema_attributes(schema.schema)
 
 
-def schema_by_name(schema=None, schema_version=None):
+def schema_by_name(
+    schema: Optional[str] = None, schema_version: Optional[tuple[int, ...]] = None
+) -> ifcopenshell_wrapper.schema_definition:
     """Returns an object allowing you to query the IFC schema itself
 
     :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
         or "IFC4X3". These refer to the ISO approved versions of IFC.
-    :type schema: string
+    :type schema: string, optional
     :param schema_version: If you want to specify an exact version of IFC
         that may not be an ISO approved version, use this argument instead
         of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -211,7 +214,9 @@ def schema_by_name(schema=None, schema_version=None):
         ADD2 TC1, which is the official version approved by ISO when people
         refer to "IFC4". Generally you should not use this argument unless
         you are testing non-ISO IFC releases.
-    :type schema_version: tuple[int]
+    :type schema_version: tuple[int, ...], optional
+    :return: Schema definition object.
+    :rtype: ifocpenshell_wrapper.schema_definition
     """
     if schema_version:
         prefixes = ("IFC", "X", "_ADD", "_TC")

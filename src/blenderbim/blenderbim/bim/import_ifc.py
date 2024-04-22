@@ -199,7 +199,7 @@ class MaterialCreator:
 
 
 class IfcImporter:
-    def __init__(self, ifc_import_settings):
+    def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
         self.file: ifcopenshell.file = None
@@ -722,7 +722,7 @@ class IfcImporter:
                         if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
 
-    def apply_blender_offset_to_matrix_world(self, obj, matrix):
+    def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             if obj.data and obj.data.get("has_cartesian_point_offset", None):
@@ -950,7 +950,9 @@ class IfcImporter:
             self.create_product(element, mesh=mesh)
 
     def create_products(
-        self, products, settings: Optional[ifcopenshell.geom.main.settings] = None
+        self,
+        products: set[ifcopenshell.entity_instance],
+        settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
         results = set()
         if not products:
@@ -1804,7 +1806,7 @@ class IfcImporter:
             if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
 
-    def get_element_matrix(self, element: ifcopenshell.entity_instance) -> np.array:
+    def get_element_matrix(self, element: ifcopenshell.entity_instance) -> np.ndarray:
         if isinstance(element, ifcopenshell.sqlite_entity):
             result = self.geometry_cache["shapes"][element.id()]["matrix"]
         else:
@@ -1950,14 +1952,14 @@ class IfcImporter:
 
             print(traceback.format_exc())
 
-    def a2p(self, o, z, x):
+    def a2p(self, o: mathutils.Vector, z: mathutils.Vector, x: mathutils.Vector) -> mathutils.Matrix:
         y = z.cross(x)
         r = mathutils.Matrix((x, y, z, o))
         r.resize_4x4()
         r.transpose()
         return r
 
-    def get_axis2placement(self, plc):
+    def get_axis2placement(self, plc: ifcopenshell.entity_instance) -> mathutils.Matrix:
         if plc.is_a("IfcAxis2Placement3D"):
             z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
             x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
@@ -1977,7 +1979,7 @@ class IfcImporter:
         o = plc.LocalOrigin.Coordinates
         return self.a2p(o, z, x)
 
-    def get_local_placement(self, plc):
+    def get_local_placement(self, plc: Optional[ifcopenshell.entity_instance] = None) -> mathutils.Matrix:
         if plc is None:
             return mathutils.Matrix()
         if plc.PlacementRelTo is None:
@@ -1992,11 +1994,11 @@ class IfcImporter:
                 bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
                 break
 
-    def link_element(self, element, obj):
+    def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
         self.added_data[element.id()] = obj
         tool.Ifc.link(element, obj)
 
-    def set_matrix_world(self, obj, matrix_world):
+    def set_matrix_world(self, obj: bpy.types.Object, matrix_world: mathutils.Matrix) -> None:
         obj.matrix_world = matrix_world
         tool.Geometry.record_object_position(obj)
 
