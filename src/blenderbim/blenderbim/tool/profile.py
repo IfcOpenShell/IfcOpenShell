@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -75,3 +76,7 @@ class Profile(blenderbim.core.tool.Profile):
     @classmethod
     def get_model_profiles(cls):
         return tool.Ifc.get().by_type("IfcProfileDef")
+
+    @classmethod
+    def duplicate_profile(cls, profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        return ifcopenshell.util.element.copy_deep(tool.Ifc.get(), profile)

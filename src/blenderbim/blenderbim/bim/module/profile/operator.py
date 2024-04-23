@@ -132,6 +132,27 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
 
+class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_profile_def"
+    bl_label = "Duplicate Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMProfileProperties
+        if len(props.profiles) > props.active_profile_index:
+            return True
+        cls.poll_message_set("No profile selected to duplicate.")
+        return False
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(props.profiles[props.active_profile_index].ifc_definition_id)
+        tool.Profile.duplicate_profile(profile)
+        bpy.ops.bim.load_profiles()
+
+
 class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_arbitrary_profile"
     bl_label = "Enable Editing Arbitrary Profile"
