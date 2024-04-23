@@ -103,6 +103,7 @@ For Linux or Mac:
     # Remove and link other IfcOpenShell utilities
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -110,9 +111,11 @@ For Linux or Mac:
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifctester
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
+    $ rm -r $BLENDER_ADDON_PATH/libs/Desktop
 
     $ ln -s $PWD/src/ifccsv/ifccsv.py $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ ln -s $PWD/src/ifcdiff/ifcdiff.py $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
+    $ ln -s $PWD/src/bsdd/bsdd.py $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
     $ ln -s $PWD/src/ifc4d/ifc4d $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ ln -s $PWD/src/ifc5d/ifc5d $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ ln -s $PWD/src/ifccityjson/ifccityjson $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -120,6 +123,7 @@ For Linux or Mac:
     $ ln -s $PWD/src/ifcpatch/ifcpatch $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
     $ ln -s $PWD/src/ifctester/ifctester $BLENDER_ADDON_PATH/libs/site/packages/ifctester
     $ ln -s $PWD/src/ifcfm/ifcfm $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
+    $ ln -s $PWD/src/blenderbim/blenderbim/libs/desktop $BLENDER_ADDON_PATH/libs/Desktop
 
     # Manually download some third party dependencies
     $ cd $BLENDER_ADDON_PATH/bim/data/gantt
@@ -168,6 +172,7 @@ Before running it follow the instructions descibed after `rem` tags.
     echo Remove and link other IfcOpenShell utilities...
     del "%blenderbim%\libs\site\packages\ifccsv.py"
     del "%blenderbim%\libs\site\packages\ifcdiff.py"
+    del "%blenderbim%\libs\site\packages\bsdd.py"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc4d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc5d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifccityjson"
@@ -175,9 +180,11 @@ Before running it follow the instructions descibed after `rem` tags.
     rd /S /Q "%blenderbim%\libs\site\packages\ifcpatch"
     rd /S /Q "%blenderbim%\libs\site\packages\ifctester"
     rd /S /Q "%blenderbim%\libs\site\packages\ifcfm"
+    rd /S /Q "%blenderbim%\libs\desktop"
 
     mklink "%blenderbim%\libs\site\packages\ifccsv.py" "%cd%\src\ifccsv\ifccsv.py"
     mklink "%blenderbim%\libs\site\packages\ifcdiff.py" "%cd%\src\ifcdiff\ifcdiff.py"
+    mklink "%blenderbim%\libs\site\packages\bsdd.py" "%cd%\src\bsdd\bsdd.py"
     mklink /D "%blenderbim%\libs\site\packages\ifc4d" "%cd%\src\ifc4d\ifc4d"
     mklink /D "%blenderbim%\libs\site\packages\ifc5d" "%cd%\src\ifc5d\ifc5d"
     mklink /D "%blenderbim%\libs\site\packages\ifccityjson" "%cd%\src\ifccityjson\ifccityjson"
@@ -185,6 +192,7 @@ Before running it follow the instructions descibed after `rem` tags.
     mklink /D "%blenderbim%\libs\site\packages\ifcpatch" "%cd%\src\ifcpatch\ifcpatch"
     mklink /D "%blenderbim%\libs\site\packages\ifctester" "%cd%\src\ifctester\ifctester"
     mklink /D "%blenderbim%\libs\site\packages\ifcfm" "%cd%\src\ifcfm\ifcfm"
+    mklink /D "%blenderbim%\libs\desktop" "%cd%\src\blenderbim\blenderbim\libs\desktop"
 
     echo Manually downloading some third party dependencies...
     curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%blenderbim%\bim\data\gantt\jsgantt.js"
