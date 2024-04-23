@@ -66,8 +66,14 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        current_index = props.active_profile_index
         ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
         bpy.ops.bim.load_profiles()
+
+        # preserve selected index if possible
+        if props.profiles:
+            props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
 class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
