@@ -39,6 +39,10 @@ class Material(blenderbim.core.tool.Material):
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 
     @classmethod
+    def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        return ifcopenshell.util.element.copy_deep(tool.Ifc.get(), material)
+
+    @classmethod
     def enable_editing_materials(cls):
         bpy.context.scene.BIMMaterialProperties.is_editing = True
 

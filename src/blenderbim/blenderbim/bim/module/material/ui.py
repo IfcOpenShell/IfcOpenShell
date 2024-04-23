@@ -61,6 +61,8 @@ class BIM_PT_materials(Panel):
             if self.props.materials and self.props.active_material_index < len(self.props.materials):
                 material = self.props.materials[self.props.active_material_index]
                 if material.ifc_definition_id:
+                    op = row.operator("bim.duplicate_material", text="", icon="DUPLICATE")
+                    op.material = material.ifc_definition_id
                     op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
