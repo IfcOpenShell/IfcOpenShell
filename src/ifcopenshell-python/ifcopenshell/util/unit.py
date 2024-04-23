@@ -683,8 +683,14 @@ def is_attr_type(
             return cur_decl
 
     if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
-        res = cur_decl.type_of_element()
-        cur_decl = res.declared_type()
+        # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
+        def get_declared_type_from_aggregate(cur_decl):
+            cur_decl = cur_decl.type_of_element()
+            if not isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
+                return cur_decl.declared_type()
+            return get_declared_type_from_aggregate(cur_decl)
+
+        cur_decl = get_declared_type_from_aggregate(cur_decl)
         if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
             return cur_decl
         while hasattr(cur_decl, "declared_type") is True:
@@ -733,14 +739,16 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str) ->
     old_length = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT"][0]
     new_length = ifcopenshell.api.run("unit.add_si_unit", file_patched, unit_type="LENGTHUNIT", prefix=prefix)
 
+    # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
+    def convert_value(value):
+        if not isinstance(value, tuple):
+            return convert_unit(value, old_length, new_length)
+        return tuple(convert_value(v) for v in value)
+
     # Traverse all elements and their nested attributes in the file and convert them
     for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
-        if isinstance(val, tuple):
-            new_value = [convert_unit(v, old_length, new_length) for v in val]
-            setattr(element, attr.name(), tuple(new_value))
-        else:
-            new_value = convert_unit(val, old_length, new_length)
-            setattr(element, attr.name(), new_value)
+        new_value = convert_value(val)
+        setattr(element, attr.name(), new_value)
 
     file_patched.remove(old_length)
     unit_assignment.Units = tuple([new_length, *unit_assignment.Units])

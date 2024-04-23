@@ -41,9 +41,10 @@ def test_file_units_length_convert(ifc_file):
         elem_id = element.id()
         original_element = f.by_id(elem_id)
         original_val = getattr(original_element, attr.name())
-        if isinstance(original_val, tuple):
-            # assert element is equal to original element times scale
-            assert val == tuple([v * scale for v in original_val])
-        else:
-            # assert element is equal to original element times scale
-            assert val == original_val * scale
+        def convert_value(value):
+            if not isinstance(value, tuple):
+                return value * scale
+            return tuple(convert_value(v) for v in value)
+
+        # assert element is equal to original element times scale
+        assert val == convert_value(original_val)
