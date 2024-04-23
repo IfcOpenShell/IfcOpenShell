@@ -18,10 +18,18 @@
 
 import ifcopenshell
 import ifcopenshell.util.unit
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, units=None, length=None, area=None, volume=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        units: Optional[list[ifcopenshell.entity_instance]] = None,
+        length: Optional[dict] = None,
+        area: Optional[dict] = None,
+        volume: Optional[dict] = None,
+    ):
         """Assign default project units
 
         Whenever a unitised quantity is specified, such as a length, area,
@@ -67,7 +75,7 @@ class Usecase:
         self.settings["area"] = area or {"is_metric": True, "raw": "METERS"}
         self.settings["volume"] = volume or {"is_metric": True, "raw": "METERS"}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         # We're going to refactor this to split unit creation and assignment
         if self.settings["units"]:
             units = self.settings["units"]
@@ -84,7 +92,7 @@ class Usecase:
         self.assign_units(unit_assignment, units)
         return unit_assignment
 
-    def get_unit_assignment(self):
+    def get_unit_assignment(self) -> ifcopenshell.entity_instance:
         unit_assignment = self.file.by_type("IfcUnitAssignment")
         if unit_assignment:
             unit_assignment = unit_assignment[0]
@@ -97,13 +105,15 @@ class Usecase:
                 self.file.by_type("IfcContext")[0].UnitsInContext = unit_assignment
         return unit_assignment
 
-    def assign_units(self, unit_assignment, new_units):
+    def assign_units(
+        self, unit_assignment: ifcopenshell.entity_instance, new_units: list[ifcopenshell.entity_instance]
+    ) -> None:
         units = set(unit_assignment.Units or [])
         for unit in new_units:
             units.add(unit)
         unit_assignment.Units = list(units)
 
-    def create_metric_unit(self, unit_type, data):
+    def create_metric_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
         type_prefix = ""
         if unit_type == "area":
             type_prefix = "SQUARE_"
@@ -116,7 +126,7 @@ class Usecase:
             type_prefix + ifcopenshell.util.unit.get_unit_name(data["raw"]),
         )
 
-    def create_imperial_unit(self, unit_type, data):
+    def create_imperial_unit(self, unit_type: str, data: dict) -> ifcopenshell.entity_instance:
         if unit_type == "length":
             dimensional_exponents = self.file.createIfcDimensionalExponents(1, 0, 0, 0, 0, 0, 0)
             name_prefix = ""
