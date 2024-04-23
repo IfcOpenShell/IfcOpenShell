@@ -30,6 +30,7 @@ classes = (
     operator.DisableAddingPresentationStyle,
     operator.DisableEditingStyle,
     operator.DisableEditingStyles,
+    operator.DuplicateStyle,
     operator.EditStyle,
     operator.EditSurfaceStyle,
     operator.EnableAddingPresentationStyle,

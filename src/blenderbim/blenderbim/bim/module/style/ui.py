@@ -85,6 +85,7 @@ class BIM_PT_styles(Panel):
 
             op = row.operator("bim.enable_editing_style", text="Edit Style", icon="GREASEPENCIL")
             op.style = style.ifc_definition_id
+            row.operator("bim.duplicate_style", text="", icon="DUPLICATE").style = style.ifc_definition_id
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
