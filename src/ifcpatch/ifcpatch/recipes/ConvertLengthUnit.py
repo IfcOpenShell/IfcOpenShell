@@ -26,7 +26,13 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, unit: str = "METERS"):
+    def __init__(
+        self,
+        src: str,
+        file: ifcopenshell.file,
+        logger: Logger,
+        unit: str = "METERS",
+    ):
         """Converts the length unit of a model to the specified unit
 
         Allowed metric units include METERS, MILLIMETERS, CENTIMETERS, etc.

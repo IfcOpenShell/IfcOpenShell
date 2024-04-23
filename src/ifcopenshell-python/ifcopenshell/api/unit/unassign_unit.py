@@ -15,10 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, units=None):
+    def __init__(self, file: ifcopenshell.file, units: Optional[list[ifcopenshell.entity_instance]] = None):
         """Unassigns units as default units for the project
 
         :param units: A list of units to assign as project defaults.

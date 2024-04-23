@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, unit_type="LENGTHUNIT", prefix=None):
+    def __init__(self, file: ifcopenshell.file, unit_type: str = "LENGTHUNIT", prefix: Optional[str] = None):
         """Add a new SI unit
 
         The supported types are ABSORBEDDOSEUNIT, AMOUNTOFSUBSTANCEUNIT,
@@ -59,7 +60,7 @@ class Usecase:
         self.file = file
         self.settings = {"unit_type": unit_type, "prefix": prefix}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         name = ifcopenshell.util.unit.si_type_names.get(self.settings["unit_type"], None)
         return self.file.create_entity(
             "IfcSIUnit", UnitType=self.settings["unit_type"], Name=name, Prefix=self.settings["prefix"]

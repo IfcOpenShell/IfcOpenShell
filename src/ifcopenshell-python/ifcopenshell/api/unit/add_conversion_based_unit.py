@@ -18,10 +18,11 @@
 
 import ifcopenshell
 import ifcopenshell.util.unit
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, name="foot", conversion_offset=None):
+    def __init__(self, file: ifcopenshell.file, name: str = "foot", conversion_offset: Optional[float] = None):
         """Add a conversion based unit
 
         If you're in one of those countries who don't use SI units, you're
@@ -41,7 +42,7 @@ class Usecase:
             that this is just an example and you don't actually need to specify
             that for fahrenheit as it's built into this API function. For
             advanced users only.
-        :type conversion_offset: float
+        :type conversion_offset: float, optional
         :return: The new IfcConversionBasedUnit or
             IfcConversionBasedUnitWithOffset
         :rtype: ifcopenshell.entity_instance.entity_instance
@@ -60,7 +61,7 @@ class Usecase:
         self.file = file
         self.settings = {"name": name, "conversion_offset": conversion_offset}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         unit_type = ifcopenshell.util.unit.imperial_types.get(self.settings["name"], "USERDEFINED")
         dimensions = ifcopenshell.util.unit.named_dimensions[unit_type]
         exponents = self.file.createIfcDimensionalExponents(*dimensions)
