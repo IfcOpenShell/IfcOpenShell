@@ -24,6 +24,7 @@ classes = (
     operator.AddLayer,
     operator.AddListItem,
     operator.AddMaterial,
+    operator.DuplicateMaterial,
     operator.AddMaterialSet,
     operator.AddProfile,
     operator.AssignMaterial,
