@@ -493,6 +493,22 @@ class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_adding = True
 
 
+class DuplicateStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_style"
+    bl_label = "Duplicate Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    style: bpy.props.IntProperty(name="Style ID")
+
+    def _execute(self, context):
+        style_type = context.scene.BIMStylesProperties.style_type
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style)
+        tool.Style.duplicate_style(style)
+        bpy.ops.bim.disable_editing_styles()
+        bpy.ops.bim.load_styles(style_type=style_type)
+
+
 class DisableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_adding_presentation_style"
     bl_label = "Disable Add Presentation Style"
