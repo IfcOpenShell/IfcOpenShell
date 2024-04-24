@@ -1317,9 +1317,9 @@ class CreateSheets(bpy.types.Operator, Operator):
         has_sheet_reference = False
         for reference in tool.Drawing.get_document_references(sheet):
             reference_description = tool.Drawing.get_reference_description(reference)
-            if reference == "SHEET":
+            if reference_description == "SHEET":
                 has_sheet_reference = True
-            elif reference == "RASTER":
+            elif reference_description == "RASTER":
                 if reference.Location in raster_references:
                     raster_references.remove(reference.Location)
                 else:
