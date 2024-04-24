@@ -254,9 +254,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         sheet_reference = None
         drawing_names = []
         for reference in cls.get_document_references(sheet):
-            if reference.Description == "LAYOUT":
+            reference_description = cls.get_reference_description(reference)
+            if reference_description == "LAYOUT":
                 sheet_reference = reference
-            elif reference.Description == "DRAWING":
+            elif reference_description == "DRAWING":
                 drawing_names.append(Path(reference.Location).stem)
         for annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
             if annotation.Name in drawing_names:
@@ -421,7 +422,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 references = document.HasDocumentReferences
             for reference in references:
-                if description and reference.Description != description:
+                if description and cls.get_reference_description(reference) != description:
                     continue
                 location = cls.get_document_uri(reference)
                 if location:
@@ -823,7 +824,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                 continue
 
             for reference in cls.get_document_references(sheet):
-                if reference.Description in ("SHEET", "LAYOUT", "RASTER"):
+                reference_description = cls.get_reference_description(reference)
+                if reference_description in ("SHEET", "LAYOUT", "RASTER"):
                     # These references are an internal detail and should not be visible to users
                     continue
                 new = props.sheets.add()
@@ -836,7 +838,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     new.identification = reference.Identification or ""
 
                 new.name = os.path.basename(reference.Location)
-                new.reference_type = reference.Description
+                new.reference_type = reference_description
 
     @classmethod
     def get_active_sheet(cls, context):
@@ -1568,8 +1570,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
-    def get_reference_description(cls, reference):
+    def get_reference_description(cls, reference: ifcopenshell.entity_instance) -> Union[str, None]:
+        if reference.file.schema == "IFC2X3":
+            return reference.Name
         return reference.Description
+
+    @classmethod
+    def generate_reference_attributes(cls, reference: ifcopenshell.entity_instance, **attributes: Any) -> dict[str, Any]:
+        """will automatically convert attributes below for IFC2X3 compatibility:
+
+        - Identification -> ItemReference
+
+        - Description -> Name
+        """
+        if reference.file.schema == "IFC2X3":
+            if "Description" in attributes:
+                attributes["Name"] = attributes["Description"]
+                del attributes["Description"]
+            if "Identification" in attributes:
+                attributes["ItemReference"] = attributes["Identification"]
+                del attributes["Identification"]
+        return attributes
 
     @classmethod
     def get_reference_location(cls, reference):

@@ -77,16 +77,17 @@ def add_sheet(ifc, drawing, titleblock=None):
     else:
         attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "SHEET"}
     ifc.run("document.edit_information", information=sheet, attributes=attributes)
-    ifc.run(
-        "document.edit_reference",
-        reference=layout,
-        attributes={"Location": drawing.get_default_layout_path(identification, "UNTITLED"), "Description": "LAYOUT"},
+
+    attributes = drawing.generate_reference_attributes(
+        layout, Location=drawing.get_default_layout_path(identification, "UNTITLED"), Description="LAYOUT"
     )
-    ifc.run(
-        "document.edit_reference",
-        reference=titleblock_reference,
-        attributes={"Location": drawing.get_default_titleblock_path(titleblock), "Description": "TITLEBLOCK"},
+    ifc.run("document.edit_reference", reference=layout, attributes=attributes)
+
+    attributes = drawing.generate_reference_attributes(
+        layout, Location=drawing.get_default_titleblock_path(titleblock), Description="TITLEBLOCK"
     )
+    ifc.run("document.edit_reference", reference=titleblock_reference, attributes=attributes)
+
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
 
@@ -138,8 +139,9 @@ def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
                     drawing.move_file(old_location, ifc.resolve_uri(new_location))
 
 
-def rename_reference(ifc, reference=None, identification=None):
-    ifc.run("document.edit_reference", reference=reference, attributes={"Identification": identification})
+def rename_reference(ifc, drawing, reference=None, identification=None):
+    attributes = drawing.generate_reference_attributes(reference, Identifiaction=identification)
+    ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
 
 def load_schedules(drawing):
