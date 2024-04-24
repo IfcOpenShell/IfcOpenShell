@@ -355,10 +355,29 @@ def get_prefix_multiplier(text):
 
 
 def get_unit_name(text: str) -> Union[str, None]:
+    """Get unit name from str, if unit is in SI."""
     text = text.upper().replace("METER", "METRE")
     for name in unit_names:
         if name.replace("_", " ") in text:
             return name
+
+
+def get_unit_name_universal(text: str) -> Union[str, None]:
+    """Get unit name from str, supports both SI and imperial system.
+
+    Can be used to provide units for `convert()`"""
+    text = text.upper().replace("METER", "METRE")
+    for name in unit_names:
+        if name.replace("_", " ") in text:
+            return name
+    for name in imperial_types:
+        if name.upper() in text:
+            return name
+
+
+def get_full_unit_name(unit: ifcopenshell.entity_instance) -> str:
+    prefix = getattr(unit, "Prefix", None) or ""
+    return prefix + unit.Name.upper()
 
 
 def get_si_dimensions(name):
@@ -727,17 +746,27 @@ def iter_element_and_attributes_per_type(
             yield element, attr, val
 
 
-def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str) -> ifcopenshell.file:
+def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "METER") -> ifcopenshell.file:
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
-    prefix = "MILLI" if target_units == "MILLIMETERS" else None
+    prefix = get_prefix(target_units)
+    si_unit = get_unit_name(target_units)
 
     # Copy all elements from the original file to the patched file
     file_patched = ifcopenshell.file.from_string(ifc_file.wrapped_data.to_string())
 
     unit_assignment = get_unit_assignment(file_patched)
 
-    old_length = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT"][0]
-    new_length = ifcopenshell.api.run("unit.add_si_unit", file_patched, unit_type="LENGTHUNIT", prefix=prefix)
+    old_length = next(u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT")
+    if si_unit:
+        new_length = ifcopenshell.api.run("unit.add_si_unit", file_patched, unit_type="LENGTHUNIT", prefix=prefix)
+    else:
+        target_units = target_units.lower()
+        if imperial_types.get(target_units) != "LENGTHUNIT":
+            raise Exception(
+                f'Couldn\'t identify target units "{target_units}". '
+                'The method supports singular unit names like "CENTIMETER", "METER", "FOOT", etc.'
+            )
+        new_length = ifcopenshell.api.run("unit.add_conversion_based_unit", file_patched, name=target_units)
 
     # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
     def convert_value(value):

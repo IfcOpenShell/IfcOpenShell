@@ -79,14 +79,7 @@ class Patcher:
 
     def get_unit_name(self, ifc_file: ifcopenshell.file) -> str:
         length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
-        names = {
-            "METRE": "METERS",
-            "FOOT": "FEET",
-            "INCH": "INCHES",
-            "MILE": "MILES",
-        }
-        prefix = getattr(length_unit, "Prefix", None) or ""
-        return prefix + names[length_unit.Name.upper()]
+        return ifcopenshell.util.unit.get_full_unit_name(length_unit)
 
     def reuse_existing_contexts(self):
         to_delete = set()
