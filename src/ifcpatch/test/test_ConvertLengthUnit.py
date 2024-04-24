@@ -29,10 +29,10 @@ class TestConvertLengthUnit(test.bootstrap.IFC4):
         unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
         output = ifcpatch.execute(
-            {"input": "input.ifc", "file": self.file, "recipe": "ConvertLengthUnit", "arguments": ["METERS"]}
+            {"input": "input.ifc", "file": self.file, "recipe": "ConvertLengthUnit", "arguments": ["METER"]}
         )
         unit = ifcopenshell.util.unit.get_project_unit(output, "LENGTHUNIT")
-        assert unit.Prefix == None
+        assert ifcopenshell.util.unit.get_full_unit_name(unit) == "METRE"
 
 
 class TestConvertLengthUnitIFC2X3(test.bootstrap.IFC2X3, TestConvertLengthUnit):
