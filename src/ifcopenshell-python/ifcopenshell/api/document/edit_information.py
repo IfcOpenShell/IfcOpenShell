@@ -15,10 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any, Optional
 
 
 class Usecase:
-    def __init__(self, file, information=None, attributes=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        information: ifcopenshell.entity_instance,
+        attributes: Optional[dict[str, Any]] = None,
+    ):
         """Edits the attributes of an IfcDocumentInformation
 
         For more information about the attributes and data types of an
@@ -44,6 +51,6 @@ class Usecase:
         self.file = file
         self.settings = {"information": information, "attributes": attributes or {}}
 
-    def execute(self):
+    def execute(self) -> None:
         for name, value in self.settings["attributes"].items():
             setattr(self.settings["information"], name, value)

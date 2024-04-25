@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from pathlib import Path
+import ifcopenshell
 
 
 def enable_editing_text(drawing, obj=None):
@@ -66,7 +67,7 @@ def disable_editing_sheets(drawing):
     drawing.disable_editing_sheets()
 
 
-def add_sheet(ifc, drawing, titleblock=None):
+def add_sheet(ifc, drawing, titleblock: ifcopenshell.entity_instance):
     sheet = ifc.run("document.add_information")
     layout = ifc.run("document.add_reference", information=sheet)
     titleblock_reference = ifc.run("document.add_reference", information=sheet)
@@ -117,7 +118,7 @@ def remove_sheet(ifc, drawing, sheet=None):
     drawing.import_sheets()
 
 
-def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
+def rename_sheet(ifc, drawing, sheet: ifcopenshell.entity_instance, identification: str, name: str) -> None:
     if ifc.get_schema() == "IFC2X3":
         attributes = {"DocumentId": identification, "Name": name}
     else:

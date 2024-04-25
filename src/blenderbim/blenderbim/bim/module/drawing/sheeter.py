@@ -41,7 +41,7 @@ class SheetBuilder:
         self.data_dir = None
         self.scale = "NTS"
 
-    def create(self, layout_path, titleblock_name):
+    def create(self, layout_path: str, titleblock_name: str) -> None:
         root = ET.Element("svg")
         root.attrib["xmlns"] = "http://www.w3.org/2000/svg"
         root.attrib["xmlns:xlink"] = "http://www.w3.org/1999/xlink"
@@ -76,7 +76,12 @@ class SheetBuilder:
         with open(layout_path, "w") as f:
             f.write(minidom.parseString(ET.tostring(root)).toprettyxml(indent="    "))
 
-    def add_drawing(self, reference, drawing, sheet):
+    def add_drawing(
+        self,
+        reference: ifcopenshell.entity_instance,
+        drawing: ifcopenshell.entity_instance,
+        sheet: ifcopenshell.entity_instance,
+    ) -> None:
         filename = drawing.Name
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         layout_dir = os.path.dirname(layout_path)
@@ -131,7 +136,7 @@ class SheetBuilder:
         )
         layout_tree.write(layout_path)
 
-    def update_sheet_drawing_sizes(self, sheet):
+    def update_sheet_drawing_sizes(self, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
@@ -171,7 +176,7 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
-    def remove_drawing(self, reference, sheet):
+    def remove_drawing(self, reference: ifcopenshell.entity_instance, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
@@ -187,7 +192,12 @@ class SheetBuilder:
 
         layout_tree.write(layout_path)
 
-    def add_document(self, reference, document, sheet):
+    def add_document(
+        self,
+        reference: ifcopenshell.entity_instance,
+        document: ifcopenshell.entity_instance,
+        sheet: ifcopenshell.entity_instance,
+    ) -> None:
         view_path = tool.Drawing.get_path_with_ext(tool.Drawing.get_document_uri(document), "svg")
         if not os.path.exists(view_path):
             tool.Drawing.create_svg_document(document)
@@ -224,7 +234,7 @@ class SheetBuilder:
         )
         layout_tree.write(layout_path)
 
-    def add_view_title(self, x, y, parent, layout_dir):
+    def add_view_title(self, x: float, y: float, parent: ET.Element, layout_dir: str) -> None:
         title_path = os.path.join(layout_dir, "assets", "view-title.svg")
         os.makedirs(os.path.dirname(title_path), exist_ok=True)
         if not os.path.exists(title_path):
@@ -241,7 +251,7 @@ class SheetBuilder:
         title.attrib["width"] = str(self.convert_to_mm(title_root.attrib.get("width")))
         title.attrib["height"] = str(self.convert_to_mm(title_root.attrib.get("height")))
 
-    def build(self, sheet):
+    def build(self, sheet: ifcopenshell.entity_instance) -> dict:
         self.references = {"SHEET": None, "RASTER": []}
 
         layout_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
@@ -272,7 +282,7 @@ class SheetBuilder:
 
         return self.references
 
-    def build_titleblock(self, root, sheet):
+    def build_titleblock(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         titleblock = root.findall('{http://www.w3.org/2000/svg}g[@data-type="titleblock"]')[0]
         image = titleblock.findall("{http://www.w3.org/2000/svg}image")[0]
         g = self.parse_embedded_svg(image, sheet.get_info())
@@ -285,7 +295,7 @@ class SheetBuilder:
         titleblock.append(g)
         titleblock.remove(image)
 
-    def ensure_drawing_unique_styles(self, svg, drawing_id):
+    def ensure_drawing_unique_styles(self, svg: ET.Element, drawing_id: int) -> ET.Element:
         """ensures all drawing's classes and ids will be unique for the whole sheet
         by adding `drawing_id` based prefix
         """
@@ -313,7 +323,7 @@ class SheetBuilder:
                 brackets_level -= 1
             text += l
 
-        def replace_urls(text):
+        def replace_urls(text: str) -> str:
             """replace urls `url(#marker)` with `url(#prefix-marker)`
             since `url(#marker.prefix)` doesn't seem to work
             """
@@ -343,7 +353,7 @@ class SheetBuilder:
 
         return svg
 
-    def build_drawings(self, root, sheet):
+    def build_drawings(self, root: ET.Element, sheet: ifcopenshell.entity_instance):
         for view in root.findall('{http://www.w3.org/2000/svg}g[@data-type="drawing"]'):
             drawing_id = int(view.attrib["data-id"])
             try:
@@ -390,7 +400,7 @@ class SheetBuilder:
             for image in images:
                 view.remove(image)
 
-    def build_documents(self, root, sheet):
+    def build_documents(self, root: ET.Element, sheet: ifcopenshell.entity_instance) -> None:
         schedules = root.findall('{http://www.w3.org/2000/svg}g[@data-type="schedule"]')
         references = root.findall('{http://www.w3.org/2000/svg}g[@data-type="reference"]')
         documents = schedules + references
@@ -427,10 +437,10 @@ class SheetBuilder:
             for image in images:
                 view.remove(image)
 
-    def get_href(self, element):
-        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href")).replace('\\','/')
+    def get_href(self, element: ET.Element) -> str:
+        return urllib.parse.unquote(element.attrib.get("{http://www.w3.org/1999/xlink}href")).replace("\\", "/")
 
-    def parse_embedded_svg(self, image, data):
+    def parse_embedded_svg(self, image: ET.Element, data: dict) -> ET.Element:
         group = ET.Element("g")
         group.attrib["transform"] = "translate({},{})".format(
             self.convert_to_mm(image.attrib.get("x")), self.convert_to_mm(image.attrib.get("y"))
@@ -466,7 +476,7 @@ class SheetBuilder:
             group.append(child)
         return group
 
-    def change_titleblock(self, sheet, titleblock_name):
+    def change_titleblock(self, sheet: ifcopenshell.entity_instance, titleblock_name: str) -> None:
         ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
         titleblock_path = tool.Drawing.get_default_titleblock_path(titleblock_name)
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
@@ -499,7 +509,7 @@ class SheetBuilder:
 
         sheet_tree.write(sheet_path)
 
-    def convert_to_mm(self, value):
+    def convert_to_mm(self, value: str) -> float:
         # CSS is what defines these possibilities
         # https://www.w3.org/TR/SVG/refs.html#ref-css-values-3
         # https://www.w3.org/TR/css-values-3/#absolute-lengths
@@ -520,5 +530,5 @@ class SheetBuilder:
             return float(value[0:-2]) * (1 / 96) * 2.54 * 10
         return float(value)
 
-    def mm_to_px(self, value):
+    def mm_to_px(self, value: float) -> float:
         return (value / 25.4) * 96

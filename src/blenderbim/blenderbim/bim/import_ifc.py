@@ -34,6 +34,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import blenderbim.tool as tool
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate

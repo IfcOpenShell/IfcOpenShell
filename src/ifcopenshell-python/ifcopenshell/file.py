@@ -259,7 +259,7 @@ class file(object):
         self.history_size = 64
         self.history = []
         self.future = []
-        self.transaction = None
+        self.transaction: Optional[Transaction] = None
 
         import weakref
 
