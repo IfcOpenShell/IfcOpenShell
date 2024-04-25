@@ -118,7 +118,11 @@ def remove_sheet(ifc, drawing, sheet=None):
 
 
 def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
-    ifc.run("document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name})
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": identification, "Name": name}
+    else:
+        attributes = {"Identification": identification, "Name": name}
+    ifc.run("document.edit_information", information=sheet, attributes=attributes)
     for reference in drawing.get_document_references(sheet):
         description = drawing.get_reference_description(reference)
         if description == "SHEET":
