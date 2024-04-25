@@ -17,10 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import numpy.typing as npt
 import ifcopenshell
 from typing import Literal, Iterable
 
-MatrixType = np.ndarray[np.ndarray[float]]
+
+MatrixType = npt.NDArray[np.float64]
+"""`npt.NDArray[np.float64]`"""
 
 
 def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixType:
@@ -36,7 +39,7 @@ def a2p(o: Iterable[float], z: Iterable[float], x: Iterable[float]) -> MatrixTyp
     :param x: The +X vector / axis of the matrix
     :type x: iterable[float]
     :return: A 4x4 numpy matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     x = x / np.linalg.norm(x)
     z = z / np.linalg.norm(z)
@@ -59,7 +62,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     :param placement: The IfcLocalPlacement enitity
     :type placement: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     ifc_class = placement.is_a()
     if ifc_class in ("IfcAxis2Placement3D", "IfcAxis2PlacementLinear"):
@@ -72,7 +75,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
             ifc_class = location.is_a()
             print(
                 f'WARNING. Placement location of type "{ifc_class}" '
-                f'is not yet supported and placement {placement} may be placed incorrectly.'
+                f"is not yet supported and placement {placement} may be placed incorrectly."
             )
             o = (0.0, 0.0, 0.0)
 
@@ -117,7 +120,7 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     :param placement: The IfcLocalPlacement entity
     :type placement: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     if placement is None:
         return np.eye(4)
@@ -137,7 +140,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     :param item: The IfcCartesianTransformationOperator entity
     :type item: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     origin = np.array(inst.LocalOrigin.Coordinates)
     axis1 = np.array((1.0, 0.0, 0.0))
@@ -183,7 +186,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixT
     :param item: The IfcMappedItem entity
     :type item: ifcopenshell.entity_instance.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     m4 = get_axis2placement(item.MappingSource.MappingOrigin)
     # TODO 2d
@@ -219,7 +222,7 @@ def rotation(angle: float, axis: Literal["X", "Y", "Z"], is_degrees=True) -> Mat
         radians. Defaults to true (i.e. degrees).
     :type is_degrees: bool
     :return: A 4x4 numpy rotation matrix
-    :rtype: np.ndarray[np.ndarray[float]]
+    :rtype: MatrixType
     """
     theta = np.radians(angle) if is_degrees else angle
     cos, sin = np.cos(theta), np.sin(theta)
