@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import numpy.typing as npt
 import collections
 import collections.abc
 import ifcopenshell
@@ -533,13 +534,13 @@ class ShapeBuilder:
 
     def create_axis2_placement_3d_from_matrix(
         self,
-        matrix: Union[np.ndarray, None] = None,
+        matrix: Union[npt.NDArray[np.float64], None] = None,
     ) -> ifcopenshell.entity_instance:
         """
         Create IfcAxis2Placement3D from numpy matrix.
 
         :param matrix: 4x4 transformation matrix, defaults to `np.eye(4)`
-        :type matrix: np.array[np.array[float]], optional
+        :type matrix: npt.NDArray[np.float64], optional
         :return: IfcAxis2Placement3D
         :rtype: ifcopenshell.entity_instance
         """
