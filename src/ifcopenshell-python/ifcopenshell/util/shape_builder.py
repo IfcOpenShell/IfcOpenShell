@@ -344,6 +344,16 @@ class ShapeBuilder:
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
             )
 
+        kwargs = {
+            "ProfileName": name,
+            "ProfileType": profile_type,
+            "OuterCurve": outer_curve,
+        }
+        if self.file.schema == "IFC2X3":
+            kwargs["Position"] = self.file.create_entity(
+                "IfcAxis2Placement2D", self.file.create_entity("IfcCartesianPoint", [0.0, 0.0])
+            )
+
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]
@@ -354,13 +364,9 @@ class ShapeBuilder:
                         "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
                     )
 
-            profile = self.file.createIfcArbitraryProfileDefWithVoids(
-                ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve, InnerCurves=inner_curves
-            )
+            profile = self.file.create_entity("IfcArbitraryProfileDefWithVoids", InnerCurves=inner_curves, **kwargs)
         else:
-            profile = self.file.createIfcArbitraryClosedProfileDef(
-                ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve
-            )
+            profile = self.file.create_entity("IfcArbitraryClosedProfileDef", **kwargs)
         return profile
 
     def translate(self, curve_or_item, translation: Vector, create_copy=False):
