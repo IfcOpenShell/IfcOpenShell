@@ -276,7 +276,15 @@ class entity_instance(object):
 
     def __setattr__(self, key: str, value: Any) -> None:
         index = self.wrapped_data.get_argument_index(key)
-        self[index] = value
+        try:
+            self[index] = value
+        except IndexError as e:
+            # get_argument_index returns 0xFFFFFFFF if attribute is not found
+            if index == 0xFFFFFFFF:
+                raise AttributeError(
+                    "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), key)
+                )
+            raise e
 
     def __getitem__(self, key: int) -> Any:
         if key < 0 or key >= len(self):
