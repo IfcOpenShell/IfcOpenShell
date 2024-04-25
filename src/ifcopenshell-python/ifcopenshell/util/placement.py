@@ -69,7 +69,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         if coordinates := getattr(location, "Coordinates", None):
             o = coordinates
         else:
-            ifc_class = location.is_a("IfcPointByDistanceExpression")
+            ifc_class = location.is_a()
             print(
                 f'WARNING. Placement location of type "{ifc_class}" '
                 f'is not yet supported and placement {placement} may be placed incorrectly.'
