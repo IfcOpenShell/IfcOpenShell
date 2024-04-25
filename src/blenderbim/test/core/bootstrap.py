@@ -19,6 +19,7 @@
 import json
 import pytest
 import blenderbim.core.tool
+from typing import Any, Self, Optional
 
 
 @pytest.fixture
@@ -241,12 +242,12 @@ def voider():
 class Prophecy:
     def __init__(self, cls):
         self.subject = cls
-        self.predictions = []
-        self.calls = []
-        self.return_values = {}
-        self.should_call = None
+        self.predictions: list[dict] = []
+        self.calls: list[dict] = []
+        self.return_values: dict[str, Any] = {}
+        self.should_call: Optional[dict] = None
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         if not hasattr(self.subject, attr):
             raise AttributeError(f"Prophecy {self.subject} has no attribute {attr}")
 
@@ -270,12 +271,12 @@ class Prophecy:
         self.predictions.append({"type": "SHOULD_BE_CALLED", "number": number, "call": self.should_call})
         return self
 
-    def will_return(self, value):
+    def will_return(self, value: Any) -> Self:
         key = json.dumps(self.should_call, sort_keys=True)
         self.return_values[key] = value
         return self
 
-    def verify(self):
+    def verify(self) -> None:
         predicted_calls = []
         for prediction in self.predictions:
             predicted_calls.append(prediction["call"])
@@ -285,7 +286,7 @@ class Prophecy:
             if call not in predicted_calls:
                 raise Exception(f"Unpredicted call: {call}")
 
-    def verify_should_be_called(self, prediction):
+    def verify_should_be_called(self, prediction: dict) -> None:
         if prediction["number"]:
             count = self.calls.count(prediction["call"])
             if count != prediction["number"]:

@@ -18,8 +18,12 @@
 
 import numpy as np
 import collections
+import collections.abc
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
 from typing import List, Tuple, Type, Union
 from itertools import chain

@@ -240,7 +240,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def create_svg_sheet(cls, document, titleblock):
+    def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")

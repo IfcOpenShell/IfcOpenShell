@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import logging
 import shapely
+import shapely.ops
 import mathutils
 import numpy as np
 import multiprocessing
