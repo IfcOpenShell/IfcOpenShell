@@ -62,7 +62,9 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        return ifcopenshell.util.element.copy_deep(tool.Ifc.get(), style)
+        new_style = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), style)
+        new_style.Name = style.Name + "_copy"
+        return new_style
 
     @classmethod
     def enable_editing(cls, obj):
