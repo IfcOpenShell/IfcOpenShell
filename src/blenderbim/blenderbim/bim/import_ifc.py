@@ -431,7 +431,7 @@ class IfcImporter:
         self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
         self.annotations -= drawing_annotations
 
-        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
+        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
         if self.ifc_import_settings.is_coordinating:
             self.elements = [e for e in self.elements if e.Representation]
 
@@ -862,7 +862,6 @@ class IfcImporter:
             self.create_generic_elements(self.spatial_elements, unselectable=True)
         else:
             self.create_generic_elements(self.spatial_elements, unselectable=False)
-
 
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
@@ -1639,6 +1638,8 @@ class IfcImporter:
                         rel_aggregates.add(nested_by[0])
                 elif nests := getattr(element, "Nests", []):
                     rel_aggregates.add(nests[0])
+                elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
+                    rel_aggregates.add(element.AdheresToElement[0])
         else:
             rel_aggregates = [
                 r
@@ -1654,6 +1655,8 @@ class IfcImporter:
                 )
                 and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
+            if self.file.schema == "IFC4X3":
+                rel_aggregates += [r for r in self.file.by_type("IfcRelAdheresToElement")]
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
@@ -1663,7 +1666,9 @@ class IfcImporter:
 
         aggregates: dict[str, dict] = {}
         for rel_aggregate in rel_aggregates:
-            element: ifcopenshell.entity_instance = rel_aggregate.RelatingObject
+            element: ifcopenshell.entity_instance = getattr(rel_aggregate, "RelatingObject", None) or getattr(
+                rel_aggregate, "RelatingElement"
+            )
             collection = bpy.data.collections.new(tool.Loader.get_name(element))
             aggregates[element.GlobalId] = {"element": element, "collection": collection}
             self.collections[element.GlobalId] = collection
@@ -1764,6 +1769,9 @@ class IfcImporter:
         elif getattr(element, "Nests", None) and not element.is_a("IfcPort"):
             nest = ifcopenshell.util.element.get_nest(element)
             return self.collections[nest.GlobalId].objects.link(obj)
+        elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
+            adherend = element.AdheresToElement[0].RelatingElement
+            return self.collections[adherend.GlobalId].objects.link(obj)
 
         return self.place_object_in_spatial_decomposition_collection(element, obj)
 

@@ -187,6 +187,9 @@ class Collector(blenderbim.core.tool.Collector):
             if any(e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")):
                 return cls._create_own_collection(obj)
 
+        if getattr(element, "HasSurfaceFeatures", None):
+            return cls._create_own_collection(obj)
+
     @classmethod
     def _get_collection(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> bpy.types.Collection:
         """get or create collection for the element based on it's type"""
@@ -244,6 +247,13 @@ class Collector(blenderbim.core.tool.Collector):
         if container:
             container_obj = tool.Ifc.get_object(container)
             collection = container_obj.BIMObjectProperties.collection
+            if collection:
+                return collection
+
+        if element.is_a("IfcSurfaceFeature") and element.file.schema == "IFC4X3":
+            adherend = element.AdheresToElement[0].RelatingElement
+            adherend_obj = tool.Ifc.get_object(adherend)
+            collection = adherend_obj.BIMObjectProperties.collection
             if collection:
                 return collection
 
