@@ -89,30 +89,29 @@ class Usecase:
         matrix[2][3] *= self.unit_scale
 
     def get_placement_rel_to(self) -> Union[ifcopenshell.entity_instance, None]:
-        if getattr(self.settings["product"], "Decomposes", None):
-            relating_object = self.settings["product"].Decomposes[0].RelatingObject
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "Nests", None):
-            relating_object = self.settings["product"].Nests[0].RelatingObject
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "ContainedIn", None):
-            related_element = self.settings["product"].ContainedIn[0].RelatedElement
-            return related_element.ObjectPlacement if hasattr(related_element, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "VoidsElements", None):
-            relating_object = self.settings["product"].VoidsElements[0].RelatingBuildingElement
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "FillsVoids", None):
-            relating_object = self.settings["product"].FillsVoids[0].RelatingOpeningElement
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "ProjectsElements", None):
-            relating_object = self.settings["product"].ProjectsElements[0].RelatingElement
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        product = self.settings["product"]
+        relating_object = None
+
+        if rels := getattr(product, "Decomposes", None):
+            relating_object = rels[0].RelatingObject
+        elif rels := getattr(product, "Nests", None):
+            relating_object = rels[0].RelatingObject
+        elif rels := getattr(product, "ContainedIn", None):
+            relating_object = rels[0].RelatedElement
+        elif rels := getattr(product, "VoidsElements", None):
+            relating_object = rels[0].RelatingBuildingElement
+        elif rels := getattr(product, "FillsVoids", None):
+            relating_object = rels[0].RelatingOpeningElement
+        elif rels := getattr(product, "ProjectsElements", None):
+            relating_object = rels[0].RelatingElement
         # TODO: add tests when there will be adherence api
-        elif getattr(self.settings["product"], "AdheresToElement", None):
-            relating_object = self.settings["product"].AdheresToElement[0].RelatingElement
-            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
-        elif getattr(self.settings["product"], "ContainedInStructure", None):
-            return self.settings["product"].ContainedInStructure[0].RelatingStructure.ObjectPlacement
+        elif rels := getattr(product, "AdheresToElement", None):
+            relating_object = rels[0].RelatingElement
+        elif rels := getattr(product, "ContainedInStructure", None):
+            return rels[0].RelatingStructure.ObjectPlacement
+
+        if relating_object:
+            return getattr(relating_object, "ObjectPlacement", None)
 
     def get_children_settings(self, placement: Union[ifcopenshell.entity_instance, None]) -> list[dict]:
         if not placement:
