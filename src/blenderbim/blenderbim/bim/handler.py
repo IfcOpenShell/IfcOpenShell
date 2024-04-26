@@ -238,6 +238,19 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     )
 
 
+def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
+    # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
+    if pao := next(iter(ifc.by_type("IfcPersonAndOrganization")), None):
+        return pao
+    elif ifc.schema == "IFC2X3":
+        if (person := next(iter(ifc.by_type("IfcPerson")), None)) is None:
+            person = tool.Ifc.run("owner.add_person")
+        if (organization := next(iter(ifc.by_type("IfcOrganization")), None)) is None:
+            organization = tool.Ifc.run("owner.add_organisation")
+        pao = tool.Ifc.run("owner.add_person_and_organisation", person=person, organisation=organization)
+        return pao
+
+
 def get_application_version() -> str:
     return ".".join(
         [
@@ -279,7 +292,7 @@ def load_post(scene):
                 key=key, owner=global_subscription_owner, args=(area,), notify=viewport_shading_changed_callback
             )
 
-    ifcopenshell.api.owner.settings.get_user = lambda ifc: core_owner.get_user(tool.Owner)
+    ifcopenshell.api.owner.settings.get_user = get_user
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
