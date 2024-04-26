@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class Usecase:
-    def __init__(self, file, opening=None):
+    def __init__(self, file: ifcopenshell.entity_instance, opening: ifcopenshell.entity_instance):
         """Remove an opening
 
         Fillings are retained as orphans. Voided elements remain. Openings
@@ -47,7 +48,7 @@ class Usecase:
         self.file = file
         self.settings = {"opening": opening}
 
-    def execute(self):
+    def execute(self) -> None:
         for rel in self.settings["opening"].VoidsElements:
             history = rel.OwnerHistory
             self.file.remove(rel)

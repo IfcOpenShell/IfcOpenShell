@@ -15,10 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, identification="HSeldon", family_name="Seldon", given_name="Hari"):
+    def __init__(
+        self,
+        file: ifcopenshell.entity_instance,
+        identification: str = "HSeldon",
+        family_name: str = "Seldon",
+        given_name: str = "Hari",
+    ):
         """Adds a new person
 
         Persons are used to identify a legal or liable representative of an
@@ -48,7 +55,7 @@ class Usecase:
             "given_name": given_name,
         }
 
-    def execute(self):
+    def execute(self) ->ifcopenshell.entity_instance:
         data = {"FamilyName": self.settings["family_name"], "GivenName": self.settings["given_name"]}
         if self.file.schema == "IFC2X3":
             data["Id"] = self.settings["identification"]

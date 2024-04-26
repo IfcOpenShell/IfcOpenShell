@@ -23,7 +23,9 @@ import ifcopenshell.util.placement
 
 
 class Usecase:
-    def __init__(self, file, opening=None, element=None):
+    def __init__(
+        self, file: ifcopenshell.file, opening: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ):
         """Create an opening in an element
 
         It is often necessary to cut out openings in elements like walls and
@@ -103,18 +105,18 @@ class Usecase:
         self.file = file
         self.settings = {"opening": opening, "element": element}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         voids_elements = self.settings["opening"].VoidsElements
 
         if voids_elements:
             if voids_elements[0].RelatingBuildingElement == self.settings["element"]:
-                return
+                return voids_elements[0]
             history = voids_elements[0].OwnerHistory
             self.file.remove(voids_elements[0])
             if history:
                 ifcopenshell.util.element.remove_deep2(self.file, history)
 
-        self.file.create_entity(
+        rel = self.file.create_entity(
             "IfcRelVoidsElement",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
@@ -133,3 +135,5 @@ class Usecase:
                 matrix=ifcopenshell.util.placement.get_local_placement(self.settings["opening"].ObjectPlacement),
                 is_si=False,
             )
+
+        return rel
