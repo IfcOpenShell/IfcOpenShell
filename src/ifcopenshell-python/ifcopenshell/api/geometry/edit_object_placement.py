@@ -107,6 +107,10 @@ class Usecase:
         elif getattr(self.settings["product"], "ProjectsElements", None):
             relating_object = self.settings["product"].ProjectsElements[0].RelatingElement
             return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
+        # TODO: add tests when there will be adherence api
+        elif getattr(self.settings["product"], "AdheresToElement", None):
+            relating_object = self.settings["product"].AdheresToElement[0].RelatingElement
+            return relating_object.ObjectPlacement if hasattr(relating_object, "ObjectPlacement") else None
         elif getattr(self.settings["product"], "ContainedInStructure", None):
             return self.settings["product"].ContainedInStructure[0].RelatingStructure.ObjectPlacement
 
