@@ -457,6 +457,9 @@ class file(object):
         :type type: string
         :param include_subtypes: Whether or not to return subtypes of the IFC class
         :type include_subtypes: bool
+
+        :raises RuntimeError: If `type` is not found in IFC schema.
+
         :returns: A list of ifcopenshell.entity_instance.entity_instance objects
         :rtype: list[ifcopenshell.entity_instance.entity_instance]
         """
