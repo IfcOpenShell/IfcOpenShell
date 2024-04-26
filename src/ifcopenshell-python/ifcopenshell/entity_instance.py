@@ -303,7 +303,15 @@ class entity_instance(object):
 
         if value is None:
             if method is not set_derived_attribute:
-                self.wrapped_data.setArgumentAsNull(idx)
+                try:
+                    self.wrapped_data.setArgumentAsNull(idx)
+                except RuntimeError as e:
+                    if e.args == ("Attribute not set",):
+                        raise ValueError(
+                            "attribute '%s' is not optional for entity instance of type '%s'"
+                            % (self.wrapped_data.get_argument_name(idx), self.wrapped_data.is_a(True))
+                        )
+                    raise e
         else:
             self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
 
