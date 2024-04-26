@@ -19,10 +19,11 @@
 import time
 import ifcopenshell
 import ifcopenshell.api.owner.settings
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file):
+    def __init__(self, file: ifcopenshell.entity_instance):
         """Creates a new owner history indicating an element was added
 
         Any object in IFC with a unique ID and name (such as physical products,
@@ -59,8 +60,9 @@ class Usecase:
         are writing your own advanced scripts and want to take advantage of the
         easier ownership tracking.
 
-        :return: The newly created IfcOwnerHistory element.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :return: The newly created IfcOwnerHistory element or `None` if it's
+            not IFC2X3 and user or application is not found in the current project.
+        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
 
         Example:
 
@@ -99,7 +101,7 @@ class Usecase:
         self.file = file
         self.settings = {}
 
-    def execute(self):
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         user = ifcopenshell.api.owner.settings.get_user(self.file)
         if self.file.schema != "IFC2X3" and not user:
             return

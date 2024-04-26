@@ -15,10 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, person=None, organisation=None):
+    def __init__(
+        self,
+        file: ifcopenshell.entity_instance,
+        person: ifcopenshell.entity_instance,
+        organisation: ifcopenshell.entity_instance,
+    ):
         """Adds a paired person and organisation
 
         A person and an organisation may be paired to create a representative
@@ -47,5 +53,5 @@ class Usecase:
         self.file = file
         self.settings = {"person": person, "organisation": organisation}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         return self.file.createIfcPersonAndOrganization(self.settings["person"], self.settings["organisation"])

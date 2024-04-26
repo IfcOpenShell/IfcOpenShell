@@ -15,10 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
 class Usecase:
-    def __init__(self, file, identification="APTR", name="Aperture Science"):
+    def __init__(self, file: ifcopenshell.file, identification: str = "APTR", name: str = "Aperture Science"):
         """Adds a new organisation
 
         Organisations are the main way to identify manufacturers, suppliers, and
@@ -45,7 +46,7 @@ class Usecase:
         self.file = file
         self.settings = {"identification": identification, "name": name}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         data = {"Name": self.settings["name"]}
         if self.file.schema == "IFC2X3":
             data["Id"] = self.settings["identification"]

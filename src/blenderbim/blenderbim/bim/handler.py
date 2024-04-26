@@ -223,7 +223,7 @@ def redo_post(scene):
     tool.Ifc.rebuild_element_maps()
 
 
-def get_application(ifc):
+def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
     version = get_application_version()
     for element in ifc.by_type("IfcApplication"):
@@ -238,7 +238,7 @@ def get_application(ifc):
     )
 
 
-def get_application_version():
+def get_application_version() -> str:
     return ".".join(
         [
             str(x)

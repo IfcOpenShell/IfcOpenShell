@@ -67,8 +67,9 @@ def set_unsupported_attribute(*args):
 _method_dict = {}
 
 
-def register_schema_attributes(schema):
+def register_schema_attributes(schema: ifcopenshell_wrapper.schema_definition) -> None:
     for decl in schema.declarations():
+        decl: ifcopenshell_wrapper.declaration
         if hasattr(decl, "argument_types"):
             fq_name = ".".join((schema.name(), decl.name()))
 
