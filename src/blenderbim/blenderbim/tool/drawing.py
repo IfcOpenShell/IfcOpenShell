@@ -1667,7 +1667,9 @@ class Drawing(blenderbim.core.tool.Drawing):
                 #add aggregate too, if element is host by one
                 if i.Decomposes:
                     aggregate = i.Decomposes[0].RelatingObject
-                    updated_set.add(aggregate)
+                    #remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
+                    if not aggregate.is_a("IfcProject"): 
+                        updated_set.add(aggregate)
 
         # After the iteration is complete, update elements with updated set 
         elements.update(updated_set)
