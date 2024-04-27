@@ -1657,8 +1657,21 @@ class Drawing(blenderbim.core.tool.Drawing):
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
-        # exclude annotations to avoid including annotations from other drawings
-        elements = {i for i in elements if not i.is_a("IfcAnnotation")}
+        
+        updated_set = set()
+
+        for i in elements:
+            # exclude annotations to avoid including annotations from other drawings
+            if not i.is_a("IfcAnnotation"): 
+                updated_set.add(i)
+                #add aggregate too, if element is host by one
+                if i.Decomposes:
+                    aggregate = i.Decomposes[0].RelatingObject
+                    updated_set.add(aggregate)
+
+        # After the iteration is complete, update elements with updated set 
+        elements.update(updated_set)
+            
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
@@ -1836,8 +1849,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            # Don't hide IfcAnnotations as some of them might exist without representations
-            if has_context or element.is_a("IfcAnnotation"):
+            # Don't hide IfcAnnotations or Aggregates as some of them might exist without representations
+            if has_context or element.is_a("IfcAnnotation") or element.IsDecomposedBy:
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.
