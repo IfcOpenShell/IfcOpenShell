@@ -726,7 +726,7 @@ class SvgWriter:
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
             for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
-                reference_description = tool.Drawing.get_reference_description(reference)
+                reference_description = tool.Drawing.get_reference_description(sheet_reference)
                 if reference_description != "DRAWING" or sheet_reference.Location != reference.Location:
                     continue
                 sheet = tool.Drawing.get_reference_document(sheet_reference)
