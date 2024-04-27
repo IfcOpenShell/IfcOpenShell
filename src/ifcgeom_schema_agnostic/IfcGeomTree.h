@@ -1780,9 +1780,11 @@ namespace IfcGeom {
                     aabb.Add(vs_transformed.back());
                 }
 
+                /*
                 std::cout << "aabb: ";
                 aabb.DumpJson(std::cout);
                 std::cout << std::endl;
+                */
             
                 std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, boost::hash<std::tuple<int, int, int>>> quantized_normal_counts;
 
@@ -1867,9 +1869,11 @@ namespace IfcGeom {
                 obb.SetZComponent(ax3.Direction(), halfsize.Z());
                 obb.SetCenter(cent.Transformed(trsf2.Inverted()));
 
+                /*
                 std::cout << "obb: ";
                 obb.DumpJson(std::cout);
                 std::cout << std::endl;
+                */
             }
             
             const auto& t = elem->product();
