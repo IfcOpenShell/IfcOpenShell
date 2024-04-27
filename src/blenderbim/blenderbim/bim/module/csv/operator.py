@@ -72,7 +72,7 @@ class ReorderCsvAttribute(bpy.types.Operator):
     def execute(self, context):
         old = context.scene.CsvProperties.csv_attributes[self.old_index]
         new = context.scene.CsvProperties.csv_attributes[self.new_index]
-        props = ["name", "header", "sort", "group", "varies_value", "summary"]
+        props = ["name", "header", "sort", "group", "varies_value", "summary", "formatting"]
         for prop in props:
             value = getattr(new, prop)
             setattr(new, prop, getattr(old, prop))
