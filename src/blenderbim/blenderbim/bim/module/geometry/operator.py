@@ -940,6 +940,7 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 
 
 class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
+    bl_description = "Create a new linked aggregate"
     bl_idname = "bim.object_duplicate_move_linked_aggregate_macro"
     bl_label = "IFC Duplicate Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
