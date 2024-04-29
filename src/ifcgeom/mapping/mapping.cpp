@@ -426,6 +426,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
 	}
 
 	taxonomy::style::ptr material_style = taxonomy::make<taxonomy::style>();
+	material_style->instance = material;
+	if (settings_.get<settings::UseMaterialNames>().get()) {
+		material_style->name = material->Name();
+	} else {
+		std::ostringstream oss;
+		oss << material->declaration().name() << "-" << material->data().id();
+		material_style->name = oss.str();
+	}
 	return material_style;
 
 	// @todo
@@ -448,8 +456,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 	taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
 
 	surface_style->instance = style;
-	if (style->Name()) {
+	if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
 		surface_style->name = *style->Name();
+	} else {
+		std::ostringstream oss;
+		oss << shading->declaration().name() << "-" << shading->data().id();
+		surface_style->name = oss.str();
 	}
 	
 	double rgb[3];
