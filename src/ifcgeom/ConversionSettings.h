@@ -187,6 +187,13 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct UseMaterialNames : public SettingBase<UseMaterialNames, bool> {
+				static constexpr const char* const name = "use-material-names";
+				static constexpr const char* const description = "Use material names instead of unique IDs for naming materials upon serialization. "
+					"Applicable for OBJ and DAE output.";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct ConvertBackUnits : public SettingBase<ConvertBackUnits, bool> {
 				static constexpr const char* const name = "convert-back-units";
 				static constexpr const char* const description = "Specifies whether to convert back geometrical output back to the "
@@ -433,7 +440,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, WeldVertices, UseWorldCoords, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam>
 		>
 		{};
 }

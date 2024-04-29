@@ -50,6 +50,35 @@ enum segment_type_t {
 // @todo use std::numbers::pi when upgrading to C++ 20
 static const double PI = boost::math::constants::pi<double>();
 
+
+namespace {
+    double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_value) {
+        if (std::abs(param_value) < 1.e-7) {
+            return param_value;
+        } else if (crv->as<IfcSchema::IfcLine>()) {
+            // @todo we should actually check magnitude of the vector
+            return param_value;
+        } else if (crv->as<IfcSchema::IfcClothoid>()) {
+            // @todo this is wrong.
+            return param_value;
+        } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
+            return circ->Radius() * param_value;
+        } else {
+            throw std::runtime_error("Unsupported curve measure type");
+        }
+    }
+
+    double translate_if_param_value(const IfcSchema::IfcCurve* crv, IfcSchema::IfcCurveMeasureSelect* val) {
+        if (auto param = val->as<IfcSchema::IfcParameterValue>()) {
+            // We don't care whether length- or positive length measure.
+            return translate_to_length_measure(crv, *param);
+        } else {
+            return *val->data().getArgument(0);
+        }
+    }
+}
+
+
 // Current implementation uses the same segment_geometry_adjuster for all ParentCurve types.
 // Comment/Uncomment to change the type of segment geometry adjuster
 // Future implementations could use specialized adjusters based on ParentCurve type
