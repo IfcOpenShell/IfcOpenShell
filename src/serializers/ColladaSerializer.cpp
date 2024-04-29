@@ -336,9 +336,6 @@ void ColladaSerializer::ColladaExporter::ColladaMaterials::ColladaEffects::close
 
 void ColladaSerializer::ColladaExporter::ColladaMaterials::add(const ifcopenshell::geometry::taxonomy::style& material) {
 	if (!contains(material)) {
-		// std::string material_name = (serializer->settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-	 	// 	? material.original_name() : material.name());
-		// @todo
 		std::string material_name = material.name;
 
 		if (material_name.empty()) {

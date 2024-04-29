@@ -61,9 +61,6 @@ void WaveFrontOBJSerializer::writeHeader() {
 
 void WaveFrontOBJSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style)
 {
-    // std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-    //     ? style.original_name() : style.name());
-	// @todo original_name
 	std::string material_name = style.name;
     IfcUtil::sanitate_material_name(material_name);
     mtl_stream.stream << "newmtl " << material_name << "\n";
@@ -131,9 +128,6 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 		const int material_id = *(material_it++);
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style& material = mesh.materials()[material_id];
-            // std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-            //     ? material.original_name() : material.name());
-			// @todo original_name
 			std::string material_name = material.name;
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream.stream << "usemtl " << material_name << "\n";
@@ -177,9 +171,6 @@ void WaveFrontOBJSerializer::write(const IfcGeom::TriangulationElement* o)
 
 		if (material_id != previous_material_id) {
 			const ifcopenshell::geometry::taxonomy::style& material = mesh.materials()[material_id];
-            // std::string material_name = (settings().get(SerializerSettings::USE_MATERIAL_NAMES)
-            //     ? material.original_name() : material.name());
-			// @todo original_name
 			std::string material_name = material.name;
             IfcUtil::sanitate_material_name(material_name);
 			obj_stream.stream << "usemtl " << material_name << "\n";
