@@ -153,9 +153,20 @@ bool mapping::reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products) {
 }
 
 aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* inst) {
+	aggregate_of_instance::ptr openings(new aggregate_of_instance);
+	
+	if (auto rep = inst->as<IfcSchema::IfcRepresentation>()) {
+		// @todo this is essentially only for hybrid kernel trying to guess
+		// when not to use a simple kernel.
+		auto prods = products_represented_by(rep, true);
+		for (auto& p : *prods) {
+			openings->push(find_openings(p));
+		}
+		return openings;
+	}
+
 	auto product = inst->as<IfcSchema::IfcProduct>();
 
-	aggregate_of_instance::ptr openings(new aggregate_of_instance);
 	if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
 		const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
 		auto rels = element->HasOpenings();
