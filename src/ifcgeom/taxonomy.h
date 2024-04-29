@@ -90,7 +90,7 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
-			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
+			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
 
 			const std::string& kind_to_string(kinds k);
 
@@ -875,6 +875,23 @@ typedef item const* ptr;
 				}
 			};
 
+			struct sphere : public surface {
+				DECLARE_PTR(sphere)
+
+				double radius;
+
+				virtual sphere* clone_() const { return new sphere(*this); }
+				virtual kinds kind() const { return SPHERE; }
+
+				void print(std::ostream& o, int) const {
+					o << "not implemented";
+				}
+				virtual size_t calc_hash() const {
+					auto v = std::make_tuple(static_cast<size_t>(SPHERE), matrix->hash_components());
+					return boost::hash<decltype(v)>{}(v);
+				}
+			};
+
 			struct bspline_surface : public surface {
 				DECLARE_PTR(bspline_surface)
 
@@ -1037,9 +1054,9 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result, piecewise_function> KindsTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result, piecewise_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
-				typedef std::tuple<plane, cylinder, bspline_surface> SurfacesTuple;
+				typedef std::tuple<plane, cylinder, sphere, bspline_surface> SurfacesTuple;
 			}
 
 			struct type_by_kind {

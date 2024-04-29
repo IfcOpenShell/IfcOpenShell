@@ -24,6 +24,7 @@
 #include <BRepPrimAPI_MakePrism.hxx>
 #include <BRepAlgoAPI_Common.hxx>
 #include <ShapeFix_Solid.hxx>
+#include <BRepPrimAPI_MakeSphere.hxx>
 
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
@@ -64,18 +65,34 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 
 		result = halfspace;
 		return true;
+	} else if (solid->children.size() == 1 
+		&& solid->children[0]->children.size() == 1 
+		&& solid->children[0]->children[0]->basis
+		&& solid->children[0]->children[0]->basis->kind() == taxonomy::SPHERE)
+	{
+		auto sphere = taxonomy::cast<taxonomy::sphere>(solid->children[0]->children[0]->basis);
+		gp_GTrsf gtrsf;
+		convert(sphere->matrix, gtrsf);
+		BRepPrimAPI_MakeSphere builder(sphere->radius);
+		auto s = builder.Solid();
+		s.Move(gtrsf.Trsf());
+		result = s;
+		return true;
 	}
 
 	for (auto& s : solid->children) {
 		TopoDS_Shape shl;
-		convert(s, shl);
-		if (shl.ShapeType() == TopAbs_SHELL) {
-			ShapeFix_Solid solid;
-			S = solid.SolidFromShell(TopoDS::Shell(shl));
-		} else if (solid->children.size() == 1) {
-			S = shl;
+		if (convert(s, shl)) {
+			if (shl.ShapeType() == TopAbs_SHELL) {
+				ShapeFix_Solid solid;
+				S = solid.SolidFromShell(TopoDS::Shell(shl));
+			} else if (solid->children.size() == 1) {
+				S = shl;
+			} else {
+				throw std::runtime_error("Unexpected configuration of subshapes");
+			}
 		} else {
-			throw std::runtime_error("Unexpected configuration of subshapes");
+			Logger::Warning("Ignored shell", s->instance);
 		}
 	}
 	if (!S.IsNull()) {
