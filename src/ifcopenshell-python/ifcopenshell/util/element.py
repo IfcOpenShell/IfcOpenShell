@@ -512,6 +512,9 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
     if (representation := getattr(element, "Representation", ...)) != ...:
         return representation.HasShapeAspects
 
+    if element.file.schema == "IFC2X3":
+        return []
+
     # IfcTypeProduct
     shape_aspects = []
     for repersentation_map in element.RepresentationMaps:
