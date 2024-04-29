@@ -109,23 +109,36 @@ namespace {
 // function to specialize the refinement of the placement at u.
 class segment_geometry_adjuster {
   public:
-    segment_geometry_adjuster(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst) : 
-       end_of_inst_(Eigen::Matrix4d::Identity()),
-       start_of_next_inst_(Eigen::Matrix4d::Identity()),
-       transition_code_(inst->Transition())
-    {
-        transformation_matrix_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(inst->Placement()))->ccomponents();
+      segment_geometry_adjuster(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst) :
+          mapping_(mapping),
+          inst_(inst),
+          next_inst_(next_inst),
+          end_of_inst_(Eigen::Matrix4d::Identity()),
+          start_of_next_inst_(Eigen::Matrix4d::Identity()),
+          transition_code_(inst->Transition())
+      {
+          transformation_matrix_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
 
-        length_ = fabs(*inst->SegmentLength()->as<IfcSchema::IfcLengthMeasure>() * mapping->get_length_unit());
+          length_ = fabs(translate_if_param_value(inst_->ParentCurve(), inst_->SegmentLength()) * mapping_->get_length_unit());
+      }
 
-       if (next_inst) {
+      void init() {
+          if (initialized_) {
+              return;
+          }
+        
+          if (next_inst_) {
           // if there is a next segment, get the coordinates at the start.
           // Note that mapping->map(next_inst) causes mapping to occur recursively 
           // through all of the curve segments until the end of curve is reached.
           // Mapping of IfcCompositeCurve, IfcGradientCurve, and IfcSegmentedReferenceCurve may
           // need to traverse the IfcCurveSegment objects in reverse order to avoid recursion.
-          auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping->map(next_inst));
-          start_of_next_inst_ = next->evaluate(0.0);
+          auto next = taxonomy::cast<taxonomy::piecewise_function>(mapping_->map(next_inst_));
+          if (next == nullptr) {
+              valid_ = false;
+          } else {
+              start_of_next_inst_ = next->evaluate(0.0);
+          }
        } else {
           // there is not a next segment, however IfcGradientCurve and IfcSegmentedReferenceCurve
           // have an optional EndPoint attribute that serves the same purpose as the zero-length
@@ -135,7 +148,7 @@ class segment_geometry_adjuster {
           //
           // Get the parent of this segment. If it is a IfcGradientCurve or IfcSegmentedReferenceCurve
           // look for the optional EndPoint attribute
-          auto curves = inst->UsingCurves();
+          auto curves = inst_->UsingCurves();
           if (curves && curves->size()) {
              auto curve = *curves->begin();
              const IfcSchema::IfcPlacement* placement = nullptr;
@@ -147,7 +160,7 @@ class segment_geometry_adjuster {
                  placement = s->EndPoint();
              }
              if (placement) {
-                 start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping->map(placement))->ccomponents();
+                 start_of_next_inst_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(placement))->ccomponents();
              }
           }
        }
@@ -163,15 +176,20 @@ class segment_geometry_adjuster {
     // and provided to the curve_segment_adjustor through this method
     void set_segment_end_point(const Eigen::Matrix4d& end_of_inst) {
        end_of_inst_ = end_of_inst;
-       init_adjustments();
+       // @todo figure out when to call this now that we defer
+       // calling init() to circumvent stackoverflow on high
+       // recursion amount on long alignments
+       // Currently empty function.
+       // init_adjustments();
     }
 
     // Transforms the ParentCurve geometry with the IfcCurveSegment.Placement and
     // applies geometric adjustments to the geometry, if enabled
-    virtual Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) const {
+    virtual Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) {
        // transform the parent curve's value into the segment curve's coordinate system
        Eigen::Matrix4d segment_curve_point = transformation_matrix_ * parent_curve_point;
-       if (adjustments_) {
+       if (adjustments_ && valid_) {
+           init();
           apply_adjustments(u, segment_curve_point);
        }
        return segment_curve_point;
@@ -193,12 +211,18 @@ class segment_geometry_adjuster {
     IfcSchema::IfcTransitionCode::Value get_transition_code() const { return transition_code_; }
     double get_length() const { return length_; }
 
+    mapping* mapping_;
+    const IfcSchema::IfcCurveSegment* inst_;
+    const IfcSchema::IfcCurveSegment* next_inst_;
+
     bool adjustments_ = true;
     Eigen::Matrix4d transformation_matrix_;
     Eigen::Matrix4d end_of_inst_;
     Eigen::Matrix4d start_of_next_inst_;
     double length_;
     IfcSchema::IfcTransitionCode::Value transition_code_;
+    bool valid_ = true;
+    bool initialized_ = false;
 };
 
 // This class refines the geometric adjustment along the segment by dividing the
@@ -258,7 +282,7 @@ class cant_adjuster : public GEOMETRY_ADJUSTER {
   public:
     using GEOMETRY_ADJUSTER::GEOMETRY_ADJUSTER;
 
-    Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) const override {
+    Eigen::Matrix4d transform_and_adjust(double u, const Eigen::Matrix4d& parent_curve_point) override {
        // Consider a line connection two rails. The upwards vector normal to that line is used to define
        // the cant tilt. For no tilt, the vector is upwards so the tilt angle is PI/2.
        // If the left rail is higher than the right angle, the tilt is clockwise and the tilt angle is less than PI/2
@@ -359,6 +383,7 @@ class curve_segment_evaluator {
     double length_; // length along the curve, as provided from the IfcCurveSegment
     segment_type_t segment_type_;
     const IfcSchema::IfcCurve* parent_curve_ = nullptr;
+    size_t current_segment_count_;
 
     double projected_length_; // for vertical segments, this is the length of curve projected onto the "Distance Along" axis
 
@@ -367,21 +392,24 @@ class curve_segment_evaluator {
     std::optional<std::function<Eigen::Matrix4d(double)>> eval_; // function for the curve. Function takes distances along, u, and returns the 4x4 position matrix
 
   public:
-    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst, double length_unit, segment_type_t segment_type)
+    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst, double length_unit, segment_type_t segment_type, size_t current_segment_count)
         : mapping_(mapping),
-          inst_(inst),
-          next_inst_(next_inst),
-          length_unit_(length_unit),
-          segment_type_(segment_type),
-          parent_curve_(inst->ParentCurve()) {
-
+        inst_(inst),
+        next_inst_(next_inst),
+        length_unit_(length_unit),
+        segment_type_(segment_type),
+        parent_curve_(inst->ParentCurve()),
+        current_segment_count_(current_segment_count)
+    {
+        /*
         if (!inst->SegmentStart()->as<IfcSchema::IfcLengthMeasure>() || !inst->SegmentLength()->as<IfcSchema::IfcLengthMeasure>()) {
             // @nb Parameter values are forbidden in the specification until parametrization is provided for all spirals
             throw std::runtime_error("Unsupported curve measure type");
         }
+        */
 
-        start_ = *inst->SegmentStart()->as<IfcSchema::IfcLengthMeasure>() * length_unit;
-        length_ = *inst->SegmentLength()->as<IfcSchema::IfcLengthMeasure>() * length_unit;
+        start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
+        length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
     }
 
     void compute_segment_end_point()
@@ -457,6 +485,7 @@ class curve_segment_evaluator {
             }
 
             geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+            geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
             eval_ = [start, s, pcX, pcY, pcDx, pcDy, pcStartX, pcStartY, pcStartDx, pcStartDy, fnX, fnY, geometry_adjuster = geometry_adjuster_](double u) {
 
                 u += start;
@@ -569,6 +598,7 @@ class curve_segment_evaluator {
     // CantSlope returns the slope of the Cant function at u. CantSlope(u) is the derivative of Cant(u)
     void set_cant_spiral_function(mapping* mapping_, std::function<double(double)> Cant, std::function<double(double)> CantSlope) {
         geometry_adjuster_ = std::make_shared<cant_adjuster>(mapping_, inst_, next_inst_);
+        geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
         eval_ = [geometry_adjuster = geometry_adjuster_, Cant, CantSlope](double u) -> Eigen::Matrix4d {
             auto cant = Cant(u);
             auto slope = CantSlope(u);
@@ -595,7 +625,9 @@ class curve_segment_evaluator {
     // match those from the bSI Railway Room unit tests
     void set_clothoid_cant_spiral_function(mapping* mapping_, std::function<double(double)> Cant, std::function<double(double)> CantSlope) {
         geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+        geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
         auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, inst_, next_inst_);
+        cant_adjuster_->enable_adjustments(current_segment_count_ <= 64);
         eval_ = [geometry_adjuster = geometry_adjuster_,cant_adjuster=cant_adjuster_, Cant, CantSlope](double u) -> Eigen::Matrix4d {
             auto cant = Cant(u);
             auto slope = CantSlope(u);
@@ -856,6 +888,7 @@ class curve_segment_evaluator {
          auto sign_l = sign(length_);
 
          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+         geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
 
          projected_length_ = length_;
          eval_ = [R, pcCenterX, pcCenterY, pcStartX, pcStartY, pc_axis_angle, start_angle, sign_l, segment_type=segment_type_, geometry_adjuster = geometry_adjuster_](double u)
@@ -1013,6 +1046,7 @@ class curve_segment_evaluator {
            }
 
            geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+           geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
 
            projected_length_ = length_;
 
@@ -1045,6 +1079,7 @@ class curve_segment_evaluator {
 
       if (segment_type_ == ST_HORIZONTAL) {
           geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+          geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
 
           auto s = l->Pnt();
           auto c = s->Coordinates();
@@ -1089,6 +1124,7 @@ class curve_segment_evaluator {
       }
       else if (segment_type_ == ST_VERTICAL) {
          geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+         geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
 
          auto s = l->Pnt();
          auto c = s->Coordinates();
@@ -1123,7 +1159,9 @@ class curve_segment_evaluator {
       }
       else if (segment_type_ == ST_CANT) {
           geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+          geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
           auto cant_adjuster_ = std::make_shared<cant_adjuster>(mapping_, inst_, next_inst_);
+          cant_adjuster_->enable_adjustments(current_segment_count_ <= 64);
           eval_ = [geometry_adjuster = geometry_adjuster_,cant_adjuster=cant_adjuster_](double u) {
               Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
               return geometry_adjuster->transform_and_adjust(u, cant_adjuster->transform_and_adjust(u,m));
@@ -1146,6 +1184,7 @@ class curve_segment_evaluator {
       auto length_unit = length_unit_;
 
       geometry_adjuster_ = std::make_shared<GEOMETRY_ADJUSTER>(mapping_, inst_, next_inst_);
+      geometry_adjuster_->enable_adjustments(current_segment_count_ <= 64);
 
       if (segment_type_ == ST_HORIZONTAL) {
          // @rb need to work on this - u is distance along curve, this differs from vertical where u = x
@@ -1343,7 +1382,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
    auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
 
-   curve_segment_evaluator cse(this, inst, next_inst, length_unit_, segment_type);
+   curve_segment_evaluator cse(this, inst, next_inst, length_unit_, segment_type, current_segment_count_);
    boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
    cse.compute_segment_end_point();
    
