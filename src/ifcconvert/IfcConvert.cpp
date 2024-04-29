@@ -814,7 +814,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	if (!geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().has()) {
+	if (vmap[ifcopenshell::geometry::settings::WeldVertices::name].defaulted()) {
 		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
 	}
 
