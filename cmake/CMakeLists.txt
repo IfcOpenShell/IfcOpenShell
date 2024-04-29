@@ -746,7 +746,7 @@ if(NOT SCHEMA_VERSIONS)
         # super arbitrarily try to keep size down at least a little bit
         set(SCHEMA_VERSIONS "2x3" "4")
     else()
-        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_tc1" "4x3_add1" "4x3_add2")
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
     endif()
 endif()
 
