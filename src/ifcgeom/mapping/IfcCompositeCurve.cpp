@@ -31,6 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #else
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
 #endif
+	current_segment_count_ = segments->size();
 
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
@@ -71,14 +72,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		else if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			if (crv->kind() == taxonomy::LOOP) {
+			if (crv && crv->kind() == taxonomy::LOOP) {
 				for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 					loop->children.push_back(s);
 				}
 			}
-			else if (crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
+			else if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
 				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
 				pwf->spans.insert(pwf->spans.end(), seg->spans.begin(), seg->spans.end());
+			} else if (!crv) {
+				return nullptr;
 			}
 		}
 #endif

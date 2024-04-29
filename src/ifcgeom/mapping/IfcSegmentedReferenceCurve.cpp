@@ -31,12 +31,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 	auto cant = taxonomy::make<taxonomy::piecewise_function>(&settings_);
 
 	auto segments = inst->Segments();
+	current_segment_count_ = segments->size();
 
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			if (crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
+			if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
 				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
 				cant->spans.insert(cant->spans.end(), seg->spans.begin(), seg->spans.end());
 			} else {

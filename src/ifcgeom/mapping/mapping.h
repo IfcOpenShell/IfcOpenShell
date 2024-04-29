@@ -22,6 +22,7 @@ namespace geometry {
 		IfcParse::IfcFile* file_;
 		double length_unit_, angle_unit_;
 		std::string length_unit_name_;
+		size_t current_segment_count_;
 
 		std::map<uint32_t, ifcopenshell::geometry::taxonomy::ptr> cache_;
 
