@@ -49,13 +49,6 @@ inline namespace settings {
 		static constexpr bool defaultvalue = false;
 	};
 
-	struct UseMaterialNames : public SettingBase<UseMaterialNames, bool> {
-		static constexpr const char* const name = "use-material-names";
-		static constexpr const char* const description = "Use material names instead of unique IDs for naming materials upon serialization. "
-					"Applicable for OBJ and DAE output.";
-		static constexpr bool defaultvalue = false;
-	};
-
 	struct UseElementTypes : public SettingBase<UseElementTypes, bool> {
 		static constexpr const char* const name = "use-element-types";
 		static constexpr const char* const description = "Use element types instead of unique IDs for naming elements upon serialization. "
