@@ -44,6 +44,7 @@ namespace geometry {
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product) = 0;
 
 		const Settings& settings() const { return settings_; }
+		Settings& settings() { return settings_; }
     };
 
 	namespace impl {

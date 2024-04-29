@@ -9,7 +9,7 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 	, settings_(s)
 {
 	mapping_ = impl::mapping_implementations().construct(file, settings_);
-	kernel_ = kernels::construct(geometry_library, mapping_->settings());
+	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
 }
 
 namespace {
