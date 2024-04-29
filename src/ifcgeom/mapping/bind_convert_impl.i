@@ -11,7 +11,7 @@
 				try { \
 					if (inst->as<IfcSchema::IfcRepresentationItem>() && !inst->as<IfcSchema::IfcStyledItem>() && \
 						/* @todo */ \
-						(item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION) \
+						(item->kind() == taxonomy::SOLID || item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION) \
 					) { \
 						auto style = find_style(inst->as<IfcSchema::IfcRepresentationItem>()); \
 						if (style) { \
