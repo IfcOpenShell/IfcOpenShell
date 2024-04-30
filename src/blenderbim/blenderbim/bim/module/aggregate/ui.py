@@ -145,6 +145,7 @@ class BIM_PT_linked_aggregate(Panel):
             else:
                 row.label(text=f"{Number_Linked_Aggregates} Linked Aggregates")
             op = row.operator("bim.object_duplicate_move_linked_aggregate", text="", icon="DUPLICATE")
+            op.location_from_3d_cursor = True
             if type(Number_Linked_Aggregates) is int:
                 if Number_Linked_Aggregates > 0:
                     op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
