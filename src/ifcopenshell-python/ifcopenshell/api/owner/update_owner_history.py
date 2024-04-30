@@ -21,10 +21,11 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
+from typing import Union
 
 
 class Usecase:
-    def __init__(self, file, element=None):
+    def __init__(self, file: ifcopenshell.file, element: ifcopenshell.entity_instance):
         """Updates the owner that is assigned to an object
 
         This ensures that the owner is tracked to have modified the object last,
@@ -60,7 +61,7 @@ class Usecase:
         self.file = file
         self.settings = {"element": element}
 
-    def execute(self):
+    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         if not hasattr(self.settings["element"], "OwnerHistory"):
             return
         user = ifcopenshell.api.owner.settings.get_user(self.file)

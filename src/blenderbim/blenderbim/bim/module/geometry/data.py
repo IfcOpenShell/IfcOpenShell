@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import ifcopenshell.util.placement
 from mathutils import Vector

@@ -29,7 +29,7 @@ EPSILON = 1e-6
 
 
 class Usecase:
-    def __init__(self, file, **settings):
+    def __init__(self, file: ifcopenshell.file, **settings):
         # TODO: This usecase currently depends on Blender's data model
         self.file = file
         self.settings = {
@@ -58,7 +58,7 @@ class Usecase:
         for key, value in settings.items():
             self.settings[key] = value
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         self.is_manifold = None
         if (
             isinstance(self.settings["geometry"], bpy.types.Mesh)
@@ -379,7 +379,7 @@ class Usecase:
             Axis=self.file.createIfcDirection(polygon.normal),
         ))
 
-    def create_annotation_fill_areas(self, is_2d=False):
+    def create_annotation_fill_areas(self, is_2d=False) -> list[ifcopenshell.entity_instance]:
         items = []
         if self.file.schema != "IFC2X3":
             points = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices, is_2d=is_2d)
@@ -391,7 +391,9 @@ class Usecase:
             items.append(self.file.createIfcAnnotationFillArea(OuterBoundary=curve))
         return items
 
-    def create_curve_from_polygon(self, points, polygon, is_2d=False):
+    def create_curve_from_polygon(
+        self, points: ifcopenshell.entity_instance, polygon: bpy.types.MeshPolygon, is_2d=False
+    ) -> ifcopenshell.entity_instance:
         indices = list(polygon.vertices)
         indices.append(indices[0])
         edge_loop = [self.file.createIfcLineIndex((v1 + 1, v2 + 1)) for v1, v2 in zip(indices, indices[1:])]
@@ -460,7 +462,7 @@ class Usecase:
             return False
         return True
 
-    def create_curves(self, should_exclude_faces=False, is_2d=False):
+    def create_curves(self, should_exclude_faces=False, is_2d=False, ignore_non_loose_edges=False):
         geom_data = self.settings["geometry"]
 
         if isinstance(geom_data, bpy.types.Mesh):
@@ -530,7 +532,9 @@ class Usecase:
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
         tool.Blender.apply_bmesh(mesh, bm)
 
-    def create_curves_from_mesh_ifc2x3(self, should_exclude_faces=False, is_2d=False):
+    def create_curves_from_mesh_ifc2x3(
+        self, should_exclude_faces=False, is_2d=False
+    ) -> list[ifcopenshell.entity_instance]:
         geom_data = self.settings["geometry"].copy()
         self.remove_doubles_from_mesh(geom_data)
         curves = []
@@ -810,7 +814,7 @@ class Usecase:
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
 
-    def create_cartesian_point_list_from_vertices(self, vertices, is_2d=False):
+    def create_cartesian_point_list_from_vertices(self, vertices: list[bpy.types.MeshVertex], is_2d=False):
         if is_2d:
             return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
         return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])

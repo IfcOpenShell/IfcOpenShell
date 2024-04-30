@@ -15,10 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
 class Usecase:
-    def __init__(self, file, profile_set=None, material=None, profile=None):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        profile_set: ifcopenshell.entity_instance,
+        material: Optional[ifcopenshell.entity_instance] = None,
+        profile: Optional[ifcopenshell.entity_instance] = None,
+    ):
         """Add a new profile item to a profile set
 
         A profile item in a profile set represents an extruded 2D profile curve
@@ -41,10 +49,10 @@ class Usecase:
             how to add a profile set.
         :type profile_set: ifcopenshell.entity_instance.entity_instance
         :param material: The IfcMaterial that the profile item is made out of.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance.entity_instance, optional
         :param profile: The IfcProfileDef that represents the 2D cross section
             of the the profile item.
-        :type profile: ifcopenshell.entity_instance.entity_instance
+        :type profile: ifcopenshell.entity_instance.entity_instance, optional
         :return: The newly created IfcMaterialProfile
         :rtype: ifcopenshell.entity_instance.entity_instance
 
@@ -84,7 +92,7 @@ class Usecase:
         self.file = file
         self.settings = {"profile_set": profile_set, "material": material, "profile": profile}
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         profiles = list(self.settings["profile_set"].MaterialProfiles or [])
         profile = self.file.create_entity("IfcMaterialProfile")
         if self.settings["material"]:

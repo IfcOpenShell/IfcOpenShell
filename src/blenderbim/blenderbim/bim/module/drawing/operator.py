@@ -29,6 +29,7 @@ import subprocess
 import numpy as np
 import multiprocessing
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
