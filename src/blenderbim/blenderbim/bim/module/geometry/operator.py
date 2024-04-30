@@ -538,6 +538,8 @@ class OverrideDelete(bpy.types.Operator):
         row.prop(self, "is_batch", text="Enable Faster Deletion")
 
     def _execute(self, context):
+        start_time = time()
+
         if self.is_batch:
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
 
@@ -562,6 +564,11 @@ class OverrideDelete(bpy.types.Operator):
             IfcStore.add_transaction_operation(self)
         # Required otherwise gizmos are still visible
         context.view_layer.objects.active = None
+
+        operator_time = time() - start_time
+        if operator_time > 10:
+            self.report({"INFO"}, "IFC Delete was finished in {:.2f} seconds".format(operator_time))
+
         return {"FINISHED"}
 
     def rollback(self, data):
