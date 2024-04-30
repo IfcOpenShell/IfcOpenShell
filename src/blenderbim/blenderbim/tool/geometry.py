@@ -23,9 +23,14 @@ import hashlib
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.system
 import blenderbim.core.tool
+import blenderbim.core.drawing
 import blenderbim.core.style
 import blenderbim.core.spatial
+import blenderbim.core.system
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc

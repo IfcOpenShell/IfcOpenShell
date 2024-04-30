@@ -2041,7 +2041,7 @@ class IfcImporter:
 
 class IfcImportSettings:
     def __init__(self):
-        self.logger = None
+        self.logger: logging.Logger = None
         self.input_file = None
         self.diff_file = None
         self.should_use_cpu_multiprocessing = True

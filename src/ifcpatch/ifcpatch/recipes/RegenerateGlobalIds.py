@@ -17,10 +17,11 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, only_duplicates=False):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, only_duplicates=False):
         """Regenerate GlobalIds in an IFC model
 
         All root elements in an IFC model must be identified by a unique Global

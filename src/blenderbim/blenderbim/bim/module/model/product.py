@@ -39,6 +39,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 import json
+from typing import Any
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
@@ -511,7 +512,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             )
 
 
-def ensure_material_assigned(usecase_path, ifc_file, settings):
+def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     if usecase_path == "material.assign_material":
         if not settings.get("material", None):
             return
@@ -550,7 +551,7 @@ def ensure_material_assigned(usecase_path, ifc_file, settings):
         obj.data.materials.append(IfcStore.get_element(material[0].id()))
 
 
-def ensure_material_unassigned(usecase_path, ifc_file, settings):
+def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     elements = settings["products"]
     if elements[0].is_a("IfcElementType"):
         elements.extend(ifcopenshell.util.element.get_types(elements[0]))
