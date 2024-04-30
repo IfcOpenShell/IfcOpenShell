@@ -299,6 +299,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
         self.setup_arrays()
+        self.profile_code("Setup arrays")
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -602,6 +603,9 @@ class IfcImporter:
         return products
 
     def predict_dense_mesh(self):
+        if self.ifc_import_settings.should_use_native_meshes:
+            return
+
         threshold = 10000  # Just from experience.
 
         faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
