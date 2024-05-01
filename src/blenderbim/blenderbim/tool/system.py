@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -145,7 +146,7 @@ class System(blenderbim.core.tool.System):
             new.ifc_class = system.is_a()
 
     @classmethod
-    def load_ports(cls, element, ports):
+    def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:
         if not ports:
             return
         obj = tool.Ifc.get_object(element)
@@ -155,7 +156,13 @@ class System(blenderbim.core.tool.System):
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
         ifc_importer.create_generic_elements(set(ports))
+
+        container = ifcopenshell.util.element.get_container(element)
+        if container:
+            collection = tool.Ifc.get_object(container).BIMObjectProperties.collection
+            ifc_importer.collections[container.GlobalId] = collection
         ifc_importer.place_objects_in_collections()
+
         for port_obj in ifc_importer.added_data.values():
             port_obj.parent = obj
             port_obj.matrix_parent_inverse = obj.matrix_world.inverted()
