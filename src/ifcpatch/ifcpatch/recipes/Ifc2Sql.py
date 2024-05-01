@@ -451,7 +451,7 @@ class Patcher:
                         if prop_name == "id":
                             continue
                         if isinstance(value, list):
-                            value = repr(value)
+                            value = json.dumps(value)
                         pset_rows.append([element.id(), pset_name, prop_name, value])
 
             if self.should_get_geometry:
