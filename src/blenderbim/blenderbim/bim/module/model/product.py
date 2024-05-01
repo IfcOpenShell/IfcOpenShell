@@ -525,30 +525,7 @@ def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, set
             ]:
                 elements.extend(rel.RelatedObjects)
 
-    for element in elements:
-        obj = IfcStore.get_element(element.GlobalId)
-        if not obj or not obj.data:
-            continue
-
-        element_material = ifcopenshell.util.element.get_material(element)
-        material = [m for m in ifc_file.traverse(element_material) if m.is_a("IfcMaterial")]
-
-        object_material_ids = [
-            om.BIMObjectProperties.ifc_definition_id
-            for om in obj.data.materials
-            if om is not None and om.BIMObjectProperties.ifc_definition_id
-        ]
-
-        if material and material[0].id() in object_material_ids:
-            continue
-
-        if len(obj.data.materials) == 1:
-            obj.data.materials.clear()
-
-        if not material:
-            continue
-
-        obj.data.materials.append(IfcStore.get_element(material[0].id()))
+    update_blender_ifc_materials(elements)
 
 
 def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
