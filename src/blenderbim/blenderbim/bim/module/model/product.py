@@ -39,7 +39,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 import json
-from typing import Any
+from typing import Any, Union
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
@@ -555,23 +555,69 @@ def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, s
     elements = settings["products"]
     if elements[0].is_a("IfcElementType"):
         elements.extend(ifcopenshell.util.element.get_types(elements[0]))
+    update_blender_ifc_materials(elements)
+
+
+def update_blender_ifc_materials(elements: list[ifcopenshell.entity_instance]) -> None:
+    """update mesh blender materials that have ifc material connected to them
+    by replacing them with `blender_material`"""
+    # since different elements can share meshes (e.g. occurrecnes without openings)
+    # we need to make sure not to affect them accidentally
+    meshes_users: dict[bpy.types.Mesh, set[bpy.types.Object]] = dict()
+    for obj in bpy.data.objects:
+        if not obj.data:
+            continue
+        meshes_users.setdefault(obj.data, set()).add(obj)
+
+    objects: set[bpy.types.Object] = set()
     for element in elements:
-        obj = tool.Ifc.get_object(element)
+        obj: bpy.types.Object = tool.Ifc.get_object(element)
         if not obj or not obj.data:
             continue
-        element_material = ifcopenshell.util.element.get_material(element)
-        if element_material:
+        objects.add(obj)
+
+    meshes: set[bpy.types.Mesh] = {obj.data for obj in objects}
+
+    for mesh in meshes:
+        mesh_users = meshes_users[mesh]
+        if not mesh_users.issubset(objects):
             continue
-        to_remove = []
-        for i, slot in enumerate(obj.material_slots):
-            if not slot.material:
+
+        # NOTE: we need `obj` as removing materials and appending them to `mesh.materials`
+        # will mess up mesh faces material indices
+
+        # NOTE: we make an assumption here that all mesh users
+        # have the same material - they either inherit it from the type
+        # or type doesn't have a material.
+        #
+        # If we add option to UI to add materials overriding type materials
+        # then this assumption won't be safe anymore
+
+        obj = next(iter(mesh_users))
+        element = tool.Ifc.get_entity(obj)
+        current_material = ifcopenshell.util.element.get_material(element)
+        if current_material:
+            current_material = tool.Ifc.get_object(current_material)
+
+        material_replaced = False
+
+        for material_slot in obj.material_slots:
+            material = material_slot.material
+            if material is None:
                 continue
-            material = tool.Ifc.get_entity(slot.material)
-            if material:
-                to_remove.append(i)
-        total_removed = 0
-        for i in to_remove:
-            obj.active_material_index = i - total_removed
-            with bpy.context.temp_override(object=obj):
-                bpy.ops.object.material_slot_remove()
-            total_removed += 1
+            ifc_material = tool.Ifc.get_entity(material)
+            # it's blender material for style, so ignore it
+            if not ifc_material:
+                continue
+            if ifc_material == current_material:
+                continue
+            material_slot.material = current_material
+            material_replaced = True
+
+        if not material_replaced and current_material:
+            mesh.materials.append(current_material)
+
+        # clear empty slots
+        for i, material in reversed(list(enumerate(mesh.materials[:]))):
+            if material is None:
+                mesh.materials.pop(index=i)
