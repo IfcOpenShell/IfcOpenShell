@@ -163,7 +163,7 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 
     auto curve_segment = new Schema::IfcCurveSegment(
         Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-        new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{1.0, 0.0})),
+        new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{sqrt(1 - start_slope * start_slope), start_slope})),
         new Schema::IfcLengthMeasure(0.0),
         new Schema::IfcLengthMeasure(length),
         parent_curve);
