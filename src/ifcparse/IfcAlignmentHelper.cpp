@@ -708,7 +708,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
 
         auto curve_segment = new Ifc4x3_add2::IfcCurveSegment(
             Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint({start_distance_along,start_height}), new Ifc4x3_add2::IfcDirection({1.0, 0.0})),
+            new Ifc4x3_add2::IfcAxis2Placement2D(new Ifc4x3_add2::IfcCartesianPoint({start_distance_along, start_height}), new Ifc4x3_add2::IfcDirection({sqrt(1.0 - start_gradient * start_gradient), start_gradient})),
             new Ifc4x3_add2::IfcLengthMeasure(0.0),
             new Ifc4x3_add2::IfcLengthMeasure(horizontal_length),
             parent_curve);
