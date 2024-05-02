@@ -47,6 +47,7 @@ from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from blenderbim.bim.module.project.data import LinksData
 from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
+from typing import Union
 
 
 class NewProject(bpy.types.Operator):
@@ -867,7 +868,16 @@ class LinkIfc(bpy.types.Operator):
                 except:
                     pass  # Perhaps on another drive or something
             new.name = filepath
-            bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
+            status = bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
+            if status == {"CANCELLED"}:
+                error_msg = (
+                    f'Error processing IFC file "{self.filepath}" '
+                    "was critical and blend file either wasn't saved or wasn't updated. "
+                    "See logs above in system console for details."
+                )
+                print(error_msg)
+                self.report({"ERROR"}, error_msg)
+                return {"FINISHED"}
         print(f"Finished linking {len(files)} IFCs", time.time() - start)
         return {"FINISHED"}
 
@@ -946,10 +956,12 @@ class LoadLink(bpy.types.Operator):
         if self.filepath.lower().endswith(".blend"):
             self.link_blend(filepath)
         elif self.filepath.lower().endswith(".ifc"):
-            self.link_ifc()
+            status = self.link_ifc()
+            if status:
+                return status
         return {"FINISHED"}
 
-    def link_blend(self, filepath):
+    def link_blend(self, filepath: str) -> None:
         with bpy.data.libraries.load(filepath, link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         for scene in bpy.data.scenes:
@@ -962,7 +974,7 @@ class LoadLink(bpy.types.Operator):
         link = bpy.context.scene.BIMProjectProperties.links.get(self.filepath)
         link.is_loaded = True
 
-    def link_ifc(self):
+    def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath + ".cache.blend"
         h5_filepath = self.filepath + ".cache.h5"
 
@@ -982,11 +994,14 @@ except Exception as e:
     exit(1)
             """
 
+            t = time.time()
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
                 temp_file.write(code)
             run = subprocess.run([bpy.app.binary_path, "-b", "--python", temp_file.name, "--python-exit-code", "1"])
             if run.returncode == 1:
                 print("An error occurred while processing your IFC.")
+                if not os.path.exists(blend_filepath) or os.stat(blend_filepath).st_mtime < t:
+                    return {"CANCELLED"}
 
         self.link_blend(blend_filepath)
 
