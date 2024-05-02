@@ -572,7 +572,7 @@ class Usecase:
             curve_object_data = self.settings["geometry"]
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         results = []
-        for spline in self.settings["geometry"].splines:
+        for spline in curve_object_data.splines:
             points = spline.bezier_points[:] + spline.points[:]
             if spline.use_cyclic_u:
                 points.append(points[0])
