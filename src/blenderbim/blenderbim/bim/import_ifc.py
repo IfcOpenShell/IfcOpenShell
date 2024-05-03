@@ -1498,7 +1498,11 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.type_collection.name].hide_viewport = True
+        types_collection = project_collection.children[self.type_collection.name]
+        types_collection.hide_viewport = False
+        for obj in types_collection.collection.objects: #turn off all objects inside Types collection.
+            obj.hide_set(True)
+
 
     def clean_mesh(self):
         obj = None
