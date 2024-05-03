@@ -303,11 +303,26 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
     def test_unassigning_a_constraint(self):
         constraint = ifcopenshell.api.run("constraint.add_objective", self.file)
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "constraint.assign_constraint", self.file, product=element, constraint=constraint
-        )
-        ifcopenshell.api.run(
-            "constraint.unassign_constraint", self.file, product=element, constraint=constraint
-        )
+        ifcopenshell.api.run("constraint.assign_constraint", self.file, product=element, constraint=constraint)
+        ifcopenshell.api.run("constraint.unassign_constraint", self.file, product=element, constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(element) == set()
         assert len(self.file.by_type("IfcRelAssociatesConstraint")) == 0
+
+    @deprecation_check
+    def test_assign_a_declaration(self):
+        def get_declared_definitions(project: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+            definitions = set()
+            for declares in project.Declares:
+                definitions.update(declares.RelatedDefinitions)
+            return definitions
+
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
+        ifcopenshell.api.run(
+            "project.assign_declaration",
+            self.file,
+            definition=element_type,
+            relating_context=library,
+        )
+        assert get_declared_definitions(library) == {element_type}
+        assert len(self.file.by_type("IfcRelDeclares")) == 1

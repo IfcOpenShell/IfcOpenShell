@@ -92,7 +92,7 @@ class Usecase:
         ifcopenshell.api.run(
             "project.assign_declaration",
             self.file,
-            definition=work_calendar,
+            definitions=[work_calendar],
             relating_context=context,
         )
         return work_calendar

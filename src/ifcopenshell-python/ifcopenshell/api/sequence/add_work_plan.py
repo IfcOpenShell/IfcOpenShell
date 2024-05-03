@@ -84,7 +84,7 @@ class Usecase:
         ifcopenshell.api.run(
             "project.assign_declaration",
             self.file,
-            definition=work_plan,
+            definitions=[work_plan],
             relating_context=context,
         )
         return work_plan

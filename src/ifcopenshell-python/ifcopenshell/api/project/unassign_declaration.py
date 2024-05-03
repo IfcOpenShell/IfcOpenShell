@@ -46,7 +46,7 @@ class Usecase:
                 ifc_class="IfcProjectLibrary", name="Demo Library")
 
             # It's necessary to say our library is part of our project.
-            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+            ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
 
             # Remove the library from our project
             ifcopenshell.api.run("project.unassign_declaration", library, definition=context, relating_context=root)

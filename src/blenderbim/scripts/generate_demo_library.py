@@ -35,7 +35,7 @@ class LibraryGenerator:
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="BlenderBIM Demo Library"
         )
         ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
+            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
@@ -209,7 +209,7 @@ class LibraryGenerator:
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
         return element
 
     def create_profile_type(self, ifc_class, name, profile):
@@ -220,7 +220,7 @@ class LibraryGenerator:
             "material.add_profile", self.file, profile_set=profile_set, material=self.material
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
 
     def create_type(self, ifc_class, name, representations):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
@@ -252,7 +252,7 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
 
 
 LibraryGenerator().generate()

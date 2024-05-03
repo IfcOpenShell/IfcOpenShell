@@ -35,7 +35,7 @@ class LibraryGenerator:
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="BlenderBIM Demo Library"
         )
         ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=self.library, relating_context=self.library
+            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.library
         )
         ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
         model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
@@ -98,7 +98,7 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
 
 
 LibraryGenerator().generate()
