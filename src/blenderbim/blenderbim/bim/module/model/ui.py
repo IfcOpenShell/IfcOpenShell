@@ -56,8 +56,11 @@ class LaunchTypeManager(bpy.types.Operator):
             ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
         else:
             ifc_class = AuthoringData.data["ifc_element_type"]
-        props.type_class = ifc_class
-        bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
+
+        # will be None if project has no types
+        if ifc_class is not None:
+            props.type_class = ifc_class
+            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
         return context.window_manager.invoke_popup(self, width=550)
 
     def draw(self, context):
