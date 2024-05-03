@@ -105,7 +105,7 @@ class Usecase:
             ifcopenshell.api.run(
                 "project.assign_declaration",
                 self.file,
-                definition=resource,
+                definitions=[resource],
                 relating_context=context,
             )
         return resource

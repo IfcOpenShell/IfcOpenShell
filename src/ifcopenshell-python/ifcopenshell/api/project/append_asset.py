@@ -61,7 +61,7 @@ class Usecase:
             root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
             context = ifcopenshell.api.run("root.create_entity", library,
                 ifc_class="IfcProjectLibrary", name="Demo Library")
-            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+            ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
 
             # Assign units for our example library
             unit = ifcopenshell.api.run("unit.add_si_unit", library,
@@ -80,7 +80,7 @@ class Usecase:
 
             # Mark our wall type as a reusable asset in our library.
             ifcopenshell.api.run("project.assign_declaration", library,
-                definition=wall_type, relating_context=context)
+                definitions=[wall_type], relating_context=context)
 
             # Let's imagine we're starting a new project
             model = ifcopenshell.api.run("project.create_file")

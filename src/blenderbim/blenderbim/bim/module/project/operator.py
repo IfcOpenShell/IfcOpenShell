@@ -302,7 +302,7 @@ class AssignLibraryDeclaration(bpy.types.Operator):
         ifcopenshell.api.run(
             "project.assign_declaration",
             self.file,
-            definition=self.file.by_id(self.definition),
+            definitions=[self.file.by_id(self.definition)],
             relating_context=self.file.by_type("IfcProjectLibrary")[0],
         )
         element_name = self.props.active_library_element
