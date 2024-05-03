@@ -212,7 +212,7 @@ class Usecase:
                 objects_without_types.append(object)
                 continue
 
-            # either is_nested_by is None or product is part of different rel
+            # either rel doesn't exist or product is part of different rel
             if object_rel != types:
                 previous_types_rels.add(object_rel)
                 objects_with_types.append(object)
