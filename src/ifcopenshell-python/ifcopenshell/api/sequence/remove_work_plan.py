@@ -50,7 +50,7 @@ class Usecase:
         ifcopenshell.api.run(
             "project.unassign_declaration",
             self.file,
-            definition=self.settings["work_plan"],
+            definitions=[self.settings["work_plan"]],
             relating_context=self.file.by_type("IfcContext")[0],
         )
         history = self.settings["work_plan"].OwnerHistory

@@ -23,6 +23,7 @@ import ifcopenshell.util.constraint
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 from datetime import datetime
+from typing import Union
 
 
 def deprecation_check(test):
@@ -326,3 +327,24 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         )
         assert get_declared_definitions(library) == {element_type}
         assert len(self.file.by_type("IfcRelDeclares")) == 1
+
+    @deprecation_check
+    def test_unassigning_a_definition(self):
+        def get_context(definition: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+            rel = next(iter(definition.HasContext), None)
+            if rel is not None:
+                return rel.RelatingContext
+
+        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element_type], relating_context=library
+        )
+        ifcopenshell.api.run(
+            "project.unassign_declaration",
+            self.file,
+            definition=element_type,
+            relating_context=library,
+        )
+        assert get_context(element_type) == None
+        assert len(self.file.by_type("IfcRelDeclares")) == 0

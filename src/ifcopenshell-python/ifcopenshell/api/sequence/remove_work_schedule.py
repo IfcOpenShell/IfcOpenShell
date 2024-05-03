@@ -54,7 +54,7 @@ class Usecase:
         ifcopenshell.api.run(
             "project.unassign_declaration",
             self.file,
-            definition=self.settings["work_schedule"],
+            definitions=[self.settings["work_schedule"]],
             relating_context=self.file.by_type("IfcContext")[0],
         )
         if self.settings["work_schedule"].Declares:

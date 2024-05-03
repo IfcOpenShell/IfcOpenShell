@@ -50,7 +50,7 @@ class Usecase:
         ifcopenshell.api.run(
             "project.unassign_declaration",
             self.file,
-            definition=self.settings["work_calendar"],
+            definitions=[self.settings["work_calendar"]],
             relating_context=self.file.by_type("IfcContext")[0],
         )
         if self.settings["work_calendar"].Controls:
