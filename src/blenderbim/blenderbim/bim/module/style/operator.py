@@ -316,6 +316,9 @@ class BrowseExternalStyle(bpy.types.Operator):
         attributes["Location"].string_value = filepath
         attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
         attributes["Name"].string_value = self.data_block
+
+        style = tool.Ifc.get().by_id(self.active_surface_style_id)
+        bpy.ops.bim.activate_external_style(material_name=tool.Ifc.get_object(style).name)
         return {"FINISHED"}
 
 
@@ -331,9 +334,18 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             material = context.active_object.active_material
         else:
             material = bpy.data.materials[self.material_name]
-        external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
-        data_block_type, data_block = external_style.Identification.split("/")
-        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+
+        props = context.scene.BIMStylesProperties
+        if props.is_editing:
+            location = props.external_style_attributes["Location"].string_value
+            identification = props.external_style_attributes["Identification"].string_value
+        else:
+            external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
+            location = external_style.Location
+            identification = external_style.Identification
+
+        data_block_type, data_block = identification.split("/")
+        style_path = Path(tool.Ifc.resolve_uri(location))
 
         if style_path.suffix != ".blend":
             self.report(
