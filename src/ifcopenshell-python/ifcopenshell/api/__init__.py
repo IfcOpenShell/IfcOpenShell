@@ -120,6 +120,9 @@ ARGUMENTS_DEPRECATION = {
     "project.assign_declaration": partial(
         batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
     ),
+    "project.unassign_declaration": partial(
+        batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
+    ),
 }
 
 

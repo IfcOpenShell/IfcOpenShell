@@ -338,7 +338,7 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
         ifcopenshell.api.run(
             "project.unassign_declaration",
             self.file,
-            definition=self.file.by_id(self.definition),
+            definitions=[self.file.by_id(self.definition)],
             relating_context=self.file.by_type("IfcProjectLibrary")[0],
         )
         element_name = self.props.active_library_element
