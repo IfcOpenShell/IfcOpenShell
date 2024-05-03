@@ -251,14 +251,15 @@ class BrowseExternalStyle(bpy.types.Operator):
     )
 
     def invoke(self, context, event):
-        external_style = None
+        style_elements = None
         if self.active_surface_style_id:
             style = tool.Ifc.get().by_id(self.active_surface_style_id)
-            external_style = tool.Style.get_style_elements(style).get("IfcExternallyDefinedSurfaceStyle", None)
+            style_elements = tool.Style.get_style_elements(style)
 
         # automatically select previously selected external style in file browser
         # if it exists in the file
-        if external_style and self.filepath == "":
+        if style_elements and self.filepath == "" and tool.Style.has_blender_external_style(style_elements):
+            external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
             style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
             self.directory = str(style_path.parent)
             self.filepath = str(style_path)
