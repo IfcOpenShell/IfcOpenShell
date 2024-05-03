@@ -220,11 +220,12 @@ class CreateDrawing(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.DocProperties
 
+        active_drawing_id = context.scene.camera.BIMObjectProperties.ifc_definition_id
         if self.print_all:
-            original_drawing_id = self.props.active_drawing_id
+            original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
-            drawings_to_print = [self.props.active_drawing_id]
+            drawings_to_print = [active_drawing_id]
 
         for drawing_i, drawing_id in enumerate(drawings_to_print):
             self.drawing_index = drawing_i
