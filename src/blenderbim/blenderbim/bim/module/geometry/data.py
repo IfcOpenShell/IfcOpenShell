@@ -223,7 +223,7 @@ class ConnectionsData:
     @classmethod
     def is_connection_realization(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        connections = element.IsConnectionRealization
+        connections = getattr(element, "IsConnectionRealization", None)
         if not connections:
             return
 
