@@ -1453,12 +1453,18 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
+        # save current visibility statuses for Views and Types collections
+        visibility_status: dict[bpy.types.Object, bool] = {}
+        for col in bpy.data.collections["Views"].children:
+            for obj in col.objects:
+                visibility_status[obj] = obj.hide_get()
+        for obj in bpy.data.collections["Types"].objects:
+            visibility_status[obj] = obj.hide_get()
+
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
                 bpy.ops.object.hide_view_clear()
                 bpy.ops.bim.activate_status_filters()
-
-        subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1477,6 +1483,11 @@ class ActivateModel(bpy.types.Operator):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+
+        # restore visibility after hide_view_clear()
+        for obj, hide_status in visibility_status.items():
+            obj.hide_set(hide_status)
+
         tool.Blender.update_viewport()
         return {"FINISHED"}
 
