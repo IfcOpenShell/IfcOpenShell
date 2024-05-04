@@ -113,7 +113,8 @@ class BIM_PT_select_similar(Panel):
         if SelectSimilarData.data["element_key"]:
             row = self.layout.row(align=True)
             row.prop(props, "element_key", text="")
-            row.operator("bim.select_similar", text="", icon="RESTRICT_SELECT_OFF")
+            op = row.operator("bim.select_similar", text="", icon="RESTRICT_SELECT_OFF")
+            op.key = props.element_key
         else:
             row = self.layout.row()
             row.label(text=f"No Active Element")
