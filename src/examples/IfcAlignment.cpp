@@ -151,7 +151,7 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 // creates geometry and business logic segments for vertical profile parabolic vertical curves
 std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_vcurve(typename Schema::IfcCartesianPoint* p, double start_slope, double end_slope, double length) {
     // geometry
-    double A = 0.0;
+    double A = p->Coordinates()[1];
     double B = start_slope;
     double C = (end_slope - start_slope) / (2 * length);
 

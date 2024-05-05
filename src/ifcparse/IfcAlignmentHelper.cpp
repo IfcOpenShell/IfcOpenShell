@@ -696,7 +696,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         result.first = curve_segment;
 
     } else if (type == Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC) {
-        double A = 0.0;
+        double A = start_height;
         double B = start_gradient;
         double C = (end_gradient - start_gradient) / (2 * horizontal_length);
 
