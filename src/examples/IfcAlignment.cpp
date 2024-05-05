@@ -50,6 +50,7 @@ Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
 
     auto project = file.addProject();
     project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
+    project->setDescription(std::string("C++ Example"));
 
     // set up project units for feet
     // the call to file.addProject() sets up length units as millimeter.
@@ -479,7 +480,10 @@ int main() {
         auto site = file.addSite(project, nullptr);
         site->setName(os.str());
 
-        auto rel_referenced_in_spatial_structure = new Schema::IfcRelReferencedInSpatialStructure(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, list_alignments_referenced_in_site, site);
+        std::ostringstream description;
+        description << "Alignments referenced into the spatial structure of Bridge Site " << i;
+
+        auto rel_referenced_in_spatial_structure = new Schema::IfcRelReferencedInSpatialStructure(IfcParse::IfcGlobalId(), nullptr, boost::none, description.str(), list_alignments_referenced_in_site, site);
         file.addEntity(rel_referenced_in_spatial_structure);
     }
 
