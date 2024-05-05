@@ -20,6 +20,7 @@
 
 import json
 import numpy
+import pkgutil
 import importlib
 import ifcopenshell
 import ifcopenshell.api
@@ -126,15 +127,26 @@ ARGUMENTS_DEPRECATION = {
 }
 
 
-CACHED_USECASE_CLASSES = dict()
+CACHED_USECASE_CLASSES = {}
+CACHED_USECASES = {}
 
 
 def run(
     usecase_path: str,
     ifc_file: Optional[ifcopenshell.file] = None,
-    should_run_listeners=True,
+    should_run_listeners: bool = True,
     **settings: Any,
 ) -> Any:
+    usecase_function = CACHED_USECASES.get(usecase_path)
+    if not usecase_function:
+        importlib.import_module(f"ifcopenshell.api.{usecase_path}")
+        module, usecase = usecase_path.split(".")
+        usecase_function = getattr(getattr(ifcopenshell.api, module), usecase)
+        CACHED_USECASES[usecase_path] = usecase_function
+    if ifc_file:
+        return usecase_function(ifc_file, should_run_listeners=should_run_listeners, **settings)
+    return usecase_function(should_run_listeners=should_run_listeners, **settings)
+
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
@@ -281,3 +293,69 @@ def extract_docs(module, usecase):
     node_data["description"] = description.strip()
     node_data["inputs"] = inputs
     return node_data
+
+
+def _wrap_api(init_globals, file, package):
+    """API endpoints are implemented as Usecase classes. This wraps the classes as functions.
+
+    Calling classes is syntactically awkward. For example,
+    ifcopenshell.api.root.create_entity.Usecase(f).execute().
+    It is more elegant to call it using ifcopenshell.api.root.create_entity(f).
+
+    Calling _wrap_api from an API package's __init__.py will generate these
+    wrapper functions at runtime.
+    """
+    import pkgutil
+    import importlib
+    import inspect
+    from pathlib import Path
+
+    def _create_function(module_name, Usecase):
+        """Create a function that wraps the Usecase class's execute method."""
+        usecase_path = ".".join(Usecase.__module__.split(".")[-2:])
+
+        def wrapper(*args, should_run_listeners: bool = True, **settings):
+            ifc_file = args[0] if args else None
+            if should_run_listeners:
+                for listener in pre_listeners.get(usecase_path, {}).values():
+                    listener(usecase_path, ifc_file, settings)
+
+            try:
+                usecase = Usecase(*args, **settings)
+            except TypeError as e:
+                msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(Usecase.__init__)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
+                raise TypeError(msg) from e
+
+            result = usecase.execute()
+
+            if should_run_listeners:
+                for listener in post_listeners.get(usecase_path, {}).values():
+                    listener(usecase_path, ifc_file, settings)
+
+            return result
+
+        wrapper.__signature__ = inspect.signature(Usecase.__init__)
+        wrapper.__doc__ = Usecase.__init__.__doc__
+        wrapper.__name__ = module_name
+        return wrapper
+
+    for finder, name, ispkg in pkgutil.iter_modules([Path(file).parent]):
+        try:
+            module = importlib.import_module(f".{name}", package)
+        except ModuleNotFoundError as e:
+            print(f"Note: API not available due to missing dependencies: {package}.{name} - {e}")
+            continue
+        usecase_cls = getattr(module, "Usecase", None)
+        if usecase_cls:
+            func = _create_function(name, usecase_cls)
+            init_globals[name] = func
+
+
+# Expose all submodules. This means that the user can just type `import ifcopenshell.api`.
+for loader, module_name, is_pkg in pkgutil.iter_modules(__path__, __name__ + "."):
+    module = importlib.import_module(module_name)
+
+    # Check if it's a direct child (only one level deep)
+    if module_name.count(".") == __name__.count(".") + 1:
+        # Generate wrapper functions for each usecase
+        _wrap_api(vars(module), module.__file__, module.__name__)
