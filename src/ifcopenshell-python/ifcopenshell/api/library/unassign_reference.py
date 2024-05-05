@@ -33,9 +33,9 @@ class Usecase:
         If the product isn't assigned to the reference, nothing will happen.
 
         :param reference: The IfcLibraryReference to unassign from
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :param products: A list of IfcProduct elements to unassign from the reference
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

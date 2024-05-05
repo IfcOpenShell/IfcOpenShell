@@ -45,7 +45,7 @@ class Usecase:
         :type conversion_offset: float, optional
         :return: The new IfcConversionBasedUnit or
             IfcConversionBasedUnitWithOffset
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

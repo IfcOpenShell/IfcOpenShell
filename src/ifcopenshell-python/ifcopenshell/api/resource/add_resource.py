@@ -50,7 +50,7 @@ class Usecase:
 
         :param parent_resource: If this is a child resource (typically to a crew
             resource), then nominate the parent IfcConstructionResource here.
-        :type parent_resource: ifcopenshell.entity_instance.entity_instance
+        :type parent_resource: ifcopenshell.entity_instance
         :param ifc_class: The class of resource chosen from
             IfcConstructionEquipmentResource, IfcConstructionMaterialResource,
             IfcConstructionProductResource, IfcCrewResource, IfcLaborResource,
@@ -63,7 +63,7 @@ class Usecase:
         :type predefined_type: str,optional
         :return: The newly created resource depending on the nominated IFC
             class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

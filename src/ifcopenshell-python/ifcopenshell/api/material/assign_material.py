@@ -64,7 +64,7 @@ class Usecase:
 
         :param products: The list of IfcProducts to assign the material or material set
             to.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param type: Choose from "IfcMaterial", "IfcMaterialConstituentSet",
             "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage",
             "IfcMaterialProfileSet", "IfcMaterialProfileSetUsage", or
@@ -74,15 +74,15 @@ class Usecase:
         :param material: The IfcMaterial or material set you are assigning here.
             If type is Usage then no need to provide `material`, it will be deduced
             from the element type automatically.
-        :type material: ifcopenshell.entity_instance.entity_instance, optional
+        :type material: ifcopenshell.entity_instance, optional
         :return: IfcRelAssociatesMaterial entity
             or a list of IfcRelAssociatesMaterial entities
             (possible if `type` is Usage
             and `products` require different Usages)
             or `None` if `products` was empty list.
         :rtype: Union[
-            ifcopenshell.entity_instance.entity_instance,
-            list[ifcopenshell.entity_instance.entity_instance], None]
+            ifcopenshell.entity_instance,
+            list[ifcopenshell.entity_instance], None]
 
         Example:
 

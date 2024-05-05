@@ -28,7 +28,7 @@ class Usecase:
         IfcRelSequence, consult the IFC documentation.
 
         :param rel_sequence: The IfcRelSequence entity you want to edit
-        :type rel_sequence: ifcopenshell.entity_instance.entity_instance
+        :type rel_sequence: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

@@ -24,7 +24,7 @@ class Usecase:
         """Removes a time period
 
         :param time_period: The IfcTimePeriod to remove.
-        :type time_period: ifcopenshell.entity_instance.entity_instance
+        :type time_period: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

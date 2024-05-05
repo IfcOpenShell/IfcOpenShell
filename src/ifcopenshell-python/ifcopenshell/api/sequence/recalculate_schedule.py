@@ -36,7 +36,7 @@ class Usecase:
         error.
 
         :param work_schedule: The IfcWorkSchedule to perform the calculation on.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :type work_schedule: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

@@ -42,7 +42,7 @@ class Usecase:
             within the work plan are relevant.
         :type start_time: str,datetime.time
         :return: The newly created IfcWorkPlan
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

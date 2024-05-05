@@ -24,7 +24,7 @@ class Usecase:
         """Removes a grid axis from a grid
 
         :param axis: The IfcGridAxis you want to remove.
-        :type axis: ifcopenshell.entity_instance.entity_instance
+        :type axis: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

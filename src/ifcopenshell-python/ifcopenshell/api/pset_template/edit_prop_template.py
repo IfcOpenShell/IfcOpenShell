@@ -25,7 +25,7 @@ class Usecase:
         IfcSimplePropertyTemplate, consult the IFC documentation.
 
         :param prop_template: The IfcSimplePropertyTemplate entity you want to edit
-        :type prop_template: ifcopenshell.entity_instance.entity_instance
+        :type prop_template: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

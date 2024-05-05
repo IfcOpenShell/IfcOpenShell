@@ -28,7 +28,7 @@ class Usecase:
 
         :param structural_analysis_model: The IfcStructuralAnalysisModel to
             remove.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :type structural_analysis_model: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

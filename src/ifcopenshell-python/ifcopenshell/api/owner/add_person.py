@@ -39,7 +39,7 @@ class Usecase:
         :param given_name: The given name
         :type given_name: str, optional
         :return: The newly created IfcPerson
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

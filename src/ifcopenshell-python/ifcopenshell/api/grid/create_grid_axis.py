@@ -54,9 +54,9 @@ class Usecase:
             Defaults to "UAxes".
         :type uvw_axes: str, optional
         :param grid: The IfcGrid you are adding the axis to.
-        :type grid: ifcopenshell.entity_instance.entity_instance
+        :type grid: ifcopenshell.entity_instance
         :return: The newly created IfcGridAxis
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

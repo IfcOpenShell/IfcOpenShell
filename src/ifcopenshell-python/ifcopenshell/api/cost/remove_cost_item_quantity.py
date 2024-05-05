@@ -26,9 +26,9 @@ class Usecase:
         removed.
 
         :param cost_item: The IfcCostItem that the quantity is assigned to
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param physical_quantity: The IfcPhysicalQuantity to remove
-        :type physical_quantity: ifcopenshell.entity_instance.entity_instance
+        :type physical_quantity: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

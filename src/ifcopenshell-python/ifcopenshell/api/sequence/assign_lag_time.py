@@ -33,7 +33,7 @@ class Usecase:
         are allowed.
 
         :param rel_sequence: The IfcRelSequence to assign the lag time to.
-        :type rel_sequence: ifcopenshell.entity_instance.entity_instance
+        :type rel_sequence: ifcopenshell.entity_instance
         :param lag_value: An ISO standardised duration string.
         :type lag_value: str
         :param duration_type: Choose from WORKTIME for the associated
@@ -43,7 +43,7 @@ class Usecase:
             is unclear.
         :type duration_type: str
         :return: The newly created IfcLagTime
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

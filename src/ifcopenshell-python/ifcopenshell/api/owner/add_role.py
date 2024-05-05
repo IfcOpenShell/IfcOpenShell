@@ -31,12 +31,12 @@ class Usecase:
 
         :param assigned_object: The IfcPerson or IfcOrganization the role should
             be assigned to.
-        :type assigned_object: ifcopenshell.entity_instance.entity_instance
+        :type assigned_object: ifcopenshell.entity_instance
         :param role: The type of role, taken from the IFC documentation for
             IfcActorRole, or a custom name.
         :type role: str, optional
         :return: The newly created IfcActorRole
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

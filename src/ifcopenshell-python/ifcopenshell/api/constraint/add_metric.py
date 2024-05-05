@@ -29,9 +29,9 @@ class Usecase:
         to meet the objective of the constraint.
 
         :param objective: The IfcObjective that this metric is a benchmark of.
-        :type objective: ifcopenshell.entity_instance.entity_instance
+        :type objective: ifcopenshell.entity_instance
         :return: The newly created IfcMetric entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

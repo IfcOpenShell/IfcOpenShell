@@ -29,7 +29,7 @@ class Usecase:
         All references and associations are also removed.
 
         :param information: The IfcDocumentInformation to remove
-        :type information: ifcopenshell.entity_instance.entity_instance
+        :type information: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

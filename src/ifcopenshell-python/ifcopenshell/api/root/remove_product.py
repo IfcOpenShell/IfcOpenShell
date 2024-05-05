@@ -42,7 +42,7 @@ class Usecase:
         naturally, the materials, types, containers, etc themselves remain).
 
         :param product: The element to remove.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

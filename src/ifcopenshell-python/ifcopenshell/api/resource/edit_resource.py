@@ -25,7 +25,7 @@ class Usecase:
         IfcResource, consult the IFC documentation.
 
         :param resource: The IfcResource entity you want to edit
-        :type resource: ifcopenshell.entity_instance.entity_instance
+        :type resource: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

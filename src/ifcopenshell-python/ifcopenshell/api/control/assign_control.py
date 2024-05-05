@@ -37,12 +37,12 @@ class Usecase:
 
         :param relating_control: The IfcControl entity that is creating the
             control or constraint
-        :type relating_control: ifcopenshell.entity_instance.entity_instance
+        :type relating_control: ifcopenshell.entity_instance
         :param related_object: The IfcObjectDefinition that is being controlled
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The newly created IfcRelAssignsToControl. If relationship already
             existed before and wasn't changed then returns None.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+        :rtype: ifcopenshell.entity_instance, None
 
         Example:
 

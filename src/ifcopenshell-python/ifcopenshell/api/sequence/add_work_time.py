@@ -31,12 +31,12 @@ class Usecase:
 
         :param work_calendar: The IfcWorkCalendar to add the work or holiday
             time definition to.
-        :type work_calendar: ifcopenshell.entity_instance.entity_instance
+        :type work_calendar: ifcopenshell.entity_instance
         :param time_type: Either WorkingTimes or ExceptionTimes, depending on
             what you want to define.
         :type time_type: str
         :return: The newly created IfcWorkTime
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

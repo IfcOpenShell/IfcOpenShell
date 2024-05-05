@@ -25,7 +25,7 @@ class Usecase:
         IfcMaterial, consult the IFC documentation.
 
         :param element: The IfcMaterial entity you want to edit
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

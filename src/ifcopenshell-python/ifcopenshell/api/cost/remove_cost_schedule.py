@@ -29,7 +29,7 @@ class Usecase:
         including all cost items.
 
         :param cost_schedule: The IfcCostSchedule entity you want to remove
-        :type cost_schedule: ifcopenshell.entity_instance.entity_instance
+        :type cost_schedule: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

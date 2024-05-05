@@ -30,7 +30,7 @@ class Usecase:
         unclear.
 
         :param constraint: The IfcObjective you want to remove.
-        :type constraint: ifcopenshell.entity_instance.entity_instance
+        :type constraint: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

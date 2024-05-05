@@ -28,7 +28,7 @@ class Usecase:
         IfcLagTime, consult the IFC documentation.
 
         :param lag_time: The IfcLagTime entity you want to edit
-        :type lag_time: ifcopenshell.entity_instance.entity_instance
+        :type lag_time: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

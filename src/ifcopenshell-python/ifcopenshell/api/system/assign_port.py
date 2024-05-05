@@ -30,12 +30,12 @@ class Usecase:
         it may be useful when patching up models.
 
         :param element: The IfcDistributionElement to assign the port to.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :param port: The IfcDistributionPort you want to assign.
-        :type port: ifcopenshell.entity_instance.entity_instance
+        :type port: ifcopenshell.entity_instance
         :return: The IfcRelNests relationship, or the
             IfcRelConnectsPortToElement for IFC2X3.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -33,12 +33,12 @@ class Usecase:
         Note that it is not necessary to assign distribution ports to a system.
 
         :param products: The list of IfcDistributionElements to assign to the system.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param system: The IfcSystem you want to assign the element to.
-        :type system: ifcopenshell.entity_instance.entity_instance
+        :type system: ifcopenshell.entity_instance
         :return: The IfcRelAssignsToGroup relationship
             or `None` if `products` was empty list.
-        :rtype: [ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: [ifcopenshell.entity_instance, None]
 
         Example:
 

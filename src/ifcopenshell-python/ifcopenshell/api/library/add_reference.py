@@ -36,9 +36,9 @@ class Usecase:
         library's references.
 
         :param library: The IfcLibraryInformation element to add a reference to
-        :type library: ifcopenshell.entity_instance.entity_instance
+        :type library: ifcopenshell.entity_instance
         :return: The newly created IfcLibraryReference element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

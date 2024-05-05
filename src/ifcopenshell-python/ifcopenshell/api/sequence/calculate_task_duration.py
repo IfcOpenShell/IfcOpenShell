@@ -36,7 +36,7 @@ class Usecase:
         then nothing happens.
 
         :param task: The IfcTask to calculate the duration for.
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

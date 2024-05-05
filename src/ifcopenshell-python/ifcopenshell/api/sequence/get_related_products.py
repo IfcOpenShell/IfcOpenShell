@@ -27,12 +27,12 @@ class Usecase:
         utility module.
 
         :param relating_product: One of the products already output by the task.
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :type relating_product: ifcopenshell.entity_instance
         :param related_object: The IfcTask that you want to get all the related
             products for.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: A set of IfcProducts output by the IfcTask.
-        :rtype: set[ifcopenshell.entity_instance.entity_instance]
+        :rtype: set[ifcopenshell.entity_instance]
 
         Example:
 

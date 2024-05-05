@@ -25,7 +25,7 @@ class Usecase:
         at least one layer to ensure a valid IFC dataset.
 
         :param layer: The IfcMaterialLayer entity you want to remove
-        :type layer: ifcopenshell.entity_instance.entity_instance
+        :type layer: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

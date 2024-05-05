@@ -42,7 +42,7 @@ class Usecase:
         be equivalent to be Tuesday 8am, for instance.
 
         :param task: The start task to begin cascading from.
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

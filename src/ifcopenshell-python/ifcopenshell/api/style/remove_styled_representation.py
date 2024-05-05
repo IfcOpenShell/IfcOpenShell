@@ -25,7 +25,7 @@ class Usecase:
         removes the representation but not the underlying styles.
 
         :param representation: The IfcStyledRepresentation to remove.
-        :type representation: ifcopenshell.entity_instance.entity_instance
+        :type representation: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

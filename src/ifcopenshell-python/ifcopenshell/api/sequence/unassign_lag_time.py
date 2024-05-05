@@ -26,7 +26,7 @@ class Usecase:
         The schedule is cascaded afterwards.
 
         :param rel_sequence: The sequence to remove the lag time from.
-        :type rel_sequence: ifcopenshell.entity_instance.entity_instance
+        :type rel_sequence: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

@@ -45,9 +45,9 @@ class Usecase:
         and implicit connectivity is preferred for early phase design.
 
         :param port1: The port of the first distribution element to connect.
-        :type port1: ifcopenshell.entity_instance.entity_instance
+        :type port1: ifcopenshell.entity_instance
         :param port2: The port of the second distribution element to connect.
-        :type port2: ifcopenshell.entity_instance.entity_instance
+        :type port2: ifcopenshell.entity_instance
         :param direction: The directionality of distribution flow through the
             port connection. NOTDEFINED means that the direction has not yet
             been determined. This is useful during preliminary system design.
@@ -61,7 +61,7 @@ class Usecase:
             connectivity is made, such as a segment or fitting. This is only to
             be used for implicit port connectivity where the segments and
             fittings are less important.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
 
         Example:
 

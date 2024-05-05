@@ -67,11 +67,11 @@ class Usecase:
         :param work_schedule: The work schedule to group the task in, if the
             task is to be a top-level or root task. This is mutually exclusive
             with the parent_task parameter.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :type work_schedule: ifcopenshell.entity_instance
         :param parent_task: The parent task, if the task is to be a subtask or
             child task. This is mutually exclusive with the work_schedule
             parameter.
-        :type parent_task: ifcopenshell.entity_instance.entity_instance
+        :type parent_task: ifcopenshell.entity_instance
         :param name: The name of the task.
         :type name: str,optional
         :param description: The description of the task.
@@ -83,7 +83,7 @@ class Usecase:
             IFC documentation for IfcTaskTypeEnum for more information.
         :type predefined_type: str
         :return: The newly created IfcTask
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

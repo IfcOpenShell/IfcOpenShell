@@ -28,7 +28,7 @@ class Usecase:
         :param currency: The currency code
         :type currency: str
         :return: The newly created IfcMonetaryUnit
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -51,13 +51,13 @@ class Usecase:
         predecessor and successor tasks in the planning profession.
 
         :param relating_process: The previous / predecessor task.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
+        :type relating_process: ifcopenshell.entity_instance
         :param related_process: The next / successor task.
-        :type related_process: ifcopenshell.entity_instance.entity_instance
+        :type related_process: ifcopenshell.entity_instance
         :param sequence_type: Choose from FINISH_START, FINISH_FINISH,
             START_START, or START_FINISH.
         :return: The newly created IfcRelSequence
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

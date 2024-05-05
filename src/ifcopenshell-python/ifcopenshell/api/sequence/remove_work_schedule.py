@@ -28,7 +28,7 @@ class Usecase:
         All tasks in the work schedule are also removed recursively.
 
         :param work_schedule: The IfcWorkSchedule to remove.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :type work_schedule: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

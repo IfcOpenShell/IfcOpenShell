@@ -36,11 +36,11 @@ class Usecase:
             layer set represents a group of layers. See
             ifcopenshell.api.material.add_material_set for more information on
             how to add a layer set.
-        :type layer_set: ifcopenshell.entity_instance.entity_instance
+        :type layer_set: ifcopenshell.entity_instance
         :param material: The IfcMaterial that the layer is made out of.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :return: The newly created IfcMaterialLayer
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

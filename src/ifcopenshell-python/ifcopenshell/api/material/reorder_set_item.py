@@ -26,7 +26,7 @@ class Usecase:
 
         :param material_set: The IfcMaterialSet which you want to reorder an
             item in.
-        :type material_set: ifcopenshell.entity_instance.entity_instance
+        :type material_set: ifcopenshell.entity_instance
         :param old_index: The index of the item you want to move. This starts
             counting from 0.
         :type old_index: int

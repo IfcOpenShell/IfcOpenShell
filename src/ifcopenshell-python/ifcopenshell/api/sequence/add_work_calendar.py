@@ -41,7 +41,7 @@ class Usecase:
             specifically define shifts, such as FIRSTSHIFT, SECONDSHIFT, or
             THIRDSHIFT. Leave as NOTDEFINED for basic calendar usage.
         :return: The newly created IfcWorkCalendar
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

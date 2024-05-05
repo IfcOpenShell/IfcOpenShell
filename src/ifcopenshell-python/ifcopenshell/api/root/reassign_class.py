@@ -48,14 +48,14 @@ class Usecase:
         this.
 
         :param product: The IfcProduct that you want to change the class of.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param ifc_class: The new IFC class you want to change it to.
         :type ifc_class: str,optional
         :param predefined_type: In case you want to change the predefined type
             too. User defined types are also allowed, just type what you want.
         :type predefined_type: str,optional
         :return: The newly modified product.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

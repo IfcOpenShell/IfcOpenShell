@@ -23,9 +23,9 @@ class Usecase:
 
         :param connection: The IfcStructuralConnection to remove the condition
             from. If omitted, it is assumed to be an orphaned condition.
-        :type connection: ifcopenshell.entity_instance.entity_instance,optional
+        :type connection: ifcopenshell.entity_instance,optional
         :param boundary_condition: The IfcBoundaryCondition to remove.
-        :type boundary_condition: ifcopenshell.entity_instance.entity_instance
+        :type boundary_condition: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

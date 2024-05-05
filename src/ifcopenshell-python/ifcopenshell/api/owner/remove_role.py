@@ -25,7 +25,7 @@ class Usecase:
         leave some of them without roles.
 
         :param role: The IfcActorRole to remove.
-        :type role: ifcopenshell.entity_instance.entity_instance
+        :type role: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

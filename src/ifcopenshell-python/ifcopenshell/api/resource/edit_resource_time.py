@@ -28,7 +28,7 @@ class Usecase:
         IfcResourceTime, consult the IFC documentation.
 
         :param resource_time: The IfcResourceTime entity you want to edit
-        :type resource_time: ifcopenshell.entity_instance.entity_instance
+        :type resource_time: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

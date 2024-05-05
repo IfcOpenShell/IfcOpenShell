@@ -27,9 +27,9 @@ class Usecase:
         All properties that are part of this property set are also removed.
 
         :param product: The IfcObject to remove the property set from.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param pset: The IfcPropertySet or IfcElementQuantity to remove.
-        :type pset: ifcopenshell.entity_instance.entity_instance
+        :type pset: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

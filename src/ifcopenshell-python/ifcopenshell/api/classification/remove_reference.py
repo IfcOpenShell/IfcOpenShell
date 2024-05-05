@@ -35,10 +35,10 @@ class Usecase:
 
         :param reference: The IfcClassificationReference entity of the
             relationship you want to remove.
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :param product: The list fo object entities of the relationship you want to
             remove.
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
 
         :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
 

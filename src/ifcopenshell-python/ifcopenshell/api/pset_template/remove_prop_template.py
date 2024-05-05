@@ -28,7 +28,7 @@ class Usecase:
         templates.
 
         :param prop_template: The IfcSimplePropertyTemplate to remove.
-        :type prop_template: ifcopenshell.entity_instance.entity_instance
+        :type prop_template: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

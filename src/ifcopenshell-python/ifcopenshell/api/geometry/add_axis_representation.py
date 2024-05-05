@@ -52,13 +52,13 @@ class Usecase:
         :param context: The IfcGeometricRepresentationContext that the
             representation is part of. This must be either a
             Model/Axis/GRAPH_VIEW (3D) or Plan/Axis/GRAPH_VIEW (2D).
-        :type context: ifcopenshell.entity_instance.entity_instance
+        :type context: ifcopenshell.entity_instance
         :param axis: The axis, as a list of two coordinates, the coordinates
             being either a list of 2 or 3 float coordinates depending on whether
             the axis is 2D or 3D.
         :type axis: list[list[float]]
         :return: The newly created IfcShapeRepresentation entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

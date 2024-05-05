@@ -22,7 +22,7 @@ class Usecase:
         """Edits the coordinate system of a structural connection
 
         :param structural_item: The IfcStructuralItem you want to modify.
-        :type structural_item: ifcopenshell.entity_instance.entity_instance
+        :type structural_item: ifcopenshell.entity_instance
         :param axis: The unit Z axis vector defined as a list of 3 floats.
             Defaults to [0., 0., 1.].
         :type axis: list[float]

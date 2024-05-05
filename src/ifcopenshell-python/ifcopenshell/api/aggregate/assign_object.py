@@ -63,13 +63,13 @@ class Usecase:
 
         :param products: The list of parts of the aggregate, typically of IfcElement or
             IfcSpatialStructureElement subclass
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :param relating_object: The whole of the aggregate, typically an
             IfcElement or IfcSpatialStructureElement subclass
-        :type relating_object: ifcopenshell.entity_instance.entity_instance
+        :type relating_object: ifcopenshell.entity_instance
         :return: The IfcRelAggregate relationship instance
             or `None` if `products` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

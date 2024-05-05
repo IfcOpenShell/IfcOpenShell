@@ -60,11 +60,11 @@ class Usecase:
         :param parent: Either an IfcTaskTimeRecurring if you are defining a
             recurring schedule for a task, or IfcWorkTime if you are defining a
             recurring pattern for a workdays or holidays in a calendar.
-        :type parent: ifcopenshell.entity_instance.entity_instance
+        :type parent: ifcopenshell.entity_instance
         :param recurrence_type: One of the types of recurrences.
         :type recurrence_type: str
         :return: The newly created IfcRecurrencePattern
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

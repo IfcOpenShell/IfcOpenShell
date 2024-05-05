@@ -36,7 +36,7 @@ class Usecase:
         :param Name: The name of the layer. Defaults to "Unnamed".
         :type Name: str, optional
         :return: The newly created IfcPresentationLayerAssignment element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

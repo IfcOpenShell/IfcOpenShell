@@ -25,7 +25,7 @@ class Usecase:
         relationship to the layer will be removed.
 
         :param layer: The IfcPresentationLayerAssignment entity to remove
-        :type layer: ifcopenshell.entity_instance.entity_instance
+        :type layer: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

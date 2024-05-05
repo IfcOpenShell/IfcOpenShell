@@ -29,10 +29,10 @@ class Usecase:
         have any impact on the cost item.
 
         :param cost_item: The IfcCostItem to remove quantities from
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param products: A list of IfcProducts that may have parametrically
             connected quantities to the cost item
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

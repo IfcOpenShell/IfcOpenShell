@@ -25,7 +25,7 @@ class Usecase:
         """Removes a profile
 
         :param profile: The IfcProfileDef to remove.
-        :type profile: ifcopenshell.entity_instance.entity_instance
+        :type profile: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

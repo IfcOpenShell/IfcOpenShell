@@ -29,7 +29,7 @@ class Usecase:
         the group will be removed.
 
         :param group: The IfcGroup entity you want to remove
-        :type group: ifcopenshell.entity_instance.entity_instance
+        :type group: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

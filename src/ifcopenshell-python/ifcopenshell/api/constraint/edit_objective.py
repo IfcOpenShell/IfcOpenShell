@@ -25,7 +25,7 @@ class Usecase:
         IfcObjective, consult the IFC documentation.
 
         :param objective: The IfcObjective you want to edit.
-        :type objective: ifcopenshell.entity_instance.entity_instance
+        :type objective: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

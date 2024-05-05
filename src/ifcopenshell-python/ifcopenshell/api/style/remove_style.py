@@ -26,7 +26,7 @@ class Usecase:
         All of the presentation items of the style will also be removed.
 
         :param style: The IfcPresentationStyle to remove.
-        :type style: ifcopenshell.entity_instance.entity_instance
+        :type style: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

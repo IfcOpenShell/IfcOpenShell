@@ -50,9 +50,9 @@ class Usecase:
             provided, the schedule will not be grouped in a work plan and would
             exist as a top level schedule in the project. This is not
             recommended.
-        :type work_plan: ifcopenshell.entity_instance.entity_instance,optional
+        :type work_plan: ifcopenshell.entity_instance,optional
         :return: The newly created IfcWorkSchedule
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

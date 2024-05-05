@@ -29,9 +29,9 @@ class Usecase:
         be used to calculate other parameters like resource utilisation.
 
         :param resource: The IfcConstructionResource to record time for.
-        :type resource: ifcopenshell.entity_instance.entity_instance
+        :type resource: ifcopenshell.entity_instance
         :return: The newly created IfcResourceTime
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

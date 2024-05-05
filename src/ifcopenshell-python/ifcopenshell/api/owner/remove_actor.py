@@ -25,7 +25,7 @@ class Usecase:
         """Removes an actor
 
         :param actor: The IfcActor to remove.
-        :type actor: ifcopenshell.entity_instance.entity_instance
+        :type actor: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

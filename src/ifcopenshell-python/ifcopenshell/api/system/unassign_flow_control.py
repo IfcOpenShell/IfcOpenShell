@@ -27,12 +27,12 @@ class Usecase:
 
         :param related_flow_control: IfcDistributionControlElement controling the
             flow element
-        :type related_flow_control: ifcopenshell.entity_instance.entity_instance
+        :type related_flow_control: ifcopenshell.entity_instance
         :param relating_flow_element: The IfcDistributionFlowElement that is being controlled
-        :type relating_flow_element: ifcopenshell.entity_instance.entity_instance
+        :type relating_flow_element: ifcopenshell.entity_instance
         :return: If the control still is related to other objects, the
             IfcRelFlowControlElements is returned, otherwise None.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+        :rtype: ifcopenshell.entity_instance, None
 
         Example:
 

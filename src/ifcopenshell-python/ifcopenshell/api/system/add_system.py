@@ -36,7 +36,7 @@ class Usecase:
             IfcSystem.
         :type ifc_class: str
         :return: The newly created IfcSystem.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

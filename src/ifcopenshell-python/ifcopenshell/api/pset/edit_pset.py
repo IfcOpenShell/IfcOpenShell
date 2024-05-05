@@ -52,7 +52,7 @@ class Usecase:
         to ensure that data types are always consistent and correct.
 
         :param pset: The IfcPropertySet to edit.
-        :type pset: ifcopenshell.entity_instance.entity_instance
+        :type pset: ifcopenshell.entity_instance
         :param name: A new name for the property set. If no name is specified,
             the property set name is not changed.
         :type name: str, optional
@@ -69,7 +69,7 @@ class Usecase:
         :param pset_template: If a property set template is provided, this will
             be used to determine data types. If no user-defined template is
             provided, the built-in buildingSMART templates will be loaded.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :type pset_template: ifcopenshell.entity_instance
         :param should_purge: If left as False, properties set to None will be
             left as None but not removed. If set to true, properties set to None
             will actually be removed.

@@ -25,12 +25,12 @@ class Usecase:
         IfcMaterialLayer, consult the IFC documentation.
 
         :param layer: The IfcMaterialLayer entity you want to edit
-        :type layer: ifcopenshell.entity_instance.entity_instance
+        :type layer: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :param material: The IfcMaterial entity you want the layer to be made
             from.
-        :type material: ifcopenshell.entity_instance.entity_instance, optional
+        :type material: ifcopenshell.entity_instance, optional
         :return: None
         :rtype: None
 

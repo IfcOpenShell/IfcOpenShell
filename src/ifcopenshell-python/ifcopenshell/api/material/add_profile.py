@@ -47,14 +47,14 @@ class Usecase:
             profile set represents a group of profile items. See
             ifcopenshell.api.material.add_material_set for more information on
             how to add a profile set.
-        :type profile_set: ifcopenshell.entity_instance.entity_instance
+        :type profile_set: ifcopenshell.entity_instance
         :param material: The IfcMaterial that the profile item is made out of.
-        :type material: ifcopenshell.entity_instance.entity_instance, optional
+        :type material: ifcopenshell.entity_instance, optional
         :param profile: The IfcProfileDef that represents the 2D cross section
             of the the profile item.
-        :type profile: ifcopenshell.entity_instance.entity_instance, optional
+        :type profile: ifcopenshell.entity_instance, optional
         :return: The newly created IfcMaterialProfile
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

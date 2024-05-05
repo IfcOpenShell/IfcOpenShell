@@ -46,7 +46,7 @@ class Usecase:
         :type ifc_class: str
         :return: The newly created style element, based on the provided
             ifc_class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

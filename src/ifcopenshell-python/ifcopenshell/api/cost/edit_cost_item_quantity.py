@@ -25,7 +25,7 @@ class Usecase:
         IfcPhysicalQuantity, consult the IFC documentation.
 
         :param physical_quantity: The IfcPhysicalQuantity entity you want to edit
-        :type physical_quantity: ifcopenshell.entity_instance.entity_instance
+        :type physical_quantity: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

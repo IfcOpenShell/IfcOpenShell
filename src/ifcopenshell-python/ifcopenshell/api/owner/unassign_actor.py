@@ -28,12 +28,12 @@ class Usecase:
         This means that the actor is no longer responsible for the object.
 
         :param relating_actor: The IfcActor who is responsible for the object.
-        :type relating_actor: ifcopenshell.entity_instance.entity_instance
+        :type relating_actor: ifcopenshell.entity_instance
         :param related_object: The object the actor is responsible for.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The updated IfcRelAssignsToActor relationship or none if there
             is no more valid relationship.
-        :rtype: None, ifcopenshell.entity_instance.entity_instance
+        :rtype: None, ifcopenshell.entity_instance
 
         Example:
 

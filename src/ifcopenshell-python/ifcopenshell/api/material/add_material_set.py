@@ -64,7 +64,7 @@ class Usecase:
             IfcMaterialConstituentSet.
         :type set_type: str, optional
         :return: The newly created material set element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

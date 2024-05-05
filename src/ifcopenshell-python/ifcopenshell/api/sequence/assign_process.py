@@ -61,12 +61,12 @@ class Usecase:
 
         :param relating_process: The IfcProcess (typically IfcTask) that the
             input, control, or resource is related to.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
+        :type relating_process: ifcopenshell.entity_instance
         :param related_object: The IfcProduct (for input), IfcCostItem (for
             control) or IfcConstructionResource (for resource).
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The newly created IfcRelAssignsToProcess relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

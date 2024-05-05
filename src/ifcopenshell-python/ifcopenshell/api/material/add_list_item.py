@@ -39,9 +39,9 @@ class Usecase:
 
         :param material_list: The IfcMaterialList the material should be added
             to.
-        :type material_list: ifcopenshell.entity_instance.entity_instance
+        :type material_list: ifcopenshell.entity_instance
         :param material: The IfcMaterial to add to the list
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

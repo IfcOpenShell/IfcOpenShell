@@ -84,7 +84,7 @@ class Usecase:
             property set may be assigned to any type.
         :type applicable_entity: str,optional
         :return: The newly created IfcPropertySetTemplate
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -28,7 +28,7 @@ class Usecase:
         boundary and its connection geometry is removed.
 
         :param boundary: The IfcRelSpaceBoundary you want to remove.
-        :type boundary: ifcopenshell.entity_instance.entity_instance
+        :type boundary: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

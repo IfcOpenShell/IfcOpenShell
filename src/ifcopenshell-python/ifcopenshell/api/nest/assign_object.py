@@ -80,13 +80,13 @@ class Usecase:
 
         :param related_objects: The list of children of the nesting relationship,
             typically IfcElements.
-        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
+        :type related_objects: list[ifcopenshell.entity_instance]
         :param relating_object: The host parent of the nesting relationship,
             typically an IfcElement.
-        :type relating_object: ifcopenshell.entity_instance.entity_instance
+        :type relating_object: ifcopenshell.entity_instance
         :return: The IfcRelNests relationship instance
             or `None` if `related_objects` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

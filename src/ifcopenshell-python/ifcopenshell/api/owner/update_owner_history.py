@@ -34,9 +34,9 @@ class Usecase:
 
         :param element: The IfcRoot element to update the ownership details on
             when a change is made.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :return: The updated IfcOwnerHistory element.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

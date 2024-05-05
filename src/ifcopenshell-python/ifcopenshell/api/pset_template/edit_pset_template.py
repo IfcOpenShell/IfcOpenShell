@@ -25,7 +25,7 @@ class Usecase:
         IfcPropertySetTemplate, consult the IFC documentation.
 
         :param pset_template: The IfcPropertySetTemplate entity you want to edit
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :type pset_template: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

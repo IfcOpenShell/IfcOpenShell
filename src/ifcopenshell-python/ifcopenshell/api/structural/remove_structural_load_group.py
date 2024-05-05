@@ -26,7 +26,7 @@ class Usecase:
         """Removes a structural load group
 
         :param load_group: The IfcStructuralLoadGroup to remove.
-        :type load_group: ifcopenshell.entity_instance.entity_instance
+        :type load_group: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

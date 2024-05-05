@@ -39,9 +39,9 @@ class Usecase:
 
         :param information: The IfcDocumentInformation that the reference will
             be created for
-        :type information: ifcopenshell.entity_instance.entity_instance
+        :type information: ifcopenshell.entity_instance
         :return: The newly created IfcDocumentReference entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

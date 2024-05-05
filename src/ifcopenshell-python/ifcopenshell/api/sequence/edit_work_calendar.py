@@ -25,7 +25,7 @@ class Usecase:
         IfcWorkCalendar, consult the IFC documentation.
 
         :param work_calendar: The IfcWorkCalendar entity you want to edit
-        :type work_calendar: ifcopenshell.entity_instance.entity_instance
+        :type work_calendar: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

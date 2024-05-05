@@ -26,7 +26,7 @@ class Usecase:
         """Removes a structural load case
 
         :param load_case: The IfcStructuralLoadCase to remove.
-        :type load_case: ifcopenshell.entity_instance.entity_instance
+        :type load_case: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

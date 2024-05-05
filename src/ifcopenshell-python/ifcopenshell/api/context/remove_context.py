@@ -27,7 +27,7 @@ class Usecase:
         removed. If a context is removed, then any subcontexts are also removed.
 
         :param context: The IfcGeometricRepresentationContext entity to remove
-        :type context: ifcopenshell.entity_instance.entity_instance
+        :type context: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

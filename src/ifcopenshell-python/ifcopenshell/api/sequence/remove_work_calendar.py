@@ -28,7 +28,7 @@ class Usecase:
         calendar.
 
         :param work_calendar: The IfcWorkCalendar to remove
-        :type work_calendar: ifcopenshell.entity_instance.entity_instance
+        :type work_calendar: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

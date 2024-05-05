@@ -25,7 +25,7 @@ class Usecase:
         IfcMetric, consult the IFC documentation.
 
         :param metric: The IfcMetric you want to edit.
-        :type metric: ifcopenshell.entity_instance.entity_instance
+        :type metric: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

@@ -35,9 +35,9 @@ class Usecase:
         be used to ensure consistency of the occurrence's representations.
 
         :param related_object: The IfcElement occurrence.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :param relating_type: The IfcElementType type.
-        :type relating_type: ifcopenshell.entity_instance.entity_instance
+        :type relating_type: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

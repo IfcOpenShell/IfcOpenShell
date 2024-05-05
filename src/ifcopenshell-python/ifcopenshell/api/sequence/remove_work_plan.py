@@ -28,7 +28,7 @@ class Usecase:
         removed.
 
         :param work_plan: The IfcWorkPlan to remove.
-        :type work_plan: ifcopenshell.entity_instance.entity_instance
+        :type work_plan: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

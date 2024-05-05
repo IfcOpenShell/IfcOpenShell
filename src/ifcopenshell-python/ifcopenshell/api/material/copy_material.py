@@ -28,9 +28,9 @@ class Usecase:
         associated to any elements.
 
         :param material: The IfcMaterial to copy
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :return: The new copy of the material
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

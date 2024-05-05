@@ -40,9 +40,9 @@ class Usecase:
         ifcopenshell.api.control.assign_control.
 
         :param cost_item: The IfcCostItem to assign parametric quantities to
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param products: The IfcObjects to assign parametric quantities to
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param prop_name: The name of the quantity. If this is not specified,
             then it is assumed that there is no calculated quantity, and the
             number of objects are counted instead.

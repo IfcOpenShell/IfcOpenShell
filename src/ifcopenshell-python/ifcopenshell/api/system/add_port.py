@@ -35,9 +35,9 @@ class Usecase:
 
         :param element: The IfcDistributionElement you want to add a
             distribution port to.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :return: The newly created IfcDistributionPort
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

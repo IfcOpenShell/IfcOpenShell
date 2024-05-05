@@ -34,7 +34,7 @@ class Usecase:
         :param name: The legal name of the organisation
         :type name: str, optional
         :return: The newly created IfcOrganization
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

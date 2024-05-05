@@ -29,13 +29,13 @@ class Usecase:
         :param cost_schedule: If the cost item is to be added as a root or top
             level cost item to a cost schedule, the IfcCostSchedule may be
             specified. This is mutually exlclusive to the cost_item parameter.
-        :type cost_schedule: ifcopenshell.entity_instance.entity_instance
+        :type cost_schedule: ifcopenshell.entity_instance
         :param cost_item: If the cost item is to be added as a subitem to an
             existing cost item, the parent IfcCostItem may be specified. This is
             mutually exclusive to the cost_schedule parameter.
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :return: The newly created IfcCostItem
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

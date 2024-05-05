@@ -24,7 +24,7 @@ class Usecase:
         """Copies a space boundary
 
         :param boundary: The IfcRelSpaceBoundary you want to copy.
-        :type boundary: ifcopenshell.entity_instance.entity_instance
+        :type boundary: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

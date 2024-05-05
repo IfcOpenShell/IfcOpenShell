@@ -28,7 +28,7 @@ class Usecase:
         All the distribution elements within the system are retained.
 
         :param system: The IfcSystem to remove.
-        :type system: ifcopenshell.entity_instance.entity_instance
+        :type system: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

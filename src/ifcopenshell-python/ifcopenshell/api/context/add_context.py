@@ -102,10 +102,10 @@ class Usecase:
         :param parent: the parent context. Must be left as None (the default)
             for contexts, and only set for subcontexts. Note that there are only
             contexts and subcontexts, a subcontext cannot have any children.
-        :type parent: ifcopenshell.entity_instance.entity_instance, optional
+        :type parent: ifcopenshell.entity_instance, optional
         :return: the newly created IfcGeometricRepresentationContext or
             IfcGeometricRepresentationSubContext entity
-        :rtype: ifcopenshell.entity_instance.entity_instance, optional
+        :rtype: ifcopenshell.entity_instance, optional
 
         Example:
 

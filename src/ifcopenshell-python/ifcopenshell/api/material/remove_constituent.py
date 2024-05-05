@@ -25,7 +25,7 @@ class Usecase:
         at least one constituent to ensure a valid IFC dataset.
 
         :param constituent: The IfcMaterialConstituent entity you want to remove
-        :type constituent: ifcopenshell.entity_instance.entity_instance
+        :type constituent: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

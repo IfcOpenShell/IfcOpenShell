@@ -25,7 +25,7 @@ class Usecase:
         IfcLibraryReference, consult the IFC documentation.
 
         :param reference: The IfcLibraryReference entity you want to edit
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

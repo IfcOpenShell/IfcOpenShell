@@ -39,7 +39,7 @@ class Usecase:
 
         :param products: The list of parts of the aggregate, typically of IfcElements or
             IfcSpatialStructureElement subclass
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

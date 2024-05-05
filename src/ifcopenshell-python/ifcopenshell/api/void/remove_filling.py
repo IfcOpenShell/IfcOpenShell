@@ -29,7 +29,7 @@ class Usecase:
         fills the opening.
 
         :param element: The element filling an opening.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

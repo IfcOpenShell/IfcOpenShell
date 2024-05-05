@@ -34,7 +34,7 @@ class Usecase:
         This base quantity is then used in other calculations.
 
         :param resource: The IfcConstructionResource to add a quantity to.
-        :type resource: ifcopenshell.entity_instance.entity_instance
+        :type resource: ifcopenshell.entity_instance
         :param ifc_class: The type of quantity to add, chosen from
             IfcQuantityArea (for material), IfcQuantityCount (for products),
             IfcQuantityLength (for material), IfcQuantityTime (for equipment or
@@ -42,7 +42,7 @@ class Usecase:
             (for material).
         :type ifc_class: str,optional
         :return: The newly created quantity depending on the IFC class
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

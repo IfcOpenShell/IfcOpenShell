@@ -25,7 +25,7 @@ class Usecase:
         Check whether or not the application is used anywhere prior to removal.
 
         :param address: The IfcApplication to remove.
-        :type address: ifcopenshell.entity_instance.entity_instance
+        :type address: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

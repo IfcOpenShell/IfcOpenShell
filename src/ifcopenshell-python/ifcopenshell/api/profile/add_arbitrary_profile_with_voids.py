@@ -44,7 +44,7 @@ class Usecase:
             this may be left as none.
         :type name: str, optional
         :return: The newly created IfcArbitraryProfileDefWithVoids
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

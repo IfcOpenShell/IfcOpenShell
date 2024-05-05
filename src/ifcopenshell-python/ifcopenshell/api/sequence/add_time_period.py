@@ -39,7 +39,7 @@ class Usecase:
 
         :param recurrence_pattern: The IfcRecurrencePattern to add the time
             period to. See ifcopenshell.api.sequence.assign_recurrence_pattern.
-        :type recurrence_pattern: ifcopenshell.entity_instance.entity_instance
+        :type recurrence_pattern: ifcopenshell.entity_instance
         :param start_time: The start time of the time period, in a format
             compatible with IfcTime, such as an ISO format time string or a
             datetime.time object.
@@ -49,7 +49,7 @@ class Usecase:
             datetime.time object.
         :type end_time: str,datetime.time
         :return: The newly created IfcTimePeriod
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

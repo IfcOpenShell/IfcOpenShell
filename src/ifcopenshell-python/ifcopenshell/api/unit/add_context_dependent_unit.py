@@ -43,7 +43,7 @@ class Usecase:
             recommended to leave this as the default of (0, 0, 0, 0, 0, 0, 0).
         :type dimensions: list[int]
         :return: The new IfcContextDependentUnit
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

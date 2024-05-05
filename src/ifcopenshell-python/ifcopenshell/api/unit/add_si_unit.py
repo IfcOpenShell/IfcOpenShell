@@ -44,7 +44,7 @@ class Usecase:
             prefix.
         :type prefix: str,optional
         :return: The newly created IfcSIUnit
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -52,7 +52,7 @@ class Usecase:
         :param name: The name of the new element.
         :type name: str,optional
         :return: The newly created element based on the specified IFC class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -25,7 +25,7 @@ class Usecase:
         IfcSystem, consult the IFC documentation.
 
         :param system: The IfcSystem entity you want to edit
-        :type system: ifcopenshell.entity_instance.entity_instance
+        :type system: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None
