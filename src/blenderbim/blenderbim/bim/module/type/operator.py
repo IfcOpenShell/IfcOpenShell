@@ -146,39 +146,36 @@ class SelectType(bpy.types.Operator):
     relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
-        selected_objs = context.selected_objects
-        active_obj = context.active_object
-        selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
+
+        if self.relating_type: #if operator button sends a relating_type, the iterator only selects this one type
+            element = tool.Ifc.get().by_id(self.relating_type)
+            obj = tool.Ifc.get_object(element)
+            selected_objs = [obj]
+        else:    #else, the iterator selects all the types of all the selected objects
+            selected_objs = context.selected_objects
+            active_obj = context.active_object
+            selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
+        
         last_relating_type_obj = None
         types_collection = bpy.data.collections.get("Types")
-        for obj in types_collection.objects:
-            obj.hide_set(True)
+        context.view_layer.layer_collection.children['IfcProject/My Project'].children["Types"].hide_viewport = False
+        for type_obj in types_collection.objects:
+            type_obj.hide_set(True)
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
             relating_type = ifcopenshell.util.element.get_type(element)
-            relating_type_obj = tool.Ifc.get_object(relating_type)
-            obj.select_set(False)
-            if relating_type_obj:
-                if relating_type_obj.hide_get():  
-                    relating_type_obj.hide_set(False)  
-                relating_type_obj.select_set(True)  
-                last_relating_type_obj = relating_type_obj 
+            if relating_type:
+                relating_type_obj = tool.Ifc.get_object(relating_type)
+                if relating_type_obj:
+                    if relating_type_obj.hide_get():  
+                        relating_type_obj.hide_set(False)  
+                    relating_type_obj.select_set(True)  
+                    last_relating_type_obj = relating_type_obj
+            if not element.is_a("IfcTypeObject"): 
+                obj.select_set(False)
 
-        context.view_layer.objects.active = last_relating_type_obj #make the active_obj's type the active object
+        context.view_layer.objects.active = last_relating_type_obj #makes the active_obj's type the active object
         
-            # if relating_type_obj:
-            #     try:
-            #         tool.Blender.select_and_activate_single_object(context, relating_type_obj)
-            #     except:
-            #         self.report({"INFO"}, "Type object is hidden.")
-            # # IfcTypeProducts are only used for annotations and not part of the model interface.
-            # if element.is_a() != "IfcTypeProduct":
-            #     try:
-            #         context.scene.BIMModelProperties.ifc_class = element.is_a()
-            #         context.scene.BIMModelProperties.relating_type_id = str(relating_type)
-            #     except:
-            #         # Potentially our BIM Tool is filtered to a specific element.
-            #         pass
         return {"FINISHED"}
 
 
