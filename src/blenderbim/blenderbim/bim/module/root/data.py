@@ -59,6 +59,7 @@ class IfcClassData:
             "IfcContext",
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
+            "IfcTypeProduct",
         ]
         version = tool.Ifc.get_schema()
         if version == "IFC2X3":
@@ -70,6 +71,7 @@ class IfcClassData:
                 "IfcStructuralItem",
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
+                "IfcTypeProduct",
             ]
         return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
