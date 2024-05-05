@@ -31,13 +31,13 @@ class Usecase:
             condition to. This will determine the type of condition that is
             created. If no connection is supplied, an orphan boundary condition
             will be created using the ifc_class that you specify.
-        :type connection: ifcopenshell.entity_instance.entity_instance,optional
+        :type connection: ifcopenshell.entity_instance,optional
         :param ifc_class: The class of IfcBoundaryCondition to create, only
             relevant if you do not specify a connection and want to create an
             orphaned boundary condition.
         :type ifc_class: str,optional
         :return: The newly created IfcBoundaryCondition
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -27,12 +27,12 @@ class Usecase:
 
         :param relating_control: The IfcControl entity that is creating the
             control or constraint
-        :type relating_control: ifcopenshell.entity_instance.entity_instance
+        :type relating_control: ifcopenshell.entity_instance
         :param related_object: The IfcObjectDefinition that is being controlled
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: If the control still is related to other objects, the
             IfcRelAssignsToControl is returned, otherwise None.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+        :rtype: ifcopenshell.entity_instance, None
 
         Example:
 

@@ -30,7 +30,7 @@ class Usecase:
         retained.
 
         :param cost_item: The IfcCostItem entity you want to remove
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

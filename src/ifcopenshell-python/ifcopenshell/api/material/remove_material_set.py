@@ -30,7 +30,7 @@ class Usecase:
 
         :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
             IfcMaterialProfileSet entity you want to remove.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

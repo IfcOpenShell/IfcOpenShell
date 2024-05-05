@@ -28,11 +28,11 @@ class Usecase:
         ifcopenshell.util.element.get_types instead.
 
         :param related_object: The IfcElement occurrence.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :param relating_type: The IfcElementType type.
-        :type relating_type: ifcopenshell.entity_instance.entity_instance
+        :type relating_type: ifcopenshell.entity_instance
         :return: A list of occurrences of the type.
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :rtype: list[ifcopenshell.entity_instance]
         """
         self.file = file
         self.settings = {

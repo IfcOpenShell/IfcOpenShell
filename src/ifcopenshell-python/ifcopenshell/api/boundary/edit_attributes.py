@@ -25,22 +25,22 @@ class Usecase:
         manual assignment of the space boundary attributes.
 
         :param entity: The IfcRelSpaceBoundary to modify
-        :type entity: ifcopenshell.entity_instance.entity_instance
+        :type entity: ifcopenshell.entity_instance
         :param relating_space: The IfcSpace or IfcExternalSpatialElement that
             the space boundary is related to.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
+        :type relating_space: ifcopenshell.entity_instance
         :param related_building_element: The IfcElement that defines the
             boundary, typically an IfcWall.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
+        :type relating_space: ifcopenshell.entity_instance
         :param parent_boundary: A parent IfcRelSpaceBoundary, only provided if
             this is an inner boundary. This can apply to 1st and 2nd level
             boundaries.
-        :type parent_boundary: ifcopenshell.entity_instance.entity_instance,
+        :type parent_boundary: ifcopenshell.entity_instance,
             optional
         :param corresponding_boundary: The other IfcRelSpaceBoundary on the
             other side of the related element. The pair together represents a
             thermal boundary. This only applies to 2nd level boundaries.
-        :type corresponding_boundary: ifcopenshell.entity_instance.entity_instance,
+        :type corresponding_boundary: ifcopenshell.entity_instance,
             optional
         :return: None
         :rtype: None

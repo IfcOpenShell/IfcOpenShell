@@ -32,14 +32,14 @@ class Usecase:
         to materials. This API function provides that capability.
 
         :param material: The IfcMaterial which you want to assign the style to.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :param style: The IfcPresentationStyle (typically IfcSurfaceStyle) that
             you want to assign to the material. This will then be applied to all
             objects that have that material.
-        :type style: ifcopenshell.entity_instance.entity_instance
+        :type style: ifcopenshell.entity_instance
         :param context: The IfcGeometricRepresentationSubContext at which this
             style should be used. Typically this is the Model BODY context.
-        :type context: ifcopenshell.entity_instance.entity_instance
+        :type context: ifcopenshell.entity_instance
         :param should_use_presentation_style_assignment: This is a technical
             detail to accomodate a bug in Revit. This should always be left as
             the default of False, unless you are finding that colours aren't

@@ -26,9 +26,9 @@ class Usecase:
 
         :param parent: The IfcCostItem, IfcConstructionResource, or IfcCostValue
             that the IfcCostValue is assigned to.
-        :type parent: ifcopenshell.entity_instance.entity_instance
+        :type parent: ifcopenshell.entity_instance
         :param cost_value: The IfcCostValue that you want to remove
-        :type parent: ifcopenshell.entity_instance.entity_instance
+        :type parent: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

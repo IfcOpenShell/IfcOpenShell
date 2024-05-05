@@ -43,7 +43,7 @@ class Usecase:
             IfcCostScheduleTypeEnum
         :type predefined_type: str, optional
         :return: The newly created IfcCostSchedule entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

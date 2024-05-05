@@ -42,15 +42,15 @@ class Usecase:
 
         :param product: The list of objects to associate the document to. This could be
             almost any sensible object in IFC.
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :param document: The IfcDocumentReference to associate to, or
             alternatively an IfcDocumentInformation, though this is not
             recommended.
-        :type document: ifcopenshell.entity_instance.entity_instance
+        :type document: ifcopenshell.entity_instance
         :return: The IfcRelAssociatesDocument relationship
             or `None` if `products` was an empty list or all products were
             already assigned to the `document`.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

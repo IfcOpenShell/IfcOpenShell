@@ -34,7 +34,7 @@ class Usecase:
         It is not allowed to have None quantities in IFC.
 
         :param qto: The IfcElementQuantity to edit.
-        :type qto: ifcopenshell.entity_instance.entity_instance
+        :type qto: ifcopenshell.entity_instance
         :param name: A new name for the quantity set. If no name is specified,
             the quantity set name is not changed.
         :type name: str, optional
@@ -51,7 +51,7 @@ class Usecase:
         :param pset_template: If a quantity set template is provided, this will
             be used to determine data types. If no user-defined template is
             provided, the built-in buildingSMART templates will be loaded.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :type pset_template: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

@@ -28,11 +28,11 @@ class Usecase:
         removed.
 
         :param products: A list of IfcProduct elements to assign to the group
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param group: The IfcGroup to assign the products to
-        :type group: ifcopenshell.entity_instance.entity_instance
+        :type group: ifcopenshell.entity_instance
         :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

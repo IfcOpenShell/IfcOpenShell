@@ -51,11 +51,11 @@ class Usecase:
         booleaned or be part of the shape of the object).
 
         :param opening: The IfcOpeningElement to cut out the element.
-        :type opening: ifcopenshell.entity_instance.entity_instance
+        :type opening: ifcopenshell.entity_instance
         :param element: The IfcElement to insert the opening into.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :return: The new IfcRelVoidsElement relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

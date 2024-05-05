@@ -41,11 +41,11 @@ class Usecase:
             ifcopenshell.api.resource.assign_resource.
 
         :param relating_actor: The IfcActor who is responsible for the object.
-        :type relating_actor: ifcopenshell.entity_instance.entity_instance
+        :type relating_actor: ifcopenshell.entity_instance
         :param related_object: The object the actor is responsible for.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The newly created IfcRelAssignsToActor relationship.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

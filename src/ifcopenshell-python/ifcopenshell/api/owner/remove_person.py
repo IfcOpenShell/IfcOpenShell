@@ -27,7 +27,7 @@ class Usecase:
         removed.
 
         :param person: The IfcPerson to remove
-        :type person: ifcopenshell.entity_instance.entity_instance
+        :type person: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

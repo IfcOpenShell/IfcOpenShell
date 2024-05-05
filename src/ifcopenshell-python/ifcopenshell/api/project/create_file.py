@@ -37,7 +37,7 @@ class Usecase:
             schema, you may specify that schema identifier here too.
         :type version: str, optional
         :return: The created IFC file object.
-        :rtype: ifcopenshell.file.file
+        :rtype: ifcopenshell.file
 
         Example:
 

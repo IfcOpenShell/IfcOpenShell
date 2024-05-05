@@ -29,7 +29,7 @@ class Usecase:
         sequences or controls are also removed.
 
         :param task: The IfcTask to remove.
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

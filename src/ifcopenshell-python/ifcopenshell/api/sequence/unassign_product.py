@@ -28,9 +28,9 @@ class Usecase:
         See ifcopenshell.api.sequence.assign_product for details.
 
         :param relating_product: The IfcProduct in the relationship.
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :type relating_product: ifcopenshell.entity_instance
         :param related_object: The IfcTask in the relationship.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

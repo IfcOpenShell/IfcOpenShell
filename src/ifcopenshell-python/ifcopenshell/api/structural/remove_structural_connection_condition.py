@@ -28,7 +28,7 @@ class Usecase:
         The condition and the member itself is preserved.
 
         :param relation: The IfcRelConnectsStructuralMember to remove.
-        :type relation: ifcopenshell.entity_instance.entity_instance
+        :type relation: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

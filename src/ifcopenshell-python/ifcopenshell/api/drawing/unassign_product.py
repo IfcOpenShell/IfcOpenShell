@@ -31,12 +31,12 @@ class Usecase:
         object later or leave the annotation as a "dumb" annotation.
 
         :param relating_product: The IfcProduct the object is related to
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :type relating_product: ifcopenshell.entity_instance
         :param related_object: The object (typically IfcAnnotation) that the
             product is related to
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The created IfcRelAssignsToProduct relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

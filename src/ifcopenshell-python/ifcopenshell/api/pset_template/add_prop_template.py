@@ -57,7 +57,7 @@ class Usecase:
 
         :param pset_template: The property set template to add the property
             template to.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :type pset_template: ifcopenshell.entity_instance
         :param name: The name of the property
         :type name: str,optional
         :param description: A few words describing what the property stores.
@@ -66,7 +66,7 @@ class Usecase:
             IFC documentation for the full list of data types.
         :param primary_measure_type: str,optional
         :return: The newly created IfcSimplePropertyTemplate.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

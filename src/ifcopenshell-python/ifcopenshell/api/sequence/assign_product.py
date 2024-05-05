@@ -37,12 +37,12 @@ class Usecase:
 
         :param relating_product: The IfcProduct that was constructed as a result
             of the task.
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
+        :type relating_product: ifcopenshell.entity_instance
         :param related_object: The IfcProcess (typically IfcTask) of the
             construction task.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The newly created IfcRelAssignsToProduct relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

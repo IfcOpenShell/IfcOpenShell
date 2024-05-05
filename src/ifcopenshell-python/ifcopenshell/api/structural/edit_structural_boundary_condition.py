@@ -25,7 +25,7 @@ class Usecase:
         IfcBoundaryCondition, consult the IFC documentation.
 
         :param condition: The IfcBoundaryCondition entity you want to edit
-        :type condition: ifcopenshell.entity_instance.entity_instance
+        :type condition: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

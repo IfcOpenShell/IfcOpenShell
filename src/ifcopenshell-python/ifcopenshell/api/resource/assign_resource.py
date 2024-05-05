@@ -38,12 +38,12 @@ class Usecase:
         (e.g. if the resource is a labour resource).
 
         :param relating_resource: The IfcResource to assign the object to.
-        :type relating_resource: ifcopenshell.entity_instance.entity_instance
+        :type relating_resource: ifcopenshell.entity_instance
         :param related_object: The IfcProduct or IfcActor to assign to the
             object.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: The newly created IfcRelAssignsToResource
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

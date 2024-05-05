@@ -29,11 +29,11 @@ class Usecase:
 
         :param work_schedule: The IfcWorkSchedule that will be assigned to the
             work plan.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :type work_schedule: ifcopenshell.entity_instance
         :param work_plan: The IfcWorkPlan for the schedule to be assigned to.
-        :type work_plan: ifcopenshell.entity_instance.entity_instance
+        :type work_plan: ifcopenshell.entity_instance
         :return: The IfcRelAggregates relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -27,7 +27,7 @@ class Usecase:
         the "person and organisation" group.
 
         :param person_and_organisation: The IfcPersonAndOrganization to remove.
-        :type person_and_organisation: ifcopenshell.entity_instance.entity_instance
+        :type person_and_organisation: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

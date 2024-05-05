@@ -53,7 +53,7 @@ class Usecase:
         :param category: The category of the material.
         :type category: str, optional
         :return: The newly created IfcMaterial
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

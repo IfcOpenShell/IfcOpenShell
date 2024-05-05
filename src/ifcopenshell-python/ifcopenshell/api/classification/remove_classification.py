@@ -29,7 +29,7 @@ class Usecase:
         removed from a project.
 
         :param classification: The IfcClassification entity you want to remove
-        :type classification: ifcopenshell.entity_instance.entity_instance
+        :type classification: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

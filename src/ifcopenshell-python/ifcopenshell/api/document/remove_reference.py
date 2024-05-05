@@ -27,7 +27,7 @@ class Usecase:
         All associations with objects are removed.
 
         :param reference: The IfcDocumentReference to remove
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

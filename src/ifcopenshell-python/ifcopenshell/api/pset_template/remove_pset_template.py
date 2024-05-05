@@ -27,7 +27,7 @@ class Usecase:
         along with it.
 
         :param pset_template: The IfcPropertySetTemplate to remove.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
+        :type pset_template: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

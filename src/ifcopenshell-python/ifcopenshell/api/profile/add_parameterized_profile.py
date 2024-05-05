@@ -26,13 +26,13 @@ class Usecase:
         the IFC documentation as subclasses of IfcParameterizedProfileDef.
 
         Currently, this API has no benefit over directly calling
-        ifcopenshell.file.file.create_entity.
+        ifcopenshell.file.create_entity.
 
         :param ifc_class: The subclass of IfcParameterizedProfileDef that you'd
             like to create.
         :type ifc_class: str
         :return: The newly created element depending on the specified ifc_class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

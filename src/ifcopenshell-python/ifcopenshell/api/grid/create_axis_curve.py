@@ -35,7 +35,7 @@ class Usecase:
             single edge.
         :type axis_curve: bpy.types.Object
         :param grid_axis: The IfcGridAxis element to add geometry to.
-        :type grid_axis: ifcopenshell.entity_instance.entity_instance
+        :type grid_axis: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

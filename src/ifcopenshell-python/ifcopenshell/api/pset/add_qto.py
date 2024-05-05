@@ -49,7 +49,7 @@ class Usecase:
         metadata, rather than quantification data.
 
         :param product: The IfcObject that you want to assign a quantity set to.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param name: The name of the quantity set. Quantity sets that are
             standardised by buildingSMART typically have a prefix of "Qto_",
             like "Qto_WallBaseQuantities". If you create your own, you must not
@@ -57,7 +57,7 @@ class Usecase:
             to your project, company, or local government requirement.
         :type name: str
         :return: The newly created IfcElementQuantity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

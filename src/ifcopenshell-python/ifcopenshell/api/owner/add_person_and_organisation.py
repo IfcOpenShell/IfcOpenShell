@@ -32,11 +32,11 @@ class Usecase:
 
         :param person: The IfcPerson being the representative of the
             organisation.
-        :type person: ifcopenshell.entity_instance.entity_instance
+        :type person: ifcopenshell.entity_instance
         :param organisation: The IfcOrganization itself.
-        :type organisation: ifcopenshell.entity_instance.entity_instance
+        :type organisation: ifcopenshell.entity_instance
         :return: The newly created IfcPersonAndOrganization
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -37,7 +37,7 @@ class Usecase:
         :param Description: The description of the purpose of the group.
         :type Description: str, optional
         :return: The newly created IfcGroup
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

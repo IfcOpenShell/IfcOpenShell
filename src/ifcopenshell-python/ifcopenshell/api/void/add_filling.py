@@ -31,11 +31,11 @@ class Usecase:
         filled.
 
         :param opening: The IfcOpeningElement to fill with the element.
-        :type opening: ifcopenshell.entity_instance.entity_instance
+        :type opening: ifcopenshell.entity_instance
         :param element: The IfcElement to be inserted into the opening.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :return: The new IfcRelFillsElement relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

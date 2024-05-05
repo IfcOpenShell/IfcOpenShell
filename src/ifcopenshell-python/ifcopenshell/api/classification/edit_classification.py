@@ -25,7 +25,7 @@ class Usecase:
         IfcClassification, consult the IFC documentation.
 
         :param classification: The IfcClassification entity you want to edit
-        :type classification: ifcopenshell.entity_instance.entity_instance
+        :type classification: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

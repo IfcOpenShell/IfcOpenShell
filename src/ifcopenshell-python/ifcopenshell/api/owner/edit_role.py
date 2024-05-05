@@ -25,7 +25,7 @@ class Usecase:
         IfcActorRole, consult the IFC documentation.
 
         :param role: The IfcActorRole entity you want to edit
-        :type role: ifcopenshell.entity_instance.entity_instance
+        :type role: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

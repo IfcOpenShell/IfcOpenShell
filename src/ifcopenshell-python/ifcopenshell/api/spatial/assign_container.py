@@ -68,13 +68,13 @@ class Usecase:
         previous aggregation, containment, or nesting relationships it may have.
 
         :param products: A list of physical IfcElements existing in the space.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param relating_structure: The IfcSpatialStructureElement element, such
             as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
             exists in.
         :return: The IfcRelContainedInSpatialStructure relationship instance
             or `None` if `products` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

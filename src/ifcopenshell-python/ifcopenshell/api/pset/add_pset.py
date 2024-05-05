@@ -53,7 +53,7 @@ class Usecase:
         data, rather than arbitrary metadata.
 
         :param product: The IfcObject that you want to assign a property set to.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param name: The name of the property set. Property sets that are
             standardised by buildingSMART typically have a prefix of "Pset_",
             like "Pset_WallCommon". If you create your own, you must not use
@@ -61,7 +61,7 @@ class Usecase:
             your project, company, or local government requirement.
         :type name: str
         :return: The newly created IfcPropertySet
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

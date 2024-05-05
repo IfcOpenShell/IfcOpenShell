@@ -38,11 +38,11 @@ class Usecase:
             constituent is part of. The constituent set represents a group of
             constituents. See ifcopenshell.api.material.add_material_set for
             information on how to add a constituent set.
-        :type constituent_set: ifcopenshell.entity_instance.entity_instance
+        :type constituent_set: ifcopenshell.entity_instance
         :param material: The IfcMaterial that the constituent is made out of.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :return: The newly created IfcMaterialConstituent
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

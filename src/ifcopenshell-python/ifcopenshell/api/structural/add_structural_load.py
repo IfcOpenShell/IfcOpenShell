@@ -34,7 +34,7 @@ class Usecase:
         :type ifc_class: str
         :return: The newly created load entity, depending on the ifc_class
             specified.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

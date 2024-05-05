@@ -25,7 +25,7 @@ class Usecase:
         and objectives.
 
         :param metric: The IfcMetric you want to remove.
-        :type metric: ifcopenshell.entity_instance.entity_instance
+        :type metric: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

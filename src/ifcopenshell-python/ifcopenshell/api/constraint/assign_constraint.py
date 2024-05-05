@@ -40,12 +40,12 @@ class Usecase:
 
         :param products: The list of products the constraint applies to. This is anything
             which can have properties or quantities.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param constraint: The IfcObjective constraint
-        :type constraint: ifcopenshell.entity_instance.entity_instance
+        :type constraint: ifcopenshell.entity_instance
         :return: The new or updated IfcRelAssociatesConstraint relationship
             or `None` if `products` was an empty list.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         self.file = file
         self.settings = {

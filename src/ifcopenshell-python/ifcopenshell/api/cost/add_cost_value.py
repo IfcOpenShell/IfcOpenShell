@@ -46,9 +46,9 @@ class Usecase:
         :param parent: A parent IfcCostItem, if specifying a price directly to a
             cost item, or a top-level price component. Alternatively, this can
             be set to a IfcCostValue, if specifying price subcomponents.
-        :type parent: ifcopenshell.entity_instance.entity_instance
+        :type parent: ifcopenshell.entity_instance
         :return: The newly created IfcCostValue
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

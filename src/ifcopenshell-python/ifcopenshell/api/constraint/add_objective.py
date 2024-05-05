@@ -30,7 +30,7 @@ class Usecase:
         quantities. See ifcopenshell.api.constraint.add_metric for more information.
 
         :return: The newly created IfcObjective entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

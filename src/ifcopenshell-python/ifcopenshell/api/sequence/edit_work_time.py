@@ -33,7 +33,7 @@ class Usecase:
         IfcWorkTime, consult the IFC documentation.
 
         :param work_time: The IfcWorkTime entity you want to edit
-        :type work_time: ifcopenshell.entity_instance.entity_instance
+        :type work_time: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

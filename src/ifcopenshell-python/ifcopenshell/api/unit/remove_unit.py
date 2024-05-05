@@ -28,7 +28,7 @@ class Usecase:
         defined quantities in the model completely lose their meaning.
 
         :param unit: The unit element to remove
-        :type unit: ifcopenshell.entity_instance.entity_instance
+        :type unit: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

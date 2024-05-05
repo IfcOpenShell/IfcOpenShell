@@ -29,7 +29,7 @@ class Usecase:
         removed, the opening is also removed.
 
         :param opening: The IfcOpeningElement to remove.
-        :type opening: ifcopenshell.entity_instance.entity_instance
+        :type opening: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

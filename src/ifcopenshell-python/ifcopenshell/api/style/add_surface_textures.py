@@ -31,7 +31,7 @@ class Usecase:
         :param uv_maps: A list of IfcIndexedTextureMap for any
             IfcTessellatedFaceSets that the representation has, obtained from
             the HasTextures attribute.
-        :type uv_maps: list[ifcopenshell.entity_instance.entity_instance]
+        :type uv_maps: list[ifcopenshell.entity_instance]
         :param textures: A list of dictionaries containing:
 
             1. Attributes to create IfcImageTexture.
@@ -47,7 +47,7 @@ class Usecase:
               based on camera position)
         :type textures: list[dict]
         :return: A list of IfcImageTexture
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :rtype: list[ifcopenshell.entity_instance]
         """
         # TODO: This usecase currently depends on Blender's data model
         self.file = file

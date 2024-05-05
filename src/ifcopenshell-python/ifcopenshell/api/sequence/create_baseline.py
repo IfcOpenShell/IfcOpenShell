@@ -37,9 +37,9 @@ class Usecase:
         * Same Resource Relationships
 
         :param work_schedule: The planned work_schedule to baseline
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
+        :type work_schedule: ifcopenshell.entity_instance
         :return: The baseline work_schedule
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
         .. code:: python

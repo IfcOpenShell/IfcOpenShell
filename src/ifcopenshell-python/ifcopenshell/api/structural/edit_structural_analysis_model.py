@@ -25,7 +25,7 @@ class Usecase:
         IfcStructuralAnalysisModel, consult the IFC documentation.
 
         :param structural_analysis_model: The IfcStructuralAnalysisModel entity you want to edit
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :type structural_analysis_model: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

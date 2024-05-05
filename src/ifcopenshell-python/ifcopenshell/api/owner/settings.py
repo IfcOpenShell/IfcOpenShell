@@ -30,9 +30,9 @@ def get_application(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instanc
     IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
 
     :param ifc: The IFC file object that is being edited.
-    :type ifc: ifcopenshell.file.file
+    :type ifc: ifcopenshell.file
     :return: The IfcApplication with metadata of the authoring software.
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
     """
     app = ifc.by_type("IfcApplication")
     if not app and ifc.schema == "IFC2X3":
@@ -50,9 +50,9 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
     IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
 
     :param ifc: The IFC file object that is being edited.
-    :type ifc: ifcopenshell.file.file
+    :type ifc: ifcopenshell.file
     :return: The IfcPersonAndOrganization with metadata of the authoring user.
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
     """
     pao = ifc.by_type("IfcPersonAndOrganization")
     if not pao and ifc.schema == "IFC2X3":

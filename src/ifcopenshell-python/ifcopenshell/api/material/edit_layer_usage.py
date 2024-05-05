@@ -28,7 +28,7 @@ class Usecase:
         IfcMaterialLayerSetUsage, consult the IFC documentation.
 
         :param usage: The IfcMaterialLayerSetUsage entity you want to edit
-        :type usage: ifcopenshell.entity_instance.entity_instance
+        :type usage: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

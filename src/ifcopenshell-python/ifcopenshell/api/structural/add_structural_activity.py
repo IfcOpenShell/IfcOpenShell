@@ -51,12 +51,12 @@ class Usecase:
         :type global_or_local: str
         :param applied_load: The IfcStructuralLoad that is applied in this
             activity.
-        :type applied_load: ifcopenshell.entity_instance.entity_instance
+        :type applied_load: ifcopenshell.entity_instance
         :param structural_member: The IfcStructuralMember that the load is
             applied to.
-        :type structural_member: ifcopenshell.entity_instance.entity_instance
+        :type structural_member: ifcopenshell.entity_instance
         :return: The newly created entity based on the ifc_class
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         self.file = file
         self.settings = {

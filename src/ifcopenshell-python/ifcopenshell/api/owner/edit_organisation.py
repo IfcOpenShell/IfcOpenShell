@@ -25,7 +25,7 @@ class Usecase:
         IfcOrganization, consult the IFC documentation.
 
         :param organisation: The IfcOrganization entity you want to edit
-        :type organisation: ifcopenshell.entity_instance.entity_instance
+        :type organisation: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

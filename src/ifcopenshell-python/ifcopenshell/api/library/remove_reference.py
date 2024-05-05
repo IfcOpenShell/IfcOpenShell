@@ -28,7 +28,7 @@ class Usecase:
         removed.
 
         :param reference: The IfcLibraryReference entity you want to remove
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

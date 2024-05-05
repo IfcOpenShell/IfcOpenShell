@@ -24,7 +24,7 @@ class Usecase:
         """Unassigns units as default units for the project
 
         :param units: A list of units to assign as project defaults.
-        :type units: list[ifcopenshell.entity_instance.entity_instance],optional
+        :type units: list[ifcopenshell.entity_instance],optional
         :return: None
         :rtype: None
 

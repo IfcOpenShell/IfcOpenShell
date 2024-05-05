@@ -39,7 +39,7 @@ class Usecase:
         :param application_developer: The IfcOrganization responsible for
             creating the application. Defaults to generating an IfcOpenShell
             organisation if none is provided.
-        :type application_developer: ifcopenshell.entity_instance.entity_instance, optional
+        :type application_developer: ifcopenshell.entity_instance, optional
         :param version: The version of the application. Defaults to the
             ifcopenshell.version data if not specified.
         :type version: str, optional

@@ -52,7 +52,7 @@ class Usecase:
 
         :param resource: The IfcConstructionResource that you want to calculate
             the work performed.
-        :type resource: ifcopenshell.entity_instance.entity_instance
+        :type resource: ifcopenshell.entity_instance
         :return None:
         :rtype: None:
         """

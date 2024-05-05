@@ -42,11 +42,11 @@ class Usecase:
             IfcPerson if it is a sole individual, or an IfcPersonAndOrganization
             if a specific person is liable within an organisation and must be
             legally nominated.
-        :type actor: ifcopenshell.entity_instance.entity_instance
+        :type actor: ifcopenshell.entity_instance
         :param ifc_class: Either "IfcActor" or "IfcOccupant".
         :type ifc_class: str, optional
         :return: The newly created IfcActor or IfcOccupant
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

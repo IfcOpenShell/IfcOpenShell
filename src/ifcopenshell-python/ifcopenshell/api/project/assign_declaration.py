@@ -43,13 +43,13 @@ class Usecase:
         a declaration lets you say that an object belongs to a library.
 
         :param definitions: The list of objects you want to declare. Typically a list of assets.
-        :type definitions: list[ifcopenshell.entity_instance.entity_instance]
+        :type definitions: list[ifcopenshell.entity_instance]
         :param relating_context: The IfcProject, or more commonly the
             IfcProjectLibrary that you want the object to be part of.
-        :type relating_context: ifcopenshell.entity_instance.entity_instance
+        :type relating_context: ifcopenshell.entity_instance
         :return: The new IfcRelDeclares relationship or None if all definitions
             were already declared / do not support declaration.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

@@ -25,15 +25,15 @@ class Usecase:
         IfcMaterialProfile, consult the IFC documentation.
 
         :param profile: The IfcMaterialProfile entity you want to edit
-        :type profile: ifcopenshell.entity_instance.entity_instance
+        :type profile: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :param profile_def: The IfcProfileDef entity the profile curve should be
             extruded from.
-        :type profile_def: ifcopenshell.entity_instance.entity_instance, optional
+        :type profile_def: ifcopenshell.entity_instance, optional
         :param material: The IfcMaterial entity you want to change the profile
             to be made from.
-        :type material: ifcopenshell.entity_instance.entity_instance, optional
+        :type material: ifcopenshell.entity_instance, optional
         :return: None
         :rtype: None
 

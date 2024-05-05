@@ -32,9 +32,9 @@ class Usecase:
         * The copy will have duplicated nested cost items
 
         :param cost_item: The cost item to be duplicated
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :return: The duplicated cost item or the list of duplicated cost items if the latter has children
-        :rtype: ifcopenshell.entity_instance.entity_instance or list of ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
 
         Example:
         .. code:: python

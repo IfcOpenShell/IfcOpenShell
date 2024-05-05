@@ -22,7 +22,7 @@ class Usecase:
         """Removes a structural load
 
         :param structural_load: The IfcStructuralLoad to remove.
-        :type structural_load: ifcopenshell.entity_instance.entity_instance
+        :type structural_load: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

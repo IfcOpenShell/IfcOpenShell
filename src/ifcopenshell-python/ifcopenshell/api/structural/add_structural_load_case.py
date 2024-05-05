@@ -35,7 +35,7 @@ class Usecase:
             IfcActionSourceTypeEnum in the IFC documentation.
         :type action_source: str
         :return: The new IfcStructuralLoadCase
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         self.file = file
         self.settings = {

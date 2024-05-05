@@ -31,7 +31,7 @@ class Usecase:
         A 3D analytical model is assumed.
 
         :return: The newly created IfcStructuralAnalysisModel
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

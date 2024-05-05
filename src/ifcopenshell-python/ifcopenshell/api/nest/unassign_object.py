@@ -32,7 +32,7 @@ class Usecase:
 
         :param related_objects: The list of children of the nesting relationship,
             typically IfcElements.
-        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
+        :type related_objects: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

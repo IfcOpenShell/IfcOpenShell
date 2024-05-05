@@ -53,7 +53,7 @@ class Usecase:
         :param name: The name of the library
         :type name: str
         :return: The newly created IfcLibraryInformation
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

@@ -25,7 +25,7 @@ class Usecase:
         IfcProfileDef, consult the IFC documentation.
 
         :param profile: The IfcProfileDef entity you want to edit
-        :type profile: ifcopenshell.entity_instance.entity_instance
+        :type profile: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

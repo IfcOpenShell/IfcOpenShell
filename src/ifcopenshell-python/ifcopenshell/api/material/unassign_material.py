@@ -32,7 +32,7 @@ class Usecase:
         If the product does not have a material, nothing happens.
 
         :param products: The list IfcProducts that may or may not have a material
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

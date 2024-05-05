@@ -25,7 +25,7 @@ class Usecase:
         IfcCostItem, consult the IFC documentation.
 
         :param cost_item: The IfcCostItem entity you want to edit
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

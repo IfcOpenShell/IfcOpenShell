@@ -25,7 +25,7 @@ class Usecase:
         IfcPerson, consult the IFC documentation.
 
         :param person: The IfcPerson entity you want to edit
-        :type person: ifcopenshell.entity_instance.entity_instance
+        :type person: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

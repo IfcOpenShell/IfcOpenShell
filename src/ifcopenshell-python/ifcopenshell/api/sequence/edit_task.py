@@ -25,7 +25,7 @@ class Usecase:
         IfcTask, consult the IFC documentation.
 
         :param task: The IfcTask entity you want to edit
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

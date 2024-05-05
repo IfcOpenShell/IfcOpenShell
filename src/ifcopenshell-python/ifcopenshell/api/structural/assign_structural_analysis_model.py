@@ -25,12 +25,12 @@ class Usecase:
         """Assigns a load or structural member to an analysis model
 
         :param product: The structural element that is part of the analysis.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param structural_analysis_model: The IfcStructuralAnalysisModel that
             the structural element is related to.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :type structural_analysis_model: ifcopenshell.entity_instance
         :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         self.file = file
         self.settings = {

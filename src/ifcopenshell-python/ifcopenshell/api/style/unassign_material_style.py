@@ -27,14 +27,14 @@ class Usecase:
         This does the inverse of assign_material_style.
 
         :param material: The IfcMaterial which you want to unassign the style from.
-        :type material: ifcopenshell.entity_instance.entity_instance
+        :type material: ifcopenshell.entity_instance
         :param style: The IfcPresentationStyle (typically IfcSurfaceStyle) that
             you want to unassign from material. This will then be applied to all
             objects that have that material.
-        :type style: ifcopenshell.entity_instance.entity_instance
+        :type style: ifcopenshell.entity_instance
         :param context: The IfcGeometricRepresentationSubContext at which this
             style should be unassigned. Typically this is the Model BODY context.
-        :type context: ifcopenshell.entity_instance.entity_instance
+        :type context: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

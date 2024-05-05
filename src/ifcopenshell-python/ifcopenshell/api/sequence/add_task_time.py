@@ -27,11 +27,11 @@ class Usecase:
         (especially for maintenance tasks).
 
         :param task: The task to add time data to.
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :param is_recurring: Whether or not the time should recur.
         :type is_recurring: bool
         :return: The newly created IfcTaskTime.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

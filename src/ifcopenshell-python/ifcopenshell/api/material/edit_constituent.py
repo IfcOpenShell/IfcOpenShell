@@ -25,11 +25,11 @@ class Usecase:
         IfcMaterialConstituent, consult the IFC documentation.
 
         :param constituent: The IfcMaterialConstituent entity you want to edit
-        :type constituent: ifcopenshell.entity_instance.entity_instance
+        :type constituent: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :param material: The IfcMaterial entity you want to change the constituent to
-        :type material: ifcopenshell.entity_instance.entity_instance, optional
+        :type material: ifcopenshell.entity_instance, optional
         :return: None
         :rtype: None
 

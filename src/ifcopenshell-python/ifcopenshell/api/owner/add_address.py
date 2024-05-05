@@ -33,12 +33,12 @@ class Usecase:
 
         :param assigned_object: The IfcOrganization or IfcPerson the contact
             address belongs to.
-        :type assigned_object: ifcopenshell.entity_instance.entity_instance
+        :type assigned_object: ifcopenshell.entity_instance
         :param ifc_class: Either IfcPostalAddress or IfcTelecomAddress. Defaults
             to IfcPostalAddress.
         :type ifc_class: str, optional
         :return: The new IfcPostalAddress or IfcTelecomAddress
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

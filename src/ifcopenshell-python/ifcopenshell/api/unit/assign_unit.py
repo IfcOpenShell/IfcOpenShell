@@ -44,9 +44,9 @@ class Usecase:
         :param units: A list of units to assign as project defaults. See
             ifcopenshell.api.unit.add_si_unit, unit.add_conversion_based_unit,
             and unit.add_monetary_unit for information on how to create units.
-        :type units: list[ifcopenshell.entity_instance.entity_instance],optional
+        :type units: list[ifcopenshell.entity_instance],optional
         :return: The IfcUnitAssignment element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

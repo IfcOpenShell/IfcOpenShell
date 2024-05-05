@@ -26,12 +26,12 @@ class Usecase:
 
         :param relating_structural_member: The IfcStructuralMember to have a
             connection added to it.
-        :type relating_structural_member: ifcopenshell.entity_instance.entity_instance
+        :type relating_structural_member: ifcopenshell.entity_instance
         :param related_structural_connection: The IfcStructuralConnection to add
             to the IfcStructuralMember.
-        :type related_structural_connection: ifcopenshell.entity_instance.entity_instance
+        :type related_structural_connection: ifcopenshell.entity_instance
         :return: The IfcRelConnectsStructuralMember relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         self.file = file
         self.settings = {

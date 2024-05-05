@@ -26,7 +26,7 @@ class Usecase:
         """Unassigns a container from products.
 
         :param product: A list of IfcProducts to remove the containment from.
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

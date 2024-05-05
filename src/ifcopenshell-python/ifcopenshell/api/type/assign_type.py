@@ -91,9 +91,9 @@ class Usecase:
         ambiguous, unknown or are so bespoke as to have no logical type.
 
         :param related_objects: The IfcElement occurrences.
-        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
+        :type related_objects: list[ifcopenshell.entity_instance]
         :param relating_type: The IfcElementType type.
-        :type relating_type: ifcopenshell.entity_instance.entity_instance
+        :type relating_type: ifcopenshell.entity_instance
         :param should_map_representations: If a type has a representation map,
             IFC requires all occurrences to map those representations. Some IFC
             vendors might disobey this, or you might want to handle it
@@ -102,7 +102,7 @@ class Usecase:
         :type should_map_representations: bool
         :return: The IfcRelDefinesByType relationship
             or `None` if `related_objects` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

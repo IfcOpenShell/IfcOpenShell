@@ -33,14 +33,14 @@ class Usecase:
         detail about how references work.
 
         :param products: The list of IfcProducts you want to associate with the reference
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param reference: The IfcLibraryReference you want the product to be
             associated with.
-        :type reference: ifcopenshell.entity_instance.entity_instance
+        :type reference: ifcopenshell.entity_instance
         :return: The IfcRelAssociatesLibrary relationship entity
             or `None` if `products` was an empty list or all products were
             already assigned to the `reference`.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

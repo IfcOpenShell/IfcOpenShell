@@ -34,10 +34,10 @@ class Usecase:
 
         :param definitions: The list of objects you want to undeclare.
             Typically a list of assets.
-        :type definitions: list[ifcopenshell.entity_instance.entity_instance]
+        :type definitions: list[ifcopenshell.entity_instance]
         :param relating_context: The IfcProject, or more commonly the
             IfcProjectLibrary that you want the object to no longer be part of.
-        :type relating_context: ifcopenshell.entity_instance.entity_instance
+        :type relating_context: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

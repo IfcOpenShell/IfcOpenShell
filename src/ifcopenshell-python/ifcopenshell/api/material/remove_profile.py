@@ -29,7 +29,7 @@ class Usecase:
         at least one profile to ensure a valid IFC dataset.
 
         :param profile: The IfcMaterialProfile entity you want to remove
-        :type profile: ifcopenshell.entity_instance.entity_instance
+        :type profile: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

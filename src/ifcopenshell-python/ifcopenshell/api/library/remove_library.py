@@ -28,7 +28,7 @@ class Usecase:
         products which have relationships to this library will not be removed.
 
         :param library: The IfcLibraryInformation entity you want to remove
-        :type library: ifcopenshell.entity_instance.entity_instance
+        :type library: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

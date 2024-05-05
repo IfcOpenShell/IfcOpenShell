@@ -27,7 +27,7 @@ class Usecase:
         removed.
 
         :param organisation: The IfcOrganization to remove
-        :type organisation: ifcopenshell.entity_instance.entity_instance
+        :type organisation: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

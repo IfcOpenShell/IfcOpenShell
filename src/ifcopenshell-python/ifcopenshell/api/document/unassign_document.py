@@ -32,10 +32,10 @@ class Usecase:
 
         :param product: The list of objects that the document reference or information is
             related to.
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
+        :type product: list[ifcopenshell.entity_instance]
         :param document: The IfcDocumentReference (typically) or in rare cases
             the IfcDocumentInformation that is associated with the product
-        :type document: ifcopenshell.entity_instance.entity_instance
+        :type document: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

@@ -31,7 +31,7 @@ class Usecase:
 
         :param rel_space_boundary: The space boundary relationship to assign the
             connection geometry to.
-        :type rel_space_boundary: ifcopenshell.entity_instance.entity_instance
+        :type rel_space_boundary: ifcopenshell.entity_instance
         :param outer_boundary: A list of 2D points representing an open
             polyline.  The last point will connect to the first point. Each
             point is represented by an interable of 2 floats. The coordinates of

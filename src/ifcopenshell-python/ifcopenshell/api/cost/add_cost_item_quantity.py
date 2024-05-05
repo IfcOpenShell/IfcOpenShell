@@ -50,12 +50,12 @@ class Usecase:
         using another API call.
 
         :param cost_item: The IfcCostItem to add the quantity to
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param ifc_class: The type of quantity to add
         :type ifc_class: str, optional
         :return: The newly created quantity entity, chosen from the ifc_class
             parameter
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

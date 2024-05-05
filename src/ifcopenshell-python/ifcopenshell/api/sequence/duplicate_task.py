@@ -33,9 +33,9 @@ class Usecase:
         * The copy will have duplicated nested tasks
 
         :param task: The task to be duplicated
-        :type task: ifcopenshell.entity_instance.entity_instance
+        :type task: ifcopenshell.entity_instance
         :return: The duplicated task or the list of duplicated tasks if the latter has children
-        :rtype: ifcopenshell.entity_instance.entity_instance or list of ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
 
         Example:
         .. code:: python

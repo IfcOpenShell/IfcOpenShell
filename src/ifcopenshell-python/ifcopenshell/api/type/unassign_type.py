@@ -29,7 +29,7 @@ class Usecase:
         and material usages associated with the previously assigned type.
 
         :param related_objects: List of IfcElement occurrences.
-        :type related_objects: list[ifcopenshell.entity_instance.entity_instance]
+        :type related_objects: list[ifcopenshell.entity_instance]
         :return: None
         :rtype: None
 

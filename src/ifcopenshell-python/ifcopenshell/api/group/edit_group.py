@@ -25,7 +25,7 @@ class Usecase:
         IfcGroup, consult the IFC documentation.
 
         :param group: The IfcGroup entity you want to edit
-        :type group: ifcopenshell.entity_instance.entity_instance
+        :type group: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

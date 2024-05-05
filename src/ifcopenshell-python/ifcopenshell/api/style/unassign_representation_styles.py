@@ -25,12 +25,12 @@ class Usecase:
 
         :param shape_representation: The IfcShapeRepresentation of the object
             that you want to unassign styles from.
-        :type shape_representation: ifcopenshell.entity_instance.entity_instance
+        :type shape_representation: ifcopenshell.entity_instance
         :param styles: A list of presentation styles, typically IfcSurfaceStyle.
             The number of items in the list should correlate with the number of
             items in the shape_representation's Items attribute. If you have
             more items than styles, the last style is used.
-        :type styles: list[ifcopenshell.entity_instance.entity_instance]
+        :type styles: list[ifcopenshell.entity_instance]
         :param should_use_presentation_style_assignment: This is a technical
             detail to accomodate a bug in Revit. This should always be left as
             the default of False, unless you are finding that colours aren't

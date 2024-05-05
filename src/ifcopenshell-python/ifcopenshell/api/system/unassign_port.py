@@ -29,9 +29,9 @@ class Usecase:
         port for cleaning or patchin purposes.
 
         :param element: The IfcDistributionElement to unassign the port from.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :param port: The IfcDistributionPort you want to unassign.
-        :type port: ifcopenshell.entity_instance.entity_instance
+        :type port: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

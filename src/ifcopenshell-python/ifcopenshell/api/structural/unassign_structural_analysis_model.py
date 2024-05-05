@@ -26,10 +26,10 @@ class Usecase:
         """Removes a relationship between a structural element and the analysis model
 
         :param product: The structural element that is part of the analysis.
-        :type product: ifcopenshell.entity_instance.entity_instance
+        :type product: ifcopenshell.entity_instance
         :param structural_analysis_model: The IfcStructuralAnalysisModel that
             the structural element is related to.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
+        :type structural_analysis_model: ifcopenshell.entity_instance
         :return: None
         :rtype: None
         """

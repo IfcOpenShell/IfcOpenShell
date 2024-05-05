@@ -59,9 +59,9 @@ class Usecase:
             classification library. The latter approach is preferred if you are
             using a commonly known system such as Uniclass, as this will ensure
             all metadata is added correctly.
-        :type classification: str,ifcopenshell.entity_instance.entity_instance
+        :type classification: str,ifcopenshell.entity_instance
         :return: The added IfcClassification element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

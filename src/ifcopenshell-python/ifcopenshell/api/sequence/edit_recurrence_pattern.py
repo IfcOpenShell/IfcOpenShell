@@ -28,7 +28,7 @@ class Usecase:
         IfcRecurrencePattern, consult the IFC documentation.
 
         :param recurrence_pattern: The IfcRecurrencePattern entity you want to edit
-        :type recurrence_pattern: ifcopenshell.entity_instance.entity_instance
+        :type recurrence_pattern: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

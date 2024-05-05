@@ -28,9 +28,9 @@ class Usecase:
         See ifcopenshell.api.sequence.assign_process for details.
 
         :param relating_process: The IfcTask in the relationship.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
+        :type relating_process: ifcopenshell.entity_instance
         :param related_object: The related object.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
+        :type related_object: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

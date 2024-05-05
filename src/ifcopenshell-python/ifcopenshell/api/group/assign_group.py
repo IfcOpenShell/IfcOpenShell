@@ -31,12 +31,12 @@ class Usecase:
         twice.
 
         :param products: A list of IfcProduct elements to assign to the group
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param group: The IfcGroup to assign the products to
-        :type group: ifcopenshell.entity_instance.entity_instance
+        :type group: ifcopenshell.entity_instance
         :return: The IfcRelAssignsToGroup relationship
             or `None` if `products` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+        :rtype: Union[ifcopenshell.entity_instance, None]
 
         Example:
 

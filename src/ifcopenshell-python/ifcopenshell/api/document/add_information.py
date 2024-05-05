@@ -33,9 +33,9 @@ class Usecase:
         is considered the latest version and the children are older revisions.
 
         :param parent: The parent document, if necessary.
-        :type parent: ifcopenshell.entity_instance.entity_instance, optional
+        :type parent: ifcopenshell.entity_instance, optional
         :return: The newly created IfcDocumentInformation entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

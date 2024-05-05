@@ -28,9 +28,9 @@ class Usecase:
         If the product isn't assigned to the group, nothing will happen.
 
         :param products: A list of IfcProduct elements to unassign from the group
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
+        :type products: list[ifcopenshell.entity_instance]
         :param group: The IfcGroup to unassign from
-        :type group: ifcopenshell.entity_instance.entity_instance
+        :type group: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

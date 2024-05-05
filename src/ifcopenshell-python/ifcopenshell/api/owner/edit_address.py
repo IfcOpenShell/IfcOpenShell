@@ -25,7 +25,7 @@ class Usecase:
         IfcAddress, consult the IFC documentation.
 
         :param address: The IfcAddress entity you want to edit
-        :type address: ifcopenshell.entity_instance.entity_instance
+        :type address: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

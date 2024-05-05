@@ -25,7 +25,7 @@ class Usecase:
         """Removes a presentation item from a presentation style
 
         :param style: The IfcPresentationItem to remove.
-        :type style: ifcopenshell.entity_instance.entity_instance
+        :type style: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

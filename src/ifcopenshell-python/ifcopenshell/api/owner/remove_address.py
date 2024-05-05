@@ -25,7 +25,7 @@ class Usecase:
         relationship removed.
 
         :param address: The IfcAddress to remove.
-        :type address: ifcopenshell.entity_instance.entity_instance
+        :type address: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

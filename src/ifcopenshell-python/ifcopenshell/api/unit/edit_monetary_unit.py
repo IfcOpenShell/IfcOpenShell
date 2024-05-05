@@ -25,7 +25,7 @@ class Usecase:
         IfcMonetaryUnit, consult the IFC documentation.
 
         :param unit: The IfcMonetaryUnit entity you want to edit
-        :type unit: ifcopenshell.entity_instance.entity_instance
+        :type unit: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

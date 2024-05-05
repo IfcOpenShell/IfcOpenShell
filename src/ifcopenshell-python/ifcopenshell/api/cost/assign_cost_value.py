@@ -35,9 +35,9 @@ class Usecase:
         rates as a "template" to quickly populate your rates from.
 
         :param cost_item: The IfcCostItem that you want to copy the values to
-        :type cost_item: ifcopenshell.entity_instance.entity_instance
+        :type cost_item: ifcopenshell.entity_instance
         :param cost_rate: The IfcCostItem that you want to copy the values from
-        :type cost_rate: ifcopenshell.entity_instance.entity_instance
+        :type cost_rate: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

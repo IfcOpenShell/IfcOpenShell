@@ -33,7 +33,7 @@ class Usecase:
         example below.
 
         :param style: The IfcPresentationStyle entity you want to edit
-        :type style: ifcopenshell.entity_instance.entity_instance
+        :type style: ifcopenshell.entity_instance
         :param attributes: a dictionary of attribute names and values.
         :type attributes: dict, optional
         :return: None

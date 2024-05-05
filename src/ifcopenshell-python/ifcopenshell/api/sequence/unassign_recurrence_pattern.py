@@ -25,7 +25,7 @@ class Usecase:
         you remove it, be sure to clean up after yourself.
 
         :param recurrence_pattern: The IfcRecurrencePattern to remove.
-        :type recurrence_pattern: ifcopenshell.entity_instance.entity_instance
+        :type recurrence_pattern: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

@@ -39,18 +39,18 @@ class Usecase:
         Do not mix units.
 
         :param library: The file object containing the asset.
-        :type library: ifcopenshell.file.file
+        :type library: ifcopenshell.file
         :param element: An element in the library file of the asset. It may be
             an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
             IfcProfileDef.
-        :type element: ifcopenshell.entity_instance.entity_instance
+        :type element: ifcopenshell.entity_instance
         :param reuse_identities: Optional dictionary of mapped entities' identities to the
             already created elements. It will be used to avoid creating
             duplicated inverse elements during multiple `project.append_asset` calls. If you want
             to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
-        :type reuse_identities: dict[int, ifcopenshell.entity_instance.entity_instance]
+        :type reuse_identities: dict[int, ifcopenshell.entity_instance]
         :return: The appended element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

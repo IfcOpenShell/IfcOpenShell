@@ -50,9 +50,9 @@ class Usecase:
           connections are still valid.
 
         :param product: The IfcProduct to copy.
-        :type param: ifcopenshell.entity_instance.entity_instance
+        :type param: ifcopenshell.entity_instance
         :return: The copied product
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 

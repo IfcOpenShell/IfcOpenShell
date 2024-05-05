@@ -26,9 +26,9 @@ class Usecase:
         """Removes a sequence relationship between tasks
 
         :param relating_process: The previous / predecessor task.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
+        :type relating_process: ifcopenshell.entity_instance
         :param related_process: The next / successor task.
-        :type related_process: ifcopenshell.entity_instance.entity_instance
+        :type related_process: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 

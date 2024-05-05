@@ -29,9 +29,9 @@ class Usecase:
         parametrically linked, so if one value changes, the other will not.
 
         :param source: The IfcCostItem to copy cost values from
-        :type source: ifcopenshell.entity_instance.entity_instance
+        :type source: ifcopenshell.entity_instance
         :param destination: The IfcCostItem to copy cost values from
-        :type destination: ifcopenshell.entity_instance.entity_instance
+        :type destination: ifcopenshell.entity_instance
         :return: None
         :rtype: None
 
