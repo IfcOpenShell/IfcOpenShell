@@ -47,12 +47,12 @@ static const double PI = boost::math::constants::pi<double>();
 double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_value) {
     if (std::abs(param_value) < 1.e-7) {
         return param_value;
-    } else if (crv->as<IfcSchema::IfcLine>()) {
-        // @todo we should actually check magnitude of the vector
-        return param_value;
-    } else if (crv->as<IfcSchema::IfcClothoid>()) {
-        // @todo this is wrong.
-        return param_value;
+    } else if (auto line = crv->as<IfcSchema::IfcLine>()) {
+        return line->Dir()->Magnitude() * param_value;
+    } else if (auto clothoid = crv->as<IfcSchema::IfcClothoid>()) {
+       // param_value = 1.0, corresponds to tangent direction = PI/2
+       // param_value = (arc length)/fabs(A*PI)
+        return fabs(clothoid->ClothoidConstant()*sqrt(PI))*param_value;
     } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
         return circ->Radius() * param_value;
     } else {
