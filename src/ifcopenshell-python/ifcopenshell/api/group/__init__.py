@@ -15,3 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_group import add_group
+from .assign_group import assign_group
+from .edit_group import edit_group
+from .remove_group import remove_group
+from .unassign_group import unassign_group
+from .update_group_products import update_group_products

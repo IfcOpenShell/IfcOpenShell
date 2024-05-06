@@ -15,3 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_library import add_library
+from .add_reference import add_reference
+from .assign_reference import assign_reference
+from .edit_library import edit_library
+from .edit_reference import edit_reference
+from .remove_library import remove_library
+from .remove_reference import remove_reference
+from .unassign_reference import unassign_reference

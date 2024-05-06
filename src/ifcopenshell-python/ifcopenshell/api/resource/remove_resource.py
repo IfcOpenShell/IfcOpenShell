@@ -21,71 +21,68 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, resource=None):
-        """Removes a resource and all relationships
+def remove_resource(file, resource=None) -> None:
+    """Removes a resource and all relationships
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Add our own crew
-            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        # Add our own crew
+        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
 
-            # Fire our crew
-            ifcopenshell.api.run("resource.remove_resource", model, resource=crew)
-        """
-        self.file = file
-        self.settings = {"resource": resource}
+        # Fire our crew
+        ifcopenshell.api.run("resource.remove_resource", model, resource=crew)
+    """
+    settings = {"resource": resource}
 
-    def execute(self):
-        # TODO: review deep purge
-        for inverse in self.file.get_inverse(self.settings["resource"]):
-            if inverse.is_a("IfcRelNests"):
-                if inverse.RelatingObject == self.settings["resource"]:
-                    for related_object in inverse.RelatedObjects:
-                        ifcopenshell.api.run(
-                            "resource.remove_resource",
-                            self.file,
-                            resource=related_object,
-                        )
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-            elif inverse.is_a("IfcRelAssignsToControl"):
-                if len(inverse.RelatedObjects) == 1:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                else:
-                    related_objects = list(inverse.RelatedObjects)
-                    related_objects.remove(self.settings["resource"])
-                    inverse.RelatedObjects = related_objects
-            elif inverse.is_a("IfcRelAssignsToResource"):
-                if inverse.RelatingResource == self.settings["resource"]:
-                    for related_object in inverse.RelatedObjects:
-                        ifcopenshell.api.run(
-                            "resource.unassign_resource",
-                            self.file,
-                            related_object=related_object,
-                            resource=self.settings["resource"],
-                        )
-                elif inverse.RelatedObjects == tuple(self.settings["resource"]):
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-        if self.settings["resource"].Usage:
-            self.file.remove(self.settings["resource"].Usage)
-        if self.settings["resource"].BaseQuantity:
-            ifcopenshell.api.run(
-                "resource.remove_resource_quantity",
-                self.file,
-                resource=self.settings["resource"],
-            )
-        history = self.settings["resource"].OwnerHistory
-        self.file.remove(self.settings["resource"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: review deep purge
+    for inverse in file.get_inverse(settings["resource"]):
+        if inverse.is_a("IfcRelNests"):
+            if inverse.RelatingObject == settings["resource"]:
+                for related_object in inverse.RelatedObjects:
+                    ifcopenshell.api.run(
+                        "resource.remove_resource",
+                        file,
+                        resource=related_object,
+                    )
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelAssignsToControl"):
+            if len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+            else:
+                related_objects = list(inverse.RelatedObjects)
+                related_objects.remove(settings["resource"])
+                inverse.RelatedObjects = related_objects
+        elif inverse.is_a("IfcRelAssignsToResource"):
+            if inverse.RelatingResource == settings["resource"]:
+                for related_object in inverse.RelatedObjects:
+                    ifcopenshell.api.run(
+                        "resource.unassign_resource",
+                        file,
+                        related_object=related_object,
+                        resource=settings["resource"],
+                    )
+            elif inverse.RelatedObjects == tuple(settings["resource"]):
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+    if settings["resource"].Usage:
+        file.remove(settings["resource"].Usage)
+    if settings["resource"].BaseQuantity:
+        ifcopenshell.api.run(
+            "resource.remove_resource_quantity",
+            file,
+            resource=settings["resource"],
+        )
+    history = settings["resource"].OwnerHistory
+    file.remove(settings["resource"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

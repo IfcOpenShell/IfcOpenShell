@@ -15,3 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_context import add_context
+from .edit_context import edit_context
+from .remove_context import remove_context

@@ -15,3 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_pset import add_pset
+from .add_qto import add_qto
+from .edit_pset import edit_pset
+from .edit_qto import edit_qto
+from .remove_pset import remove_pset

@@ -21,35 +21,38 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
+def copy_cost_item(file, cost_item=None) -> None:
+    """Copies all cost items and related relationships
+
+    The following relationships are also duplicated:
+
+    * The copy will have the same attributes and property sets as the original cost item
+    * The copy will be assigned to the parent cost schedule
+    * The copy will have duplicated nested cost items
+
+    :param cost_item: The cost item to be duplicated
+    :type cost_item: ifcopenshell.entity_instance
+    :return: The duplicated cost item or the list of duplicated cost items if the latter has children
+    :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
+
+    Example:
+    .. code:: python
+
+        # We have a cost item
+        cost_item = CostItem(name="Design new feature", deadline="2023-03-01")
+
+        # And now we have two
+        duplicated_cost_item = project.duplicate_cost_item(cost_item)
+
+
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"cost_item": cost_item}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, cost_item=None):
-        """Copies all cost items and related relationships
-
-        The following relationships are also duplicated:
-
-        * The copy will have the same attributes and property sets as the original cost item
-        * The copy will be assigned to the parent cost schedule
-        * The copy will have duplicated nested cost items
-
-        :param cost_item: The cost item to be duplicated
-        :type cost_item: ifcopenshell.entity_instance
-        :return: The duplicated cost item or the list of duplicated cost items if the latter has children
-        :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
-
-        Example:
-        .. code:: python
-
-            # We have a cost item
-            cost_item = CostItem(name="Design new feature", deadline="2023-03-01")
-
-            # And now we have two
-            duplicated_cost_item = project.duplicate_cost_item(cost_item)
-
-
-        """
-        self.file = file
-        self.settings = {"cost_item": cost_item}
-
     def execute(self):
         self.new_cost_items = []
         self.duplicate_cost_item(self.settings["cost_item"])

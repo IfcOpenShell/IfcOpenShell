@@ -20,40 +20,37 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, work_plan=None):
-        """Removes a work plan
+def remove_work_plan(file, work_plan=None) -> None:
+    """Removes a work plan
 
-        Note that schedules that are grouped under the work plan are not
-        removed.
+    Note that schedules that are grouped under the work plan are not
+    removed.
 
-        :param work_plan: The IfcWorkPlan to remove.
-        :type work_plan: ifcopenshell.entity_instance
-        :return: None
-        :rtype: None
+    :param work_plan: The IfcWorkPlan to remove.
+    :type work_plan: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # This will hold all our construction schedules
-            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        # This will hold all our construction schedules
+        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
 
-            # And remove it immediately
-            ifcopenshell.api.run("sequence.remove_work_plan", model, work_plan=work_plan)
-        """
-        self.file = file
-        self.settings = {"work_plan": work_plan}
+        # And remove it immediately
+        ifcopenshell.api.run("sequence.remove_work_plan", model, work_plan=work_plan)
+    """
+    settings = {"work_plan": work_plan}
 
-    def execute(self):
-        # TODO: do a deep purge
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
-            self.file,
-            definitions=[self.settings["work_plan"]],
-            relating_context=self.file.by_type("IfcContext")[0],
-        )
-        history = self.settings["work_plan"].OwnerHistory
-        self.file.remove(self.settings["work_plan"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: do a deep purge
+    ifcopenshell.api.run(
+        "project.unassign_declaration",
+        file,
+        definitions=[settings["work_plan"]],
+        relating_context=file.by_type("IfcContext")[0],
+    )
+    history = settings["work_plan"].OwnerHistory
+    file.remove(settings["work_plan"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

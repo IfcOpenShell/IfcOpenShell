@@ -17,29 +17,26 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, condition=None, attributes=None):
-        """Edits the attributes of an IfcBoundaryCondition
+def edit_structural_boundary_condition(file, condition=None, attributes=None) -> None:
+    """Edits the attributes of an IfcBoundaryCondition
 
-        For more information about the attributes and data types of an
-        IfcBoundaryCondition, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcBoundaryCondition, consult the IFC documentation.
 
-        :param condition: The IfcBoundaryCondition entity you want to edit
-        :type condition: ifcopenshell.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"condition": condition, "attributes": attributes or {}}
+    :param condition: The IfcBoundaryCondition entity you want to edit
+    :type condition: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
+    """
+    settings = {"condition": condition, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, data in self.settings["attributes"].items():
-            if data["type"] == "string" or data["type"] == "null":
-                value = data["value"]
-            elif data["type"] == "IfcBoolean":
-                value = self.file.createIfcBoolean(data["value"])
-            else:
-                value = self.file.create_entity(data["type"], data["value"])
-            setattr(self.settings["condition"], name, value)
+    for name, data in settings["attributes"].items():
+        if data["type"] == "string" or data["type"] == "null":
+            value = data["value"]
+        elif data["type"] == "IfcBoolean":
+            value = file.createIfcBoolean(data["value"])
+        else:
+            value = file.create_entity(data["type"], data["value"])
+        setattr(settings["condition"], name, value)

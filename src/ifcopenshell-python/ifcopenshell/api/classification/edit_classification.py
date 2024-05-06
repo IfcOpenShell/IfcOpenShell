@@ -17,32 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, classification=None, attributes=None):
-        """Edits the attributes of an IfcClassification
+def edit_classification(file, classification=None, attributes=None) -> None:
+    """Edits the attributes of an IfcClassification
 
-        For more information about the attributes and data types of an
-        IfcClassification, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcClassification, consult the IFC documentation.
 
-        :param classification: The IfcClassification entity you want to edit
-        :type classification: ifcopenshell.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param classification: The IfcClassification entity you want to edit
+    :type classification: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            classification = model.by_type("IfcClassification")[0]
-            # Change the name of the classification system to "Foo"
-            ifcopenshell.api.run("classification.edit_classification", model,
-                classification=classification, attributes={"Name": "Foo"})
-        """
-        self.file = file
-        self.settings = {"classification": classification, "attributes": attributes or {}}
+        classification = model.by_type("IfcClassification")[0]
+        # Change the name of the classification system to "Foo"
+        ifcopenshell.api.run("classification.edit_classification", model,
+            classification=classification, attributes={"Name": "Foo"})
+    """
+    settings = {"classification": classification, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["classification"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["classification"], name, value)

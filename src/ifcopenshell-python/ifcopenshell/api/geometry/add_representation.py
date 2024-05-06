@@ -28,37 +28,40 @@ X_AXIS = Vector((1, 0, 0))
 EPSILON = 1e-6
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, **settings):
-        # TODO: This usecase currently depends on Blender's data model
-        self.file = file
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
-            "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
-            "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
-            "total_items": 1,  # How many representation items to create
-            "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
-            "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
-            "should_force_triangulation": False,  # If we should force triangulation for meshes
-            "should_generate_uvs": False,  # If UV coordinates should also be generated
-            #  Possible IFC representation classes:
-            #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
-            #  IfcExtrudedAreaSolid/IfcCircleProfileDef
-            #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
-            #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
-            #  IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage
-            #  IfcGeometricCurveSet/IfcTextLiteral
-            #  IfcTextLiteral
-            "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
-            "profile_set_usage": None,  # The material profile set if the extrusion requires it
-            "text_literal": None,  # The text literal if the representation requires it
-        }
-        self.ifc_vertices = []
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_representation(file: ifcopenshell.file, **usecase_settings) -> ifcopenshell.entity_instance:
+    usecase = Usecase()
+    # TODO: This usecase currently depends on Blender's data model
+    usecase.file = file
+    usecase.settings = {
+        "context": None,  # IfcGeometricRepresentationContext
+        "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
+        "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
+        "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
+        "total_items": 1,  # How many representation items to create
+        "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
+        "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
+        "should_force_triangulation": False,  # If we should force triangulation for meshes
+        "should_generate_uvs": False,  # If UV coordinates should also be generated
+        #  Possible IFC representation classes:
+        #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
+        #  IfcExtrudedAreaSolid/IfcCircleProfileDef
+        #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
+        #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
+        #  IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage
+        #  IfcGeometricCurveSet/IfcTextLiteral
+        #  IfcTextLiteral
+        "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
+        "profile_set_usage": None,  # The material profile set if the extrusion requires it
+        "text_literal": None,  # The text literal if the representation requires it
+    }
+    usecase.ifc_vertices = []
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
-    def execute(self) -> ifcopenshell.entity_instance:
+
+class Usecase:
+    def execute(self):
         self.is_manifold = None
         if (
             isinstance(self.settings["geometry"], bpy.types.Mesh)
@@ -374,10 +377,12 @@ class Usecase:
         return items
 
     def create_plane(self, polygon):
-        return self.file.createIfcPlane(Position=self.file.createIfcAxis2Placement3D(
-            Location=self.file.createIfcCartesianPoint(polygon.center),
-            Axis=self.file.createIfcDirection(polygon.normal),
-        ))
+        return self.file.createIfcPlane(
+            Position=self.file.createIfcAxis2Placement3D(
+                Location=self.file.createIfcCartesianPoint(polygon.center),
+                Axis=self.file.createIfcDirection(polygon.normal),
+            )
+        )
 
     def create_annotation_fill_areas(self, is_2d=False) -> list[ifcopenshell.entity_instance]:
         items = []

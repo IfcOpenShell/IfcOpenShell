@@ -17,13 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, material=None, attributes=None):
-        """Edits the attributes of an IfcMaterial"""
-        
-        self.file = file
-        self.settings = {"material": material, "attributes": attributes or {}}
+def edit_material(file, material=None, attributes=None) -> None:
+    """Edits the attributes of an IfcMaterial"""
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["material"], name, value)
+    settings = {"material": material, "attributes": attributes or {}}
+
+    for name, value in settings["attributes"].items():
+        setattr(settings["material"], name, value)

@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .copy_class import copy_class
+from .create_entity import create_entity
+from .reassign_class import reassign_class
+from .remove_product import remove_product

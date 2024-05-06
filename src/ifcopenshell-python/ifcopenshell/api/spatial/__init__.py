@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .assign_container import assign_container
+from .dereference_structure import dereference_structure
+from .reference_structure import reference_structure
+from .unassign_container import unassign_container

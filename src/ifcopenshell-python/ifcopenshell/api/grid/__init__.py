@@ -15,3 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .create_axis_curve import create_axis_curve
+from .create_grid_axis import create_grid_axis
+from .remove_grid_axis import remove_grid_axis
