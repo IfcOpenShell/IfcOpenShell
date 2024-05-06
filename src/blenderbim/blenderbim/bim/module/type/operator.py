@@ -157,8 +157,9 @@ class SelectType(bpy.types.Operator):
             selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
         
         last_relating_type_obj = None
+        types_collection_in_view_layer = self.find_collection_in_ifcproject(context, collection_name = "Types")
+        types_collection_in_view_layer.hide_viewport = False
         types_collection = bpy.data.collections.get("Types")
-        context.view_layer.layer_collection.children['IfcProject/My Project'].children["Types"].hide_viewport = False
         for type_obj in types_collection.objects:
             type_obj.hide_set(True)
         for obj in selected_objs:
@@ -175,8 +176,20 @@ class SelectType(bpy.types.Operator):
                 obj.select_set(False)
 
         context.view_layer.objects.active = last_relating_type_obj #makes the active_obj's type the active object
-        
+
         return {"FINISHED"}
+
+    def find_collection_in_ifcproject(self, context, collection_name):
+
+        ifc_project_collection = None
+        for child in context.view_layer.layer_collection.children:
+            if "IfcProject" in child.name:
+                ifc_project_collection = child
+                break
+        
+        if ifc_project_collection:
+            collection_in_view_layer = ifc_project_collection.children.get(collection_name)
+            return collection_in_view_layer
 
 
 class SelectSimilarType(bpy.types.Operator):
