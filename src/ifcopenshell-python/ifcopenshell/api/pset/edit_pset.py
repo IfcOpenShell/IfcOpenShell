@@ -18,9 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.util.pset
+from typing import Optional, Any, Union
 
 
-def edit_pset(file, pset=None, name=None, properties=None, pset_template=None, should_purge=False) -> None:
+def edit_pset(
+    file: ifcopenshell.entity_instance,
+    pset: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
+    properties: Optional[dict[str, Any]] = None,
+    pset_template: Optional[ifcopenshell.entity_instance] = None,
+    should_purge: bool = False,
+) -> None:
     """Edits a property set and its properties
 
     At its simplest usage, this may be used to edit the name of a property
@@ -68,7 +76,7 @@ def edit_pset(file, pset=None, name=None, properties=None, pset_template=None, s
     :param pset_template: If a property set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
-    :type pset_template: ifcopenshell.entity_instance
+    :type pset_template: ifcopenshell.entity_instance, optional
     :param should_purge: If left as False, properties set to None will be
         left as None but not removed. If set to true, properties set to None
         will actually be removed.
@@ -158,18 +166,18 @@ def edit_pset(file, pset=None, name=None, properties=None, pset_template=None, s
 
 
 class Usecase:
-    def execute(self):
+    def execute(self) -> None:
         self.update_pset_name()
         self.load_pset_template()
         existing_props = self.update_existing_properties()
         new_props = self.add_new_properties()
         self.assign_new_properties(existing_props + new_props)
 
-    def update_pset_name(self):
+    def update_pset_name(self) -> None:
         if self.settings["name"]:
             self.settings["pset"].Name = self.settings["name"]
 
-    def load_pset_template(self):
+    def load_pset_template(self) -> None:
         if self.settings["pset_template"]:
             self.pset_template = self.settings["pset_template"]
         else:
@@ -177,13 +185,13 @@ class Usecase:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
-    def _should_update_prop(self, prop) -> bool:
+    def _should_update_prop(self, prop: ifcopenshell.entity_instance) -> bool:
         """
         Checks if the given property should be changed
         """
         return prop.Name in self.settings["properties"]
 
-    def _try_purge(self, prop) -> bool:
+    def _try_purge(self, prop: ifcopenshell.entity_instance) -> bool:
         """
         Tries to remove the property
         if successful, returns True, otherwise False
@@ -200,7 +208,7 @@ class Usecase:
     #   For example - IfcPropertyEnumeratedValue to
     # IfcPropertySingleValue.  Or maybe the user should
     # just delete the property first? - vulevukusej
-    def update_existing_properties(self):
+    def update_existing_properties(self) -> list[ifcopenshell.entity_instance]:
         existing_props = []
         for prop in self.get_properties():
             if not self._should_update_prop(prop):
@@ -222,7 +230,9 @@ class Usecase:
                 raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
         return existing_props
 
-    def update_existing_prop_enum(self, prop):
+    def update_existing_prop_enum(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         NOTE: Assumes the prop exists
         """
@@ -255,7 +265,9 @@ class Usecase:
         del self.settings["properties"][prop.Name]
         return prop
 
-    def update_existing_prop_single_value(self, prop):
+    def update_existing_prop_single_value(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         NOTE: Assumes the prop exists
         """
@@ -278,7 +290,7 @@ class Usecase:
         del self.settings["properties"][prop.Name]
         return prop
 
-    def add_new_properties(self):
+    def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties = []
         for name, value in self.settings["properties"].items():
             if value is None and self.settings["should_purge"]:
@@ -358,13 +370,13 @@ class Usecase:
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
 
-    def assign_new_properties(self, props):
+    def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
         elif hasattr(self.settings["pset"], "Properties"):
             self.settings["pset"].Properties = props
 
-    def get_properties(self):
+    def get_properties(self) -> list[ifcopenshell.entity_instance]:
         """
         Returns list of existing properties
         """

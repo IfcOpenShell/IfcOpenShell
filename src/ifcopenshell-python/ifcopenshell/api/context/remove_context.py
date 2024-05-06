@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def remove_context(file, context=None) -> None:
+def remove_context(file: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance) -> None:
     """Removes an IfcGeometricRepresentationContext
 
     Any representation geometry that is assigned to the context is also
