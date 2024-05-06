@@ -160,10 +160,16 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return args[0]
 
     def instance(self, args):
-        return {"type": "instance", "value": " ".join([a.children[0].value for a in args])}
+        if args[0].data == "not":
+            return {"type": "instance", "value": "!" + args[1].children[0].value}
+        else:
+            return {"type": "instance", "value": args[0].children[0].value}
 
     def entity(self, args):
-        return {"type": "entity", "value": " ".join([a.children[0].value for a in args])}
+        if args[0].data == "not":
+            return {"type": "entity", "value": "!" + args[1].children[0].value}
+        else:
+            return {"type": "entity", "value": args[0].children[0].value}
 
     def attribute(self, args):
         name, comparison, value = args
