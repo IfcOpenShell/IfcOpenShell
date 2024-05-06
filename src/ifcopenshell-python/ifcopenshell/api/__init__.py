@@ -21,6 +21,7 @@
 import json
 import numpy
 import pkgutil
+import inspect
 import importlib
 import ifcopenshell
 import ifcopenshell.api
@@ -247,7 +248,6 @@ def remove_all_listeners():
 
 def extract_docs(module, usecase):
     import typing
-    import inspect
     import collections
 
     results = []
@@ -295,60 +295,31 @@ def extract_docs(module, usecase):
     return node_data
 
 
-def _wrap_api(init_globals, file, package):
-    """API endpoints are implemented as Usecase classes. This wraps the classes as functions.
+def wrap_usecase(usecase_path, usecase):
+    """Wraps an API function in pre/post listeners."""
 
-    Calling classes is syntactically awkward. For example,
-    ifcopenshell.api.root.create_entity.Usecase(f).execute().
-    It is more elegant to call it using ifcopenshell.api.root.create_entity(f).
+    def wrapper(*args, should_run_listeners: bool = True, **settings):
+        ifc_file = args[0] if args else None
+        if should_run_listeners:
+            for listener in pre_listeners.get(usecase_path, {}).values():
+                listener(usecase_path, ifc_file, settings)
 
-    Calling _wrap_api from an API package's __init__.py will generate these
-    wrapper functions at runtime.
-    """
-    import pkgutil
-    import importlib
-    import inspect
-    from pathlib import Path
-
-    def _create_function(module_name, Usecase):
-        """Create a function that wraps the Usecase class's execute method."""
-        usecase_path = ".".join(Usecase.__module__.split(".")[-2:])
-
-        def wrapper(*args, should_run_listeners: bool = True, **settings):
-            ifc_file = args[0] if args else None
-            if should_run_listeners:
-                for listener in pre_listeners.get(usecase_path, {}).values():
-                    listener(usecase_path, ifc_file, settings)
-
-            try:
-                usecase = Usecase(*args, **settings)
-            except TypeError as e:
-                msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(Usecase.__init__)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
-                raise TypeError(msg) from e
-
-            result = usecase.execute()
-
-            if should_run_listeners:
-                for listener in post_listeners.get(usecase_path, {}).values():
-                    listener(usecase_path, ifc_file, settings)
-
-            return result
-
-        wrapper.__signature__ = inspect.signature(Usecase.__init__)
-        wrapper.__doc__ = Usecase.__init__.__doc__
-        wrapper.__name__ = module_name
-        return wrapper
-
-    for finder, name, ispkg in pkgutil.iter_modules([Path(file).parent]):
         try:
-            module = importlib.import_module(f".{name}", package)
-        except ModuleNotFoundError as e:
-            print(f"Note: API not available due to missing dependencies: {package}.{name} - {e}")
-            continue
-        usecase_cls = getattr(module, "Usecase", None)
-        if usecase_cls:
-            func = _create_function(name, usecase_cls)
-            init_globals[name] = func
+            result = usecase(*args, **settings)
+        except TypeError as e:
+            msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(Usecase.__init__)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
+            raise TypeError(msg) from e
+
+        if should_run_listeners:
+            for listener in post_listeners.get(usecase_path, {}).values():
+                listener(usecase_path, ifc_file, settings)
+
+        return result
+
+    wrapper.__signature__ = inspect.signature(usecase)
+    wrapper.__doc__ = usecase.__doc__
+    wrapper.__name__ = usecase_path
+    return wrapper
 
 
 # Expose all submodules. This means that the user can just type `import ifcopenshell.api`.
@@ -357,5 +328,8 @@ for loader, module_name, is_pkg in pkgutil.iter_modules(__path__, __name__ + "."
 
     # Check if it's a direct child (only one level deep)
     if module_name.count(".") == __name__.count(".") + 1:
-        # Generate wrapper functions for each usecase
-        _wrap_api(vars(module), module.__file__, module.__name__)
+        for usecase_name in vars(module):
+            usecase = getattr(module, usecase_name)
+            if callable(usecase):
+                usecase_path = f"{module_name.split('.')[-1]}.{usecase_name}"
+                setattr(module, usecase_name, wrap_usecase(usecase_path, usecase))
