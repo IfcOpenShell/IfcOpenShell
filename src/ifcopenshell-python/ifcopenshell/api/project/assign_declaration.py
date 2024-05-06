@@ -119,9 +119,9 @@ def assign_declaration(
         return None
 
     for has_context in previous_declares_rels:
-        related_definitions = set(has_context.RelatedDefinitions) - objects_with_contexts
+        related_definitions = set(has_context.RelatedDefinitions) - set(objects_with_contexts)
         if related_definitions:
-            has_context.RelatedDefinitions = related_definitions
+            has_context.RelatedDefinitions = list(related_definitions)
             ifcopenshell.api.run("owner.update_owner_history", file, **{"element": has_context})
         else:
             history = has_context.OwnerHistory
