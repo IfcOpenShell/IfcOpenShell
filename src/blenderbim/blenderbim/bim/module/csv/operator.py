@@ -246,6 +246,7 @@ class ExportIfcCsv(bpy.types.Operator):
         if props.format != "csv" and props.should_generate_svg:
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
+        self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
 
@@ -285,6 +286,7 @@ class ImportIfcCsv(bpy.types.Operator):
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         refresh_ui_data()
+        self.report({"INFO"}, "Data is imported to IFC.")
         return {"FINISHED"}
 
 
