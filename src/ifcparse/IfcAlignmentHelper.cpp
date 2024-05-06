@@ -163,7 +163,9 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
     horizontal_segments->push(alignment_segment);
     if (include_geometry) {
-        horizontal_curve_segments->push(mapAlignmentHorizontalSegment(design_parameters).first);
+        auto segment = mapAlignmentHorizontalSegment(design_parameters).first;
+        segment->setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
+        horizontal_curve_segments->push(segment);
     }
 
     Ifc4x3_add2::IfcCompositeCurve* composite_curve = nullptr;
@@ -306,7 +308,9 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
     vertical_segments->push(alignment_segment);
     if (include_geometry) {
-        vertical_curve_segments->push(mapAlignmentVerticalSegment(design_parameters).first);
+        auto segment = mapAlignmentVerticalSegment(design_parameters).first;
+        segment->setTransition(Ifc4x3_add2::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
+        vertical_curve_segments->push(segment);
     }
 
     Ifc4x3_add2::IfcGradientCurve* gradient_curve = nullptr;
