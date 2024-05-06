@@ -17,32 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, reference=None, attributes=None):
-        """Edits the attributes of an IfcClassificationReference
+def edit_reference(file, reference=None, attributes=None) -> None:
+    """Edits the attributes of an IfcClassificationReference
 
-        For more information about the attributes and data types of an
-        IfcClassificationReference, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcClassificationReference, consult the IFC documentation.
 
-        :param reference: The IfcClassificationReference entity you want to edit
-        :type reference: ifcopenshell.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param reference: The IfcClassificationReference entity you want to edit
+    :type reference: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            reference = model.by_type("IfcClassification")[0]
-            # Change the name of the reference to "Foo"
-            ifcopenshell.api.run("classification.edit_reference", model,
-                reference=reference, attributes={"Name": "Foo"})
-        """
-        self.file = file
-        self.settings = {"reference": reference, "attributes": attributes or {}}
+        reference = model.by_type("IfcClassification")[0]
+        # Change the name of the reference to "Foo"
+        ifcopenshell.api.run("classification.edit_reference", model,
+            reference=reference, attributes={"Name": "Foo"})
+    """
+    settings = {"reference": reference, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["reference"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["reference"], name, value)

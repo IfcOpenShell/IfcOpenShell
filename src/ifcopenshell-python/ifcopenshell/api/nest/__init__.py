@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .assign_object import assign_object
+from .change_nest import change_nest
+from .reorder_nesting import reorder_nesting
+from .unassign_object import unassign_object

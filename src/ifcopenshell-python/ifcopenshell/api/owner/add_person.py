@@ -18,47 +18,43 @@
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.entity_instance,
-        identification: str = "HSeldon",
-        family_name: str = "Seldon",
-        given_name: str = "Hari",
-    ):
-        """Adds a new person
+def add_person(
+    file: ifcopenshell.entity_instance,
+    identification: str = "HSeldon",
+    family_name: str = "Seldon",
+    given_name: str = "Hari",
+) -> None:
+    """Adds a new person
 
-        Persons are used to identify a legal or liable representative of an
-        organisation or point of contact.
+    Persons are used to identify a legal or liable representative of an
+    organisation or point of contact.
 
-        :param identification: The computer readable unique identification of
-            the person. For example, their username in a CDE or alias.
-        :type identification: str, optional
-        :param family_name: The family name
-        :type family_name: str, optional
-        :param given_name: The given name
-        :type given_name: str, optional
-        :return: The newly created IfcPerson
-        :rtype: ifcopenshell.entity_instance
+    :param identification: The computer readable unique identification of
+        the person. For example, their username in a CDE or alias.
+    :type identification: str, optional
+    :param family_name: The family name
+    :type family_name: str, optional
+    :param given_name: The given name
+    :type given_name: str, optional
+    :return: The newly created IfcPerson
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            ifcopenshell.api.run("owner.add_person", model,
-                identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
-        """
-        self.file = file
-        self.settings = {
-            "identification": identification,
-            "family_name": family_name,
-            "given_name": given_name,
-        }
+        ifcopenshell.api.run("owner.add_person", model,
+            identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
+    """
+    settings = {
+        "identification": identification,
+        "family_name": family_name,
+        "given_name": given_name,
+    }
 
-    def execute(self) ->ifcopenshell.entity_instance:
-        data = {"FamilyName": self.settings["family_name"], "GivenName": self.settings["given_name"]}
-        if self.file.schema == "IFC2X3":
-            data["Id"] = self.settings["identification"]
-        else:
-            data["Identification"] = self.settings["identification"]
-        return self.file.create_entity("IfcPerson", **data)
+    data = {"FamilyName": settings["family_name"], "GivenName": settings["given_name"]}
+    if file.schema == "IFC2X3":
+        data["Id"] = settings["identification"]
+    else:
+        data["Identification"] = settings["identification"]
+    return file.create_entity("IfcPerson", **data)

@@ -21,22 +21,25 @@ import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            "profile": None,
-            "depth": 1.0,
-            "cardinal_point": 5,
-            # Planes are defined either by Clipping objects
-            # or by dictionaries of arguments for `Clipping.parse`
-            "clippings": [],  # A list of planes that define clipping half space solids
-            "placement_zx_axes": (None, None),
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_profile_representation(file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "context": None,  # IfcGeometricRepresentationContext
+        "profile": None,
+        "depth": 1.0,
+        "cardinal_point": 5,
+        # Planes are defined either by Clipping objects
+        # or by dictionaries of arguments for `Clipping.parse`
+        "clippings": [],  # A list of planes that define clipping half space solids
+        "placement_zx_axes": (None, None),
+    }
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]

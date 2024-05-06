@@ -21,48 +21,45 @@ import ifcopenshell.util.date
 from datetime import datetime
 
 
-class Usecase:
-    def __init__(self, file, name=None, predefined_type="NOTDEFINED"):
-        """Add a new cost schedule
+def add_cost_schedule(file, name=None, predefined_type="NOTDEFINED") -> None:
+    """Add a new cost schedule
 
-        A cost schedule is a group of cost items which typically represent a
-        cost plan or breakdown of the project. This may be used as an estimate,
-        bid, or actual cost.
+    A cost schedule is a group of cost items which typically represent a
+    cost plan or breakdown of the project. This may be used as an estimate,
+    bid, or actual cost.
 
-        Alternatively, a cost schedule may also represent a schedule of rates,
-        which include cost items which capture unit rates for different elements
-        or processes.
+    Alternatively, a cost schedule may also represent a schedule of rates,
+    which include cost items which capture unit rates for different elements
+    or processes.
 
-        As such, creating a cost schedule is necessary prior to creating and
-        managing any cost items.
+    As such, creating a cost schedule is necessary prior to creating and
+    managing any cost items.
 
-        :param name: The name of the cost schedule.
-        :type name: str, optional
-        :param predefined_type: The predefined type of the cost schedule, chosen
-            from a valid type in the IFC documentation for
-            IfcCostScheduleTypeEnum
-        :type predefined_type: str, optional
-        :return: The newly created IfcCostSchedule entity
-        :rtype: ifcopenshell.entity_instance
+    :param name: The name of the cost schedule.
+    :type name: str, optional
+    :param predefined_type: The predefined type of the cost schedule, chosen
+        from a valid type in the IFC documentation for
+        IfcCostScheduleTypeEnum
+    :type predefined_type: str, optional
+    :return: The newly created IfcCostSchedule entity
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            # Now that we have a cost schedule, we may add cost items to it
-            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-        """
-        self.file = file
-        self.settings = {"name": name, "predefined_type": predefined_type}
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        # Now that we have a cost schedule, we may add cost items to it
+        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+    """
+    settings = {"name": name, "predefined_type": predefined_type}
 
-    def execute(self):
-        cost_schedule = ifcopenshell.api.run(
-            "root.create_entity",
-            self.file,
-            ifc_class="IfcCostSchedule",
-            predefined_type=self.settings["predefined_type"],
-            name=self.settings["name"],
-        )
-        cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
-        return cost_schedule
+    cost_schedule = ifcopenshell.api.run(
+        "root.create_entity",
+        file,
+        ifc_class="IfcCostSchedule",
+        predefined_type=settings["predefined_type"],
+        name=settings["name"],
+    )
+    cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    return cost_schedule

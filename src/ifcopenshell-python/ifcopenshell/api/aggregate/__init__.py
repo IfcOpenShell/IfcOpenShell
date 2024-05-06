@@ -22,3 +22,6 @@ One common use is spatial elements, such as how a site has multiple buildings,
 and a building has multiple storeys. Another is for regular elements, such as
 how a wall is made out of members and coverings.
 """
+
+from .assign_object import assign_object
+from .unassign_object import unassign_object

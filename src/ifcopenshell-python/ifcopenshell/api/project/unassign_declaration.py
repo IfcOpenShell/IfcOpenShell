@@ -21,59 +21,55 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        definitions: list[ifcopenshell.entity_instance],
-        relating_context: ifcopenshell.entity_instance,
-    ):
-        """Unassigns a list of objects from a project or project library
+def unassign_declaration(
+    file: ifcopenshell.file,
+    definitions: list[ifcopenshell.entity_instance],
+    relating_context: ifcopenshell.entity_instance,
+) -> None:
+    """Unassigns a list of objects from a project or project library
 
-        Typically used to remove an asset from a project library.
+    Typically used to remove an asset from a project library.
 
-        :param definitions: The list of objects you want to undeclare.
-            Typically a list of assets.
-        :type definitions: list[ifcopenshell.entity_instance]
-        :param relating_context: The IfcProject, or more commonly the
-            IfcProjectLibrary that you want the object to no longer be part of.
-        :type relating_context: ifcopenshell.entity_instance
-        :return: None
-        :rtype: None
+    :param definitions: The list of objects you want to undeclare.
+        Typically a list of assets.
+    :type definitions: list[ifcopenshell.entity_instance]
+    :param relating_context: The IfcProject, or more commonly the
+        IfcProjectLibrary that you want the object to no longer be part of.
+    :type relating_context: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Programmatically generate a library. You could do this visually too.
-            library = ifcopenshell.api.run("project.create_file")
-            root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
-            context = ifcopenshell.api.run("root.create_entity", library,
-                ifc_class="IfcProjectLibrary", name="Demo Library")
+        # Programmatically generate a library. You could do this visually too.
+        library = ifcopenshell.api.run("project.create_file")
+        root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
+        context = ifcopenshell.api.run("root.create_entity", library,
+            ifc_class="IfcProjectLibrary", name="Demo Library")
 
-            # It's necessary to say our library is part of our project.
-            ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
+        # It's necessary to say our library is part of our project.
+        ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
 
-            # Remove the library from our project
-            ifcopenshell.api.run("project.unassign_declaration", library, definitions=[context], relating_context=root)
-        """
-        self.file = file
-        self.settings = {
-            "definitions": definitions,
-            "relating_context": relating_context,
-        }
+        # Remove the library from our project
+        ifcopenshell.api.run("project.unassign_declaration", library, definitions=[context], relating_context=root)
+    """
+    settings = {
+        "definitions": definitions,
+        "relating_context": relating_context,
+    }
 
-    def execute(self):
-        definitions = set(self.settings["definitions"])
-        rels = {rel for obj in definitions if (rel := next(iter(obj.HasContext), None))}
+    definitions = set(settings["definitions"])
+    rels = {rel for obj in definitions if (rel := next(iter(obj.HasContext), None))}
 
-        for rel in rels:
-            related_definitions = set(rel.RelatedDefinitions) - definitions
-            if related_definitions:
-                rel.RelatedDefinitions = list(related_definitions)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-            else:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
+    for rel in rels:
+        related_definitions = set(rel.RelatedDefinitions) - definitions
+        if related_definitions:
+            rel.RelatedDefinitions = list(related_definitions)
+            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        else:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)

@@ -19,73 +19,70 @@
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, cost_item=None, ifc_class="IfcQuantityCount"):
-        """Adds a new quantity associated with a cost item
+def add_cost_item_quantity(file, cost_item=None, ifc_class="IfcQuantityCount") -> None:
+    """Adds a new quantity associated with a cost item
 
-        Cost items calculate their subtotal by multiplying the sum of the cost
-        item's "values" by the sum of the cost item's "quantities". The
-        quantities may be either parametrically linked to quantities measured on
-        physical product, or manually specified.
+    Cost items calculate their subtotal by multiplying the sum of the cost
+    item's "values" by the sum of the cost item's "quantities". The
+    quantities may be either parametrically linked to quantities measured on
+    physical product, or manually specified.
 
-        The quantity must be of a particular type, common examples are:
+    The quantity must be of a particular type, common examples are:
 
-        - IfcQuantityCount: to count the total occurrences of a product, useful
-          for things like doors, windows, and furniture
-        - IfcQuantityNumber: any other generic numeric quantity
-        - IfcQuantityLength
-        - IfcQuantityArea
-        - IfcQuantityVolume
-        - IfcQuantityWeight
-        - IfcQuantityTime
+    - IfcQuantityCount: to count the total occurrences of a product, useful
+      for things like doors, windows, and furniture
+    - IfcQuantityNumber: any other generic numeric quantity
+    - IfcQuantityLength
+    - IfcQuantityArea
+    - IfcQuantityVolume
+    - IfcQuantityWeight
+    - IfcQuantityTime
 
-        A cost item must not mix quantities of different types.
+    A cost item must not mix quantities of different types.
 
-        If an IfcQuantityCount is used, then this API will automatically count
-        all products that this cost item controls (see
-        ifcopenshell.api.controls.assign_control) and prefill that quantity.
+    If an IfcQuantityCount is used, then this API will automatically count
+    all products that this cost item controls (see
+    ifcopenshell.api.controls.assign_control) and prefill that quantity.
 
-        For all other quantity types, the quantity is left as zero and the user
-        must either manually specify the quantity or parametrically link it
-        using another API call.
+    For all other quantity types, the quantity is left as zero and the user
+    must either manually specify the quantity or parametrically link it
+    using another API call.
 
-        :param cost_item: The IfcCostItem to add the quantity to
-        :type cost_item: ifcopenshell.entity_instance
-        :param ifc_class: The type of quantity to add
-        :type ifc_class: str, optional
-        :return: The newly created quantity entity, chosen from the ifc_class
-            parameter
-        :rtype: ifcopenshell.entity_instance
+    :param cost_item: The IfcCostItem to add the quantity to
+    :type cost_item: ifcopenshell.entity_instance
+    :param ifc_class: The type of quantity to add
+    :type ifc_class: str, optional
+    :return: The newly created quantity entity, chosen from the ifc_class
+        parameter
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            chair = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-            ifcopenshell.api.run("control.assign_control", model,
-                relating_control=cost_item, related_object=chair)
+        chair = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        ifcopenshell.api.run("control.assign_control", model,
+            relating_control=cost_item, related_object=chair)
 
-            # Let's assume we want to count the amount of chairs to calculate our cost item
-            # Because this is an IfcQuantityCount the count will be automatically set to "1" chair
-            ifcopenshell.api.run("cost.add_cost_item_quantity", model,
-                cost_item=item, ifc_class="IfcQuantityCount")
-        """
-        self.file = file
-        self.settings = {"cost_item": cost_item, "ifc_class": ifc_class}
+        # Let's assume we want to count the amount of chairs to calculate our cost item
+        # Because this is an IfcQuantityCount the count will be automatically set to "1" chair
+        ifcopenshell.api.run("cost.add_cost_item_quantity", model,
+            cost_item=item, ifc_class="IfcQuantityCount")
+    """
+    settings = {"cost_item": cost_item, "ifc_class": ifc_class}
 
-    def execute(self):
-        quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
-        quantity[3] = 0.0
-        # This is a bold assumption
-        # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-        if self.settings["ifc_class"] == "IfcQuantityCount" and self.settings["cost_item"].Controls:
-            count = 0
-            for rel in self.settings["cost_item"].Controls:
-                count += len(rel.RelatedObjects)
-            quantity[3] = count
-        quantities = list(self.settings["cost_item"].CostQuantities or [])
-        quantities.append(quantity)
-        self.settings["cost_item"].CostQuantities = quantities
-        return quantity
+    quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
+    quantity[3] = 0.0
+    # This is a bold assumption
+    # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
+    if settings["ifc_class"] == "IfcQuantityCount" and settings["cost_item"].Controls:
+        count = 0
+        for rel in settings["cost_item"].Controls:
+            count += len(rel.RelatedObjects)
+        quantity[3] = count
+    quantities = list(settings["cost_item"].CostQuantities or [])
+    quantities.append(quantity)
+    settings["cost_item"].CostQuantities = quantities
+    return quantity

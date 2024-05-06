@@ -63,11 +63,7 @@ def create_ifc_door_lining(
 
     points = [p.xz for p in points]
     door_lining = builder.polyline(points, closed=True)
-    door_lining = builder.extrude(
-        door_lining,
-        size.y,
-        **builder.extrude_kwargs("Y")
-    )
+    door_lining = builder.extrude(door_lining, size.y, **builder.extrude_kwargs("Y"))
     builder.translate(door_lining, position)
 
     return door_lining
@@ -79,75 +75,78 @@ def create_ifc_box(builder: ShapeBuilder, size: Vector, position: Vector = V(0, 
     return box
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        """units in settings expected to be in ifc project units"""
-        self.file = file
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoor.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorLiningProperties.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorPanelProperties.htm
-        self.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(self.file)}
-        self.settings.update(
-            {
-                "context": None,  # IfcGeometricRepresentationContext
-                "overall_height": self.convert_si_to_unit(2.0),
-                "overall_width": self.convert_si_to_unit(0.9),
-                # DOUBLE_DOOR_DOUBLE_SWING, DOUBLE_DOOR_FOLDING, DOUBLE_DOOR_LIFTING_VERTICAL,
-                # DOUBLE_DOOR_SINGLE_SWING, DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT,
-                # DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, DOUBLE_DOOR_SLIDING,
-                # DOUBLE_SWING_LEFT, DOUBLE_SWING_RIGHT, FOLDING_TO_LEFT,
-                # FOLDING_TO_RIGHT, LIFTING_HORIZONTAL, LIFTING_VERTICAL_LEFT,
-                # LIFTING_VERTICAL_RIGHT, REVOLVING, REVOLVING_VERTICAL,
-                # ROLLINGUP, SINGLE_SWING_LEFT, SINGLE_SWING_RIGHT, SLIDING_TO_LEFT,
-                # SLIDING_TO_RIGHT, SWING_FIXED_LEFT, SWING_FIXED_RIGHT
-                "operation_type": "SINGLE_SWING_LEFT",  # door type
-                "lining_properties": {
-                    "LiningDepth": self.convert_si_to_unit(0.050),
-                    "LiningThickness": self.convert_si_to_unit(0.050),
-                    # offset from the outer side of the wall (by Y-axis)
-                    "LiningOffset": self.convert_si_to_unit(0.0),
-                    # offset from the wall
-                    "LiningToPanelOffsetX": self.convert_si_to_unit(0.025),
-                    # offset from the X-axis (unlike windows)
-                    "LiningToPanelOffsetY": self.convert_si_to_unit(0.025),
-                    # transom - vertical distance between door and window panels
-                    "TransomThickness": self.convert_si_to_unit(0.000),
-                    # TransomOffset - distance from the bottom door opening
-                    # to the beginning of the transom
-                    # unlike windows TransomOffset which goes to the center of the transom
-                    "TransomOffset": self.convert_si_to_unit(1.525),
-                    "ShapeAspectStyle": None,  # DEPRECATED
-                    # Casing cover wall faces around the opening
-                    # on the left, right and upper sides
-                    # Casing should be either on both sides of the wall or no casing
-                    # If `LiningOffset` is present then therefore casing is not possible on outer wall
-                    # therefore there will be no casing on inner wall either
-                    "CasingDepth": self.convert_si_to_unit(0.005),
-                    "CasingThickness": self.convert_si_to_unit(0.075),  # by Z-axis
-                    # Threshold covers the bottom side of the opening
-                    "ThresholdDepth": self.convert_si_to_unit(0.1),
-                    "ThresholdThickness": self.convert_si_to_unit(0.025),  # by Z-axis
-                    # offset by Y-axis
-                    "ThresholdOffset": self.convert_si_to_unit(0.000),
-                },
-                "panel_properties": {
-                    "PanelDepth": self.convert_si_to_unit(0.035),  # by Y
-                    "PanelWidth": 1.0,  # as ratio to the clear door opening
-                    "FrameDepth": self.convert_si_to_unit(0.035),  # by Y
-                    "FrameThickness": self.convert_si_to_unit(0.035),  # by X
-                    # LEFT, MIDDLE, RIGHT, NOTDEFINED
-                    "PanelPosition": ...,  # NEVER USED
-                    # defines the basic ways to describe how door panels operate
-                    # basically how it opens
-                    "PanelOperation": None,  # NEVER USED
-                    "ShapeAspectStyle": None,  # DEPRECATED
-                },
-            }
-        )
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_door_representation(file, **usecase_settings) -> None:
+    """units in usecase_settings expected to be in ifc project units"""
+    usecase = Usecase()
+    usecase.file = file
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoor.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorLiningProperties.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorPanelProperties.htm
+    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
+    usecase.settings.update(
+        {
+            "context": None,  # IfcGeometricRepresentationContext
+            "overall_height": usecase.convert_si_to_unit(2.0),
+            "overall_width": usecase.convert_si_to_unit(0.9),
+            # DOUBLE_DOOR_DOUBLE_SWING, DOUBLE_DOOR_FOLDING, DOUBLE_DOOR_LIFTING_VERTICAL,
+            # DOUBLE_DOOR_SINGLE_SWING, DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT,
+            # DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, DOUBLE_DOOR_SLIDING,
+            # DOUBLE_SWING_LEFT, DOUBLE_SWING_RIGHT, FOLDING_TO_LEFT,
+            # FOLDING_TO_RIGHT, LIFTING_HORIZONTAL, LIFTING_VERTICAL_LEFT,
+            # LIFTING_VERTICAL_RIGHT, REVOLVING, REVOLVING_VERTICAL,
+            # ROLLINGUP, SINGLE_SWING_LEFT, SINGLE_SWING_RIGHT, SLIDING_TO_LEFT,
+            # SLIDING_TO_RIGHT, SWING_FIXED_LEFT, SWING_FIXED_RIGHT
+            "operation_type": "SINGLE_SWING_LEFT",  # door type
+            "lining_properties": {
+                "LiningDepth": usecase.convert_si_to_unit(0.050),
+                "LiningThickness": usecase.convert_si_to_unit(0.050),
+                # offset from the outer side of the wall (by Y-axis)
+                "LiningOffset": usecase.convert_si_to_unit(0.0),
+                # offset from the wall
+                "LiningToPanelOffsetX": usecase.convert_si_to_unit(0.025),
+                # offset from the X-axis (unlike windows)
+                "LiningToPanelOffsetY": usecase.convert_si_to_unit(0.025),
+                # transom - vertical distance between door and window panels
+                "TransomThickness": usecase.convert_si_to_unit(0.000),
+                # TransomOffset - distance from the bottom door opening
+                # to the beginning of the transom
+                # unlike windows TransomOffset which goes to the center of the transom
+                "TransomOffset": usecase.convert_si_to_unit(1.525),
+                "ShapeAspectStyle": None,  # DEPRECATED
+                # Casing cover wall faces around the opening
+                # on the left, right and upper sides
+                # Casing should be either on both sides of the wall or no casing
+                # If `LiningOffset` is present then therefore casing is not possible on outer wall
+                # therefore there will be no casing on inner wall either
+                "CasingDepth": usecase.convert_si_to_unit(0.005),
+                "CasingThickness": usecase.convert_si_to_unit(0.075),  # by Z-axis
+                # Threshold covers the bottom side of the opening
+                "ThresholdDepth": usecase.convert_si_to_unit(0.1),
+                "ThresholdThickness": usecase.convert_si_to_unit(0.025),  # by Z-axis
+                # offset by Y-axis
+                "ThresholdOffset": usecase.convert_si_to_unit(0.000),
+            },
+            "panel_properties": {
+                "PanelDepth": usecase.convert_si_to_unit(0.035),  # by Y
+                "PanelWidth": 1.0,  # as ratio to the clear door opening
+                "FrameDepth": usecase.convert_si_to_unit(0.035),  # by Y
+                "FrameThickness": usecase.convert_si_to_unit(0.035),  # by X
+                # LEFT, MIDDLE, RIGHT, NOTDEFINED
+                "PanelPosition": ...,  # NEVER USED
+                # defines the basic ways to describe how door panels operate
+                # basically how it opens
+                "PanelOperation": None,  # NEVER USED
+                "ShapeAspectStyle": None,  # DEPRECATED
+            },
+        }
+    )
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         builder = ShapeBuilder(self.file)
         overall_height = self.settings["overall_height"]

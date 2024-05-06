@@ -15,3 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .assign_product import assign_product
+from .edit_text_literal import edit_text_literal
+from .unassign_product import unassign_product

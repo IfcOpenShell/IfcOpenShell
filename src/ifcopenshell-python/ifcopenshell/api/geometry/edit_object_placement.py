@@ -27,24 +27,26 @@ from typing import Optional, Union
 NPArrayOfFloats = npt.NDArray[np.float64]
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        product: ifcopenshell.entity_instance,
-        matrix: Optional[NPArrayOfFloats] = None,
-        is_si=True,
-        should_transform_children=False,
-    ):
-        self.file = file
-        self.settings = {
-            "product": product,
-            "matrix": matrix if matrix is not None else np.eye(4),
-            "is_si": is_si,
-            "should_transform_children": should_transform_children,
-        }
+def edit_object_placement(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    matrix: Optional[NPArrayOfFloats] = None,
+    is_si=True,
+    should_transform_children=False,
+) -> ifcopenshell.entity_instance:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "product": product,
+        "matrix": matrix if matrix is not None else np.eye(4),
+        "is_si": is_si,
+        "should_transform_children": should_transform_children,
+    }
+    return usecase.execute()
 
-    def execute(self) -> ifcopenshell.entity_instance:
+
+class Usecase:
+    def execute(self):
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)

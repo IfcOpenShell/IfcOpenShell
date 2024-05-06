@@ -19,30 +19,33 @@
 import ifcopenshell.util.element
 
 
+def remove_style(file, style=None) -> None:
+    """Removes a presentation style
+
+    All of the presentation items of the style will also be removed.
+
+    :param style: The IfcPresentationStyle to remove.
+    :type style: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # Create a new surface style
+        style = ifcopenshell.api.run("style.add_style", model)
+
+        # Not anymore!
+        ifcopenshell.api.run("style.remove_style", model, style=style)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"style": style}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, style=None):
-        """Removes a presentation style
-
-        All of the presentation items of the style will also be removed.
-
-        :param style: The IfcPresentationStyle to remove.
-        :type style: ifcopenshell.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Create a new surface style
-            style = ifcopenshell.api.run("style.add_style", model)
-
-            # Not anymore!
-            ifcopenshell.api.run("style.remove_style", model, style=style)
-        """
-        self.file = file
-        self.settings = {"style": style}
-
     def execute(self):
         self.purge_styled_items(self.settings["style"])
         for style in self.settings["style"].Styles or []:

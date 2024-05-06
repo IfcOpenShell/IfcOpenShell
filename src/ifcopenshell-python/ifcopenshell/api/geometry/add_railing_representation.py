@@ -31,39 +31,42 @@ def mm(x):
     return x / 1000
 
 
+def add_railing_representation(file, **usecase_settings) -> None:
+    """
+    units in usecase_settings expected to be in ifc project units
+
+    `railing_path` is a list of point coordinates for the railing path,
+    coordinates are expected to be at the top of the railing, not at the center
+
+    `railing_path` is expected to be a list of Vector objects
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
+    usecase.settings.update(
+        {
+            "context": None,  # IfcGeometricRepresentationContext
+            "railing_type": "WALL_MOUNTED_HANDRAIL",
+            "railing_path": usecase.path_si_to_units([V(0, 0, 1), V(1, 0, 1), V(2, 0, 1)]),
+            "use_manual_supports": False,
+            "support_spacing": usecase.convert_si_to_unit(mm(1000)),
+            "railing_diameter": usecase.convert_si_to_unit(mm(50)),
+            "clear_width": usecase.convert_si_to_unit(mm(40)),
+            "terminal_type": "180",
+            "height": usecase.convert_si_to_unit(mm(1000)),
+            "looped_path": False,
+        }
+    )
+
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+
+    if usecase.settings["railing_type"] != "WALL_MOUNTED_HANDRAIL":
+        raise Exception('Only "WALL_MOUNTED_HANDRAIL" railing_type is supported at the moment.')
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, **settings):
-        """
-        units in settings expected to be in ifc project units
-
-        `railing_path` is a list of point coordinates for the railing path,
-        coordinates are expected to be at the top of the railing, not at the center
-
-        `railing_path` is expected to be a list of Vector objects
-        """
-        self.file = file
-        self.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(self.file)}
-        self.settings.update(
-            {
-                "context": None,  # IfcGeometricRepresentationContext
-                "railing_type": "WALL_MOUNTED_HANDRAIL",
-                "railing_path": self.path_si_to_units([V(0, 0, 1), V(1, 0, 1), V(2, 0, 1)]),
-                "use_manual_supports": False,
-                "support_spacing": self.convert_si_to_unit(mm(1000)),
-                "railing_diameter": self.convert_si_to_unit(mm(50)),
-                "clear_width": self.convert_si_to_unit(mm(40)),
-                "terminal_type": "180",
-                "height": self.convert_si_to_unit(mm(1000)),
-                "looped_path": False,
-            }
-        )
-
-        for key, value in settings.items():
-            self.settings[key] = value
-
-        if self.settings["railing_type"] != "WALL_MOUNTED_HANDRAIL":
-            raise Exception('Only "WALL_MOUNTED_HANDRAIL" railing_type is supported at the moment.')
-
     def execute(self):
         arc_points = []
         items_3d = []

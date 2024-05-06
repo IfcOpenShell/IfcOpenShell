@@ -21,38 +21,35 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "relating_element": None,
-            "related_element": None,
-            "element": None,
-            "connection_type": None,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def disconnect_path(file, **usecase_settings) -> None:
+    settings = {
+        "relating_element": None,
+        "related_element": None,
+        "element": None,
+        "connection_type": None,
+    }
+    for key, value in usecase_settings.items():
+        settings[key] = value
 
-    def execute(self):
-        if self.settings["connection_type"] and self.settings["element"]:
-            connections = [
-                r
-                for r in self.settings["element"].ConnectedTo
-                if r.is_a("IfcRelConnectsPathElements") and r.RelatingConnectionType == self.settings["connection_type"]
-            ] + [
-                r
-                for r in self.settings["element"].ConnectedFrom
-                if r.is_a("IfcRelConnectsPathElements") and r.RelatedConnectionType == self.settings["connection_type"]
-            ]
-        else:
-            connections = [
-                r
-                for r in self.settings["relating_element"].ConnectedTo
-                if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == self.settings["related_element"]
-            ]
+    if settings["connection_type"] and settings["element"]:
+        connections = [
+            r
+            for r in settings["element"].ConnectedTo
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatingConnectionType == settings["connection_type"]
+        ] + [
+            r
+            for r in settings["element"].ConnectedFrom
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatedConnectionType == settings["connection_type"]
+        ]
+    else:
+        connections = [
+            r
+            for r in settings["relating_element"].ConnectedTo
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == settings["related_element"]
+        ]
 
-        for connection in set(connections):
-            history = connection.OwnerHistory
-            self.file.remove(connection)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
+    for connection in set(connections):
+        history = connection.OwnerHistory
+        file.remove(connection)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
