@@ -260,6 +260,11 @@ class Usecase:
                 prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
                 prop.EnumerationValues = value.EnumerationValues
 
+        else:
+            raise ValueError(
+                f'Value "{self.settings["properties"][prop.Name]}" is not a valid value for enum property {prop.Name}.'
+            )
+
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
