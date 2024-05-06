@@ -99,7 +99,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 	}
 	*/
 
-	const bool has_position = !m4->is_identity();
+	const bool has_position = m4 && !m4->is_identity();
 
 	// @todo precision
 
