@@ -395,6 +395,7 @@ int main() {
 
     // Zero-length terminator
     auto vertical_terminator_segment = create_gradient(vpoe, -0.5 / 100, 0.0);
+    vertical_terminator_segment.first->setTransition(Schema::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
     vertical_curve_segments->push(vertical_terminator_segment.first);
     vertical_segments->push(vertical_terminator_segment.second);
 
