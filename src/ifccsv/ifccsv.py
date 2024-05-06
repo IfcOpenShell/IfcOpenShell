@@ -391,15 +391,16 @@ class IfcCsv:
         empty: str = "",
         bool_true: str = "YES",
         bool_false: str = "NO",
+        concat: str = ", ",
     ) -> None:
         ext = table.split(".")[-1].lower()
 
         if ext == "csv":
-            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false)
+            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false, concat)
         elif ext == "ods":
-            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false)
+            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
         elif ext == "xlsx":
-            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false)
+            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_csv(
         self,
@@ -411,6 +412,7 @@ class IfcCsv:
         empty: str = "",
         bool_true: str = "YES",
         bool_false: str = "NO",
+        concat: str = ", ",
     ) -> None:
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -423,17 +425,17 @@ class IfcCsv:
                     elif len(attributes) == len(headers) - 1:
                         attributes.insert(0, "")  # The GlobalId column
                     continue
-                self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false)
+                self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false, concat)
 
-    def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
+    def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat):
         df = pd.read_excel(table)
-        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
+        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false, concat)
 
-    def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
+    def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat):
         df = pd.read_excel(table, engine="odf")
-        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
+        self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false, concat)
 
-    def import_pd(self, ifc_file, df, attributes=None, null="-", empty="", bool_true="YES", bool_false="NO"):
+    def import_pd(self, ifc_file, df, attributes=None, null="-", empty="", bool_true="YES", bool_false="NO", concat=", "):
         headers = df.columns.tolist()
 
         if not attributes:
@@ -442,7 +444,7 @@ class IfcCsv:
             attributes.insert(0, "")  # The GlobalId column
 
         for _, row in df.iterrows():
-            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false)
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false, concat)
 
     def process_row(
         self,
@@ -454,6 +456,7 @@ class IfcCsv:
         empty: str,
         bool_true: str,
         bool_false: str,
+        concat: str
     ) -> None:
         try:
             element = ifc_file.by_guid(row[0])
@@ -472,7 +475,14 @@ class IfcCsv:
             elif value == bool_false:
                 value = False
             key = attributes[i] or headers[i]
-            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
+            try:
+                ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
+            except ValueError as e:
+                if "enum property" in e.args[0]:
+                    value = value.split(concat)
+                    ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
+                else:
+                    raise e
 
 
 if __name__ == "__main__":
@@ -534,5 +544,6 @@ if __name__ == "__main__":
             delimiter=args.delimiter,
             null=args.null,
             empty=args.empty,
+            concat=args.concat
         )
         ifc_file.write(args.ifc)
