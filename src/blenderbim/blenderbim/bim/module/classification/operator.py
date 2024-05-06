@@ -209,6 +209,10 @@ class DisableEditingClassification(bpy.types.Operator):
 class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_classification"
     bl_label = "Remove Classification"
+    bl_description = (
+        "The classification and all of its relationships, children references, "
+        "and relationships between objects and child references will be completely removed from a project"
+    )
     bl_options = {"REGISTER", "UNDO"}
     classification: bpy.props.IntProperty()
 

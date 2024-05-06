@@ -24,7 +24,7 @@ def remove_classification(file, classification=None) -> None:
     """Removes an IfcClassification from the project and all references
 
     The classification and all of its relationships, children references,
-    and relationships between objectse and child references are completely
+    and relationships between objects and child references are completely
     removed from a project.
 
     :param classification: The IfcClassification entity you want to remove
