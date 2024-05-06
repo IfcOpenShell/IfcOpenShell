@@ -323,13 +323,49 @@ def wrap_usecase(usecase_path, usecase):
 
 
 # Expose all submodules. This means that the user can just type `import ifcopenshell.api`.
-for loader, module_name, is_pkg in pkgutil.iter_modules(__path__, __name__ + "."):
-    module = importlib.import_module(module_name)
+import ifcopenshell.api.aggregate as aggregate
+import ifcopenshell.api.attribute as attribute
+import ifcopenshell.api.boundary as boundary
+import ifcopenshell.api.classification as classification
+import ifcopenshell.api.constraint as constraint
+import ifcopenshell.api.context as context
+import ifcopenshell.api.control as control
+import ifcopenshell.api.cost as cost
+import ifcopenshell.api.document as document
+import ifcopenshell.api.drawing as drawing
+import ifcopenshell.api.geometry as geometry
+import ifcopenshell.api.georeference as georeference
+import ifcopenshell.api.grid as grid
+import ifcopenshell.api.group as group
+import ifcopenshell.api.layer as layer
+import ifcopenshell.api.library as library
+import ifcopenshell.api.material as material
+import ifcopenshell.api.nest as nest
+import ifcopenshell.api.owner as owner
+import ifcopenshell.api.profile as profile
+import ifcopenshell.api.project as project
+import ifcopenshell.api.pset as pset
+import ifcopenshell.api.pset_template as pset_template
+import ifcopenshell.api.resource as resource
+import ifcopenshell.api.root as root
+import ifcopenshell.api.sequence as sequence
+import ifcopenshell.api.spatial as spatial
+import ifcopenshell.api.structural as structural
+import ifcopenshell.api.style as style
+import ifcopenshell.api.system as system
+import ifcopenshell.api.type as type  # Whoohoo!
+import ifcopenshell.api.unit as unit
+import ifcopenshell.api.void as void
 
+# Wrap all submodule usecases with listeners.
+# This for loop also conveniently ensures that the above imports are comprehensive.
+for loader, module_name, is_pkg in pkgutil.iter_modules(__path__, __name__ + "."):
     # Check if it's a direct child (only one level deep)
     if module_name.count(".") == __name__.count(".") + 1:
+        module_name = module_name.split(".")[-1]
+        module = globals()[module_name]
         for usecase_name in vars(module):
             usecase = getattr(module, usecase_name)
             if callable(usecase):
-                usecase_path = f"{module_name.split('.')[-1]}.{usecase_name}"
+                usecase_path = f"{module_name}.{usecase_name}"
                 setattr(module, usecase_name, wrap_usecase(usecase_path, usecase))
