@@ -23,7 +23,7 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 	auto loop = taxonomy::make<taxonomy::loop>();
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
+	std::vector<taxonomy::piecewise_function::ptr> pwfs;
 
 #ifdef SCHEMA_HAS_IfcSegment
 	// 4x3
@@ -31,8 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #else
 	IfcSchema::IfcCompositeCurveSegment::list::ptr segments = inst->Segments();
 #endif
-	current_segment_count_ = segments->size();
-
+	
 	for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCompositeCurveSegment>() && segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve()->as<IfcSchema::IfcLine>()) {
 			Logger::Notice("Infinite IfcLine used as ParentCurve of segment, treating as a segment", segment);
@@ -78,8 +77,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 				}
 			}
 			else if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
-				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
-				pwf->spans.insert(pwf->spans.end(), seg->spans.begin(), seg->spans.end());
+            pwfs.push_back(taxonomy::cast<taxonomy::piecewise_function>(crv));
 			} else if (!crv) {
 				return nullptr;
 			}
@@ -87,7 +85,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 #endif
 	}
 
-	if (pwf->spans.empty()) {
+	if (pwfs.empty()) {
 		aggregate_of_instance::ptr profile = inst->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
 		const bool force_close = profile && profile->size() > 0;
 		loop->closed = force_close;
@@ -95,7 +93,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		return loop;
 	}
 	else {
-		pwf->instance = inst;
+      auto pwf = taxonomy::make<taxonomy::piecewise_function>(pwfs,&settings_,inst);
 		return pwf;
 	}
 }

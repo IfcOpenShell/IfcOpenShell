@@ -28,18 +28,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
        Logger::Warning("Expected IfcSegmentedReferenceCurve.BaseCurve to be IfcGradient", inst); // CT 4.1.7.1.1.3
 		  
 	auto gradient = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
-	auto cant = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-
+	
 	auto segments = inst->Segments();
-	current_segment_count_ = segments->size();
 
-	for (auto& segment : *segments) {
+    std::vector<taxonomy::piecewise_function::ptr> pwfs;
+    for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
 			if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
-				auto seg = taxonomy::cast<taxonomy::piecewise_function>(crv);
-				cant->spans.insert(cant->spans.end(), seg->spans.begin(), seg->spans.end());
+				pwfs.push_back(taxonomy::cast<taxonomy::piecewise_function>(crv));
 			} else {
 				Logger::Error("Unsupported");
 				return nullptr;
@@ -49,6 +47,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 			return nullptr;
 		}
 	}
+   auto cant = taxonomy::make<taxonomy::piecewise_function>(pwfs,&settings_);
 
 	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
 		auto g = gradient->evaluate(u);
@@ -63,26 +62,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
       return m;
 	};
 
-	std::array<taxonomy::piecewise_function::ptr, 2> both = { gradient , cant };
-	// @todo: rb - this constrains the range of u to the minimum of gradient and cant
-	// we discussed using the maximum for the range of us and then using std::numeric_limits<double>::NAN
-	// for values of u that gradient or cant cannot be computed.
-	// Review and decide what to do.
-	double min_length = std::numeric_limits<double>::infinity();
-	for (auto i = 0; i < 2; ++i) {
-		double l = 0;
-		for (auto& s : both[i]->spans) {
-			l += s.first;
-		}
-		if (l < min_length) {
-			min_length = l;
-		}
-	}
+   double min_length = std::min(gradient->length(), cant->length());
 
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-	pwf->spans.emplace_back( min_length, composition );
-	pwf->instance = inst;
-	return pwf;
+	taxonomy::piecewise_function::spans spans;
+   spans.emplace_back(min_length, composition);
+   auto pwf = taxonomy::make<taxonomy::piecewise_function>(spans, &settings_, inst);
+   return pwf;
 }
 
 #endif

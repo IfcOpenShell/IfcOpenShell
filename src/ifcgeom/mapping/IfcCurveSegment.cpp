@@ -103,7 +103,6 @@ class curve_segment_evaluator {
     double length_; // length along the curve, as provided from the IfcCurveSegment
     segment_type_t segment_type_;
     const IfcSchema::IfcCurve* parent_curve_ = nullptr;
-    size_t current_segment_count_;
 
     double projected_length_; // for vertical segments, this is the length of curve projected onto the "Distance Along" axis
 
@@ -111,13 +110,12 @@ class curve_segment_evaluator {
     std::optional<Eigen::Matrix4d> parent_curve_placement_;                 // placement matrix for the parent curve
 
   public:
-    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit, segment_type_t segment_type, size_t current_segment_count)
+    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit, segment_type_t segment_type)
         : mapping_(mapping),
           inst_(inst),
           length_unit_(length_unit),
           segment_type_(segment_type),
-          parent_curve_(inst->ParentCurve()),
-          current_segment_count_(current_segment_count) {
+          parent_curve_(inst->ParentCurve()) {
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
         length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
     }
@@ -734,7 +732,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
     auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
 
-    curve_segment_evaluator cse(this, inst, length_unit_, segment_type, current_segment_count_);
+    curve_segment_evaluator cse(this, inst, length_unit_, segment_type);
     boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
     const auto& parent_curve_fn = cse.parent_curve_function();
     const auto& parent_curve_placement = cse.parent_curve_placement();
@@ -772,11 +770,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
         return curve_segment_placement * rotation * translation * p;
     };
 
-    // @todo it might be suboptimal that we no longer have the spans now
-    auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-    auto length = fabs(cse.length());
-    pwf->spans.push_back({length, fn});
-    pwf->instance = inst;
+    auto length = cse.length();
+
+    taxonomy::piecewise_function::spans spans;
+    spans.emplace_back(fabs(length), fn);
+    auto pwf = taxonomy::make<taxonomy::piecewise_function>(spans,&settings_,inst);
     return pwf;
 }
 

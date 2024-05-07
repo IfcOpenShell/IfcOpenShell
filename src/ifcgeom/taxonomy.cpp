@@ -471,37 +471,67 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
    } else {
 	   // parameter is minimum number of steps
        num_steps = (unsigned)std::ceil(param);
-    }
+   }
 
 	return evaluate(0.0, curve_length, num_steps);
 }
 
 item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double ustart, double uend,unsigned nsteps) const {
+    return evaluate2(ustart, uend, nsteps).first;
+}
+
+std::pair<item::ptr, std::vector<double>> ifcopenshell::geometry::taxonomy::piecewise_function::evaluate2(double ustart, double uend, unsigned nsteps) const {
     double curve_length = length();
     ustart = std::max(0.0, ustart);
     uend = std::min(uend, curve_length);
 
- 	 auto resolution = (uend - ustart)/ nsteps;
+    auto resolution = (uend - ustart) / nsteps;
 
     std::vector<taxonomy::point3::ptr> polygon;
+    std::vector<double> u_values;
+    polygon.reserve(nsteps);
+    u_values.reserve(nsteps);
 
-    for (int i = 0; i <= nsteps; ++i) {
+    for (unsigned i = 0; i <= nsteps; ++i) {
         auto u = resolution * i + ustart;
+        u_values.push_back(u);
         Eigen::Matrix4d m = evaluate(u);
         polygon.push_back(taxonomy::make<taxonomy::point3>(m.col(3)(0), m.col(3)(1), m.col(3)(2)));
     }
 
-    return polygon_from_points(polygon);
+    return {polygon_from_points(polygon), u_values};
 }
 
 Eigen::Matrix4d ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double u) const {
-   // @todo: rb optimize, assume monotonic evaluation and store last evaluated segment?
-   for (auto& [length, fn] : spans) {
-   if (u < length + 0.001) { // @todo: rb - need to use consistent tolerance
-         return fn(u);
-      }
-      u -= length;
-   }
+	// assume monotonic evaluation and store last evaluated segment
+    if (current_span_fn_ == nullptr || (u < current_span_start_ || current_span_end_ < u)) {
+       // there isn't a current span or u is outside the range of the current span
+		 // get a new "current span"
+        std::tie(current_span_start_,current_span_end_, current_span_fn_) = get_span(u);
+    }
+
+	 u -= current_span_start_; // make u relative to start of span
+	 return (*current_span_fn_)(u);
+}
+
+std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> ifcopenshell::geometry::taxonomy::piecewise_function::get_span(double u) const {
+	 // force u to be within bounds of the curve
+    double curve_length = length();
+    u = std::max(0.0, u);
+    u = std::min(u, curve_length);
+
+	double start = 0;
+    for (auto& [length, fn] : spans_) {
+		 auto tolerance = settings_ ? settings_->get<ifcopenshell::geometry::settings::Precision>().get() : 0.001;
+       if (u < length + tolerance) {
+           return {start, start+length, &fn} ;
+       }
+       start += length;
+       u -= length;
+    }
+
+    Logger::Error("taxonomy::piecewise_function::get_span span not found.");
+    return {0, 0, nullptr};
 }
 
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
