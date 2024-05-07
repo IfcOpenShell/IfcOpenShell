@@ -30,7 +30,7 @@ class Clipping:
     operand_type: str = "IfcHalfSpaceSolid"
 
     @classmethod
-    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, Clipping, None]:
+    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, "Clipping", None]:
         """Parse various formats into a clipping object
 
         `raw_data` can be either:

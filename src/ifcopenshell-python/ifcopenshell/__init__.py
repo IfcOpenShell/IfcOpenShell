@@ -35,9 +35,8 @@ import sys
 import zipfile
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
-import ifcopenshell.util.file
 
 if hasattr(os, "uname"):
     platform_system = os.uname()[0].lower()
@@ -56,16 +55,9 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", p
 
 try:
     from . import ifcopenshell_wrapper
-except Exception as e:
-    if int(python_version_tuple[0]) == 2:
-        # Only for py2, as py3 has exception chaining
-        import traceback
-
-        traceback.print_exc()
-        print("-" * 64)
+except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
@@ -92,11 +84,12 @@ class SchemaError(Error):
     pass
 
 
-def open(path: "os.PathLike | str", format: str = None, should_stream: bool = False) -> file:
+def open(path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False) -> file:
     """Loads an IFC dataset from a filepath
 
-    You can specify a file format. If no format is given, it is guessed from its extension.
-    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
+    You can specify a file format. If no format is given, it is guessed from
+    its extension. Currently supported specified format: .ifc | .ifcZIP |
+    .ifcXML.
 
     You can then filter by element ID, class, etc, and subscript by id or guid.
 
