@@ -8,6 +8,9 @@ h1, h2, h3, h4 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+h1 code.literal {
+    background: none;
+}
 a {
     text-decoration: none;
 }
@@ -16,6 +19,7 @@ a {
 }
 .sidebar-brand-text {
     font-size: 1rem;
+    text-align: center;
 }
 .blockbutton {
     max-width: 500px;
