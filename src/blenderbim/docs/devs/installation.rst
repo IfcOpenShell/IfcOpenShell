@@ -160,7 +160,7 @@ Before running it follow the instructions descibed after `rem` tags.
     mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
 
     echo Copy over compiled IfcOpenShell files...
-    copy %blenderbim%\libs\site\packages\ifcopenshell\*_wrapper* %cd%\src\ifcopenshell-python\ifcopenshell\
+    copy "%blenderbim%\libs\site\packages\ifcopenshell\*_wrapper*" "%cd%\src\ifcopenshell-python\ifcopenshell\"
 
     echo Remove the IfcOpenShell dependency...
     rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell"
