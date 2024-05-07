@@ -45,7 +45,7 @@ except BaseException:
     CodeEdit = QtWidgets.QPlainTextEdit
 
 
-class StdoutRedirector(object):
+class StdoutRedirector:
     """A class for redirecting stdout to this Text widget."""
 
     def __init__(self, widget):

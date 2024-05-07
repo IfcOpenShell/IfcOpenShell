@@ -122,7 +122,7 @@ class geometry_creation_thread(QtCore.QThread):
         self.signals.completed.emit((it, self.f, list(_())))
 
 
-class configuration(object):
+class configuration:
     def __init__(self):
         try:
             import ConfigParser

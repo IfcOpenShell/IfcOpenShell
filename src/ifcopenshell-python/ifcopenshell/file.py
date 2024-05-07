@@ -176,7 +176,7 @@ class Transaction:
 file_dict = {}
 
 
-class file(object):
+class file:
     """Base class for containing IFC files.
 
     Class has instance methods for filtering by element Id, Type, etc.
