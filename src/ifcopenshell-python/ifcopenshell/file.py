@@ -550,20 +550,26 @@ class file:
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
+    def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
-        :param format: Force use of a specific format. Guessed from file name if None.
-        Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
-        For zipped .ifcXML use format=".ifcXML" with zipped=True
+        :param format: Force use of a specific format. Guessed from file name
+            if None.  Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to
+            format=".ifc" with zipped=True) For zipped .ifcXML use
+            format=".ifcXML" with zipped=True
+        :type format: str
         :param zipped: zip the file after it is written
+        :type zipped: bool
 
-        Examples:
-        >>> model.write("path/to/model.ifc")
-        >>> model.write("path/to/model.ifcXML")
-        >>> model.write("path/to/model.ifcZIP")
-        >>> model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
-        >>> model.write("path/to/model.anyextension", format=".ifcXML")
+        Example:
+
+        .. code:: python
+
+            model.write("path/to/model.ifc")
+            model.write("path/to/model.ifcXML")
+            model.write("path/to/model.ifcZIP")
+            model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
+            model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -595,7 +601,7 @@ class file:
         return
 
     @staticmethod
-    def from_string(s: str) -> file:
+    def from_string(s: str) -> "file":
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod

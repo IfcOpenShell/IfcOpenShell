@@ -16,18 +16,42 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The entry module for IfcOpenShell
+"""Welcome to IfcOpenShell! IfcOpenShell provides a way to read and write IFCs.
 
-Typically used for opening an IFC via a filepath, or accessing one of the
-submodules.
+IfcOpenShell can open IFC files, read entities (such as walls, buildings,
+properties, systems, etc), edit attributes, write out ``.ifc`` files and more.
+
+This module provides primitive functions to interact with IFC, including:
+
+- For most users, you can open and read IFC models, see docs for :func:`open`.
+  This returns an :class:`file` object representing the IFC model. You can then
+  query the model to filter elements.
+- For developers, you can query the schema itself, see docs for
+  :func:`schema_by_name`. This returns a schema object which you can use to
+  analyse the definitions of IFC classes and data types.
+
+You may also be interested in:
+
+- For model authoring and editing operations, see :mod:`ifcopenshell.api`.
+- For extracting information from models, see :mod:`ifcopenshell.util`.
+- For processing geometry, see :mod:`ifcopenshell.geom`.
+
+
+For more details, consult https://docs.ifcopenshell.org/
 
 Example:
 
 .. code:: python
 
     import ifcopenshell
+
     print(ifcopenshell.version) # v0.7.0-1b1fd1e6
+
     model = ifcopenshell.open("/path/to/model.ifc")
+    walls = model.by_type("IfcWall")
+
+    for wall in walls:
+        print(wall.Name)
 """
 
 import os
@@ -219,7 +243,7 @@ def schema_by_name(
 
 
 def guess_format(path: Path) -> Union[str | None]:
-    """Try to guess format using file extension
+    """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
     file, which is plaintext and stores data using the STEP Physical File
@@ -228,6 +252,9 @@ def guess_format(path: Path) -> Union[str | None]:
     This will return the canonical form of the format. For example, if a path
     has the extension of .xml or .ifcxml (case insensitive), it will return
     .ifcXML.
+
+    Users generally won't call this function. The :func:`open` function uses
+    this internally to guess the file format.
 
     :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
     """
@@ -245,4 +272,5 @@ def guess_format(path: Path) -> Union[str | None]:
     return None
 
 
-from .main import *
+version = ifcopenshell_wrapper.version()
+get_log = ifcopenshell_wrapper.get_log
