@@ -936,18 +936,17 @@ class OverrideDuplicateMoveLinked(bpy.types.Operator):
 
 
 class DuplicateMoveLinkedAggregateMacro(bpy.types.Macro):
-    bl_description = "Create a new linked aggregate"
+    bl_description = "Create and move a new linked aggregate"
     bl_idname = "bim.object_duplicate_move_linked_aggregate_macro"
-    bl_label = "IFC Duplicate Linked Aggregate"
+    bl_label = "IFC Duplicate and Move Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
 
 class DuplicateMoveLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.object_duplicate_move_linked_aggregate"
-    bl_label = "IFC Duplicate Linked Aggregate"
+    bl_label = "IFC Duplicate and Move Linked Aggregate"
     bl_options = {"REGISTER", "UNDO"}
     is_interactive: bpy.props.BoolProperty(name="Is Interactive", default=True)
-    location_from_3d_cursor: bpy.props.BoolProperty(name="Position Duplicate Based on 3d cursor", default=False)
 
     @classmethod
     def poll(cls, context):
@@ -960,7 +959,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context)
 
     @staticmethod
-    def execute_ifc_duplicate_linked_aggregate_operator(self, context):
+    def execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=False):
         self.new_active_obj = None
         self.group_name = "BBIM_Linked_Aggregate"
         self.pset_name = "BBIM_Linked_Aggregate"
@@ -1075,13 +1074,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                     ]
                     tool.Ifc.run("group.assign_group", group=linked_aggregate_group[0], products=new)
 
-        def get_location_from_3d_cursor(old_to_new):
-            for new in old_to_new.values():
-                aggregate = ifcopenshell.util.element.get_aggregate(new[0])
-                if aggregate:
-                    base_obj = tool.Ifc.get_object(aggregate)
-                    base_obj_location = base_obj.location.copy()
-                    break
+        def get_location_from_3d_cursor(old_to_new, aggregate):
+            base_obj = tool.Ifc.get_object(aggregate)
+            base_obj_location = base_obj.location.copy()
 
             for new in old_to_new.values():
                 new_obj = tool.Ifc.get_object(new[0])
@@ -1114,13 +1109,28 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
 
         custom_incremental_naming_for_element_assembly(old_to_new)
 
-        if self.location_from_3d_cursor:
-            get_location_from_3d_cursor(old_to_new)
+        if location_from_3d_cursor:
+            get_location_from_3d_cursor(old_to_new, selected_element)
 
         blenderbim.bim.handler.refresh_ui_data()
 
         return old_to_new
 
+
+class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
+    bl_idname = "bim.duplicate_linked_aggregate_to_3d_cursor"
+    bl_label = "IFC Duplicate Linked Aggregate to 3d Cursor"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return len(context.selected_objects) > 0
+
+    def execute(self, context):
+        return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
+
+    def _execute(self, context):
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=True)
 
 class RefreshLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.refresh_linked_aggregate"
