@@ -95,7 +95,10 @@ html_theme_options = {
         "color-background-border": "#cfd0cb",
         "color-foreground-primary": "#2e3436",
         "color-sidebar-item-background--hover": "#f7f7f6",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
+        "color-link--visited--hover": "#d98014",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
     "dark_css_variables": {
@@ -106,7 +109,10 @@ html_theme_options = {
         "color-background-border": "#2e3436",
         "color-foreground-primary": "#eeeeec",
         "color-sidebar-item-background--hover": "#2e3436",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
+        "color-link--visited--hover": "#d98014",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
 
