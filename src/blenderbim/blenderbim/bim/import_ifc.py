@@ -2063,7 +2063,7 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
-        self.distance_limit = 1000
+        self.distance_limit = 10000
         self.false_origin = None
         self.element_offset = 0
         self.element_limit = 30000
