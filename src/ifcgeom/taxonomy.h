@@ -137,21 +137,32 @@ typedef item const* ptr;
 			};
 
 			struct piecewise_function : public implicit_item {
-				DECLARE_PTR(piecewise_function)
+            DECLARE_PTR(piecewise_function)
 
-				piecewise_function(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance){};
-				piecewise_function(ifcopenshell::geometry::Settings* settings) : settings_(settings){};
+				using spans = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
+
+            piecewise_function(const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), settings_(settings), spans_(s){};
+            piecewise_function(const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), settings_(settings)
+				{
+                for (auto& pwf : pwfs) {
+                    spans_.insert(spans_.end(), pwf->spans_.begin(), pwf->spans_.end());
+                }
+				};
             piecewise_function(piecewise_function&&) = default;
             piecewise_function(const piecewise_function&) = default;
 
-				ifcopenshell::geometry::Settings* settings_ = nullptr;
+				const ifcopenshell::geometry::Settings* settings_ = nullptr;
 
-				// length of span, function to evaluate span
-				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;
+				bool is_empty() const { return spans_.empty(); }
 
 				double length() const {
-                    return std::accumulate(spans.begin(), spans.end(), 0.0, [](const auto& v,const auto& s) { return v + s.first; });
-                }
+					if (!length_.has_value()) {
+						length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s.first; });
+					}
+               return *length_;
+            }
 
 				void print(std::ostream& o, int = 0) const {
 					o << "piecewise_function" << std::endl;
@@ -165,10 +176,34 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				virtual item::ptr evaluate() const;
-            item::ptr evaluate(double ustart, double uend,unsigned nsteps) const;
+				item::ptr evaluate() const override;
 
+            /// @brief evaluates the piecewise function between ustart and uend
+            /// @param ustart starting location - taken as 0.0 if before start
+            /// @param uend ending location - taken as length if beyond end
+            /// @param nsteps number of steps to evaluate
+            /// @return taxonomy::loop::ptr
+            item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
+
+            /// @brief evaluates the piecewise function between ustart and uend
+            /// @param ustart starting location - taken as 0.0 if before start
+            /// @param uend ending location - taken as length if beyond end
+            /// @param nsteps number of steps to evaluate
+            /// @return taxonomy::loop::ptr and vector of u values
+            std::pair<item::ptr, std::vector<double>> evaluate2(double ustart, double uend, unsigned nsteps) const;
+
+				/// @brief evaluates the piecewise function at u
+				/// @param u u is constrained to be between 0 and length
+				/// @return 4x4 placement matrix
 				Eigen::Matrix4d evaluate(double u) const;
+
+            private:
+               std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+               spans spans_;
+               mutable double current_span_start_ = 0;
+				   mutable double current_span_end_ = 0;
+				   mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
+               mutable boost::optional<double> length_;
 			};
 
 #ifdef TAXONOMY_USE_SHARED_PTR
@@ -1156,7 +1191,8 @@ typedef item const* ptr;
                         if (loop->pwf.is_initialized()) {
                             pwf_ = loop->pwf;
                         } else {
-                            pwf_ = taxonomy::make<taxonomy::piecewise_function>();
+                            taxonomy::piecewise_function::spans spans;
+                            spans.reserve(loop->children.size());
                             for (auto& edge : loop->children) {
                                 // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
                                 if (edge->basis) {
@@ -1174,8 +1210,9 @@ typedef item const* ptr;
                                     axis = refDirection.cross(Y).normalized();
                                     return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
                                 };
-                                (*pwf_)->spans.emplace_back(l, fn);
+                                spans.emplace_back(l, fn);
                             }
+                            pwf_ = taxonomy::make<taxonomy::piecewise_function>(spans);
                             loop->pwf = pwf_;
                         }
                     }
