@@ -27,11 +27,10 @@ import re
 import numbers
 import zipfile
 import functools
+import ifcopenshell
 from pathlib import Path
 from typing import Optional, Any
 
-import ifcopenshell.util.element
-import ifcopenshell.util.file
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
@@ -120,10 +119,18 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if ifcopenshell.util.element.has_element_reference(attribute, element):
+                if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         return inverses
+
+    def has_element_reference(self, value: Any, element: ifcopenshell.entity_instance) -> bool:
+        if isinstance(value, (tuple, list)):
+            for v in value:
+                if self.has_element_reference(v, element):
+                    return True
+            return False
+        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
@@ -376,14 +383,11 @@ class file(object):
             match = re.match(reg, self.wrapped_data.schema)
             version_tuple = tuple(
                 map(
-                    lambda pp: int(pp[1][len(pp[0]):]) if pp[1] else None,
+                    lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
                     ((p, match.group(p)) for p in prefixes),
                 )
             )
-            return "".join(
-                "".join(map(str, t)) if t[1] else ""
-                for t in zip(prefixes, version_tuple[0:2])
-            )
+            return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
         elif attr == "schema_identifier":
             return self.wrapped_data.schema
         elif attr == "schema_version":
@@ -576,7 +580,7 @@ class file(object):
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if format == None:
-            format = ifcopenshell.util.file.guess_format(path)
+            format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
             serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
             serializer.finalize()
