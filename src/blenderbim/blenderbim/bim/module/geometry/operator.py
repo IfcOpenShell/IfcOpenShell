@@ -926,7 +926,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     if r.is_a("IfcRelAssignsToGroup")
                     if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                 ]
-                tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], product=new[0])
+                tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
