@@ -196,33 +196,36 @@ class entity_instance:
 
     @staticmethod
     def walk(f: Callable[[Any], bool], g: Callable[[Any], Any], value: Any) -> Any:
-        """
-         Applies transformation to `value` based on a given condition.
-         If value is a nested structure (e.g., a list or a tuple) will apply transformation to it's elements.
-        .
+        """Applies a transformation to `value` based on a given condition.
 
-         :param f: A callable that takes a single argument and returns a boolean value. It represents the condition
-         :type f: Callable
-         :param g: A callable that takes a single argument and returns a transformed value. It represents the transformation
-         :type g: Callable
-         :param value: Any object, the input value to be processed
-         :type value: Any
-         :return: Transformed value
-         :rtype: Any
+        If value is a nested structure (e.g., a list or a tuple) will apply
+        transformation to it's elements.
 
-         Example:
+        :param f: A callable that takes a single argument and returns a boolean
+            value. It represents the condition.
+        :type f: Callable
+        :param g: A callable that takes a single argument and returns a
+            transformed value. It represents the transformation.
+        :type g: Callable
+        :param value: Any object, the input value to be processed
+        :type value: Any
+        :return: Transformed value
+        :rtype: Any
 
-         .. code:: python
+        Example:
 
-             # Define condition and transformation functions
-             condition = lambda v: v == old
-             transform = lambda v: new
+        .. code:: python
 
-             # Usage example
-             attribute_value = element.RelatedElements
-             print(old in attribute_value, new in attribute_value) # True, False
-             result = element.walk(condition, transform, element.RelatedElements)
-             print(old in attribute_value, new in attribute_value) # False, True
+            # Define condition and transformation functions
+            condition = lambda v: v == old
+            transform = lambda v: new
+            
+            # Usage example
+            attribute_value = element.RelatedElements
+            print(old in attribute_value, new in attribute_value) # True, False
+
+            result = element.walk(condition, transform, element.RelatedElements)
+            print(old in attribute_value, new in attribute_value) # False, True
         """
 
         if isinstance(value, (tuple, list)):

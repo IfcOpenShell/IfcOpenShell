@@ -16,7 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""High level user-oriented IFC authoring capabilities"""
+"""High level IFC authoring and editing functions
+
+Authoring, editing, and deleting IFC data requires a detailed understanding of
+the rules of the IFC schema. This API module provides simple to use authoring
+functions that hide this complexity from you. Things like managing differences
+between IFC versions, tracking owernship changes, or cleaning up after orphaned
+relationships are all handled automatically.
+"""
 
 import json
 import numpy
@@ -24,13 +31,12 @@ import pkgutil
 import inspect
 import importlib
 import ifcopenshell
-import ifcopenshell.api
 from typing import Callable, Any, Optional
 from functools import partial
 
 
-pre_listeners = {}
-post_listeners = {}
+pre_listeners: dict[str, dict] = {}
+post_listeners: dict[str, dict] = {}
 
 
 def batching_argument_deprecation(
@@ -128,8 +134,8 @@ ARGUMENTS_DEPRECATION = {
 }
 
 
-CACHED_USECASE_CLASSES = {}
-CACHED_USECASES = {}
+CACHED_USECASE_CLASSES: dict[str, Callable] = {}
+CACHED_USECASES: dict[str, Callable] = {}
 
 
 def run(
@@ -250,8 +256,6 @@ def extract_docs(module, usecase):
     import typing
     import collections
 
-    results = []
-
     inputs = collections.OrderedDict()
 
     function_init = getattr(getattr(ifcopenshell.api, module), usecase).Usecase.__init__
@@ -307,7 +311,7 @@ def wrap_usecase(usecase_path, usecase):
         try:
             result = usecase(*args, **settings)
         except TypeError as e:
-            msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(Usecase.__init__)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
+            msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(usecase)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
             raise TypeError(msg) from e
 
         if should_run_listeners:
