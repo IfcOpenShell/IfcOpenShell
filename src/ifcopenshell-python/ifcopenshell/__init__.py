@@ -36,8 +36,8 @@ from __future__ import print_function
 
 import os
 import sys
-import tempfile
 import zipfile
+import tempfile
 from pathlib import Path
 from typing import Optional
 
@@ -73,9 +73,11 @@ from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
+
 try:
     from .stream import stream, stream_entity
-except: pass
+except:
+    pass
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -84,11 +86,13 @@ UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 
 class Error(Exception):
     """Error used when a generic problem occurs"""
+
     pass
 
 
 class SchemaError(Error):
     """Error used when an IFC schema related problem occurs"""
+
     pass
 
 
@@ -114,7 +118,7 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
     """
     path = Path(path)
     if format is None:
-        format = ifcopenshell.util.file.guess_format(path)
+        format = guess_format(path)
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:
@@ -141,8 +145,7 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
             NO_HEADER: (Error, "Unable to parse IFC SPF header"),
             UNSUPPORTED_SCHEMA: (
                 SchemaError,
-                "Unsupported schema: %s"
-                % ",".join(f.header.file_schema.schema_identifiers),
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
             ),
         }[f.good().value()]
         raise exc(msg)
@@ -224,6 +227,33 @@ def schema_by_name(
     else:
         schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
     return ifcopenshell_wrapper.schema_by_name(schema)
+
+
+def guess_format(path: Path) -> Union[str | None]:
+    """Try to guess format using file extension
+
+    IFCs may be serialised as different formats. The most common is a ``.ifc``
+    file, which is plaintext and stores data using the STEP Physical File
+    format. IFC can also be stored as a Zipfile, XML, JSON, or SQL.
+
+    This will return the canonical form of the format. For example, if a path
+    has the extension of .xml or .ifcxml (case insensitive), it will return
+    .ifcXML.
+
+    :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".ifc":
+        return ".ifc"
+    elif suffix in (".ifczip", ".zip"):
+        return ".ifcZIP"
+    elif suffix in (".ifcxml", ".xml"):
+        return ".ifcXML"
+    elif suffix in (".ifcjson", ".json"):
+        return ".ifcJSON"
+    elif suffix in (".ifcsqlite", ".sqlite", ".db"):
+        return ".ifcSQLite"
+    return None
 
 
 from .main import *
