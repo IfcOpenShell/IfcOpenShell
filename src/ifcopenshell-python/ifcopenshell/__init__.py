@@ -168,7 +168,7 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     """Creates a new IFC entity that does not belong to an IFC file object
 
     Note that it is more common to create entities within a existing file
-    object. See :meth:`ifcopenshell.file.file.create_entity`.
+    object. See :meth:`ifcopenshell.file.create_entity`.
 
     :param type: Case insensitive name of the IFC class
     :type type: string
@@ -177,7 +177,7 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     :param args: The positional arguments of the IFC class
     :param kwargs: The keyword arguments of the IFC class
     :returns: An entity instance
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
