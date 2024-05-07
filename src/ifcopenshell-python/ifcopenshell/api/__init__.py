@@ -158,9 +158,6 @@ def run(
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
 
-    # see #4531
-    if usecase_path in ARGUMENTS_DEPRECATION:
-        usecase_path, settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
 
     # TODO: settings serialization for client-server systems
     # def serialise_entity_instance(entity):
@@ -304,9 +301,14 @@ def wrap_usecase(usecase_path, usecase):
 
     def wrapper(*args, should_run_listeners: bool = True, **settings):
         ifc_file = args[0] if args else None
+        nonlocal usecase_path
         if should_run_listeners:
             for listener in pre_listeners.get(usecase_path, {}).values():
                 listener(usecase_path, ifc_file, settings)
+
+        # see #4531
+        if usecase_path in ARGUMENTS_DEPRECATION:
+            usecase_path, settings = ARGUMENTS_DEPRECATION[usecase_path](usecase_path, settings)
 
         try:
             result = usecase(*args, **settings)
