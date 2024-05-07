@@ -17,11 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import annotations
-
 import os
 import re
 import numbers
@@ -33,13 +28,6 @@ from typing import Optional, Any
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-
-try:
-    # Python 2
-    basestring
-except NameError:
-    # Python 3 or newer
-    basestring = (str, bytes)
 
 
 class Transaction:
@@ -403,7 +391,7 @@ class file(object):
     def __getitem__(self, key):
         if isinstance(key, numbers.Integral):
             return entity_instance(self.wrapped_data.by_id(key), self)
-        elif isinstance(key, basestring):
+        elif isinstance(key, (str, bytes)):
             return entity_instance(self.wrapped_data.by_guid(str(key)), self)
 
     def by_id(self, id: int) -> ifcopenshell.entity_instance:
