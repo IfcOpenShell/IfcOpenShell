@@ -29,7 +29,7 @@ def indent(n, s):
     return "\n".join(" "*n + l for l in splitted)
 
 
-class Base(object):
+class Base:
     """
     A base class for all code generation classes. Currently only working around
     some python 2/3 incompatibilities in terms of unicode file handling.
