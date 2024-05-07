@@ -60,7 +60,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     should use ``get_local_placement`` instead.
 
     :param placement: The IfcLocalPlacement enitity
-    :type placement: ifcopenshell.entity_instance.entity_instance
+    :type placement: ifcopenshell.entity_instance
     :return: A 4x4 numpy matrix
     :rtype: MatrixType
     """
@@ -118,7 +118,7 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         matrix = ifcopenshell.util.placement.get_local_placement(placement)
 
     :param placement: The IfcLocalPlacement entity
-    :type placement: ifcopenshell.entity_instance.entity_instance
+    :type placement: ifcopenshell.entity_instance
     :return: A 4x4 numpy matrix
     :rtype: MatrixType
     """
@@ -138,7 +138,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     ``get_mappeditem_transformation`` instead.
 
     :param item: The IfcCartesianTransformationOperator entity
-    :type item: ifcopenshell.entity_instance.entity_instance
+    :type item: ifcopenshell.entity_instance
     :return: A 4x4 numpy transformation matrix
     :rtype: MatrixType
     """
@@ -184,7 +184,7 @@ def get_mappeditem_transformation(item: ifcopenshell.entity_instance) -> MatrixT
     transformation matrix.
 
     :param item: The IfcMappedItem entity
-    :type item: ifcopenshell.entity_instance.entity_instance
+    :type item: ifcopenshell.entity_instance
     :return: A 4x4 numpy transformation matrix
     :rtype: MatrixType
     """
@@ -201,7 +201,7 @@ def get_storey_elevation(storey: ifcopenshell.entity_instance) -> float:
     its placement, or as a fallback the ``Elevation`` attribute.
 
     :param storey: The IfcBuildingStorey entity
-    :type storey: ifcopenshell.entity_instance.entity_instance
+    :type storey: ifcopenshell.entity_instance
     :return: The elevation in project units
     :rtype: float
     """

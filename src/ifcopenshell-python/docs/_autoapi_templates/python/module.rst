@@ -17,8 +17,8 @@
 {% block subpackages %}
 {% set visible_subpackages = obj.subpackages|selectattr("display")|list %}
 {% if visible_subpackages %}
-Subpackagesa
-------------
+Subpackages
+-----------
 .. toctree::
    :titlesonly:
    :maxdepth: 1

@@ -307,7 +307,7 @@ class file:
         :param args: The positional arguments of the IFC class
         :param kwargs: The keyword arguments of the IFC class
         :returns: An entity instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 
@@ -402,8 +402,8 @@ class file:
 
         :raises RuntimeError: If `id` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         return self[id]
 
@@ -415,8 +415,8 @@ class file:
 
         :raises RuntimeError: If `guid` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         """
         return self[guid]
@@ -426,9 +426,9 @@ class file:
         If the entity already exists, it is not re-added. Existence of entity is checked by it's `.identity()`.
 
         :param inst: The entity instance to add
-        :type inst: ifcopenshell.entity_instance.entity_instance
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
 
         if self.transaction:
@@ -452,8 +452,8 @@ class file:
 
         :raises RuntimeError: If `type` is not found in IFC schema.
 
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
@@ -465,13 +465,13 @@ class file:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
         :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
         :type max_levels: bool
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -489,12 +489,12 @@ class file:
         """Return a list of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
         :param with_attribute_indices: Returns pairs of <i, idx>
            where i[idx] is inst or contains inst. Requires allow_duplicate=True
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
@@ -514,7 +514,7 @@ class file:
         """Returns the number of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :returns: The total number of references
         :rtype: int
         """
@@ -528,7 +528,7 @@ class file:
         the reference to the deleted will be removed from the aggregate.
 
         :param inst: The entity instance to delete
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :rtype: None
         """
         if self.transaction:
