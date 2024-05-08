@@ -18,14 +18,18 @@
 ################################################################################
 
 # check for 3ds Max SDK
-foreach(max_year RANGE 2014 2030)
+# JW do that in reverse order to only include highest found SDK in project files 
+# JW apparently cmake/foreach doesnt understand negative step nor down sequence
+foreach(max_year RANGE 2030 2029 2028 2027 2026 2025 2024 2023 2022 2021 2020 2019 2018 2017)
     set(max_sdk "$ENV{ADSK_3DSMAX_SDK_${max_year}}")
 
     if(NOT "${max_sdk}" STREQUAL "")
-        message(STATUS "Autodesk 3ds Max SDK ${max_year} found at ${max_sdk}")
+        message(STATUS "Highest Autodesk 3ds Max SDK ${max_year} found at ${max_sdk}")
         list(APPEND FOUND_MAX_YEARS ${max_year})
         list(APPEND FOUND_MAX_SDKS ${max_sdk})
         set(HAS_MAX TRUE)
+        # break out of loop to only build for  highest SDK installed
+        break()
     endif()
 endforeach()
 
