@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def update_group_products(file, group=None, products=None) -> None:

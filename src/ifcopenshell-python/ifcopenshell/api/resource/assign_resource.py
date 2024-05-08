@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def assign_resource(file, relating_resource=None, related_object=None) -> None:

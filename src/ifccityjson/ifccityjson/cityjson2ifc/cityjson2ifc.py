@@ -20,6 +20,7 @@
 import os
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 from datetime import datetime
 
 from .geometry import GeometryIO

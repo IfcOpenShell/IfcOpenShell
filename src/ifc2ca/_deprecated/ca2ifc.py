@@ -19,6 +19,7 @@
 
 import json
 import ifcopenshell
+import ifcopenshell.guid
 import os
 from datetime import datetime
 

@@ -20,6 +20,7 @@
 import uuid
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifctester.facet
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
 

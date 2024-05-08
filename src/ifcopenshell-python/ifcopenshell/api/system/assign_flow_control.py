@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def assign_flow_control(file, relating_flow_element=None, related_flow_control=None) -> None:

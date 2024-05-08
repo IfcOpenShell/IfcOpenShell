@@ -21,6 +21,7 @@ from pathlib import Path
 import bpy
 import mathutils
 import ifcopenshell
+import ifcopenshell.guid
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile

@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def assign_structural_analysis_model(file, product=None, structural_analysis_model=None) -> None:

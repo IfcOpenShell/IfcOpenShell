@@ -20,6 +20,7 @@ import re
 import bpy
 import json
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector

@@ -20,6 +20,7 @@ import numpy
 import pytest
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.placement
 
 

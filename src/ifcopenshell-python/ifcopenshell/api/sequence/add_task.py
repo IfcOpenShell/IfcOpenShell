@@ -18,6 +18,7 @@
 
 import ifcopenshell.api
 import ifcopenshell
+import ifcopenshell.guid
 
 
 def add_task(
