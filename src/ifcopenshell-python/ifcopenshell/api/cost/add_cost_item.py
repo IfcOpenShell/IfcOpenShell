@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def add_cost_item(file, cost_schedule=None, cost_item=None) -> None:

@@ -3,6 +3,7 @@ import json
 import lark
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import ifcopenshell.guid
 import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
 from blenderbim.bim.prop import BIMFacet

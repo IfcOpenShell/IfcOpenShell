@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 class TestRemovePerson(test.bootstrap.IFC4):

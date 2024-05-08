@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem") -> ifcopenshell.entity_instance:

@@ -19,6 +19,7 @@
 import operator
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 class TestEditPset(test.bootstrap.IFC4):

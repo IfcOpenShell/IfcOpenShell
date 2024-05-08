@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.guid
 import ifcsverchok.helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode

@@ -19,6 +19,7 @@
 RUN_FROM_DEV_REPO = False
 
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.attribute
 import glob
 import sys
