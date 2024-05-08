@@ -20,65 +20,62 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, material=None):
-        """Removes a material set
+def remove_material_set(file, material=None) -> None:
+    """Removes a material set
 
-        All set items, such as layers, profiles, or constituents will also be
-        removed. However, the materials and profile curves used by the layers,
-        profiles and constituents will not be removed.
+    All set items, such as layers, profiles, or constituents will also be
+    removed. However, the materials and profile curves used by the layers,
+    profiles and constituents will not be removed.
 
-        :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
-            IfcMaterialProfileSet entity you want to remove.
-        :type material: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
+        IfcMaterialProfileSet entity you want to remove.
+    :type material: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a material set
-            material_set = ifcopenshell.api.run("material.add_material_set", model,
-                name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
+        # Create a material set
+        material_set = ifcopenshell.api.run("material.add_material_set", model,
+            name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
-            # Create some materials
-            gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        # Create some materials
+        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
-            # Add some layers
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        # Add some layers
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
 
-            # Completely delete the set and all layers. The gypsum and steel
-            # material still exist, though.
-            ifcopenshell.api.run("material.remove_material_set", model, material=material_set)
-        """
+        # Completely delete the set and all layers. The gypsum and steel
+        # material still exist, though.
+        ifcopenshell.api.run("material.remove_material_set", model, material=material_set)
+    """
 
-        self.file = file
-        self.settings = {"material": material}
+    settings = {"material": material}
 
-    def execute(self):
-        inverse_elements = self.file.get_inverse(self.settings["material"])
-        if self.settings["material"].is_a("IfcMaterialLayerSet"):
-            set_items = self.settings["material"].MaterialLayers or []
-        elif self.settings["material"].is_a("IfcMaterialProfileSet"):
-            set_items = self.settings["material"].MaterialProfiles or []
-        elif self.settings["material"].is_a("IfcMaterialConstituentSet"):
-            set_items = self.settings["material"].MaterialConstituents or []
-        elif self.settings["material"].is_a("IfcMaterialList"):
-            set_items = []
-        for set_item in set_items:
-            self.file.remove(set_item)
-        self.file.remove(self.settings["material"])
-        for inverse in inverse_elements:
-            if inverse.is_a("IfcRelAssociatesMaterial"):
-                history = inverse.OwnerHistory
-                self.file.remove(inverse)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-            elif inverse.is_a("IfcMaterialProperties"):
-                for prop in inverse.Properties or []:
-                    self.file.remove(prop)
-                self.file.remove(inverse)
+    inverse_elements = file.get_inverse(settings["material"])
+    if settings["material"].is_a("IfcMaterialLayerSet"):
+        set_items = settings["material"].MaterialLayers or []
+    elif settings["material"].is_a("IfcMaterialProfileSet"):
+        set_items = settings["material"].MaterialProfiles or []
+    elif settings["material"].is_a("IfcMaterialConstituentSet"):
+        set_items = settings["material"].MaterialConstituents or []
+    elif settings["material"].is_a("IfcMaterialList"):
+        set_items = []
+    for set_item in set_items:
+        file.remove(set_item)
+    file.remove(settings["material"])
+    for inverse in inverse_elements:
+        if inverse.is_a("IfcRelAssociatesMaterial"):
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcMaterialProperties"):
+            for prop in inverse.Properties or []:
+                file.remove(prop)
+            file.remove(inverse)

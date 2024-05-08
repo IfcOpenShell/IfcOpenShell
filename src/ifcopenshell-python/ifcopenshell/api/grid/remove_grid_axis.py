@@ -19,36 +19,33 @@
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, axis=None):
-        """Removes a grid axis from a grid
+def remove_grid_axis(file, axis=None) -> None:
+    """Removes a grid axis from a grid
 
-        :param axis: The IfcGridAxis you want to remove.
-        :type axis: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param axis: The IfcGridAxis you want to remove.
+    :type axis: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-            # A pretty standard rectangular grid, with only two axes.
-            grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
-            axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
-                axis_tag="A", uvw_axes="UAxes", grid=grid)
-            axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
-                axis_tag="1", uvw_axes="VAxes", grid=grid)
+        # A pretty standard rectangular grid, with only two axes.
+        grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
+        axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+            axis_tag="A", uvw_axes="UAxes", grid=grid)
+        axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+            axis_tag="1", uvw_axes="VAxes", grid=grid)
 
-            # Let's create a third so we can remove it later
-            axis_2 = ifcopenshell.api.run("grid.create_grid_axis", model,
-                axis_tag="2", uvw_axes="VAxes", grid=grid)
+        # Let's create a third so we can remove it later
+        axis_2 = ifcopenshell.api.run("grid.create_grid_axis", model,
+            axis_tag="2", uvw_axes="VAxes", grid=grid)
 
-            # Let's remove it!
-            ifcopenshell.api.run("grid.remove_grid_axis", model, axis=axis_2)
-        """
-        self.file = file
-        self.settings = {"axis": axis}
+        # Let's remove it!
+        ifcopenshell.api.run("grid.remove_grid_axis", model, axis=axis_2)
+    """
+    settings = {"axis": axis}
 
-    def execute(self):
-        if len(self.file.get_inverse(self.settings["axis"].AxisCurve)) == 1:
-            ifcopenshell.util.element.remove_deep(self.file, self.settings["axis"].AxisCurve)
-            self.file.remove(self.settings["axis"].AxisCurve)
-        self.file.remove(self.settings["axis"])
+    if len(file.get_inverse(settings["axis"].AxisCurve)) == 1:
+        ifcopenshell.util.element.remove_deep(file, settings["axis"].AxisCurve)
+        file.remove(settings["axis"].AxisCurve)
+    file.remove(settings["axis"])

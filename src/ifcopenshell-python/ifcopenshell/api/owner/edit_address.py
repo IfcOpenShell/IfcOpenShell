@@ -17,42 +17,39 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, address=None, attributes=None):
-        """Edits the attributes of an IfcAddress
+def edit_address(file, address=None, attributes=None) -> None:
+    """Edits the attributes of an IfcAddress
 
-        For more information about the attributes and data types of an
-        IfcAddress, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcAddress, consult the IFC documentation.
 
-        :param address: The IfcAddress entity you want to edit
-        :type address: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param address: The IfcAddress entity you want to edit
+    :type address: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # A snail mail address
-            postal = ifcopenshell.api.run("owner.add_address", model,
-                assigned_object=organisation, ifc_class="IfcPostalAddress")
-            ifcopenshell.api.run("owner.edit_address", model, address=postal,
-                attributes={"Purpose": "OFFICE", "AddressLines": ["42 Wallaby Way"],
-                "Town": "Sydney", "Region": "NSW", "PostalCode": "2000"})
+        # A snail mail address
+        postal = ifcopenshell.api.run("owner.add_address", model,
+            assigned_object=organisation, ifc_class="IfcPostalAddress")
+        ifcopenshell.api.run("owner.edit_address", model, address=postal,
+            attributes={"Purpose": "OFFICE", "AddressLines": ["42 Wallaby Way"],
+            "Town": "Sydney", "Region": "NSW", "PostalCode": "2000"})
 
-            # A phone or internet address
-            telecom = ifcopenshell.api.run("owner.add_address", model,
-                assigned_object=organisation, ifc_class="IfcTelecomAddress")
-            ifcopenshell.api.run("owner.edit_address", model, address=telecom,
-                attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
-                "ElectronicMailAddresses": ["bobthebuilder@example.com"],
-                "WWWHomePageURL": "https://thinkmoult.com"})
-        """
-        self.file = file
-        self.settings = {"address": address, "attributes": attributes or {}}
+        # A phone or internet address
+        telecom = ifcopenshell.api.run("owner.add_address", model,
+            assigned_object=organisation, ifc_class="IfcTelecomAddress")
+        ifcopenshell.api.run("owner.edit_address", model, address=telecom,
+            attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
+            "ElectronicMailAddresses": ["bobthebuilder@example.com"],
+            "WWWHomePageURL": "https://thinkmoult.com"})
+    """
+    settings = {"address": address, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["address"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["address"], name, value)

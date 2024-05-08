@@ -20,44 +20,41 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, Name="Unnamed", Description=None):
-        """Adds a new group
+def add_group(file, Name="Unnamed", Description=None) -> None:
+    """Adds a new group
 
-        An IFC group is an arbitrary collection of products, which are typically
-        physical. It may be used when there is no other more specific group
-        which may be used. Other types of groups include distribution systems,
-        which group together products that are connected and circulate a medium
-        (such as fluid or electricity), or zones, which group together spaces,
-        or structural load groups, which group together loads for structural
-        analysis, or inventories, which are groups of assets.
+    An IFC group is an arbitrary collection of products, which are typically
+    physical. It may be used when there is no other more specific group
+    which may be used. Other types of groups include distribution systems,
+    which group together products that are connected and circulate a medium
+    (such as fluid or electricity), or zones, which group together spaces,
+    or structural load groups, which group together loads for structural
+    analysis, or inventories, which are groups of assets.
 
-        :param Name: The name of the group. Defaults to "Unnamed"
-        :type Name: str, optional
-        :param Description: The description of the purpose of the group.
-        :type Description: str, optional
-        :return: The newly created IfcGroup
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param Name: The name of the group. Defaults to "Unnamed"
+    :type Name: str, optional
+    :param Description: The description of the purpose of the group.
+    :type Description: str, optional
+    :return: The newly created IfcGroup
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
-        """
-        self.file = file
-        self.settings = {
-            "Name": Name or "Unnamed",
-            "Description": Description,
+        ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+    """
+    settings = {
+        "Name": Name or "Unnamed",
+        "Description": Description,
+    }
+
+    return file.create_entity(
+        "IfcGroup",
+        **{
+            "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "Name": settings["Name"],
+            "Description": settings["Description"],
         }
-
-    def execute(self):
-        return self.file.create_entity(
-            "IfcGroup",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "Name": self.settings["Name"],
-                "Description": self.settings["Description"],
-            }
-        )
+    )

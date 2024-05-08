@@ -19,48 +19,45 @@
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, library: ifcopenshell.entity_instance):
-        """Adds a new reference to a library
+def add_reference(file: ifcopenshell.file, library: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Adds a new reference to a library
 
-        A library represents an external data source, such as a database,
-        spreadsheet, API, or something else that contains information related to
-        the IFC project. Within a library, there will be one or more references,
-        such as reference to a particular table or row in a database, or a sheet
-        and row or column in a spreadsheet, a URI in a linked data Brickschema
-        file, 32-bit decimal BACnetObjectIdentifier in a BACnet system, IP
-        address in a network, and so on.
+    A library represents an external data source, such as a database,
+    spreadsheet, API, or something else that contains information related to
+    the IFC project. Within a library, there will be one or more references,
+    such as reference to a particular table or row in a database, or a sheet
+    and row or column in a spreadsheet, a URI in a linked data Brickschema
+    file, 32-bit decimal BACnetObjectIdentifier in a BACnet system, IP
+    address in a network, and so on.
 
-        These references can then be related to IFC elements. You cannot relate
-        an IFC element directly to a library, it must be related to one of the
-        library's references.
+    These references can then be related to IFC elements. You cannot relate
+    an IFC element directly to a library, it must be related to one of the
+    library's references.
 
-        :param library: The IfcLibraryInformation element to add a reference to
-        :type library: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcLibraryReference element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param library: The IfcLibraryInformation element to add a reference to
+    :type library: ifcopenshell.entity_instance
+    :return: The newly created IfcLibraryReference element
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
 
-            # Let's create a reference to a single AHU in our Brickschema dataset
-            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-            ifcopenshell.api.run("library.edit_reference", model,
-                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
-        """
-        self.file = file
-        self.settings = {
-            "library": library,
-        }
+        # Let's create a reference to a single AHU in our Brickschema dataset
+        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+        ifcopenshell.api.run("library.edit_reference", model,
+            reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+    """
+    settings = {
+        "library": library,
+    }
 
-    def execute(self) -> ifcopenshell.entity_instance:
-        if self.file.schema == "IFC2X3":
-            reference = self.file.createIfcLibraryReference()
-            references = list(self.settings["library"].LibraryReference or [])
-            references.append(reference)
-            self.settings["library"].LibraryReference = references
-            return reference
-        return self.file.createIfcLibraryReference(ReferencedLibrary=self.settings["library"])
+    if file.schema == "IFC2X3":
+        reference = file.createIfcLibraryReference()
+        references = list(settings["library"].LibraryReference or [])
+        references.append(reference)
+        settings["library"].LibraryReference = references
+        return reference
+    return file.createIfcLibraryReference(ReferencedLibrary=settings["library"])

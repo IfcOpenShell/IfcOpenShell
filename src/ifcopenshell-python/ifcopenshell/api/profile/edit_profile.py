@@ -17,34 +17,31 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, profile=None, attributes=None):
-        """Edits the attributes of an IfcProfileDef
+def edit_profile(file, profile=None, attributes=None) -> None:
+    """Edits the attributes of an IfcProfileDef
 
-        For more information about the attributes and data types of an
-        IfcProfileDef, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcProfileDef, consult the IFC documentation.
 
-        :param profile: The IfcProfileDef entity you want to edit
-        :type profile: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param profile: The IfcProfileDef entity you want to edit
+    :type profile: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
-                ifc_class="IfcCircleProfileDef")
-            circle = 1.
+        circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+            ifc_class="IfcCircleProfileDef")
+        circle = 1.
 
-            ifcopenshell.api.run("profile.edit_profile", model,
-                profile=circle, attributes={"ProfileName": "1000mm Dia"})
-        """
-        self.file = file
-        self.settings = {"profile": profile, "attributes": attributes or {}}
+        ifcopenshell.api.run("profile.edit_profile", model,
+            profile=circle, attributes={"ProfileName": "1000mm Dia"})
+    """
+    settings = {"profile": profile, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["profile"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["profile"], name, value)

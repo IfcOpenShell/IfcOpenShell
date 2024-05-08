@@ -19,46 +19,49 @@
 import ifcopenshell.util.unit
 
 
+def add_arbitrary_profile_with_voids(file, outer_profile=None, inner_profiles=None, name=None) -> None:
+    """Adds a new arbitrary polyline-based profile with voids
+
+    The outer profile is represented as a polyline defined by a list of
+    coordinates. Only straight segments are allowed. Coordinates must be
+    provided in SI meters.
+
+    To represent a closed curve, the first and last coordinate must be
+    identical.
+
+    The inner profiles are represented as a list of polylines.
+    Every polyline in defined by a list of coordinates.
+    Only straight segments are allowed. Coordinates must be
+    provided in SI meters.
+
+    :param outer_profile: A list of coordinates
+    :type profile: list[float]
+    :param inner_profiles: A list of polylines
+    :type profile: list[list[float]]
+    :param name: If the profile is semantically significant (i.e. to be
+        managed and reused by the user) then it must be named. Otherwise,
+        this may be left as none.
+    :type name: str, optional
+    :return: The newly created IfcArbitraryProfileDefWithVoids
+    :rtype: ifcopenshell.entity_instance
+
+    Example:
+
+    .. code:: python
+
+        # A 400mm by 400mm square with a 200mm by 200mm hole in it.
+        square_with_hole = ifcopenshell.api.run("profile.add_arbitrary_profile_with_voids", model,
+            outer_profile=[(0., 0.), (.4, 0.), (.4, .4), (0., .4), (0., 0.)],
+            inner_profiles=[[(0.1, 0.1), (0.3, 0.1), (0.3, 0.3), (0.1, 0.3), (0.1, 0.1)]],
+            name="SK01 Hole Profile")
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"outer_profile": outer_profile, "inner_profiles": inner_profiles, "name": name}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, outer_profile=None, inner_profiles=None, name=None):
-        """Adds a new arbitrary polyline-based profile with voids
-
-        The outer profile is represented as a polyline defined by a list of
-        coordinates. Only straight segments are allowed. Coordinates must be
-        provided in SI meters.
-
-        To represent a closed curve, the first and last coordinate must be
-        identical.
-
-        The inner profiles are represented as a list of polylines.
-        Every polyline in defined by a list of coordinates.
-        Only straight segments are allowed. Coordinates must be
-        provided in SI meters.
-
-        :param outer_profile: A list of coordinates
-        :type profile: list[float]
-        :param inner_profiles: A list of polylines
-        :type profile: list[list[float]]
-        :param name: If the profile is semantically significant (i.e. to be
-            managed and reused by the user) then it must be named. Otherwise,
-            this may be left as none.
-        :type name: str, optional
-        :return: The newly created IfcArbitraryProfileDefWithVoids
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # A 400mm by 400mm square with a 200mm by 200mm hole in it.
-            square_with_hole = ifcopenshell.api.run("profile.add_arbitrary_profile_with_voids", model,
-                outer_profile=[(0., 0.), (.4, 0.), (.4, .4), (0., .4), (0., 0.)],
-                inner_profiles=[[(0.1, 0.1), (0.3, 0.1), (0.3, 0.3), (0.1, 0.3), (0.1, 0.1)]],
-                name="SK01 Hole Profile")
-        """
-        self.file = file
-        self.settings = {"outer_profile": outer_profile, "inner_profiles": inner_profiles, "name": name}
-
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         outer_points = [self.convert_si_to_unit(p) for p in self.settings["outer_profile"]]
@@ -69,7 +72,9 @@ class Usecase:
             outer_curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in outer_points])
             inner_curves = []
             for inner_point in inner_points:
-                inner_curves.append(self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in inner_point]))
+                inner_curves.append(
+                    self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in inner_point])
+                )
         else:
             outer_curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(outer_points))
             inner_curves = []

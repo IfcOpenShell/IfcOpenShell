@@ -74,6 +74,9 @@ autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv'
 # These are auto-generated based on the IFC schema, so exclude them
 autoapi_ignore = ['*ifcopenshell/express/rules*']
 
+# Custom autoapi templates to make it easier to read our docs
+autoapi_template_dir = "_autoapi_templates"
+
 # autoapi_options doesn't have show-module-summary, as it tends to create one
 # page per function which contradicts the presentation of showing all functions
 # as a list. This creates two possible locations where a function is documented
@@ -81,7 +84,7 @@ autoapi_ignore = ['*ifcopenshell/express/rules*']
 # ifcopenshell.file is imported from ifcopenshell.file.file, but it gets pretty
 # confusing to see the docs again in multiple places (seriously,
 # ifcopenshell.file.file is everywhere).
-autoapi_options = ['members', 'undoc-members', 'private-members', 'special-members', 'show-inheritance']
+autoapi_options = ['members', 'undoc-members', 'show-inheritance', 'imported-members']
 
 # This option is set to both to allow both class docstrings and __init__ docstrings.
 autoapi_python_class_content = 'both'
@@ -130,7 +133,10 @@ html_theme_options = {
         "color-background-border": "#cfd0cb",
         "color-foreground-primary": "#2e3436",
         "color-sidebar-item-background--hover": "#f7f7f6",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
+        "color-link--visited--hover": "#d98014",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
     "dark_css_variables": {
@@ -141,7 +147,10 @@ html_theme_options = {
         "color-background-border": "#2e3436",
         "color-foreground-primary": "#eeeeec",
         "color-sidebar-item-background--hover": "#2e3436",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
+        "color-link--visited--hover": "#d98014",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
 

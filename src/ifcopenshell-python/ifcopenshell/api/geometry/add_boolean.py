@@ -20,24 +20,27 @@ import ifcopenshell.util.unit
 import numpy as np
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "representation": None,
-            "operator": "DIFFERENCE",
-            # IfcHalfSpaceSolid, Mesh
-            "type": "IfcHalfSpaceSolid",
-            # The XY plane is the clipping boundary and +Z is removed.
-            "matrix": None,  # A matrix to define a clipping Ifchalfspacesolid.
-            "blender_obj": None,  # A Blender OBJ to define the voided OBJ for a "Mesh" type
-            "blender_void": None,  # A Blender OBJ to define the void OBJ for a "Mesh" type
-            "should_force_faceted_brep": False,
-            "should_force_triangulation": False,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_boolean(file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "representation": None,
+        "operator": "DIFFERENCE",
+        # IfcHalfSpaceSolid, Mesh
+        "type": "IfcHalfSpaceSolid",
+        # The XY plane is the clipping boundary and +Z is removed.
+        "matrix": None,  # A matrix to define a clipping Ifchalfspacesolid.
+        "blender_obj": None,  # A Blender OBJ to define the voided OBJ for a "Mesh" type
+        "blender_void": None,  # A Blender OBJ to define the void OBJ for a "Mesh" type
+        "should_force_faceted_brep": False,
+        "should_force_triangulation": False,
+    }
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         if self.settings["type"] == "IfcHalfSpaceSolid":

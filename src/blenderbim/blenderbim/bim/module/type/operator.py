@@ -146,22 +146,50 @@ class SelectType(bpy.types.Operator):
     relating_type: bpy.props.IntProperty()
 
     def execute(self, context):
-        element = tool.Ifc.get().by_id(self.relating_type)
-        obj = tool.Ifc.get_object(element)
-        if obj:
-            try:
-                tool.Blender.select_and_activate_single_object(context, obj)
-            except:
-                self.report({"INFO"}, "Type object is hidden.")
-        # IfcTypeProducts are only used for annotations and not part of the model interface.
-        if element.is_a() != "IfcTypeProduct":
-            try:
-                context.scene.BIMModelProperties.ifc_class = element.is_a()
-                context.scene.BIMModelProperties.relating_type_id = str(self.relating_type)
-            except:
-                # Potentially our BIM Tool is filtered to a specific element.
-                pass
+
+        if self.relating_type: #if operator button sends a relating_type, the iterator only selects this one type
+            element = tool.Ifc.get().by_id(self.relating_type)
+            obj = tool.Ifc.get_object(element)
+            selected_objs = [obj]
+        else:    #else, the iterator selects all the types of all the selected objects
+            selected_objs = context.selected_objects
+            active_obj = context.active_object
+            selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
+        
+        last_relating_type_obj = None
+        types_collection_in_view_layer = self.find_collection_in_ifcproject(context, collection_name = "Types")
+        types_collection_in_view_layer.hide_viewport = False
+        types_collection = bpy.data.collections.get("Types")
+        for type_obj in types_collection.objects:
+            type_obj.hide_set(True)
+        for obj in selected_objs:
+            element = tool.Ifc.get_entity(obj)
+            relating_type = ifcopenshell.util.element.get_type(element)
+            if relating_type:
+                relating_type_obj = tool.Ifc.get_object(relating_type)
+                if relating_type_obj:
+                    if relating_type_obj.hide_get():  
+                        relating_type_obj.hide_set(False)  
+                    relating_type_obj.select_set(True)  
+                    last_relating_type_obj = relating_type_obj
+            if not element.is_a("IfcTypeObject"): 
+                obj.select_set(False)
+
+        context.view_layer.objects.active = last_relating_type_obj #makes the active_obj's type the active object
+
         return {"FINISHED"}
+
+    def find_collection_in_ifcproject(self, context, collection_name):
+
+        ifc_project_collection = None
+        for child in context.view_layer.layer_collection.children:
+            if "IfcProject" in child.name:
+                ifc_project_collection = child
+                break
+        
+        if ifc_project_collection:
+            collection_in_view_layer = ifc_project_collection.children.get(collection_name)
+            return collection_in_view_layer
 
 
 class SelectSimilarType(bpy.types.Operator):

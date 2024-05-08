@@ -21,20 +21,25 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 
 
-class Usecase:
-    def __init__(self, file, element=None, context=None, p1=None, p2=None, elevation=None, height=None, thickness=None, is_si=True):
-        self.file = file
-        self.settings = {
-            "element": element,
-            "context": context,
-            "p1": p1,
-            "p2": p2,
-            "elevation": elevation,
-            "height": height,
-            "thickness": thickness,
-            "is_si": is_si
-        }
+def create_2pt_wall(
+    file, element=None, context=None, p1=None, p2=None, elevation=None, height=None, thickness=None, is_si=True
+) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "element": element,
+        "context": context,
+        "p1": p1,
+        "p2": p2,
+        "elevation": elevation,
+        "height": height,
+        "thickness": thickness,
+        "is_si": is_si,
+    }
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
@@ -44,9 +49,9 @@ class Usecase:
         length = float(np.linalg.norm(self.settings["p2"] - self.settings["p1"]))
 
         if not self.settings["is_si"]:
-            length=self.convert_unit_to_si(length)
-            self.settings["height"]=self.convert_unit_to_si(self.settings["height"])
-            self.settings["thickness"]=self.convert_unit_to_si(self.settings["thickness"])
+            length = self.convert_unit_to_si(length)
+            self.settings["height"] = self.convert_unit_to_si(self.settings["height"])
+            self.settings["thickness"] = self.convert_unit_to_si(self.settings["thickness"])
             self.settings["p1"][0] = self.convert_unit_to_si(self.settings["p1"][0])
             self.settings["p1"][1] = self.convert_unit_to_si(self.settings["p1"][1])
             self.settings["elevation"] = self.convert_unit_to_si(self.settings["elevation"])

@@ -21,46 +21,40 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        products: list[ifcopenshell.entity_instance],
-        system: ifcopenshell.entity_instance,
-    ):
-        """Unassigns list of products from a system
+def unassign_system(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    system: ifcopenshell.entity_instance,
+) -> None:
+    """Unassigns list of products from a system
 
-        :param products: The list of IfcDistributionElements to unassign from the system.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :param system: The IfcSystem you want to unassign the element from.
-        :type system: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param products: The list of IfcDistributionElements to unassign from the system.
+    :type products: list[ifcopenshell.entity_instance]
+    :param system: The IfcSystem you want to unassign the element from.
+    :type system: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # A completely empty distribution system
-            system = ifcopenshell.api.run("system.add_system", model)
+        # A completely empty distribution system
+        system = ifcopenshell.api.run("system.add_system", model)
 
-            # Create a duct
-            duct = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+        # Create a duct
+        duct = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
-            # This duct is part of the system
-            ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
+        # This duct is part of the system
+        ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
 
-            # Not anymore!
-            ifcopenshell.api.run("system.unassign_system", model, products=[duct], system=system)
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "system": system,
-        }
+        # Not anymore!
+        ifcopenshell.api.run("system.unassign_system", model, products=[duct], system=system)
+    """
+    settings = {
+        "products": products,
+        "system": system,
+    }
 
-    def execute(self):
-        ifcopenshell.api.run(
-            "group.unassign_group", self.file, products=self.settings["products"], group=self.settings["system"]
-        )
+    ifcopenshell.api.run("group.unassign_group", file, products=settings["products"], group=settings["system"])

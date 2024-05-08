@@ -23,6 +23,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
 import ifcopenshell.util.representation
+from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
 from mathutils import Vector
 
@@ -125,6 +126,10 @@ class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
         material = tool.Ifc.get_object(style)
         tool.Style.reload_material_from_ifc(material)
         props.is_editing_style = 0
+
+        # restore selected style type
+        material = tool.Ifc.get_object(style)
+        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
 
 
 class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -246,14 +251,15 @@ class BrowseExternalStyle(bpy.types.Operator):
     )
 
     def invoke(self, context, event):
-        external_style = None
+        style_elements = None
         if self.active_surface_style_id:
             style = tool.Ifc.get().by_id(self.active_surface_style_id)
-            external_style = tool.Style.get_style_elements(style).get("IfcExternallyDefinedSurfaceStyle", None)
+            style_elements = tool.Style.get_style_elements(style)
 
         # automatically select previously selected external style in file browser
         # if it exists in the file
-        if external_style and self.filepath == "":
+        if style_elements and self.filepath == "" and tool.Style.has_blender_external_style(style_elements):
+            external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
             style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
             self.directory = str(style_path.parent)
             self.filepath = str(style_path)
@@ -310,6 +316,9 @@ class BrowseExternalStyle(bpy.types.Operator):
         attributes["Location"].string_value = filepath
         attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
         attributes["Name"].string_value = self.data_block
+
+        style = tool.Ifc.get().by_id(self.active_surface_style_id)
+        bpy.ops.bim.activate_external_style(material_name=tool.Ifc.get_object(style).name)
         return {"FINISHED"}
 
 
@@ -325,14 +334,23 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             material = context.active_object.active_material
         else:
             material = bpy.data.materials[self.material_name]
-        external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
-        data_block_type, data_block = external_style.Identification.split("/")
-        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+
+        props = context.scene.BIMStylesProperties
+        if props.is_editing:
+            location = props.external_style_attributes["Location"].string_value
+            identification = props.external_style_attributes["Identification"].string_value
+        else:
+            external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
+            location = external_style.Location
+            identification = external_style.Identification
+
+        data_block_type, data_block = identification.split("/")
+        style_path = Path(tool.Ifc.resolve_uri(location))
 
         if style_path.suffix != ".blend":
             self.report(
                 {"ERROR"},
-                f"Error loading external style for \"{material.name}\" - only Blender external styles are supported",
+                f'Error loading external style for "{material.name}" - only Blender external styles are supported',
             )
             return {"CANCELLED"}
 
@@ -587,7 +605,8 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_class = self.ifc_class
         tool.Style.set_surface_style_props()
 
-        surface_style = tool.Style.get_style_elements(style).get(self.ifc_class, None)
+        style_elements = tool.Style.get_style_elements(style)
+        surface_style = style_elements.get(self.ifc_class, None)
         attributes = tool.Style.get_style_ui_props_attributes(self.ifc_class)
 
         # lighting style require special handling since Attribute doesn't support colors
@@ -606,6 +625,17 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         if attributes is not None:
             attributes.clear()
             blenderbim.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
+
+        material = tool.Ifc.get_object(style)
+        active_style_type = material.BIMStyleProperties.active_style_type
+        if self.ifc_class == "IfcExternallyDefinedSurfaceStyle" and active_style_type != "External":
+            if tool.Style.has_blender_external_style(style_elements):
+                switch_shading(material, "External")
+        elif (
+            self.ifc_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering", "IfcSurfaceStyleWithTextures")
+            and active_style_type != "Shading"
+        ):
+            switch_shading(material, "Shading")
 
 
 class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -630,6 +660,10 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         self.props.is_editing_style = 0
         core.load_styles(tool.Style, style_type=self.props.style_type)
+
+        # restore selected style type
+        material = tool.Ifc.get_object(self.style)
+        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
 
     def edit_existing_style(self):
         material = tool.Ifc.get_object(self.style)

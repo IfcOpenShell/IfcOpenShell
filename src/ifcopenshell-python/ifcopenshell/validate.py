@@ -32,8 +32,6 @@ Available flags:
 - ``--fields``: Output more detailed information about failed entities (available only with ``--json``).
 """
 
-from __future__ import print_function
-
 import os
 import sys
 import json

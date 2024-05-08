@@ -17,31 +17,28 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, group=None, attributes=None):
-        """Edits the attributes of an IfcGroup
+def edit_group(file, group=None, attributes=None) -> None:
+    """Edits the attributes of an IfcGroup
 
-        For more information about the attributes and data types of an
-        IfcGroup, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcGroup, consult the IFC documentation.
 
-        :param group: The IfcGroup entity you want to edit
-        :type group: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param group: The IfcGroup entity you want to edit
+    :type group: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
-            ifcopenshell.api.run("group.edit_group", model,
-                group=group, attributes={"Description": "All furniture and joinery included in the unit"})
-        """
-        self.file = file
-        self.settings = {"group": group, "attributes": attributes or {}}
+        group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        ifcopenshell.api.run("group.edit_group", model,
+            group=group, attributes={"Description": "All furniture and joinery included in the unit"})
+    """
+    settings = {"group": group, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["group"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["group"], name, value)

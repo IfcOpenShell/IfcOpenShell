@@ -27,9 +27,9 @@ def get_constraints(product: ifcopenshell.entity_instance) -> list[ifcopenshell.
     Retrieves the constraints assigned to the `product`.
 
     :param product: The IFC element.
-    :type product: ifcopenshell.entity_instance.entity_instance
+    :type product: ifcopenshell.entity_instance
     :return: List of assigned constraints.
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
     """
     constraints = []
     for rel in product.HasAssociations or []:
@@ -43,9 +43,9 @@ def get_constrained_elements(constraint: ifcopenshell.entity_instance) -> set[if
     Retrieves the elements constrained by a `constraint`.
 
     :param product: The IFC element.
-    :type product: ifcopenshell.entity_instance.entity_instance
+    :type product: ifcopenshell.entity_instance
     :return: Set of elements constrained by a `constrant`.
-    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+    :rtype: set[ifcopenshell.entity_instance]
     """
     elements = set()
     for rel in constraint.file.get_inverse(constraint):
@@ -59,9 +59,9 @@ def get_metrics(constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     Retrieves the list of nested constraints for a IfcObjective `constraint`.
 
     :param product: IfcObjective constraint.
-    :type product: ifcopenshell.entity_instance.entity_instance
+    :type product: ifcopenshell.entity_instance
     :return: List of nested constraints.
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
     """
 
     metrics = []

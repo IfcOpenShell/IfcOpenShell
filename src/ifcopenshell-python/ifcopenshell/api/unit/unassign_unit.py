@@ -19,43 +19,40 @@ import ifcopenshell
 from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, units: Optional[list[ifcopenshell.entity_instance]] = None):
-        """Unassigns units as default units for the project
+def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.entity_instance]] = None) -> None:
+    """Unassigns units as default units for the project
 
-        :param units: A list of units to assign as project defaults.
-        :type units: list[ifcopenshell.entity_instance.entity_instance],optional
-        :return: None
-        :rtype: None
+    :param units: A list of units to assign as project defaults.
+    :type units: list[ifcopenshell.entity_instance],optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # You need a project before you can assign units.
-            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+        # You need a project before you can assign units.
+        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
 
-            # Millimeters and square meters
-            length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-            area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+        # Millimeters and square meters
+        length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
 
-            # Make it our default units, if we are doing a metric building
-            ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        # Make it our default units, if we are doing a metric building
+        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
 
-            # Actually, we don't need areas.
-            ifcopenshell.api.run("unit.unassign_unit", model, units=[area])
-        """
-        self.file = file
-        self.settings = {"units": units}
+        # Actually, we don't need areas.
+        ifcopenshell.api.run("unit.unassign_unit", model, units=[area])
+    """
+    settings = {"units": units}
 
-    def execute(self):
-        unit_assignment = self.file.by_type("IfcUnitAssignment")
-        if not unit_assignment:
-            return
-        unit_assignment = unit_assignment[0]
-        units = set(unit_assignment.Units or [])
-        units = units - set(self.settings["units"])
-        if units:
-            unit_assignment.Units = list(units)
-            return unit_assignment
-        self.file.remove(unit_assignment)
+    unit_assignment = file.by_type("IfcUnitAssignment")
+    if not unit_assignment:
+        return
+    unit_assignment = unit_assignment[0]
+    units = set(unit_assignment.Units or [])
+    units = units - set(settings["units"])
+    if units:
+        unit_assignment.Units = list(units)
+        return unit_assignment
+    file.remove(unit_assignment)

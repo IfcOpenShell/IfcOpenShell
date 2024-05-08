@@ -19,50 +19,52 @@
 import ifcopenshell.api
 
 
+def add_application(
+    file,
+    application_developer=None,
+    version=None,
+    application_full_name="IfcOpenShell",
+    application_identifier="IfcOpenShell",
+) -> None:
+    """Adds a new application
+
+    IFC data may be associated with an authoring application to identify
+    which application was responsible for editing or authoring the data. An
+    application is defined by the developing organisation, as well as a full
+    name and identifier. This is akin to how web browsers have an
+    identification string.
+
+    :param application_developer: The IfcOrganization responsible for
+        creating the application. Defaults to generating an IfcOpenShell
+        organisation if none is provided.
+    :type application_developer: ifcopenshell.entity_instance, optional
+    :param version: The version of the application. Defaults to the
+        ifcopenshell.version data if not specified.
+    :type version: str, optional
+    :param application_full_name: The name of the application
+    :type application_full_name: str, optional
+    :param application_identifier: An identification string for the
+        application intended for computers to read.
+    :type application_identifier: str, optional
+
+    Example:
+
+    .. code:: python
+
+        application = ifcopenshell.api.run("owner.add_application", model)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "application_developer": application_developer,
+        "version": version or ifcopenshell.version,
+        "application_full_name": application_full_name,
+        "application_identifier": application_identifier,
+    }
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(
-        self,
-        file,
-        application_developer=None,
-        version=None,
-        application_full_name="IfcOpenShell",
-        application_identifier="IfcOpenShell",
-    ):
-        """Adds a new application
-
-        IFC data may be associated with an authoring application to identify
-        which application was responsible for editing or authoring the data. An
-        application is defined by the developing organisation, as well as a full
-        name and identifier. This is akin to how web browsers have an
-        identification string.
-
-        :param application_developer: The IfcOrganization responsible for
-            creating the application. Defaults to generating an IfcOpenShell
-            organisation if none is provided.
-        :type application_developer: ifcopenshell.entity_instance.entity_instance, optional
-        :param version: The version of the application. Defaults to the
-            ifcopenshell.version data if not specified.
-        :type version: str, optional
-        :param application_full_name: The name of the application
-        :type application_full_name: str, optional
-        :param application_identifier: An identification string for the
-            application intended for computers to read.
-        :type application_identifier: str, optional
-
-        Example:
-
-        .. code:: python
-
-            application = ifcopenshell.api.run("owner.add_application", model)
-        """
-        self.file = file
-        self.settings = {
-            "application_developer": application_developer,
-            "version": version or ifcopenshell.version,
-            "application_full_name": application_full_name,
-            "application_identifier": application_identifier,
-        }
-
     def execute(self):
         if not self.settings["application_developer"]:
             self.settings["application_developer"] = self.create_application_organisation()

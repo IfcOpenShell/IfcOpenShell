@@ -16,6 +16,7 @@ a {
 }
 .sidebar-brand-text {
     font-size: 1rem;
+    text-align: center;
 }
 .blockbutton {
     max-width: 500px;

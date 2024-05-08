@@ -17,37 +17,34 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, context, attributes):
-        """Edits the attributes of an IfcGeometricRepresentationContext
+def edit_context(file, context, attributes) -> None:
+    """Edits the attributes of an IfcGeometricRepresentationContext
 
-        For more information about the attributes and data types of an
-        IfcGeometricRepresentationContext, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcGeometricRepresentationContext, consult the IFC documentation.
 
-        :param context: The IfcGeometricRepresentationContext entity you want to edit
-        :type context: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param context: The IfcGeometricRepresentationContext entity you want to edit
+    :type context: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-            # Revit had a bug where they incorrectly called the body representation a "Facetation"
-            body = ifcopenshell.api.run("context.add_context", model,
-                context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
-            )
+        model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+        # Revit had a bug where they incorrectly called the body representation a "Facetation"
+        body = ifcopenshell.api.run("context.add_context", model,
+            context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+        )
 
-            # Let's fix it!
-            ifcopenshell.api.run("context.edit_context", model,
-                context=body, attributes={"ContextIdentifier": "Body"})
-        """
-        self.file = file
-        self.settings = {"context": context, "attributes": attributes or {}}
+        # Let's fix it!
+        ifcopenshell.api.run("context.edit_context", model,
+            context=body, attributes={"ContextIdentifier": "Body"})
+    """
+    settings = {"context": context, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["context"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["context"], name, value)

@@ -17,33 +17,30 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, Name=None):
-        """Adds a new layer
+def add_layer(file, Name=None) -> None:
+    """Adds a new layer
 
-        An IFC layer is like a CAD layer. Portions of an object's geometry
-        (typically portions of its 2D linework) can be assigned to layers, which
-        can provide stylistic information such as line weights, colours, or
-        simply be used for filtering.
+    An IFC layer is like a CAD layer. Portions of an object's geometry
+    (typically portions of its 2D linework) can be assigned to layers, which
+    can provide stylistic information such as line weights, colours, or
+    simply be used for filtering.
 
-        Layers have historically been used to organise CAD data and included in
-        ISO standards such as ISO 13567 or by the AIA. This alllows IFC data to
-        be compatible with older, 2D-oriented, layer-based workflows.
+    Layers have historically been used to organise CAD data and included in
+    ISO standards such as ISO 13567 or by the AIA. This alllows IFC data to
+    be compatible with older, 2D-oriented, layer-based workflows.
 
-        Some software that are still based on layers, such as Tekla or ArchiCAD
-        may also use this layer information for filtering.
+    Some software that are still based on layers, such as Tekla or ArchiCAD
+    may also use this layer information for filtering.
 
-        :param Name: The name of the layer. Defaults to "Unnamed".
-        :type Name: str, optional
-        :return: The newly created IfcPresentationLayerAssignment element
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param Name: The name of the layer. Defaults to "Unnamed".
+    :type Name: str, optional
+    :return: The newly created IfcPresentationLayerAssignment element
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-            ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL-FULL-DIMS-N")
-        """
-        self.file = file
-        self.settings = {"Name": Name or "Unnamed"}
+        ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL-FULL-DIMS-N")
+    """
+    settings = {"Name": Name or "Unnamed"}
 
-    def execute(self):
-        return self.file.create_entity("IfcPresentationLayerAssignment", Name=self.settings["Name"])
+    return file.create_entity("IfcPresentationLayerAssignment", Name=settings["Name"])

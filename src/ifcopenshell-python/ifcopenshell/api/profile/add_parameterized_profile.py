@@ -17,33 +17,30 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, ifc_class=None):
-        """Adds a new parameterised profile
+def add_parameterized_profile(file, ifc_class=None) -> None:
+    """Adds a new parameterised profile
 
-        IFC offers parameterised profiles for common standardised hot roll
-        steel sections and common concrete forms. A full list is available on
-        the IFC documentation as subclasses of IfcParameterizedProfileDef.
+    IFC offers parameterised profiles for common standardised hot roll
+    steel sections and common concrete forms. A full list is available on
+    the IFC documentation as subclasses of IfcParameterizedProfileDef.
 
-        Currently, this API has no benefit over directly calling
-        ifcopenshell.file.file.create_entity.
+    Currently, this API has no benefit over directly calling
+    ifcopenshell.file.create_entity.
 
-        :param ifc_class: The subclass of IfcParameterizedProfileDef that you'd
-            like to create.
-        :type ifc_class: str
-        :return: The newly created element depending on the specified ifc_class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param ifc_class: The subclass of IfcParameterizedProfileDef that you'd
+        like to create.
+    :type ifc_class: str
+    :return: The newly created element depending on the specified ifc_class.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
-                ifc_class="IfcCircleProfileDef")
-            circle.Radius = 1.
-        """
-        self.file = file
-        self.settings = {"ifc_class": ifc_class}
+        circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+            ifc_class="IfcCircleProfileDef")
+        circle.Radius = 1.
+    """
+    settings = {"ifc_class": ifc_class}
 
-    def execute(self):
-        return self.file.create_entity(self.settings["ifc_class"])
+    return file.create_entity(settings["ifc_class"])

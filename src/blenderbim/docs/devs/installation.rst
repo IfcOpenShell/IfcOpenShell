@@ -92,13 +92,14 @@ For Linux or Mac:
     $ ln -s $PWD/src/blenderbim/blenderbim/tool $BLENDER_ADDON_PATH/tool
     $ ln -s $PWD/src/blenderbim/blenderbim/bim $BLENDER_ADDON_PATH/bim
 
-    # Remove the IfcOpenShell dependency Python code
-    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
-    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
+    # Copy over compiled IfcOpenShell files
+    $ cp $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/*_wrapper* $PWD/src/ifcopenshell-python/ifcopenshell/
+    
+    # Remove the IfcOpenShell dependency
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
 
     # Replace them with links to the Git repository
-    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/api $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
-    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/util $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
+    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
 
     # Remove and link other IfcOpenShell utilities
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
@@ -153,21 +154,19 @@ Before running it follow the instructions descibed after `rem` tags.
     rd /S /Q "%blenderbim%\tool\"
     rd /S /Q "%blenderbim%\bim\"
 
-
     echo Replacing them with links to the Git repository...
     mklink /D "%blenderbim%\core" "%cd%\src\blenderbim\blenderbim\core"
     mklink /D "%blenderbim%\tool" "%cd%\src\blenderbim\blenderbim\tool"
     mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
 
+    echo Copy over compiled IfcOpenShell files...
+    copy "%blenderbim%\libs\site\packages\ifcopenshell\*_wrapper*" "%cd%\src\ifcopenshell-python\ifcopenshell\"
 
-    echo Remove the IfcOpenShell dependency Python code...
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\api"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\util"
+    echo Remove the IfcOpenShell dependency...
+    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell"
 
-
-    echo Replacing them with links to the Git repository...
-    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\api" "%cd%\src\ifcopenshell-python\ifcopenshell\api"
-    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\util" "%cd%\src\ifcopenshell-python\ifcopenshell\util"
+    echo Replace them with links to the Git repository...
+    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell" "%cd%\src\ifcopenshell-python\ifcopenshell"
 
     echo Remove and link other IfcOpenShell utilities...
     del "%blenderbim%\libs\site\packages\ifccsv.py"

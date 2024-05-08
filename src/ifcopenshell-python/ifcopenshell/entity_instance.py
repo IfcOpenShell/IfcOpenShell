@@ -17,16 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import functools
 import importlib
 import numbers
 import itertools
 import operator
-import functools
 import subprocess
 import sys
 import time
@@ -37,7 +32,7 @@ from . import settings
 
 try:
     import logging
-except ImportError as e:
+except ImportError:
     logging = type("logger", (object,), {"exception": staticmethod(lambda s: print(s))})
 
 T = TypeVar("T")
@@ -104,21 +99,48 @@ for nm in ifcopenshell_wrapper.schema_names():
     register_schema_attributes(schema)
 
 
-class entity_instance(object):
-    """Base class for all IFC objects.
+class entity_instance:
+    """Represents an entity (wall, slab, property, etc) of an IFC model
 
-    An instantiated entity_instance will have methods of Python and the IFC class itself.
+    An IFC model consists of entities. Examples of entities include walls,
+    slabs, doors and so on. Entities can also be non-physical things, like
+    properties, systems, construction tasks, colours, geometry, and more.
+
+    Entities are defined through an **IFC Class**. There are hundreds of **IFC
+    Classes** defined as part of the ISO standard by the buildingSMART
+    International organisation. The **IFC Class** defines the attributes of an
+    entity, as well as the data types and whether or not an attribute is
+    mandatory or optional.
+
+    IfcOpenShell's API dynamically implements the IFC schema. You will not find
+    documentation about available **IFC Classes**, or what attributes they
+    have.  Please consult the buildingSMART official documentation or start
+    reading :doc:`/introduction/introduction_to_ifc`.
+
+    In addition to the Python methods you see documented here, an instantiated
+    entity_instance will have attributes defined by its IFC class. For example,
+    an entity instance which is an IfcWall class will have a ``Name``
+    attribute, and an IfcColourRgb will have a ``Red`` attribute. Please
+    consult the buildingSMART official documentation.
 
     Example:
 
     .. code:: python
 
-        ifc_file = ifcopenshell.open(file_path)
-        products = ifc_file.by_type("IfcProduct")
-        print(products[0].__class__)
-        >>> <class 'ifcopenshell.entity_instance.entity_instance'>
-        print(products[0].Representation)
-        >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
+        model = ifcopenshell.open(file_path)
+        walls = model.by_type("IfcWall")
+        wall = walls[0]
+
+        print(wall) # #38=IFCWALL('2MEinnTPbCMwLOgceaQZFu',$,$,'My Wall',$,#52,#47,$,$);
+        print(wall.is_a()) # IfcWall
+
+        # Note: the `Name` attribute is dynamic, based on the IFC class.
+        print(wall.Name) # My Wall
+
+        # Attributes are ordered and may also be accessed via index.
+        print(wall[3]) # My Wall
+
+        print(wall.__class__) # <class 'ifcopenshell.entity_instance'>
     """
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
@@ -200,33 +222,36 @@ class entity_instance(object):
 
     @staticmethod
     def walk(f: Callable[[Any], bool], g: Callable[[Any], Any], value: Any) -> Any:
-        """
-         Applies transformation to `value` based on a given condition.
-         If value is a nested structure (e.g., a list or a tuple) will apply transformation to it's elements.
-        .
+        """Applies a transformation to `value` based on a given condition.
 
-         :param f: A callable that takes a single argument and returns a boolean value. It represents the condition
-         :type f: Callable
-         :param g: A callable that takes a single argument and returns a transformed value. It represents the transformation
-         :type g: Callable
-         :param value: Any object, the input value to be processed
-         :type value: Any
-         :return: Transformed value
-         :rtype: Any
+        If value is a nested structure (e.g., a list or a tuple) will apply
+        transformation to it's elements.
 
-         Example:
+        :param f: A callable that takes a single argument and returns a boolean
+            value. It represents the condition.
+        :type f: Callable
+        :param g: A callable that takes a single argument and returns a
+            transformed value. It represents the transformation.
+        :type g: Callable
+        :param value: Any object, the input value to be processed
+        :type value: Any
+        :return: Transformed value
+        :rtype: Any
 
-         .. code:: python
+        Example:
 
-             # Define condition and transformation functions
-             condition = lambda v: v == old
-             transform = lambda v: new
+        .. code:: python
 
-             # Usage example
-             attribute_value = element.RelatedElements
-             print(old in attribute_value, new in attribute_value) # True, False
-             result = element.walk(condition, transform, element.RelatedElements)
-             print(old in attribute_value, new in attribute_value) # False, True
+            # Define condition and transformation functions
+            condition = lambda v: v == old
+            transform = lambda v: new
+            
+            # Usage example
+            attribute_value = element.RelatedElements
+            print(old in attribute_value, new in attribute_value) # True, False
+
+            result = element.walk(condition, transform, element.RelatedElements)
+            print(old in attribute_value, new in attribute_value) # False, True
         """
 
         if isinstance(value, (tuple, list)):

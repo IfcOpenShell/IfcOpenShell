@@ -145,7 +145,7 @@ def rename_sheet(ifc, drawing, sheet: ifcopenshell.entity_instance, identificati
 
 
 def rename_reference(ifc, drawing, reference=None, identification=None):
-    attributes = drawing.generate_reference_attributes(reference, Identifiaction=identification)
+    attributes = drawing.generate_reference_attributes(reference, Identification=identification)
     ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
 

@@ -88,9 +88,9 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
     """Resolve possibly mapped representation.
 
     :param representation: IfcRepresentation
-    :type representation: ifcopenshell.entity_instance.entity_instance
+    :type representation: ifcopenshell.entity_instance
     :return: Representation resolved from mappings
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
     """
     if len(representation.Items) == 1 and representation.Items[0].is_a("IfcMappedItem"):
         return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)

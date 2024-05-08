@@ -17,14 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"representation": None}
-        self.ifc_vertices = []
-        for key, value in settings.items():
-            self.settings[key] = value
+def map_representation(file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"representation": None}
+    usecase.ifc_vertices = []
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         mapping_source = self.get_mapping_source()
 

@@ -299,6 +299,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
         self.setup_arrays()
+        self.profile_code("Setup arrays")
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -602,6 +603,9 @@ class IfcImporter:
         return products
 
     def predict_dense_mesh(self):
+        if self.ifc_import_settings.should_use_native_meshes:
+            return
+
         threshold = 10000  # Just from experience.
 
         faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
@@ -1494,7 +1498,11 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.type_collection.name].hide_viewport = True
+        types_collection = project_collection.children[self.type_collection.name]
+        types_collection.hide_viewport = False
+        for obj in types_collection.collection.objects: #turn off all objects inside Types collection.
+            obj.hide_set(True)
+
 
     def clean_mesh(self):
         obj = None
@@ -2041,7 +2049,7 @@ class IfcImporter:
 
 class IfcImportSettings:
     def __init__(self):
-        self.logger = None
+        self.logger: logging.Logger = None
         self.input_file = None
         self.diff_file = None
         self.should_use_cpu_multiprocessing = True

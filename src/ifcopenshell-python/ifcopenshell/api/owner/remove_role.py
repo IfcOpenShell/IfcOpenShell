@@ -17,38 +17,35 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, role=None):
-        """Removes a role
+def remove_role(file, role=None) -> None:
+    """Removes a role
 
-        People and organisations using the role will be untouched. This may
-        leave some of them without roles.
+    People and organisations using the role will be untouched. This may
+    leave some of them without roles.
 
-        :param role: The IfcActorRole to remove.
-        :type role: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param role: The IfcActorRole to remove.
+    :type role: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
-            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
+        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
 
-            # After running this, the organisation will have no role again
-            ifcopenshell.api.run("owner.remove_role", model, role=role)
-        """
-        self.file = file
-        self.settings = {"role": role}
+        # After running this, the organisation will have no role again
+        ifcopenshell.api.run("owner.remove_role", model, role=role)
+    """
+    settings = {"role": role}
 
-    def execute(self):
-        for inverse in self.file.get_inverse(self.settings["role"]):
-            if inverse.is_a() in ("IfcOrganization", "IfcPerson", "IfcPersonAndOrganization"):
-                if inverse.Roles == (self.settings["role"],):
-                    inverse.Roles = None
-            elif inverse.is_a("IfcResourceLevelRelationship") and not inverse.is_a("IfcOrganizationRelationship"):
-                if inverse.RelatedResourceObjects == (self.settings["organisation"],):
-                    self.file.remove(inverse)
-        self.file.remove(self.settings["role"])
+    for inverse in file.get_inverse(settings["role"]):
+        if inverse.is_a() in ("IfcOrganization", "IfcPerson", "IfcPersonAndOrganization"):
+            if inverse.Roles == (settings["role"],):
+                inverse.Roles = None
+        elif inverse.is_a("IfcResourceLevelRelationship") and not inverse.is_a("IfcOrganizationRelationship"):
+            if inverse.RelatedResourceObjects == (settings["organisation"],):
+                file.remove(inverse)
+    file.remove(settings["role"])

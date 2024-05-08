@@ -15,3 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_style import add_style
+from .add_surface_style import add_surface_style
+from .add_surface_textures import add_surface_textures
+from .assign_material_style import assign_material_style
+from .assign_representation_styles import assign_representation_styles
+from .edit_presentation_style import edit_presentation_style
+from .edit_surface_style import edit_surface_style
+from .remove_style import remove_style
+from .remove_styled_representation import remove_styled_representation
+from .remove_surface_style import remove_surface_style
+from .unassign_material_style import unassign_material_style
+from .unassign_representation_styles import unassign_representation_styles

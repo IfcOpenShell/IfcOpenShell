@@ -21,49 +21,46 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, actor=None, ifc_class="IfcActor"):
-        """Adds a new actor
+def add_actor(file, actor=None, ifc_class="IfcActor") -> None:
+    """Adds a new actor
 
-        An actor is a person or an organisation who has a responsibility or role
-        to play in a project. Actor roles include design consultants,
-        architects, engineers, cost planners, suppliers, manufacturers,
-        warrantors, owners, subcontractors, etc.
+    An actor is a person or an organisation who has a responsibility or role
+    to play in a project. Actor roles include design consultants,
+    architects, engineers, cost planners, suppliers, manufacturers,
+    warrantors, owners, subcontractors, etc.
 
-        Actors may either be project actors, who are responsible for the
-        delivery of the project, or occupants, who are responsible for the
-        consumption of the project.
+    Actors may either be project actors, who are responsible for the
+    delivery of the project, or occupants, who are responsible for the
+    consumption of the project.
 
-        Identifying and managing actors is critical for asset management, and
-        identifying liability for legal submissions.
+    Identifying and managing actors is critical for asset management, and
+    identifying liability for legal submissions.
 
-        :param actor: Most commonly, an IfcOrganization (in compliance with GDPR
-            requirements for non personally identifiable information), or an
-            IfcPerson if it is a sole individual, or an IfcPersonAndOrganization
-            if a specific person is liable within an organisation and must be
-            legally nominated.
-        :type actor: ifcopenshell.entity_instance.entity_instance
-        :param ifc_class: Either "IfcActor" or "IfcOccupant".
-        :type ifc_class: str, optional
-        :return: The newly created IfcActor or IfcOccupant
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param actor: Most commonly, an IfcOrganization (in compliance with GDPR
+        requirements for non personally identifiable information), or an
+        IfcPerson if it is a sole individual, or an IfcPersonAndOrganization
+        if a specific person is liable within an organisation and must be
+        legally nominated.
+    :type actor: ifcopenshell.entity_instance
+    :param ifc_class: Either "IfcActor" or "IfcOccupant".
+    :type ifc_class: str, optional
+    :return: The newly created IfcActor or IfcOccupant
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Setup an organisation with a single role
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
-            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+        # Setup an organisation with a single role
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
+        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
 
-            # Assign that organisation to a newly created actor
-            actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
-        """
-        self.file = file
-        self.settings = {"actor": actor, "ifc_class": ifc_class or "IfcActor"}
+        # Assign that organisation to a newly created actor
+        actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+    """
+    settings = {"actor": actor, "ifc_class": ifc_class or "IfcActor"}
 
-    def execute(self):
-        actor = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=self.settings["ifc_class"])
-        actor.TheActor = self.settings["actor"]
-        return actor
+    actor = ifcopenshell.api.run("root.create_entity", file, ifc_class=settings["ifc_class"])
+    actor.TheActor = settings["actor"]
+    return actor

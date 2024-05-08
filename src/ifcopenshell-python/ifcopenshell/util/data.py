@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations
 import numpy as np
 import ifcopenshell
 from typing import Any, Union
@@ -31,7 +30,7 @@ class Clipping:
     operand_type: str = "IfcHalfSpaceSolid"
 
     @classmethod
-    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, Clipping, None]:
+    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, "Clipping", None]:
         """Parse various formats into a clipping object
 
         `raw_data` can be either:

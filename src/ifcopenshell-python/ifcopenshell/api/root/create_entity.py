@@ -18,66 +18,69 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 from typing import Optional
 
 
+def create_entity(
+    file: ifcopenshell.file,
+    ifc_class: str = "IfcBuildingElementProxy",
+    predefined_type: Optional[str] = None,
+    name: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
+    """Create a new rooted product
+
+    This is a critical function used to create almost any rooted product or
+    product type. If you want to create walls, spaces, buildings, wall
+    types, and so on, use this function.
+
+    Just specify the class you want to create, as well as the predefined
+    type and name. It will handle the storage of the predefined type and
+    check whether the predefined type is built-in or custom. It will also
+    generate a valid GlobalId and store ownership history. It will also
+    handle some edge cases for default validity where users might forget to
+    populate some mandatory attributes. For example, doors must define an
+    operation type but many people forget.
+
+    :param ifc_class: Any rooted IFC class.
+    :type ifc_class: str,optional
+    :param predefined_type: Any built-in or user-defined predefined type that
+        is applicable to that IFC class. For user-defined predefined types
+        just enter in any value and the API will handle it automatically.
+    :type predefined_type: str,optional
+    :param name: The name of the new element.
+    :type name: str,optional
+    :return: The newly created element based on the specified IFC class.
+    :rtype: ifcopenshell.entity_instance
+
+    Example:
+
+    .. code:: python
+
+        # We have a project.
+        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+
+        # We have a building.
+        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+
+        # We have a wall.
+        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+        # We have a wall type.
+        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "ifc_class": ifc_class,
+        "predefined_type": predefined_type,
+        "name": name,
+    }
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        ifc_class: str = "IfcBuildingElementProxy",
-        predefined_type: Optional[str] = None,
-        name: Optional[str] = None,
-    ):
-        """Create a new rooted product
-
-        This is a critical function used to create almost any rooted product or
-        product type. If you want to create walls, spaces, buildings, wall
-        types, and so on, use this function.
-
-        Just specify the class you want to create, as well as the predefined
-        type and name. It will handle the storage of the predefined type and
-        check whether the predefined type is built-in or custom. It will also
-        generate a valid GlobalId and store ownership history. It will also
-        handle some edge cases for default validity where users might forget to
-        populate some mandatory attributes. For example, doors must define an
-        operation type but many people forget.
-
-        :param ifc_class: Any rooted IFC class.
-        :type ifc_class: str,optional
-        :param predefined_type: Any built-in or user-defined predefined type that
-            is applicable to that IFC class. For user-defined predefined types
-            just enter in any value and the API will handle it automatically.
-        :type predefined_type: str,optional
-        :param name: The name of the new element.
-        :type name: str,optional
-        :return: The newly created element based on the specified IFC class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # We have a project.
-            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
-
-            # We have a building.
-            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-
-            # We have a wall.
-            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-
-            # We have a wall type.
-            ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
-        """
-        self.file = file
-        self.settings = {
-            "ifc_class": ifc_class,
-            "predefined_type": predefined_type,
-            "name": name,
-        }
-
-    def execute(self) -> ifcopenshell.entity_instance:
+    def execute(self):
         element = self.file.create_entity(
             self.settings["ifc_class"],
             **{

@@ -116,6 +116,8 @@ the following comparison checks:
     "``>=``", "Must be greater than or equal to the value."
     "``<``", "Must be less than the value."
     "``<=``", "Must be less than or equal to the value."
+    "``*=``", "Must contain the value."
+    "``!*=``", "Must not contain the value."
 
 When you specify a ``{{pset}}``, ``{{prop}}``, or ``{{value}}``, there are
 three ways you can do so:

@@ -20,32 +20,29 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, profile=None):
-        """Removes a profile
+def remove_profile(file, profile=None) -> None:
+    """Removes a profile
 
-        :param profile: The IfcProfileDef to remove.
-        :type profile: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param profile: The IfcProfileDef to remove.
+    :type profile: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
-                ifc_class="IfcCircleProfileDef")
-            circle = 1.
-            ifcopenshell.api.run("profile.remove_profile", model, profile=circle)
-        """
-        self.file = file
-        self.settings = {"profile": profile}
+        circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+            ifc_class="IfcCircleProfileDef")
+        circle = 1.
+        ifcopenshell.api.run("profile.remove_profile", model, profile=circle)
+    """
+    settings = {"profile": profile}
 
-    def execute(self):
-        subelements = set()
-        for attribute in self.settings["profile"]:
-            if isinstance(attribute, ifcopenshell.entity_instance):
-                subelements.add(attribute)
-        self.file.remove(self.settings["profile"])
-        for subelement in subelements:
-            ifcopenshell.util.element.remove_deep2(self.file, subelement)
+    subelements = set()
+    for attribute in settings["profile"]:
+        if isinstance(attribute, ifcopenshell.entity_instance):
+            subelements.add(attribute)
+    file.remove(settings["profile"])
+    for subelement in subelements:
+        ifcopenshell.util.element.remove_deep2(file, subelement)

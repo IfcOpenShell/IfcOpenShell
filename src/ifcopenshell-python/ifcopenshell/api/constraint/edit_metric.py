@@ -17,33 +17,30 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, metric=None, attributes=None):
-        """Edit the attributes of a metric
+def edit_metric(file, metric=None, attributes=None) -> None:
+    """Edit the attributes of a metric
 
-        For more information about the attributes and data types of an
-        IfcMetric, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcMetric, consult the IFC documentation.
 
-        :param metric: The IfcMetric you want to edit.
-        :type metric: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param metric: The IfcMetric you want to edit.
+    :type metric: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            metric = ifcopenshell.api.run("constraint.add_metric", model,
-                objective=objective)
-            ifcopenshell.api.run("constraint.edit_metric", model,
-                metric=metric, attributes={"ConstraintGrade": "HARD"})
-        """
-        self.file = file
-        self.settings = {"metric": metric, "attributes": attributes or {}}
+        objective = ifcopenshell.api.run("constraint.add_objective", model)
+        metric = ifcopenshell.api.run("constraint.add_metric", model,
+            objective=objective)
+        ifcopenshell.api.run("constraint.edit_metric", model,
+            metric=metric, attributes={"ConstraintGrade": "HARD"})
+    """
+    settings = {"metric": metric, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["metric"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["metric"], name, value)

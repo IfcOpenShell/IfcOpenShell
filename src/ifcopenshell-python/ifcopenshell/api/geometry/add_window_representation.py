@@ -56,12 +56,7 @@ def create_ifc_window_frame_simple(
     th_left, th_up, th_right, th_bottom = thickness
 
     def get_extruded_profile(profile):
-        return builder.extrude(
-            profile,
-            size.y,
-            position=position,
-            **builder.extrude_kwargs("Y")
-        )
+        return builder.extrude(profile, size.y, position=position, **builder.extrude_kwargs("Y"))
 
     # if all lining sides are present then we can just use two rectangles
     # as inner and outer curves of the profile
@@ -207,12 +202,7 @@ def create_ifc_window(
 
     glass_position = frame_position + V(0, frame_size.y / 2 - glass_thickness / 2, 0)
     glass_rect = builder.deep_copy(frame_extruded_items[0].SweptArea.InnerCurves[0])
-    glass = builder.extrude(
-        glass_rect,
-        glass_thickness,
-        position=glass_position,
-        **builder.extrude_kwargs("Y")
-    )
+    glass = builder.extrude(glass_rect, glass_thickness, position=glass_position, **builder.extrude_kwargs("Y"))
 
     output_items = [lining_items, frame_extruded_items, [glass]]
     builder.translate(chain(*output_items), position)
@@ -220,73 +210,76 @@ def create_ifc_window(
     return output_items
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        """units in settings expected to be in ifc project units"""
-        self.file = file
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindow.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypePartitioningEnum.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowLiningProperties.htm
-        # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelProperties.htm
-        self.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(self.file)}
-        self.settings.update(
-            {
-                "context": None,  # IfcGeometricRepresentationContext
-                # SINGLE_PANEL, DOUBLE_PANEL_HORIZONTAL, DOUBLE_PANEL_VERTICAL,
-                # TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_HORIZONTAL, TRIPLE_PANEL_LEFT,
-                # TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_TOP, TRIPLE_PANEL_VERTICAL
-                "partition_type": "SINGLE_PANEL",
-                "overall_height": self.convert_si_to_unit(0.9),
-                "overall_width": self.convert_si_to_unit(0.6),
-                "lining_properties": {
-                    "LiningDepth": self.convert_si_to_unit(0.050),
-                    "LiningThickness": self.convert_si_to_unit(0.050),
-                    "LiningOffset": self.convert_si_to_unit(0.050),  # offset to the wall
-                    # offset from the wall
-                    "LiningToPanelOffsetX": self.convert_si_to_unit(0.025),
-                    # offset from the lining
-                    # that way it allows you to define overall_depth constant between all panels
-                    # and still have panels with different size:
-                    # overall_depth = lining_depth + offset_y
-                    # full offset from X axis = overall_depth - frame_depth
-                    "LiningToPanelOffsetY": self.convert_si_to_unit(0.025),
-                    # applies to DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
-                    # TriplePanelLeft, TriplePanelRight
-                    # mullion - horizontal distance between panels
-                    "MullionThickness": self.convert_si_to_unit(0.050),
-                    # distance from the first lining to the mullion center
-                    "FirstMullionOffset": self.convert_si_to_unit(0.3),
-                    # applies to TriplePanelVertical
-                    # distance from the first lining to the second mullion center
-                    "SecondMullionOffset": self.convert_si_to_unit(0.45),
-                    # applies to DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
-                    # TriplePanelLeft, TriplePanelRight
-                    # works similar way to mullion
-                    "TransomThickness": self.convert_si_to_unit(0.050),
-                    "FirstTransomOffset": self.convert_si_to_unit(0.3),
-                    # applies to TriplePanelHorizontal
-                    "SecondTransomOffset": self.convert_si_to_unit(0.6),
+def add_window_representation(file, **usecase_settings) -> None:
+    """units in usecase_settings expected to be in ifc project units"""
+    usecase = Usecase()
+    usecase.file = file
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindow.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypePartitioningEnum.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowLiningProperties.htm
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelProperties.htm
+    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
+    usecase.settings.update(
+        {
+            "context": None,  # IfcGeometricRepresentationContext
+            # SINGLE_PANEL, DOUBLE_PANEL_HORIZONTAL, DOUBLE_PANEL_VERTICAL,
+            # TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_HORIZONTAL, TRIPLE_PANEL_LEFT,
+            # TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_TOP, TRIPLE_PANEL_VERTICAL
+            "partition_type": "SINGLE_PANEL",
+            "overall_height": usecase.convert_si_to_unit(0.9),
+            "overall_width": usecase.convert_si_to_unit(0.6),
+            "lining_properties": {
+                "LiningDepth": usecase.convert_si_to_unit(0.050),
+                "LiningThickness": usecase.convert_si_to_unit(0.050),
+                "LiningOffset": usecase.convert_si_to_unit(0.050),  # offset to the wall
+                # offset from the wall
+                "LiningToPanelOffsetX": usecase.convert_si_to_unit(0.025),
+                # offset from the lining
+                # that way it allows you to define overall_depth constant between all panels
+                # and still have panels with different size:
+                # overall_depth = lining_depth + offset_y
+                # full offset from X axis = overall_depth - frame_depth
+                "LiningToPanelOffsetY": usecase.convert_si_to_unit(0.025),
+                # applies to DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
+                # TriplePanelLeft, TriplePanelRight
+                # mullion - horizontal distance between panels
+                "MullionThickness": usecase.convert_si_to_unit(0.050),
+                # distance from the first lining to the mullion center
+                "FirstMullionOffset": usecase.convert_si_to_unit(0.3),
+                # applies to TriplePanelVertical
+                # distance from the first lining to the second mullion center
+                "SecondMullionOffset": usecase.convert_si_to_unit(0.45),
+                # applies to DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
+                # TriplePanelLeft, TriplePanelRight
+                # works similar way to mullion
+                "TransomThickness": usecase.convert_si_to_unit(0.050),
+                "FirstTransomOffset": usecase.convert_si_to_unit(0.3),
+                # applies to TriplePanelHorizontal
+                "SecondTransomOffset": usecase.convert_si_to_unit(0.6),
+                "ShapeAspectStyle": None,  # DEPRECATED
+            },
+            "panel_properties": [
+                {
+                    "FrameDepth": usecase.convert_si_to_unit(0.035),  # by Y
+                    "FrameThickness": usecase.convert_si_to_unit(0.035),  # by X
+                    # BOTTOM, LEFT, MIDDLE, RIGHT, TOP
+                    "PanelPosition": ...,  # NEVER USED
+                    # defines the basic ways to describe how window panels operate
+                    # how it's hanged, how it opens
+                    "OperationType": None,  # NEVER USED
                     "ShapeAspectStyle": None,  # DEPRECATED
                 },
-                "panel_properties": [
-                    {
-                        "FrameDepth": self.convert_si_to_unit(0.035),  # by Y
-                        "FrameThickness": self.convert_si_to_unit(0.035),  # by X
-                        # BOTTOM, LEFT, MIDDLE, RIGHT, TOP
-                        "PanelPosition": ...,  # NEVER USED
-                        # defines the basic ways to describe how window panels operate
-                        # how it's hanged, how it opens
-                        "OperationType": None,  # NEVER USED
-                        "ShapeAspectStyle": None,  # DEPRECATED
-                    },
-                ],
-            }
-        )
+            ],
+        }
+    )
 
-        for key, value in settings.items():
-            self.settings[key] = value
-        self.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[self.settings["partition_type"]]
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    usecase.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[usecase.settings["partition_type"]]
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         builder = ShapeBuilder(self.file)
         overall_height = self.settings["overall_height"]

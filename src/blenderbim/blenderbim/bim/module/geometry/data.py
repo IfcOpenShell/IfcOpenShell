@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import ifcopenshell.util.placement
 from mathutils import Vector
@@ -222,7 +223,7 @@ class ConnectionsData:
     @classmethod
     def is_connection_realization(cls):
         element = tool.Ifc.get_entity(bpy.context.active_object)
-        connections = element.IsConnectionRealization
+        connections = getattr(element, "IsConnectionRealization", None)
         if not connections:
             return
 

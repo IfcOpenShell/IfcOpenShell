@@ -17,75 +17,70 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, layer_set=None, material=None):
-        """Adds a new layer to a layer set
+def add_layer(file, layer_set=None, material=None) -> None:
+    """Adds a new layer to a layer set
 
-        A layer represents a portion of material within a layered build up,
-        defined by a thickness. Typical layered construction includes walls and
-        slabs, where a wall might include a layer of finish, a layer of
-        structure, a layer of insulation, and so on. It is recommended to define
-        layered construction this way where it is unnecessary to define the
-        exact geometry of how the wall or slab will be built, and it will
-        instead be determined on site by a trade.
+    A layer represents a portion of material within a layered build up,
+    defined by a thickness. Typical layered construction includes walls and
+    slabs, where a wall might include a layer of finish, a layer of
+    structure, a layer of insulation, and so on. It is recommended to define
+    layered construction this way where it is unnecessary to define the
+    exact geometry of how the wall or slab will be built, and it will
+    instead be determined on site by a trade.
 
-        Layers are defined in a particular order and thickness, so that it is
-        clear which layer comes next.
+    Layers are defined in a particular order and thickness, so that it is
+    clear which layer comes next.
 
-        :param layer_set: The IfcMaterialLayerSet that the layer is part of. The
-            layer set represents a group of layers. See
-            ifcopenshell.api.material.add_material_set for more information on
-            how to add a layer set.
-        :type layer_set: ifcopenshell.entity_instance.entity_instance
-        :param material: The IfcMaterial that the layer is made out of.
-        :type material: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcMaterialLayer
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param layer_set: The IfcMaterialLayerSet that the layer is part of. The
+        layer set represents a group of layers. See
+        ifcopenshell.api.material.add_material_set for more information on
+        how to add a layer set.
+    :type layer_set: ifcopenshell.entity_instance
+    :param material: The IfcMaterial that the layer is made out of.
+    :type material: ifcopenshell.entity_instance
+    :return: The newly created IfcMaterialLayer
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we have a wall type that has two layers of
-            # gypsum with steel studs inside. Notice we are assigning to
-            # the type only, as all occurrences of that type will automatically
-            # inherit the material.
-            wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
+        # Let's imagine we have a wall type that has two layers of
+        # gypsum with steel studs inside. Notice we are assigning to
+        # the type only, as all occurrences of that type will automatically
+        # inherit the material.
+        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
 
-            # First, let's create a material set. This will later be assigned
-            # to our wall type element.
-            material_set = ifcopenshell.api.run("material.add_material_set", model,
-                name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
+        # First, let's create a material set. This will later be assigned
+        # to our wall type element.
+        material_set = ifcopenshell.api.run("material.add_material_set", model,
+            name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
-            # Let's create a few materials, it's important to also give them
-            # categories. This makes it easy for model recipients to do things
-            # like "show me everything made out of aluminium / concrete / steel
-            # / glass / etc". The IFC specification states a list of categories
-            # you can use.
-            gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        # Let's create a few materials, it's important to also give them
+        # categories. This makes it easy for model recipients to do things
+        # like "show me everything made out of aluminium / concrete / steel
+        # / glass / etc". The IFC specification states a list of categories
+        # you can use.
+        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
-            # Now let's use those materials as three layers in our set, such
-            # that the steel studs are sandwiched by the gypsum. Let's imagine
-            # we're setting the layer thickness in millimeters.
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
-            layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+        # Now let's use those materials as three layers in our set, such
+        # that the steel studs are sandwiched by the gypsum. Let's imagine
+        # we're setting the layer thickness in millimeters.
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
+        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
 
-            # Great! Let's assign our material set to our wall type.
-            ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
-        """
-        self.file = file
-        self.settings = {"layer_set": layer_set, "material": material}
+        # Great! Let's assign our material set to our wall type.
+        ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
+    """
+    settings = {"layer_set": layer_set, "material": material}
 
-    def execute(self):
-        layers = list(self.settings["layer_set"].MaterialLayers or [])
-        layer = self.file.create_entity(
-            "IfcMaterialLayer", **{"Material": self.settings["material"], "LayerThickness": 1.0}
-        )
-        layers.append(layer)
-        self.settings["layer_set"].MaterialLayers = layers
-        return layer
+    layers = list(settings["layer_set"].MaterialLayers or [])
+    layer = file.create_entity("IfcMaterialLayer", **{"Material": settings["material"], "LayerThickness": 1.0})
+    layers.append(layer)
+    settings["layer_set"].MaterialLayers = layers
+    return layer

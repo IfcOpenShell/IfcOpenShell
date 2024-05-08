@@ -21,58 +21,55 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, profile=None):
-        """Removes a profile item from a profile set
+def remove_profile(file, profile=None) -> None:
+    """Removes a profile item from a profile set
 
-        Note that it is invalid to have zero items in a set, so you should leave
-        at least one profile to ensure a valid IFC dataset.
+    Note that it is invalid to have zero items in a set, so you should leave
+    at least one profile to ensure a valid IFC dataset.
 
-        :param profile: The IfcMaterialProfile entity you want to remove
-        :type profile: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param profile: The IfcMaterialProfile entity you want to remove
+    :type profile: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # First, let's create a material set.
-            material_set = ifcopenshell.api.run("material.add_profile_set", model,
-                name="B1", set_type="IfcMaterialProfileSet")
+        # First, let's create a material set.
+        material_set = ifcopenshell.api.run("material.add_profile_set", model,
+            name="B1", set_type="IfcMaterialProfileSet")
 
-            # Create a steel material.
-            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        # Create a steel material.
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
-            # Create an I-beam profile curve. Notice how we name our profiles
-            # based on standardised steel profile names.
-            hea100 = self.file.create_entity(
-                "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
-                OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
-            )
+        # Create an I-beam profile curve. Notice how we name our profiles
+        # based on standardised steel profile names.
+        hea100 = file.create_entity(
+            "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
+            OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
+        )
 
-            # Define that steel material and cross section as a single profile item.
-            ifcopenshell.api.run("material.add_profile", model,
-                profile_set=material_set, material=steel, profile=hea100)
+        # Define that steel material and cross section as a single profile item.
+        ifcopenshell.api.run("material.add_profile", model,
+            profile_set=material_set, material=steel, profile=hea100)
 
-            # Imagine a welded square along the length of the profile.
-            welded_square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
-                profile=[(.0025, .0025), (.0325, .0025), (.0325, -.0025), (.0025, -.0025), (.0025, .0025)])
-            weld_profile = ifcopenshell.api.run("material.add_profile", model,
-                profile_set=material_set, material=steel, profile=welded_square)
+        # Imagine a welded square along the length of the profile.
+        welded_square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
+            profile=[(.0025, .0025), (.0325, .0025), (.0325, -.0025), (.0025, -.0025), (.0025, .0025)])
+        weld_profile = ifcopenshell.api.run("material.add_profile", model,
+            profile_set=material_set, material=steel, profile=welded_square)
 
-            # Let's remove our welded square.
-            ifcopenshell.api.run("material.remove_profile", model, profile=weld_profile)
-        """
+        # Let's remove our welded square.
+        ifcopenshell.api.run("material.remove_profile", model, profile=weld_profile)
+    """
 
-        self.file = file
-        self.settings = {"profile": profile}
+    settings = {"profile": profile}
 
-    def execute(self):
-        subelements = set()
-        for attribute in self.settings["profile"]:
-            if isinstance(attribute, ifcopenshell.entity_instance):
-                subelements.add(attribute)
-        self.file.remove(self.settings["profile"])
-        for subelement in subelements:
-            ifcopenshell.util.element.remove_deep2(self.file, subelement)
+    subelements = set()
+    for attribute in settings["profile"]:
+        if isinstance(attribute, ifcopenshell.entity_instance):
+            subelements.add(attribute)
+    file.remove(settings["profile"])
+    for subelement in subelements:
+        ifcopenshell.util.element.remove_deep2(file, subelement)
