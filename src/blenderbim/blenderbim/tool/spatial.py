@@ -113,14 +113,12 @@ class Spatial(blenderbim.core.tool.Spatial):
             for element in rel.RelatedObjects:
                 related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
             related_objects = sorted(related_objects, key=lambda e: e[1])
-            for element in related_objects:
-                element = element[0]
+            for element, _ in related_objects:
                 new = props.containers.add()
                 new.name = element.Name or "Unnamed"
                 new.long_name = element.LongName or ""
                 new.has_decomposition = bool(element.IsDecomposedBy)
                 new.ifc_definition_id = element.id()
-                new.elevation = element[1]
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
