@@ -16,6 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""An element may have an owner, indicating who is responsible, liable, or
+contactable regarding that element
+
+Note that in IFC2X3, element ownership is mandatory and must be addressed prior
+to the creation of any element at all. See :func:`create_owner_history` for
+examples.
+"""
+
+from .. import wrap_usecases
 from .add_actor import add_actor
 from .add_address import add_address
 from .add_application import add_application
@@ -39,3 +48,5 @@ from .remove_person_and_organisation import remove_person_and_organisation
 from .remove_role import remove_role
 from .unassign_actor import unassign_actor
 from .update_owner_history import update_owner_history
+
+wrap_usecases(__path__, __name__)

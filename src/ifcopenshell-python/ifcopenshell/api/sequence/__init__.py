@@ -16,6 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Manage work schedules, tasks, calendars, and more for 4D
+
+These are typically used for construction planning, but may also be used in
+managing recurring facility maintenance schedules.
+"""
+
+from .. import wrap_usecases
 from .add_task import add_task
 from .add_task_time import add_task_time
 from .add_time_period import add_time_period
@@ -59,3 +66,5 @@ from .unassign_process import unassign_process
 from .unassign_product import unassign_product
 from .unassign_recurrence_pattern import unassign_recurrence_pattern
 from .unassign_sequence import unassign_sequence
+
+wrap_usecases(__path__, __name__)

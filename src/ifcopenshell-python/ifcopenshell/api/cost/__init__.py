@@ -16,6 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Manage cost schedules, cost items, cost estimation and parametric quantity
+take-off
+
+IFC supports storing cost schedules and detailed cost breakdown structures,
+including formulas, subtotals, and parametric links to model element
+quantities.
+"""
+
+from .. import wrap_usecases
 from .add_cost_item import add_cost_item
 from .add_cost_item_quantity import add_cost_item_quantity
 from .add_cost_schedule import add_cost_schedule
@@ -35,3 +44,5 @@ from .remove_cost_item_quantity import remove_cost_item_quantity
 from .remove_cost_schedule import remove_cost_schedule
 from .remove_cost_value import remove_cost_value
 from .unassign_cost_item_quantity import unassign_cost_item_quantity
+
+wrap_usecases(__path__, __name__)

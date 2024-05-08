@@ -16,6 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Create geometric representations and assign them to elements
+
+These functions support both the creation of arbitrary geometry as well as
+geometry that follows parametric rules (e.g. layered geometry or profiled
+geometry extrusions).
+"""
+
+from .. import wrap_usecases
 from .add_axis_representation import add_axis_representation
 from .add_boolean import add_boolean
 try:
@@ -51,3 +59,5 @@ from .map_representation import map_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation
 from .unassign_representation import unassign_representation
+
+wrap_usecases(__path__, __name__)
