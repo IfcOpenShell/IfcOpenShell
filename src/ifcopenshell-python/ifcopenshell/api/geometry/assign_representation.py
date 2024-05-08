@@ -20,13 +20,16 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"product": None, "representation": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+def assign_representation(file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"product": None, "representation": None}
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         if self.settings["product"].is_a("IfcProduct"):
             product_type = ifcopenshell.util.element.get_type(self.settings["product"])

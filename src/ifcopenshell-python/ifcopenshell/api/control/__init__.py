@@ -15,3 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Processes and costs may be controlled by other entities which indicate
+constraints that determine how they can change
+
+This is an advanced feature mostly used in 4D/5D
+"""
+
+from .. import wrap_usecases
+from .assign_control import assign_control
+from .unassign_control import unassign_control
+
+wrap_usecases(__path__, __name__)

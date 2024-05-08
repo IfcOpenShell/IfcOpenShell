@@ -15,3 +15,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Manage common construction types of physical elements
+
+Almost all constructed elements may be grouped into "types". Types include wall
+types, window types, column types, equipment types, and more.
+
+Using types is critical to the success of any project.
+"""
+
+from .. import wrap_usecases
+from .assign_type import assign_type
+from .get_related_objects import get_related_objects
+from .map_type_representations import map_type_representations
+from .unassign_type import unassign_type
+
+wrap_usecases(__path__, __name__)

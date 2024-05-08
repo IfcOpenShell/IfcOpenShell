@@ -15,3 +15,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Manage property templates to standard project property names and data types
+
+To help standardise the naming, data types, and association of properties to
+elements, IFC supports property set templates. buildingSMART provides their own
+built-in ISO-standardised property templates, but governments, companies, and
+individuals may also create their own.
+"""
+
+from .. import wrap_usecases
+from .add_prop_template import add_prop_template
+from .add_pset_template import add_pset_template
+from .edit_prop_template import edit_prop_template
+from .edit_pset_template import edit_pset_template
+from .remove_prop_template import remove_prop_template
+from .remove_pset_template import remove_pset_template
+
+wrap_usecases(__path__, __name__)

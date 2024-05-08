@@ -15,3 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Assign spatial relationships such as when an element is in a space
+
+Physical elements (walls, doors, etc) may be contained in or reference spatial
+elements (spaces, storeys, buildings, etc).
+"""
+
+from .. import wrap_usecases
+from .assign_container import assign_container
+from .dereference_structure import dereference_structure
+from .reference_structure import reference_structure
+from .unassign_container import unassign_container
+
+wrap_usecases(__path__, __name__)

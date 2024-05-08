@@ -378,6 +378,7 @@ class BimToolUI:
             op.depth = cls.props.extrusion_depth
 
             add_layout_hotkey_operator(cls.layout, "Extend", "S_E", "")
+            add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__)
 
             if AuthoringData.data["active_class"] in (
                 "IfcCableCarrierSegment",
@@ -385,8 +386,8 @@ class BimToolUI:
                 "IfcDuctSegment",
                 "IfcPipeSegment",
             ):
-                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_F", "")
 
+                add_layout_hotkey_operator(cls.layout, "Add Fitting", "S_Y", "")
                 if context.region.type != "TOOL_HEADER":
                     cls.layout.operator("bim.mep_add_bend")
                     cls.layout.operator("bim.mep_add_transition")
@@ -394,7 +395,6 @@ class BimToolUI:
 
             else:
                 add_layout_hotkey_operator(cls.layout, "Edit Axis", "A_E", "")
-                add_layout_hotkey_operator(cls.layout, "Flip", "S_F", bpy.ops.bim.flip_object.__doc__)
                 add_layout_hotkey_operator(cls.layout, "Butt", "S_T", "")
                 add_layout_hotkey_operator(cls.layout, "Mitre", "S_Y", "")
                 add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
@@ -719,10 +719,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_wall()
         elif self.active_class in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
             bpy.ops.bim.flip_fill()
-        elif self.active_class in ("IfcBeam", "IfcColumn"):
+        elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.flip_object(flip_local_axes="XZ")
-        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
-            bpy.ops.bim.fit_flow_segments()
+
 
     def hotkey_S_G(self):
         obj = bpy.context.active_object
@@ -808,8 +807,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.join_wall(join_type="V")
+        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+            bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
+
 
     def hotkey_S_B(self):
         bpy.ops.bim.add_boundary()

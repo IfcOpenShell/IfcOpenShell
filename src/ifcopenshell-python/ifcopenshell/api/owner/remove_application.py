@@ -17,27 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, application=None):
-        """Removes an application
+def remove_application(file, application=None) -> None:
+    """Removes an application
 
-        Warning: removing an application may invalidate ownership histories.
-        Check whether or not the application is used anywhere prior to removal.
+    Warning: removing an application may invalidate ownership histories.
+    Check whether or not the application is used anywhere prior to removal.
 
-        :param address: The IfcApplication to remove.
-        :type address: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param address: The IfcApplication to remove.
+    :type address: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            application = ifcopenshell.api.run("owner.add_application", model)
-            ifcopenshell.api.run("owner.remove_address", model, application=application)
-        """
-        self.file = file
-        self.settings = {"application": application}
+        application = ifcopenshell.api.run("owner.add_application", model)
+        ifcopenshell.api.run("owner.remove_address", model, application=application)
+    """
+    settings = {"application": application}
 
-    def execute(self):
-        self.file.remove(self.settings["application"])
+    file.remove(settings["application"])

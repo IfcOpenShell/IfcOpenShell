@@ -15,3 +15,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Property sets and quantity sets let you store simple key value metadata
+associated with elements
+
+This is the simplest and most common way to store information about an element.
+For example, if a door has a fire rating, it is stored as a property.
+"""
+
+from .. import wrap_usecases
+from .add_pset import add_pset
+from .add_qto import add_qto
+from .edit_pset import edit_pset
+from .edit_qto import edit_qto
+from .remove_pset import remove_pset
+
+wrap_usecases(__path__, __name__)

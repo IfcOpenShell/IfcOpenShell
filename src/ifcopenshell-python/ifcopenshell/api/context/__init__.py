@@ -15,3 +15,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Contexts allow you to classify when geometry should be used in different
+purposes
+
+For example, a door may have many geometries assigned to it: a 3D body
+geometry, a clearance zone for disabled access and egress, and a 2D top down
+plan view representation annotating swing extents. Each geometry is assigned to
+a context to distinguish its purpose and level of detail.
+"""
+
+from .. import wrap_usecases
+from .add_context import add_context
+from .edit_context import edit_context
+from .remove_context import remove_context
+
+wrap_usecases(__path__, __name__)

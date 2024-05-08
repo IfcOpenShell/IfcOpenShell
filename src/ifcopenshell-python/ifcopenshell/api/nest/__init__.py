@@ -15,3 +15,22 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Nesting is when a component is attached to a host element
+
+Examples include when a faucet is attached using a predrilled hole in a basin,
+or when a modular connection occurs through a connection point. This implies
+that when a host element moves, the child nested components must move as well.
+
+Note that this API is not meant to be used for connection points on
+distribution systems. For that purpose, such as for pipe fittings and
+equipment, please see :mod:`ifcopenshell.api.system`.
+"""
+
+from .. import wrap_usecases
+from .assign_object import assign_object
+from .change_nest import change_nest
+from .reorder_nesting import reorder_nesting
+from .unassign_object import unassign_object
+
+wrap_usecases(__path__, __name__)

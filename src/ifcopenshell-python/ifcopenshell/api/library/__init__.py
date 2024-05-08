@@ -15,3 +15,22 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Manage references to external libraries
+
+An external library is any system which uses a key to store information. This
+allows you to associate IFC entities with any arbitrary external database, API,
+system, and so on. This is typically useful in smart building systems.
+"""
+
+from .. import wrap_usecases
+from .add_library import add_library
+from .add_reference import add_reference
+from .assign_reference import assign_reference
+from .edit_library import edit_library
+from .edit_reference import edit_reference
+from .remove_library import remove_library
+from .remove_reference import remove_reference
+from .unassign_reference import unassign_reference
+
+wrap_usecases(__path__, __name__)

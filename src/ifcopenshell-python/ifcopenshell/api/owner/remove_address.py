@@ -17,35 +17,32 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, address=None):
-        """Removes an address
+def remove_address(file, address=None) -> None:
+    """Removes an address
 
-        Naturally, any organisations or people using that address will have the
-        relationship removed.
+    Naturally, any organisations or people using that address will have the
+    relationship removed.
 
-        :param address: The IfcAddress to remove.
-        :type address: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param address: The IfcAddress to remove.
+    :type address: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            organisation = ifcopenshell.api.run("owner.add_organisation", model)
-            address = ifcopenshell.api.run("owner.add_address", model,
-                assigned_object=organisation, ifc_class="IfcPostalAddress")
+        organisation = ifcopenshell.api.run("owner.add_organisation", model)
+        address = ifcopenshell.api.run("owner.add_address", model,
+            assigned_object=organisation, ifc_class="IfcPostalAddress")
 
-            # Change our mind and delete it
-            ifcopenshell.api.run("owner.remove_address", model, address=address)
-        """
-        self.file = file
-        self.settings = {"address": address}
+        # Change our mind and delete it
+        ifcopenshell.api.run("owner.remove_address", model, address=address)
+    """
+    settings = {"address": address}
 
-    def execute(self):
-        for inverse in self.file.get_inverse(self.settings["address"]):
-            if inverse.is_a() in ("IfcOrganization", "IfcPerson"):
-                if inverse.Addresses == (self.settings["address"],):
-                    inverse.Addresses = None
-        self.file.remove(self.settings["address"])
+    for inverse in file.get_inverse(settings["address"]):
+        if inverse.is_a() in ("IfcOrganization", "IfcPerson"):
+            if inverse.Addresses == (settings["address"],):
+                inverse.Addresses = None
+    file.remove(settings["address"])

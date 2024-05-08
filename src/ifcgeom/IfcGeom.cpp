@@ -549,6 +549,36 @@ IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchem
 	return openings;
 }
 
+namespace {
+	template <typename T>
+	IfcSchema::IfcMaterial* get_single_from_aggregate(bool take_first_regardless_of_size, const T& agg) {
+		if (take_first_regardless_of_size ? agg->size() >= 1 : agg->size() == 1) {
+			auto* layer_or_profile = *agg->begin();
+			if (layer_or_profile->Material()) {
+				return layer_or_profile->Material();
+			}
+		}
+		return nullptr;
+	}
+#ifdef SCHEMA_HAS_IfcMaterialProfileSet
+	IfcSchema::IfcMaterial* get_single_from_set(bool take_first_regardless_of_size, IfcSchema::IfcMaterialProfileSet* profileset) {
+		return get_single_from_aggregate(take_first_regardless_of_size, profileset->MaterialProfiles());
+	}
+#endif
+	IfcSchema::IfcMaterial* get_single_from_set(bool take_first_regardless_of_size, IfcSchema::IfcMaterialLayerSet* profileset) {
+		return get_single_from_aggregate(take_first_regardless_of_size, profileset->MaterialLayers());
+	}
+
+	IfcSchema::IfcMaterial* get_single_from_usage(bool take_first_regardless_of_size, IfcSchema::IfcMaterialLayerSetUsage* usage) {
+		return get_single_from_set(take_first_regardless_of_size, usage->ForLayerSet());
+	}
+#ifdef SCHEMA_HAS_IfcMaterialProfileSet
+	IfcSchema::IfcMaterial* get_single_from_usage(bool take_first_regardless_of_size, IfcSchema::IfcMaterialProfileSetUsage* usage) {
+		return get_single_from_set(take_first_regardless_of_size, usage->ForProfileSet());
+	}
+#endif
+}
+
 const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
 	IfcSchema::IfcMaterial* single_material = 0;
 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
@@ -566,14 +596,19 @@ const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(c
 			single_material = associated_material->as<IfcSchema::IfcMaterial>();
 			// NB: IfcMaterialLayerSets are also considered, regardless of --enable-layerset-slicing. Picking
 			// the first material (in accordance with other viewers) when layerset-slicing is disabled.
-			if (!single_material && associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
-				IfcSchema::IfcMaterialLayerSet* layerset = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()->ForLayerSet();
-				if (getValue(GV_LAYERSET_FIRST) > 0.0 ? layerset->MaterialLayers()->size() >= 1 : layerset->MaterialLayers()->size() == 1) {
-					IfcSchema::IfcMaterialLayer* layer = (*layerset->MaterialLayers()->begin());
-					if (layer->Material()) {
-						single_material = layer->Material();
-					}
+			if (!single_material) {
+				if (auto* m = associated_material->as<IfcSchema::IfcMaterialLayerSetUsage>()) {
+					single_material = get_single_from_usage(getValue(GV_LAYERSET_FIRST) > 0.0, m);
+				} else if (auto* m = associated_material->as<IfcSchema::IfcMaterialLayerSet>()) {
+					single_material = get_single_from_set(getValue(GV_LAYERSET_FIRST) > 0.0, m);
 				}
+#ifdef SCHEMA_HAS_IfcMaterialProfileSet
+				else if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSetUsage>()) {
+					single_material = get_single_from_usage(getValue(GV_LAYERSET_FIRST) > 0.0, m);
+				} else if (auto* m = associated_material->as<IfcSchema::IfcMaterialProfileSet>()) {
+					single_material = get_single_from_set(getValue(GV_LAYERSET_FIRST) > 0.0, m);
+				}
+#endif
 			}
 		}
 	}

@@ -19,41 +19,37 @@ import ifcopenshell
 from typing import Any, Optional
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        reference: ifcopenshell.entity_instance,
-        attributes: Optional[dict[str, Any]] = None,
-    ):
-        """Edits the attributes of an IfcDocumentReference
+def edit_reference(
+    file: ifcopenshell.file,
+    reference: ifcopenshell.entity_instance,
+    attributes: Optional[dict[str, Any]] = None,
+) -> None:
+    """Edits the attributes of an IfcDocumentReference
 
-        For more information about the attributes and data types of an
-        IfcDocumentReference, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcDocumentReference, consult the IFC documentation.
 
-        :param reference: The IfcDocumentReference entity you want to edit
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param reference: The IfcDocumentReference entity you want to edit
+    :type reference: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            document = ifcopenshell.api.run("document.add_information", model)
-            ifcopenshell.api.run("document.edit_information", model,
-                information=document,
-                attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
-                "Location": "A-GA-6100 - Overall Plan.pdf"})
-            reference = ifcopenshell.api.run("document.add_reference", model, information=document)
-            ifcopenshell.api.run("document.edit_reference", model,
-                reference=reference, attributes={"Identification": "2.1.15"})
-        """
-        self.file = file
-        self.settings = {"reference": reference, "attributes": attributes or {}}
+        document = ifcopenshell.api.run("document.add_information", model)
+        ifcopenshell.api.run("document.edit_information", model,
+            information=document,
+            attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
+            "Location": "A-GA-6100 - Overall Plan.pdf"})
+        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+        ifcopenshell.api.run("document.edit_reference", model,
+            reference=reference, attributes={"Identification": "2.1.15"})
+    """
+    settings = {"reference": reference, "attributes": attributes or {}}
 
-    def execute(self) -> None:
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["reference"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["reference"], name, value)
