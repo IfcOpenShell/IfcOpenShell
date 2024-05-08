@@ -16,6 +16,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Manage physical materials (concrete, steel, etc) and their association to
+elements
+
+IFC supports both simple materials and parametric materials (materials that
+have layered thicknesses or cross sectional profiles).
+
+Parametric materials will include parametric constraints on the geometry of
+the element. These API functions do not cover that responsibility. See
+:mod:`ifcopenshell.api.geometry`.
+
+Note that this API only covers physical materials, not visual styles. If you
+want to look at visual styles such as colours, transparency, shading, or
+rendering options, see :mod:`ifcopenshell.api.style`.
+"""
+
+from .. import wrap_usecases
 from .add_constituent import add_constituent
 from .add_layer import add_layer
 from .add_list_item import add_list_item
@@ -40,3 +56,5 @@ from .remove_material_set import remove_material_set
 from .remove_profile import remove_profile
 from .reorder_set_item import reorder_set_item
 from .unassign_material import unassign_material
+
+wrap_usecases(__path__, __name__)

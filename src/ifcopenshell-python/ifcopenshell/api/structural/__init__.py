@@ -16,6 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Manage analytical properties for structural simulation
+
+This only handles authoring the analytical model, and does not actually perform
+any structural simulation. To perform the simulation, see IFC2CA.
+"""
+
+from .. import wrap_usecases
 from .add_structural_activity import add_structural_activity
 from .add_structural_analysis_model import add_structural_analysis_model
 from .add_structural_boundary_condition import add_structural_boundary_condition
@@ -37,3 +44,5 @@ from .remove_structural_load import remove_structural_load
 from .remove_structural_load_case import remove_structural_load_case
 from .remove_structural_load_group import remove_structural_load_group
 from .unassign_structural_analysis_model import unassign_structural_analysis_model
+
+wrap_usecases(__path__, __name__)
