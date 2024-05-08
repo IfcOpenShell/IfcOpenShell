@@ -240,12 +240,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def create_svg_sheet(cls, document, titleblock):
+    def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")
         sheet_builder.create(uri, titleblock)
         return uri
+
+    @classmethod
+    def add_drawings(cls, sheet):
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
+        drawing_references = {}
+        drawing_names = []
+        for reference in cls.get_document_references(sheet):
+            reference_description = cls.get_reference_description(reference)
+            if reference_description == "DRAWING":
+                drawing_references[Path(reference.Location).stem] = reference
+                drawing_names.append(Path(reference.Location).stem)
+        for drawing_annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
+            if drawing_annotation.Name in drawing_names:
+                sheet_builder.add_drawing(drawing_references[drawing_annotation.Name], drawing_annotation, sheet)
 
     @classmethod
     def delete_collection(cls, collection):
@@ -406,7 +421,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 references = document.HasDocumentReferences
             for reference in references:
-                if description and reference.Description != description:
+                if description and cls.get_reference_description(reference) != description:
                     continue
                 location = cls.get_document_uri(reference)
                 if location:
@@ -808,7 +823,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                 continue
 
             for reference in cls.get_document_references(sheet):
-                if reference.Description in ("SHEET", "LAYOUT", "RASTER"):
+                reference_description = cls.get_reference_description(reference)
+                if reference_description in ("SHEET", "LAYOUT", "RASTER"):
                     # These references are an internal detail and should not be visible to users
                     continue
                 new = props.sheets.add()
@@ -821,7 +837,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     new.identification = reference.Identification or ""
 
                 new.name = os.path.basename(reference.Location)
-                new.reference_type = reference.Description
+                new.reference_type = reference_description
 
     @classmethod
     def get_active_sheet(cls, context):
@@ -1553,8 +1569,27 @@ class Drawing(blenderbim.core.tool.Drawing):
         tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
-    def get_reference_description(cls, reference):
+    def get_reference_description(cls, reference: ifcopenshell.entity_instance) -> Union[str, None]:
+        if reference.file.schema == "IFC2X3":
+            return reference.Name
         return reference.Description
+
+    @classmethod
+    def generate_reference_attributes(cls, reference: ifcopenshell.entity_instance, **attributes: Any) -> dict[str, Any]:
+        """will automatically convert attributes below for IFC2X3 compatibility:
+
+        - Identification -> ItemReference
+
+        - Description -> Name
+        """
+        if reference.file.schema == "IFC2X3":
+            if "Description" in attributes:
+                attributes["Name"] = attributes["Description"]
+                del attributes["Description"]
+            if "Identification" in attributes:
+                attributes["ItemReference"] = attributes["Identification"]
+                del attributes["Identification"]
+        return attributes
 
     @classmethod
     def get_reference_location(cls, reference):
@@ -1622,8 +1657,23 @@ class Drawing(blenderbim.core.tool.Drawing):
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
-        # exclude annotations to avoid including annotations from other drawings
-        elements = {i for i in elements if not i.is_a("IfcAnnotation")}
+        
+        updated_set = set()
+
+        for i in elements:
+            # exclude annotations to avoid including annotations from other drawings
+            if not i.is_a("IfcAnnotation"): 
+                updated_set.add(i)
+                #add aggregate too, if element is host by one
+                if i.Decomposes:
+                    aggregate = i.Decomposes[0].RelatingObject
+                    #remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
+                    if not aggregate.is_a("IfcProject"): 
+                        updated_set.add(aggregate)
+
+        # After the iteration is complete, update elements with updated set 
+        elements.update(updated_set)
+            
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
@@ -1801,8 +1851,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            # Don't hide IfcAnnotations as some of them might exist without representations
-            if has_context or element.is_a("IfcAnnotation"):
+            # Don't hide IfcAnnotations or Aggregates as some of them might exist without representations
+            if has_context or element.is_a("IfcAnnotation") or element.IsDecomposedBy:
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.

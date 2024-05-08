@@ -15,3 +15,24 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Classification systems are a way of categorising objects
+
+Although IFC itself comes with a built-in classification hierarchy (e.g.
+IfcWall and its predefined types of PARTITIONING, etc), there are many external
+or custom classification systems such as Uniclass, Omniclass and more. IFC is
+able to integrate with any external classification system.
+
+This API allows you to manage and assign external classification systems and
+references.
+"""
+
+from .. import wrap_usecases
+from .add_classification import add_classification
+from .add_reference import add_reference
+from .edit_classification import edit_classification
+from .edit_reference import edit_reference
+from .remove_classification import remove_classification
+from .remove_reference import remove_reference
+
+wrap_usecases(__path__, __name__)

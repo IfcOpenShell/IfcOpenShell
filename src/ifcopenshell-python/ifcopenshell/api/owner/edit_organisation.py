@@ -17,32 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, organisation=None, attributes=None):
-        """Edits the attributes of an IfcOrganization
+def edit_organisation(file, organisation=None, attributes=None) -> None:
+    """Edits the attributes of an IfcOrganization
 
-        For more information about the attributes and data types of an
-        IfcOrganization, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcOrganization, consult the IFC documentation.
 
-        :param organisation: The IfcOrganization entity you want to edit
-        :type organisation: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param organisation: The IfcOrganization entity you want to edit
+    :type organisation: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects With Ballpens")
-            ifcopenshell.api.run("owner.edit_organisation", model, organisation=organisation,
-                attributes={"name": "Architects Without Ballpens"})
-        """
-        self.file = file
-        self.settings = {"organisation": organisation, "attributes": attributes or {}}
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects With Ballpens")
+        ifcopenshell.api.run("owner.edit_organisation", model, organisation=organisation,
+            attributes={"name": "Architects Without Ballpens"})
+    """
+    settings = {"organisation": organisation, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["organisation"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["organisation"], name, value)

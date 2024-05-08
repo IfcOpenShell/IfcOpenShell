@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import json
@@ -36,6 +37,7 @@ import blenderbim.core.style
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector
 from typing import Union
+from logging import Logger
 
 
 class IfcExporter:
@@ -163,10 +165,10 @@ class IfcExporter:
                 bpy.ops.bim.update_representation(obj=obj.name)
         tool.Geometry.record_object_position(obj)
 
-    def get_application_name(self):
+    def get_application_name(self) -> str:
         return "BlenderBIM"
 
-    def get_application_version(self):
+    def get_application_version(self) -> str:
         version = ".".join(
             [
                 str(x)
@@ -184,11 +186,13 @@ class IfcExporter:
 
 class IfcExportSettings:
     def __init__(self):
-        self.logger = None
-        self.output_file = None
+        self.logger: Logger = None
+        self.output_file: str = None
+        self.json_version: str = None
+        self.json_compact: bool = None
 
     @staticmethod
-    def factory(context, output_file, logger):
+    def factory(context: bpy.types.Context, output_file: str, logger: Logger) -> IfcExportSettings:
         settings = IfcExportSettings()
         settings.output_file = output_file
         settings.logger = logger

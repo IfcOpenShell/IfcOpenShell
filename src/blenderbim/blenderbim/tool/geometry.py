@@ -23,9 +23,14 @@ import hashlib
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.system
 import blenderbim.core.tool
+import blenderbim.core.drawing
 import blenderbim.core.style
 import blenderbim.core.spatial
+import blenderbim.core.system
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
@@ -622,7 +627,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.data.BIMMeshProperties.material_checksum = str([s.id() for s in cls.get_styles(obj) if s])
 
     @classmethod
-    def record_object_position(cls, obj):
+    def record_object_position(cls, obj: bpy.types.Object) -> None:
         # These are recorded separately because they have different numerical tolerances
         obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())

@@ -26,13 +26,19 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, unit: str = "METERS"):
+    def __init__(
+        self,
+        src: str,
+        file: ifcopenshell.file,
+        logger: Logger,
+        unit: str = "METER",
+    ):
         """Converts the length unit of a model to the specified unit
 
-        Allowed metric units include METERS, MILLIMETERS, CENTIMETERS, etc.
-        Allowed imperial units include INCHES, FEET, MILES.
+        Allowed metric units include METER, MILLIMETER, CENTIMETER, etc.
+        Allowed imperial units include INCH, FOOT, MILE.
 
-        :param unit: The name of the desired unit, defaults to "METERS"
+        :param unit: The name of the desired unit, defaults to "METER"
         :type unit: str
 
         Example:
@@ -40,10 +46,10 @@ class Patcher:
         .. code:: python
 
             # Convert to millimeters
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETERS"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["MILLIMETER"]})
 
             # Convert to feet
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FEET"]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FOOT"]})
         """
         self.src = src
         self.file = file

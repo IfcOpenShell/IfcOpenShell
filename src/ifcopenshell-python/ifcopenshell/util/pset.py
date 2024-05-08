@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations
 import re
 import pathlib
 import ifcopenshell
@@ -24,12 +23,12 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.type
 from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
-from typing import List, Generator, Optional
+from typing import List, Optional
 
-templates: dict[str, PsetQto] = {}
+templates: dict[str, "PsetQto"] = {}
 
 
-def get_template(schema: str) -> PsetQto:
+def get_template(schema: str) -> "PsetQto":
     global templates
     if schema not in templates:
         templates[schema] = PsetQto(schema)

@@ -15,3 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Manage georeferencing metadata
+
+IFC model geometry may have a coordinate reference system (CRS) assigned to it.
+It may also optionally have a map conversion defined to transform to and from
+map coordinates and project local engineering coordinates.
+"""
+
+from .. import wrap_usecases
+from .add_georeferencing import add_georeferencing
+from .edit_georeferencing import edit_georeferencing
+from .remove_georeferencing import remove_georeferencing
+
+wrap_usecases(__path__, __name__)

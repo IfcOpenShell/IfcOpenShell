@@ -17,16 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import time
 import uuid
 
 from .file import file
 from .guid import compress
-from . import main
+from .ifcopenshell_wrapper import version
 
 # A quick way to setup an 'empty' IFC file, taken from:
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/
@@ -62,8 +58,8 @@ END-ISO-10303-21;
 """
 
 DEFAULTS = {
-    "application": lambda d: "IfcOpenShell-%s" % main.version,
-    "application_version": lambda d: main.version,
+    "application": lambda d: "IfcOpenShell-%s" % version(),
+    "application_version": lambda d: version(),
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),

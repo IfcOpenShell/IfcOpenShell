@@ -20,38 +20,35 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "relating_element": None,
-            "related_element": None,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def disconnect_element(file, **usecase_settings) -> None:
+    settings = {
+        "relating_element": None,
+        "related_element": None,
+    }
+    for key, value in usecase_settings.items():
+        settings[key] = value
 
-    def execute(self):
-        incompatible_connections = []
+    incompatible_connections = []
 
-        for rel in self.settings["relating_element"].ConnectedTo:
-            if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == self.settings["related_element"]:
-                incompatible_connections.append(rel)
+    for rel in settings["relating_element"].ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["related_element"]:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["relating_element"].ConnectedFrom:
-            if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == self.settings["related_element"]:
-                incompatible_connections.append(rel)
+    for rel in settings["relating_element"].ConnectedFrom:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == settings["related_element"]:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["related_element"].ConnectedTo:
-            if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == self.settings["relating_element"]:
-                incompatible_connections.append(rel)
+    for rel in settings["related_element"].ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["relating_element"]:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["related_element"].ConnectedFrom:
-            if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == self.settings["relating_element"]:
-                incompatible_connections.append(rel)
+    for rel in settings["related_element"].ConnectedFrom:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == settings["relating_element"]:
+            incompatible_connections.append(rel)
 
-        if incompatible_connections:
-            for connection in set(incompatible_connections):
-                history = connection.OwnerHistory
-                self.file.remove(connection)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
+    if incompatible_connections:
+        for connection in set(incompatible_connections):
+            history = connection.OwnerHistory
+            file.remove(connection)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)

@@ -134,6 +134,19 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
         material_prop_purge()
 
 
+class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_material"
+    bl_label = "Diplicate Material"
+    bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty(name="Material ID")
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        tool.Material.duplicate_material(ifc_file.by_id(self.material))
+        material_prop_purge()
+        bpy.ops.bim.load_materials()
+
+
 class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material_set"
     bl_label = "Add Material Set"

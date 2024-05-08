@@ -20,6 +20,7 @@ from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
 from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 class BIM_PT_aggregate(Panel):
@@ -131,22 +132,29 @@ class BIM_PT_linked_aggregate(Panel):
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        props = context.active_object.BIMObjectAggregateProperties
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        props = obj.BIMObjectAggregateProperties
         row = layout.row(align=True)
-        row.label(text="Advanced Users Only", icon="ERROR")
-        row = layout.row(align=True)
-        
-        if type(AggregateData.data['total_linked_aggregate']) is int:
-            if AggregateData.data['total_linked_aggregate'] > 0:
-                row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
-                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
-                op.select_parts = False
-                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_OB_POINTCLOUD")
-                op.select_parts = True
-                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
-                op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
+
+
+        if element.Decomposes:
+            Number_Linked_Aggregates = AggregateData.data['total_linked_aggregate']
+            if not Number_Linked_Aggregates:
+                row.label(text="Not a Linked Aggregate")
+            else:
+                row.label(text=f"{Number_Linked_Aggregates} Linked Aggregates")
+            op = row.operator("bim.object_duplicate_move_linked_aggregate", text="", icon="DUPLICATE")
+            if type(Number_Linked_Aggregates) is int:
+                if Number_Linked_Aggregates > 0:
+                    op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
+                    op.select_parts = False
+                    op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_OB_POINTCLOUD")
+                    op.select_parts = True
+                    row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+                    op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
         else:
-            row.label(text="No Linked Aggregates")
+            row.label(text="Not an Aggregate")
             
         
 

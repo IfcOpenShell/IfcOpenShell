@@ -20,36 +20,33 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, actor=None):
-        """Removes an actor
+def remove_actor(file, actor=None) -> None:
+    """Removes an actor
 
-        :param actor: The IfcActor to remove.
-        :type actor: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param actor: The IfcActor to remove.
+    :type actor: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Setup an organisation with a single role
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
-            role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
-            ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+        # Setup an organisation with a single role
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
+        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
+        ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
 
-            # Assign that organisation to a newly created actor
-            actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+        # Assign that organisation to a newly created actor
+        actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
 
-            # Actually we need ballpens on this project
-            ifcopenshell.api.run("owner.remove_actor", model, actor=actor)
-        """
-        self.file = file
-        self.settings = {"actor": actor}
+        # Actually we need ballpens on this project
+        ifcopenshell.api.run("owner.remove_actor", model, actor=actor)
+    """
+    settings = {"actor": actor}
 
-    def execute(self):
-        history = self.settings["actor"].OwnerHistory
-        self.file.remove(self.settings["actor"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    history = settings["actor"].OwnerHistory
+    file.remove(settings["actor"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

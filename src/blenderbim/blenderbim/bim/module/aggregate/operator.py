@@ -96,12 +96,13 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
             )
 
             # Removes Pset related to Linked Aggregates
-            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate")
-            if pset:
-                pset = tool.Ifc.get().by_id(pset["id"])
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            if not element.is_a('IfcElementAssembly'):
+                pset = ifcopenshell.util.element.get_pset(element, 'BBIM_Linked_Aggregate')
+                if pset:
+                    pset = tool.Ifc.get().by_id(pset["id"])
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
 
-
+              
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
     """Enable editing aggregation relationship"""
 
@@ -132,6 +133,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty(name="IFC Class", default="IfcElementAssembly")
+    aggregate_name: bpy.props.StringProperty(name="Name", default="Default_Name")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -139,13 +141,15 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         row = self.layout
         row.prop(self, "ifc_class")
+        row = self.layout
+        row.prop(self, "aggregate_name")
 
     def _execute(self, context):
         try:
             ifc_class = tool.Ifc.schema().declaration_by_name(self.ifc_class).name()
         except:
             return
-        aggregate = self.create_aggregate(context, ifc_class)
+        aggregate = self.create_aggregate(context, ifc_class, self.aggregate_name)
 
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -173,8 +177,8 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
 
-    def create_aggregate(self, context, ifc_class):
-        aggregate = bpy.data.objects.new("Assembly", None)
+    def create_aggregate(self, context, ifc_class, aggregate_name):
+        aggregate = bpy.data.objects.new(aggregate_name, None)
         aggregate.location = context.scene.cursor.location
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
         return aggregate

@@ -17,30 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import annotations
-
 import os
 import re
 import numbers
 import zipfile
 import functools
+import ifcopenshell
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional, Any
 
-import ifcopenshell.util.element
-import ifcopenshell.util.file
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-
-try:
-    # Python 2
-    basestring
-except NameError:
-    # Python 3 or newer
-    basestring = (str, bytes)
 
 
 class Transaction:
@@ -52,7 +39,7 @@ class Transaction:
         self.batch_delete_ids = set()
         self.batch_inverses = []
 
-    def serialise_entity_instance(self, element):
+    def serialise_entity_instance(self, element: ifcopenshell.entity_instance) -> dict[str, Any]:
         info = element.get_info()
         for key, value in info.items():
             info[key] = self.serialise_value(element, value)
@@ -103,7 +90,7 @@ class Transaction:
                 }
             )
 
-    def store_delete(self, element):
+    def store_delete(self, element: ifcopenshell.entity_instance) -> None:
         inverses = {}
         if self.is_batched:
             if element.id() not in self.batch_delete_ids:
@@ -120,10 +107,18 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if ifcopenshell.util.element.has_element_reference(attribute, element):
+                if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         return inverses
+
+    def has_element_reference(self, value: Any, element: ifcopenshell.entity_instance) -> bool:
+        if isinstance(value, (tuple, list)):
+            for v in value:
+                if self.has_element_reference(v, element):
+                    return True
+            return False
+        return value == element
 
     def rollback(self):
         for operation in self.operations[::-1]:
@@ -181,7 +176,7 @@ class Transaction:
 file_dict = {}
 
 
-class file(object):
+class file:
     """Base class for containing IFC files.
 
     Class has instance methods for filtering by element Id, Type, etc.
@@ -259,7 +254,7 @@ class file(object):
         self.history_size = 64
         self.history = []
         self.future = []
-        self.transaction = None
+        self.transaction: Optional[Transaction] = None
 
         import weakref
 
@@ -312,7 +307,7 @@ class file(object):
         :param args: The positional arguments of the IFC class
         :param kwargs: The keyword arguments of the IFC class
         :returns: An entity instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 
@@ -376,14 +371,11 @@ class file(object):
             match = re.match(reg, self.wrapped_data.schema)
             version_tuple = tuple(
                 map(
-                    lambda pp: int(pp[1][len(pp[0]):]) if pp[1] else None,
+                    lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
                     ((p, match.group(p)) for p in prefixes),
                 )
             )
-            return "".join(
-                "".join(map(str, t)) if t[1] else ""
-                for t in zip(prefixes, version_tuple[0:2])
-            )
+            return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
         elif attr == "schema_identifier":
             return self.wrapped_data.schema
         elif attr == "schema_version":
@@ -399,7 +391,7 @@ class file(object):
     def __getitem__(self, key):
         if isinstance(key, numbers.Integral):
             return entity_instance(self.wrapped_data.by_id(key), self)
-        elif isinstance(key, basestring):
+        elif isinstance(key, (str, bytes)):
             return entity_instance(self.wrapped_data.by_guid(str(key)), self)
 
     def by_id(self, id: int) -> ifcopenshell.entity_instance:
@@ -410,8 +402,8 @@ class file(object):
 
         :raises RuntimeError: If `id` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         return self[id]
 
@@ -423,8 +415,8 @@ class file(object):
 
         :raises RuntimeError: If `guid` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         """
         return self[guid]
@@ -434,9 +426,9 @@ class file(object):
         If the entity already exists, it is not re-added. Existence of entity is checked by it's `.identity()`.
 
         :param inst: The entity instance to add
-        :type inst: ifcopenshell.entity_instance.entity_instance
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
 
         if self.transaction:
@@ -457,8 +449,11 @@ class file(object):
         :type type: string
         :param include_subtypes: Whether or not to return subtypes of the IFC class
         :type include_subtypes: bool
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+        :raises RuntimeError: If `type` is not found in IFC schema.
+
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
@@ -470,13 +465,13 @@ class file(object):
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
         :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
         :type max_levels: bool
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -494,12 +489,12 @@ class file(object):
         """Return a list of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
         :param with_attribute_indices: Returns pairs of <i, idx>
            where i[idx] is inst or contains inst. Requires allow_duplicate=True
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
@@ -519,7 +514,7 @@ class file(object):
         """Returns the number of entities that reference this entity
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :returns: The total number of references
         :rtype: int
         """
@@ -533,7 +528,7 @@ class file(object):
         the reference to the deleted will be removed from the aggregate.
 
         :param inst: The entity instance to delete
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :rtype: None
         """
         if self.transaction:
@@ -555,25 +550,31 @@ class file(object):
     def __iter__(self):
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
+    def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
-        :param format: Force use of a specific format. Guessed from file name if None.
-        Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
-        For zipped .ifcXML use format=".ifcXML" with zipped=True
+        :param format: Force use of a specific format. Guessed from file name
+            if None.  Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to
+            format=".ifc" with zipped=True) For zipped .ifcXML use
+            format=".ifcXML" with zipped=True
+        :type format: str
         :param zipped: zip the file after it is written
+        :type zipped: bool
 
-        Examples:
-        >>> model.write("path/to/model.ifc")
-        >>> model.write("path/to/model.ifcXML")
-        >>> model.write("path/to/model.ifcZIP")
-        >>> model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
-        >>> model.write("path/to/model.anyextension", format=".ifcXML")
+        Example:
+
+        .. code:: python
+
+            model.write("path/to/model.ifc")
+            model.write("path/to/model.ifcXML")
+            model.write("path/to/model.ifcZIP")
+            model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
+            model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if format == None:
-            format = ifcopenshell.util.file.guess_format(path)
+            format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
             serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
             serializer.finalize()
@@ -600,7 +601,7 @@ class file(object):
         return
 
     @staticmethod
-    def from_string(s: str) -> file:
+    def from_string(s: str) -> "file":
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod

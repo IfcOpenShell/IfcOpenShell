@@ -17,9 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import numpy.typing as npt
 import collections
+import collections.abc
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
 from typing import List, Tuple, Type, Union
 from itertools import chain
@@ -339,6 +344,16 @@ class ShapeBuilder:
                 "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
             )
 
+        kwargs = {
+            "ProfileName": name,
+            "ProfileType": profile_type,
+            "OuterCurve": outer_curve,
+        }
+        if self.file.schema == "IFC2X3":
+            kwargs["Position"] = self.file.create_entity(
+                "IfcAxis2Placement2D", self.file.create_entity("IfcCartesianPoint", [0.0, 0.0])
+            )
+
         if inner_curves:
             if not isinstance(inner_curves, collections.abc.Iterable):
                 inner_curves = [inner_curves]
@@ -349,13 +364,9 @@ class ShapeBuilder:
                         "Ref: https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcArbitraryClosedProfileDef.htm#8.15.3.1.4-Formal-propositions"
                     )
 
-            profile = self.file.createIfcArbitraryProfileDefWithVoids(
-                ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve, InnerCurves=inner_curves
-            )
+            profile = self.file.create_entity("IfcArbitraryProfileDefWithVoids", InnerCurves=inner_curves, **kwargs)
         else:
-            profile = self.file.createIfcArbitraryClosedProfileDef(
-                ProfileName=name, ProfileType=profile_type, OuterCurve=outer_curve
-            )
+            profile = self.file.create_entity("IfcArbitraryClosedProfileDef", **kwargs)
         return profile
 
     def translate(self, curve_or_item, translation: Vector, create_copy=False):
@@ -529,13 +540,13 @@ class ShapeBuilder:
 
     def create_axis2_placement_3d_from_matrix(
         self,
-        matrix: Union[np.ndarray, None] = None,
+        matrix: Union[npt.NDArray[np.float64], None] = None,
     ) -> ifcopenshell.entity_instance:
         """
         Create IfcAxis2Placement3D from numpy matrix.
 
         :param matrix: 4x4 transformation matrix, defaults to `np.eye(4)`
-        :type matrix: np.array[np.array[float]], optional
+        :type matrix: npt.NDArray[np.float64], optional
         :return: IfcAxis2Placement3D
         :rtype: ifcopenshell.entity_instance
         """

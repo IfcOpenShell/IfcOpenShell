@@ -111,16 +111,17 @@ class Spatial(blenderbim.core.tool.Spatial):
         for rel in parent.IsDecomposedBy or []:
             related_objects = []
             for element in rel.RelatedObjects:
+                # skip objects without placements
+                if not element.is_a("IfcProduct"):
+                    continue
                 related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
             related_objects = sorted(related_objects, key=lambda e: e[1])
-            for element in related_objects:
-                element = element[0]
+            for element, _ in related_objects:
                 new = props.containers.add()
                 new.name = element.Name or "Unnamed"
                 new.long_name = element.LongName or ""
                 new.has_decomposition = bool(element.IsDecomposedBy)
                 new.ifc_definition_id = element.id()
-                new.elevation = element[1]
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
@@ -583,14 +584,32 @@ class Spatial(blenderbim.core.tool.Spatial):
         obj.location = newLoc
 
     @classmethod
-    def set_obj_origin_to_cursor_position(cls, obj):
+    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj):
+        mat = obj.matrix_world
+        inverted = mat.inverted()
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
+        global_bbox_center = mat @ local_bbox_center
+        global_obj_origin = global_bbox_center
+        global_obj_origin.z = 0
+
+        oldLoc = obj.location
+        newLoc = global_obj_origin
+        diff = newLoc - oldLoc
+        for vert in obj.data.vertices:
+            aux_vector = mat @ vert.co
+            aux_vector = aux_vector - diff
+            vert.co = inverted @ aux_vector
+        obj.location = newLoc
+
+    @classmethod
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj):
         mat = obj.matrix_world
         inverted = mat.inverted()
 
         collection = bpy.context.view_layer.active_layer_collection.collection
         collection_obj = collection.BIMCollectionProperties.obj
         x, y = bpy.context.scene.cursor.location.xy
-        z = collection_obj.matrix_world.translation.z
+        z = 0
 
         oldLoc = obj.location
         newLoc = Vector((x, y, z))

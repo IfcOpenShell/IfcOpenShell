@@ -93,7 +93,7 @@ class SvgWriter:
 
     def setup_drawing_resource_paths(self, element):
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
-        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns"):
+        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
             resource_path = pset.get(resource)
             if not resource_path:
                 self.resource_paths[resource] = None
@@ -719,14 +719,15 @@ class SvgWriter:
             self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style)
         )
 
-    def get_reference_and_sheet_id_from_annotation(self, element):
+    def get_reference_and_sheet_id_from_annotation(self, element: ifcopenshell.entity_instance) -> tuple[str, str]:
         reference_id = "-"
         sheet_id = "-"
         drawing = tool.Drawing.get_annotation_element(element)
         reference = tool.Drawing.get_drawing_reference(drawing)
         if reference:
             for sheet_reference in tool.Ifc.get().by_type("IfcDocumentReference"):
-                if sheet_reference.Description != "DRAWING" or sheet_reference.Location != reference.Location:
+                reference_description = tool.Drawing.get_reference_description(sheet_reference)
+                if reference_description != "DRAWING" or sheet_reference.Location != reference.Location:
                     continue
                 sheet = tool.Drawing.get_reference_document(sheet_reference)
                 if sheet:

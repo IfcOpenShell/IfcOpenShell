@@ -19,6 +19,7 @@
 import shapely
 import shapely.ops
 import numpy as np
+import numpy.typing as npt
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -27,6 +28,9 @@ from typing import Optional, Literal, Union, Iterable
 tol = 1e-6
 AXIS_LITERAL = Literal["X", "Y", "Z"]
 VECTOR_3D = tuple[float, float, float]
+
+MatrixType = npt.NDArray[np.float64]
+"""`npt.NDArray[np.float64]`"""
 
 
 def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
@@ -113,19 +117,19 @@ def get_z(geometry) -> float:
     return max(z_values) - min(z_values)
 
 
-def get_shape_matrix(shape) -> np.ndarray:
+def get_shape_matrix(shape) -> MatrixType:
     """Formats the transformation matrix of a shape as a 4x4 numpy array
 
     :param shape: Shape output calculated by IfcOpenShell
     :type shape: shape
     :return: A 4x4 numpy array representing the transformation matrix
-    :rtype: np.array
+    :rtype: MatrixType
     """
     m = shape.transformation.matrix.data
     return np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
 
 
-def get_bbox_centroid(geometry) -> tuple[float]:
+def get_bbox_centroid(geometry) -> tuple[float, float, float]:
     """Calculates the bounding box centroid of the geometry
 
     The centroid is in local coordinates relative to the object's placement.
@@ -133,11 +137,14 @@ def get_bbox_centroid(geometry) -> tuple[float]:
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: tuple[float]
+    :rtype: tuple[float, float, float]
     """
     x_values = [geometry.verts[i] for i in range(0, len(geometry.verts), 3)]
     y_values = [geometry.verts[i + 1] for i in range(0, len(geometry.verts), 3)]
     z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
+    x_values: list[float]
+    y_values: list[float]
+    z_values: list[float]
     minx = min(x_values)
     maxx = max(x_values)
     miny = min(y_values)
@@ -147,27 +154,27 @@ def get_bbox_centroid(geometry) -> tuple[float]:
     return (minx + ((maxx - minx) / 2), miny + ((maxy - miny) / 2), minz + ((maxz - minz) / 2))
 
 
-def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> tuple[float]:
+def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
     """Calculates the element's bounding box centroid
 
     The centroid is in global coordinates. Note that if you have the shape, it
     is more efficient to use ``get_shape_bbox_centroid``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: tuple[float]
+    :rtype: npt.NDArray[np.float64]
     """
     centroid = get_bbox_centroid(geometry)
     if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
-        return centroid
+        return np.array(centroid)
     mat = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_shape_bbox_centroid(shape, geometry) -> tuple[float]:
+def get_shape_bbox_centroid(shape, geometry) -> npt.NDArray[np.float64]:
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
@@ -178,13 +185,13 @@ def get_shape_bbox_centroid(shape, geometry) -> tuple[float]:
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: A tuple representing the XYZ centroid
-    :rtype: tuple[float]
+    :rtype: npt.NDArray[np.float64]
     """
     centroid = get_bbox_centroid(geometry)
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry) -> np.ndarray[np.ndarray[float]]:
+def get_vertices(geometry) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -200,7 +207,7 @@ def get_vertices(geometry) -> np.ndarray[np.ndarray[float]]:
     return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
 
 
-def get_edges(geometry) -> np.ndarray[np.ndarray[int]]:
+def get_edges(geometry) -> npt.NDArray[np.int32]:
     """Get all the edges as a numpy array
 
     Results are a nested numpy array e.g. [[e1v1, e1v2], [e2v1, e2v2], ...]
@@ -215,10 +222,10 @@ def get_edges(geometry) -> np.ndarray[np.ndarray[int]]:
     :rtype: np.array[np.array[int]]
     """
     edges = geometry.edges
-    return [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
+    return np.array([[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)])
 
 
-def get_faces(geometry) -> np.ndarray[np.ndarray[int]]:
+def get_faces(geometry) -> npt.NDArray[np.int32]:
     """Get all the faces as a numpy array
 
     Faces are always triangulated. If the shape is a BRep and you want to get
@@ -232,10 +239,10 @@ def get_faces(geometry) -> np.ndarray[np.ndarray[int]]:
     :rtype: np.array[np.array[int]]
     """
     faces = geometry.faces
-    return [[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)]
+    return np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
 
 
-def get_shape_vertices(shape, geometry) -> np.ndarray[np.ndarray[float]]:
+def get_shape_vertices(shape, geometry) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
@@ -255,7 +262,7 @@ def get_shape_vertices(shape, geometry) -> np.ndarray[np.ndarray[float]]:
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_element_vertices(element: ifcopenshell.entity_instance, geometry) -> np.ndarray[np.ndarray[float]]:
+def get_element_vertices(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
@@ -264,7 +271,7 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry) -> np.
     Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: A numpy array listing all the vertices. Each vertex is a numpy array with XYZ coordinates.
@@ -340,7 +347,7 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
     ``get_shape_bottom_elevation``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: The Z value
@@ -356,7 +363,7 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry) -
     ``get_shape_top_elevation``.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :param geometry: Geometry output calculated by IfcOpenShell
     :type geometry: geometry
     :return: The Z value
@@ -365,7 +372,7 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry) -
     return max([v[2] for v in get_element_vertices(element, geometry)])
 
 
-def get_bbox(vertices: Iterable[VECTOR_3D]) -> tuple[np.ndarray[float]]:
+def get_bbox(vertices: Iterable[VECTOR_3D]) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     """Gets the bounding box of vertices
 
     :param vertices: An iterable of vertices
@@ -388,7 +395,7 @@ def get_bbox(vertices: Iterable[VECTOR_3D]) -> tuple[np.ndarray[float]]:
     return (np.array([minx, miny, minz]), np.array([maxx, maxy, maxz]))
 
 
-def get_area_vf(vertices: np.ndarray[VECTOR_3D], faces: np.ndarray[Iterable[int]]) -> float:
+def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32]) -> float:
     """Calculates the surface area given a list of vertices and triangulated faces
 
     :param vertices: A list of 3D vertices, such as returned from get_vertices.
@@ -649,9 +656,9 @@ def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.ent
     solid extrusions. This is useful for later doing 2D take-off from profiles.
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :return: A list of profiles
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
     """
     material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
     if material and material.is_a("IfcMaterialProfileSet"):
@@ -663,9 +670,9 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     """Gets all extruded area solids used to define an element's model body geometry
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :return: A list of extrusion representation items
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
     """
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:

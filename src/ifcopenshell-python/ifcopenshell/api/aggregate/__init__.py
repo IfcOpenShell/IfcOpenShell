@@ -16,9 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Aggregates are the concept of breaking down larger wholes into smaller parts.
+"""Aggregates is the concept of breaking down larger wholes into smaller parts.
 
-One common use is spatial elements, such as how a site has multiple buildings,
-and a building has multiple storeys. Another is for regular elements, such as
-how a wall is made out of members and coverings.
+For example, spatial elements such as sites are broken down into one or more
+buildings, and a building is broken down into storeys. Another example is for
+physical elements, such as how a wall is made out of members and coverings.
 """
+
+from .. import wrap_usecases
+from .assign_object import assign_object
+from .unassign_object import unassign_object
+
+wrap_usecases(__path__, __name__)

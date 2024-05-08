@@ -15,3 +15,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Create, copy, or remove physical elements such as walls, doors, slabs, etc
+
+This is one of the most used API modules and should be used any time you want
+to create, remove, copy, or change a physical or spatial element. See
+:func:`create_entity` to get started.
+
+This module should also be used to create types. To then associate types with
+elements, see :mod:`ifcopenshell.api.type`.
+"""
+
+from .. import wrap_usecases
+from .copy_class import copy_class
+from .create_entity import create_entity
+from .reassign_class import reassign_class
+from .remove_product import remove_product
+
+wrap_usecases(__path__, __name__)

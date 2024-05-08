@@ -15,3 +15,21 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Create an IFC project
+
+All IFCs must have one, and only one IFC project before any data may be
+associated. If you are starting from scratch, see :func:create_file.
+
+Once a project exists, you may optionally create project libraries and
+associate type assets with it. You may also append assets from other projects
+into your project.
+"""
+
+from .. import wrap_usecases
+from .append_asset import append_asset
+from .assign_declaration import assign_declaration
+from .create_file import create_file
+from .unassign_declaration import unassign_declaration
+
+wrap_usecases(__path__, __name__)

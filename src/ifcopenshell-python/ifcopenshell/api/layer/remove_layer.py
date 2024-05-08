@@ -17,27 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, layer=None):
-        """Removes a layer
+def remove_layer(file, layer=None) -> None:
+    """Removes a layer
 
-        All representation items assigned to the layer will remain, but the
-        relationship to the layer will be removed.
+    All representation items assigned to the layer will remain, but the
+    relationship to the layer will be removed.
 
-        :param layer: The IfcPresentationLayerAssignment entity to remove
-        :type layer: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param layer: The IfcPresentationLayerAssignment entity to remove
+    :type layer: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
-            ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
-        """
-        self.file = file
-        self.settings = {"layer": layer}
+        layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
+        ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
+    """
+    settings = {"layer": layer}
 
-    def execute(self):
-        self.file.remove(self.settings["layer"])
+    file.remove(settings["layer"])

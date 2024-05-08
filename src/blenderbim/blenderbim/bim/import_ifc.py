@@ -34,6 +34,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import blenderbim.tool as tool
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
@@ -199,7 +200,7 @@ class MaterialCreator:
 
 
 class IfcImporter:
-    def __init__(self, ifc_import_settings):
+    def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
         self.file: ifcopenshell.file = None
@@ -298,6 +299,7 @@ class IfcImporter:
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
         self.setup_arrays()
+        self.profile_code("Setup arrays")
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -430,7 +432,7 @@ class IfcImporter:
         self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
         self.annotations -= drawing_annotations
 
-        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement")]
+        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
         if self.ifc_import_settings.is_coordinating:
             self.elements = [e for e in self.elements if e.Representation]
 
@@ -601,6 +603,9 @@ class IfcImporter:
         return products
 
     def predict_dense_mesh(self):
+        if self.ifc_import_settings.should_use_native_meshes:
+            return
+
         threshold = 10000  # Just from experience.
 
         faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
@@ -725,7 +730,7 @@ class IfcImporter:
                         if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
 
-    def apply_blender_offset_to_matrix_world(self, obj, matrix):
+    def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             if obj.data and obj.data.get("has_cartesian_point_offset", None):
@@ -862,7 +867,6 @@ class IfcImporter:
         else:
             self.create_generic_elements(self.spatial_elements, unselectable=False)
 
-
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
         tmp = self.context_settings
@@ -953,7 +957,9 @@ class IfcImporter:
             self.create_product(element, mesh=mesh)
 
     def create_products(
-        self, products, settings: Optional[ifcopenshell.geom.main.settings] = None
+        self,
+        products: set[ifcopenshell.entity_instance],
+        settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
         results = set()
         if not products:
@@ -1492,7 +1498,11 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        project_collection.children[self.type_collection.name].hide_viewport = True
+        types_collection = project_collection.children[self.type_collection.name]
+        types_collection.hide_viewport = False
+        for obj in types_collection.collection.objects: #turn off all objects inside Types collection.
+            obj.hide_set(True)
+
 
     def clean_mesh(self):
         obj = None
@@ -1627,30 +1637,34 @@ class IfcImporter:
         if self.ifc_import_settings.has_filter:
             rel_aggregates = set()
             for element in self.elements:
-                if element.IsDecomposedBy:
-                    rel_aggregates.add(element.IsDecomposedBy[0])
-                elif element.Decomposes:
-                    rel_aggregates.add(element.Decomposes[0])
-                elif getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
-                    if [e for e in element.IsNestedBy[0].RelatedObjects if not e.is_a("IfcPort")]:
-                        rel_aggregates.add(element.IsNestedBy[0])
-                elif getattr(element, "Nests", []):
-                    rel_aggregates.add(element.Nests[0])
+                if decomposed_by := element.IsDecomposedBy:
+                    rel_aggregates.add(decomposed_by[0])
+                elif decomposes := element.Decomposes:
+                    rel_aggregates.add(decomposes[0])
+                elif nested_by := getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
+                    if next((e for e in nested_by[0].RelatedObjects if not e.is_a("IfcPort")), None):
+                        rel_aggregates.add(nested_by[0])
+                elif nests := getattr(element, "Nests", []):
+                    rel_aggregates.add(nests[0])
+                elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
+                    rel_aggregates.add(element.AdheresToElement[0])
         else:
             rel_aggregates = [
                 r
                 for r in self.file.by_type("IfcRelAggregates")
-                if r.RelatingObject.is_a("IfcElement") or r.RelatingObject.is_a("IfcElementType")
+                if (relating_obj := r.RelatingObject).is_a("IfcElement") or relating_obj.is_a("IfcElementType")
             ] + [
                 r
                 for r in self.file.by_type("IfcRelNests")
                 if (
-                    r.RelatingObject.is_a("IfcElement")
-                    or r.RelatingObject.is_a("IfcElementType")
-                    or (r.RelatingObject.is_a("IfcPositioningElement") and not r.RelatingObject.is_a("IfcGrid"))
+                    (relating_obj := r.RelatingObject).is_a("IfcElement")
+                    or relating_obj.is_a("IfcElementType")
+                    or (relating_obj.is_a("IfcPositioningElement") and not relating_obj.is_a("IfcGrid"))
                 )
                 and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
             ]
+            if self.file.schema == "IFC4X3":
+                rel_aggregates += [r for r in self.file.by_type("IfcRelAdheresToElement")]
 
         if len(rel_aggregates) > 10000:
             # More than 10,000 collections makes Blender unhappy
@@ -1660,7 +1674,9 @@ class IfcImporter:
 
         aggregates: dict[str, dict] = {}
         for rel_aggregate in rel_aggregates:
-            element: ifcopenshell.entity_instance = rel_aggregate.RelatingObject
+            element: ifcopenshell.entity_instance = getattr(rel_aggregate, "RelatingObject", None) or getattr(
+                rel_aggregate, "RelatingElement"
+            )
             collection = bpy.data.collections.new(tool.Loader.get_name(element))
             aggregates[element.GlobalId] = {"element": element, "collection": collection}
             self.collections[element.GlobalId] = collection
@@ -1761,6 +1777,9 @@ class IfcImporter:
         elif getattr(element, "Nests", None) and not element.is_a("IfcPort"):
             nest = ifcopenshell.util.element.get_nest(element)
             return self.collections[nest.GlobalId].objects.link(obj)
+        elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
+            adherend = element.AdheresToElement[0].RelatingElement
+            return self.collections[adherend.GlobalId].objects.link(obj)
 
         return self.place_object_in_spatial_decomposition_collection(element, obj)
 
@@ -1810,7 +1829,7 @@ class IfcImporter:
             if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
                 return rel.RelatingGroup
 
-    def get_element_matrix(self, element: ifcopenshell.entity_instance) -> np.array:
+    def get_element_matrix(self, element: ifcopenshell.entity_instance) -> np.ndarray:
         if isinstance(element, ifcopenshell.sqlite_entity):
             result = self.geometry_cache["shapes"][element.id()]["matrix"]
         else:
@@ -1932,7 +1951,9 @@ class IfcImporter:
 
                 # See bug 3546
                 # ios_edges holds true edges that aren't triangulated.
-                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry)))
+                #
+                # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
+                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
 
                 mesh.vertices.add(num_vertices)
                 mesh.vertices.foreach_set("co", verts)
@@ -1959,14 +1980,14 @@ class IfcImporter:
 
             print(traceback.format_exc())
 
-    def a2p(self, o, z, x):
+    def a2p(self, o: mathutils.Vector, z: mathutils.Vector, x: mathutils.Vector) -> mathutils.Matrix:
         y = z.cross(x)
         r = mathutils.Matrix((x, y, z, o))
         r.resize_4x4()
         r.transpose()
         return r
 
-    def get_axis2placement(self, plc):
+    def get_axis2placement(self, plc: ifcopenshell.entity_instance) -> mathutils.Matrix:
         if plc.is_a("IfcAxis2Placement3D"):
             z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
             x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
@@ -1986,7 +2007,7 @@ class IfcImporter:
         o = plc.LocalOrigin.Coordinates
         return self.a2p(o, z, x)
 
-    def get_local_placement(self, plc):
+    def get_local_placement(self, plc: Optional[ifcopenshell.entity_instance] = None) -> mathutils.Matrix:
         if plc is None:
             return mathutils.Matrix()
         if plc.PlacementRelTo is None:
@@ -2001,11 +2022,11 @@ class IfcImporter:
                 bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
                 break
 
-    def link_element(self, element, obj):
+    def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
         self.added_data[element.id()] = obj
         tool.Ifc.link(element, obj)
 
-    def set_matrix_world(self, obj, matrix_world):
+    def set_matrix_world(self, obj: bpy.types.Object, matrix_world: mathutils.Matrix) -> None:
         obj.matrix_world = matrix_world
         tool.Geometry.record_object_position(obj)
 
@@ -2028,7 +2049,7 @@ class IfcImporter:
 
 class IfcImportSettings:
     def __init__(self):
-        self.logger = None
+        self.logger: logging.Logger = None
         self.input_file = None
         self.diff_file = None
         self.should_use_cpu_multiprocessing = True

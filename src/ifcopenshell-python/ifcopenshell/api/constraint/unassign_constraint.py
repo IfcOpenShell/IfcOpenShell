@@ -21,31 +21,33 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
+def unassign_constraint(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    constraint: ifcopenshell.entity_instance,
+) -> None:
+    """Unassigns a constraint from a list of products
+
+    The constraint will not be deleted and is available to be assigned to
+    other products.
+
+    :param products: The list of products the constraint applies to.
+    :type products: list[ifcopenshell.entity_instance]
+    :param constraint: The IfcObjective constraint
+    :type constraint: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "products": products,
+        "constraint": constraint,
+    }
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        products: list[ifcopenshell.entity_instance],
-        constraint: ifcopenshell.entity_instance,
-    ):
-        """Unassigns a constraint from a list of products
-
-        The constraint will not be deleted and is available to be assigned to
-        other products.
-
-        :param products: The list of products the constraint applies to.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :param constraint: The IfcObjective constraint
-        :type constraint: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "constraint": constraint,
-        }
-
     def execute(self):
         products = set(self.settings["products"])
         if not products:

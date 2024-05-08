@@ -44,18 +44,32 @@ class BIM_PT_styles(Panel):
 
         self.props = context.scene.BIMStylesProperties
 
-        if self.props.is_editing:
-            row = self.layout.row(align=True)
-            row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
-            if not self.props.is_adding:
-                row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
-            row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
-        else:
+        if not self.props.is_editing:
             row = self.layout.row(align=True)
             row.label(text="{} Styles".format(StylesData.data["total_styles"]), icon="SHADING_RENDERED")
             blenderbim.bim.helper.prop_with_search(row, self.props, "style_type", text="")
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
+
+        active_style = self.props.styles and self.props.active_style_index < len(self.props.styles)
+        row = self.layout.row(align=True)
+        row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
+        row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
+
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        if not self.props.is_adding:
+            row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
+        if active_style:
+            style = self.props.styles[self.props.active_style_index]
+            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
+            material = bpy.data.materials[material_name]
+
+            row.operator("bim.duplicate_style", text="", icon="DUPLICATE").style = style.ifc_definition_id
+            row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
+            op = row.operator("bim.enable_editing_style", text="", icon="GREASEPENCIL")
+            op.style = style.ifc_definition_id
+            row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
 
         self.layout.template_list("BIM_UL_styles", "", self.props, "styles", self.props, "active_style_index")
 
@@ -77,17 +91,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.disable_adding_presentation_style", text="", icon="CANCEL")
 
         # style ui tools
-        if self.props.styles and self.props.active_style_index < len(self.props.styles):
-            row = self.layout.row(align=True)
-            style = self.props.styles[self.props.active_style_index]
-            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
-            material = bpy.data.materials[material_name]
-
-            op = row.operator("bim.enable_editing_style", text="Edit Style", icon="GREASEPENCIL")
-            op.style = style.ifc_definition_id
-            row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
-            row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
-
+        if active_style:
             row = self.layout.row(align=True)
             row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
             op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")

@@ -19,6 +19,7 @@
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
@@ -58,6 +59,12 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def disable_editing_styles(cls):
         bpy.context.scene.BIMStylesProperties.is_editing = False
+
+    @classmethod
+    def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        new_style = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), style)
+        new_style.Name = style.Name + "_copy"
+        return new_style
 
     @classmethod
     def enable_editing(cls, obj):

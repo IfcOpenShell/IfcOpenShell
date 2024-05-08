@@ -20,68 +20,65 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(
-        self, file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
-    ):
-        """Unassigns representation items from a layer
+def unassign_layer(
+    file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
+) -> None:
+    """Unassigns representation items from a layer
 
-        If the representation item isn't assigned to the layer, nothing will
-        happen.
-        If after unassignment layer won't have any assigned items it will be
-        removed to keep IFC valid.
+    If the representation item isn't assigned to the layer, nothing will
+    happen.
+    If after unassignment layer won't have any assigned items it will be
+    removed to keep IFC valid.
 
-        :param items: A list IfcRepresentationItem elements to unassign
-        :type items: list[ifcopenshell.entity_instance.entity_instance]
-        :param layer: The IfcPresentationLayerAssignment to unassign from
-        :type layer: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param items: A list IfcRepresentationItem elements to unassign
+    :type items: list[ifcopenshell.entity_instance]
+    :param layer: The IfcPresentationLayerAssignment to unassign from
+    :type layer: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Remember, all geometry needs to specify the context it is part of first.
-            # See ifcopenshell.api.context.add_context for details.
-            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-            body = ifcopenshell.api.run("context.add_context", model,
-                context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
-            )
+        # Remember, all geometry needs to specify the context it is part of first.
+        # See ifcopenshell.api.context.add_context for details.
+        model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+        body = ifcopenshell.api.run("context.add_context", model,
+            context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
 
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-            representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
-                context=body, length=5, height=3, thickness=0.2)
-            ifcopenshell.api.run("geometry.assign_representation", model,
-                product=wall, representation=representation)
-            ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+            context=body, length=5, height=3, thickness=0.2)
+        ifcopenshell.api.run("geometry.assign_representation", model,
+            product=wall, representation=representation)
+        ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
 
-            # Now let's create a layer that contains walls
-            layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
+        # Now let's create a layer that contains walls
+        layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
 
-            # And assign our wall representation item (in this example, there is
-            # only one item) to the layer.
-            ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
+        # And assign our wall representation item (in this example, there is
+        # only one item) to the layer.
+        ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
 
-            # Let's undo it!
-            ifcopenshell.api.run("layer.unassign_layer", model, items=[representation.Items[0]], layer=layer)
-        """
-        self.file = file
-        self.settings = {
-            "items": items,
-            "layer": layer,
-        }
+        # Let's undo it!
+        ifcopenshell.api.run("layer.unassign_layer", model, items=[representation.Items[0]], layer=layer)
+    """
+    settings = {
+        "items": items,
+        "layer": layer,
+    }
 
-    def execute(self):
-        layer = self.settings["layer"]
-        assigned_items = set(layer.AssignedItems) or set()
-        items = set(self.settings["items"])
-        if not items.issubset(assigned_items):
-            return
-        assigned_items = list(assigned_items - items)
+    layer = settings["layer"]
+    assigned_items = set(layer.AssignedItems) or set()
+    items = set(settings["items"])
+    if not items.issubset(assigned_items):
+        return
+    assigned_items = list(assigned_items - items)
 
-        # keep IFC valid in case if there are no items left
-        if assigned_items:
-            layer.AssignedItems = assigned_items
-        else:
-            self.file.remove(layer)
+    # keep IFC valid in case if there are no items left
+    if assigned_items:
+        layer.AssignedItems = assigned_items
+    else:
+        file.remove(layer)

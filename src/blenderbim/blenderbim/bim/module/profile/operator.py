@@ -66,8 +66,14 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        current_index = props.active_profile_index
         ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
         bpy.ops.bim.load_profiles()
+
+        # preserve selected index if possible
+        if props.profiles:
+            props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
 class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -123,6 +129,27 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
         profile.ProfileName = "New Profile"
+        bpy.ops.bim.load_profiles()
+
+
+class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_profile_def"
+    bl_label = "Duplicate Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMProfileProperties
+        if len(props.profiles) > props.active_profile_index:
+            return True
+        cls.poll_message_set("No profile selected to duplicate.")
+        return False
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(props.profiles[props.active_profile_index].ifc_definition_id)
+        tool.Profile.duplicate_profile(profile)
         bpy.ops.bim.load_profiles()
 
 

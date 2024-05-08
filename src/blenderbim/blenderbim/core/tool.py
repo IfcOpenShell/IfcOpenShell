@@ -329,6 +329,7 @@ class Drawing:
     def get_name(cls, element): pass
     def get_path_filename(cls, uri): pass
     def get_reference_description(cls, reference): pass
+    def generate_reference_attributes(cls, reference, **attributes): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
     def get_references_with_location(cls, location): pass
@@ -871,7 +872,8 @@ class Spatial:
     def get_transformed_mesh_from_local_to_global(cls, mesh): pass
     def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_cursor_position(cls, obj): pass
+    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
     def get_active_obj_z(cls): pass

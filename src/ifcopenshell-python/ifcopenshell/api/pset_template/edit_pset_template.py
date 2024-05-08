@@ -17,34 +17,31 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, pset_template=None, attributes=None):
-        """Edits the attributes of an IfcPropertySetTemplate
+def edit_pset_template(file, pset_template=None, attributes=None) -> None:
+    """Edits the attributes of an IfcPropertySetTemplate
 
-        For more information about the attributes and data types of an
-        IfcPropertySetTemplate, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcPropertySetTemplate, consult the IFC documentation.
 
-        :param pset_template: The IfcPropertySetTemplate entity you want to edit
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param pset_template: The IfcPropertySetTemplate entity you want to edit
+    :type pset_template: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Whoops! We named it with a buildingSMART reserved "Pset_" prefix!
-            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Pset_RiskFactors")
+        # Whoops! We named it with a buildingSMART reserved "Pset_" prefix!
+        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Pset_RiskFactors")
 
-            # Let's fix it to prefix with our company code instead.
-            ifcopenshell.api.run("pset_template.edit_pset_template", model,
-                pset_template=template, attributes={"Name": "ABC_RiskFactors"})
-        """
-        self.file = file
-        self.settings = {"pset_template": pset_template, "attributes": attributes or {}}
+        # Let's fix it to prefix with our company code instead.
+        ifcopenshell.api.run("pset_template.edit_pset_template", model,
+            pset_template=template, attributes={"Name": "ABC_RiskFactors"})
+    """
+    settings = {"pset_template": pset_template, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["pset_template"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["pset_template"], name, value)

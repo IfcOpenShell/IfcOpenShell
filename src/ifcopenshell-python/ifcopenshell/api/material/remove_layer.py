@@ -17,45 +17,42 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, layer=None):
-        """Removes a layer from a layer set
+def remove_layer(file, layer=None) -> None:
+    """Removes a layer from a layer set
 
-        Note that it is invalid to have zero items in a set, so you should leave
-        at least one layer to ensure a valid IFC dataset.
+    Note that it is invalid to have zero items in a set, so you should leave
+    at least one layer to ensure a valid IFC dataset.
 
-        :param layer: The IfcMaterialLayer entity you want to remove
-        :type layer: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param layer: The IfcMaterialLayer entity you want to remove
+    :type layer: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a material set for steel stud partition walls.
-            material_set = ifcopenshell.api.run("material.add_material_set", model,
-                name="Window", set_type="IfcMaterialConstituentSet")
+        # Create a material set for steel stud partition walls.
+        material_set = ifcopenshell.api.run("material.add_material_set", model,
+            name="Window", set_type="IfcMaterialConstituentSet")
 
-            gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
 
-            # Now let's use those materials as three layers in our set, such
-            # that the steel studs are sandwiched by the gypsum. Let's imagine
-            # we're setting the layer thickness in millimeters.
-            layer1 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer1, attributes={"LayerThickness": 13})
-            layer2 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer2, attributes={"LayerThickness": 92})
-            layer3 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-            ifcopenshell.api.run("material.edit_layer", model, layer=layer3, attributes={"LayerThickness": 13})
+        # Now let's use those materials as three layers in our set, such
+        # that the steel studs are sandwiched by the gypsum. Let's imagine
+        # we're setting the layer thickness in millimeters.
+        layer1 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer1, attributes={"LayerThickness": 13})
+        layer2 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer2, attributes={"LayerThickness": 92})
+        layer3 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.run("material.edit_layer", model, layer=layer3, attributes={"LayerThickness": 13})
 
-            # Let's remove the last layer, such that the wall might be clad only
-            # one one side such as to line a services riser.
-            ifcopenshell.api.run("material.remove_layer", model, layer=layer3)
-        """
-        self.file = file
-        self.settings = {"layer": layer}
+        # Let's remove the last layer, such that the wall might be clad only
+        # one one side such as to line a services riser.
+        ifcopenshell.api.run("material.remove_layer", model, layer=layer3)
+    """
+    settings = {"layer": layer}
 
-    def execute(self):
-        self.file.remove(self.settings["layer"])
+    file.remove(settings["layer"])

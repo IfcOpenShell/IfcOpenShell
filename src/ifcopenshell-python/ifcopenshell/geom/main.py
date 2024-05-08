@@ -17,11 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import annotations
-
 import os
 import sys
 import operator
@@ -153,7 +148,7 @@ class tree(ifcopenshell_wrapper.tree):
     def select(
         self,
         value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], "TopoDS.TopoDS_Shape"
         ],
         **kwargs,
     ) -> list[entity_instance]:

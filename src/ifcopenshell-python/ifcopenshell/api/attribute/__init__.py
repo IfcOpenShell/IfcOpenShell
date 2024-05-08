@@ -15,3 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Basic modification of the attributes of an element.
+
+All IFC entities have attributes. Some of these attributes contain rules about
+inheritance and what they are allowed to contain. These usecases make sure that
+any editing complies with these rules.
+"""
+
+from .. import wrap_usecases
+from .edit_attributes import edit_attributes
+
+wrap_usecases(__path__, __name__)

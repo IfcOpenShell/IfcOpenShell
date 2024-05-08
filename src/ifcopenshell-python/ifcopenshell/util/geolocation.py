@@ -147,7 +147,7 @@ def auto_xyz2enh(ifc_file, x, y, z):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param x: The X local engineering coordinate provided in project length units.
     :type x: float
     :param y: The Y local engineering coordinate provided in project length units.
@@ -215,7 +215,7 @@ def auto_enh2xyz(ifc_file, easting, northing, height):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param easting: The global easting map coordinate provided in map units.
     :type easting: float
     :param northing: The global northing map coordinate provided in map units.
@@ -283,7 +283,7 @@ def auto_z2e(ifc_file, z):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param z: The Z local engineering coordinate provided in project length units.
     :type z: float
     :return: The elevation in project length units.
@@ -587,7 +587,7 @@ def get_grid_north(ifc_file):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :return: An angle to grid north in decimal degrees
     :rtype: float
     """
@@ -623,7 +623,7 @@ def get_true_north(ifc_file):
     instead.
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :return: An angle to true north in decimal degrees
     :rtype: float
     """

@@ -15,3 +15,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Elements may be arbitrarily assigned to groups for organisation
+
+Groups are useful for filtering elements or non-hierarchical organisation of a
+model. Note that this only targets arbitrary groups. If you want to group
+elements into a distribution system, see :mod:`ifcopenshell.api.system`.
+"""
+
+from .. import wrap_usecases
+from .add_group import add_group
+from .assign_group import assign_group
+from .edit_group import edit_group
+from .remove_group import remove_group
+from .unassign_group import unassign_group
+from .update_group_products import update_group_products
+
+wrap_usecases(__path__, __name__)

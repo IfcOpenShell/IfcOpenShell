@@ -15,3 +15,19 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Create void relationships between openings and physical elements
+
+An opening is a special element (created using
+:func:`ifcopenshell.api.root.create_entity`) that may then be used to create
+voids in other elements (such as walls and slabs). These voids may then be
+filled with doors, trapdoors, skylights, and so on.
+"""
+
+from .. import wrap_usecases
+from .add_filling import add_filling
+from .add_opening import add_opening
+from .remove_filling import remove_filling
+from .remove_opening import remove_opening
+
+wrap_usecases(__path__, __name__)

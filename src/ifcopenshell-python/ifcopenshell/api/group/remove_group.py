@@ -21,53 +21,50 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, group=None):
-        """Removes a group
+def remove_group(file, group=None) -> None:
+    """Removes a group
 
-        All products assigned to the group will remain, but the relationship to
-        the group will be removed.
+    All products assigned to the group will remain, but the relationship to
+    the group will be removed.
 
-        :param group: The IfcGroup entity you want to remove
-        :type group: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param group: The IfcGroup entity you want to remove
+    :type group: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
-            ifcopenshell.api.run("group.remove_group", model, group=group)
-        """
-        self.file = file
-        self.settings = {"group": group}
+        group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        ifcopenshell.api.run("group.remove_group", model, group=group)
+    """
+    settings = {"group": group}
 
-    def execute(self):
-        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["group"])]:
-            try:
-                inverse = self.file.by_id(inverse_id)
-            except:
-                continue
-            if inverse.is_a("IfcRelDefinesByProperties"):
-                ifcopenshell.api.run(
-                    "pset.remove_pset",
-                    self.file,
-                    product=self.settings["group"],
-                    pset=inverse.RelatingPropertyDefinition,
-                )
-            elif inverse.is_a("IfcRelAssignsToGroup"):
-                if inverse.RelatingGroup == self.settings["group"]:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                elif len(inverse.RelatedObjects) == 1:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-        history = self.settings["group"].OwnerHistory
-        self.file.remove(self.settings["group"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    for inverse_id in [i.id() for i in file.get_inverse(settings["group"])]:
+        try:
+            inverse = file.by_id(inverse_id)
+        except:
+            continue
+        if inverse.is_a("IfcRelDefinesByProperties"):
+            ifcopenshell.api.run(
+                "pset.remove_pset",
+                file,
+                product=settings["group"],
+                pset=inverse.RelatingPropertyDefinition,
+            )
+        elif inverse.is_a("IfcRelAssignsToGroup"):
+            if inverse.RelatingGroup == settings["group"]:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+            elif len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+    history = settings["group"].OwnerHistory
+    file.remove(settings["group"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

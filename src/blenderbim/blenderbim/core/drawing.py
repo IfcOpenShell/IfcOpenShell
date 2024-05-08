@@ -16,6 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from pathlib import Path
+import ifcopenshell
+
 
 def enable_editing_text(drawing, obj=None):
     drawing.enable_editing_text(obj)
@@ -64,7 +67,7 @@ def disable_editing_sheets(drawing):
     drawing.disable_editing_sheets()
 
 
-def add_sheet(ifc, drawing, titleblock=None):
+def add_sheet(ifc, drawing, titleblock: ifcopenshell.entity_instance):
     sheet = ifc.run("document.add_information")
     layout = ifc.run("document.add_reference", information=sheet)
     titleblock_reference = ifc.run("document.add_reference", information=sheet)
@@ -75,18 +78,30 @@ def add_sheet(ifc, drawing, titleblock=None):
     else:
         attributes = {"Identification": identification, "Name": "UNTITLED", "Scope": "SHEET"}
     ifc.run("document.edit_information", information=sheet, attributes=attributes)
-    ifc.run(
-        "document.edit_reference",
-        reference=layout,
-        attributes={"Location": drawing.get_default_layout_path(identification, "UNTITLED"), "Description": "LAYOUT"},
+
+    attributes = drawing.generate_reference_attributes(
+        layout, Location=drawing.get_default_layout_path(identification, "UNTITLED"), Description="LAYOUT"
     )
-    ifc.run(
-        "document.edit_reference",
-        reference=titleblock_reference,
-        attributes={"Location": drawing.get_default_titleblock_path(titleblock), "Description": "TITLEBLOCK"},
+    ifc.run("document.edit_reference", reference=layout, attributes=attributes)
+
+    attributes = drawing.generate_reference_attributes(
+        layout, Location=drawing.get_default_titleblock_path(titleblock), Description="TITLEBLOCK"
     )
+    ifc.run("document.edit_reference", reference=titleblock_reference, attributes=attributes)
+
     drawing.create_svg_sheet(sheet, titleblock)
     drawing.import_sheets()
+
+
+def regenerate_sheet(drawing, sheet=None):
+    titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
+    drawing.create_svg_sheet(sheet, drawing.sanitise_filename(Path(titleblock_uri).stem))
+    try:
+        drawing.add_drawings(sheet)
+    except FileNotFoundError:
+        path_layout = drawing.get_document_uri(sheet, "LAYOUT")
+        if drawing.does_file_exist(path_layout):
+            drawing.delete_file(path_layout)
 
 
 def open_sheet(drawing, sheet=None):
@@ -103,8 +118,12 @@ def remove_sheet(ifc, drawing, sheet=None):
     drawing.import_sheets()
 
 
-def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
-    ifc.run("document.edit_information", information=sheet, attributes={"Identification": identification, "Name": name})
+def rename_sheet(ifc, drawing, sheet: ifcopenshell.entity_instance, identification: str, name: str) -> None:
+    if ifc.get_schema() == "IFC2X3":
+        attributes = {"DocumentId": identification, "Name": name}
+    else:
+        attributes = {"Identification": identification, "Name": name}
+    ifc.run("document.edit_information", information=sheet, attributes=attributes)
     for reference in drawing.get_document_references(sheet):
         description = drawing.get_reference_description(reference)
         if description == "SHEET":
@@ -125,8 +144,9 @@ def rename_sheet(ifc, drawing, sheet=None, identification=None, name=None):
                     drawing.move_file(old_location, ifc.resolve_uri(new_location))
 
 
-def rename_reference(ifc, reference=None, identification=None):
-    ifc.run("document.edit_reference", reference=reference, attributes={"Identification": identification})
+def rename_reference(ifc, drawing, reference=None, identification=None):
+    attributes = drawing.generate_reference_attributes(reference, Identification=identification)
+    ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
 
 def load_schedules(drawing):

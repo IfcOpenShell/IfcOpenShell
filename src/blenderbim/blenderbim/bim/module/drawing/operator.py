@@ -29,6 +29,7 @@ import subprocess
 import numpy as np
 import multiprocessing
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
@@ -219,11 +220,12 @@ class CreateDrawing(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.DocProperties
 
+        active_drawing_id = context.scene.camera.BIMObjectProperties.ifc_definition_id
         if self.print_all:
-            original_drawing_id = self.props.active_drawing_id
+            original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
-            drawings_to_print = [self.props.active_drawing_id]
+            drawings_to_print = [active_drawing_id]
 
         for drawing_i, drawing_id in enumerate(drawings_to_print):
             self.drawing_index = drawing_i
@@ -1241,12 +1243,14 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
             return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
-        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
-        attributes = {
-            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
-            "Location": drawing_reference.Location,
-            "Description": "DRAWING",
-        }
+        attributes = tool.Drawing.generate_reference_attributes(
+            reference,
+            Identification=str(
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+            ),
+            Location=drawing_reference.Location,
+            Description="DRAWING",
+        )
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = context.scene.BIMProperties.data_dir
@@ -1314,9 +1318,10 @@ class CreateSheets(bpy.types.Operator, Operator):
 
         has_sheet_reference = False
         for reference in tool.Drawing.get_document_references(sheet):
-            if reference.Description == "SHEET":
+            reference_description = tool.Drawing.get_reference_description(reference)
+            if reference_description == "SHEET":
                 has_sheet_reference = True
-            elif reference.Description == "RASTER":
+            elif reference_description == "RASTER":
                 if reference.Location in raster_references:
                     raster_references.remove(reference.Location)
                 else:
@@ -1327,7 +1332,9 @@ class CreateSheets(bpy.types.Operator, Operator):
             tool.Ifc.run(
                 "document.edit_reference",
                 reference=reference,
-                attributes={"Location": tool.Ifc.get_relative_uri(svg), "Description": "SHEET"},
+                attributes=tool.Drawing.generate_reference_attributes(
+                    reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
+                ),
             )
 
         for raster_reference in raster_references:
@@ -1335,7 +1342,9 @@ class CreateSheets(bpy.types.Operator, Operator):
             tool.Ifc.run(
                 "document.edit_reference",
                 reference=reference,
-                attributes={"Location": tool.Ifc.get_relative_uri(raster_reference), "Description": "RASTER"},
+                attributes=tool.Drawing.generate_reference_attributes(
+                    reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
+                ),
             )
 
         svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
@@ -1444,12 +1453,18 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
+        # save current visibility statuses for Views and Types collections
+        visibility_status: dict[bpy.types.Object, bool] = {}
+        for col in bpy.data.collections["Views"].children:
+            for obj in col.objects:
+                visibility_status[obj] = obj.hide_get()
+        for obj in bpy.data.collections["Types"].objects:
+            visibility_status[obj] = obj.hide_get()
+
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
                 bpy.ops.object.hide_view_clear()
                 bpy.ops.bim.activate_status_filters()
-
-        subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1468,6 +1483,11 @@ class ActivateModel(bpy.types.Operator):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+
+        # restore visibility after hide_view_clear()
+        for obj, hide_status in visibility_status.items():
+            obj.hide_set(hide_status)
+
         tool.Blender.update_viewport()
         return {"FINISHED"}
 
@@ -1988,12 +2008,14 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
             return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
-        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
-        attributes = {
-            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "SCHEDULE")]) + 1),
-            "Location": schedule_location,
-            "Description": "SCHEDULE",
-        }
+        attributes = tool.Drawing.generate_reference_attributes(
+            reference,
+            Identification=str(
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "SCHEDULE")]) + 1
+            ),
+            Location=schedule_location,
+            Description="SCHEDULE",
+        )
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
@@ -2042,12 +2064,15 @@ class AddReferenceToSheet(bpy.types.Operator, Operator):
             return
 
         reference = tool.Ifc.run("document.add_reference", information=sheet)
-        id_attr = "ItemReference" if tool.Ifc.get_schema() == "IFC2X3" else "Identification"
-        attributes = {
-            id_attr: str(len([r for r in references if r.Description in ("DRAWING", "REFERENCE")]) + 1),
-            "Location": extref_location,
-            "Description": "REFERENCE",
-        }
+        attributes = tool.Drawing.generate_reference_attributes(
+            reference,
+            Identification=str(
+                len([r for r in references if tool.Drawing.get_reference_description(r) in ("DRAWING", "REFERENCE")])
+                + 1
+            ),
+            Location=extref_location,
+            Description="REFERENCE",
+        )
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
@@ -2373,6 +2398,7 @@ class LoadSheets(bpy.types.Operator, Operator):
             if not filepath.is_file():
                 sheet_name = f"{sheet_prop.identification} - {sheet_prop.name}"
                 sheets_not_found.append(f'"{sheet_name}" - {document_uri}')
+                core.regenerate_sheet(tool.Drawing, sheet)
 
         if sheets_not_found:
             self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
@@ -2391,8 +2417,8 @@ class EditSheet(bpy.types.Operator, Operator):
         if sheet.is_a("IfcDocumentInformation"):
             self.document_type = "SHEET"
             self.name = sheet.Name
-            self.identification = sheet.Identification
-        elif sheet.is_a("IfcDocumentReference") and sheet.Description == "TITLEBLOCK":
+            self.identification = sheet.DocumentId if tool.Ifc.get_schema() == "IFC2X3" else sheet.Identification
+        elif sheet.is_a("IfcDocumentReference") and tool.Drawing.get_reference_description(sheet) == "TITLEBLOCK":
             self.document_type = "TITLEBLOCK"
         else:
             self.document_type = "EMBEDDED"
@@ -2418,7 +2444,7 @@ class EditSheet(bpy.types.Operator, Operator):
         if self.document_type == "SHEET":
             core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
         elif self.document_type == "EMBEDDED":
-            core.rename_reference(tool.Ifc, reference=sheet, identification=self.identification)
+            core.rename_reference(tool.Ifc, tool.Drawing, reference=sheet, identification=self.identification)
         elif self.document_type == "TITLEBLOCK":
             titleblock = self.props.titleblock
             reference = sheet

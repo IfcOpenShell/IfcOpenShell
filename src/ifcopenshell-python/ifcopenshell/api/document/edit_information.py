@@ -15,35 +15,38 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any, Optional
 
 
-class Usecase:
-    def __init__(self, file, information=None, attributes=None):
-        """Edits the attributes of an IfcDocumentInformation
+def edit_information(
+    file: ifcopenshell.file,
+    information: ifcopenshell.entity_instance,
+    attributes: Optional[dict[str, Any]] = None,
+) -> None:
+    """Edits the attributes of an IfcDocumentInformation
 
-        For more information about the attributes and data types of an
-        IfcDocumentInformation, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcDocumentInformation, consult the IFC documentation.
 
-        :param reference: The IfcDocumentInformation entity you want to edit
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param reference: The IfcDocumentInformation entity you want to edit
+    :type reference: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            document = ifcopenshell.api.run("document.add_information", model)
-            ifcopenshell.api.run("document.edit_information", model,
-                information=document,
-                attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
-                "Location": "A-GA-6100 - Overall Plan.pdf"})
-        """
-        self.file = file
-        self.settings = {"information": information, "attributes": attributes or {}}
+        document = ifcopenshell.api.run("document.add_information", model)
+        ifcopenshell.api.run("document.edit_information", model,
+            information=document,
+            attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
+            "Location": "A-GA-6100 - Overall Plan.pdf"})
+    """
+    settings = {"information": information, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["information"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["information"], name, value)

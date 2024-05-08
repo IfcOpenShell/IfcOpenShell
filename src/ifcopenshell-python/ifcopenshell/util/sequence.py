@@ -20,7 +20,20 @@ import datetime
 import ifcopenshell.util.date
 from math import floor
 from functools import lru_cache
-from collections import namedtuple
+from typing import Union, Literal, Optional, Iterator
+
+
+DURATION_TYPE = Literal["ELAPSEDTIME", "WORKTIME", "NOTDEFINED"]
+RECURRENCE_TYPE = Literal[
+    "BY_DAY_COUNT",
+    "BY_WEEKDAY_COUNT",
+    "DAILY",
+    "MONTHLY_BY_DAY_OF_MONTH",
+    "MONTHLY_BY_POSITION",
+    "WEEKLY",
+    "YEARLY_BY_DAY_OF_MONTH",
+    "YEARLY_BY_POSITION",
+]
 
 
 def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=False):
@@ -49,7 +62,7 @@ def derive_date(task, attribute_name, date=None, is_earliest=False, is_latest=Fa
     return date
 
 
-def derive_calendar(task):
+def derive_calendar(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     calendar = get_calendar(task)
     if calendar:
         return calendar
@@ -57,7 +70,7 @@ def derive_calendar(task):
         return derive_calendar(rel.RelatingObject)
 
 
-def get_calendar(task):
+def get_calendar(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     calendar = [
         rel.RelatingControl
         for rel in task.HasAssignments or []
@@ -68,7 +81,7 @@ def get_calendar(task):
         return calendar[0]
 
 
-def count_working_days(start, finish, calendar):
+def count_working_days(start, finish, calendar: ifcopenshell.entity_instance) -> int:
     result = 0
     if start == finish:
         return 0
@@ -88,7 +101,11 @@ def count_working_days(start, finish, calendar):
 
 
 def get_start_or_finish_date(
-    start, duration, duration_type, calendar, date_type="FINISH"
+    start,
+    duration,
+    duration_type: DURATION_TYPE,
+    calendar: ifcopenshell.entity_instance,
+    date_type: Literal["START", "FINISH"] = "FINISH",
 ):
     if not duration.days:
         # Typically a milestone will have zero duration, so the start == finish
@@ -107,7 +124,7 @@ def get_start_or_finish_date(
     return datetime.datetime.combine(result, datetime.time(17))
 
 
-def offset_date(start, duration, duration_type, calendar):
+def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
     current_date = start
     months = getattr(duration, "months", 0)
     years = getattr(duration, "years", 0)
@@ -129,7 +146,7 @@ def offset_date(start, duration, duration_type, calendar):
     return current_date
 
 
-def get_soonest_working_day(start, duration_type, calendar):
+def get_soonest_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
     if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
         return start
     while not is_working_day(start, calendar):
@@ -139,7 +156,7 @@ def get_soonest_working_day(start, duration_type, calendar):
     return start
 
 
-def get_recent_working_day(start, duration_type, calendar):
+def get_recent_working_day(start, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance):
     if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(start, calendar):
         return start
     while not is_working_day(start, calendar):
@@ -150,7 +167,7 @@ def get_recent_working_day(start, duration_type, calendar):
 
 
 @lru_cache(maxsize=None)
-def is_working_day(day, calendar):
+def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     is_working_day = False
     for work_time in calendar.WorkingTimes or []:
         if is_work_time_applicable_to_day(work_time, day):
@@ -166,7 +183,7 @@ def is_working_day(day, calendar):
 
 
 @lru_cache(maxsize=None)
-def is_calendar_applicable(day, calendar):
+def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not calendar or not calendar.WorkingTimes:
         return False
     is_applicable = False
@@ -177,18 +194,20 @@ def is_calendar_applicable(day, calendar):
     return is_applicable
 
 
-def is_day_in_work_time(day, work_time):
+def is_day_in_work_time(day, work_time: ifcopenshell.entity_instance) -> bool:
     is_day_in_work_time = True
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
-    if work_time[4]:
-        start = ifcopenshell.util.date.ifc2datetime(work_time[4])
+    # 4 IfcWorktime Start
+    if start := work_time[4]:
+        start = ifcopenshell.util.date.ifc2datetime(start)
         if day > start:
             is_day_in_work_time = True
         else:
             is_day_in_work_time = False
-    if work_time[5]:
-        finish = ifcopenshell.util.date.ifc2datetime(work_time[5])
+    # 5 IfcWorktime Finish
+    if finish := work_time[5]:
+        finish = ifcopenshell.util.date.ifc2datetime(finish)
         if day < finish:
             is_day_in_work_time = True
         else:
@@ -196,7 +215,7 @@ def is_day_in_work_time(day, work_time):
     return is_day_in_work_time
 
 
-def is_work_time_applicable_to_day(work_time, day):
+def is_work_time_applicable_to_day(work_time: ifcopenshell.entity_instance, day) -> bool:
     if not is_day_in_work_time(day, work_time):
         return False
     if not work_time.RecurrencePattern:
@@ -205,36 +224,39 @@ def is_work_time_applicable_to_day(work_time, day):
     if isinstance(day, datetime.datetime):
         day = datetime.date(day.year, day.month, day.day)
     recurrence = work_time.RecurrencePattern
-    if recurrence.RecurrenceType == "DAILY":
+    recurrence_type: RECURRENCE_TYPE = recurrence.RecurrenceType
+    if recurrence_type == "DAILY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return True
+        # 4 IfcWorktime Start
         if not work_time[4]:
             return False
         return False  # TODO
-    elif recurrence.RecurrenceType == "WEEKLY":
+    elif recurrence_type == "WEEKLY":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent
+        # 4 IfcWorktime Start
         if not work_time[4]:
             return False
         return False  # TODO
-    elif recurrence.RecurrenceType == "MONTHLY_BY_DAY_OF_MONTH":
+    elif recurrence_type == "MONTHLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return day.day in recurrence.DayComponent
         return False  # TODO
-    elif recurrence.RecurrenceType == "MONTHLY_BY_POSITION":
+    elif recurrence_type == "MONTHLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (day.weekday() + 1) in recurrence.WeekdayComponent and floor(
                 day.day / 7
             ) + 1 == recurrence["Position"]
         return False  # TODO
-    elif recurrence.RecurrenceType == "YEARLY_BY_DAY_OF_MONTH":
+    elif recurrence_type == "YEARLY_BY_DAY_OF_MONTH":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
                 day.month in recurrence.MonthComponent
                 and day.day in recurrence.DayComponent
             )
         return False  # TODO
-    elif recurrence.RecurrenceType == "YEARLY_BY_POSITION":
+    elif recurrence_type == "YEARLY_BY_POSITION":
         if not recurrence.Interval and not recurrence.Occurrences:
             return (
                 day.month in recurrence.MonthComponent
@@ -244,7 +266,7 @@ def is_work_time_applicable_to_day(work_time, day):
         return False  # TODO
 
 
-def get_task_work_schedule(task):
+def get_task_work_schedule(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     parent_task = get_parent_task(task)
     if parent_task:
         return get_task_work_schedule(parent_task) or get_task_work_schedule(task)
@@ -257,25 +279,23 @@ def get_task_work_schedule(task):
         return None
 
 
-def get_nested_tasks(task):
+def get_nested_tasks(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     return [object for rel in task.IsNestedBy or [] for object in rel.RelatedObjects]
 
 
-def get_parent_task(task):
-    return (
-        task.Nests[0].RelatingObject
-        if task.Nests and task.Nests[0].RelatingObject.is_a("IfcTask")
-        else None
-    )
+def get_parent_task(task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    nests = task.Nests
+    if nests and (obj := nests[0].RelatingObject).is_a("IfcTask"):
+        return obj
 
 
-def get_all_nested_tasks(task):
+def get_all_nested_tasks(task: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
     for nested_task in get_nested_tasks(task):
         yield nested_task
         yield from get_all_nested_tasks(nested_task)
 
 
-def get_work_schedule_tasks(work_schedule):
+def get_work_schedule_tasks(work_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     tasks = []
     for root_task in get_root_tasks(work_schedule):
         nested_tasks = get_all_nested_tasks(root_task)
@@ -283,7 +303,7 @@ def get_work_schedule_tasks(work_schedule):
     return tasks
 
 
-def get_root_tasks(work_schedule):
+def get_root_tasks(work_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     return [
         obj
         for rel in work_schedule.Controls
@@ -292,7 +312,7 @@ def get_root_tasks(work_schedule):
     ]
 
 
-def get_root_tasks_ids(work_schedule):
+def get_root_tasks_ids(work_schedule: ifcopenshell.entity_instance) -> list[int]:
     return [
         obj.id()
         for rel in work_schedule.Controls
@@ -301,7 +321,7 @@ def get_root_tasks_ids(work_schedule):
     ]
 
 
-def guess_date_range(work_schedule):
+def guess_date_range(work_schedule: ifcopenshell.entity_instance):
     earliest = None
     latest = None
     root_tasks = get_root_tasks(work_schedule)
@@ -323,7 +343,7 @@ def guess_date_range(work_schedule):
     return earliest, latest
 
 
-def get_direct_task_outputs(task):
+def get_direct_task_outputs(task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     return [
         rel.RelatingProduct
         for rel in task.HasAssignments
@@ -331,7 +351,7 @@ def get_direct_task_outputs(task):
     ]
 
 
-def get_task_outputs(task, is_deep=False):
+def get_task_outputs(task: ifcopenshell.entity_instance, is_deep=False):
     if not is_deep:
         return get_direct_task_outputs(task)
     else:
@@ -342,7 +362,7 @@ def get_task_outputs(task, is_deep=False):
         ]
 
 
-def get_task_inputs(task, is_deep=False):
+def get_task_inputs(task: ifcopenshell.entity_instance, is_deep=False):
     if not is_deep:
         return [
             object
@@ -365,7 +385,7 @@ def get_task_inputs(task, is_deep=False):
         ]
 
 
-def get_task_resources(task, is_deep=False):
+def get_task_resources(task: ifcopenshell.entity_instance, is_deep=False):
     if not is_deep:
         return [
             object
@@ -388,15 +408,17 @@ def get_task_resources(task, is_deep=False):
         ]
 
 
-def has_task_outputs(task):
+def has_task_outputs(task: ifcopenshell.entity_instance) -> bool:
     return len(get_task_outputs(task)) > 0
 
 
-def has_task_inputs(task):
+def has_task_inputs(task: ifcopenshell.entity_instance) -> bool:
     return len(get_task_inputs(task)) > 0
 
 
-def get_tasks_for_product(product, schedule=None):
+def get_tasks_for_product(
+    product: ifcopenshell.entity_instance, schedule: Optional[ifcopenshell.entity_instance] = None
+) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
     """
     Get all tasks assigned to or referenced by the given product.
 
@@ -438,7 +460,7 @@ def get_tasks_for_product(product, schedule=None):
     return inputs, outputs
 
 
-def get_sequence_assignment(task, sequence="successor"):
+def get_sequence_assignment(task: ifcopenshell.entity_instance, sequence="successor"):
     if sequence == "successor":
         relationship_attr = "IsPredecessorTo"
     elif sequence == "predecessor":

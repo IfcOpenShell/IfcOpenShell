@@ -15,3 +15,18 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Handles the definition of cross sectional profiles
+
+Maintaining a clean profile library is important for structural simulations and
+identification of standardised profiles for fabrication and carbon counting.
+"""
+
+from .. import wrap_usecases
+from .add_arbitrary_profile import add_arbitrary_profile
+from .add_arbitrary_profile_with_voids import add_arbitrary_profile_with_voids
+from .add_parameterized_profile import add_parameterized_profile
+from .edit_profile import edit_profile
+from .remove_profile import remove_profile
+
+wrap_usecases(__path__, __name__)

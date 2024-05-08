@@ -62,7 +62,9 @@
 #include <STEPConstruct_PointHasher.hxx>
 #include "clash_utils.h"
 
+#ifdef WITH_HDF5
 #include "H5Cpp.h"
+#endif
 
 
 namespace IfcGeom {
@@ -1504,6 +1506,7 @@ namespace IfcGeom {
 			}
 		}
 
+#ifdef WITH_HDF5
         void write_h5() {
             H5::H5File file("filename.h5", H5F_ACC_TRUNC);
             H5::Group shapes = file.createGroup("/shapes");
@@ -1714,6 +1717,7 @@ namespace IfcGeom {
                 colours_dataset.write(flat_colours.data(), H5::PredType::NATIVE_FLOAT);
             }
         }
+#endif
 
         template <typename T>
         void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const std::vector<T>& matrix, std::vector<T>& result) {
@@ -1776,9 +1780,11 @@ namespace IfcGeom {
                     aabb.Add(vs_transformed.back());
                 }
 
+                /*
                 std::cout << "aabb: ";
                 aabb.DumpJson(std::cout);
                 std::cout << std::endl;
+                */
             
                 std::unordered_map<std::tuple<int, int, int>, std::vector<size_t>, boost::hash<std::tuple<int, int, int>>> quantized_normal_counts;
 
@@ -1863,9 +1869,11 @@ namespace IfcGeom {
                 obb.SetZComponent(ax3.Direction(), halfsize.Z());
                 obb.SetCenter(cent.Transformed(trsf2.Inverted()));
 
+                /*
                 std::cout << "obb: ";
                 obb.DumpJson(std::cout);
                 std::cout << std::endl;
+                */
             }
             
             const auto& t = elem->product();

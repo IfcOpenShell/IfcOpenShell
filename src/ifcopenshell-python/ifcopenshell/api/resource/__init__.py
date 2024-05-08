@@ -15,3 +15,26 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Manage construction and maintenance resources
+
+Resources include equipment (cranes, etc), labour, material, and products. They
+are typically referenced in construction planning, maintenance schedules, or
+cost items.
+"""
+
+from .. import wrap_usecases
+from .add_resource import add_resource
+from .add_resource_quantity import add_resource_quantity
+from .add_resource_time import add_resource_time
+from .assign_resource import assign_resource
+from .calculate_resource_usage import calculate_resource_usage
+from .calculate_resource_work import calculate_resource_work
+from .edit_resource import edit_resource
+from .edit_resource_quantity import edit_resource_quantity
+from .edit_resource_time import edit_resource_time
+from .remove_resource import remove_resource
+from .remove_resource_quantity import remove_resource_quantity
+from .unassign_resource import unassign_resource
+
+wrap_usecases(__path__, __name__)
