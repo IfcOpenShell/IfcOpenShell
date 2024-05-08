@@ -231,7 +231,7 @@ class curve_segment_evaluator {
             return m;
         };
 
-        parent_curve_placement_ = (*parent_curve_fn_)(0);
+        parent_curve_placement_ = (*parent_curve_fn_)(0.0);
     }
 
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -511,7 +511,7 @@ class curve_segment_evaluator {
                 return m;
             };
 
-            parent_curve_placement_ = (*parent_curve_fn_)(0.0);
+            parent_curve_placement_ = (*parent_curve_fn_)(start_);
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -543,15 +543,9 @@ class curve_segment_evaluator {
        auto pcDx = dr[0];
        auto pcDy = dr[1];
 
-       Eigen::Matrix4d p = Eigen::Matrix4d::Identity();
-       p.col(0) = Eigen::Vector4d(pcDx, pcDy, 0, 0);
-       p.col(1) = Eigen::Vector4d(-pcDy, pcDx, 0, 0);
-       p.col(3) = Eigen::Vector4d(pcX, pcY, 0, 1);
-       parent_curve_placement_ = p;
-
-       if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
+       if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
           std::function<double(double)> convert_u;
-          if (segment_type_ == ST_HORIZONTAL) {
+          if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_CANT) {
               convert_u = [](double u) { return u; }; // u is along curve
           } else {
              // u is along horizontal, convert to along curve
@@ -570,8 +564,8 @@ class curve_segment_evaluator {
               m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
               return m;
           };
-        } else if (segment_type_ == ST_CANT) {
-            parent_curve_fn_ = [](double /*u*/) { Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); return m; };
+
+          parent_curve_placement_ = (*parent_curve_fn_)(start_);
         } else {
             Logger::Warning(std::runtime_error("Unexpected segment type encountered"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -693,7 +687,7 @@ class curve_segment_evaluator {
                 return m;
             };
 
-            parent_curve_placement_ = (*parent_curve_fn_)(0.0);
+            parent_curve_placement_ = (*parent_curve_fn_)(start_);
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
