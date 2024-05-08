@@ -24,7 +24,6 @@ import random
 import logging
 import platform
 import subprocess
-import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -34,7 +33,7 @@ import blenderbim.tool as tool
 import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
-import blenderbim.tool as tool
+from blenderbim import get_debug_info
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -44,28 +43,7 @@ class CopyDebugInformation(bpy.types.Operator):
     bl_description = "Copies debugging information to your clipboard for use in bugreports"
 
     def execute(self, context):
-        version = ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
-        info = {
-            "os": platform.system(),
-            "os_version": platform.version(),
-            "python_version": platform.python_version(),
-            "architecture": platform.architecture(),
-            "machine": platform.machine(),
-            "processor": platform.processor(),
-            "blender_version": bpy.app.version_string,
-            "blenderbim_version": version,
-            "ifc": False,
-        }
-
+        info = get_debug_info()
         if tool.Ifc.get():
             info.update(
                 {
