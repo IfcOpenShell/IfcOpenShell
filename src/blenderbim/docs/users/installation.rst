@@ -106,19 +106,22 @@ On Windows:
 Updating
 --------
 
-First uninstall the current BlenderBIM add-on, then install the latest version.
+First follow the `Uninstalling`_ section below, then install the latest version.
 
 Uninstalling
 ------------
 
 Navigate to ``Edit > Preferences > Add-ons``. Due to a limitation in Blender,
-you have to first disable the BlenderBIM Add-on in your Blender preferences by
-pressing the checkbox next to the add-on, then restart Blender. After
-restarting, you can uninstall the BlenderBIM Add-on by pressing the ``Remove``
-button in the Blender preferences window.
+you have to **first disable the BlenderBIM Add-on in your Blender preferences**
+by pressing the checkbox next to the add-on, then **restart Blender**. It is
+critical to follow this sequence of disabling first, and then restarting.
 
-Alternatively, you may uninstall manually by deleting the ``blenderbim/``
-directory in your Blender add-ons directory.
+After restarting, you can uninstall the BlenderBIM Add-on by pressing the
+``Remove`` button in the Blender preferences window.
+
+Alternatively, you may uninstall manually by deleting the ``blenderbim``
+directory in :ref:`your Blender add-ons directory<where is the add-on
+installed>`.
 
 .. warning::
 
@@ -130,12 +133,20 @@ directory in your Blender add-ons directory.
 FAQ
 ---
 
+If you are unable to install the BlenderBIM Add-on, make sure you are using
+**Blender 4.1** installed from https://blender.org/ and are installing the
+latest version from https://blenderbim.org.
+
+Other common solutions are listed below. If none of these fix the problem, you
+can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
+`live chat with a developer <https://osarch.org/chat/>`_.
+
 1. **Some other error prevents me from installing or doing basic functions with
    the add-on. Is it specific to my environment?**
 
-   Sometimes it is helpful to try installing and using the BlenderBIM Add-on on
-   a "clean environment". A clean environment is defined as a fresh Blender
-   installation with no other add-ons enabled with factory settings.
+   Try installing and using the BlenderBIM Add-on on a "clean environment". A
+   clean environment is a fresh Blender installation with no other add-ons
+   enabled with factory settings.
 
    To quickly test in a clean environment, find your Blender configuration
    folder based on the `where is the add-on installed`_ section. Rename the

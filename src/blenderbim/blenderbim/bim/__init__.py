@@ -17,11 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-from pathlib import Path
 import bpy
 import bpy.utils.previews
 import blenderbim
 import importlib
+from pathlib import Path
 from . import handler, ui, prop, operator, helper
 from typing import Callable, Union
 
