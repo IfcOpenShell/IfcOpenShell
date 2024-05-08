@@ -104,10 +104,11 @@ class PrintIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PurgeIfcLinks(bpy.types.Operator):
-    bl_idname = "bim.purge_ifc_links"
-    bl_label = "Purge IFC Links"
-    bl_description = "Purge all definitions and references from the file.\nWarning : Cannot be undone."
+class ConvertToBlender(bpy.types.Operator):
+    bl_idname = "bim.convert_to_blender"
+    bl_label = "Convert To Blender File"
+    bl_description = "Removes all IFC data and revert to basic Blender objects.\nWarning : Cannot be undone."
+    bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         for obj in bpy.data.objects:
@@ -119,26 +120,6 @@ class PurgeIfcLinks(bpy.types.Operator):
             material.BIMMaterialProperties.ifc_style_id = False
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
-        IfcStore.purge()
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class ConvertToBlender(bpy.types.Operator):
-    bl_idname = "bim.convert_to_blender"
-    bl_label = "Convert To Blender File"
-    bl_description = "Removes all IFC data, and converts the file to a simple Blender file."
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        for o in bpy.data.objects:
-            if o.type in {"MESH", "EMPTY"}:
-                o.BIMObjectProperties.ifc_definition_id = 0
-                if o.data:
-                    o.data.BIMMeshProperties.ifc_definition_id = 0
-        for m in bpy.data.materials:
-            m.BIMMaterialProperties.ifc_style_id = False
-        bpy.context.scene.BIMProperties.ifc_file = ""
         IfcStore.purge()
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}

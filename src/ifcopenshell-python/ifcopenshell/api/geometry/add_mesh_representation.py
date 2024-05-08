@@ -19,25 +19,28 @@
 import ifcopenshell.util.unit
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, **settings):
-        self.file = file
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            # Vertices, edges, and faces are given in the form of: [item1, item2, item3, ...]
-            # ... where itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]
-            "vertices": None,  # A list of coordinates
-            # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
-            "edges": None,  # A list of edges, represented by vertex index pairs
-            # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
-            "faces": None,  # A list of polygons, represented by vertex indices
-            "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
-            "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
-            "force_faceted_brep": False,  # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_mesh_representation(file: ifcopenshell.file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "context": None,  # IfcGeometricRepresentationContext
+        # Vertices, edges, and faces are given in the form of: [item1, item2, item3, ...]
+        # ... where itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]
+        "vertices": None,  # A list of coordinates
+        # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
+        "edges": None,  # A list of edges, represented by vertex index pairs
+        # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
+        "faces": None,  # A list of polygons, represented by vertex indices
+        "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
+        "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
+        "force_faceted_brep": False,  # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
+    }
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)

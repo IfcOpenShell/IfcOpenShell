@@ -19,3 +19,8 @@
 """Boundaries are primarily used for representing virtual interfaces between
 spaces for energy analysis.
 """
+
+from .assign_connection_geometry import assign_connection_geometry
+from .copy_boundary import copy_boundary
+from .edit_attributes import edit_attributes
+from .remove_boundary import remove_boundary

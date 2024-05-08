@@ -16,4 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Utility functions for common IFC queries"""
+"""Utility functions for extracting IFC data
+
+Data in IFC files is represented using relationships between IFC entities. To
+extract data like "what properties does this wall have" involves looping
+through these relationships which can be tedious.
+
+This module makes it easy to get commonly requested data from IFC
+relationships, such as properties of a wall, what elements are connected to
+pipes, dates from work schedules, filtering maintainable elements, and more.
+"""

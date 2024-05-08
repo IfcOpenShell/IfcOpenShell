@@ -20,48 +20,45 @@ import ifcopenshell.util.unit
 from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, unit_type: str = "LENGTHUNIT", prefix: Optional[str] = None):
-        """Add a new SI unit
+def add_si_unit(
+    file: ifcopenshell.file, unit_type: str = "LENGTHUNIT", prefix: Optional[str] = None
+) -> ifcopenshell.entity_instance:
+    """Add a new SI unit
 
-        The supported types are ABSORBEDDOSEUNIT, AMOUNTOFSUBSTANCEUNIT,
-        AREAUNIT, DOSEEQUIVALENTUNIT, ELECTRICCAPACITANCEUNIT,
-        ELECTRICCHARGEUNIT, ELECTRICCONDUCTANCEUNIT, ELECTRICCURRENTUNIT,
-        ELECTRICRESISTANCEUNIT, ELECTRICVOLTAGEUNIT, ENERGYUNIT, FORCEUNIT,
-        FREQUENCYUNIT, ILLUMINANCEUNIT, INDUCTANCEUNIT, LENGTHUNIT,
-        LUMINOUSFLUXUNIT, LUMINOUSINTENSITYUNIT, MAGNETICFLUXDENSITYUNIT,
-        MAGNETICFLUXUNIT, MASSUNIT, PLANEANGLEUNIT, POWERUNIT, PRESSUREUNIT,
-        RADIOACTIVITYUNIT, SOLIDANGLEUNIT, THERMODYNAMICTEMPERATUREUNIT,
-        TIMEUNIT, VOLUMEUNIT.
+    The supported types are ABSORBEDDOSEUNIT, AMOUNTOFSUBSTANCEUNIT,
+    AREAUNIT, DOSEEQUIVALENTUNIT, ELECTRICCAPACITANCEUNIT,
+    ELECTRICCHARGEUNIT, ELECTRICCONDUCTANCEUNIT, ELECTRICCURRENTUNIT,
+    ELECTRICRESISTANCEUNIT, ELECTRICVOLTAGEUNIT, ENERGYUNIT, FORCEUNIT,
+    FREQUENCYUNIT, ILLUMINANCEUNIT, INDUCTANCEUNIT, LENGTHUNIT,
+    LUMINOUSFLUXUNIT, LUMINOUSINTENSITYUNIT, MAGNETICFLUXDENSITYUNIT,
+    MAGNETICFLUXUNIT, MASSUNIT, PLANEANGLEUNIT, POWERUNIT, PRESSUREUNIT,
+    RADIOACTIVITYUNIT, SOLIDANGLEUNIT, THERMODYNAMICTEMPERATUREUNIT,
+    TIMEUNIT, VOLUMEUNIT.
 
-        Prefixes supported are ATTO, CENTI, DECA, DECI, EXA, FEMTO, GIGA, HECTO,
-        KILO, MEGA, MICRO, MILLI, NANO, PETA, PICO, TERA.
+    Prefixes supported are ATTO, CENTI, DECA, DECI, EXA, FEMTO, GIGA, HECTO,
+    KILO, MEGA, MICRO, MILLI, NANO, PETA, PICO, TERA.
 
-        :param unit_type: A type of unit chosen from the list above. For
-            example, choosing LENGTHUNIT will give you a metre.
-        :type unit_type: str
-        :param prefix: A prefix chosen from the list above, or None for no
-            prefix.
-        :type prefix: str,optional
-        :return: The newly created IfcSIUnit
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param unit_type: A type of unit chosen from the list above. For
+        example, choosing LENGTHUNIT will give you a metre.
+    :type unit_type: str
+    :param prefix: A prefix chosen from the list above, or None for no
+        prefix.
+    :type prefix: str,optional
+    :return: The newly created IfcSIUnit
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Millimeters and square meters
-            length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-            area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+        # Millimeters and square meters
+        length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
 
-            # Make it our default units, if we are doing a metric building
-            ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
-        """
-        self.file = file
-        self.settings = {"unit_type": unit_type, "prefix": prefix}
+        # Make it our default units, if we are doing a metric building
+        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+    """
+    settings = {"unit_type": unit_type, "prefix": prefix}
 
-    def execute(self) -> ifcopenshell.entity_instance:
-        name = ifcopenshell.util.unit.si_type_names.get(self.settings["unit_type"], None)
-        return self.file.create_entity(
-            "IfcSIUnit", UnitType=self.settings["unit_type"], Name=name, Prefix=self.settings["prefix"]
-        )
+    name = ifcopenshell.util.unit.si_type_names.get(settings["unit_type"], None)
+    return file.create_entity("IfcSIUnit", UnitType=settings["unit_type"], Name=name, Prefix=settings["prefix"])

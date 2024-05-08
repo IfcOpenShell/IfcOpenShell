@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
@@ -166,6 +167,9 @@ class ObjectMaterialData:
         cls.data["type_material"] = cls.type_material()
         cls.data["material_type"] = cls.material_type()
         cls.data["active_material_constituents"] = cls.active_material_constituents()
+        # after material_name and type_material
+        cls.data["is_type_material_overridden"] = cls.is_type_material_overridden()
+
         cls.is_loaded = True
 
     @classmethod
@@ -294,8 +298,7 @@ class ObjectMaterialData:
 
     @classmethod
     def material_name(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        material = ifcopenshell.util.element.get_material(element)
+        material = cls.material
         if material:
             return getattr(material, "Name", None) or "Unnamed"
 
@@ -339,3 +342,18 @@ class ObjectMaterialData:
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []
         return [m.Name for m in material.MaterialConstituents if m.Name]
+
+    @classmethod
+    def is_type_material_overridden(cls) -> bool:
+        if not cls.data["type_material"]:
+            return False
+
+        # try to avoid accessing ifc
+        if cls.data["material_name"] != cls.data["type_material"]:
+            return True
+
+        # in theory material can be overridden by the same material
+        # so we check occurrence material explicitly
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        occurrence_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        return bool(occurrence_material)

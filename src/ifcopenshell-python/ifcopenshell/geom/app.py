@@ -16,10 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
 import time
@@ -126,7 +122,7 @@ class geometry_creation_thread(QtCore.QThread):
         self.signals.completed.emit((it, self.f, list(_())))
 
 
-class configuration(object):
+class configuration:
     def __init__(self):
         try:
             import ConfigParser

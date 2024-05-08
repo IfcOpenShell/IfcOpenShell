@@ -29,6 +29,7 @@ import subprocess
 import numpy as np
 import multiprocessing
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.representation
@@ -219,11 +220,12 @@ class CreateDrawing(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.DocProperties
 
+        active_drawing_id = context.scene.camera.BIMObjectProperties.ifc_definition_id
         if self.print_all:
-            original_drawing_id = self.props.active_drawing_id
+            original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
         else:
-            drawings_to_print = [self.props.active_drawing_id]
+            drawings_to_print = [active_drawing_id]
 
         for drawing_i, drawing_id in enumerate(drawings_to_print):
             self.drawing_index = drawing_i
@@ -1451,12 +1453,18 @@ class ActivateModel(bpy.types.Operator):
 
         CutDecorator.uninstall()
 
+        # save current visibility statuses for Views and Types collections
+        visibility_status: dict[bpy.types.Object, bool] = {}
+        for col in bpy.data.collections["Views"].children:
+            for obj in col.objects:
+                visibility_status[obj] = obj.hide_get()
+        for obj in bpy.data.collections["Types"].objects:
+            visibility_status[obj] = obj.hide_get()
+
         if not bpy.app.background:
             with context.temp_override(**tool.Blender.get_viewport_context()):
                 bpy.ops.object.hide_view_clear()
                 bpy.ops.bim.activate_status_filters()
-
-        subcontext = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
         for obj in context.visible_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1475,6 +1483,11 @@ class ActivateModel(bpy.types.Operator):
                         is_global=True,
                         should_sync_changes_first=True,
                     )
+
+        # restore visibility after hide_view_clear()
+        for obj, hide_status in visibility_status.items():
+            obj.hide_set(hide_status)
+
         tool.Blender.update_viewport()
         return {"FINISHED"}
 

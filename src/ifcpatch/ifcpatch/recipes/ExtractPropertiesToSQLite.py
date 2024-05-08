@@ -23,6 +23,7 @@ import json
 import time
 import tempfile
 import ifcopenshell
+import ifcopenshell.util.element
 
 try:
     import sqlite3
@@ -106,14 +107,16 @@ class Patcher:
         relationships = []
         id_map = {e.id(): i for i, e in enumerate(elements)}
         for i, element in enumerate(elements):
-            rows.append([
-                i,
-                element[0],
-                element.is_a(),
-                ifcopenshell.util.element.get_predefined_type(element),
-                element[2],
-                element[3],
-            ])
+            rows.append(
+                [
+                    i,
+                    element[0],  # IfcRoot.GlobalId
+                    element.is_a(),
+                    ifcopenshell.util.element.get_predefined_type(element),
+                    element[2],  # IfcRoot.Name
+                    element[3],  # IfcRoot.Description
+                ]
+            )
             psets = ifcopenshell.util.element.get_psets(element, should_inherit=False)
             for pset_name, pset_data in psets.items():
                 for prop_name, value in pset_data.items():
@@ -134,27 +137,30 @@ class Patcher:
                     materials = []
                 elif material.is_a("IfcMaterialLayerSet"):
                     for idx, item in enumerate(material.MaterialLayers):
-                        properties.append([i, "IFC Material", f"Layer {idx + 1} Name", item.Name])
-                        properties.append([i, "IFC Material", f"Layer {idx + 1} Material", item.Material.Name])
-                        if getattr(item.Material, "Category"):
-                            properties.append([i, "IFC Material", f"Layer {idx + 1} Category", item.Material.Category])
+                        material = item.Material
+                        properties.append([i, "IFC Material", f"Layer {idx + 1} Name", getattr(item, "Name", None)])
+                        properties.append([i, "IFC Material", f"Layer {idx + 1} Material", material.Name])
+                        if category := getattr(material, "Category", None):
+                            properties.append([i, "IFC Material", f"Layer {idx + 1} Category", category])
                 elif material.is_a("IfcMaterialProfileSet"):
                     for idx, item in enumerate(material.MaterialProfiles):
+                        material = item.Material
                         properties.append([i, "IFC Material", f"Profile {idx + 1} Name", item.Name])
-                        properties.append([i, "IFC Material", f"Profile {idx + 1} Material", item.Material.Name])
-                        if getattr(item.Material, "Category"):
-                            properties.append([i, "IFC Material", f"Profile {idx + 1} Category", item.Material.Category])
+                        properties.append([i, "IFC Material", f"Profile {idx + 1} Material", material.Name])
+                        if category := getattr(material, "Category", None):
+                            properties.append([i, "IFC Material", f"Profile {idx + 1} Category", category])
                 elif material.is_a("IfcMaterialConstituentSet"):
                     for idx, item in enumerate(material.MaterialConstituents):
+                        material = item.Material
                         properties.append([i, "IFC Material", f"Constituent {idx + 1} Name", item.Name])
-                        properties.append([i, "IFC Material", f"Constituent {idx + 1} Material", item.Material.Name])
-                        if getattr(item.Material, "Category"):
-                            properties.append([i, "IFC Material", f"Constituent {idx + 1} Category", item.Material.Category])
+                        properties.append([i, "IFC Material", f"Constituent {idx + 1} Material", material.Name])
+                        if category := getattr(material, "Category", None):
+                            properties.append([i, "IFC Material", f"Constituent {idx + 1} Category", category])
                 elif material.is_a("IfcMaterialList"):
                     for idx, material in enumerate(material.Materials):
                         properties.append([i, "IFC Material", f"Material {idx + 1} Name", material.Name])
-                        if getattr(material, "Category"):
-                            properties.append([i, "IFC Material", f"Material {idx + 1} Category", material.Category])
+                        if category := getattr(material, "Category", None):
+                            properties.append([i, "IFC Material", f"Material {idx + 1} Category", category])
 
             layers = ifcopenshell.util.element.get_layers(self.file, element)
             for idx, layer in enumerate(layers):

@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.util.element
 from typing import Any, Callable, Optional, Union, Literal, overload
@@ -41,7 +40,7 @@ def get_pset(
     occurrence, not the type's pset.
 
     :param element: The IFC Element entity
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param name: The name of the pset
     :type name: str
     :param prop: The name of the property
@@ -129,7 +128,7 @@ def get_psets(
     occurrence, not the type's pset.
 
     :param element: The IFC Element entity
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param psets_only: Default as False. Set to true if only property sets are needed.
     :type psets_only: bool,optional
     :param qtos_only: Default as False. Set to true if only quantities are needed.
@@ -419,7 +418,7 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     considered first.
 
     :param element: The IFC Element entity
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The predefined type of the element
     :rtype: str
 
@@ -449,9 +448,9 @@ def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
     """Retrieves the construction type element of an element occurrence
 
     :param element: The element occurrence
-    :type: ifcopenshell.entity_instance.entity_instance
+    :type: ifcopenshell.entity_instance
     :return: The related type element
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -474,9 +473,9 @@ def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_in
     """Get all the occurrences of a type element
 
     :param type: The type element
-    :type type: ifcopenshell.entity_instance.entity_instance
+    :type type: ifcopenshell.entity_instance
     :return: A list of occurrences of that type
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -496,9 +495,9 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
     """Gets element shape aspects
 
     :param element: The element to get the shape aspects of.
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The associated shape aspects of the element.
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -531,7 +530,7 @@ def get_material(
     constituent), or a material set usage.
 
     :param element: The element to get the material of.
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param should_skip_usage: If set to True, if the material is a material set
         usage, the material set itself will be returned. Useful if you don't
         care about occurrence usage parameters. If False, the usage will be
@@ -541,7 +540,7 @@ def get_material(
         types will be considered.
     :type should_inherit: bool
     :return: The associated material of the element or `None`.
-    :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -575,11 +574,11 @@ def get_materials(
     returned as a list.
 
     :param element: The element to get the materials of.
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param should_inherit: If True, any inherited materials from associated
         types will be considered.
     :return: The associated materials of the element.
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -609,9 +608,9 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     Styles may be retreived from the material or the body representation.
 
     :param element: The element to get the styles of.
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: A list of surface styles
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -656,11 +655,11 @@ def get_elements_by_material(
     usage.
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param material: The IFC Material entity
-    :type material: ifcopenshell.entity_instance.entity_instance
+    :type material: ifcopenshell.entity_instance
     :return: A list of elements using the to the material
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -697,11 +696,11 @@ def get_elements_by_style(
     """Retrieves the elements whose geometric representation uses a style
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param style: The IfcPresentationStyle entity
-    :type style: ifcopenshell.entity_instance.entity_instance
+    :type style: ifcopenshell.entity_instance
     :return: The elements related to the style
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -739,11 +738,11 @@ def get_elements_by_representation(
     """Gets all elements using a geometric representation
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param representation: The IfcShapeRepresentation representation
-    :type representation: ifcopenshell.entity_instance.entity_instance
+    :type representation: ifcopenshell.entity_instance
     :return: The elements using the geometric representation
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -773,11 +772,11 @@ def get_elements_by_layer(
     """Get all the elements that are used by a presentation layer
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param layer: The IfcPresentationLayerAssignment layer
-    :type layer: ifcopenshell.entity_instance.entity_instance
+    :type layer: ifcopenshell.entity_instance
     :return: The elements using the geometric representation
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
     """
     results = set()
     for item in layer.AssignedItems or []:
@@ -799,11 +798,11 @@ def get_layers(
     traditional CAD presentation layer.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param element: The IFC element to interrogate
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: A list of IfcPresentationLayerAssignment
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -837,7 +836,7 @@ def get_container(
     Retrieves the spatial structure container of an element.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param should_get_direct: If True, a result is only returned if the element
         is directly contained in a spatial structure element. If False, an
         indirect spatial container may be returned, such as if an element is a
@@ -848,7 +847,7 @@ def get_container(
         example, you may be after the storey, not a space.
     :type ifc_class: str, optional
     :return: The direct or indirect container of the element or None.
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -893,9 +892,9 @@ def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifc
     as stairs, doors, etc.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: A list of IfcSpatialElement
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -911,9 +910,9 @@ def get_structure_referenced_elements(structure: ifcopenshell.entity_instance) -
     """Retreives a set of elements referenced by a structure
 
     :param structure: IfcSpatialElement
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: A set of referenced elements, IfcSpatialReferenceSelect
-    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -935,9 +934,9 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     parts of an aggreate, all openings, and all fills of any openings.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The decomposition of the element
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -979,9 +978,9 @@ def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
     """Retrieves all subelements of an element based on the group.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: All subelements of the group
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -1007,7 +1006,7 @@ def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
 
     :param element: The IFC element
     :return: List of IfcGroups element is assigned to.
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -1028,9 +1027,9 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_
     Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The aggregate of the element
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -1049,9 +1048,9 @@ def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_insta
     Retrieves the nest parent of an element.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The nested whole of the element
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -1073,9 +1072,9 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
     Retrieves the parts of an element that have an aggregation relationship.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The parts of the element
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -1099,7 +1098,7 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
     :param include_ports: Default as False. Set to true if you also want to get ports.
     :type include_ports: bool,optional
     :return: The components of the element
-    :rtype: list[ifcopenshell.entity_instance.entity_instance]
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 
@@ -1142,9 +1141,9 @@ def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifco
     """Get all elements with assigned `reference`
 
     :param reference: IfcExternalReference subtype reference
-    :type reference: ifcopenshell.entity_instance.entity_instance
+    :type reference: ifcopenshell.entity_instance
     :return: The elements with assigned `reference`
-    :rtype: set[ifcopenshell.entity_instance.entity_instance]
+    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -1223,7 +1222,7 @@ def batch_remove_deep2(ifc_file: ifcopenshell.file) -> None:
     on existing variables in memory.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :rtype: None
 
     Example:
@@ -1250,9 +1249,9 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
     See documentation for batch_remove_deep2.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :return: A newly loaded file with the elements removed.
-    :rtype: ifcopenshell.file.file
+    :rtype: ifcopenshell.file
     """
     ifc_string = ifc_file.to_string()
     lines = iter(ifc_string.split("\n"))
@@ -1305,13 +1304,13 @@ def remove_deep2(
     subgraph but are protected from deletion.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param also_consider: elements to also consider as a part of a subgraph
-    :type also_consider: list[ifcopenshell.entity_instance.entity_instance], optional
+    :type also_consider: list[ifcopenshell.entity_instance], optional
     :param do_not_delete: elements to protect from deletion
-    :type do_not_delete: list[ifcopenshell.entity_instance.entity_instance], optional
+    :type do_not_delete: list[ifcopenshell.entity_instance], optional
     :param element: The starting element that defines the subgraph
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     """
     # ifc_file.batch()
     to_delete = set()
@@ -1358,11 +1357,11 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
     GlobalIds are regenerated.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param element: The IFC element to copy
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :return: The newly copied element
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
     """
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
@@ -1388,9 +1387,9 @@ def copy_deep(
     GlobalIds are regenerated.
 
     :param ifc_file: The IFC file object
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param element: The IFC element to copy
-    :type element: ifcopenshell.entity_instance.entity_instance
+    :type element: ifcopenshell.entity_instance
     :param exclude: An optional list of strings of IFC class names to not copy.
         If any of the subelement is this class, it will not be copied and the
         original instance will be referenced.
@@ -1401,9 +1400,9 @@ def copy_deep(
     :param copied_entities: A dictionary of IDs as keys and entities as values
         to reuse when coming across the same entity twice. This can typically
         be left as None.
-    :type copied_entities: dict[int:ifcopenshell.entity_instance.entity_instance], optional
+    :type copied_entities: dict[int:ifcopenshell.entity_instance], optional
     :return: The newly copied element
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
     """
     if copied_entities is None:
         copied_entities = {}

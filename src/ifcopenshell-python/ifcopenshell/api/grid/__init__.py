@@ -15,3 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+try:
+    from .create_axis_curve import create_axis_curve
+except ModuleNotFoundError as e:
+    print(f"Note: API not available due to missing dependencies: grid.create_axis_curve - {e}")
+from .create_grid_axis import create_grid_axis
+from .remove_grid_axis import remove_grid_axis

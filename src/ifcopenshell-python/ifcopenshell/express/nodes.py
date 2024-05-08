@@ -17,13 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import print_function
-
 import io
 import string
 import operator
 import collections
-
 import bootstrap
 
 class Node:

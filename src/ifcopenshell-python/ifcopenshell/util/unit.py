@@ -398,7 +398,7 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
     """Get the default project unit of a particular unit type
 
     :param ifc_file: The IFC file.
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
     :type unit_type: str
@@ -536,9 +536,9 @@ def convert_unit(value: float, from_unit: ifcopenshell.entity_instance, to_unit:
     :param value: The numeric value you want to convert
     :type value: float
     :param from_unit: The IfcNamedUnit to confirm from.
-    :type from_unit: ifcopenshell.entity_instance.entity_instance
+    :type from_unit: ifcopenshell.entity_instance
     :param to_unit: The IfcNamedUnit to confirm from.
-    :type to_unit: ifcopenshell.entity_instance.entity_instance
+    :type to_unit: ifcopenshell.entity_instance
     :return: The converted value.
     :rtype: float
     """
@@ -599,7 +599,7 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
         si_meters / unit_scale = ifc_project_length
 
     :param ifc_file: The IFC file.
-    :type ifc_file: ifcopenshell.file.file
+    :type ifc_file: ifcopenshell.file
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :type unit_type: str
     :returns: The scale factor

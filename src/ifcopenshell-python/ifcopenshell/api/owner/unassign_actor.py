@@ -21,58 +21,55 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relating_actor=None, related_object=None):
-        """Unassigns an actor to an object
+def unassign_actor(file, relating_actor=None, related_object=None) -> None:
+    """Unassigns an actor to an object
 
-        This means that the actor is no longer responsible for the object.
+    This means that the actor is no longer responsible for the object.
 
-        :param relating_actor: The IfcActor who is responsible for the object.
-        :type relating_actor: ifcopenshell.entity_instance.entity_instance
-        :param related_object: The object the actor is responsible for.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: The updated IfcRelAssignsToActor relationship or none if there
-            is no more valid relationship.
-        :rtype: None, ifcopenshell.entity_instance.entity_instance
+    :param relating_actor: The IfcActor who is responsible for the object.
+    :type relating_actor: ifcopenshell.entity_instance
+    :param related_object: The object the actor is responsible for.
+    :type related_object: ifcopenshell.entity_instance
+    :return: The updated IfcRelAssignsToActor relationship or none if there
+        is no more valid relationship.
+    :rtype: None, ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # We need to procure and install 2 of this particular pump type in our facility.
-            pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")
+        # We need to procure and install 2 of this particular pump type in our facility.
+        pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")
 
-            # Define who the manufacturer is
-            manufacturer = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="PWP", name="Pumps With Power")
-            ifcopenshell.api.run("owner.add_role", model, assigned_object=manufacturer, role="MANUFACTURER")
+        # Define who the manufacturer is
+        manufacturer = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="PWP", name="Pumps With Power")
+        ifcopenshell.api.run("owner.add_role", model, assigned_object=manufacturer, role="MANUFACTURER")
 
-            # Make the manufacturer responsible for that pump type.
-            ifcopenshell.api.run("owner.assign_actor", model,
-                relating_actor=manufacturer, related_object=pump_type)
+        # Make the manufacturer responsible for that pump type.
+        ifcopenshell.api.run("owner.assign_actor", model,
+            relating_actor=manufacturer, related_object=pump_type)
 
-            # Undo the assignment
-            ifcopenshell.api.run("owner.unassign_actor", model,
-                relating_actor=manufacturer, related_object=pump_type)
-        """
-        self.file = file
-        self.settings = {
-            "relating_actor": relating_actor,
-            "related_object": related_object,
-        }
+        # Undo the assignment
+        ifcopenshell.api.run("owner.unassign_actor", model,
+            relating_actor=manufacturer, related_object=pump_type)
+    """
+    settings = {
+        "relating_actor": relating_actor,
+        "related_object": related_object,
+    }
 
-    def execute(self):
-        for rel in self.settings["related_object"].HasAssignments or []:
-            if not rel.is_a("IfcRelAssignsToActor") or rel.RelatingActor != self.settings["relating_actor"]:
-                continue
-            if len(rel.RelatedObjects) == 1:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-                return
-            related_objects = list(rel.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            rel.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-            return rel
+    for rel in settings["related_object"].HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToActor") or rel.RelatingActor != settings["relating_actor"]:
+            continue
+        if len(rel.RelatedObjects) == 1:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+            return
+        related_objects = list(rel.RelatedObjects)
+        related_objects.remove(settings["related_object"])
+        rel.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        return rel

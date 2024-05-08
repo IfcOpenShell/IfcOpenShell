@@ -20,57 +20,54 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, material=None):
-        """Removes a material
+def remove_material(file, material=None) -> None:
+    """Removes a material
 
-        If the material is used in a material set, the corresponding layer,
-        profile, or constituent is also removed. Note that this may result in a
-        material set with zero items in it, which is invalid, so the user must
-        take care of this situation themselves.
+    If the material is used in a material set, the corresponding layer,
+    profile, or constituent is also removed. Note that this may result in a
+    material set with zero items in it, which is invalid, so the user must
+    take care of this situation themselves.
 
-        :param material: The IfcMaterial entity you want to remove
-        :type material: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param material: The IfcMaterial entity you want to remove
+    :type material: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a material
-            aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
+        # Create a material
+        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
 
-            # ... and remove it
-            ifcopenshell.api.run("material.remove_material", model, material=aluminium)
-        """
-        self.file = file
-        self.settings = {"material": material}
+        # ... and remove it
+        ifcopenshell.api.run("material.remove_material", model, material=aluminium)
+    """
+    settings = {"material": material}
 
-    def execute(self):
-        inverse_elements = self.file.get_inverse(self.settings["material"])
-        self.file.remove(self.settings["material"])
-        # TODO: Right now, we we choose only to delete set items (e.g. a layer) but not the material set
-        # This can lead to invalid material sets, but we assume the user will deal with it
-        for inverse in inverse_elements:
-            if inverse.is_a("IfcMaterialConstituent"):
-                self.file.remove(inverse)
-            elif inverse.is_a("IfcMaterialLayer"):
-                self.file.remove(inverse)
-            elif inverse.is_a("IfcMaterialProfile"):
-                self.file.remove(inverse)
-            elif inverse.is_a("IfcRelAssociatesMaterial"):
-                history = inverse.OwnerHistory
-                self.file.remove(inverse)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-            elif inverse.is_a("IfcMaterialProperties"):
-                for prop in inverse.Properties or []:
-                    self.file.remove(prop)
-                self.file.remove(inverse)
-            elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
-                for representation in inverse.Representations:
-                    for item in representation.Items:
-                        self.file.remove(item)
-                    self.file.remove(representation)
-                self.file.remove(inverse)
+    inverse_elements = file.get_inverse(settings["material"])
+    file.remove(settings["material"])
+    # TODO: Right now, we we choose only to delete set items (e.g. a layer) but not the material set
+    # This can lead to invalid material sets, but we assume the user will deal with it
+    for inverse in inverse_elements:
+        if inverse.is_a("IfcMaterialConstituent"):
+            file.remove(inverse)
+        elif inverse.is_a("IfcMaterialLayer"):
+            file.remove(inverse)
+        elif inverse.is_a("IfcMaterialProfile"):
+            file.remove(inverse)
+        elif inverse.is_a("IfcRelAssociatesMaterial"):
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcMaterialProperties"):
+            for prop in inverse.Properties or []:
+                file.remove(prop)
+            file.remove(inverse)
+        elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
+            for representation in inverse.Representations:
+                for item in representation.Items:
+                    file.remove(item)
+                file.remove(representation)
+            file.remove(inverse)

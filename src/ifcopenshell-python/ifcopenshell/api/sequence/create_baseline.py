@@ -21,38 +21,41 @@ import ifcopenshell.util.system
 import ifcopenshell.util.element
 
 
+def create_baseline(file, work_schedule=None, name=None) -> None:
+    """Creates a baseline for your Work Schedule
+
+    Using a IfcWorkSchdule having PredefinedType=PLANNED,
+    We can create a baseline for our work schedule. This IfcWorkSchedule will have PredefinedType=BASELINE
+    and the IfcWorkSchedule.CreationDate indicating the date of the baseline creation, and IfcWorkSchedule.Name indicating the name of the baseline.
+
+    The following relationships are also baselined:
+
+    * Same Tasks & attributes
+    * Same Task Relationships
+    * Same Construction Resources
+    * Same Resource Relationships
+
+    :param work_schedule: The planned work_schedule to baseline
+    :type work_schedule: ifcopenshell.entity_instance
+    :return: The baseline work_schedule
+    :rtype: ifcopenshell.entity_instance
+
+    Example:
+    .. code:: python
+
+        # We have a Work Schedule
+        planned_work_schedule = WorkSchedule(name="Design new feature",predefinedType="PLANNED", deadline="2023-03-01")
+
+        # And now we have a baseline for our Work Schedule
+        baseline_work_schedule = ifcopenshell.api.run("sequence.create_baseline",file, work_schedule= planned_work_schedule, name="Baseline 1")
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"work_schedule": work_schedule, "name": name}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, work_schedule=None, name=None):
-        """Creates a baseline for your Work Schedule
-
-        Using a IfcWorkSchdule having PredefinedType=PLANNED,
-        We can create a baseline for our work schedule. This IfcWorkSchedule will have PredefinedType=BASELINE
-        and the IfcWorkSchedule.CreationDate indicating the date of the baseline creation, and IfcWorkSchedule.Name indicating the name of the baseline.
-
-        The following relationships are also baselined:
-
-        * Same Tasks & attributes
-        * Same Task Relationships
-        * Same Construction Resources
-        * Same Resource Relationships
-
-        :param work_schedule: The planned work_schedule to baseline
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
-        :return: The baseline work_schedule
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-        .. code:: python
-
-            # We have a Work Schedule
-            planned_work_schedule = WorkSchedule(name="Design new feature",predefinedType="PLANNED", deadline="2023-03-01")
-
-            # And now we have a baseline for our Work Schedule
-            baseline_work_schedule = ifcopenshell.api.run("sequence.create_baseline",file, work_schedule= planned_work_schedule, name="Baseline 1")
-        """
-        self.file = file
-        self.settings = {"work_schedule": work_schedule, "name": name}
-
     def execute(self):
         result = self.create_baseline_work_schedule(self.settings["work_schedule"])
         return result
@@ -92,17 +95,13 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run(
-                "owner.update_owner_history", self.file, **{"element": referenced_by}
-            )
+            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run(
-                        "owner.create_owner_history", self.file
-                    ),
+                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
                 }

@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_filling import add_filling
+from .add_opening import add_opening
+from .remove_filling import remove_filling
+from .remove_opening import remove_opening

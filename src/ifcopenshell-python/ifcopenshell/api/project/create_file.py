@@ -20,52 +20,46 @@ import datetime
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, version: str = "IFC4"):
-        """Create a blank IFC model file object
+def create_file(version: str = "IFC4") -> ifcopenshell.file:
+    """Create a blank IFC model file object
 
-        Create a new IFC file object based on the nominated schema version. The
-        schema version you choose determines what type of IFC data you can store
-        in this model. The file is blank and contains no entities.
+    Create a new IFC file object based on the nominated schema version. The
+    schema version you choose determines what type of IFC data you can store
+    in this model. The file is blank and contains no entities.
 
-        It also sets up header data for STEP file serialisation, such as the
-        current timestamp, IfcOpenShell as the preprocessor, and defaults to a
-        DesignTransferView MVD.
+    It also sets up header data for STEP file serialisation, such as the
+    current timestamp, IfcOpenShell as the preprocessor, and defaults to a
+    DesignTransferView MVD.
 
-        :param version: The schema version of the IFC file. Choose from
-            "IFC2X3", "IFC4", or "IFC4X3". If you have loaded in a custom
-            schema, you may specify that schema identifier here too.
-        :type version: str, optional
-        :return: The created IFC file object.
-        :rtype: ifcopenshell.file.file
+    :param version: The schema version of the IFC file. Choose from
+        "IFC2X3", "IFC4", or "IFC4X3". If you have loaded in a custom
+        schema, you may specify that schema identifier here too.
+    :type version: str, optional
+    :return: The created IFC file object.
+    :rtype: ifcopenshell.file
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Start a new model.
-            model = ifcopenshell.api.run("project.create_file")
+        # Start a new model.
+        model = ifcopenshell.api.run("project.create_file")
 
-            # It's currently a blank model, so typically the first thing we do
-            # is create a project in it.
-            project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
+        # It's currently a blank model, so typically the first thing we do
+        # is create a project in it.
+        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
 
-            # ... and off we go!
-        """
-        self.settings = {"version": version}
+        # ... and off we go!
+    """
+    settings = {"version": version}
 
-    def execute(self) -> ifcopenshell.file:
-        self.file = ifcopenshell.file(schema=self.settings["version"])
-        self.file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
-        self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.utcnow()
-            .replace(tzinfo=datetime.timezone.utc)
-            .astimezone()
-            .replace(microsecond=0)
-            .isoformat()
-        )
-        self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
-        self.file.wrapped_data.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
-        self.file.wrapped_data.header.file_name.authorization = "Nobody"
-        self.file.wrapped_data.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
-        return self.file
+    file = ifcopenshell.file(schema=settings["version"])
+    file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
+    file.wrapped_data.header.file_name.time_stamp = (
+        datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()
+    )
+    file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
+    file.wrapped_data.header.file_name.originating_system = "IfcOpenShell {}".format(ifcopenshell.version)
+    file.wrapped_data.header.file_name.authorization = "Nobody"
+    file.wrapped_data.header.file_description.description = ("ViewDefinition[DesignTransferView]",)
+    return file

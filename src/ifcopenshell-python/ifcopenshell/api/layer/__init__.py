@@ -15,3 +15,9 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_layer import add_layer
+from .assign_layer import assign_layer
+from .edit_layer import edit_layer
+from .remove_layer import remove_layer
+from .unassign_layer import unassign_layer

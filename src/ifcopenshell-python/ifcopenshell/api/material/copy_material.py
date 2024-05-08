@@ -20,45 +20,42 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, material=None):
-        """Copies a material
+def copy_material(file, material=None) -> None:
+    """Copies a material
 
-        All material psets and styles are copied. The copied material is not
-        associated to any elements.
+    All material psets and styles are copied. The copied material is not
+    associated to any elements.
 
-        :param material: The IfcMaterial to copy
-        :type material: ifcopenshell.entity_instance.entity_instance
-        :return: The new copy of the material
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param material: The IfcMaterial to copy
+    :type material: ifcopenshell.entity_instance
+    :return: The new copy of the material
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
+        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
 
-            # Let's duplicate the concrete material
-            concrete_copy = ifcopenshell.api.run("material.copy_material", model, material=concrete)
-        """
-        self.file = file
-        self.settings = {"material": material}
+        # Let's duplicate the concrete material
+        concrete_copy = ifcopenshell.api.run("material.copy_material", model, material=concrete)
+    """
+    settings = {"material": material}
 
-    def execute(self):
-        if self.settings["material"].is_a("IfcMaterial"):
-            new = ifcopenshell.util.element.copy(self.file, self.settings["material"])
-            for inverse in self.file.get_inverse(self.settings["material"]):
-                if inverse.is_a("IfcMaterialProperties"):
-                    # Properties must not be shared between objects for convenience of authoring
-                    inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                    properties = []
-                    for pset in inverse.Properties:
-                        properties.append(ifcopenshell.util.element.copy_deep(self.file, pset))
-                    inverse.Properties = properties
-                    inverse.Material = new
-                elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
-                    inverse = ifcopenshell.util.element.copy_deep(
-                        self.file, inverse, exclude=["IfcRepresentationContext", "IfcMaterial"]
-                    )
-                    inverse.RepresentedMaterial = new
-            return new
+    if settings["material"].is_a("IfcMaterial"):
+        new = ifcopenshell.util.element.copy(file, settings["material"])
+        for inverse in file.get_inverse(settings["material"]):
+            if inverse.is_a("IfcMaterialProperties"):
+                # Properties must not be shared between objects for convenience of authoring
+                inverse = ifcopenshell.util.element.copy(file, inverse)
+                properties = []
+                for pset in inverse.Properties:
+                    properties.append(ifcopenshell.util.element.copy_deep(file, pset))
+                inverse.Properties = properties
+                inverse.Material = new
+            elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
+                inverse = ifcopenshell.util.element.copy_deep(
+                    file, inverse, exclude=["IfcRepresentationContext", "IfcMaterial"]
+                )
+                inverse.RepresentedMaterial = new
+        return new

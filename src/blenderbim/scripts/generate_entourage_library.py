@@ -42,7 +42,7 @@ class LibraryGenerator:
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=library_name
         )
         ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
+            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
         )
         unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
@@ -131,7 +131,7 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
 
 
 if __name__ == "__main__":

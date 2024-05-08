@@ -15,3 +15,7 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .add_georeferencing import add_georeferencing
+from .edit_georeferencing import edit_georeferencing
+from .remove_georeferencing import remove_georeferencing

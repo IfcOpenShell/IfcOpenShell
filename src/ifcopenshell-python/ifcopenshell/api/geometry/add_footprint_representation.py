@@ -19,20 +19,17 @@
 import ifcopenshell.util.unit
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            "curves": [],  # A list of IFC curves to include in the curve set
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_footprint_representation(file, **usecase_settings) -> None:
+    settings = {
+        "context": None,  # IfcGeometricRepresentationContext
+        "curves": [],  # A list of IFC curves to include in the curve set
+    }
+    for key, value in usecase_settings.items():
+        settings[key] = value
 
-    def execute(self):
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"],
-            self.settings["context"].ContextIdentifier,
-            "GeometricCurveSet",
-            [self.file.createIfcGeometricCurveSet(self.settings["curves"])],
-        )
+    return file.createIfcShapeRepresentation(
+        settings["context"],
+        settings["context"].ContextIdentifier,
+        "GeometricCurveSet",
+        [file.createIfcGeometricCurveSet(settings["curves"])],
+    )

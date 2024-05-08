@@ -17,47 +17,44 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Usecase:
-    def __init__(self, file, assigned_object=None, role="ARCHITECT"):
-        """Adds and assigns a new role
+def add_role(file, assigned_object=None, role="ARCHITECT") -> None:
+    """Adds and assigns a new role
 
-        People and organisations must play one or more roles on a project. Roles
-        include architects, engineers, subcontractors, clients, manufacturers,
-        etc. Typically these roles and their corresponding responsibilities will
-        be outlined in contractual documents.
+    People and organisations must play one or more roles on a project. Roles
+    include architects, engineers, subcontractors, clients, manufacturers,
+    etc. Typically these roles and their corresponding responsibilities will
+    be outlined in contractual documents.
 
-        This function will both add and assign the role to the person or
-        organisation.
+    This function will both add and assign the role to the person or
+    organisation.
 
-        :param assigned_object: The IfcPerson or IfcOrganization the role should
-            be assigned to.
-        :type assigned_object: ifcopenshell.entity_instance.entity_instance
-        :param role: The type of role, taken from the IFC documentation for
-            IfcActorRole, or a custom name.
-        :type role: str, optional
-        :return: The newly created IfcActorRole
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param assigned_object: The IfcPerson or IfcOrganization the role should
+        be assigned to.
+    :type assigned_object: ifcopenshell.entity_instance
+    :param role: The type of role, taken from the IFC documentation for
+        IfcActorRole, or a custom name.
+    :type role: str, optional
+    :return: The newly created IfcActorRole
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
-            ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
-        """
-        self.file = file
-        self.settings = {"assigned_object": assigned_object, "role": role}
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
+        ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+    """
+    settings = {"assigned_object": assigned_object, "role": role}
 
-    def execute(self):
-        element = self.file.createIfcActorRole("ARCHITECT")
-        if self.settings["role"]:
-            try:
-                element.Role = self.settings["role"]
-            except:
-                element.Role = "USERDEFINED"
-                element.UserDefinedRole = self.settings["role"]
-        roles = list(self.settings["assigned_object"].Roles) if self.settings["assigned_object"].Roles else []
-        roles.append(element)
-        self.settings["assigned_object"].Roles = roles
-        return element
+    element = file.createIfcActorRole("ARCHITECT")
+    if settings["role"]:
+        try:
+            element.Role = settings["role"]
+        except:
+            element.Role = "USERDEFINED"
+            element.UserDefinedRole = settings["role"]
+    roles = list(settings["assigned_object"].Roles) if settings["assigned_object"].Roles else []
+    roles.append(element)
+    settings["assigned_object"].Roles = roles
+    return element

@@ -15,3 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+
+from .assign_type import assign_type
+from .get_related_objects import get_related_objects
+from .map_type_representations import map_type_representations
+from .unassign_type import unassign_type

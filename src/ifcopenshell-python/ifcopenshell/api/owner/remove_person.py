@@ -19,51 +19,48 @@
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, person=None):
-        """Remove an person
+def remove_person(file, person=None) -> None:
+    """Remove an person
 
-        All roles and addresses assigned to the person will also be
-        removed.
+    All roles and addresses assigned to the person will also be
+    removed.
 
-        :param person: The IfcPerson to remove
-        :type person: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param person: The IfcPerson to remove
+    :type person: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            ifcopenshell.api.run("owner.add_person", model,
-                identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
-            ifcopenshell.api.run("owner.remove_person", model, person=person)
-        """
-        self.file = file
-        self.settings = {"person": person}
+        ifcopenshell.api.run("owner.add_person", model,
+            identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
+        ifcopenshell.api.run("owner.remove_person", model, person=person)
+    """
+    settings = {"person": person}
 
-    def execute(self):
-        for role in self.settings["person"].Roles or []:
-            if len(self.file.get_inverse(role)) == 1:
-                ifcopenshell.api.run("owner.remove_role", self.file, role=role)
-        for address in self.settings["person"].Addresses or []:
-            if len(self.file.get_inverse(address)) == 1:
-                ifcopenshell.api.run("owner.remove_address", self.file, address=address)
-        for inverse in self.file.get_inverse(self.settings["person"]):
-            if inverse.is_a("IfcWorkControl"):
-                if inverse.Creators == (self.settings["person"],):
-                    inverse.Creators = None
-            elif inverse.is_a("IfcInventory"):
-                if inverse.ResponsiblePersons == (self.settings["person"],):
-                    inverse.ResponsiblePersons = None
-            elif inverse.is_a("IfcDocumentInformation"):
-                if inverse.Editors == (self.settings["person"],):
-                    inverse.Editors = None
-            elif inverse.is_a("IfcPersonAndOrganization"):
-                ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=inverse)
-            elif inverse.is_a("IfcActor"):
-                ifcopenshell.api.run("root.remove_product", self.file, product=inverse)
-            elif inverse.is_a("IfcResourceLevelRelationship"):
-                if inverse.RelatedResourceObjects == (self.settings["person"],):
-                    self.file.remove(inverse)
-        self.file.remove(self.settings["person"])
+    for role in settings["person"].Roles or []:
+        if len(file.get_inverse(role)) == 1:
+            ifcopenshell.api.run("owner.remove_role", file, role=role)
+    for address in settings["person"].Addresses or []:
+        if len(file.get_inverse(address)) == 1:
+            ifcopenshell.api.run("owner.remove_address", file, address=address)
+    for inverse in file.get_inverse(settings["person"]):
+        if inverse.is_a("IfcWorkControl"):
+            if inverse.Creators == (settings["person"],):
+                inverse.Creators = None
+        elif inverse.is_a("IfcInventory"):
+            if inverse.ResponsiblePersons == (settings["person"],):
+                inverse.ResponsiblePersons = None
+        elif inverse.is_a("IfcDocumentInformation"):
+            if inverse.Editors == (settings["person"],):
+                inverse.Editors = None
+        elif inverse.is_a("IfcPersonAndOrganization"):
+            ifcopenshell.api.run("owner.remove_person_and_organisation", file, person_and_organisation=inverse)
+        elif inverse.is_a("IfcActor"):
+            ifcopenshell.api.run("root.remove_product", file, product=inverse)
+        elif inverse.is_a("IfcResourceLevelRelationship"):
+            if inverse.RelatedResourceObjects == (settings["person"],):
+                file.remove(inverse)
+    file.remove(settings["person"])

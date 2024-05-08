@@ -20,20 +20,23 @@ import ifcopenshell.util.unit
 from math import sin, cos
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "context": None,  # IfcGeometricRepresentationContext
-            "depth": 0.2,
-            "x_angle": 0,  # Radians
-            # Planes are defined either by Clipping objects
-            # or by dictionaries of arguments for `Clipping.parse`
-            "clippings": [],  # A list of planes that define clipping half space solids
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def add_slab_representation(file, **usecase_settings) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "context": None,  # IfcGeometricRepresentationContext
+        "depth": 0.2,
+        "x_angle": 0,  # Radians
+        # Planes are defined either by Clipping objects
+        # or by dictionaries of arguments for `Clipping.parse`
+        "clippings": [],  # A list of planes that define clipping half space solids
+    }
+    for key, value in usecase_settings.items():
+        usecase.settings[key] = value
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         return self.file.createIfcShapeRepresentation(

@@ -719,7 +719,7 @@ class SvgWriter:
             self.svg.text(sheet_id, insert=(text_position[0], text_position[1] + 2.5), class_="ELEVATION", **text_style)
         )
 
-    def get_reference_and_sheet_id_from_annotation(self, element):
+    def get_reference_and_sheet_id_from_annotation(self, element: ifcopenshell.entity_instance) -> tuple[str, str]:
         reference_id = "-"
         sheet_id = "-"
         drawing = tool.Drawing.get_annotation_element(element)

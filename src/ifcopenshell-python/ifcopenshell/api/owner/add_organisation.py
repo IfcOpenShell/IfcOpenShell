@@ -18,38 +18,37 @@
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, identification: str = "APTR", name: str = "Aperture Science"):
-        """Adds a new organisation
+def add_organisation(
+    file: ifcopenshell.file, identification: str = "APTR", name: str = "Aperture Science"
+) -> ifcopenshell.entity_instance:
+    """Adds a new organisation
 
-        Organisations are the main way to identify manufacturers, suppliers, and
-        other actors who do not have a single representative or must not have
-        any personally identifiable information.
+    Organisations are the main way to identify manufacturers, suppliers, and
+    other actors who do not have a single representative or must not have
+    any personally identifiable information.
 
-        :param identification: The short code identifying the organisation.
-            Sometimes used in drawing naming schemes. Otherise used as a
-            canonicalised way of computers to identify the organisation. Like
-            their stock name.
-        :type identification: str, optional
-        :param name: The legal name of the organisation
-        :type name: str, optional
-        :return: The newly created IfcOrganization
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param identification: The short code identifying the organisation.
+        Sometimes used in drawing naming schemes. Otherise used as a
+        canonicalised way of computers to identify the organisation. Like
+        their stock name.
+    :type identification: str, optional
+    :param name: The legal name of the organisation
+    :type name: str, optional
+    :return: The newly created IfcOrganization
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
-        """
-        self.file = file
-        self.settings = {"identification": identification, "name": name}
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
+    """
+    settings = {"identification": identification, "name": name}
 
-    def execute(self) -> ifcopenshell.entity_instance:
-        data = {"Name": self.settings["name"]}
-        if self.file.schema == "IFC2X3":
-            data["Id"] = self.settings["identification"]
-        else:
-            data["Identification"] = self.settings["identification"]
-        return self.file.create_entity("IfcOrganization", **data)
+    data = {"Name": settings["name"]}
+    if file.schema == "IFC2X3":
+        data["Id"] = settings["identification"]
+    else:
+        data["Identification"] = settings["identification"]
+    return file.create_entity("IfcOrganization", **data)
