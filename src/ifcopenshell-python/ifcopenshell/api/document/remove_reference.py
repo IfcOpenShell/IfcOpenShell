@@ -38,11 +38,15 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
         reference = ifcopenshell.api.run("document.add_reference", model, information=document)
         ifcopenshell.api.run("document.remove_reference", model, reference=reference)
     """
-    settings = {"reference": reference}
 
-    for rel in settings["reference"].DocumentRefForObjects or []:
+    if file.schema == "IFC2X3":
+        rels = [r for r in file.get_inverse(reference) if r.is_a("IfcRelAssociatesDocument")]
+    else:
+        rels = reference.DocumentRefForObjects
+
+    for rel in rels:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    file.remove(settings["reference"])
+    file.remove(reference)

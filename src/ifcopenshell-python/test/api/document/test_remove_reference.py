@@ -41,3 +41,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcDocumentInformation")) == 1
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 1
+
+
+class TestRemoveReferenceIFC2X3(test.bootstrap.IFC2X3, TestRemoveReference):
+    pass
