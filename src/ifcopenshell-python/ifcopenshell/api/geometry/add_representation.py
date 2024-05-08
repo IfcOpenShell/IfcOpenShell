@@ -15,13 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-
+from __future__ import annotations
 import bpy
 import math
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector, Matrix
-from blenderbim.bim.module.geometry.helper import Helper
+
 
 Z_AXIS = Vector((0, 0, 1))
 X_AXIS = Vector((1, 0, 0))
@@ -29,6 +29,10 @@ EPSILON = 1e-6
 
 
 def add_representation(file: ifcopenshell.file, **usecase_settings) -> ifcopenshell.entity_instance:
+    # lazy import Helper to avoid circular import
+    if "Helper" not in globals():
+        from blenderbim.bim.module.geometry.helper import Helper
+
     usecase = Usecase()
     # TODO: This usecase currently depends on Blender's data model
     usecase.file = file
