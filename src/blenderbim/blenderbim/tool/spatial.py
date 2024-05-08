@@ -111,6 +111,9 @@ class Spatial(blenderbim.core.tool.Spatial):
         for rel in parent.IsDecomposedBy or []:
             related_objects = []
             for element in rel.RelatedObjects:
+                # skip objects without placements
+                if not element.is_a("IfcProduct"):
+                    continue
                 related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
             related_objects = sorted(related_objects, key=lambda e: e[1])
             for element, _ in related_objects:
