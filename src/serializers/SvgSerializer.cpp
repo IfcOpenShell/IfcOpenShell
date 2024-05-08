@@ -1830,13 +1830,13 @@ void SvgSerializer::addTextAnnotations(const drawing_key& k) {
 		}
 	}
 
-	aggregate_of_instance::ptr annotations;
+	boost::optional<IfcParse::IfcFile::type_iterator_range_t> annotations;
 	if (file) {
 		annotations = file->instances_by_type("IfcAnnotation");
 	}
 	if (annotations) {
-		for (auto& ann_ : *annotations) {
-			auto ann = (IfcUtil::IfcBaseEntity*) ann_;
+		for (auto& ann_ : boost::make_iterator_range(*annotations)) {
+			auto ann = ann_->as<IfcUtil::IfcBaseEntity>();
 
 			auto ot = ann->get("ObjectType");
 			auto nm = ann->get("Name");
@@ -2072,50 +2072,48 @@ void SvgSerializer::finalize() {
 
 			if (file && storey_height_display_ != SH_NONE && pln && std::abs(pln->Position().Direction().Z()) < 1.e-5) {
 				auto storeys = file->instances_by_type("IfcBuildingStorey");
-				if (storeys) {
-					const double lu = file->getUnit("LENGTHUNIT").second;
-					for (auto& s : *storeys) {
-						auto storey = (IfcUtil::IfcBaseEntity*) s;
-						auto a = storey->get("Elevation");
-						if (!a->isNull()) {
-							double elev = *a;
-							elev *= lu;
-							auto svg_name = nameElement(storey);
+				const double lu = file->getUnit("LENGTHUNIT").second;
+				for (auto& s : boost::make_iterator_range(storeys)) {
+					auto storey = s->as<IfcUtil::IfcBaseEntity>();
+					auto a = storey->get("Elevation");
+					if (!a->isNull()) {
+						double elev = *a;
+						elev *= lu;
+						auto svg_name = nameElement(storey);
 
-							gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
-							//, pln->Position().XDirection()));
-							// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
+						gp_Pln elev_pln(gp_Ax3(gp_Pnt(0, 0, elev), gp::DZ(), gp::DX()));
+						//, pln->Position().XDirection()));
+						// auto ref_y = pln->Position().YDirection().XYZ().Dot(pln->Position().Location().XYZ());
 
-							double x0, y0, z0, x1, y1, z1;
-							bnd_.Get(x0, y0, z0, x1, y1, z1);
+						double x0, y0, z0, x1, y1, z1;
+						bnd_.Get(x0, y0, z0, x1, y1, z1);
 
-							// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
-							// the global bounding box) to include the storey height symbols.
-							x0 -= 0.2;
-							y0 -= 0.2;
-							z0 -= 0.2;
+						// @todo this is a hack in order to get the auto elevations (which are 0.1 offset from
+						// the global bounding box) to include the storey height symbols.
+						x0 -= 0.2;
+						y0 -= 0.2;
+						z0 -= 0.2;
 
-							x1 += 0.2;
-							y1 += 0.2;
-							z1 += 0.2;
+						x1 += 0.2;
+						y1 += 0.2;
+						z1 += 0.2;
 
-							const double shll = storey_height_line_length_.get_value_or(2.);
+						const double shll = storey_height_line_length_.get_value_or(2.);
 
-							BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
-							gp_Trsf trsf;
-							TopoDS_Compound C;
-							BRep_Builder B;
-							B.MakeCompound(C);
-							B.Add(C, mf.Face());
-							std::string name;
-							auto a2 = storey->get("Name");
-							if (!a2->isNull()) {
-								name = (std::string) *a2;
-							}
-							write(geometry_data{
-								C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
-							});
+						BRepBuilderAPI_MakeFace mf(elev_pln, x0 - shll, x1 + shll, y0 - shll, y1 + shll);
+						gp_Trsf trsf;
+						TopoDS_Compound C;
+						BRep_Builder B;
+						B.MakeCompound(C);
+						B.Add(C, mf.Face());
+						std::string name;
+						auto a2 = storey->get("Name");
+						if (!a2->isNull()) {
+							name = (std::string) *a2;
 						}
+						write(geometry_data{
+							C,{boost::none},trsf,storey,storey,elev,name,nameElement(storey)
+						});
 					}
 				}
 			}
@@ -2303,30 +2301,28 @@ void SvgSerializer::setFile(IfcParse::IfcFile* f) {
 	file = f;
 
 	auto storeys = f->instances_by_type("IfcBuildingStorey");
-	if (!storeys || storeys->size() == 0) {
+	if (std::distance(storeys.first, storeys.second)) {
 		auto mapping = ifcopenshell::geometry::impl::mapping_implementations().construct(file, geometry_settings_);
 
 		std::vector<const IfcParse::declaration*> to_derive_from;
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcBuilding"));
 		to_derive_from.push_back(f->schema()->declaration_by_name("IfcSite"));
 		for (auto it = to_derive_from.begin(); it != to_derive_from.end(); ++it) {
-			aggregate_of_instance::ptr insts = f->instances_by_type(*it);
-			if (insts) {
-				for (auto jt = insts->begin(); jt != insts->end(); ++jt) {
-					IfcUtil::IfcBaseEntity* product = (IfcUtil::IfcBaseEntity*) *jt;
-					if (!product->get("ObjectPlacement")->isNull()) {
-						auto item = mapping->map(*product->get("ObjectPlacement"));
-						auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
-						gp_Trsf trsf;
-						if (matrix) {
-							// @todo shouldn't this take into account configurable section height?
-							setSectionHeight(matrix->translation_part()(3) + 1.);
+			auto insts = f->instances_by_type(*it);
+			for (auto& product_ : boost::make_iterator_range(insts)) {
+				IfcUtil::IfcBaseEntity* product = product_->as<IfcUtil::IfcBaseEntity>();
+				if (!product->get("ObjectPlacement")->isNull()) {
+					auto item = mapping->map(*product->get("ObjectPlacement"));
+					auto matrix = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(item);
+					gp_Trsf trsf;
+					if (matrix) {
+						// @todo shouldn't this take into account configurable section height?
+						setSectionHeight(matrix->translation_part()(3) + 1.);
 #ifdef TAXONOMY_USE_NAKED_PTR
-							delete matrix;
+						delete matrix;
 #endif
-							Logger::Warning("No building storeys encountered, used for reference:", product);
-							return;
-						}
+						Logger::Warning("No building storeys encountered, used for reference:", product);
+						return;
 					}
 				}
 			}
@@ -2352,9 +2348,9 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 	section_data_.emplace();
 	auto storeys = file->instances_by_type("IfcBuildingStorey");
 	const double lu = file->getUnit("LENGTHUNIT").second;
-	if (storeys && storeys->size() > 0) {
-		for (auto& s : *storeys) {
-			auto attr_value = ((IfcUtil::IfcBaseEntity*)s)->get("Elevation");
+	if (std::distance(storeys.first, storeys.second)) {
+		for (auto& s : boost::make_iterator_range(storeys)) {
+			auto attr_value = s->as<IfcUtil::IfcBaseEntity>()->get("Elevation");
 			if (!attr_value->isNull()) {
 				double elev;
 				try {
@@ -2366,7 +2362,7 @@ void SvgSerializer::setSectionHeightsFromStoreys(double offset) {
 				if (!section_data_->empty()) {
 					boost::get<horizontal_plan>(section_data_->back()).next_elevation = elev * lu;
 				}
-				section_data_->push_back(horizontal_plan{ (IfcUtil::IfcBaseEntity*)s, elev * lu, offset, std::numeric_limits<double>::infinity() });
+				section_data_->push_back(horizontal_plan{ s->as<IfcUtil::IfcBaseEntity>(), elev * lu, offset, std::numeric_limits<double>::infinity() });
 			}			
 		}
 	} else {

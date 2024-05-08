@@ -480,7 +480,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
             if (state->dialect == ifcxml_dialect_ifc4) {
                 // In IFC2X3 not added directly because attrs such as GlobalId are in
                 // subsequent child nodes
-                newinst = state->file->addEntity(newinst);
+                newinst = &*state->file->addEntity(newinst);
                 if (id) {
                     state->idmap[*id] = newinst->data().id();
                 }

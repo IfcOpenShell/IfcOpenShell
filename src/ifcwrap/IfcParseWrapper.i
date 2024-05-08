@@ -49,10 +49,10 @@ private:
 %rename("by_id") instance_by_id;
 %rename("by_type") instances_by_type;
 %rename("by_type_excl_subtypes") instances_by_type_excl_subtypes;
-%rename("entity_instance") IfcBaseClass;
+
 %rename("file") IfcFile;
-%rename("add") addEntity;
-%rename("remove") removeEntity;
+%ignore IfcParse::IfcFile::addEntity;
+%ignore IfcParse::IfcFile::removeEntity;
 
 class attribute_value_derived {};
 %{
@@ -88,12 +88,71 @@ PyObject* get_feature(const std::string& x) {
 %}
 
 %{
+class entity_instance;
+const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl);
+IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsigned i);
+%}
 
-static const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
+
+%inline %{
+class entity_instance {
+	boost::variant<
+		IfcParse::IfcFile::instance_storage_type,
+		std::weak_ptr<IfcUtil::IfcBaseClass>
+	> data_;
+
+	struct visitor {
+		IfcParse::IfcFile::instance_storage_type operator()(const IfcParse::IfcFile::instance_storage_type& t) {
+			return t;
+		}
+		IfcParse::IfcFile::instance_storage_type operator()(const std::weak_ptr<IfcUtil::IfcBaseClass>& t) {
+			auto u = t.lock();
+			if (u) {
+				return u;
+			} else {
+				throw std::runtime_error("No longer availabe");
+			}
+		}
+	};
+public:
+	entity_instance(const IfcParse::IfcFile::instance_storage_type& shared)
+		: data_(std::weak_ptr<IfcUtil::IfcBaseClass>(shared))
+	{}
+
+	entity_instance(IfcUtil::IfcBaseClass* naked)
+		: data_(IfcParse::IfcFile::instance_storage_type(naked))
+	{}
+
+	operator IfcUtil::IfcBaseClass*() const {
+		return &*boost::apply_visitor(visitor{}, data_);
+	}
+
+	const IfcParse::declaration& declaration() const {
+		return boost::apply_visitor(visitor{}, data_)->declaration();
+	}
+
+	const IfcEntityInstanceData& data() const { 
+		return boost::apply_visitor(visitor{}, data_)->data();
+	}
+
+    IfcEntityInstanceData& data() { 
+		return boost::apply_visitor(visitor{}, data_)->data();
+	}
+
+	uint32_t identity() const {
+		return boost::apply_visitor(visitor{}, data_)->identity();
+	}
+};
+
+%}
+
+%{
+
+const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl) {
 	return decl->name();
 }
 
-static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClass* inst, unsigned i) {
+IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsigned i) {
 	const IfcParse::parameter_type* pt = 0;
 	if (inst->declaration().as_entity()) {
 		pt = inst->declaration().as_entity()->attribute_by_index(i)->type_of_attribute();
@@ -122,20 +181,28 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return reinterpret_cast<size_t>($self);
 	}
 
-	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
+	entity_instance by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
 	}
+
+	entity_instance add(entity_instance& e, int i) {
+		return $self->addEntity(e, i);
+	}
+
+	void remove(entity_instance& e) {
+		return $self->removeEntity(e);
+	}
 	
-	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverse(e->data().id(), 0, -1);
+	aggregate_of_instance::ptr get_inverse(entity_instance& e) {
+		return $self->getInverse(e.data().id(), 0, -1);
 	}
 
-	std::vector<int> get_inverse_indices(IfcUtil::IfcBaseClass* e) {
-		return $self->get_inverse_indices(e->data().id());
+	std::vector<int> get_inverse_indices(entity_instance& e) {
+		return $self->get_inverse_indices(e.data().id());
 	}
 
-	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
-		return $self->getTotalInverses(e->data().id());
+	int get_total_inverses(entity_instance& e) {
+		return $self->getTotalInverses(e.data().id());
 	}
 
 	void write(const std::string& fn) {
@@ -186,7 +253,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	%}
 }
 
-%extend IfcUtil::IfcBaseClass {
+%extend entity_instance {
 
 	int get_attribute_category(const std::string& name) const {
 		if (!$self->declaration().as_entity()) {
@@ -288,7 +355,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return std::pair<IfcUtil::ArgumentType,Argument*>($self->data().getArgument(i)->type(), $self->data().getArgument(i));
 	}
 
-	bool __eq__(IfcUtil::IfcBaseClass* other) const {
+	bool __eq__(entity_instance* other) const {
 		return $self->identity() == other->identity();
 	}
 
@@ -477,7 +544,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		}
 	}
 
-	void setArgumentAsEntityInstance(unsigned int i, IfcUtil::IfcBaseClass* v) {
+	void setArgumentAsEntityInstance(unsigned int i, entity_instance* v) {
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
 			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
@@ -603,7 +670,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		return IFCOPENSHELL_VERSION;
 	}
 
-	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
+	entity_instance new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
 		IfcEntityInstanceData* data = new IfcEntityInstanceData(decl);

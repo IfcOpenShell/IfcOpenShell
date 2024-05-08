@@ -1555,7 +1555,7 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
                 if (it != this->file->internal_guid_map().end()) {
                     Logger::Warning("Duplicate guid " + guid);
                 }
-                this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+                this->file->internal_guid_map()[guid] = this->file->instance_by_id_2(this->id());
             } catch (IfcParse::IfcException& e) {
                 Logger::Error(e);
             }
@@ -1656,7 +1656,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     boost::circular_buffer<Token> token_stream(3, Token());
 
     IfcEntityInstanceData* data;
-    IfcUtil::IfcBaseClass* instance = 0;
+    instance_storage_type instance = 0;
 
     unsigned current_id = 0;
     int progress = 0;
@@ -1682,7 +1682,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             }
 
             data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
-            instance = schema()->instantiate(data);
+            instance = instance_storage_type(schema()->instantiate(data));
 
             /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
             // Update the status after every 1000 instances parsed
@@ -1715,22 +1715,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
             const IfcParse::declaration* ty = &instance->declaration();
 
-            {
-                aggregate_of_instance::ptr insts = instances_by_type_excl_subtypes(ty);
-                if (!insts) {
-                    insts = aggregate_of_instance::ptr(new aggregate_of_instance());
-                    bytype_excl_[ty] = insts;
-                }
-                insts->push(instance);
-            }
+                bytype_excl_.insert({ ty, instance });
 
             for (;;) {
-                aggregate_of_instance::ptr insts = instances_by_type(ty);
-                if (!insts) {
-                    insts = aggregate_of_instance::ptr(new aggregate_of_instance());
-                    bytype_[ty] = insts;
-                }
-                insts->push(instance);
+                bytype_.insert({ ty, instance });
                 const IfcParse::declaration* pt = ty->as_entity()->supertype();
                 if (pt != nullptr) {
                     ty = pt;
@@ -1898,7 +1886,7 @@ void IfcFile::addEntities(aggregate_of_instance::ptr entities) {
     }
 }
 
-IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id) {
+IfcFile::instance_storage_type IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id) {
     if (id != -1 && byid_.find((unsigned)id) != byid_.end()) {
         throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
     }
@@ -1914,7 +1902,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         return mit->second;
     }
 
-    IfcUtil::IfcBaseClass* new_entity = entity;
+    instance_storage_type new_entity = instance_storage_type(entity);
 
     // Obtain all forward references by a depth-first
     // traversal and add them to the file.
@@ -1944,7 +1932,16 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
             // If it is part of this file
             // nothing else needs to be done.
-            return entity;
+            if constexpr (std::is_same_v<IfcFile::instance_storage_type, IfcUtil::IfcBaseClass*>) {
+                return entity;
+            } else {
+                for (auto& x : byid_) {
+                    if (&*x.second == entity) {
+                        return x.second;
+                    }
+                }
+                throw std::runtime_error("Internal error");
+            }
         }
 
         // An instance is being added from another file. A copy of the
@@ -1952,7 +1949,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         // need to be updated to point to instances in this file.
         IfcFile* other_file = entity->data().file;
         IfcEntityInstanceData* we = new IfcEntityInstanceData(entity->data());
-        new_entity = schema()->instantiate(we);
+        new_entity = instance_storage_type(schema()->instantiate(we));
 
         // In case an entity is added that contains geometry, the unit
         // information needs to be accounted for for IfcLengthMeasures.
@@ -1981,7 +1978,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                 }
 
                 IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                copy->set(eit->second);
+                copy->set(&*eit->second);
                 we->setArgument(i, copy);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
                 aggregate_of_instance::ptr instances = *attr;
@@ -1991,7 +1988,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     if (eit == entity_file_map_.end()) {
                         throw IfcParse::IfcException("Unable to map instance to file");
                     }
-                    new_instances->push(eit->second);
+                    new_instances->push(&*eit->second);
                 }
 
                 IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
@@ -2007,7 +2004,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                         if (eit == entity_file_map_.end()) {
                             throw IfcParse::IfcException("Unable to map instance to file");
                         }
-                        list.push_back(eit->second);
+                        list.push_back(&*eit->second);
                     }
                     new_instances->push(list);
                 }
@@ -2076,7 +2073,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             }
         }
 
-        entity_file_map_.insert(entity_entity_map_t::value_type(entity->identity(), new_entity));
+        entity_file_map_.insert(entity_entity_map_t::value_type(entity->identity(), &*new_entity));
     }
 
     // For subtypes of IfcRoot, the GUID mapping needs to be updated.
@@ -2098,21 +2095,11 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     const IfcParse::declaration* ty = &new_entity->declaration();
 
     if (ty->as_entity() != nullptr) {
-        aggregate_of_instance::ptr insts = instances_by_type_excl_subtypes(ty);
-        if (!insts) {
-            insts = aggregate_of_instance::ptr(new aggregate_of_instance());
-            bytype_excl_[ty] = insts;
-        }
-        insts->push(new_entity);
+        bytype_excl_.insert({ ty, new_entity });
     }
 
     for (; ty->as_entity() != nullptr;) {
-        aggregate_of_instance::ptr insts = instances_by_type(ty);
-        if (!insts) {
-            insts = aggregate_of_instance::ptr(new aggregate_of_instance());
-            bytype_[ty] = insts;
-        }
-        insts->push(new_entity);
+        bytype_.insert({ ty, new_entity });
 
         const IfcParse::declaration* pt = ty->as_entity()->supertype();
         if (pt != nullptr) {
@@ -2158,7 +2145,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     }
 
     if (parsing_complete_ && (ty->as_entity() != nullptr)) {
-        build_inverses_(new_entity);
+        build_inverses_(&*new_entity);
     }
 
     return new_entity;
@@ -2323,20 +2310,24 @@ void IfcFile::process_deletion_() {
         const IfcParse::declaration* ty = &entity->declaration();
 
         {
-            aggregate_of_instance::ptr instances_of_same_type = instances_by_type_excl_subtypes(ty);
-            instances_of_same_type->remove(entity);
-            if (instances_of_same_type->size() == 0) {
-                bytype_excl_.erase(ty);
+            auto instances_of_same_type = bytype_excl_.equal_range(ty);
+            for (auto it = instances_of_same_type.first; it != instances_of_same_type.second;) {
+                if (&*it->second == entity) {
+                    it = bytype_excl_.erase(it);
+                } else {
+                    ++it;
+                }
             }
         }
 
         for (;;) {
-            aggregate_of_instance::ptr instances_of_same_type = instances_by_type(ty);
-            if (instances_of_same_type) {
-                instances_of_same_type->remove(entity);
-            }
-            if (instances_of_same_type->size() == 0) {
-                bytype_.erase(ty);
+            auto instances_of_same_type = bytype_.equal_range(ty);
+            for (auto it = instances_of_same_type.first; it != instances_of_same_type.second;) {
+                if (&*it->second == entity) {
+                    it = bytype_.erase(it);
+                } else {
+                    ++it;
+                }
             }
 
             const IfcParse::declaration* pt = ty->as_entity()->supertype();
@@ -2350,14 +2341,16 @@ void IfcFile::process_deletion_() {
         // entity_file_map is in place to prevent duplicate definitions with usage of add().
         // Upon deletion the pairs need to be erased.
         for (auto it = entity_file_map_.begin(); it != entity_file_map_.end();) {
-            if (it->second == entity) {
+            if (&*it->second == entity) {
                 it = entity_file_map_.erase(it);
             } else {
                 ++it;
             }
         }
 
-        delete entity;
+        if constexpr (std::is_same_v<IfcFile::instance_storage_type, IfcUtil::IfcBaseClass*>) {
+            delete entity;
+        }
     }
 
     if (batch_mode_) {
@@ -2397,21 +2390,19 @@ void IfcFile::process_deletion_() {
     batch_deletion_ids_.clear();
 }
 
-aggregate_of_instance::ptr IfcFile::instances_by_type(const IfcParse::declaration* t) {
-    entities_by_type_t::const_iterator it = bytype_.find(t);
-    return (it == bytype_.end()) ? aggregate_of_instance::ptr() : it->second;
+IfcFile::type_iterator_range_t IfcFile::instances_by_type(const IfcParse::declaration* t) {
+    return bytype_.equal_range(t);
 }
 
-aggregate_of_instance::ptr IfcFile::instances_by_type_excl_subtypes(const IfcParse::declaration* t) {
-    entities_by_type_t::const_iterator it = bytype_excl_.find(t);
-    return (it == bytype_excl_.end()) ? aggregate_of_instance::ptr() : it->second;
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes(const IfcParse::declaration* t) {
+    return bytype_.equal_range(t);
 }
 
-aggregate_of_instance::ptr IfcFile::instances_by_type(const std::string& t) {
+IfcFile::type_iterator_range_t IfcFile::instances_by_type(const std::string& t) {
     return instances_by_type(schema()->declaration_by_name(t));
 }
 
-aggregate_of_instance::ptr IfcFile::instances_by_type_excl_subtypes(const std::string& t) {
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes(const std::string& t) {
     return instances_by_type_excl_subtypes(schema()->declaration_by_name(t));
 }
 
@@ -2428,10 +2419,18 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
     if (it == byid_.end()) {
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
     }
+    return &*it->second;
+}
+
+IfcFile::instance_storage_type IfcFile::instance_by_id_2(int id) {
+    entity_by_id_t::const_iterator it = byid_.find(id);
+    if (it == byid_.end()) {
+        throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
+    }
     return it->second;
 }
 
-IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
+IfcFile::instance_storage_type IfcFile::instance_by_guid(const std::string& guid) {
     entity_by_guid_t::const_iterator it = byguid_.find(guid);
     if (it == byguid_.end()) {
         throw IfcException("Instance with GlobalId '" + guid + "' not found");
@@ -2441,15 +2440,17 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
 
 // FIXME: Test destructor to delete entity and arg allocations
 IfcFile::~IfcFile() {
-    std::set<IfcUtil::IfcBaseClass*> entities_to_delete;
-    for (const auto& pair : byid_) {
-        entities_to_delete.insert(pair.second);
-    }
-    for (const auto& pair : byidentity_) {
-        entities_to_delete.insert(pair.second);
-    }
-    for (auto* entity : entities_to_delete) {
-        delete entity;
+    if constexpr (std::is_same_v<IfcFile::instance_storage_type, IfcUtil::IfcBaseClass*>) {
+        std::set<IfcFile::instance_storage_type> entities_to_delete;
+        for (const auto& pair : byid_) {
+            entities_to_delete.insert(pair.second);
+        }
+        for (const auto& pair : byidentity_) {
+            entities_to_delete.insert(pair.second);
+        }
+        for (auto entity : entities_to_delete) {
+            delete &*entity;
+        }
     }
     delete stream;
     delete tokens;
@@ -2463,19 +2464,19 @@ IfcFile::entity_by_id_t::const_iterator IfcFile::end() const {
     return byid_.end();
 }
 
-IfcFile::type_iterator IfcFile::types_begin() const {
+IfcFile::type_iterator<IfcFile::entities_by_type_t::key_type> IfcFile::types_begin() const {
     return bytype_excl_.begin();
 }
 
-IfcFile::type_iterator IfcFile::types_end() const {
+IfcFile::type_iterator<IfcFile::entities_by_type_t::key_type> IfcFile::types_end() const {
     return bytype_excl_.end();
 }
 
-IfcFile::type_iterator IfcFile::types_incl_super_begin() const {
+IfcFile::type_iterator<IfcFile::entities_by_type_t::key_type> IfcFile::types_incl_super_begin() const {
     return bytype_.begin();
 }
 
-IfcFile::type_iterator IfcFile::types_incl_super_end() const {
+IfcFile::type_iterator<IfcFile::entities_by_type_t::key_type> IfcFile::types_incl_super_end() const {
     return bytype_.end();
 }
 
@@ -2490,12 +2491,12 @@ struct id_instance_pair_sorter {
 std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
     file.header().write(out);
 
-    typedef std::vector<std::pair<unsigned int, IfcUtil::IfcBaseClass*>> vector_t;
+    typedef std::vector<std::pair<unsigned int, IfcParse::IfcFile::instance_storage_type>> vector_t;
     vector_t sorted(file.begin(), file.end());
     std::sort(sorted.begin(), sorted.end(), id_instance_pair_sorter());
 
     for (vector_t::const_iterator it = sorted.begin(); it != sorted.end(); ++it) {
-        const IfcUtil::IfcBaseClass* e = it->second;
+        auto& e = it->second;
         if (e->declaration().as_entity() != nullptr) {
             out << e->data().toString(true) << ";" << std::endl;
         }
@@ -2622,16 +2623,16 @@ void IfcFile::setDefaultHeaderValues() {
 std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
     std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
 
-    aggregate_of_instance::ptr projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
-    if (!projects || projects->size() == 0) {
+    auto projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
+    if (std::distance(projects.first, projects.second) == 0) {
         try {
             projects = instances_by_type(schema()->declaration_by_name("IfcContext"));
         } catch (IfcException& e) {
         }
     }
 
-    if (projects && projects->size() == 1) {
-        IfcUtil::IfcBaseClass* project = *projects->begin();
+    if (std::distance(projects.first, projects.second) == 1) {
+        auto project = *projects.first;
 
         IfcUtil::IfcBaseClass* unit_assignment = *project->data().getArgument(
             project->declaration().as_entity()->attribute_index("UnitsInContext"));
@@ -2704,7 +2705,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
 
 void IfcParse::IfcFile::build_inverses() {
     for (const auto& pair : *this) {
-        build_inverses_(pair.second);
+        build_inverses_(&*pair.second);
     }
 }
 

@@ -443,14 +443,14 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	boost::optional<std::array<double, 3>> crs_x_axis;
 	boost::optional<std::array<double, 3>> eastings_northings_elevation;
 
-	aggregate_of_instance::ptr coordops;
+	IfcParse::IfcFile::type_iterator_range_t coordops;
 	try {
 		coordops = f->instances_by_type("IfcCoordinateOperation");
 	} catch (IfcParse::IfcException&) {
 		// Ignored. Schema likely doesn't support IfcCoordinateOperation.
 	}
-	if (coordops) {
-		for (auto& coordop : *coordops) {
+	if (std::distance(coordops.first, coordops.second)) {
+		for (auto& coordop : boost::make_iterator_range(coordops)) {
 			IfcUtil::IfcBaseClass* source_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
 			if (source_crs->declaration().is("IfcGeometricRepresentationContext")) {
 				IfcUtil::IfcBaseClass* target_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
@@ -486,9 +486,9 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	if (!crs_epsg) {
 		auto sites = f->instances_by_type("IfcSite");
 
-		if (sites && sites->size() == 1) {
-			auto lat_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
-			auto lon_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
+		if (std::distance(sites.first, sites.second)) {
+			auto lat_attr = (*sites.first)->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
+			auto lon_attr = (*sites.first)->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
 
 			if (!lat_attr->isNull() && !lon_attr->isNull()) {
 				std::vector<int> lat_dms = *lat_attr;
@@ -521,8 +521,8 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 
 	auto contexts = f->instances_by_type_excl_subtypes("IfcGeometricRepresentationContext");
 
-	if (contexts && contexts->size() > 0) {
-		auto context = (*contexts->begin())->as<IfcUtil::IfcBaseEntity>();
+	if (std::distance(contexts.first, contexts.second)) {
+		auto context = (*contexts.first)->as<IfcUtil::IfcBaseEntity>();
 		auto north_attr = context->get("TrueNorth");
 		if (!north_attr->isNull()) {
 			IfcUtil::IfcBaseClass* north = *north_attr;

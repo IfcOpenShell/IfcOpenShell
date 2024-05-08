@@ -68,10 +68,18 @@ class IFC_PARSE_API file_open_status {
 /// and provide access to the entities in an IFC file
 class IFC_PARSE_API IfcFile {
   public:
-    typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
-    typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
-    typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
-    typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
+#ifndef NO_SHARED_POINTER_STORAGE
+      typedef std::shared_ptr<IfcUtil::IfcBaseClass> instance_storage_type;
+      typedef std::weak_ptr<IfcUtil::IfcBaseClass> instance_reference_type;
+#else
+      typedef IfcUtil::IfcBaseClass* instance_storage_type;
+      typedef IfcUtil::IfcBaseClass* instance_reference_type;
+#endif
+
+    typedef std::multimap<const IfcParse::declaration*, instance_storage_type> entities_by_type_t;
+    typedef boost::unordered_map<unsigned int, instance_storage_type> entity_by_id_t;
+    typedef boost::unordered_map<uint32_t, instance_storage_type> entity_by_iden_t;
+    typedef std::map<std::string, instance_storage_type> entity_by_guid_t;
     typedef std::tuple<int, int, int> inverse_attr_record;
     enum INVERSE_ATTR {
         INSTANCE_ID,
@@ -80,9 +88,9 @@ class IFC_PARSE_API IfcFile {
     };
     typedef std::map<inverse_attr_record, std::vector<int>> entities_by_ref_t;
     typedef std::map<int, std::vector<int>> entities_by_ref_excl_t;
-    typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
     typedef entity_by_id_t::const_iterator const_iterator;
 
+    template <typename T>
     class type_iterator : private entities_by_type_t::const_iterator {
       public:
         type_iterator() : entities_by_type_t::const_iterator(){};
@@ -90,16 +98,35 @@ class IFC_PARSE_API IfcFile {
         type_iterator(const entities_by_type_t::const_iterator& iter)
             : entities_by_type_t::const_iterator(iter){};
 
-        entities_by_type_t::key_type const* operator->() const {
-            return &entities_by_type_t::const_iterator::operator->()->first;
+        T const* operator->() const {
+            if constexpr (std::is_same_v<T, entities_by_type_t::key_type>) {
+                return &entities_by_type_t::const_iterator::operator->()->first;
+            } else {
+                return &entities_by_type_t::const_iterator::operator->()->second;
+            }
         }
 
-        entities_by_type_t::key_type const& operator*() const {
-            return entities_by_type_t::const_iterator::operator*().first;
+        T const& operator*() const {
+            if constexpr (std::is_same_v<T, entities_by_type_t::key_type>) {
+                return entities_by_type_t::const_iterator::operator*().first;
+            } else {
+                return entities_by_type_t::const_iterator::operator*().second;
+            }
         }
 
         type_iterator& operator++() {
-            entities_by_type_t::const_iterator::operator++();
+            auto k = **this;
+            // @todo we changed from map(aggregate) to multimap(instance)
+            // (why again?) so now we need to keep iterating in our type
+            // iterator. Given the distribution of entity types, this
+            // likely has performance impliciations, but this function is
+            // probably hardly ever used.
+            do {
+                entities_by_type_t::const_iterator::operator++();
+                if constexpr (std::is_same_v<T, entities_by_type_t::value_type>) {
+                    break;
+                }
+            } while (k == **this);
             return *this;
         }
 
@@ -116,6 +143,8 @@ class IFC_PARSE_API IfcFile {
         }
     };
 
+    typedef std::pair<type_iterator<entities_by_type_t::value_type::second_type>, type_iterator<entities_by_type_t::value_type::second_type>> type_iterator_range_t;
+
     static bool lazy_load_;
     static bool lazy_load() { return lazy_load_; }
     static void lazy_load(bool b) { lazy_load_ = b; }
@@ -125,7 +154,7 @@ class IFC_PARSE_API IfcFile {
     static void guid_map(bool b) { guid_map_ = b; }
 
   private:
-    typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
+    typedef std::map<uint32_t, instance_storage_type> entity_entity_map_t;
 
     bool parsing_complete_;
     file_open_status good_ = file_open_status::SUCCESS;
@@ -192,48 +221,50 @@ class IFC_PARSE_API IfcFile {
     /// with the highest id (EXPRESS ENTITY_INSTANCE_NAME)
     const_iterator end() const;
 
-    type_iterator types_begin() const;
-    type_iterator types_end() const;
+    type_iterator<entities_by_type_t::key_type> types_begin() const;
+    type_iterator<entities_by_type_t::key_type> types_end() const;
 
-    type_iterator types_incl_super_begin() const;
-    type_iterator types_incl_super_end() const;
+    type_iterator<entities_by_type_t::key_type> types_incl_super_begin() const;
+    type_iterator<entities_by_type_t::key_type> types_incl_super_end() const;
 
     /// Returns all entities in the file that match the template argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
     template <class T>
     typename T::list::ptr instances_by_type() {
-        aggregate_of_instance::ptr untyped_list = instances_by_type(&T::Class());
-        if (untyped_list) {
-            return untyped_list->as<T>();
+        auto range = instances_by_type(&T::Class());
+        typename T::list::ptr vec(new typename T::list);
+        for (auto it = range.first; it != range.second; ++it) {
+            vec->push((*it)->template as<T>());
         }
-        return typename T::list::ptr(new typename T::list);
+        return vec;
     }
 
     template <class T>
     typename T::list::ptr instances_by_type_excl_subtypes() {
-        aggregate_of_instance::ptr untyped_list = instances_by_type_excl_subtypes(&T::Class());
-        if (untyped_list) {
-            return untyped_list->as<T>();
+        auto range = instances_by_type_excl_subtypes(&T::Class());
+        typename T::list::ptr vec(new typename T::list);
+        for (auto it = range.first; it != range.second; ++it) {
+            vec->push((*it)->template as<T>());
         }
-        return typename T::list::ptr(new typename T::list);
+        return vec;
     }
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration*);
+    type_iterator_range_t instances_by_type(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
-    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration*);
+    type_iterator_range_t instances_by_type_excl_subtypes(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    aggregate_of_instance::ptr instances_by_type(const std::string& type);
+    type_iterator_range_t instances_by_type(const std::string& type);
 
     /// Returns all entities in the file that match the positional argument.
-    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& type);
+    type_iterator_range_t instances_by_type_excl_subtypes(const std::string& type);
 
     /// Returns all entities in the file that reference the id
     aggregate_of_instance::ptr instances_by_reference(int id);
@@ -241,8 +272,10 @@ class IFC_PARSE_API IfcFile {
     /// Returns the entity with the specified id
     IfcUtil::IfcBaseClass* instance_by_id(int id);
 
+    IfcFile::instance_storage_type instance_by_id_2(int id);
+
     /// Returns the entity with the specified GlobalId
-    IfcUtil::IfcBaseClass* instance_by_guid(const std::string& guid);
+    IfcFile::instance_storage_type instance_by_guid(const std::string& guid);
 
     /// Performs a depth-first traversal, returning all entity instance
     /// attributes as a flat list. NB: includes the root instance specified
@@ -274,7 +307,7 @@ class IFC_PARSE_API IfcFile {
 
     void recalculate_id_counter();
 
-    IfcUtil::IfcBaseClass* addEntity(IfcUtil::IfcBaseClass* entity, int id = -1);
+    IfcFile::instance_storage_type addEntity(IfcUtil::IfcBaseClass* entity, int id = -1);
     void addEntities(aggregate_of_instance::ptr entities);
 
     void batch() { batch_mode_ = true; }
@@ -327,11 +360,20 @@ IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
 
 namespace std {
 template <>
-struct iterator_traits<IfcParse::IfcFile::type_iterator> {
+struct iterator_traits<IfcParse::IfcFile::type_iterator<IfcParse::IfcFile::entities_by_type_t::key_type>> {
     typedef ptrdiff_t difference_type;
     typedef const IfcParse::declaration* value_type;
     typedef const IfcParse::declaration*& reference;
     typedef const IfcParse::declaration** pointer;
+    typedef std::forward_iterator_tag iterator_category;
+};
+
+template <>
+struct iterator_traits<IfcParse::IfcFile::type_iterator<IfcParse::IfcFile::entities_by_type_t::value_type::second_type>> {
+    typedef ptrdiff_t difference_type;
+    typedef IfcParse::IfcFile::entities_by_type_t::value_type value_type;
+    typedef IfcParse::IfcFile::entities_by_type_t::value_type reference;
+    typedef IfcParse::IfcFile::entities_by_type_t::value_type* pointer;
     typedef std::forward_iterator_tag iterator_category;
 };
 } // namespace std
