@@ -47,3 +47,7 @@ class TestRemoveUnit(test.bootstrap.IFC4):
         unit = ifcopenshell.api.run("unit.add_conversion_based_unit", self.file, name="foot")
         ifcopenshell.api.run("unit.remove_unit", self.file, unit=unit)
         assert len([e for e in self.file]) == 0
+
+
+class TestRemoveUnitIFC2X3(test.bootstrap.IFC2X3, TestRemoveUnit):
+    pass

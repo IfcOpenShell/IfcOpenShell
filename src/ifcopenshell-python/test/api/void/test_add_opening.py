@@ -77,3 +77,7 @@ class TestAddOpening(test.bootstrap.IFC4):
         opening.ObjectPlacement = placement
         ifcopenshell.api.run("void.add_opening", self.file, opening=opening, element=wall)
         assert opening.ObjectPlacement == placement
+
+
+class TestAddOpeningIFC2X3(test.bootstrap.IFC2X3, TestAddOpening):
+    pass

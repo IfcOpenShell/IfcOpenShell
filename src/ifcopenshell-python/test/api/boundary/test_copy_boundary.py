@@ -34,3 +34,7 @@ class TestCopyBoundary(test.bootstrap.IFC4):
         boundary2 = ifcopenshell.api.run("boundary.copy_boundary", self.file, boundary=boundary)
         assert boundary2.ConnectionGeometry.is_a("IfcConnectionSurfaceGeometry")
         assert boundary2.ConnectionGeometry != boundary.ConnectionGeometry
+
+
+class TestCopyBoundaryIFC2X3(test.bootstrap.IFC2X3, TestCopyBoundary):
+    pass

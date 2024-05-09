@@ -33,3 +33,7 @@ class TestAddCostSchedule(test.bootstrap.IFC4):
         assert schedule.Name == "Foo"
         assert schedule.PredefinedType == "USERDEFINED"
         assert schedule.ObjectType == "FOO"
+
+
+class TestAddCostScheduleIFC2X3(test.bootstrap.IFC2X3, TestAddCostSchedule):
+    pass

@@ -37,3 +37,7 @@ class TestAssignProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=wall, related_object=label)
         assert len(wall.ReferencedBy) == 1
         assert wall.ReferencedBy[0].RelatedObjects == (label,)
+
+
+class TestAssignProductIFC2X3(test.bootstrap.IFC2X3, TestAssignProduct):
+    pass

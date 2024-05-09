@@ -25,3 +25,7 @@ class TestAddMonetaryUnit(test.bootstrap.IFC4):
         unit = ifcopenshell.api.run("unit.add_monetary_unit", self.file, currency="USD")
         assert unit.is_a("IfcMonetaryUnit")
         assert unit.Currency == "USD"
+
+
+class TestAddMonetaryUnitIFC2X3(test.bootstrap.IFC2X3, TestAddMonetaryUnit):
+    pass

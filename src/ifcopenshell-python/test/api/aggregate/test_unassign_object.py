@@ -49,3 +49,7 @@ class TestUnassignObject(test.bootstrap.IFC4):
         ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
         ifcopenshell.api.run("aggregate.unassign_object", self.file, products=[subelement])
         assert len(self.file.by_type("IfcRelAggregates")) == 0
+
+
+class TestUnassignObjectIFC2X3(test.bootstrap.IFC2X3, TestUnassignObject):
+    pass
