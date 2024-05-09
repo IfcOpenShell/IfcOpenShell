@@ -29,8 +29,9 @@ from ifcopenshell.util.doc import (
     get_attribute_doc,
 )
 from . import ifc
-import blenderbim.tool as tool
+from blenderbim import get_debug_info
 import blenderbim.bim
+import blenderbim.tool as tool
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
 
@@ -402,6 +403,15 @@ class BIM_PT_tabs(Panel):
 
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
+
+            if blenderbim.last_error:
+                box = self.layout.box()
+                box.label(text="BlenderBIM experienced an error :(", icon="ERROR")
+                box.label(text="View the console for full logs.", icon="CONSOLE")
+                box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
+                op = box.operator("bim.open_uri", text="How Can I Fix This?")
+                op.uri = "https://docs.blenderbim.org/users/troubleshooting.html"
+
         except:
             pass  # Prior to load_post, we may not have any area properties setup
 

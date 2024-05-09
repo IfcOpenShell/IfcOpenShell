@@ -13,9 +13,9 @@ Unstable installation
 
 **Unstable installation** is almost the same as **Stable installation**, except
 that they are typically updated every day. Simply download a daily build from
-the `Github releases page
-<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the same
-instructions as the **Stable installation**.
+the `GitHub releases page
+<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the
+usual :doc:`installation instructions</users/installation>`.
 
 You will need to choose which build to download.
 
