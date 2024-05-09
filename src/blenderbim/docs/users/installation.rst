@@ -58,51 +58,6 @@ You can enable add-ons permanently by using ``Save User Settings`` from the Addo
 
 .. _where is the add-on installed:
 
-Where is the add-on installed?
-------------------------------
-
-Upon installation, the BlenderBIM Add-on is stored in the
-``scripts/addons/blenderbim/`` directory, within your Blender configuration
-folder. However, the location of your Blender configuration folder depends on
-how you have installed Blender.
-
-If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the Blender configuration folder in the following directory, where
-``X.XX`` is the Blender version:
-::
-
-    /path/to/blender/X.XX/
-
-Otherwise, if you installed Blender using an installation package, the Blender
-configuration folder depends on which operating system you use.
-
-On Linux, if you are installing the add-on as a user:
-::
-
-    ~/.config/blender/X.XX/
-
-On Linux, if you are deploying the add-on system-wide (this may also depend on
-your Linux distribution):
-::
-
-    /usr/share/blender/X.XX/
-
-On Mac, if you are installing the add-on as a user:
-::
-
-    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
-
-On Mac, if you are deploying the add-on system-wide:
-
-::
-
-    /Library/Application Support/Blender/X.XX/
-
-On Windows:
-::
-
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\
-
 Updating
 --------
 
@@ -129,66 +84,52 @@ installed>`.
     If you do not restart Blender, the add-on will fail to remove correctly, and you
     will need to uninstall manually.
 
+Where is the add-on installed?
+------------------------------
 
-FAQ
----
+Upon installation, the BlenderBIM Add-on is stored in the
+``scripts/addons/blenderbim/`` directory, within your Blender configuration
+folder. However, the location of your Blender configuration folder depends on
+how you have installed Blender.
 
-If you are unable to install the BlenderBIM Add-on, make sure you are using
-**Blender 4.1** installed from https://blender.org/ and are installing the
-latest version from https://blenderbim.org.
+If you downloaded Blender as a ``.zip`` file without running an installer, the
+BlenderBIM Add-on will be installed in the following directory, where ``X.XX``
+is the Blender version:
 
-Other common solutions are listed below. If none of these fix the problem, you
-can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
-`live chat with a developer <https://osarch.org/chat/>`_.
+::
 
-1. **Some other error prevents me from installing or doing basic functions with
-   the add-on. Is it specific to my environment?**
+    /path/to/blender/X.XX/scripts/addons/blenderbim/
 
-   Try installing and using the BlenderBIM Add-on on a "clean environment". A
-   clean environment is a fresh Blender installation with no other add-ons
-   enabled with factory settings.
+Otherwise, if you installed Blender using an installation package, the Blender
+configuration folder depends on which operating system you use.
 
-   To quickly test in a clean environment, find your Blender configuration
-   folder based on the `where is the add-on installed`_ section. Rename the
-   folder from ``X.XX`` to something else like ``X.XX_backup``, then restart
-   Blender and try follow the installation instructions again.
+On Linux, if you are installing the add-on as a user:
 
-   If this fixes your issue, consider disabling other add-ons one by one until
-   you find a conflict as a next step to isolating the issue.
+::
 
-2. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.10'"**
+    ~/.config/blender/X.XX/scripts/addons/blenderbim/
 
-   If you are using a Mac, be sure to use the Mac Silicon version if you have a
-   newer Mac. The only exception is if you have installed Blender using Steam
-   on a Mac, in which case you need to use the Mac Intel download.
+On Linux, if you are deploying the add-on system-wide (this may also depend on
+your Linux distribution):
 
-   For all other scenarios, check the BlenderBIM Add-on zip file which you
-   downloaded. The zip will have either ``py39``, ``py310``, or ``py311`` in
-   the name. See the instructions in the :ref:`devs/installation:unstable
-   installation` section to check that you have installed the correct version.
+::
 
-3. **I am on Ubuntu and get an error similar to "ImportError:
-   /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
+    /usr/share/blender/X.XX/scripts/addons/blenderbim/
 
-   Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
-   If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
-   or you'll need to compile IfcOpenShell yourself.
+On Mac, if you are installing the add-on as a user:
 
-4. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
+::
 
-   If you have installed Blender from another source instead of from
-   `Blender.org <https://www.blender.org/download/>`__, such as from your
-   distro's package repositories, then you may be missing some modules like
-   ``numpy``. Try installing it manually like ``apt install python-numpy``.
+    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
 
-5. **I get an error similar to RuntimeError: Instance #1234 not found**
+On Mac, if you are deploying the add-on system-wide:
 
-   Blender saves and loads projects to a ``.blend`` file. However. the
-   BlenderBIM Add-on works with native IFC, and this means instead of saving
-   and loading ``.blend`` files, you should instead save and load the ``.ifc``
-   project.
+::
 
-   If you have opened a ``.blend`` file, there is a risk that the contents of
-   the ``.blend`` session do not correlate to the contents of the ``.ifc``,
-   which can cause this error. Unless you are an advanced user, only save and
-   load ``.ifc`` files.
+    /Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
+
+On Windows:
+
+::
+
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons\blenderbim\

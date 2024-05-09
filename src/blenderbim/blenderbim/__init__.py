@@ -131,7 +131,7 @@ if sys.modules.get("bpy", None):
                 box.label(text=f"Python {py} BBIM {info['blenderbim_version']}", icon="SCRIPTPLUGINS")
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
-                op.uri = "https://docs.blenderbim.org/users/installation.html#faq"
+                op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#installation-issues"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
