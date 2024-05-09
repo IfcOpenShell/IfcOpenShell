@@ -338,7 +338,18 @@ class entity_instance:
                         )
                     raise e
         else:
-            self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            try:
+                self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            except TypeError:
+                raise TypeError(
+                    "attribute '%s' for entity '%s' is expecting value of type '%s', got '%s'."
+                    % (
+                        self.wrapped_data.get_argument_name(idx),
+                        self.wrapped_data.is_a(True),
+                        self.wrapped_data.get_argument_type(idx),
+                        type(value).__name__,
+                    )
+                )
 
         return value
 
