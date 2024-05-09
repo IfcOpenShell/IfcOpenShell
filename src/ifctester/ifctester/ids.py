@@ -75,8 +75,8 @@ class Ids:
         milestone=None,
     ):
         # Not part of the IDS spec, but very useful in practice
-        self.filepath = None
-        self.filename = None
+        self.filepath: Optional[str] = None
+        self.filename: Optional[str] = None
 
         self.specifications: List[Specification] = []
         self.info = {}
@@ -300,6 +300,7 @@ class Specification:
             return "optional"
         elif self.maxOccurs == 0:
             return "prohibited"
+        return "required"  # Fallback
 
     def set_usage(self, usage: Cardinality) -> None:
         if usage == "optional":
