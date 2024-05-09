@@ -18,9 +18,12 @@
 
 import ifcopenshell
 import ifcopenshell.guid
+from typing import Optional
 
 
-def add_information(file, parent=None) -> None:
+def add_information(
+    file: ifcopenshell.file, parent: Optional[ifcopenshell.entity_instance] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new document information to the project
 
     An IFC document information is a document associated with the project.

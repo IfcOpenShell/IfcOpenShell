@@ -19,7 +19,7 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-from typing import Literal, Iterable
+from typing import Literal, Iterable, Optional
 
 
 MatrixType = npt.NDArray[np.float64]
@@ -97,7 +97,7 @@ def get_axis2placement(placement: ifcopenshell.entity_instance) -> MatrixType:
     return a2p(o, z, x)
 
 
-def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
+def get_local_placement(placement: Optional[ifcopenshell.entity_instance] = None) -> MatrixType:
     """Parse a local placement into a 4x4 transformation matrix
 
     This is typically used to find the location and rotation of an element. The
@@ -118,7 +118,7 @@ def get_local_placement(placement: ifcopenshell.entity_instance) -> MatrixType:
         matrix = ifcopenshell.util.placement.get_local_placement(placement)
 
     :param placement: The IfcLocalPlacement entity
-    :type placement: ifcopenshell.entity_instance
+    :type placement: ifcopenshell.entity_instance, optional
     :return: A 4x4 numpy matrix
     :rtype: MatrixType
     """

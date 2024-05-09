@@ -19,9 +19,14 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
+from typing import Union
 
 
-def assign_control(file, relating_control=None, related_object=None) -> None:
+def assign_control(
+    file: ifcopenshell.file,
+    relating_control: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
     """Assigns a planning control or constraint to an object
 
     IFC can describe concepts that control other objects. For example, a

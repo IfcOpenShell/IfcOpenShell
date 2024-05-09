@@ -17,9 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Optional
 
 
-def assign_cost_item_quantity(file, cost_item=None, products=None, prop_name="") -> None:
+def assign_cost_item_quantity(
+    file: ifcopenshell.file,
+    cost_item: ifcopenshell.entity_instance,
+    products: list[ifcopenshell.entity_instance],
+    prop_name: Optional[str] = "",
+) -> None:
     """Adds a cost item quantity that is parametrically connected to a product
 
     A cost item may have its subtotal calculated by multiplying a unit value

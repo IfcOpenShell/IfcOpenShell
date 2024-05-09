@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_classification(file: ifcopenshell.entity_instance, classification: ifcopenshell.entity_instance) -> None:
+def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.entity_instance) -> None:
     """Removes an IfcClassification from the project and all references
 
     The classification and all of its relationships, children references,

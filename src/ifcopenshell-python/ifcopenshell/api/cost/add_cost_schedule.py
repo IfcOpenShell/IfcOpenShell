@@ -19,9 +19,10 @@
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime
+from typing import Optional
 
 
-def add_cost_schedule(file, name=None, predefined_type="NOTDEFINED") -> None:
+def add_cost_schedule(file: ifcopenshell.file, name: Optional[str] = None, predefined_type="NOTDEFINED") -> None:
     """Add a new cost schedule
 
     A cost schedule is a group of cost items which typically represent a

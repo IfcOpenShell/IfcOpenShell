@@ -18,22 +18,29 @@
 
 import ifcopenshell.api
 import ifcopenshell.guid
+from typing import Optional
 
 
-def add_cost_item(file, cost_schedule=None, cost_item=None) -> None:
+def add_cost_item(
+    file: ifcopenshell.file,
+    cost_schedule: Optional[ifcopenshell.entity_instance] = None,
+    cost_item: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     """Add a new cost item
 
     A cost item represents a single line item in a cost schedule. Cost items
     may then be broken down into cost subitems.
 
+    Either `cost_schedule` or `cost_item` must be provided.
+
     :param cost_schedule: If the cost item is to be added as a root or top
         level cost item to a cost schedule, the IfcCostSchedule may be
         specified. This is mutually exlclusive to the cost_item parameter.
-    :type cost_schedule: ifcopenshell.entity_instance
+    :type cost_schedule: ifcopenshell.entity_instance, optional.
     :param cost_item: If the cost item is to be added as a subitem to an
         existing cost item, the parent IfcCostItem may be specified. This is
         mutually exclusive to the cost_schedule parameter.
-    :type cost_item: ifcopenshell.entity_instance
+    :type cost_item: ifcopenshell.entity_instance, optional
     :return: The newly created IfcCostItem
     :rtype: ifcopenshell.entity_instance
 
@@ -62,7 +69,7 @@ def add_cost_item(file, cost_schedule=None, cost_item=None) -> None:
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
                 "RelatedObjects": [cost_item],
                 "RelatingControl": settings["cost_schedule"],
-            }
+            },
         )
     elif settings["cost_item"]:
         ifcopenshell.api.run(

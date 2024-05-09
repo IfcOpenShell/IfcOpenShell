@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_product(file, relating_product=None, related_object=None) -> None:
+def unassign_product(
+    file: ifcopenshell.file,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
     """Unassigns a product and an object (typically an annotation)
 
     Smart annotation objects can be associated with products so that they
@@ -34,8 +38,8 @@ def unassign_product(file, relating_product=None, related_object=None) -> None:
     :param related_object: The object (typically IfcAnnotation) that the
         product is related to
     :type related_object: ifcopenshell.entity_instance
-    :return: The created IfcRelAssignsToProduct relationship
-    :rtype: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
     Example:
 
@@ -68,4 +72,3 @@ def unassign_product(file, relating_product=None, related_object=None) -> None:
         related_objects.remove(settings["related_object"])
         rel.RelatedObjects = related_objects
         ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
-        return rel

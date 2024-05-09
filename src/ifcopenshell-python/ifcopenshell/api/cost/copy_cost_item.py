@@ -19,9 +19,14 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from typing import Union
 
 
-def copy_cost_item(file, cost_item=None) -> None:
+def copy_cost_item(
+    file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+    # TODO: currently it never returns list of duplicated cost items
+    # though it is stated in the docs
     """Copies all cost items and related relationships
 
     The following relationships are also duplicated:
@@ -33,7 +38,7 @@ def copy_cost_item(file, cost_item=None) -> None:
     :param cost_item: The cost item to be duplicated
     :type cost_item: ifcopenshell.entity_instance
     :return: The duplicated cost item or the list of duplicated cost items if the latter has children
-    :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
+    :rtype: ifcopenshell.entity_instance or list[ifcopenshell.entity_instance]
 
     Example:
     .. code:: python
@@ -55,7 +60,7 @@ def copy_cost_item(file, cost_item=None) -> None:
 class Usecase:
     def execute(self):
         self.new_cost_items = []
-        self.duplicate_cost_item(self.settings["cost_item"])
+        return self.duplicate_cost_item(self.settings["cost_item"])
 
     def duplicate_cost_item(self, cost_item):
         new_cost_item = ifcopenshell.util.element.copy_deep(self.file, cost_item)

@@ -19,7 +19,9 @@
 import ifcopenshell.api
 
 
-def assign_cost_value(file, cost_item=None, cost_rate=None) -> None:
+def assign_cost_value(
+    file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance, cost_rate: ifcopenshell.entity_instance
+) -> None:
     """Assigns a cost value to a cost item from a schedule of rates
 
     Instead of assigning cost values from scratch for each cost item in a
