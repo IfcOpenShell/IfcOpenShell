@@ -26,7 +26,6 @@ Using types is critical to the success of any project.
 
 from .. import wrap_usecases
 from .assign_type import assign_type
-from .get_related_objects import get_related_objects
 from .map_type_representations import map_type_representations
 from .unassign_type import unassign_type
 
