@@ -332,7 +332,14 @@ class file:
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        kwargs_attrs = [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        attrs = list(enumerate(args)) + kwargs_attrs
+
+        if len(attrs) > len(e):
+            raise ValueError(
+                "entity instance of type '%s' has only %s attributes but %s attributes were provided."
+                % (e.is_a(True), len(e), len(attrs))
+            )
 
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
@@ -341,8 +348,18 @@ class file:
             transaction = self.transaction
             self.transaction = None
 
-        for idx, arg in attrs:
-            e[idx] = arg
+        try:
+            for idx, arg in attrs:
+                e[idx] = arg
+        except IndexError:
+            invalid_attrs = []
+            for (attr_index, _), attr_name in zip(kwargs_attrs, kwargs):
+                if attr_index == 0xFFFFFFFF:
+                    invalid_attrs.append(attr_name)
+                raise ValueError(
+                    "entity instance of type '%s' doesn't have the following attributes: %s."
+                    % (e.is_a(True), ", ".join(invalid_attrs))
+                )
 
         # Restore transaction status
         if attrs:
