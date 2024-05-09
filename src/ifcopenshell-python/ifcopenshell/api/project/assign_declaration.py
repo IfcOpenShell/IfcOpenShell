@@ -24,7 +24,7 @@ from typing import Union
 
 
 def assign_declaration(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     definitions: list[ifcopenshell.entity_instance],
     relating_context: ifcopenshell.entity_instance,
 ) -> Union[ifcopenshell.entity_instance, None]:
@@ -142,6 +142,6 @@ def assign_declaration(
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
                 "RelatedDefinitions": list(objects_to_change),
                 "RelatingContext": relating_context,
-            }
+            },
         )
     return declares

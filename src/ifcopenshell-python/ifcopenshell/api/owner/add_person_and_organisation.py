@@ -19,7 +19,7 @@ import ifcopenshell
 
 
 def add_person_and_organisation(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     person: ifcopenshell.entity_instance,
     organisation: ifcopenshell.entity_instance,
 ) -> ifcopenshell.entity_instance:

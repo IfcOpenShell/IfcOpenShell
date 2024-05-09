@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_monetary_unit(file, currency="DOLLARYDOO") -> None:
+def add_monetary_unit(file: ifcopenshell.file, currency: str = "DOLLARYDOO") -> ifcopenshell.entity_instance:
     """Add a new currency
 
     Currency units are useful in cost plans to know in what currency the

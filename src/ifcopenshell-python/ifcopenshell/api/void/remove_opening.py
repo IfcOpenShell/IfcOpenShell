@@ -20,7 +20,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_opening(file: ifcopenshell.entity_instance, opening: ifcopenshell.entity_instance) -> None:
+def remove_opening(file: ifcopenshell.file, opening: ifcopenshell.entity_instance) -> None:
     """Remove an opening
 
     Fillings are retained as orphans. Voided elements remain. Openings

@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
 
 
-def remove_context(file: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance) -> None:
+def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance) -> None:
     """Removes an IfcGeometricRepresentationContext
 
     Any representation geometry that is assigned to the context is also

@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_constraint(file, constraint=None) -> None:
+def remove_constraint(file: ifcopenshell.file, constraint: ifcopenshell.entity_instance) -> None:
     """Remove a constraint (typically an objective)
 
     Removes a constraint definition and all of its associations to any

@@ -19,16 +19,18 @@
 import ifcopenshell
 
 
-def add_metric_reference(file, metric=None, reference_path=None) -> None:
+def add_metric_reference(
+    file: ifcopenshell.file, metric: ifcopenshell.entity_instance, reference_path: str
+) -> list[ifcopenshell.entity_instance]:
     """
     Adds a chain of references to a metric. The reference path is a string of the form "attribute.attribute.attribute"
     Used to reference a value of an attribute of an instance through a metric objective entity.
     """
     settings = {"metric": metric, "reference_path": reference_path}
 
+    references_created = []
     if settings["reference_path"]:
         attributes = settings["reference_path"].split(".")
-        references_created = []
         for i in range(len(attributes)):
             if i == 0:
                 reference = file.create_entity("IfcReference")
@@ -40,4 +42,4 @@ def add_metric_reference(file, metric=None, reference_path=None) -> None:
                 reference.AttributeIdentifier = attributes[i]
                 references_created[i - 1].InnerReference = reference
                 references_created.append(reference)
-        return references_created
+    return references_created

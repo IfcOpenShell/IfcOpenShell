@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def assign_product(file, relating_product=None, related_object=None) -> None:
+def assign_product(
+    file: ifcopenshell.file,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Associates a product and an object, typically for annotation
 
     Warning: this is an experimental API.
@@ -104,7 +108,7 @@ def assign_product(file, relating_product=None, related_object=None) -> None:
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingProduct": settings["relating_product"],
-            }
+            },
         )
 
     if is_grid_axis:

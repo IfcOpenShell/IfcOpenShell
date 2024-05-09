@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_cost_value(file, parent=None) -> None:
+def add_cost_value(file: ifcopenshell.file, parent: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Adds a new value or subvalue to a cost item
 
     A cost item's subtotal can be specified in two ways.

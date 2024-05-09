@@ -22,7 +22,7 @@ import ifcopenshell.api.owner.settings
 from typing import Union
 
 
-def create_owner_history(file: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
     """Creates a new owner history indicating an element was added
 
     Any object in IFC with a unique ID and name (such as physical products,

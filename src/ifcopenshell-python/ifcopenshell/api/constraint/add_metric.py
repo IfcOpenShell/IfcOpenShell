@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def add_metric(file, objective=None) -> None:
+def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Add a new metric benchmark
 
     Qualitative constraints may have a series of quantitative benchmarks
@@ -50,7 +50,7 @@ def add_metric(file, objective=None) -> None:
             "Name": "Unnamed",
             "ConstraintGrade": "NOTDEFINED",
             "Benchmark": "EQUALTO",
-        }
+        },
     )
     if settings["objective"]:
         benchmark_values = list(settings["objective"].BenchmarkValues or [])

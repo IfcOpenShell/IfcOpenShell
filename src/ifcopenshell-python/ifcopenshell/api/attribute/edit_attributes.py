@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.element
+from typing import Any
 
 
-def edit_attributes(file, product=None, attributes=None) -> None:
+def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edit the attributes of a product
 
     All IFC entities have attributes. Normally they can be edited directly,
@@ -31,7 +33,7 @@ def edit_attributes(file, product=None, attributes=None) -> None:
         entity.
     :type product: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 

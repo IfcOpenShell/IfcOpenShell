@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_cost_item(file, cost_item=None) -> None:
+def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> None:
     """Removes a cost item
 
     All associated relationships with the cost item are also removed,

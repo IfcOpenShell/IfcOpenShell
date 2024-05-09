@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_metric(file, metric=None) -> None:
+def remove_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance) -> None:
     """Remove a metric benchmark
 
     Removes a metric benchmark and all of its associations to any products

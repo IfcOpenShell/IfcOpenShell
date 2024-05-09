@@ -19,7 +19,9 @@
 import ifcopenshell.api
 
 
-def unassign_cost_item_quantity(file, cost_item=None, products=None) -> None:
+def unassign_cost_item_quantity(
+    file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+) -> None:
     """Removes quantities of a cost item that are calculated on products
 
     A cost item may have quantities that are parametrically calculated on

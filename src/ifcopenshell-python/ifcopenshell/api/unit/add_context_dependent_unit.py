@@ -15,9 +15,15 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_context_dependent_unit(file, unit_type="USERDEFINED", name="THINGAMAJIG", dimensions=None) -> None:
+def add_context_dependent_unit(
+    file: ifcopenshell.file,
+    unit_type: str = "USERDEFINED",
+    name: str = "THINGAMAJIG",
+    dimensions: tuple[int, int, int, int, int, int, int] = (0, 0, 0, 0, 0, 0, 0),
+) -> ifcopenshell.entity_instance:
     """Add a new arbitrary unit that can only be interpreted in a project specific context
 
     Occasionally the construction industry uses arbitrary units to quantify
@@ -51,7 +57,7 @@ def add_context_dependent_unit(file, unit_type="USERDEFINED", name="THINGAMAJIG"
         # Boxes of things
         ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
     """
-    settings = {"unit_type": unit_type, "name": name, "dimensions": dimensions or (0, 0, 0, 0, 0, 0, 0)}
+    settings = {"unit_type": unit_type, "name": name, "dimensions": dimensions}
 
     return file.create_entity(
         "IfcContextDependentUnit",

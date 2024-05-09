@@ -19,13 +19,13 @@
 import ifcopenshell.util.element
 
 
-def copy_boundary(file, boundary=None) -> None:
+def copy_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Copies a space boundary
 
     :param boundary: The IfcRelSpaceBoundary you want to copy.
     :type boundary: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
+    :return: Duplicate of the IfcRelSpaceBoundary
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 

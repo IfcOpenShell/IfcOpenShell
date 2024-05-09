@@ -20,7 +20,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 
 
-def remove_unit(file, unit=None) -> None:
+def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> None:
     """Remove a unit
 
     Be very careful when a unit is removed, as it may mean that previously

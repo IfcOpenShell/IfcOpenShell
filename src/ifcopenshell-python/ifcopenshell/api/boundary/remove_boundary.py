@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_boundary(file, boundary=None) -> None:
+def remove_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instance) -> None:
     """Removes a space boundary
 
     The relating space or related building element is untouched. Only the

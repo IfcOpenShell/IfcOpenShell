@@ -22,7 +22,7 @@ from typing import Optional, Any, Union
 
 
 def edit_pset(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     pset: ifcopenshell.entity_instance,
     name: Optional[str] = None,
     properties: Optional[dict[str, Any]] = None,

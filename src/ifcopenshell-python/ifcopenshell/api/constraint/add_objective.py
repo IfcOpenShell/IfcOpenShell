@@ -19,7 +19,7 @@
 import ifcopenshell
 
 
-def add_objective(file) -> None:
+def add_objective(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
     """Add a new objective constraint
 
     Parametric constraints may be defined by the user. The constraint is defined

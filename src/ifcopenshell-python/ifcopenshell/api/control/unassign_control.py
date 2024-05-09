@@ -19,9 +19,14 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from typing import Union
 
 
-def unassign_control(file, relating_control=None, related_object=None) -> None:
+def unassign_control(
+    file: ifcopenshell.file,
+    relating_control: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
     """Unassigns a planning control or constraint to an object
 
     :param relating_control: The IfcControl entity that is creating the

@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_cost_schedule(file, cost_schedule=None) -> None:
+def remove_cost_schedule(file: ifcopenshell.file, cost_schedule: ifcopenshell.entity_instance) -> None:
     """Removes a cost schedule
 
     All associated relationships with the cost schedule are also removed,

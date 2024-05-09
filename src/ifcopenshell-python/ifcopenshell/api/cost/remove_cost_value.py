@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_cost_value(file, parent=None, cost_value=None) -> None:
+def remove_cost_value(
+    file: ifcopenshell.file, parent: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance
+) -> None:
     """Removes a cost value
 
     The cost value may be assigned either to a cost item, a construction
