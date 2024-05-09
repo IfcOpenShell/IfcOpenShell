@@ -22,7 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_information(file, information=None) -> None:
+def remove_information(file: ifcopenshell.file, information: ifcopenshell.entity_instance) -> None:
     """Removes a document information
 
     All references and associations are also removed.
@@ -41,23 +41,32 @@ def remove_information(file, information=None) -> None:
         # ... and remove it!
         ifcopenshell.api.run("document.remove_information", model, information=document)
     """
-    settings = {"information": information}
 
-    for reference in settings["information"].HasDocumentReferences or []:
+    if file.schema == "IFC2X3":
+        references = information.DocumentReferences or []
+    else:
+        references = information.HasDocumentReferences
+
+    for reference in references:
         ifcopenshell.api.run("document.remove_reference", file, reference=reference)
 
-    for rel in settings["information"].IsPointer or []:
-        for information in rel.RelatedDocuments:
-            ifcopenshell.api.run("document.remove_information", file, information=information)
+    for rel in information.IsPointer or []:
+        for info in rel.RelatedDocuments:
+            ifcopenshell.api.run("document.remove_information", file, information=info)
 
-    for rel in settings["information"].IsPointedTo or []:
-        if rel.RelatedDocuments == (settings["information"],):
+    for rel in information.IsPointedTo or []:
+        if rel.RelatedDocuments == (information,):
             # This relationship is non-rooted
             file.remove(rel)
 
-    for rel in settings["information"].DocumentInfoForObjects or []:
+    if file.schema == "IFC2X3":
+        rels = [r for r in file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == information]
+    else:
+        rels = information.DocumentInfoForObjects
+
+    for rel in rels:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    file.remove(settings["information"])
+    file.remove(information)
