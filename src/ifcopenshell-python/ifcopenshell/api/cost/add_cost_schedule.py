@@ -62,5 +62,17 @@ def add_cost_schedule(file: ifcopenshell.file, name: Optional[str] = None, prede
         predefined_type=settings["predefined_type"],
         name=settings["name"],
     )
-    cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    if file.schema == "IFC2X3":
+        cost_schedule.UpdateDate = createIfcDateAndTime(file, datetime.now())
+    else:
+        cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
     return cost_schedule
+
+
+def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
+    ifc_dt = file.create_entity("IfcDateAndTime")
+    ifc_dt.DateComponent = file.create_entity(
+        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
+    )
+    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
+    return ifc_dt
