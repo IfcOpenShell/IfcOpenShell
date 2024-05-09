@@ -315,7 +315,9 @@ def wrap_usecase(usecase_path, usecase):
         ifc_file = args[0] if args else None
         nonlocal usecase_path
         if should_run_listeners:
-            for listener in pre_listeners.get(usecase_path, {}).values():
+            listeners = list(pre_listeners.get(usecase_path, {}).values())
+            listeners += pre_listeners.get("*", {}).values()
+            for listener in listeners:
                 listener(usecase_path, ifc_file, settings)
 
         # see #4531
@@ -329,7 +331,9 @@ def wrap_usecase(usecase_path, usecase):
             raise TypeError(msg) from e
 
         if should_run_listeners:
-            for listener in post_listeners.get(usecase_path, {}).values():
+            listeners = list(post_listeners.get(usecase_path, {}).values())
+            listeners += post_listeners.get("*", {}).values()
+            for listener in listeners:
                 listener(usecase_path, ifc_file, settings)
 
         return result
