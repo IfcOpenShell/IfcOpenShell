@@ -21,6 +21,7 @@ import bpy
 import time
 import logging
 import tempfile
+import traceback
 import subprocess
 import numpy as np
 import ifcopenshell
@@ -674,19 +675,23 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             return self.finish_loading_project(context)
 
     def finish_loading_project(self, context):
-        if not self.is_existing_ifc_file():
-            return {"FINISHED"}
+        try:
+            if not self.is_existing_ifc_file():
+                return {"FINISHED"}
 
-        if tool.Blender.is_default_scene():
-            for obj in bpy.data.objects:
-                bpy.data.objects.remove(obj)
+            if tool.Blender.is_default_scene():
+                for obj in bpy.data.objects:
+                    bpy.data.objects.remove(obj)
 
-        context.scene.BIMProperties.ifc_file = self.get_filepath()
-        context.scene.BIMProjectProperties.is_loading = True
-        context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
-        tool.Blender.register_toolbar()
-        if not self.is_advanced:
-            bpy.ops.bim.load_project_elements()
+            context.scene.BIMProperties.ifc_file = self.get_filepath()
+            context.scene.BIMProjectProperties.is_loading = True
+            context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
+            tool.Blender.register_toolbar()
+            if not self.is_advanced:
+                bpy.ops.bim.load_project_elements()
+        except:
+            blenderbim.last_error = traceback.format_exc()
+            raise
         return {"FINISHED"}
 
     def invoke(self, context, event):
