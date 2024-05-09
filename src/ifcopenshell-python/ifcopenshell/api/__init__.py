@@ -170,31 +170,6 @@ def run(
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
 
-
-    # TODO: settings serialization for client-server systems
-    # def serialise_entity_instance(entity):
-    #     return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
-    # vcs_settings = settings.copy()
-    # for key, value in settings.items():
-    #     if isinstance(value, ifcopenshell.entity_instance):
-    #         vcs_settings[key] = serialise_entity_instance(value)
-    #     elif isinstance(value, numpy.ndarray):
-    #         vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
-    #     elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
-    #         vcs_settings[key] = [serialise_entity_instance(i) for i in value]
-    if "add_representation" in usecase_path:
-        pass
-        # print(usecase_path, "{ ... settings too complex right now ... }")
-    elif "owner." in usecase_path:
-        pass
-    else:
-        pass
-        # print(vcs_settings)
-        # try:
-        #    print(usecase_path, json.dumps(vcs_settings))
-        # except:
-        #    print(usecase_path, vcs_settings)
-
     usecase_class = CACHED_USECASE_CLASSES.get(usecase_path)
     if usecase_class is None:
         importlib.import_module(f"ifcopenshell.api.{usecase_path}")
@@ -306,6 +281,28 @@ def extract_docs(module, usecase):
     node_data["description"] = description.strip()
     node_data["inputs"] = inputs
     return node_data
+
+
+def serialise_settings(settings):
+    def serialise_entity_instance(entity):
+        return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
+
+    vcs_settings = settings.copy()
+    for key, value in settings.items():
+        if isinstance(value, ifcopenshell.entity_instance):
+            vcs_settings[key] = serialise_entity_instance(value)
+        elif isinstance(value, numpy.ndarray):
+            vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
+        elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
+            vcs_settings[key] = [serialise_entity_instance(i) for i in value]
+    if "add_representation" in usecase_path:
+        return ""
+    elif "owner." in usecase_path:
+        return ""
+    try:
+        return json.dumps(vcs_settings)
+    except:
+        return str(vcs_settings)
 
 
 def wrap_usecase(usecase_path, usecase):
