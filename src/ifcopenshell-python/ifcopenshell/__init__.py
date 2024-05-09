@@ -86,6 +86,18 @@ from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
 
+# explicitly specify available imported symbols
+# (it's a requirement for a typed library)
+__all__ = [
+    "ifcopenshell_wrapper",
+    "file",
+    "entity_instance",
+    "sqlite",
+    "sqlite_entity",
+    "stream",
+    "stream_entity",
+]
+
 try:
     from .stream import stream, stream_entity
 except:
