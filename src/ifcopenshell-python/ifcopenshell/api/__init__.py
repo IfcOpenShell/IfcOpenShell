@@ -295,10 +295,11 @@ def serialise_settings(settings):
             vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
         elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
             vcs_settings[key] = [serialise_entity_instance(i) for i in value]
-    if "add_representation" in usecase_path:
-        return ""
-    elif "owner." in usecase_path:
-        return ""
+        else:
+            try:
+                vcs_settings[key] = str(value)
+            except:
+                vcs_settings[key] = "n/a"
     try:
         return json.dumps(vcs_settings)
     except:

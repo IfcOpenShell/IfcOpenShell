@@ -33,7 +33,7 @@ import blenderbim.tool as tool
 import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
-from blenderbim import get_debug_info
+from blenderbim import get_debug_info, format_debug_info
 from blenderbim.bim.ifc import IfcStore
 
 
@@ -54,16 +54,18 @@ class CopyDebugInformation(bpy.types.Operator):
                 }
             )
 
-        # Format it in a readable way
-        text = "\n".join(f"{k}: {v}" for k, v in info.items())
+        text = format_debug_info(info)
+
+        print("-" * 80)
         print(text)
+        print("-" * 80)
 
         if platform.system() == "Windows":
-            command = "echo | set /p nul=" + text.strip()
+            command = "echo | set /p nul=" + text
         elif platform.system() == "Darwin":  # for MacOS
-            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | pbcopy'
+            command = 'printf "' + text.replace("\n", "\\n").replace('"', "") + '" | pbcopy'
         else:  # Linux
-            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
+            command = 'printf "' + text.replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
         subprocess.run(command, shell=True, check=True)
         return {"FINISHED"}
 

@@ -24,6 +24,7 @@ import traceback
 import subprocess
 import webbrowser
 import addon_utils
+from collections import deque
 
 bl_info = {
     "name": "BlenderBIM",
@@ -38,6 +39,7 @@ bl_info = {
 }
 
 last_error = None
+last_actions: deque = deque(maxlen=10)
 
 
 def get_debug_info():
@@ -60,8 +62,20 @@ def get_debug_info():
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
         "blenderbim_version": version,
+        "last_actions": last_actions,
         "last_error": last_error,
     }
+
+
+def format_debug_info(info: dict):
+    last_actions = ""
+    for action in info["last_actions"]:
+        last_actions += f"\n# {action['type']}: {action['name']}"
+        if settings := action.get("settings"):
+            last_actions += f"\n>>> {settings}"
+    info["last_actions"] = last_actions
+    text = "\n".join(f"{k}: {v}" for k, v in info.items())
+    return text.strip()
 
 
 if sys.modules.get("bpy", None):
@@ -72,6 +86,18 @@ if sys.modules.get("bpy", None):
 
     try:
         import blenderbim.bim
+        import ifcopenshell.api
+
+        def log_api(usecase_path, ifc_file, settings):
+            last_actions.append(
+                {
+                    "type": "ifcopenshell.api",
+                    "name": usecase_path,
+                    "settings": ifcopenshell.api.serialise_settings(settings),
+                }
+            )
+
+        ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
             blenderbim.bim.register()
@@ -83,7 +109,7 @@ if sys.modules.get("bpy", None):
         last_error = traceback.format_exc()
 
         print(last_error)
-        print(get_debug_info())
+        print(format_debug_info(get_debug_info()))
         print("\nFATAL ERROR: Unable to load the BlenderBIM Add-on")
 
         class BIM_PT_fatal_error(bpy.types.Panel):
@@ -122,21 +148,14 @@ if sys.modules.get("bpy", None):
             bl_description = "Copies debugging information to your clipboard for use in bugreports"
 
             def execute(self, context):
-                info = get_debug_info()
-                # Format it in a readable way
-                text = "\n".join(f"{k}: {v}" for k, v in info.items())
-                print(text)
+                info = format_debug_info(get_debug_info())
 
                 if platform.system() == "Windows":
-                    command = "echo | set /p nul=" + text.strip()
+                    command = "echo | set /p nul=" + info
                 elif platform.system() == "Darwin":  # for MacOS
-                    command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | pbcopy'
+                    command = 'printf "' + info.replace("\n", "\\n").replace('"', "") + '" | pbcopy'
                 else:  # Linux
-                    command = (
-                        'printf "'
-                        + text.strip().replace("\n", "\\n").replace('"', "")
-                        + '" | xclip -selection clipboard'
-                    )
+                    command = 'printf "' + info.replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
                 subprocess.run(command, shell=True, check=True)
                 return {"FINISHED"}
 
