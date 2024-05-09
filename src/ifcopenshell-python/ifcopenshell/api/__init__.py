@@ -23,6 +23,19 @@ the rules of the IFC schema. This API module provides simple to use authoring
 functions that hide this complexity from you. Things like managing differences
 between IFC versions, tracking owernship changes, or cleaning up after orphaned
 relationships are all handled automatically.
+
+If you're new to IFC authoring, start by looking at the following APIs:
+
+- See :func:`ifcopenshell.api.project.create_file` to create a new IFC.
+- See :func:`ifcopenshell.api.root.create_entity` to create new entities, like
+  the mandatory IfcProject, and then an IfcSite, IfcWall, etc.
+- See :func:`ifcopenshell.api.aggregate.assign_object` to create a spatial
+  hierarchy.
+- See :func:`ifcopenshell.api.spatial.assign_container` to place physical
+  elements (e.g. walls) inside spatial elements (e.g. building storeys).
+
+Also see how to `create a simple model from scratch
+<https://docs.ifcopenshell.org/ifcopenshell-python/code_examples.html#create-a-simple-model-from-scratch>`_.
 """
 
 import json

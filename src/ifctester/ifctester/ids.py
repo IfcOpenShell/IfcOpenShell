@@ -174,6 +174,7 @@ class Specification:
         self.instructions = instructions
 
         self.applicable_entities: list[ifcopenshell.entity_instance] = []
+        self.failed_entities: set[ifcopenshell.entity_instance] = set()
         self.status = None
 
     def asdict(self):
