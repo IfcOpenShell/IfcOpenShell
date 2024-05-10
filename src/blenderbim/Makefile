@@ -151,8 +151,10 @@ endif
 	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.7.0.zip
 	cd dist/working && unzip v0.7.0.zip
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
-	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
-	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/util/
+	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/util dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/*.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/express/rule_executor.py dist/blenderbim/libs/site/packages/ifcopenshell/express/
 	# Provides bcf functionality
