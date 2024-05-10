@@ -18,9 +18,12 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Any
 
 
-def edit_sequence(file, rel_sequence=None, attributes=None) -> None:
+def edit_sequence(
+    file: ifcopenshell.file, rel_sequence: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcRelSequence
 
     For more information about the attributes and data types of an
@@ -29,7 +32,7 @@ def edit_sequence(file, rel_sequence=None, attributes=None) -> None:
     :param rel_sequence: The IfcRelSequence entity you want to edit
     :type rel_sequence: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -59,7 +62,7 @@ def edit_sequence(file, rel_sequence=None, attributes=None) -> None:
         ifcopenshell.api.run("sequence.edit_sequence", model,
             rel_sequence=sequence, attributes={"SequenceType": "START_START"})
     """
-    settings = {"rel_sequence": rel_sequence, "attributes": attributes or {}}
+    settings = {"rel_sequence": rel_sequence, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["rel_sequence"], name, value)

@@ -19,7 +19,9 @@
 import ifcopenshell.api
 
 
-def add_structural_load_group(file, name="Unnamed", action_type="NOTDEFINED", action_source="NOTDEFINED") -> None:
+def add_structural_load_group(
+    file: ifcopenshell.file, name: str = "Unnamed", action_type: str = "NOTDEFINED", action_source: str = "NOTDEFINED"
+) -> ifcopenshell.entity_instance:
     """Adds a new load group, which is a collection of related loads
 
     :param name: The name of the load group
@@ -34,19 +36,14 @@ def add_structural_load_group(file, name="Unnamed", action_type="NOTDEFINED", ac
     :return: The new IfcStructuralLoadCase
     :rtype: ifcopenshell.entity_instance
     """
-    settings = {
-        "name": name,
-        "action_type": action_type,
-        "action_source": action_source,
-    }
 
     load_group = ifcopenshell.api.run(
         "root.create_entity",
         file,
         ifc_class="IfcStructuralLoadGroup",
         predefined_type="LOAD_GROUP",
-        name=settings["name"],
+        name=name,
     )
-    load_group.ActionType = settings["action_type"]
-    load_group.ActionSource = settings["action_source"]
+    load_group.ActionType = action_type
+    load_group.ActionSource = action_source
     return load_group

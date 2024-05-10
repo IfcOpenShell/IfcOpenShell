@@ -19,11 +19,17 @@
 import ifcopenshell.api
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from datetime import datetime
+from datetime import datetime, time
 from datetime import timedelta
+from typing import Optional, Union
 
 
-def add_time_period(file, recurrence_pattern=None, start_time=None, end_time=None) -> None:
+def add_time_period(
+    file: ifcopenshell.file,
+    recurrence_pattern: ifcopenshell.entity_instance,
+    start_time: Optional[Union[str, time]] = None,
+    end_time: Optional[Union[str, time]] = None,
+) -> ifcopenshell.entity_instance:
     """Adds a time period to a recurrence pattern
 
     A recurring time may be an all-day event, or only during certain time

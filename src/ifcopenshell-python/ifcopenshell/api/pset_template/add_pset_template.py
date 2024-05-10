@@ -21,11 +21,11 @@ import ifcopenshell.guid
 
 
 def add_pset_template(
-    file,
-    name="New_Pset",
-    template_type="PSET_TYPEDRIVENOVERRIDE",
-    applicable_entity="IfcObject,IfcTypeObject",
-) -> None:
+    file: ifcopenshell.file,
+    name: str = "New_Pset",
+    template_type: str = "PSET_TYPEDRIVENOVERRIDE",
+    applicable_entity: str = "IfcObject,IfcTypeObject",
+) -> ifcopenshell.entity_instance:
     """Adds a new property set template
 
     This creates a new template for property sets. A template defines what

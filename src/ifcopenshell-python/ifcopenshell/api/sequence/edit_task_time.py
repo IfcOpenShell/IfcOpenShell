@@ -20,13 +20,13 @@ import datetime
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
-from typing import Any, Optional
+from typing import Any
 
 
 def edit_task_time(
     file: ifcopenshell.file,
     task_time: ifcopenshell.entity_instance,
-    attributes: Optional[dict[str, Any]] = None,
+    attributes: dict[str, Any],
 ) -> None:
     """Edits the attributes of an IfcTaskTime
 
@@ -36,7 +36,7 @@ def edit_task_time(
     :param task_time: The IfcTaskTime entity you want to edit
     :type task_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -59,7 +59,7 @@ def edit_task_time(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"task_time": task_time, "attributes": attributes or {}}
+    usecase.settings = {"task_time": task_time, "attributes": attributes}
     return usecase.execute()
 
 

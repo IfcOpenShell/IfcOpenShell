@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_styled_representation(file, representation=None) -> None:
+def remove_styled_representation(file: ifcopenshell.file, representation: ifcopenshell.entity_instance) -> None:
     """Removes a styled representation
 
     Styled representations are typically associated with materials. This

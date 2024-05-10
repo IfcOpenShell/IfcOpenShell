@@ -19,7 +19,7 @@
 import ifcopenshell.util.date
 
 
-def add_resource_time(file, resource=None) -> None:
+def add_resource_time(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Adds the time that a resource is used for
 
     For labour and equipment resources, the total duration that the resource

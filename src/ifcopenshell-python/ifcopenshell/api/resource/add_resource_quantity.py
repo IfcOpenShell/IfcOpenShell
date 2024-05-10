@@ -19,7 +19,9 @@
 import ifcopenshell.util.element
 
 
-def add_resource_quantity(file, resource=None, ifc_class="IfcQuantityCount") -> None:
+def add_resource_quantity(
+    file: ifcopenshell.file, resource: ifcopenshell.entity_instance, ifc_class: str = "IfcQuantityCount"
+) -> ifcopenshell.entity_instance:
     """Adds a quantity to a resource
 
     The quantity of a resource represents the "unit quantity" of that
@@ -65,6 +67,7 @@ def add_resource_quantity(file, resource=None, ifc_class="IfcQuantityCount") -> 
     settings = {"resource": resource, "ifc_class": ifc_class}
 
     quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
+    # 3 IfcPhysicalSimpleQuantity Value
     quantity[3] = 0.0
     old_quantity = settings["resource"].BaseQuantity
     settings["resource"].BaseQuantity = quantity

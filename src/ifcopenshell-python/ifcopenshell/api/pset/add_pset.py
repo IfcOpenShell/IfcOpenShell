@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def add_pset(file, product=None, name=None) -> None:
+def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:
     """Adds a new property set to a product
 
     Products, such as physical objects or types in IFC may have properties

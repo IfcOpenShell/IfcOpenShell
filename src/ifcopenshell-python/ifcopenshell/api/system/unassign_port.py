@@ -18,9 +18,12 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
-def unassign_port(file, element=None, port=None) -> None:
+def unassign_port(
+    file: ifcopenshell.file, element: ifcopenshell.entity_instance, port: ifcopenshell.entity_instance
+) -> None:
     """Unassigns a port to an element
 
     Ports are typically always assigned to a distribution element, but in

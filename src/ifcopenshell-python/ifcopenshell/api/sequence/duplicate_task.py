@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.sequence
 
 
-def duplicate_task(file, task=None) -> None:
+def duplicate_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Duplicates a task in the project
 
     The following relationships are also duplicated:

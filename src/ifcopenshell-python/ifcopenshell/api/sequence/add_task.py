@@ -19,17 +19,18 @@
 import ifcopenshell.api
 import ifcopenshell
 import ifcopenshell.guid
+from typing import Optional
 
 
 def add_task(
-    file,
-    work_schedule=None,
-    parent_task=None,
-    name=None,
-    description=None,
-    identification=None,
-    predefined_type="NOTDEFINED",
-) -> None:
+    file: ifcopenshell.file,
+    work_schedule: Optional[ifcopenshell.entity_instance] = None,
+    parent_task: Optional[ifcopenshell.entity_instance] = None,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    identification: Optional[str] = None,
+    predefined_type: str = "NOTDEFINED",
+) -> ifcopenshell.entity_instance:
     """Adds a new task
 
     Tasks are typically used for two purposes: construction scheduling and
@@ -66,11 +67,11 @@ def add_task(
     :param work_schedule: The work schedule to group the task in, if the
         task is to be a top-level or root task. This is mutually exclusive
         with the parent_task parameter.
-    :type work_schedule: ifcopenshell.entity_instance
+    :type work_schedule: ifcopenshell.entity_instance, optional
     :param parent_task: The parent task, if the task is to be a subtask or
         child task. This is mutually exclusive with the work_schedule
         parameter.
-    :type parent_task: ifcopenshell.entity_instance
+    :type parent_task: ifcopenshell.entity_instance, optioanl
     :param name: The name of the task.
     :type name: str,optional
     :param description: The description of the task.

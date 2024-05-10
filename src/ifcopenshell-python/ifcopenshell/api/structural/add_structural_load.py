@@ -17,9 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Optional
 
 
-def add_structural_load(file, name=None, ifc_class="IfcStructuralLoadLinearForce") -> None:
+def add_structural_load(
+    file: ifcopenshell.file, name: Optional[str] = None, ifc_class: str = "IfcStructuralLoadLinearForce"
+) -> ifcopenshell.entity_instance:
     """Adds a new structural load
 
     Structural loads may be actions or reactions. A simple load might be a
@@ -42,9 +45,4 @@ def add_structural_load(file, name=None, ifc_class="IfcStructuralLoadLinearForce
         # Create a simple linear load
         ifcopenshell.api.run("structural.add_structural_load", model)
     """
-    settings = {
-        "name": name,
-        "ifc_class": ifc_class,
-    }
-
-    return file.create_entity(settings["ifc_class"], Name=settings["name"])
+    return file.create_entity(ifc_class, Name=name)

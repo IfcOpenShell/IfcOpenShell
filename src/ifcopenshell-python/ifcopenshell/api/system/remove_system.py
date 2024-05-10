@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_system(file, system=None) -> None:
+def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance) -> None:
     """Removes a distribution system
 
     All the distribution elements within the system are retained.

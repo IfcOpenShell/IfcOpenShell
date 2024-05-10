@@ -19,7 +19,7 @@
 import ifcopenshell.util.element
 
 
-def remove_resource_quantity(file, resource=None) -> None:
+def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Removes the base quantity of a resource
 
     Example:

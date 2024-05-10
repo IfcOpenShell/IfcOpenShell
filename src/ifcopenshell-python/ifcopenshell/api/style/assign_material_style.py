@@ -22,7 +22,11 @@ import ifcopenshell.util.element
 
 
 def assign_material_style(
-    file, material=None, style=None, context=None, should_use_presentation_style_assignment=False
+    file: ifcopenshell.file,
+    material: ifcopenshell.entity_instance,
+    style: ifcopenshell.entity_instance,
+    context: ifcopenshell.entity_instance,
+    should_use_presentation_style_assignment: bool = False,
 ) -> None:
     """Assigns a style to a material
 

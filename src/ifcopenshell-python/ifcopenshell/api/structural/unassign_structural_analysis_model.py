@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_structural_analysis_model(file, product=None, structural_analysis_model=None) -> None:
+def unassign_structural_analysis_model(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    structural_analysis_model: ifcopenshell.entity_instance,
+) -> None:
     """Removes a relationship between a structural element and the analysis model
 
     :param product: The structural element that is part of the analysis.

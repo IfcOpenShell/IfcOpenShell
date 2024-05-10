@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_work_plan(file, work_plan=None) -> None:
+def remove_work_plan(file: ifcopenshell.entity_instance, work_plan: ifcopenshell.entity_instance) -> None:
     """Removes a work plan
 
     Note that schedules that are grouped under the work plan are not

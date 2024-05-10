@@ -17,18 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.date
+from datetime import time
 from datetime import datetime
+from typing import Union, Optional
 
 
 def add_work_schedule(
-    file,
-    name="Unnamed",
-    predefined_type="NOTDEFINED",
+    file: ifcopenshell.file,
+    name: str = "Unnamed",
+    predefined_type: str = "NOTDEFINED",
     object_type=None,
-    start_time=None,
-    work_plan=None,
-) -> None:
+    start_time: Optional[Union[str, time]] = None,
+    work_plan: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     """Add a new work schedule
 
     A work schedule is a group of tasks, where the tasks are typically

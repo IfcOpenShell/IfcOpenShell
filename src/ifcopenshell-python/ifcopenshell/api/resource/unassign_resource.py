@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_resource(file, relating_resource=None, related_object=None) -> None:
+def unassign_resource(
+    file: ifcopenshell.file,
+    relating_resource: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
     """Removes the relationship between a resource and object
 
     :param relating_resource: The IfcResource to assign the object to.
@@ -29,8 +33,8 @@ def unassign_resource(file, relating_resource=None, related_object=None) -> None
     :param related_object: The IfcProduct or IfcActor to assign to the
         object.
     :type related_object: ifcopenshell.entity_instance
-    :return: The newly created IfcRelAssignsToResource
-    :rtype: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
     Example:
 
@@ -74,4 +78,3 @@ def unassign_resource(file, relating_resource=None, related_object=None) -> None
         related_objects.remove(settings["related_object"])
         rel.RelatedObjects = related_objects
         ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
-        return rel

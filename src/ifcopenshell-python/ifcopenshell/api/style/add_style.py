@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def add_style(file, name=None, ifc_class="IfcSurfaceStyle") -> None:
+def add_style(
+    file: ifcopenshell.file, name: Optional[str] = None, ifc_class="IfcSurfaceStyle"
+) -> ifcopenshell.entity_instance:
     """Add a new presentation style
 
     A presentation style is a container of visual settings (called
@@ -54,8 +58,10 @@ def add_style(file, name=None, ifc_class="IfcSurfaceStyle") -> None:
         # Create a new surface style
         style = ifcopenshell.api.run("style.add_style", model)
     """
-    settings = {"name": name, "ifc_class": ifc_class}
 
-    if settings["ifc_class"] == "IfcSurfaceStyle":
+    kwargs = {"Name": name}
+    if ifc_class == "IfcSurfaceStyle":
         # Name is filled out because Revit treats this incorrectly as the material name
-        return file.createIfcSurfaceStyle(settings["name"], "BOTH")
+        kwargs["Side"] = "BOTH"
+
+    return file.create_entity(ifc_class, **kwargs)

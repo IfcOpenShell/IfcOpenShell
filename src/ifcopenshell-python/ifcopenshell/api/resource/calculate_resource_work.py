@@ -18,12 +18,13 @@
 
 import math
 import ifcopenshell.api
+import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.resource
 
 
-def calculate_resource_work(file, resource=None) -> None:
+def calculate_resource_work(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Calculates the work that a resource is used for
 
     This is an unofficial parametric calculation that may be done on a

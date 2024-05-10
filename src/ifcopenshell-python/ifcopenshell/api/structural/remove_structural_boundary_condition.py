@@ -15,16 +15,22 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def remove_structural_boundary_condition(file, connection=None, boundary_condition=None) -> None:
+def remove_structural_boundary_condition(
+    file: ifcopenshell.file,
+    connection: Optional[ifcopenshell.entity_instance] = None,
+    boundary_condition: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     """Removes a condition from a connection, or an orphased boundary condition
 
     :param connection: The IfcStructuralConnection to remove the condition
         from. If omitted, it is assumed to be an orphaned condition.
     :type connection: ifcopenshell.entity_instance,optional
     :param boundary_condition: The IfcBoundaryCondition to remove.
-    :type boundary_condition: ifcopenshell.entity_instance
+    :type boundary_condition: ifcopenshell.entity_instance, optional.
     :return: None
     :rtype: None
     """

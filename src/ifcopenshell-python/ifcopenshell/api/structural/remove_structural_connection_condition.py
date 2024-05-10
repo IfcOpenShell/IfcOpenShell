@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_structural_connection_condition(file, relation=None) -> None:
+def remove_structural_connection_condition(file: ifcopenshell.file, relation: ifcopenshell.entity_instance) -> None:
     """Removes a relationship between a connection and a condition
 
     The condition and the member itself is preserved.
