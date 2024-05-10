@@ -65,7 +65,14 @@ def unassign_material_style(
             for item in representation.Items:
                 if not item.is_a("IfcStyledItem"):
                     continue
-                styles = [s for s in item.Styles if s != settings["style"]]
+                styles = []
+                for s in item.Styles:
+                    if s == settings["style"]:
+                        continue
+                    if s.is_a("IfcPresentationStyleAssignment"):
+                        if s.Styles == (settings["style"],):
+                            continue
+                    styles.append(s)
                 if not styles:
                     file.remove(item)
                 elif len(styles) != len(item.Styles):

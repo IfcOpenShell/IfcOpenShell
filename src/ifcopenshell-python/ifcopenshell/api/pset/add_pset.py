@@ -121,27 +121,36 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
         has_property_sets.append(pset)
         settings["product"].HasPropertySets = has_property_sets
         return pset
-    elif settings["product"].is_a("IfcMaterialDefinition"):
-        for definition in settings["product"].HasProperties or []:
-            if definition.Name == settings["name"]:
+    # in IFC2X3 IfcMaterialDefinition not yet existed
+    elif settings["product"].is_a("IfcMaterialDefinition") or settings["product"].is_a("IfcMaterial"):
+        if file.schema == "IFC2X3":
+            ifc_class = "IfcExtendedMaterialProperties"
+            definitions = (d for d in file.by_type("IfcMaterialProperties") if d.Material == settings["product"])
+        else:
+            ifc_class = "IfcMaterialProperties"
+            definitions = settings["product"].HasProperties
+        for definition in definitions:
+            # In IFC2X3 not all IfcMaterialProperties has Name
+            if getattr(definition, "Name") == settings["name"]:
                 return definition
 
         return file.create_entity(
-            "IfcMaterialProperties",
+            ifc_class,
             **{
                 "Name": settings["name"],
                 "Material": settings["product"],
             }
         )
     elif settings["product"].is_a("IfcProfileDef"):
-        for definition in settings["product"].HasProperties or []:
-            if definition.Name == settings["name"]:
-                return definition
+        # in IFC2X3 IfcProfileProperties doesn't have Name and we cannot identify them
+        if file.schema != "IFC2X3":
+            for definition in settings["product"].HasProperties or []:
+                if definition.Name == settings["name"]:
+                    return definition
 
-        return file.create_entity(
-            "IfcProfileProperties",
-            **{
-                "Name": settings["name"],
-                "ProfileDefinition": settings["product"],
-            }
-        )
+        kwargs = {}
+        kwargs["ProfileDefinition"] = settings["product"]
+        if file.schema != "IFC2X3":
+            kwargs["Name"] = settings["name"]
+
+        return file.create_entity("IfcProfileProperties", **kwargs)

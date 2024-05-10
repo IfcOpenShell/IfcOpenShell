@@ -34,3 +34,7 @@ class TestRemoveStyle(test.bootstrap.IFC4):
         styled_item = self.file.createIfcStyledItem(Styles=[style])
         ifcopenshell.api.run("style.remove_style", self.file, style=style)
         assert len(list(self.file)) == 0
+
+
+class TestRemoveStyleIFC2X3(test.bootstrap.IFC2X3, TestRemoveStyle):
+    pass
