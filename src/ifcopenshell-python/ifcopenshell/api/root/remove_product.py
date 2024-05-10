@@ -183,6 +183,14 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
             file.remove(inverse)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
+        elif inverse.is_a("IfcRelConnectsPortToElement"):
+            if inverse.RelatedElement == settings["product"]:
+                ifcopenshell.api.run("root.remove_product", file, product=inverse.RelatingPort)
+            elif inverse.RelatingPort == settings["product"]:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsPorts"):
             if settings["product"] not in (inverse.RelatingPort, inverse.RelatedPort):
                 # if it's not RelatingPort/RelatedPort then it's optional RealizingElement
