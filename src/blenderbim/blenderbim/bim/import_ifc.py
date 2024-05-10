@@ -1912,11 +1912,7 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
-                m = shape.transformation.matrix.data
-                mat = np.array(
-                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-                )
-                offset_point = np.linalg.inv(mat) @ np.array(
+                offset_point = np.array(
                     (
                         float(props.blender_eastings),
                         float(props.blender_northings),
@@ -1924,6 +1920,12 @@ class IfcImporter:
                         0.0,
                     )
                 )
+                if geometry != shape:
+                    m = shape.transformation.matrix.data
+                    mat = np.array(
+                        ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+                    )
+                    offset_point = np.linalg.inv(mat) @ offset_point
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
                     verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
