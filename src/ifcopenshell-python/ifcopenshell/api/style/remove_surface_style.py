@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_surface_style(file, style=None) -> None:
+def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
     """Removes a presentation item from a presentation style
 
     :param style: The IfcPresentationItem to remove.

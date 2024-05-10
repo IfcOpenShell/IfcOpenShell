@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_prop_template(file, prop_template=None, attributes=None) -> None:
+def edit_prop_template(
+    file: ifcopenshell.file, prop_template: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcSimplePropertyTemplate
 
     For more information about the attributes and data types of an
@@ -26,7 +30,7 @@ def edit_prop_template(file, prop_template=None, attributes=None) -> None:
     :param prop_template: The IfcSimplePropertyTemplate entity you want to edit
     :type prop_template: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -43,7 +47,7 @@ def edit_prop_template(file, prop_template=None, attributes=None) -> None:
         ifcopenshell.api.run("pset_template.edit_prop_template", model,
             prop_template=prop, attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLengthMeasure"})
     """
-    settings = {"prop_template": prop_template, "attributes": attributes or {}}
+    settings = {"prop_template": prop_template, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["prop_template"], name, value)

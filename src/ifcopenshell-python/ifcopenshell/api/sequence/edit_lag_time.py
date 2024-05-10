@@ -18,9 +18,10 @@
 
 import ifcopenshell.api
 import ifcopenshell.util.date
+from typing import Any
 
 
-def edit_lag_time(file, lag_time=None, attributes=None) -> None:
+def edit_lag_time(file: ifcopenshell.file, lag_time: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcLagTime
 
     For more information about the attributes and data types of an
@@ -29,7 +30,7 @@ def edit_lag_time(file, lag_time=None, attributes=None) -> None:
     :param lag_time: The IfcLagTime entity you want to edit
     :type lag_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -74,7 +75,7 @@ def edit_lag_time(file, lag_time=None, attributes=None) -> None:
         # Or, let's make it 2 days instead.
         ifcopenshell.api.run("sequence.edit_lag_time", model, lag_time=lag, attributes={"LagValue": "P2D"})
     """
-    settings = {"lag_time": lag_time, "attributes": attributes or {}}
+    settings = {"lag_time": lag_time, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         if name == "LagValue" and value is not None:

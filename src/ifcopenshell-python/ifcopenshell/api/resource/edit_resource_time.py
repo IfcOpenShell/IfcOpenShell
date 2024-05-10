@@ -18,9 +18,12 @@
 
 import datetime
 import ifcopenshell
+from typing import Any
 
 
-def edit_resource_time(file, resource_time=None, attributes=None) -> None:
+def edit_resource_time(
+    file: ifcopenshell.file, resource_time: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcResourceTime
 
     For more information about the attributes and data types of an
@@ -29,7 +32,7 @@ def edit_resource_time(file, resource_time=None, attributes=None) -> None:
     :param resource_time: The IfcResourceTime entity you want to edit
     :type resource_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -59,7 +62,7 @@ def edit_resource_time(file, resource_time=None, attributes=None) -> None:
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"resource_time": resource_time, "attributes": attributes or {}}
+    usecase.settings = {"resource_time": resource_time, "attributes": attributes}
     return usecase.execute()
 
 

@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_structural_load_case(file, load_case=None) -> None:
+def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell.entity_instance) -> None:
     """Removes a structural load case
 
     :param load_case: The IfcStructuralLoadCase to remove.

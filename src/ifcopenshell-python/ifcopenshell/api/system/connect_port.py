@@ -20,9 +20,16 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
+from typing import Optional
 
 
-def connect_port(file, port1=None, port2=None, direction="NOTDEFINED", element=None) -> None:
+def connect_port(
+    file: ifcopenshell.file,
+    port1: ifcopenshell.entity_instance,
+    port2: ifcopenshell.entity_instance,
+    direction: str = "NOTDEFINED",
+    element: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     """Connects two ports together
 
     A distribution element (e.g. a duct) may be connected to another
@@ -61,7 +68,7 @@ def connect_port(file, port1=None, port2=None, direction="NOTDEFINED", element=N
         connectivity is made, such as a segment or fitting. This is only to
         be used for implicit port connectivity where the segments and
         fittings are less important.
-    :type element: ifcopenshell.entity_instance
+    :type element: ifcopenshell.entity_instance, optional
 
     Example:
 

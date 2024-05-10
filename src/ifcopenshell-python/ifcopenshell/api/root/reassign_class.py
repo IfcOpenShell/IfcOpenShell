@@ -20,14 +20,15 @@ import ifcopenshell
 import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+from typing import Optional
 
 
 def reassign_class(
-    file,
-    product=None,
-    ifc_class="IfcBuildingElementProxy",
-    predefined_type=None,
-) -> None:
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    ifc_class: str = "IfcBuildingElementProxy",
+    predefined_type: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     """Changes the class of a product
 
     If you ever created a wall then realised it's meant to be something

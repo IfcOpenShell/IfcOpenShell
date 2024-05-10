@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_structural_load_group(file, load_group=None) -> None:
+def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshell.entity_instance) -> None:
     """Removes a structural load group
 
     :param load_group: The IfcStructuralLoadGroup to remove.

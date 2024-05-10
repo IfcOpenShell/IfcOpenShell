@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_work_schedule(file, work_schedule=None) -> None:
+def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance) -> None:
     """Removes a work schedule
 
     All tasks in the work schedule are also removed recursively.

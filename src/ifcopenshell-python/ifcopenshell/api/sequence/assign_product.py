@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def assign_product(file, relating_product=None, related_object=None) -> None:
+def assign_product(
+    file: ifcopenshell.entity_instance,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Assigns a product to be produced as a result of a process
 
     A construction task may result in products (e.g. a wall) being
@@ -71,7 +75,7 @@ def assign_product(file, relating_product=None, related_object=None) -> None:
     if settings["related_object"].HasAssignments:
         for assignment in settings["related_object"].HasAssignments:
             if assignment.is_a("IfcRelAssignsToProduct") and assignment.RelatingProduct == settings["relating_product"]:
-                return
+                return assignment
 
     referenced_by = None
     if settings["relating_product"].ReferencedBy:

@@ -19,7 +19,7 @@
 import ifcopenshell.util.element
 
 
-def remove_pset_template(file, pset_template=None) -> None:
+def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.entity_instance) -> None:
     """Removes a property set template
 
     All property templates within the property set template are also removed

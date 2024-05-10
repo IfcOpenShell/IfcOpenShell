@@ -18,9 +18,15 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Any, Optional
 
 
-def add_surface_style(file, style=None, ifc_class="IfcSurfaceStyleShading", attributes=None) -> None:
+def add_surface_style(
+    file: ifcopenshell.file,
+    style: ifcopenshell.entity_instance,
+    ifc_class: str = "IfcSurfaceStyleShading",
+    attributes: Optional[dict[str, Any]] = None,
+) -> None:
     """Adds a new presentation item to a surface style
 
     A surface style can have multiple different types of presentation items

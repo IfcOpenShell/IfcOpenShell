@@ -20,7 +20,11 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-def add_structural_member_connection(file, relating_structural_member=None, related_structural_connection=None) -> None:
+def add_structural_member_connection(
+    file: ifcopenshell.file,
+    relating_structural_member: ifcopenshell.entity_instance,
+    related_structural_connection: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Relates a structural member and a structural connection
 
     :param relating_structural_member: The IfcStructuralMember to have a
@@ -39,7 +43,7 @@ def add_structural_member_connection(file, relating_structural_member=None, rela
 
     for connection in settings["related_structural_connection"].ConnectsStructuralMembers or []:
         if connection.RelatingStructuralMember == settings["relating_structural_member"]:
-            return
+            return connection
     rel = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcRelConnectsStructuralMember")
     rel.RelatingStructuralMember = settings["relating_structural_member"]
     rel.RelatedStructuralConnection = settings["related_structural_connection"]

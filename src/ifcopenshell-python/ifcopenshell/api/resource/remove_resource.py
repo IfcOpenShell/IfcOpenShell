@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_resource(file, resource=None) -> None:
+def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Removes a resource and all relationships
 
     Example:

@@ -18,9 +18,16 @@
 
 import ifcopenshell
 import ifcopenshell.util.pset
+from typing import Optional, Any
 
 
-def edit_qto(file, qto=None, name=None, properties=None, pset_template=None) -> None:
+def edit_qto(
+    file: ifcopenshell.file,
+    qto: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
+    properties: Optional[dict[str, Any]] = None,
+    pset_template: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     """Edits a quantity set and its quantities
 
     At its simplest usage, this may be used to edit the name of a quantity
@@ -50,7 +57,7 @@ def edit_qto(file, qto=None, name=None, properties=None, pset_template=None) -> 
     :param pset_template: If a quantity set template is provided, this will
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
-    :type pset_template: ifcopenshell.entity_instance
+    :type pset_template: ifcopenshell.entity_instance, optional
     :return: None
     :rtype: None
 

@@ -20,7 +20,9 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_structural_analysis_model(file, structural_analysis_model=None) -> None:
+def remove_structural_analysis_model(
+    file: ifcopenshell.file, structural_analysis_model: ifcopenshell.entity_instance
+) -> None:
     """Removes an analysis model
 
     Note that the contents of an analysis model are currently preserved.

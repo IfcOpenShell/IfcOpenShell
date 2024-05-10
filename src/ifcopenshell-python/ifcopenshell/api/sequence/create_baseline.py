@@ -17,12 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.guid
-import ifcopenshell.util.system
 import ifcopenshell.util.element
+import ifcopenshell.util.sequence
+import ifcopenshell.util.system
+from typing import Optional
 
 
-def create_baseline(file, work_schedule=None, name=None) -> None:
+def create_baseline(
+    file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, name: Optional[str] = None
+) -> None:
     """Creates a baseline for your Work Schedule
 
     Using a IfcWorkSchdule having PredefinedType=PLANNED,
@@ -38,6 +43,8 @@ def create_baseline(file, work_schedule=None, name=None) -> None:
 
     :param work_schedule: The planned work_schedule to baseline
     :type work_schedule: ifcopenshell.entity_instance
+    :param name: baseline work schedule name
+    :type name: str, optional
     :return: The baseline work_schedule
     :rtype: ifcopenshell.entity_instance
 

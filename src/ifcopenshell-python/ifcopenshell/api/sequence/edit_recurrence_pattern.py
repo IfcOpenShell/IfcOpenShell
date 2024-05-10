@@ -18,9 +18,12 @@
 
 import ifcopenshell
 import ifcopenshell.util.sequence
+from typing import Any
 
 
-def edit_recurrence_pattern(file, recurrence_pattern=None, attributes=None) -> None:
+def edit_recurrence_pattern(
+    file: ifcopenshell.file, recurrence_pattern: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcRecurrencePattern
 
     For more information about the attributes and data types of an
@@ -29,7 +32,7 @@ def edit_recurrence_pattern(file, recurrence_pattern=None, attributes=None) -> N
     :param recurrence_pattern: The IfcRecurrencePattern entity you want to edit
     :type recurrence_pattern: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -54,7 +57,7 @@ def edit_recurrence_pattern(file, recurrence_pattern=None, attributes=None) -> N
     """
     settings = {
         "recurrence_pattern": recurrence_pattern,
-        "attributes": attributes or {},
+        "attributes": attributes,
     }
 
     for name, value in settings["attributes"].items():

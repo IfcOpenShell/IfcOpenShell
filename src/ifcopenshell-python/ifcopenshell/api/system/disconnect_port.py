@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def disconnect_port(file, port=None) -> None:
+def disconnect_port(file: ifcopenshell.file, port: ifcopenshell.entity_instance) -> None:
     """Disconnects a port from any other port
 
     A port may only be connected to one other port, so the other port is not

@@ -22,7 +22,7 @@ import ifcopenshell.util.date
 import ifcopenshell.util.element
 
 
-def calculate_task_duration(file, task=None) -> None:
+def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
     """Calculates the task duration based on resource usage
 
     If a task has labour or equipment resources assigned to it, its duration

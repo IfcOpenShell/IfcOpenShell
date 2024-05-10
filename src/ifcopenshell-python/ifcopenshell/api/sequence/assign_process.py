@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def assign_process(file, relating_process=None, related_object=None) -> None:
+def assign_process(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Assigns an object to be related to a process, typically a construction task
 
     Processes work using the ICOM (Input, Controls, Outputs, Mechanisms)

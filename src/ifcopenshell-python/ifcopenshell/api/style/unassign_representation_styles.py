@@ -15,10 +15,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
 def unassign_representation_styles(
-    file, shape_representation=None, styles=None, should_use_presentation_style_assignment=False
+    file: ifcopenshell.file,
+    shape_representation: ifcopenshell.entity_instance,
+    styles: list[ifcopenshell.entity_instance],
+    should_use_presentation_style_assignment: bool = False,
 ) -> None:
     """Unassigns styles directly assigned to an object representation
 

@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def add_qto(file, product=None, name=None) -> None:
+def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:
     """Adds a new quantity set to a product
 
     Products, such as physical objects or types in IFC may have quantities

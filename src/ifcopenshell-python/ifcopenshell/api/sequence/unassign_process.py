@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_process(file, relating_process=None, related_object=None) -> None:
+def unassign_process(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
     """Unassigns a process and object relationship
 
     See ifcopenshell.api.sequence.assign_process for details.

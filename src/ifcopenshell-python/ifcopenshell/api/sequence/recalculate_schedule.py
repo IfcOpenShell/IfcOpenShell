@@ -23,7 +23,7 @@ import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
-def recalculate_schedule(file, work_schedule=None) -> None:
+def recalculate_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance) -> None:
     """Calculate the critical path and floats for a work schedule
 
     This implements critical path analysis, using the forward pass and

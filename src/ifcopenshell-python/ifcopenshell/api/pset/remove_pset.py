@@ -20,7 +20,9 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_pset(file, product=None, pset=None) -> None:
+def remove_pset(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, pset: ifcopenshell.entity_instance
+) -> None:
     """Removes a property set from a product
 
     All properties that are part of this property set are also removed.

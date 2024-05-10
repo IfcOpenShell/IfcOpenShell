@@ -17,10 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_work_calendar(file, work_calendar=None) -> None:
+def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.entity_instance) -> None:
     """Removes a work calendar
 
     All relationships are also removed, such as if a task is set to use that

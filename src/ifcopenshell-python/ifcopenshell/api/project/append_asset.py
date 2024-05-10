@@ -19,9 +19,15 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
+from typing import Optional
 
 
-def append_asset(file, library=None, element=None, reuse_identities=None) -> None:
+def append_asset(
+    file: ifcopenshell.file,
+    library: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
     A BIM library asset may be a type product (e.g. wall type), product

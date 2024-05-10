@@ -18,16 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.guid
+from typing import Optional
 
 
 def add_prop_template(
-    file,
-    pset_template=None,
-    name="NewProperty",
-    description=None,
-    template_type="P_SINGLEVALUE",
-    primary_measure_type="IfcLabel",
-) -> None:
+    file: ifcopenshell.file,
+    pset_template: ifcopenshell.entity_instance,
+    name: str = "NewProperty",
+    description: Optional[str] = None,
+    template_type: str = "P_SINGLEVALUE",
+    primary_measure_type: str = "IfcLabel",
+) -> ifcopenshell.entity_instance:
     """Adds new property templates to a property set template
 
     Assuming you first have a property set template, this allows you to add

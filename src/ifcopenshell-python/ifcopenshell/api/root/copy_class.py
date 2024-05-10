@@ -17,11 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.system
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 
 
-def copy_class(file, product=None) -> None:
+def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Copies a product
 
     The following relationships are also duplicated:

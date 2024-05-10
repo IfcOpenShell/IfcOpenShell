@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def unassign_recurrence_pattern(file, recurrence_pattern=None) -> None:
+def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifcopenshell.entity_instance) -> None:
     """Unassigns a recurrence pattern
 
     Note that a recurring task time must have a recurrence pattern, so if

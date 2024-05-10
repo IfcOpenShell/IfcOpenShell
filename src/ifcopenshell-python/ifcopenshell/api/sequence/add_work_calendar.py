@@ -19,7 +19,9 @@
 import ifcopenshell.api
 
 
-def add_work_calendar(file, name="Unnamed", predefined_type="NOTDEFINED") -> None:
+def add_work_calendar(
+    file: ifcopenshell.file, name: str = "Unnamed", predefined_type: str = "NOTDEFINED"
+) -> ifcopenshell.entity_instance:
     """Add a work calendar
 
     A work calendar defines when work is allowed to occur and when the

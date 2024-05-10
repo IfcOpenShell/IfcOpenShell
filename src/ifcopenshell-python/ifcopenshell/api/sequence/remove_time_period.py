@@ -19,7 +19,7 @@
 import ifcopenshell.api
 
 
-def remove_time_period(file, time_period=None) -> None:
+def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity_instance) -> None:
     """Removes a time period
 
     :param time_period: The IfcTimePeriod to remove.
