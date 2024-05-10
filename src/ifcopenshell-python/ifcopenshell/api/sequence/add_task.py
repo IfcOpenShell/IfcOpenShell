@@ -175,6 +175,6 @@ def add_task(
             related_objects=[task],
             relating_object=settings["parent_task"],
         )
-        if settings["parent_task"].Identification:
+        if file.schema != "IFC2X3" and settings["parent_task"].Identification:
             task.Identification = settings["parent_task"].Identification + "." + str(len(rel.RelatedObjects))
     return task

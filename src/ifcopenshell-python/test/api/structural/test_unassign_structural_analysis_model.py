@@ -44,3 +44,7 @@ class TestUnassignStructuralAnalysisModel(test.bootstrap.IFC4):
         rels = self.file.by_type("IfcRelAssignsToGroup")
         assert len(models[0].IsGroupedBy) == 0
         assert len(rels) == 0
+
+
+class TestUnassignStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestUnassignStructuralAnalysisModel):
+    pass

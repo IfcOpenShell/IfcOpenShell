@@ -121,3 +121,7 @@ class TestAssignContainer(test.bootstrap.IFC4):
         ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=aggregate)
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         assert not ifcopenshell.util.element.get_aggregate(subelement)
+
+
+class TestAssignContainerIFC2X3(test.bootstrap.IFC2X3, TestAssignContainer):
+    pass

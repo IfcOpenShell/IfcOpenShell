@@ -97,7 +97,7 @@ def add_resource(
             related_objects=[resource],
             relating_object=settings["parent_resource"],
         )
-    else:
+    elif file.schema != "IFC2X3":
         context = file.by_type("IfcContext")[0]
         ifcopenshell.api.run(
             "project.assign_declaration",

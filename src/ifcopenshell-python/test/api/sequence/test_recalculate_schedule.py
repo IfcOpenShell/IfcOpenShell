@@ -22,6 +22,8 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# NOTE: sequence module features relies on entities introduced in IFC4
+# therefore no IFC2X3 tests
 # A good way for checking these is to recreate them in ProjectLibre
 class TestRecalculateSchedule(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_task_has_no_time(self):

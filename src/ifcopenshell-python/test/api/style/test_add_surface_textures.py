@@ -21,6 +21,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# TODO: add ifc2x3 tests after add_surface_textures will support ifc2x3
 class TestAddSurfaceTexture(test.bootstrap.IFC4):
     def get_default_texture_data(self):
         return [
@@ -67,6 +68,7 @@ class TestAddSurfaceTexture(test.bootstrap.IFC4):
         for texture, data in zip(textures, texture_data):
             self.compare_texture_to_data(texture, data)
 
+    # NOTE: IfcTextureCoordinate doesn't have Maps in IFC2X3
     def test_add_surface_textures_from_data_with_uv_maps(self):
         texture_data = self.get_default_texture_data()
         texture_data[0]["uv_mode"] = "Generated"

@@ -395,7 +395,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
 
     def test_removing_all_space_boundaries_of_an_element(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        boundary = self.file.createIfcRelSpaceBoundary2ndLevel(
+        boundary = self.file.createIfcRelSpaceBoundary(
             GlobalId=ifcopenshell.guid.new(), RelatedBuildingElement=element
         )
         ifcopenshell.api.run("root.remove_product", self.file, product=element)
@@ -417,8 +417,8 @@ class TestRemoveProduct(test.bootstrap.IFC4):
 
     def test_removing_flow_control_elements(self):
         flow_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
-        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionControlElement")
+        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionControlElement")
 
         ifcopenshell.api.run(
             "system.assign_flow_control",
@@ -439,8 +439,8 @@ class TestRemoveProduct(test.bootstrap.IFC4):
 
     def test_removing_flow_element_with_flow_controls(self):
         flow_element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
-        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcController")
+        flow_control = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionControlElement")
+        flow_control1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionControlElement")
 
         ifcopenshell.api.run(
             "system.assign_flow_control",
@@ -456,3 +456,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         )
         ifcopenshell.api.run("root.remove_product", self.file, product=flow_element)
         assert not self.file.by_type("IfcRelFlowControlElements")
+
+
+class TestRemoveProductIFC2X3(test.bootstrap.IFC2X3, TestRemoveProduct):
+    pass
