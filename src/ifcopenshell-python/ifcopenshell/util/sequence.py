@@ -478,3 +478,56 @@ def get_sequence_assignment(task: ifcopenshell.entity_instance, sequence="succes
             return result
 
     return []
+
+
+def get_related_products(
+    relating_product: Optional[ifcopenshell.entity_instance] = None,
+    related_object: Optional[ifcopenshell.entity_instance] = None,
+) -> set[ifcopenshell.entity_instance]:
+    """Gets the related products being output by a task
+
+    :param relating_product: One of the products already output by the task.
+    :type relating_product: ifcopenshell.entity_instance, optional
+    :param related_object: The IfcTask that you want to get all the related
+        products for.
+    :type related_object: ifcopenshell.entity_instance, optional
+    :return: A set of IfcProducts output by the IfcTask.
+    :rtype: set[ifcopenshell.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+
+        # Let's create a construction task. Note that the predefined type is
+        # important to distinguish types of tasks.
+        task = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule, name="Build wall", identification="A", predefined_type="CONSTRUCTION")
+
+        # Let's say we have a wall somewhere.
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+        # Let's construct that wall!
+        ifcopenshell.api.run("sequence.assign_product", relating_product=wall, related_object=task)
+
+        # This will give us a set with that wall in it.
+        products = ifcopenshell.util.sequence.get_related_products(related_object=task)
+    """
+
+    products = set()
+    related_object = None
+    if related_object:
+        related_object = related_object
+    elif relating_product:
+        for reference in relating_product.ReferencedBy:
+            if reference.is_a("IfcRelAssignsToProduct"):
+                related_object = reference.RelatedObjects[0]
+    if related_object:
+        assignments = related_object.HasAssignments
+        for assignment in assignments:
+            if assignment.is_a("IfcRelAssignsToProduct"):
+                products.add(assignment.RelatingProduct.id())
+    return products
