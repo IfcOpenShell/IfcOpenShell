@@ -72,8 +72,6 @@ class Facet:
     def __init__(self, *parameters):
         self.status = None
         self.failures: list[FacetFailure] = []
-        self.parameters = []
-        self.applicability_templates = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
