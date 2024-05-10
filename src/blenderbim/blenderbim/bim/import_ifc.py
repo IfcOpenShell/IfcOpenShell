@@ -702,15 +702,17 @@ class IfcImporter:
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            point = np.array(
+            point = mat @ np.array(
                 (
-                    shape.geometry.verts[0] / self.unit_scale,
-                    shape.geometry.verts[1] / self.unit_scale,
-                    shape.geometry.verts[2] / self.unit_scale,
+                    shape.geometry.verts[0],
+                    shape.geometry.verts[1],
+                    shape.geometry.verts[2],
                     0.0,
                 )
             )
-            return mat @ point
+            point = point / self.unit_scale
+            if self.is_point_far_away(point, is_meters=False):
+                return point
 
     def does_element_likely_have_geometry_far_away(self, element):
         for representation in element.Representation.Representations:
@@ -1500,9 +1502,8 @@ class IfcImporter:
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
         types_collection = project_collection.children[self.type_collection.name]
         types_collection.hide_viewport = False
-        for obj in types_collection.collection.objects: #turn off all objects inside Types collection.
+        for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
             obj.hide_set(True)
-
 
     def clean_mesh(self):
         obj = None
