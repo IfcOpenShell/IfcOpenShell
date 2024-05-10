@@ -49,7 +49,6 @@ from .edit_work_calendar import edit_work_calendar
 from .edit_work_plan import edit_work_plan
 from .edit_work_schedule import edit_work_schedule
 from .edit_work_time import edit_work_time
-from .get_related_products import get_related_products
 
 try:
     from .recalculate_schedule import recalculate_schedule
