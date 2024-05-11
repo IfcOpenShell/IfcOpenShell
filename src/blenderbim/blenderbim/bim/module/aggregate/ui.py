@@ -73,7 +73,7 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
-                row.label(text="No Aggregate", icon="TRIA_UP")
+                row.label(text="No Whole relation defined", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
