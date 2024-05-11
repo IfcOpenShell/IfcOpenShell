@@ -352,12 +352,10 @@ class Usecase:
         )
 
     def create_curve3d_representation(self):
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"],
-            self.settings["context"].ContextIdentifier,
-            "Curve3D",
-            self.create_curves(),
-        )
+        if curves := self.create_curves():
+            return self.file.createIfcShapeRepresentation(
+                self.settings["context"], self.settings["context"].ContextIdentifier, "Curve3D", curves
+            )
 
     def create_curve2d_representation(self):
         return self.file.createIfcShapeRepresentation(
@@ -425,7 +423,7 @@ class Usecase:
             results.append(self.file.createIfcSweptDiskSolid(curve, radius))
         return results
 
-    def is_mesh_curve_consequtive(self, geom_data):
+    def is_mesh_curve_consecutive(self, geom_data):
         import blenderbim.tool as tool
 
         bm = tool.Blender.get_bmesh_for_mesh(geom_data)
@@ -475,11 +473,11 @@ class Usecase:
         geom_data = self.settings["geometry"]
 
         if isinstance(geom_data, bpy.types.Mesh):
-            if self.is_mesh_curve_consequtive(geom_data):
-                if self.file.schema == "IFC2X3":
-                    return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
-                else:
-                    return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+            if not self.is_mesh_curve_consecutive(geom_data):
+                return
+            if self.file.schema == "IFC2X3":
+                return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+            return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
 
         import blenderbim.tool as tool
 
