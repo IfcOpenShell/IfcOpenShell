@@ -64,5 +64,5 @@ class TestUnassignFlowControl(test.bootstrap.IFC4):
         assert relation.RelatedControlElements == (flow_control,)
 
 
-class TestUnassignFlowControlIFC2X3(test.bootstrap.IFC2X3, TestUnassignFlowControl):
+class TestUnassignFlowControlIFC2X3(TestUnassignFlowControl, test.bootstrap.IFC2X3):
     pass
