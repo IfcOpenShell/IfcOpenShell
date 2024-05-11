@@ -18,6 +18,7 @@
 
 import abc
 import inspect
+from typing import Optional
 
 # fmt: off
 # pylint: skip-file
@@ -72,20 +73,21 @@ class Aggregate:
 
 @interface
 class Blender:
-    def set_active_object(cls, obj): pass
-    def get_name(cls, ifc_class, name): pass
-    def get_selected_objects(cls): pass
-    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
-    def is_ifc_object(cls, obj): pass
-    def is_ifc_class_active(cls, ifc_class): pass
-    def get_viewport_context(cls): pass
-    def update_viewport(cls): pass
-    def get_default_selection_keypmap(cls): pass
-    def get_object_bounding_box(cls, obj): pass
+    def activate_camera(cls, obj): pass
     def apply_bmesh(cls, mesh, bm, obj=None): pass
-    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
     def bmesh_join(cls, bm_a, bm_b, callback=None): pass
+    def create_ifc_object(cls, ifc_class: str, name: Optional[str] = None, data=None): pass
+    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+    def get_default_selection_keypmap(cls): pass
+    def get_name(cls, ifc_class, name): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
+    def get_object_bounding_box(cls, obj): pass
+    def get_selected_objects(cls): pass
+    def get_viewport_context(cls): pass
+    def is_ifc_class_active(cls, ifc_class): pass
+    def is_ifc_object(cls, obj): pass
+    def set_active_object(cls, obj): pass
+    def update_viewport(cls): pass
 
 
 @interface
