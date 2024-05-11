@@ -136,15 +136,17 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 "for Profile - 2D bounding box by local XZ axes.\n"
                 "For other contexts - bounding box is 3d.",
             ),
-            ("PROJECT", "Full Representation", ""),
+            ("OBJECT", "From Object", "Copies geometry from another object"),
+            ("PROJECT", "Full Representation", "Reuses the current representation"),
         ],
         name="Representation Conversion Method",
     )
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMGeometryProperties
-        ifc_context = int(props.contexts or "0") or None
+        props = context.scene.BIMGeometryProperties
+        oprops = obj.BIMGeometryProperties
+        ifc_context = int(oprops.contexts or "0") or None
         if not ifc_context:
             return
         ifc_context = tool.Ifc.get().by_id(ifc_context)
@@ -166,6 +168,13 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 data = tool.Geometry.generate_2d_box_mesh(obj, axis="Y")
             else:
                 data = tool.Geometry.generate_3d_box_mesh(obj)
+            tool.Geometry.change_object_data(obj, data, is_global=True)
+        elif (
+            self.representation_conversion_method == "OBJECT"
+            and props.representation_from_object
+            and props.representation_from_object.data
+        ):
+            data = tool.Geometry.duplicate_object_data(props.representation_from_object)
             tool.Geometry.change_object_data(obj, data, is_global=True)
 
         try:
@@ -192,6 +201,9 @@ class AddRepresentation(bpy.types.Operator, Operator):
     def draw(self, context):
         row = self.layout.row()
         row.prop(self, "representation_conversion_method", text="")
+        if self.representation_conversion_method == "OBJECT":
+            row = self.layout.row()
+            row.prop(context.scene.BIMGeometryProperties, "representation_from_object", text="")
 
 
 class SelectConnection(bpy.types.Operator, Operator):
