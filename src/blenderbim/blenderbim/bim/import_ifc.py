@@ -1929,6 +1929,7 @@ class IfcImporter:
                     offset_point = np.linalg.inv(mat) @ offset_point
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
+                    # Note: this enh2xyz call is crazy slow.
                     verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
                         geometry.verts[i + 1],
