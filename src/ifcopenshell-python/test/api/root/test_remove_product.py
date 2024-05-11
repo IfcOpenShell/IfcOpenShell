@@ -458,5 +458,5 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelFlowControlElements")
 
 
-class TestRemoveProductIFC2X3(test.bootstrap.IFC2X3, TestRemoveProduct):
+class TestRemoveProductIFC2X3(TestRemoveProduct, test.bootstrap.IFC2X3):
     pass
