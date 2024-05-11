@@ -50,6 +50,23 @@ class Blender(blenderbim.core.tool.Blender):
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
     @classmethod
+    def activate_camera(cls, obj: bpy.types.Object) -> None:
+        area = tool.Blender.get_view3d_area()
+        is_local_view = area.spaces[0].local_view is not None
+        if is_local_view:
+            # Turn off local view before activating drawing, and then turn it on again.
+            for a in bpy.context.screen.areas:
+                if a.type == "VIEW_3D":
+                    override = bpy.context.copy()
+                    override["area"] = a
+                    bpy.ops.view3d.localview(override)
+            bpy.context.scene.camera = obj
+            bpy.ops.view3d.localview(override)
+        else:
+            bpy.context.scene.camera = obj
+        area.spaces[0].region_3d.view_perspective = "CAMERA"
+
+    @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> Any:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
@@ -845,9 +862,7 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.register_tool(ws_model.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_model.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_drawing.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
-            bpy.utils.register_tool(
-                ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False
-            )
+            bpy.utils.register_tool(ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
             bpy.utils.register_tool(
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )
