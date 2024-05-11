@@ -970,6 +970,8 @@ class Selector:
                 value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
             elif key in ("materials", "mats"):
                 value = ifcopenshell.util.element.get_materials(value)
+            elif key == "profiles":
+                value = ifcopenshell.util.shape.get_profiles(value)
             elif key == "styles":
                 value = ifcopenshell.util.element.get_styles(value)
             elif key in ("item", "i"):
