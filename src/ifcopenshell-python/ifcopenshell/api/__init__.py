@@ -350,7 +350,8 @@ def wrap_usecases(path, name):
     module_name = name.split(".")[-1]
     module = sys.modules[name]
     for loader, usecase_name, is_pkg in pkgutil.iter_modules(path):
-        usecase = getattr(module, usecase_name)
+        # We may not be able to get the usecase if we are missing a dependency.
+        usecase = getattr(module, usecase_name, None)
         if callable(usecase):
             usecase_path = f"{module_name}.{usecase_name}"
             setattr(module, usecase_name, wrap_usecase(usecase_path, usecase))
