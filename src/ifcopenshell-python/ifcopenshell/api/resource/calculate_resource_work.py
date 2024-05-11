@@ -56,17 +56,15 @@ def calculate_resource_work(file: ifcopenshell.file, resource: ifcopenshell.enti
     :return None:
     :rtype: None:
     """
-    settings = {"resource": resource}
-
-    if ifcopenshell.util.constraint.is_attribute_locked(settings["resource"], "Usage.ScheduleWork"):
+    if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleWork"):
         return
-    amount_worked = ifcopenshell.util.resource.get_resource_required_work(settings["resource"])
+    amount_worked = ifcopenshell.util.resource.get_resource_required_work(resource)
     if not amount_worked:
         return
-    if not settings["resource"].Usage:
+    if not resource.Usage:
         ifcopenshell.api.run(
             "resource.add_resource_time",
             file,
-            resource=settings["resource"],
+            resource=resource,
         )
-    settings["resource"].Usage.ScheduleWork = amount_worked
+    resource.Usage.ScheduleWork = amount_worked

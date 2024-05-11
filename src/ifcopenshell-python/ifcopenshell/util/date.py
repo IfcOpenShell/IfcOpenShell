@@ -22,8 +22,8 @@ from dateutil import parser
 
 try:
     import isodate
-except:
-    pass  # Duration parsing not supported
+except ModuleNotFoundError as e:
+    print(f"Note: duration parsing not available due to missing dependencies: util.date - {e}")
 
 
 def timedelta2duration(timedelta):
@@ -187,8 +187,6 @@ def parse_duration(value):
         if "P" in value:
             try:
                 return isodate.parse_duration(value)
-            except ModuleNotFoundError:
-                print("Duration parsing not supported: isodate module not found")
             except:
                 print("Error parsing ISO string duration")
             return None
