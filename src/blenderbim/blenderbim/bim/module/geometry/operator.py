@@ -149,6 +149,8 @@ class AddRepresentation(bpy.types.Operator, Operator):
             return
         ifc_context = tool.Ifc.get().by_id(ifc_context)
 
+        original_data = obj.data
+
         if self.representation_conversion_method == "OUTLINE":
             if ifc_context.ContextType == "Plan":
                 data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
@@ -166,16 +168,23 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 data = tool.Geometry.generate_3d_box_mesh(obj)
             tool.Geometry.change_object_data(obj, data, is_global=True)
 
-        core.add_representation(
-            tool.Ifc,
-            tool.Geometry,
-            tool.Style,
-            tool.Surveyor,
-            obj=obj,
-            context=ifc_context,
-            ifc_representation_class=None,
-            profile_set_usage=None,
-        )
+        try:
+            core.add_representation(
+                tool.Ifc,
+                tool.Geometry,
+                tool.Style,
+                tool.Surveyor,
+                obj=obj,
+                context=ifc_context,
+                ifc_representation_class=None,
+                profile_set_usage=None,
+            )
+        except core.IncompatibleRepresentationError:
+            if obj.data != original_data:
+                tool.Geometry.change_object_data(obj, original_data, is_global=True)
+                bpy.data.meshes.remove(data)
+            self.report({"ERROR"}, "No compatible representation for the context could be created.")
+            return {"CANCELLED"}
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

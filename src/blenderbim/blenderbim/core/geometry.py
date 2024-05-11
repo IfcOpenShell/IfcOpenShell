@@ -47,7 +47,7 @@ def add_representation(
     data = geometry.get_object_data(obj)
 
     if not data and ifc_representation_class != "IfcTextLiteral":
-        return
+        raise IncompatibleRepresentationError()
 
     representation = ifc.run(
         "geometry.add_representation",
@@ -62,6 +62,9 @@ def add_representation(
         ifc_representation_class=ifc_representation_class,
         profile_set_usage=profile_set_usage,
     )
+
+    if not representation:
+        raise IncompatibleRepresentationError()
 
     if geometry.is_body_representation(representation):
         [geometry.run_style_add_style(obj=mat) for mat in geometry.get_object_materials_without_styles(obj)]
@@ -221,3 +224,7 @@ def edit_similar_opening_placement(geometry, opening=None, similar_openings=None
         old_placement = similar_opening.ObjectPlacement
         similar_opening.ObjectPlacement = opening.ObjectPlacement
         geometry.delete_opening_object_placement(old_placement)
+
+
+class IncompatibleRepresentationError(Exception):
+    pass
