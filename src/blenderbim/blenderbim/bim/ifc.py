@@ -19,6 +19,7 @@
 import os
 import bpy
 import uuid
+import shutil
 import hashlib
 import zipfile
 import tempfile
@@ -121,7 +122,13 @@ class IfcStore:
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
         new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
         IfcStore.cache = None
-        os.replace(IfcStore.cache_path, new_cache_path)
+        try:
+            shutil.move(IfcStore.cache_path, new_cache_path)
+        except PermissionError:
+            try:
+                shutil.copy2(IfcStore.cache_path, new_cache_path)
+            except PermissionError:
+                pass  # Well we tried. No cache for you!
         IfcStore.get_cache()
 
     @staticmethod
