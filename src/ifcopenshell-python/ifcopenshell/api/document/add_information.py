@@ -56,11 +56,8 @@ def add_information(
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
     """
-    settings = {"parent": parent}
-
     id_attribute = "DocumentId" if file.schema == "IFC2X3" else "Identification"
     information = file.create_entity("IfcDocumentInformation", **{id_attribute: "X", "Name": "Unnamed"})
-    parent = settings["parent"]
     if not parent and file.by_type("IfcProject"):
         parent = file.by_type("IfcProject")[0]
     if parent.is_a("IfcProject") or parent.is_a("IfcContext"):
