@@ -51,6 +51,7 @@
 ###############################################################################
 import logging
 import os
+import re
 import sys
 import subprocess as sp
 import shutil
@@ -468,6 +469,8 @@ if "wasm" in flags:
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
 
+compiler_flags = "CFLAGS", "CXXFLAGS", "LDFLAGS"
+
 CXXFLAGS = os.environ.get("CXXFLAGS", "")
 CFLAGS = os.environ.get("CFLAGS", "")
 LDFLAGS = os.environ.get("LDFLAGS", "")
@@ -493,7 +496,11 @@ else:
         CXXFLAGS=CXXFLAGS_MINIMAL
         CFLAGS=CFLAGS_MINIMAL
     LDFLAGS = f"{LDFLAGS} {ADDITIONAL_ARGS_STR}"
-    
+
+if "lto" in flags:
+    for f in compiler_flags:
+        locals()[f] += f" -flto={IFCOS_NUM_BUILD_PROCS}"
+
 os.environ["CXXFLAGS"] = CXXFLAGS
 os.environ["CFLAGS"] = CFLAGS
 os.environ["LDFLAGS"] = LDFLAGS
@@ -503,6 +510,11 @@ os.environ["LDFLAGS"] = LDFLAGS
 # build_dependency(name="cmake-%s" % (CMAKE_VERSION,), mode="autoconf", build_tool_args=[], download_url="https://cmake.org/files/v%s" % (CMAKE_VERSION_2,), download_name="cmake-%s.tar.gz" % (CMAKE_VERSION,))
 
 if 'hdf5' in targets:
+    # not supported
+    orig = [os.environ[f] for f in compiler_flags]
+    for f in compiler_flags:
+        os.environ[f] = re.sub("-flto(=\w+)?", "", os.environ[f])
+
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
     build_dependency(
         name=f"hdf5-{HDF5_VERSION}",
@@ -513,6 +525,10 @@ if 'hdf5' in targets:
         ctest_result=f"HDF5-{HDF5_VERSION}-{platform.system()}",
         ctest_result_path=f"HDF_Group/HDF5/{HDF5_VERSION}"
     )
+    
+    for f, o in zip(compiler_flags, orig):
+        os.environ[f] = o
+    
 
 if "json" in targets:
     json_url = f"https://github.com/nlohmann/json/releases/download/{JSON_VERSION}/json.hpp"
