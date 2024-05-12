@@ -128,10 +128,9 @@ simpletype_impl_type = "return *((IfcParse::type_declaration*)%(schema_name_uppe
 simpletype_impl_class = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = (
-    "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"
-    + "); data_->setArgument(0, attr);}"
+    "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_value(0, v);"
 )
-simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
+simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); set_value(0, v->generalize());"
 simpletype_impl_cast = "return *data_->getArgument(0);"
 simpletype_impl_cast_templated = (
     "aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
@@ -187,16 +186,12 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *(
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
     data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
-    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
-    data_->setArgument(0,attr);
+    set_value(0, IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
 }
 
 %(schema_name)s::%(name)s::%(name)s(const std::string& v) {
     data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
-    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-    attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
-    data_->setArgument(0,attr);
+    set_value(0, IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
 }
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
@@ -217,7 +212,7 @@ entity_implementation = """// Function implementations for %(name)s
 %(inverse)s
 const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_types[%(index_in_schema)d]) throw IfcException("Unable to find keyword in schema"); data_ = e; }
+%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { data_ = e; }
 %(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); %(constructor_implementation)s }
 """
 
@@ -257,33 +252,33 @@ get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance:
 get_inverse = "return data_->getInverse(%(schema_name_upper)s_types[%(type_index)d], %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(%(star_if_optional)sv"
-    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
+    "%(check_optional_set_begin)sset_value(%(index)d, %(star_if_optional)sv);%(check_optional_set_else)sunset_value(%(index)d);%(check_optional_set_end)s"
 )
-set_attr_stmt_enum = "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
+set_attr_instance = (
+    "%(check_optional_set_begin)sset_value(%(index)d, v->as<IfcUtil::IfcBaseClass>());%(check_optional_set_else)sunset_value(%(index)d);%(check_optional_set_end)s"
+)
+set_attr_stmt_enum =  "%(check_optional_set_begin)sset_value(%(index)d, IfcWrite::IfcWriteArgument::EnumerationReference(%(star_if_optional)sv,%(non_optional_type)s::ToString(%(star_if_optional)sv)));%(check_optional_set_else)sunset_value(%(index)d);%(check_optional_set_end)s"
 set_attr_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set((%(star_if_optional)sv)->generalize()"
-    + ");%(check_optional_set_end)sdata_->setArgument(%(index)d,attr);}"
+    "%(check_optional_set_begin)sset_value(%(index)d, (%(star_if_optional)sv)->generalize());%(check_optional_set_else)sunset_value(%(index)d);%(check_optional_set_end)s"
 )
 
 constructor_stmt = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(name)s)"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "set_value(%(index)d, (%(name)s));"
 )
 constructor_stmt_enum = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((IfcWrite::IfcWriteArgument::EnumerationReference(%(name)s,%(type)s::ToString(%(name)s)))"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "set_value(%(index)d, (IfcWrite::IfcWriteArgument::EnumerationReference(%(name)s,%(type)s::ToString(%(name)s))));"
 )
 constructor_stmt_array = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set((%(name)s)->generalize()"
-    + ");data_->setArgument(%(index)d,attr);}"
+    "set_value(%(index)d, (%(name)s)->generalize());"
 )
 constructor_stmt_derived = (
-    "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();attr->set(IfcWrite::IfcWriteArgument::Derived()"
-    + ");data_->setArgument(%(index)d,attr);}"
+    ""
+)
+constructor_stmt_instance = (
+    "set_value(%(index)d, %(name)s ? %(name)s->as<IfcUtil::IfcBaseClass>() : (IfcUtil::IfcBaseClass*) nullptr);"
 )
 
-constructor_stmt_optional = " if (%(name)s) {%(stmt)s } else { IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(boost::blank()); data_->setArgument(%(index)d, attr); }"
+constructor_stmt_optional = " if (%(name)s) {%(stmt)s }"
 
 inverse_implementation = '    inverse_map[Type::%(type)s].insert(std::make_pair("%(name)s", std::make_pair(Type::%(related_type)s, %(index)d)));'
 

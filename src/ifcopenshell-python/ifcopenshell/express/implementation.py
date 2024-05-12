@@ -153,6 +153,8 @@ class Implementation(codegen.Base):
                             return templates.set_attr_stmt_enum
                         elif arg["is_templated_list"] and not (select or simple or express):
                             return templates.set_attr_stmt_array
+                        elif arg["full_type"].endswith('*'):
+                            return templates.set_attr_instance
                         else:
                             return templates.set_attr_stmt
 
@@ -172,6 +174,7 @@ class Implementation(codegen.Base):
                             "non_optional_type": arg["non_optional_type"].replace("::Value", ""),
                             "star_if_optional": "*" if "boost::optional" in arg["full_type"] else "",
                             "check_optional_set_begin": "if (v) {" if "boost::optional" in arg["full_type"] else "",
+                            "check_optional_set_else": "} else {" if "boost::optional" in arg["full_type"] else "if constexpr (false)",
                             "check_optional_set_end": "}" if "boost::optional" in arg["full_type"] else "",
                         },
                     )
@@ -188,6 +191,8 @@ class Implementation(codegen.Base):
                         if arg["is_templated_list"]
                         else templates.constructor_stmt_enum
                         if arg["is_enum"]
+                        else templates.constructor_stmt_instance
+                        if arg["full_type"].endswith('*')
                         else templates.constructor_stmt
                     )
                     impl = tmpl % {
