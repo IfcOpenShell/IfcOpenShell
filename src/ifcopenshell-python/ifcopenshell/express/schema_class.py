@@ -180,18 +180,18 @@ class EarlyBoundCodeWriter:
 
         self.statements.append("{factory_placeholder}")
 
-        self.statements.append(
-            """
-#if defined(__clang__)
-__attribute__((optnone))
-#elif defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC push_options
-#pragma GCC optimize ("O0")
-#elif defined(_MSC_VER)
-#pragma optimize("", off)
-#endif
-        """
-        )
+#         self.statements.append(
+#             """
+# #if defined(__clang__)
+# __attribute__((optnone))
+# #elif defined(__GNUC__) || defined(__GNUG__)
+# #pragma GCC push_options
+# #pragma GCC optimize ("O0")
+# #elif defined(_MSC_VER)
+# #pragma optimize("", off)
+# #endif
+#         """
+#         )
         self.statements.append("IfcParse::schema_definition* %s_populate_schema() {" % self.schema_name)
 
     def typedef(self, name, declared_type):
@@ -289,16 +289,16 @@ __attribute__((optnone))
         )
         self.statements.append("}");
 
-        self.statements.append(
-            """
-#if defined(__clang__)
-#elif defined(__GNUC__) || defined(__GNUG__)
-#pragma GCC pop_options
-#elif defined(_MSC_VER)
-#pragma optimize("", on)
-#endif
-        """
-        )
+#         self.statements.append(
+#             """
+# #if defined(__clang__)
+# #elif defined(__GNUC__) || defined(__GNUG__)
+# #pragma GCC pop_options
+# #elif defined(_MSC_VER)
+# #pragma optimize("", on)
+# #endif
+#         """
+#         )
 
         self.statements.extend(
             (
