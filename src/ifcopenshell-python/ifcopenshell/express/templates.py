@@ -200,14 +200,11 @@ const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *(
 }
 
 const char* %(schema_name)s::%(name)s::ToString(Value v) {
-    if ( v < 0 || v >= %(max_id)d ) throw IfcException("Unable to find keyword in schema");
-    const char* names[] = { %(values)s };
-    return names[v];
+    return %(schema_name)s::%(name)s::%(name)s::Class().lookup_enum_value((size_t)v);
 }
 
 %(schema_name)s::%(name)s::Value %(schema_name)s::%(name)s::FromString(const std::string& s) {
-%(from_string_statements)s
-    throw IfcException("Unable to find keyword in schema: " + s);
+    return (%(schema_name)s::%(name)s::Value) %(schema_name)s::%(name)s::%(name)s::Class().lookup_enum_offset(s);
 }
 
 %(schema_name)s::%(name)s::operator %(schema_name)s::%(name)s::Value() const {
