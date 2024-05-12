@@ -47,7 +47,7 @@ def add_representation(
     data = geometry.get_object_data(obj)
 
     if not data and ifc_representation_class != "IfcTextLiteral":
-        raise IncompatibleRepresentationError()
+        return
 
     representation = ifc.run(
         "geometry.add_representation",
