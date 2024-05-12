@@ -124,19 +124,19 @@ simpletype_impl_argument_type = 'if (i == 0) { return %(attr_type)s; } else { th
 simpletype_impl_argument = "return data_->getArgument(i);"
 simpletype_impl_is_with_supertype = "return v == %(class_name)s_type || %(superclass)s::is(v);"
 simpletype_impl_is_without_supertype = "return v == %(class_name)s_type;"
-simpletype_impl_type = "return *%(schema_name_upper)s_%(class_name)s_type;"
-simpletype_impl_class = "return *%(schema_name_upper)s_%(class_name)s_type;"
+simpletype_impl_type = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
+simpletype_impl_class = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 simpletype_impl_explicit_constructor = "data_ = e;"
 simpletype_impl_constructor = (
-    "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"
+    "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v"
     + "); data_->setArgument(0, attr);}"
 )
-simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(class_name)s_type); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
+simpletype_impl_constructor_templated = "data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); {IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument(); attr->set(v->generalize()); data_->setArgument(0, attr);}"
 simpletype_impl_cast = "return *data_->getArgument(0);"
 simpletype_impl_cast_templated = (
     "aggregate_of_instance::ptr es = *data_->getArgument(0); return es->as< %(underlying_type)s >();"
 )
-simpletype_impl_declaration = "return *%(schema_name_upper)s_%(class_name)s_type;"
+simpletype_impl_declaration = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
 select = """%(documentation)s
 class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
@@ -174,26 +174,26 @@ public:
 """
 
 select_function = """
-const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
+const IfcParse::select_type& %(schema_name)s::%(name)s::Class() { return *((IfcParse::select_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 """
 
 enumeration_function = """
-const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *%(schema_name_upper)s_%(name)s_type; }
-const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
+const IfcParse::enumeration_type& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+const IfcParse::enumeration_type& %(schema_name)s::%(name)s::Class() { return *((IfcParse::enumeration_type*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
 
 %(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) {
     data_ = e;
 }
 
 %(schema_name)s::%(name)s::%(name)s(Value v) {
-    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type);
+    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(v,ToString(v)));
     data_->setArgument(0,attr);
 }
 
 %(schema_name)s::%(name)s::%(name)s(const std::string& v) {
-    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type);
+    data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]);
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(IfcWrite::IfcWriteArgument::EnumerationReference(FromString(v),ToString(FromString(v))));
     data_->setArgument(0,attr);
@@ -218,10 +218,10 @@ const char* %(schema_name)s::%(name)s::ToString(Value v) {
 entity_implementation = """// Function implementations for %(name)s
 %(attributes)s
 %(inverse)s
-const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *%(schema_name_upper)s_%(name)s_type; }
-const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *%(schema_name_upper)s_%(name)s_type; }
-%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_%(name)s_type) throw IfcException("Unable to find keyword in schema"); data_ = e; }
-%(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(schema_name_upper)s_%(name)s_type); %(constructor_implementation)s }
+const IfcParse::entity& %(schema_name)s::%(name)s::declaration() const { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+const IfcParse::entity& %(schema_name)s::%(name)s::Class() { return *((IfcParse::entity*)%(schema_name_upper)s_types[%(index_in_schema)d]); }
+%(schema_name)s::%(name)s::%(name)s(IfcEntityInstanceData* e) : %(superclass)s { if (!e) return; if (e->type() != %(schema_name_upper)s_types[%(index_in_schema)d]) throw IfcException("Unable to find keyword in schema"); data_ = e; }
+%(schema_name)s::%(name)s::%(name)s(%(constructor_arguments)s) : %(superclass)s {data_ = new IfcEntityInstanceData(%(schema_name_upper)s_types[%(index_in_schema)d]); %(constructor_implementation)s }
 """
 
 optional_attribute_description = "/// Whether the optional attribute %s is defined for this %s"
@@ -257,7 +257,7 @@ get_attr_stmt_entity = "%(null_check)s return ((IfcUtil::IfcBaseClass*)(*data_->
 get_attr_stmt_array = "%(null_check)s aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 get_attr_stmt_nested_array = "%(null_check)s aggregate_of_aggregate_of_instance::ptr es = *data_->getArgument(%(index)d); return es->as< %(list_instance_type)s >();"
 
-get_inverse = "return data_->getInverse(%(schema_name_upper)s_%(type)s_type, %(index)d)->as<%(type)s>();"
+get_inverse = "return data_->getInverse(%(schema_name_upper)s_types[%(type_index)d], %(index)d)->as<%(type)s>();"
 
 set_attr_stmt = (
     "{IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();%(check_optional_set_begin)sattr->set(%(star_if_optional)sv"
