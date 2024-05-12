@@ -18,6 +18,7 @@
 
 
 import operator
+import re
 
 import nodes
 import codegen
@@ -146,11 +147,14 @@ class EarlyBoundCodeWriter:
 
     def declare(self, definition_type, name):
         schema_name = self.schema_name
-        self.statements.append("%(definition_type)s* %(schema_name)s_%(name)s_type = 0;" % locals())
+        # self.statements.append("%(definition_type)s* %(schema_name)s_%(name)s_type = 0;" % locals())
         self.names.append(name)
 
     def begin_schema(self):
         self.names.sort(key=str.lower)
+        schema_name = self.schema_name
+        num_names = len(self.names)
+        self.statements.append("declaration* %(schema_name)s_types[%(num_names)d] = {nullptr};" % locals())
 
         self.statements.append("{factory_placeholder}")
 
@@ -172,7 +176,7 @@ __attribute__((optnone))
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new type_declaration("%(name)s", %(index_in_schema)d, %(declared_type)s);'
+            '    %(schema_name)s_types[%(index_in_schema)d] = new type_declaration("%(name)s", %(index_in_schema)d, %(declared_type)s);'
             % locals()
         )
 
@@ -183,7 +187,7 @@ __attribute__((optnone))
         self.statements.append("        std::vector<std::string> items; items.reserve(%d);" % len(enum.values))
         self.statements.extend(map(lambda v: '        items.push_back("%s");' % v, sorted(enum.values)))
         self.statements.append(
-            '        %(schema_name)s_%(name)s_type = new enumeration_type("%(name)s", %(index_in_schema)d, items);'
+            '        %(schema_name)s_types[%(index_in_schema)d] = new enumeration_type("%(name)s", %(index_in_schema)d, items);'
             % locals()
         )
         self.statements.append("    }")
@@ -191,10 +195,10 @@ __attribute__((optnone))
     def entity(self, name, type):
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
-        supertype = "0" if len(type.supertypes) == 0 else "%s_%s_type" % (self.schema_name, type.supertypes[0])
+        supertype = "0" if len(type.supertypes) == 0 else "%s_types[%d]" % (self.schema_name, self.names.index(type.supertypes[0]))
         is_abstract = "true" if type.abstract else "false"
         self.statements.append(
-            '    %(schema_name)s_%(name)s_type = new entity("%(name)s", %(is_abstract)s, %(index_in_schema)d, %(supertype)s);'
+            '    %(schema_name)s_types[%(index_in_schema)d] = new entity("%(name)s", %(is_abstract)s, %(index_in_schema)d, (entity*) %(supertype)s);'
             % locals()
         )
 
@@ -204,15 +208,16 @@ __attribute__((optnone))
         self.statements.append("    {")
         self.statements.append("        std::vector<const declaration*> items; items.reserve(%d);" % len(type.values))
         self.statements.extend(
-            map(lambda v: "        items.push_back(%s_%s_type);" % (self.schema_name, v), sorted(map(str, type.values)))
+            map(lambda v: "        items.push_back(%s_types[%d]);" % (self.schema_name, self.names.index(v)), sorted(map(str, type.values)))
         )
         self.statements.append(
-            '        %(schema_name)s_%(name)s_type = new select_type("%(name)s", %(index_in_schema)d, items);'
+            '        %(schema_name)s_types[%(index_in_schema)d] = new select_type("%(name)s", %(index_in_schema)d, items);'
             % locals()
         )
         self.statements.append("    }")
 
     def entity_attributes(self, name, attribute_definitions, is_derived):
+        index_in_schema = self.names.index(name)
         schema_name = self.schema_name
         self.statements.append("    {")
         self.statements.append(
@@ -228,31 +233,37 @@ __attribute__((optnone))
         self.statements.append(
             "        " + " ".join(map(lambda b: "derived.push_back(%s);" % str(b).lower(), is_derived))
         )
-        self.statements.append("        %(schema_name)s_%(name)s_type->set_attributes(attributes, derived);" % locals())
+        self.statements.append("        ((entity*)%(schema_name)s_types[%(index_in_schema)d])->set_attributes(attributes, derived);" % locals())
         self.statements.append("    }")
 
     def inverse_attributes(self, name, inv_attrs):
         schema_name = self.schema_name
+        index_in_schema = self.names.index(name)
         self.statements.append("    {")
         self.statements.append(
             "        std::vector<const inverse_attribute*> attributes; attributes.reserve(%d);" % len(inv_attrs)
         )
         for attr_name, aggr_type, bound1, bound2, entity_ref, attribute_entity, attribute_entity_index in inv_attrs:
+            opposite_index_in_schema = self.names.index(entity_ref)
+            opposite1 = '%(schema_name)s_types[%(opposite_index_in_schema)d]' % locals()
+            opposite_index_in_schema = self.names.index(attribute_entity)
+            opposite2 = '%(schema_name)s_types[%(opposite_index_in_schema)d]' % locals()
             self.statements.append(
-                '        attributes.push_back(new inverse_attribute("%(attr_name)s", inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, %(schema_name)s_%(entity_ref)s_type, %(schema_name)s_%(attribute_entity)s_type->attributes()[%(attribute_entity_index)d]));'
+                '        attributes.push_back(new inverse_attribute("%(attr_name)s", inverse_attribute::%(aggr_type)s_type, %(bound1)d, %(bound2)d, ((entity*) %(opposite1)s), ((entity*) %(opposite2)s)->attributes()[%(attribute_entity_index)d]));'
                 % locals()
             )
-        self.statements.append("        %(schema_name)s_%(name)s_type->set_inverse_attributes(attributes);" % locals())
+        self.statements.append("        ((entity*) %(schema_name)s_types[%(index_in_schema)d])->set_inverse_attributes(attributes);" % locals())
         self.statements.append("    }")
 
     def entity_subtypes(self, name, tys):
         schema_name = self.schema_name
+        index_in_schema = self.names.index(name)
         self.statements.append("    {")
         self.statements.append("        std::vector<const entity*> defs; defs.reserve(%d);" % len(tys))
         self.statements.append(
-            ("        " + "".join(map(lambda t: ("defs.push_back(%%(schema_name)s_%s_type);" % t), tys))) % locals()
+            ("        " + "".join(map(lambda t: ("defs.push_back(((entity*) %%(schema_name)s_types[%d]));" % self.names.index(t)), tys))) % locals()
         )
-        self.statements.append("        %(schema_name)s_%(name)s_type->set_subtypes(defs);" % locals())
+        self.statements.append("        ((entity*) %(schema_name)s_types[%(index_in_schema)d])->set_subtypes(defs);" % locals())
         self.statements.append("    }")
 
     def finalize(self, can_be_instantiated_set):
@@ -266,7 +277,8 @@ __attribute__((optnone))
             "    std::vector<const declaration*> declarations; declarations.reserve(%(num_declarations)d);" % locals()
         )
         for type_name in self.names:
-            self.statements.append("    declarations.push_back(%(schema_name)s_%(type_name)s_type);" % locals())
+            index_in_schema = self.names.index(type_name)
+            self.statements.append("    declarations.push_back(%(schema_name)s_types[%(index_in_schema)d]);" % locals())
 
         self.statements.append(
             '    return new schema_definition("%(schema_name)s", declarations, new %(schema_name)s_instance_factory());'
@@ -352,6 +364,23 @@ class SchemaClass(codegen.Base):
 
         x = code(schema_name)
 
+        def transform_to_indexed(fn):
+            def wrapper(*args, **kwargs):
+                declared_type = fn(*args, **kwargs)
+                if 'simple_type' in declared_type:
+                    pass
+                else:
+                    match = re.search(r'\((\w+?_[\w+]+?_\w+?)\)', declared_type)
+                    if match:
+                        old_decl = match.group(1)
+                        tn = old_decl.rsplit('_', 2)[1]
+                        idx = x.names.index(tn)
+                        snu = schema_name.upper()
+                        declared_type = declared_type.replace(old_decl, '%(snu)s_types[%(idx)d]' % locals())
+                return declared_type
+            return wrapper if code == EarlyBoundCodeWriter else fn
+
+        @transform_to_indexed
         def get_declared_type(type, emitted_names=None):
             if isinstance(type, nodes.SimpleType):
                 type = type.type
@@ -469,9 +498,8 @@ class SchemaClass(codegen.Base):
                 if write(name):
                     emitted.add(name.lower())
                     declarations_by_index.append(name)
-                    declared_types.append("%(schema_name)s_%(name)s_type" % locals())
 
-        num_declarations = len(declared_types)
+        num_declarations = len(emitted)
 
         for name, type in mapping.schema.entities.items():
             derived = set(mapping.derived_in_supertype(type))
