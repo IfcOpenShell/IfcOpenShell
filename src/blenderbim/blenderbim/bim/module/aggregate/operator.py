@@ -100,7 +100,7 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
                 pset = ifcopenshell.util.element.get_pset(element, 'BBIM_Linked_Aggregate')
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
               
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):

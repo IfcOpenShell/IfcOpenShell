@@ -551,7 +551,7 @@ class Model(blenderbim.core.tool.Model):
             data = tool.Ifc.get().createIfcText(json.dumps(data))
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj):
