@@ -215,7 +215,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
             group.Description = description
         else:
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
         if results:
             ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
 
@@ -368,7 +368,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description = json.dumps(
                 {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
             )
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

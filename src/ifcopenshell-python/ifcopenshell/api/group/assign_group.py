@@ -42,7 +42,7 @@ def assign_group(
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
         ifcopenshell.api.run("group.assign_group", model,
             products=model.by_type("IfcFurniture"), group=group)
     """

@@ -67,6 +67,20 @@ def batching_argument_deprecation(
     return (replace_usecase or usecase_path, settings)
 
 
+def renamed_arguments_deprecation(
+    usecase_path: str, settings: dict, arguments_remapped: dict[str, str]
+) -> tuple[str, dict]:
+    for prev_argument, new_argument in arguments_remapped.items():
+        if prev_argument in settings:
+            print(
+                f"WARNING. `{prev_argument}` argument is deprecated for API method "
+                f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+            )
+            settings = settings | {new_argument: settings[prev_argument]}
+            settings.pop(prev_argument)
+    return (usecase_path, settings)
+
+
 ARGUMENTS_DEPRECATION = {
     "spatial.assign_container": partial(
         batching_argument_deprecation, prev_argument="product", new_argument="products"
@@ -143,6 +157,10 @@ ARGUMENTS_DEPRECATION = {
     "project.unassign_declaration": partial(
         batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
     ),
+    "group.add_group": partial(
+        renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
+    ),
+    "layer.add_layer": partial(renamed_arguments_deprecation, arguments_remapped={"Name": "name"}),
 }
 
 

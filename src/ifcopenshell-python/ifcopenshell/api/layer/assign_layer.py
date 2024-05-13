@@ -59,7 +59,7 @@ def assign_layer(
         ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
 
         # Now let's create a layer that contains walls
-        layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
+        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
 
         # And assign our wall representation item (in this example, there is
         # only one item) to the layer.

@@ -23,7 +23,7 @@ from typing import Optional
 
 
 def add_group(
-    file: ifcopenshell.file, Name: str = "Unnamed", Description: Optional[str] = None
+    file: ifcopenshell.file, name: str = "Unnamed", description: Optional[str] = None
 ) -> ifcopenshell.entity_instance:
     """Adds a new group
 
@@ -37,8 +37,8 @@ def add_group(
 
     :param Name: The name of the group. Defaults to "Unnamed"
     :type Name: str, optional
-    :param Description: The description of the purpose of the group.
-    :type Description: str, optional
+    :param description: The description of the purpose of the group.
+    :type description: str, optional
     :return: The newly created IfcGroup
     :rtype: ifcopenshell.entity_instance
 
@@ -46,11 +46,11 @@ def add_group(
 
     .. code:: python
 
-        ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
     """
     settings = {
-        "Name": Name or "Unnamed",
-        "Description": Description,
+        "name": name or "Unnamed",
+        "description": description,
     }
 
     return file.create_entity(
@@ -58,7 +58,7 @@ def add_group(
         **{
             "GlobalId": ifcopenshell.guid.new(),
             "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
-            "Name": settings["Name"],
-            "Description": settings["Description"],
+            "Name": settings["name"],
+            "Description": settings["description"],
         }
     )
