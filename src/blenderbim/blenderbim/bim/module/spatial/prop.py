@@ -44,6 +44,8 @@ def update_elevation(self, context):
 
 
 def update_active_container_index(self, context):
+    if self.active_container_index < 0:
+        return
     self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
     self.container_name = self.containers[self.active_container_index].name
     self.elevation = self.containers[self.active_container_index].elevation
