@@ -20,12 +20,19 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestAddMaterialSet(test.bootstrap.IFC4):
+class TestAddMaterialSetIFC2X3(test.bootstrap.IFC2X3):
     def test_add_layer_set(self):
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialLayerSet")
         assert material.LayerSetName == "Unnamed"
         assert material.is_a("IfcMaterialLayerSet")
 
+    def test_add_list(self):
+        material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialList")
+        assert material.is_a("IfcMaterialList")
+
+
+class TestAddMaterialSetIFC4(test.bootstrap.IFC4, TestAddMaterialSetIFC2X3):
+    # entities added in IFC4
     def test_add_profile_set(self):
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialProfileSet")
         assert material.Name == "Unnamed"
@@ -35,7 +42,3 @@ class TestAddMaterialSet(test.bootstrap.IFC4):
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialConstituentSet")
         assert material.Name == "Unnamed"
         assert material.is_a("IfcMaterialConstituentSet")
-
-    def test_add_list(self):
-        material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialList")
-        assert material.is_a("IfcMaterialList")

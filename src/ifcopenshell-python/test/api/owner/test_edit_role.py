@@ -32,3 +32,7 @@ class TestEditRole(test.bootstrap.IFC4):
         assert role.Role == "ARCHITECT"
         assert role.UserDefinedRole == "UserDefinedRole"
         assert role.Description == "Description"
+
+
+class TestEditRoleIFC2X3(test.bootstrap.IFC2X3, TestEditRole):
+    pass

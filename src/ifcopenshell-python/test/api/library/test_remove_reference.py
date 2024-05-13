@@ -28,3 +28,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
         ifcopenshell.api.run("library.remove_reference", self.file, reference=reference)
         assert len(self.file.by_type("IfcLibraryReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
+
+
+class TestRemoveReferenceIFC2X3(test.bootstrap.IFC2X3, TestRemoveReference):
+    pass

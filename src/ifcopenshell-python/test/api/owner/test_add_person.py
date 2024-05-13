@@ -29,6 +29,11 @@ class TestAddPerson(test.bootstrap.IFC4):
             family_name="FamilyName",
             given_name="GivenName",
         )
-        assert person.Identification == "Identification"
+        # 0 IfcPerson Identification(>IFC2X3) / Id (IFC2X3)
+        assert person[0] == "Identification"
         assert person.FamilyName == "FamilyName"
         assert person.GivenName == "GivenName"
+
+
+class TestAddPersonIFC2X3(test.bootstrap.IFC2X3, TestAddPerson):
+    pass

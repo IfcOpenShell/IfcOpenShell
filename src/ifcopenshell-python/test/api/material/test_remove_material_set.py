@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestRemoveMaterialSet(test.bootstrap.IFC4):
+class TestRemoveMaterialSetIFC2X3(test.bootstrap.IFC2X3):
     def test_removing_material_set(self):
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialLayerSet")
         ifcopenshell.api.run("material.remove_material_set", self.file, material=material)
@@ -43,6 +43,9 @@ class TestRemoveMaterialSet(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcMaterialLayer")) == 0
         assert len(self.file.by_type("IfcMaterial")) == 1
 
+
+class TestRemoveMaterialSetIFC4(test.bootstrap.IFC4, TestRemoveMaterialSetIFC2X3):
+    # IFC2X3 doesn't support adding a pset to IfcMaterialLayerSet
     def test_removing_a_material_set_with_properties(self):
         material = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialLayerSet")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="Foo_Bar")

@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestRemoveRole(test.bootstrap.IFC4):
+class TestRemoveRoleIFC2X3(test.bootstrap.IFC2X3):
     def test_removing_a_role(self):
         role = self.file.createIfcActorRole()
         ifcopenshell.api.run("owner.remove_role", self.file, role=role)
@@ -47,20 +47,22 @@ class TestRemoveRole(test.bootstrap.IFC4):
         ifcopenshell.api.run("owner.remove_role", self.file, role=role)
         assert person_and_organisation.Roles is None
 
+
+class TestRemoveRoleIFC4(test.bootstrap.IFC4, TestRemoveRoleIFC2X3):
     def test_deleting_resource_approval_relationships(self):
-        organisation = self.file.createIfcOrganization()
-        self.file.createIfcResourceApprovalRelationship(RelatedResourceObjects=[organisation])
+        organisation = self.file.create_entity("IfcOrganization")
+        self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[organisation])
         ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
         assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
 
     def test_deleting_resource_constraint_relationships(self):
-        organisation = self.file.createIfcOrganization()
-        self.file.createIfcResourceConstraintRelationship(RelatedResourceObjects=[organisation])
+        organisation = self.file.create_entity("IfcOrganization")
+        self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[organisation])
         ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
         assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
 
     def test_deleting_external_reference_relationships(self):
-        organisation = self.file.createIfcOrganization()
-        self.file.createIfcExternalReferenceRelationship(RelatedResourceObjects=[organisation])
+        organisation = self.file.create_entity("IfcOrganization")
+        self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[organisation])
         ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
         assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0
