@@ -61,8 +61,13 @@ class TestRemovePerson(test.bootstrap.IFC4):
     def test_ensuring_inventory_should_not_be_left_in_an_invalid_set_cardinality(self):
         person = self.file.createIfcPerson()
         inventory = self.file.createIfcInventory(ResponsiblePersons=[person])
+        inventory_id = inventory.id()
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
-        assert inventory.ResponsiblePersons is None
+        if self.file.schema != "IFC2X3":
+            assert inventory.ResponsiblePersons is None
+        else:
+            with pytest.raises(RuntimeError):
+                self.file.by_id(inventory_id)
 
     def test_deleting_person_and_organisations(self):
         person = self.file.createIfcPerson()
