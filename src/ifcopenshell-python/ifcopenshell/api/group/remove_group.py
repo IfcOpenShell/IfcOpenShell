@@ -36,7 +36,7 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        group = ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
         ifcopenshell.api.run("group.remove_group", model, group=group)
     """
     settings = {"group": group}

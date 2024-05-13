@@ -40,7 +40,7 @@ def update_group_products(
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
         ifcopenshell.api.run("group.update_group_products", model,
             products=model.by_type("IfcFurniture"), group=group)
     """

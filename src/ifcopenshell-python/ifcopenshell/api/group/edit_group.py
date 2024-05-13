@@ -36,7 +36,7 @@ def edit_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance, att
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        group = ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
         ifcopenshell.api.run("group.edit_group", model,
             group=group, attributes={"Description": "All furniture and joinery included in the unit"})
     """

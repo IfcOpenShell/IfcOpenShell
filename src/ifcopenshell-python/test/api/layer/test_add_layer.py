@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -15,25 +15,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-import ifcopenshell
+
+import test.bootstrap
+import ifcopenshell.api
 
 
-def remove_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance) -> None:
-    """Removes a layer
+class TestAddLayer(test.bootstrap.IFC4):
+    def test_add_layer_no_arguments(self):
+        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        assert layer.Name == "Unnamed"
 
-    All representation items assigned to the layer will remain, but the
-    relationship to the layer will be removed.
+    def test_assign_additional_items(self):
+        layer = ifcopenshell.api.run("layer.add_layer", self.file, name="Name")
+        assert layer.Name == "Name"
 
-    :param layer: The IfcPresentationLayerAssignment entity to remove
-    :type layer: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
 
-    Example:
-
-    .. code:: python
-
-        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
-        ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
-    """
-    file.remove(layer)
+class TestAddLayerIFC2X3(test.bootstrap.IFC2X3, TestAddLayer):
+    pass

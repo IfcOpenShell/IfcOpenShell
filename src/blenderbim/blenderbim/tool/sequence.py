@@ -1630,7 +1630,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
-            group = tool.Ifc.run("group.add_group", Name=name, Description=description)
+            group = tool.Ifc.run("group.add_group", name=name, description=description)
         return group[0]
 
     @classmethod

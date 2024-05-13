@@ -39,7 +39,7 @@ def unassign_group(
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
         furniture = model.by_type("IfcFurniture")
         ifcopenshell.api.run("group.assign_group", model, products=furniture, group=group)
 
