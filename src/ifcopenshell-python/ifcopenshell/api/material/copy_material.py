@@ -48,11 +48,23 @@ def copy_material(file, material=None) -> None:
             if inverse.is_a("IfcMaterialProperties"):
                 # Properties must not be shared between objects for convenience of authoring
                 inverse = ifcopenshell.util.element.copy(file, inverse)
-                properties = []
-                for pset in inverse.Properties:
-                    properties.append(ifcopenshell.util.element.copy_deep(file, pset))
-                inverse.Properties = properties
                 inverse.Material = new
+
+                props_attribute = "Properties"
+                if file.schema == "IFC2X3":
+                    if not inverse.is_a("IfcExtendedMaterialProperties"):
+                        continue
+                    props_attribute = "ExtendedProperties"
+
+                props = getattr(inverse, props_attribute)
+                if not props:
+                    continue
+
+                copied_props = []
+                for pset in props:
+                    copied_props.append(ifcopenshell.util.element.copy_deep(file, pset))
+                setattr(inverse, props_attribute, copied_props)
+
             elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
                 inverse = ifcopenshell.util.element.copy_deep(
                     file, inverse, exclude=["IfcRepresentationContext", "IfcMaterial"]
