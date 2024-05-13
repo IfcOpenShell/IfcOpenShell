@@ -193,7 +193,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
         else:
             del data[self.item]
             data = tool.Ifc.get().createIfcText(json.dumps(data))
