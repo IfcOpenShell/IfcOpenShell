@@ -40,11 +40,14 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
         # Let's change our mind and remove it.
         ifcopenshell.api.run("library.remove_reference", model, reference=reference)
     """
-    settings = {"reference": reference}
+    if file.schema != "IFC2X3":
+        rels = reference.LibraryRefForObjects
+    else:
+        rels = [rel for rel in file.by_type("IfcRelAssociatesLibrary") if rel.RelatingLibrary == reference]
 
-    for rel in settings["reference"].LibraryRefForObjects:
+    for rel in rels:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    file.remove(settings["reference"])
+    file.remove(reference)
