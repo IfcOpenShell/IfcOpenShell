@@ -378,18 +378,29 @@ class Usecase:
     def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
+
+        # Material / Profile properties
         elif hasattr(self.settings["pset"], "Properties"):
             self.settings["pset"].Properties = props
+
+        # IFC2X3 IfcMaterialProperties
+        elif self.settings["pset"].is_a("IfcMaterialProperties"):
+            self.settings["pset"].ExtendedProperties = props
 
     def get_properties(self) -> list[ifcopenshell.entity_instance]:
         """
         Returns list of existing properties
         """
-        if hasattr(self.settings["pset"], "HasProperties"):
-            return self.settings["pset"].HasProperties or []
+        if (props := getattr(self.settings["pset"], "HasProperties", ...)) is not ...:
+            return props or []
 
-        elif hasattr(self.settings["pset"], "Properties"):  # For IfcMaterialProperties
-            return self.settings["pset"].Properties or []
+        # Material / Profile properties
+        elif (props := getattr(self.settings["pset"], "Properties", ...)) is not ...:
+            return props or []
+
+        # IFC2X3 IfcMaterialProperties
+        elif (props := getattr(self.settings["pset"], "ExtendedProperties", ...)) is not ...:
+            return props or []
 
         raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 
