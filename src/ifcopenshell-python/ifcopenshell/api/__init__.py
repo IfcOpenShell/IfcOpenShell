@@ -324,8 +324,18 @@ def wrap_usecase(usecase_path, usecase):
 
         try:
             result = usecase(*args, **settings)
-        except TypeError as e:
-            msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(usecase)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
+        except NotImplementedError as e:
+            if not e.args[0].startswith(f"{usecase.__name__}()"):
+                # signature errors typically start with function name
+                # e.g. "TypeError: edit_library() got an unexpected keyword argument 'test'"
+                # otherwise it's an error inside api call and we shouldn't get in the way
+                raise e
+            msg = (
+                f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. "
+                f"You specified args {args} and settings {settings}\n\n"
+                f"Correct signature is {inspect.signature(usecase)}\n"
+                f"See help(ifcopenshell.api.{usecase_path}) for documentation."
+            )
             raise TypeError(msg) from e
 
         if should_run_listeners:
