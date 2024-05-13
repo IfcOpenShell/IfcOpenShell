@@ -20,7 +20,6 @@ import pytest
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
-import functools
 
 
 class IFC4X3:
@@ -48,13 +47,23 @@ class IFC2X3:
     def setup(self):
         self.file: ifcopenshell.file = ifcopenshell.api.run("project.create_file", version="IFC2X3")
 
-        @functools.cache
-        def get_user(ifc: ifcopenshell.file):
+        def get_user(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+            user = next(iter(ifc.by_type("IfcPersonAndOrganization")), None)
+            if user:
+                return user
             person = ifc.create_entity("IfcPerson")
             organization = ifc.create_entity("IfcOrganization")
             return ifc.create_entity("IfcPersonAndOrganization", ThePerson=person, TheOrganization=organization)
 
         ifcopenshell.api.owner.settings.get_user = get_user
-        ifcopenshell.api.owner.settings.get_application = functools.cache(lambda ifc: ifc.createIfcApplication())
+
+        def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
+            application = next(iter(ifc.by_type("IfcApplication")), None)
+            if application:
+                return application
+            return ifc.create_entity("IfcApplication")
+
+        ifcopenshell.api.owner.settings.get_application = get_application
+
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
