@@ -19,7 +19,7 @@
 import ifcopenshell.api
 
 
-def remove_person(file, person=None) -> None:
+def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance) -> None:
     """Remove an person
 
     All roles and addresses assigned to the person will also be

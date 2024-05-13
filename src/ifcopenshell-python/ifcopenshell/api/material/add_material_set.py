@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_material_set(file, name="Unnamed", set_type="IfcMaterialConstituentSet") -> None:
+def add_material_set(
+    file: ifcopenshell.file, name: str = "Unnamed", set_type: str = "IfcMaterialConstituentSet"
+) -> ifcopenshell.entity_instance:
     """Adds a new material set
 
     IFC allows you to state that objects are made out of multiple materials.

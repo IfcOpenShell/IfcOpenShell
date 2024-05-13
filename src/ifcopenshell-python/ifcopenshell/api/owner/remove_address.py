@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_address(file, address=None) -> None:
+def remove_address(file: ifcopenshell.file, address: ifcopenshell.entity_instance) -> None:
     """Removes an address
 
     Naturally, any organisations or people using that address will have the

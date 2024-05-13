@@ -19,7 +19,9 @@
 import ifcopenshell
 
 
-def add_list_item(file, material_list=None, material=None) -> None:
+def add_list_item(
+    file: ifcopenshell.file, material_list: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+) -> None:
     """Adds a new material in a list of materials
 
     In IFC2X3, if you wanted an object to have multiple materials (i.e. a

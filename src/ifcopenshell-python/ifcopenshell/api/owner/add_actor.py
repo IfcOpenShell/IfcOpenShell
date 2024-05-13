@@ -19,9 +19,14 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Literal
 
 
-def add_actor(file, actor=None, ifc_class="IfcActor") -> None:
+def add_actor(
+    file: ifcopenshell.file,
+    actor: ifcopenshell.entity_instance,
+    ifc_class: Literal["IfcActor", "IfcOccupant"] = "IfcActor",
+) -> ifcopenshell.entity_instance:
     """Adds a new actor
 
     An actor is a person or an organisation who has a responsibility or role

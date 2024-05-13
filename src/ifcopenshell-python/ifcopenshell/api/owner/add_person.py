@@ -23,7 +23,7 @@ def add_person(
     identification: str = "HSeldon",
     family_name: str = "Seldon",
     given_name: str = "Hari",
-) -> None:
+) -> ifcopenshell.entity_instance:
     """Adds a new person
 
     Persons are used to identify a legal or liable representative of an

@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_role(file, role=None) -> None:
+def remove_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance) -> None:
     """Removes a role
 
     People and organisations using the role will be untouched. This may

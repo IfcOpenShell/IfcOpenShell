@@ -17,15 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Optional
 
 
 def add_application(
-    file,
-    application_developer=None,
-    version=None,
-    application_full_name="IfcOpenShell",
-    application_identifier="IfcOpenShell",
-) -> None:
+    file: ifcopenshell.file,
+    application_developer: Optional[ifcopenshell.entity_instance] = None,
+    version: Optional[str] = None,
+    application_full_name: str = "IfcOpenShell",
+    application_identifier: str = "IfcOpenShell",
+) -> ifcopenshell.entity_instance:
     """Adds a new application
 
     IFC data may be associated with an authoring application to identify
@@ -46,6 +47,8 @@ def add_application(
     :param application_identifier: An identification string for the
         application intended for computers to read.
     :type application_identifier: str, optional
+    :return: The newly created IfcApplication
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 

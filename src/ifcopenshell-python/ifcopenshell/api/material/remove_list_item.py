@@ -19,7 +19,9 @@
 import ifcopenshell
 
 
-def remove_list_item(file, material_list=None, material_index=0) -> None:
+def remove_list_item(
+    file: ifcopenshell.file, material_list: ifcopenshell.entity_instance, material_index: int = 0
+) -> None:
     """Removes an item in an material list
 
     Note that it is invalid to have zero items in a list, so you should leave

@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_organisation(file, organisation=None, attributes=None) -> None:
+def edit_organisation(file: ifcopenshell.file, organisation: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcOrganization
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_organisation(file, organisation=None, attributes=None) -> None:
     :param organisation: The IfcOrganization entity you want to edit
     :type organisation: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -39,7 +41,7 @@ def edit_organisation(file, organisation=None, attributes=None) -> None:
         ifcopenshell.api.run("owner.edit_organisation", model, organisation=organisation,
             attributes={"name": "Architects Without Ballpens"})
     """
-    settings = {"organisation": organisation, "attributes": attributes or {}}
+    settings = {"organisation": organisation, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["organisation"], name, value)

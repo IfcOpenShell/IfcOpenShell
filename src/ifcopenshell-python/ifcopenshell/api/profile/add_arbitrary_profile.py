@@ -17,9 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Optional
 
 
-def add_arbitrary_profile(file, profile=None, name=None) -> None:
+def add_arbitrary_profile(
+    file: ifcopenshell.file, profile: list[tuple[float, float]], name: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new arbitrary polyline-based profile
 
     The profile is represented as a polyline defined by a list of
@@ -30,7 +33,7 @@ def add_arbitrary_profile(file, profile=None, name=None) -> None:
     identical.
 
     :param profile: A list of coordinates
-    :type profile: list[list[float]]
+    :type profile: list[tuple[float, float]]
     :param name: If the profile is semantically significant (i.e. to be
         managed and reused by the user) then it must be named. Otherwise,
         this may be left as none.

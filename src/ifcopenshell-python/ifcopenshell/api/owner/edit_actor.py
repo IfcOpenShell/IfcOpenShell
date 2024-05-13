@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_actor(file, actor=None, attributes=None) -> None:
+def edit_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcActor
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_actor(file, actor=None, attributes=None) -> None:
     :param actor: The IfcActor entity you want to edit
     :type actor: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -47,7 +49,7 @@ def edit_actor(file, actor=None, attributes=None) -> None:
         ifcopenshell.api.run("actor.edit_actor", model,
             actor=actor, attributes={"Description": "Responsible for buildings A, B, and C."})
     """
-    settings = {"actor": actor, "attributes": attributes or {}}
+    settings = {"actor": actor, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["actor"], name, value)

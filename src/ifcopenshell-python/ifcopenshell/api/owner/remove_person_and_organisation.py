@@ -19,7 +19,9 @@
 import ifcopenshell.api
 
 
-def remove_person_and_organisation(file, person_and_organisation=None) -> None:
+def remove_person_and_organisation(
+    file: ifcopenshell.file, person_and_organisation: ifcopenshell.entity_instance
+) -> None:
     """Removes a person and organisation
 
     Note that the underlying person and organisation is not removed, only

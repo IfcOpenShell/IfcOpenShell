@@ -19,7 +19,9 @@
 import ifcopenshell.util.representation
 
 
-def assign_profile(file, material_profile=None, profile=None) -> None:
+def assign_profile(
+    file: ifcopenshell.file, material_profile: ifcopenshell.entity_instance, profile: ifcopenshell.entity_instance
+) -> None:
     """Changes the profile curve of a material profile item in a profile set
 
     In addition to changing the profile curve, it will also change the
@@ -94,7 +96,8 @@ def assign_profile(file, material_profile=None, profile=None) -> None:
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+    def execute(self) -> None:
         # TODO: handle composite profiles
         old_profile = self.settings["material_profile"].Profile
         self.settings["material_profile"].Profile = self.settings["profile"]
@@ -117,7 +120,7 @@ class Usecase:
             # TODO: check remove deep
             self.file.remove(old_profile)
 
-    def change_profile(self, element):
+    def change_profile(self, element: ifcopenshell.entity_instance) -> None:
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation:
             return

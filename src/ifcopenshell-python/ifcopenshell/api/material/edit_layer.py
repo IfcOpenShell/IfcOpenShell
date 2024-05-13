@@ -15,9 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional, Any
 
 
-def edit_layer(file, layer=None, attributes=None, material=None) -> None:
+def edit_layer(
+    file: ifcopenshell.file,
+    layer: ifcopenshell.entity_instance,
+    attributes: Optional[dict[str, Any]] = None,
+    material: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     """Edits the attributes of an IfcMaterialLayer
 
     For more information about the attributes and data types of an

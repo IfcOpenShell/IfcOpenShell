@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_library(file, library=None) -> None:
+def remove_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance) -> None:
     """Removes a library
 
     All references along with their relationships will also be removed. Any

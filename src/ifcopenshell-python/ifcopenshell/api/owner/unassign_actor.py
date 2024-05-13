@@ -21,7 +21,9 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_actor(file, relating_actor=None, related_object=None) -> None:
+def unassign_actor(
+    file: ifcopenshell.file, relating_actor: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+) -> None:
     """Unassigns an actor to an object
 
     This means that the actor is no longer responsible for the object.
@@ -30,9 +32,8 @@ def unassign_actor(file, relating_actor=None, related_object=None) -> None:
     :type relating_actor: ifcopenshell.entity_instance
     :param related_object: The object the actor is responsible for.
     :type related_object: ifcopenshell.entity_instance
-    :return: The updated IfcRelAssignsToActor relationship or none if there
-        is no more valid relationship.
-    :rtype: None, ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
     Example:
 
@@ -72,4 +73,3 @@ def unassign_actor(file, relating_actor=None, related_object=None) -> None:
         related_objects.remove(settings["related_object"])
         rel.RelatedObjects = related_objects
         ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
-        return rel

@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def reorder_set_item(file, material_set=None, old_index=0, new_index=0) -> None:
+def reorder_set_item(
+    file: ifcopenshell.file, material_set: ifcopenshell.entity_instance, old_index: int = 0, new_index: int = 0
+) -> None:
     """Reorders an item in a material set
 
     In some material sets, the order have meaning, like in a layer set. In

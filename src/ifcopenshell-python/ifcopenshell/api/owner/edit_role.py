@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_role(file, role=None, attributes=None) -> None:
+def edit_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcActorRole
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_role(file, role=None, attributes=None) -> None:
     :param role: The IfcActorRole entity you want to edit
     :type role: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -43,7 +45,7 @@ def edit_role(file, role=None, attributes=None) -> None:
         # But Bob is not an architect
         ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "CONSTRUCTIONMANAGER"})
     """
-    settings = {"role": role, "attributes": attributes or {}}
+    settings = {"role": role, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["role"], name, value)

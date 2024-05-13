@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_address(file, assigned_object=None, ifc_class="IfcPostalAddress") -> None:
+def add_address(
+    file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, ifc_class: str = "IfcPostalAddress"
+) -> ifcopenshell.entity_instance:
     """Add a new telecom or postal address to an organisation or person
 
     A person or organisation may have associated contact details such as

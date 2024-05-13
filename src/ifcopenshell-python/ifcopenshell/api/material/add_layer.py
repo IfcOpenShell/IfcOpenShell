@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_layer(file, layer_set=None, material=None) -> None:
+def add_layer(
+    file: ifcopenshell.file, layer_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Adds a new layer to a layer set
 
     A layer represents a portion of material within a layered build up,

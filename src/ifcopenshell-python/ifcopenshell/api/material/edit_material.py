@@ -15,12 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_material(file, material=None, attributes=None) -> None:
+def edit_material(file: ifcopenshell.file, material: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcMaterial"""
 
-    settings = {"material": material, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["material"], name, value)
+    for name, value in attributes.items():
+        setattr(material, name, value)

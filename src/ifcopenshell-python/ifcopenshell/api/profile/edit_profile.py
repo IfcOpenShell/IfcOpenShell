@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_profile(file, profile=None, attributes=None) -> None:
+def edit_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcProfileDef
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_profile(file, profile=None, attributes=None) -> None:
     :param profile: The IfcProfileDef entity you want to edit
     :type profile: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -41,7 +43,7 @@ def edit_profile(file, profile=None, attributes=None) -> None:
         ifcopenshell.api.run("profile.edit_profile", model,
             profile=circle, attributes={"ProfileName": "1000mm Dia"})
     """
-    settings = {"profile": profile, "attributes": attributes or {}}
+    settings = {"profile": profile, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["profile"], name, value)

@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_constituent(file, constituent=None) -> None:
+def remove_constituent(file: ifcopenshell.file, constituent: ifcopenshell.entity_instance) -> None:
     """Removes a constituent from a constituent set
 
     Note that it is invalid to have zero items in a set, so you should leave
