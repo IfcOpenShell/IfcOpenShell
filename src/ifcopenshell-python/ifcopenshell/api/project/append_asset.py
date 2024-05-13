@@ -129,6 +129,8 @@ class Usecase:
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
+        self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
+
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
             return self.append_type_product()
@@ -179,7 +181,7 @@ class Usecase:
     def append_type_product(self):
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
-            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
@@ -192,7 +194,7 @@ class Usecase:
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
             "IfcElement": ["HasOpenings"],
-            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
