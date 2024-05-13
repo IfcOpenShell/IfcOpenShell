@@ -406,6 +406,7 @@ class BIM_PT_tabs(Panel):
 
             if blenderbim.last_error:
                 box = self.layout.box()
+                box.alert=True
                 row = box.row(align=True)
                 row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
