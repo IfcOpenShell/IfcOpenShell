@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-class TestRemovePersonAndOrganisation(test.bootstrap.IFC4):
+class TestRemovePersonAndOrganisationIFC2X3(test.bootstrap.IFC2X3):
     def test_removing(self):
         user = self.file.createIfcPersonAndOrganization()
         ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
@@ -39,26 +39,29 @@ class TestRemovePersonAndOrganisation(test.bootstrap.IFC4):
         ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
         assert document_information.Editors is None
 
-    def test_deleting_resource_approval_relationships(self):
-        user = self.file.createIfcPersonAndOrganization()
-        self.file.createIfcResourceApprovalRelationship(RelatedResourceObjects=[user])
-        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
-        assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
-
-    def test_deleting_resource_constraint_relationships(self):
-        user = self.file.createIfcPersonAndOrganization()
-        self.file.createIfcResourceConstraintRelationship(RelatedResourceObjects=[user])
-        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
-        assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
-
-    def test_deleting_external_reference_relationships(self):
-        user = self.file.createIfcPersonAndOrganization()
-        self.file.createIfcExternalReferenceRelationship(RelatedResourceObjects=[user])
-        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
-        assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0
-
     def test_deleting_owner_history(self):
         user = self.file.createIfcPersonAndOrganization()
         self.file.createIfcOwnerHistory(OwningUser=user)
         ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
         assert len(self.file.by_type("IfcOwnerHistory")) == 0
+
+
+class TestRemovePersonAndOrganisationIFC4(test.bootstrap.IFC4, TestRemovePersonAndOrganisationIFC2X3):
+    # IfcResourceLevelRelationships were added in IFC4
+    def test_deleting_resource_approval_relationships(self):
+        user = self.file.create_entity("IfcPersonAndOrganization")
+        self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[user])
+        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
+        assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
+
+    def test_deleting_resource_constraint_relationships(self):
+        user = self.file.create_entity("IfcPersonAndOrganization")
+        self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[user])
+        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
+        assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
+
+    def test_deleting_external_reference_relationships(self):
+        user = self.file.create_entity("IfcPersonAndOrganization")
+        self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[user])
+        ifcopenshell.api.run("owner.remove_person_and_organisation", self.file, person_and_organisation=user)
+        assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0

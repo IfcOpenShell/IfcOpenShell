@@ -96,3 +96,7 @@ class TestUpdateOwnerHistory(test.bootstrap.IFC4):
     def test_doing_nothing_if_no_history_can_be_updated(self):
         person = self.file.createIfcPerson()
         assert ifcopenshell.api.run("owner.update_owner_history", self.file, element=person) == None
+
+
+class TestUpdateOwnerHistoryIFC2X3(test.bootstrap.IFC2X3, TestUpdateOwnerHistory):
+    pass

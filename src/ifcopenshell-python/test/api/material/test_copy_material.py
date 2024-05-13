@@ -33,19 +33,31 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
         ifcopenshell.api.run("material.assign_material", self.file, products=[element], material=material)
         new = ifcopenshell.api.run("material.copy_material", self.file, material=material)
-        assert material.AssociatedTo
-        assert not new.AssociatedTo
+        assert ifcopenshell.util.element.get_elements_by_material(self.file, material)
+        assert not ifcopenshell.util.element.get_elements_by_material(self.file, new)
 
     def test_copy_a_material_with_properties(self):
+        def get_material_props(material: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+            if self.file.schema != "IFC2X3":
+                return material.HasProperties
+            return [i for i in self.file.get_inverse(material) if i.is_a("IfcMaterialProperties")]
+
         material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="Foo_Bar")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"foo": "bar"})
         new = ifcopenshell.api.run("material.copy_material", self.file, material=material)
         assert new.Name == "CON01"
         assert len(self.file.by_type("IfcMaterial")) == 2
-        assert new.HasProperties[0] != material.HasProperties[0]
-        assert new.HasProperties[0].Properties[0] != material.HasProperties[0].Properties[0]
-        assert ifcopenshell.util.element.get_pset(new, "Foo_Bar", "foo") == "bar"
+        assert len(self.file.by_type("IfcMaterialProperties")) == 2
+        props_old = get_material_props(material)[0]
+        props_new = get_material_props(new)[0]
+        assert props_old != props_new
+        if self.file.schema != "IFC2X3":
+            assert props_old.Properties[0] != props_new.Properties[0]
+            assert ifcopenshell.util.element.get_pset(new, "Foo_Bar", "foo") == "bar"
+        else:
+            assert props_old.ExtendedProperties[0] != props_new.ExtendedProperties[0]
+            assert props_new.ExtendedProperties[0].NominalValue.wrappedValue == "bar"
 
     def test_copy_a_material_with_a_style_representation(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
@@ -59,3 +71,6 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         assert new.HasRepresentation[0] != material.HasRepresentation[0]
         assert new.HasRepresentation[0].Representations[0] != material.HasRepresentation[0].Representations[0]
         assert new.HasRepresentation[0].Representations[0].ContextOfItems == context
+
+class TestCopyMaterialIFC2X3(test.bootstrap.IFC2X3, TestCopyMaterial):
+    pass

@@ -16,12 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import pytest
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.guid
 
 
-class TestRemovePerson(test.bootstrap.IFC4):
+class TestRemovePersonIFC2X3(test.bootstrap.IFC2X3):
     def test_removing_a_person(self):
         person = self.file.createIfcPerson()
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
@@ -87,20 +88,23 @@ class TestRemovePerson(test.bootstrap.IFC4):
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
         assert document_information.Editors is None
 
+
+class TestRemovePersonIFC4(test.bootstrap.IFC4, TestRemovePersonIFC2X3):
+    # IfcResourceLevelRelationships were added in IFC4
     def test_deleting_resource_approval_relationships(self):
-        person = self.file.createIfcPerson()
-        self.file.createIfcResourceApprovalRelationship(RelatedResourceObjects=[person])
+        person = self.file.create_entity("IfcPerson")
+        self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[person])
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
         assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
 
     def test_deleting_resource_constraint_relationships(self):
-        person = self.file.createIfcPerson()
-        self.file.createIfcResourceConstraintRelationship(RelatedResourceObjects=[person])
+        person = self.file.create_entity("IfcPerson")
+        self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[person])
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
         assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
 
     def test_deleting_external_reference_relationships(self):
-        person = self.file.createIfcPerson()
-        self.file.createIfcExternalReferenceRelationship(RelatedResourceObjects=[person])
+        person = self.file.create_entity("IfcPerson")
+        self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[person])
         ifcopenshell.api.run("owner.remove_person", self.file, person=person)
         assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0

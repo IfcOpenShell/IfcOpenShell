@@ -37,3 +37,7 @@ class TestAssignLayer(test.bootstrap.IFC4):
         ifcopenshell.api.run("layer.assign_layer", self.file, items=items[2:], layer=layer)
         assert len(layer.AssignedItems) == 4
         assert set(layer.AssignedItems) == set(items)
+
+
+class TestAssignLayerIFC2X3(test.bootstrap.IFC2X3, TestAssignLayer):
+    pass
