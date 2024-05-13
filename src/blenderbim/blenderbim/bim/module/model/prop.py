@@ -87,6 +87,41 @@ def update_type_page(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
 
 
+def update_relating_array_from_object(self, context):
+    if self.relating_array_object is None:
+        return
+    element = tool.Ifc.get_entity(self.relating_array_object)
+    if not element:
+        return
+    # If a child is selected, the following assigns the parent to the relating_array_object
+    parent_globalid = element.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue.wrappedValue
+    parent_element = tool.Ifc.get().by_guid(parent_globalid)
+    parent_of_relating_array_object = tool.Ifc.get_object(parent_element)
+    #The following error handling is used to break out when an array parent is selected
+    try:
+        element.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[1].NominalValue.wrappedValue
+    except AttributeError:
+        pass
+    else:
+        bpy.ops.bim.enable_editing_array(item=self.is_editing)
+        return 
+
+    self.relating_array_object = parent_of_relating_array_object
+    bpy.ops.bim.enable_editing_array(item=self.is_editing)
+
+    return self.relating_array_object
+
+
+def is_object_array_applicable(self, obj):
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return False
+    return element.IsDefinedBy[0].RelatingPropertyDefinition.Name == "BBIM_Array"
+
+
+
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
@@ -203,6 +238,14 @@ class BIMArrayProperties(PropertyGroup):
         description="Regenerate all children based on the parent object",
         default=False,
     )
+    relating_array_object: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Array Properties",
+        update=update_relating_array_from_object,
+        poll=is_object_array_applicable,
+    )
+
+
 
 
 class BIMStairProperties(PropertyGroup):
