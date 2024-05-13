@@ -535,5 +535,5 @@ class RemoveRailing(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMRailingProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
         return {"FINISHED"}

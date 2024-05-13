@@ -938,7 +938,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
                 pset = tool.Ifc.get().by_id(pset["id"])
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0],pset=pset)
 
             if new[0].is_a("IfcElementAssembly"):
                 linked_aggregate_group = [

@@ -644,6 +644,6 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMDoorProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}
