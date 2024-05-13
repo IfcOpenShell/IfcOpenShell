@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.util.date
+import datetime
 from typing import Any
 
 
@@ -41,7 +43,16 @@ def edit_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance,
             attributes={"Description": "A Brickschema TTL including only mechanical distribution systems."})
     """
 
-    settings = {"library": library, "attributes": attributes}
+    if "VersionDate" in attributes:
+        dt = attributes["VersionDate"]
+        if isinstance(dt, datetime.datetime):
+            if file.schema != "IFC2X3":
+                dt = ifcopenshell.util.date.datetime2ifc(dt, "IfcDateTime")
+            else:
+                calendar_date = ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
+                dt = file.create_entity("IfcCalendarDate", **calendar_date)
+            attributes = attributes.copy()
+            attributes["VersionDate"] = dt
 
-    for name, value in settings["attributes"].items():
-        setattr(settings["library"], name, value)
+    for name, value in attributes.items():
+        setattr(library, name, value)
