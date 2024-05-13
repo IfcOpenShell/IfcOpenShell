@@ -21,7 +21,9 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def assign_actor(file, relating_actor=None, related_object=None) -> None:
+def assign_actor(
+    file: ifcopenshell.file, relating_actor: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Assigns an actor to an object
 
     An actor may be assigned to objects which implies that the actor is
@@ -80,7 +82,7 @@ def assign_actor(file, relating_actor=None, related_object=None) -> None:
     if settings["related_object"].HasAssignments:
         for rel in settings["related_object"].HasAssignments:
             if rel.is_a("IfcRelAssignsToActor") and rel.RelatingActor == settings["relating_actor"]:
-                return
+                return rel
 
     rel = None
 

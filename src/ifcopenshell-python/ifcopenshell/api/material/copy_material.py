@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def copy_material(file, material=None) -> None:
+def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Copies a material
 
     All material psets and styles are copied. The copied material is not

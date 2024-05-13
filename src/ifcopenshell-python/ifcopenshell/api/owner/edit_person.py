@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_person(file, person=None, attributes=None) -> None:
+def edit_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcPerson
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_person(file, person=None, attributes=None) -> None:
     :param person: The IfcPerson entity you want to edit
     :type person: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -39,7 +41,7 @@ def edit_person(file, person=None, attributes=None) -> None:
         ifcopenshell.api.run("owner.edit_person", model, person=person,
             attributes={"MiddleNames": ["The"], "FamilyName": "Builder"})
     """
-    settings = {"person": person, "attributes": attributes or {}}
+    settings = {"person": person, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["person"], name, value)

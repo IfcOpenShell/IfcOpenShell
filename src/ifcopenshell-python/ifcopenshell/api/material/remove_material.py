@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_material(file, material=None) -> None:
+def remove_material(file: ifcopenshell.file, material: ifcopenshell.entity_instance) -> None:
     """Removes a material
 
     If the material is used in a material set, the corresponding layer,

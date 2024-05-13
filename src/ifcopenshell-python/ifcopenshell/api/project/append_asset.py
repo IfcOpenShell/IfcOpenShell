@@ -19,7 +19,8 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
-from typing import Optional
+import ifcopenshell.util.element
+from typing import Optional, Any, Union
 
 
 def append_asset(
@@ -124,6 +125,9 @@ def append_asset(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
@@ -223,7 +227,7 @@ class Usecase:
 
         return element
 
-    def add_element(self, element):
+    def add_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() == 0:
             return
         existing_element = self.get_existing_element(element)
@@ -262,7 +266,7 @@ class Usecase:
                 elif value:
                     return True
 
-    def check_inverses(self, element):
+    def check_inverses(self, element: ifcopenshell.entity_instance) -> None:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue

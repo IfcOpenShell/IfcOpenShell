@@ -17,7 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def edit_profile(file, profile=None, attributes=None, profile_def=None, material=None) -> None:
+from typing import Any, Optional
+import ifcopenshell
+
+
+def edit_profile(
+    file: ifcopenshell.file,
+    profile: ifcopenshell.entity_instance,
+    attributes: Optional[dict[str, Any]] = None,
+    profile_def: Optional[ifcopenshell.entity_instance] = None,
+    material: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     """Edits the attributes of an IfcMaterialProfile
 
     For more information about the attributes and data types of an

@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def add_material(file, name=None, category=None) -> None:
+def add_material(
+    file: ifcopenshell.file, name: Optional[str] = None, category: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new material
 
     A material in IFC represents a physical material, such as timber, steel,
@@ -48,7 +52,7 @@ def add_material(file, name=None, category=None) -> None:
 
     :param name: The name of the material, typically tagged in a finishes
         drawing or schedule.
-    :type name: str
+    :type name: str, optional
     :param category: The category of the material.
     :type category: str, optional
     :return: The newly created IfcMaterial
