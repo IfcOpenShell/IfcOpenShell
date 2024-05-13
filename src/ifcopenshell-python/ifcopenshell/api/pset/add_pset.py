@@ -61,6 +61,9 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
         that prefix. It is recommended to use your own prefix tailored to
         your project, company, or local government requirement.
     :type name: str
+
+    :raises TypeError: If `product` class doesn't support adding a pset.
+
     :return: The newly created IfcPropertySet
     :rtype: ifcopenshell.entity_instance
 
@@ -154,3 +157,5 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
             kwargs["Name"] = settings["name"]
 
         return file.create_entity("IfcProfileProperties", **kwargs)
+
+    raise TypeError(f"Class '{settings['product'].is_a(True)}' doesn't support adding a property set.")
