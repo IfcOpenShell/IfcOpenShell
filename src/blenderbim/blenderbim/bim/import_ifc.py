@@ -608,7 +608,8 @@ class IfcImporter:
 
         threshold = 10000  # Just from experience.
 
-        faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
+        # The check for CfsFaces/Faces/CoordIndex accommodates invalid data from Cadwork
+        faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell") if e.CfsFaces]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
             return
@@ -616,12 +617,12 @@ class IfcImporter:
         if self.file.schema == "IFC2X3":
             return
 
-        faces = [len(e.Faces) for e in self.file.by_type("IfcPolygonalFaceSet")]
+        faces = [len(e.Faces) for e in self.file.by_type("IfcPolygonalFaceSet") if e.Faces]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
             return
 
-        faces = [len(e.CoordIndex) for e in self.file.by_type("IfcTriangulatedFaceSet")]
+        faces = [len(e.CoordIndex) for e in self.file.by_type("IfcTriangulatedFaceSet") if e.CoordIndex]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
 
