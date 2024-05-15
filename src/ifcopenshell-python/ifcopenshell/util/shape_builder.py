@@ -26,7 +26,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
-from typing import List, Tuple, Type, Union
+from typing import Union, Optional, Literal, Any
 from itertools import chain
 from mathutils import Vector, Matrix
 
@@ -34,7 +34,7 @@ V = lambda *x: Vector([float(i) for i in x])
 sign = lambda x: x and (1, -1)[x < 0]
 PRECISION = 1.0e-5
 
-VectorTuple = Type[Tuple[float, float, float]]
+VectorTuple = type[tuple[float, float, float]]
 "tuple of 3 `float` values"
 
 
@@ -59,13 +59,17 @@ class ShapeBuilder:
         self.file = ifc_file
 
     def polyline(
-        self, points: List[Vector], closed: bool = False, position_offset: Vector = None, arc_points: List[int] = []
+        self,
+        points: list[Vector],
+        closed: bool = False,
+        position_offset: Optional[Vector] = None,
+        arc_points: list[int] = [],
     ) -> ifcopenshell.entity_instance:
         """
         Generate an IfcIndexedPolyCurve based on the provided points.
 
         :param points: List of 2d or 3d points
-        :type points: List[Vector]
+        :type points: list[Vector]
         :param closed: Whether polyline should be closed. Default is `False`
         :type closed: bool, optional
         :param position_offset: offset to be applied to all points
@@ -73,7 +77,7 @@ class ShapeBuilder:
         :param arc_points: Indices of the middle points for arcs. For creating an arc segment,
             provide 3 points: `arc_start`, `arc_middle` and `arc_end` to `points` and add the `arc_middle`
             point's index to `arc_points`
-        :type arc_points: List[int], optional
+        :type arc_points: list[int], optional
 
         :return: IfcIndexedPolyCurve
         :rtype: ifcopenshell.entity_instance
@@ -155,7 +159,9 @@ class ShapeBuilder:
         ifc_curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
         return ifc_curve
 
-    def get_rectangle_coords(self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Vector = None) -> List[Vector]:
+    def get_rectangle_coords(
+        self, size: Vector = Vector((1.0, 1.0)).freeze(), position: Optional[Vector] = None
+    ) -> list[Vector]:
         """
         Get rectangle coords arranged as below:
 
@@ -248,7 +254,7 @@ class ShapeBuilder:
     # TODO: explain points order for the curve_between_two_points
     # because the order is important and defines the center of the curve
     # currently it seems like the first point shifted by x-axis defines the center
-    def curve_between_two_points(self, points):
+    def curve_between_two_points(self, points: tuple[Vector, Vector]) -> ifcopenshell.entity_instance:
         # > points - list of 2 Vectors
         """Simple circle based curve between two points
         Good for creating curves and fillets, won't work for continuous ellipse shapes.
@@ -268,7 +274,13 @@ class ShapeBuilder:
         curve = self.file.createIfcIndexedPolyCurve(Points=ifc_points, Segments=[seg])
         return curve
 
-    def get_trim_points_from_mask(self, x_axis_radius, y_axis_radius, trim_points_mask, position_offset=None):
+    def get_trim_points_from_mask(
+        self,
+        x_axis_radius: float,
+        y_axis_radius: float,
+        trim_points_mask: list[int],
+        position_offset: Optional[Vector] = None,
+    ) -> list[Vector]:
         """Handy way to get edge points of the ellipse like shape of a given radiuses.
 
         Mask points are numerated from 0 to 3 ccw starting from (x_axis_radius/2; 0).
@@ -289,13 +301,13 @@ class ShapeBuilder:
 
     def create_ellipse_curve(
         self,
-        x_axis_radius,
-        y_axis_radius,
+        x_axis_radius: float,
+        y_axis_radius: float,
         position=Vector((0.0, 0.0)).freeze(),
-        trim_points=[],
-        ref_x_direction=Vector((1.0, 0.0)),
-        trim_points_mask=[],
-    ):
+        trim_points: list[Vector] = (),
+        ref_x_direction: Vector = Vector((1.0, 0.0)),
+        trim_points_mask: list[int] = (),
+    ) -> ifcopenshell.entity_instance:
         """
         Ellipse trimming points should be specified in counter clockwise order.
 
@@ -329,7 +341,13 @@ class ShapeBuilder:
         )
         return trim_ellipse
 
-    def profile(self, outer_curve, name=None, inner_curves=[], profile_type="AREA"):
+    def profile(
+        self,
+        outer_curve: ifcopenshell.entity_instance,
+        name: Optional[str] = None,
+        inner_curves: list[ifcopenshell.entity_instance] = (),
+        profile_type: str = "AREA",
+    ) -> ifcopenshell.entity_instance:
         # > inner_curves - list of IfcCurve;
         # inner_curves could be used as a tool for boolean operation
         # but if any point of inner curve will go outside the outer curve
@@ -369,7 +387,12 @@ class ShapeBuilder:
             profile = self.file.create_entity("IfcArbitraryClosedProfileDef", **kwargs)
         return profile
 
-    def translate(self, curve_or_item, translation: Vector, create_copy=False):
+    def translate(
+        self,
+        curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+        translation: Vector,
+        create_copy: bool = False,
+    ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
         # > curve_or_item - could be a list of curves or items or representations
         # < returns translated object
 
@@ -413,7 +436,7 @@ class ShapeBuilder:
 
     def rotate_2d_point(
         self, point_2d: Vector, angle=90, pivot_point: Vector = Vector((0.0, 0.0)).freeze(), counter_clockwise=False
-    ):
+    ) -> Vector:
         # > angle - in degrees
         # < rotated Vector
 
@@ -425,12 +448,12 @@ class ShapeBuilder:
 
     def rotate(
         self,
-        curve_or_item,
-        angle=90,
+        curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+        angle: float = 90,
         pivot_point: Vector = Vector((0.0, 0.0)).freeze(),
-        counter_clockwise=False,
-        create_copy=False,
-    ):
+        counter_clockwise: bool = False,
+        create_copy: bool = False,
+    ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
         # > curve_or_item - could be a list of curves or items
         # > angle - in degrees
         # < returns rotated object
@@ -479,7 +502,7 @@ class ShapeBuilder:
         point_2d: Vector,
         mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
         mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
-    ):
+    ) -> Vector:
         """mirror_axes - along which axes mirror will be applied"""
         base = point_2d  # prevent mutating the argument
         mirror_axes = Vector([-1 if i > 0 else 1 for i in mirror_axes])
@@ -558,12 +581,12 @@ class ShapeBuilder:
 
     def mirror(
         self,
-        curve_or_item,
+        curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
         mirror_axes: Vector = Vector((1.0, 1.0)).freeze(),
         mirror_point: Vector = Vector((0.0, 0.0)).freeze(),
-        create_copy=False,
-        placement_matrix=None,
-    ):
+        create_copy: bool = False,
+        placement_matrix: Optional[Matrix] = None,
+    ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
         """mirror_axes - along which axes mirror will be applied
 
         For example, mirroring `A(1,0)` by axis `(1,0)` will result in `A'(-1,0)`
@@ -687,14 +710,14 @@ class ShapeBuilder:
 
     def extrude(
         self,
-        profile_or_curve,
-        magnitude=1.0,
+        profile_or_curve: ifcopenshell.entity_instance,
+        magnitude: float = 1.0,
         position: Vector = Vector([0.0, 0.0, 0.0]).freeze(),
         extrusion_vector: Vector = Vector((0.0, 0.0, 1.0)).freeze(),
         position_z_axis: Vector = Vector((0.0, 0.0, 1.0)).freeze(),
         position_x_axis: Vector = Vector((1.0, 0.0, 0.0)).freeze(),
-        position_y_axis: Vector = None,
-    ):
+        position_y_axis: Optional[Vector] = None,
+    ) -> ifcopenshell.entity_instance:
         """Extrude profile or curve to get IfcExtrudedAreaSolid.
 
         REMEMBER when handling custom axes - IFC is using RIGHT handed coordinate system.
@@ -730,7 +753,9 @@ class ShapeBuilder:
         )
         return extruded_area
 
-    def create_swept_disk_solid(self, path_curve, radius):
+    def create_swept_disk_solid(
+        self, path_curve: ifcopenshell.entity_instance, radius: float
+    ) -> ifcopenshell.entity_instance:
         """Create IfcSweptDiskSolid from `path_curve` (must be 3D) and `radius`"""
         if path_curve.Dim != 3:
             raise Exception(
@@ -741,16 +766,22 @@ class ShapeBuilder:
         disk_solid = self.file.createIfcSweptDiskSolid(Directrix=path_curve, Radius=radius)
         return disk_solid
 
-    def get_representation(self, context, items, representation_type: str = None) -> ifcopenshell.entity_instance:
+    def get_representation(
+        self,
+        context: ifcopenshell.entity_instance,
+        items: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+        representation_type: Optional[str] = None,
+    ) -> ifcopenshell.entity_instance:
         """Create IFC representation for the specified context and items.
 
         :param context: IfcGeometricRepresentationSubContext
+        :type context: ifcopenshell.entity_instance
         :param items: could be a list or single curve/IfcExtrudedAreaSolid
         :param representation_type: Explicitly specified RepresentationType, defaults to `None`.
             If not provided it will be guessed from the items types
         :type representation_type: str, optional
 
-        :return: IfcRepresentation
+        :return: IfcShapeRepresentation
         :rtype: ifcopenshell.entity_instance
         """
         if not isinstance(items, collections.abc.Iterable):
@@ -779,11 +810,11 @@ class ShapeBuilder:
         )
         return representation
 
-    def deep_copy(self, element):
+    def deep_copy(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return ifcopenshell.util.element.copy_deep(self.file, element)
 
     # UTILITIES
-    def extrude_kwargs(self, axis):
+    def extrude_kwargs(self, axis: Literal["Y", "X", "Z"]) -> dict[str, Vector]:
         """Shortcut to get kwargs for `ShapeBuilder.extrude` to extrude by some axis.
 
         It assumes you have 2D profile in:
@@ -814,7 +845,9 @@ class ShapeBuilder:
                 "extrusion_vector": Vector((0, 0, 1)),
             }
 
-    def rotate_extrusion_kwargs_by_z(self, kwargs, angle, counter_clockwise=False):
+    def rotate_extrusion_kwargs_by_z(
+        self, kwargs: dict[str, Any], angle: float, counter_clockwise: bool = False
+    ) -> dict[str, Vector]:
         """shortcut to rotate extrusion kwargs by z axis
 
         `kwargs` expected to have `position_x_axis` and `position_z_axis` keys
@@ -829,7 +862,7 @@ class ShapeBuilder:
         kwargs["position_z_axis"].rotate(rot)
         return kwargs
 
-    def get_polyline_coords(self, polyline):
+    def get_polyline_coords(self, polyline: ifcopenshell.entity_instance) -> list[Vector]:
         """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
         coords = None
         if polyline.is_a("IfcIndexedPolyCurve"):
@@ -838,7 +871,7 @@ class ShapeBuilder:
             coords = [p.Coordinates for p in polyline.Points]
         return coords
 
-    def set_polyline_coords(self, polyline, coords):
+    def set_polyline_coords(self, polyline: ifcopenshell.entity_instance, coords: list[Vector]) -> None:
         """polyline should be either `IfcIndexedPolyCurve` or `IfcPolyline`"""
         if polyline.is_a("IfcIndexedPolyCurve"):
             polyline.Points.CoordList = coords
@@ -846,7 +879,14 @@ class ShapeBuilder:
             for i, co in enumerate(coords):
                 polyline.Points[i].Coordinates = co
 
-    def get_simple_2dcurve_data(self, coords, fillets=[], fillet_radius=[], closed=True, create_ifc_curve=None):
+    def get_simple_2dcurve_data(
+        self,
+        coords: list[Vector],
+        fillets: list[int] = (),
+        fillet_radius: list[float] = (),
+        closed: bool = True,
+        create_ifc_curve: bool = False,
+    ) -> tuple[list[Vector], list[tuple[int, int], Union[ifcopenshell.entity_instance, None]]]:
         """
         Creates simple 2D curve from set of 2d coords and list of points with fillets.
         Simple curve means that all fillets are based on 90 degree angle.
@@ -957,8 +997,14 @@ class ShapeBuilder:
         return (points, segments, ifc_curve)
 
     def create_z_profile_lips_curve(
-        self, FirstFlangeWidth, SecondFlangeWidth, Depth, Girth, WallThickness, FilletRadius
-    ):
+        self,
+        FirstFlangeWidth: float,
+        SecondFlangeWidth: float,
+        Depth: float,
+        Girth: float,
+        WallThickness: float,
+        FilletRadius: float,
+    ) -> ifcopenshell.entity_instance:
         x1 = FirstFlangeWidth
         x2 = SecondFlangeWidth
         y = Depth / 2
@@ -996,7 +1042,9 @@ class ShapeBuilder:
 
         return ifc_curve
 
-    def create_transition_arc_ifc(self, width, height, create_ifc_curve=False):
+    def create_transition_arc_ifc(
+        self, width: str, height: str, create_ifc_curve: bool = False
+    ) -> tuple[list[Vector], list[tuple[int, int], Union[ifcopenshell.entity_instance, None]]]:
         # create an arc in the rectangle with specified width and height
         # if it's not possible to make a complete arc
         # it will create arc with longest radius possible
@@ -1028,7 +1076,7 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
-    def polygonal_face_set(self, points, faces):
+    def polygonal_face_set(self, points: list[Vector], faces: list[[list[int]]]) -> ifcopenshell.entity_instance:
         """
         > `points` - list of points
 
@@ -1048,8 +1096,14 @@ class ShapeBuilder:
         return face_set
 
     def extrude_face_set(
-        self, points, magnitude: float, extrusion_vector=V(0, 0, 1).freeze(), offset=None, start_cap=True, end_cap=True
-    ):
+        self,
+        points: list[Vector],
+        magnitude: float,
+        extrusion_vector: Vector = V(0, 0, 1).freeze(),
+        offset: Optional[Vector] = None,
+        start_cap: bool = True,
+        end_cap: bool = True,
+    ) -> ifcopenshell.entity_instance:
         """
         Method to extrude by creating face sets rather than creating IfcExtrudedAreaSolid.
 
@@ -1057,18 +1111,20 @@ class ShapeBuilder:
         to assure CorrectItemsForType.
 
         :param points: list of points, assuming they form consecutive closed polyline.
+        :type points: list[Vector]
         :param magnitude: extrusion magnitude
-        :param type: float
+        :type magnitude: float
         :param extrusion_vector: extrusion direction, by default it's extruding by Z+ axis
-        :param type: Vector, optional
+        :type extrusion_vector: Vector, optional
         :param offset: offset from the points
-        :param type: Vector, optional
+        :type offset: Vector, optional
         :param start_cap: if True, create start cap, by default it's True
-        :param type: bool, optional
+        :type start_cap: bool, optional
         :param end_cap: if True, create end cap, by default it's True
-        :param type: bool, optional
+        :type end_cap: bool, optional
 
         :return: IfcPolygonalFaceSet
+        :rtype: ifcopenshell.entity_instance
         """
 
         # prevent mutating arguments, deepcopy doesn't work

@@ -16,14 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 
-def map_representation(file, **usecase_settings) -> None:
+
+def map_representation(
+    file: ifcopenshell.file, representation: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"representation": None}
-    usecase.ifc_vertices = []
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
+    usecase.settings = {"representation": representation}
     return usecase.execute()
 
 

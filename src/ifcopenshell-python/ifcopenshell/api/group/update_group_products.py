@@ -21,7 +21,9 @@ import ifcopenshell.api
 import ifcopenshell.guid
 
 
-def update_group_products(file, group=None, products=None) -> None:
+def update_group_products(
+    file: ifcopenshell.file, group: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+) -> ifcopenshell.entity_instance:
     """Sets a group products to be an explicit list of products
 
     Any previous products assigned to that group will have their assignment

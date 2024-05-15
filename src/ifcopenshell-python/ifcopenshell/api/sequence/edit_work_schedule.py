@@ -21,7 +21,7 @@ from typing import Any
 
 
 def edit_work_schedule(
-    file: ifcopenshell.entity_instance, work_schedule: ifcopenshell.entity_instance, attributes: dict[str, Any]
+    file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, attributes: dict[str, Any]
 ) -> None:
     """Edits the attributes of an IfcWorkSchedule
 

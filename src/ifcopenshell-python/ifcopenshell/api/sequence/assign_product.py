@@ -22,7 +22,7 @@ import ifcopenshell.guid
 
 
 def assign_product(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     relating_product: ifcopenshell.entity_instance,
     related_object: ifcopenshell.entity_instance,
 ) -> ifcopenshell.entity_instance:

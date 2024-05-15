@@ -17,22 +17,32 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from ifcopenshell.util.data import Clipping
 from math import sin, cos
+from typing import Any, Optional, Union
 
 
-def add_slab_representation(file, **usecase_settings) -> None:
+def add_slab_representation(
+    file,
+    # IfcGeometricRepresentationContext
+    context: ifcopenshell.entity_instance,
+    # in meters
+    depth: float = 0.2,
+    # in radians
+    x_angle: float = 0.0,
+    # A list of planes that define clipping half space solids
+    # Planes are defined either by Clipping objects
+    # or by dictionaries of arguments for `Clipping.parse`
+    clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "context": None,  # IfcGeometricRepresentationContext
-        "depth": 0.2,
-        "x_angle": 0,  # Radians
-        # Planes are defined either by Clipping objects
-        # or by dictionaries of arguments for `Clipping.parse`
-        "clippings": [],  # A list of planes that define clipping half space solids
+        "context": context,
+        "depth": depth,
+        "x_angle": x_angle,
+        "clippings": clippings if clippings is not None else [],
     }
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

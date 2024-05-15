@@ -36,7 +36,7 @@ def edit_profile_usage(
     :param usage: The IfcMaterialProfileSetUsage entity you want to edit
     :type usage: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -93,7 +93,7 @@ def edit_profile_usage(
     usecase = Usecase()
 
     usecase.file = file
-    usecase.settings = {"usage": usage, "attributes": attributes or {}}
+    usecase.settings = {"usage": usage, "attributes": attributes}
     return usecase.execute()
 
 

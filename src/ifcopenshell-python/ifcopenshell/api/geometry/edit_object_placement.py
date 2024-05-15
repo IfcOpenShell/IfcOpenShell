@@ -31,8 +31,8 @@ def edit_object_placement(
     file: ifcopenshell.file,
     product: ifcopenshell.entity_instance,
     matrix: Optional[NPArrayOfFloats] = None,
-    is_si=True,
-    should_transform_children=False,
+    is_si: bool = True,
+    should_transform_children: bool = False,
 ) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file

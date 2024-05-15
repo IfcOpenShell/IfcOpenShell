@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_group(file, group=None) -> None:
+def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -> None:
     """Removes a group
 
     All products assigned to the group will remain, but the relationship to

@@ -16,13 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 from mathutils import Matrix  # For now, we depend on Blender
+import bpy.types
 
 
-def create_axis_curve(file, axis_curve=None, grid_axis=None) -> None:
+def create_axis_curve(
+    file: ifcopenshell.file, axis_curve: bpy.types.Object, grid_axis: ifcopenshell.entity_instance
+) -> None:
     """Adds curve geometry to a grid axis to represent the axis extents
 
     This currently depends on the Blender geometry kernel to function.

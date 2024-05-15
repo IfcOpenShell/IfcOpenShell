@@ -15,9 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional, Literal
 
 
-def create_grid_axis(file, axis_tag=None, same_sense=None, uvw_axes=None, grid=None) -> None:
+def create_grid_axis(
+    file: ifcopenshell.file,
+    grid: ifcopenshell.entity_instance,
+    axis_tag: str = "A",
+    same_sense: bool = True,
+    uvw_axes: Literal["UAxes", "VAxes", "WAxes"] = "UAxes",
+) -> ifcopenshell.entity_instance:
     """Adds a new grid axis to a grid
 
     An IFC grid will typically have a minimum of two axes which will be
@@ -66,17 +74,9 @@ def create_grid_axis(file, axis_tag=None, same_sense=None, uvw_axes=None, grid=N
         axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
             axis_tag="1", uvw_axes="VAxes", grid=grid)
     """
-    settings = {
-        "axis_tag": axis_tag or "A",
-        "same_sense": same_sense or True,
-        "uvw_axes": uvw_axes or "UAxes",  # Choose which axes
-        "grid": grid,
-    }
 
-    element = file.create_entity(
-        "IfcGridAxis", **{"AxisTag": settings["axis_tag"], "SameSense": settings["same_sense"]}
-    )
-    axes = list(getattr(settings["grid"], settings["uvw_axes"]) or [])
+    element = file.create_entity("IfcGridAxis", **{"AxisTag": axis_tag, "SameSense": same_sense})
+    axes = list(getattr(grid, uvw_axes) or [])
     axes.append(element)
-    setattr(settings["grid"], settings["uvw_axes"], axes)
+    setattr(grid, uvw_axes, axes)
     return element

@@ -89,7 +89,6 @@ def assign_connection_geometry(
     usecase.axis = axis
     usecase.ref_direction = ref_direction
     usecase.unit_scale = unit_scale
-    usecase.ifc_vertices = []
     return usecase.execute()
 
 

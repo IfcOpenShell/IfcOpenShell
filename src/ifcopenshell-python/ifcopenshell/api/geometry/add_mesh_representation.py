@@ -17,26 +17,43 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Optional
+
+COORD_3D = tuple[float, float, float]
 
 
-def add_mesh_representation(file: ifcopenshell.file, **usecase_settings) -> None:
+def add_mesh_representation(
+    file: ifcopenshell.file,
+    # IfcGeometricRepresentationContext
+    context: ifcopenshell.entity_instance,
+    # Vertices, edges, and faces are given in the form of: [item1, item2, item3, ...]
+    # A list of coordinates
+    # ... where itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]
+    vertices: list[COORD_3D],
+    # A list of edges, represented by vertex index pairs
+    # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
+    edges: list[tuple[int, int]],
+    # A list of polygons, represented by vertex indices
+    # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
+    faces: list[list[int]],
+    # Optionally apply a vector offset to all coordinates
+    cooridnate_offset: Optional[COORD_3D] = None,
+    # A scale factor to apply for all vectors in case the unit is different
+    unit_scale: Optional[float] = None,
+    # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
+    force_faceted_brep: bool = False,
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "context": None,  # IfcGeometricRepresentationContext
-        # Vertices, edges, and faces are given in the form of: [item1, item2, item3, ...]
-        # ... where itemN = [(0., 0., 0.), (1., 1., 1.), (x, y, z), ...]
-        "vertices": None,  # A list of coordinates
-        # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
-        "edges": None,  # A list of edges, represented by vertex index pairs
-        # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
-        "faces": None,  # A list of polygons, represented by vertex indices
-        "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
-        "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
-        "force_faceted_brep": False,  # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
+        "context": context,
+        "vertices": vertices,
+        "edges": edges,
+        "faces": faces,
+        "coordinate_offset": cooridnate_offset,
+        "unit_scale": unit_scale,
+        "force_faceted_brep": force_faceted_brep,
     }
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

@@ -19,12 +19,10 @@
 import ifcopenshell.util.element
 
 
-def remove_boolean(file, **usecase_settings) -> None:
+def remove_boolean(file: ifcopenshell.file, item: ifcopenshell.entity_instance) -> None:
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"item": None}
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
+    usecase.settings = {"item": item}
     return usecase.execute()
 
 

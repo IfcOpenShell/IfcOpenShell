@@ -20,30 +20,31 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def disconnect_element(file, **usecase_settings) -> None:
-    settings = {
-        "relating_element": None,
-        "related_element": None,
-    }
-    for key, value in usecase_settings.items():
-        settings[key] = value
-
+def disconnect_element(
+    file: ifcopenshell.file,
+    relating_element: ifcopenshell.entity_instance,
+    related_element: ifcopenshell.entity_instance,
+) -> None:
+    # TODO: arguments relating_element, related_element probably
+    # should be renamed to element1, element2
+    # as api call doesn't really treat them as "relating" and "related"
+    # and just purging all connections between them
     incompatible_connections = []
 
-    for rel in settings["relating_element"].ConnectedTo:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["related_element"]:
+    for rel in relating_element.ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == related_element:
             incompatible_connections.append(rel)
 
-    for rel in settings["relating_element"].ConnectedFrom:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == settings["related_element"]:
+    for rel in relating_element.ConnectedFrom:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == related_element:
             incompatible_connections.append(rel)
 
-    for rel in settings["related_element"].ConnectedTo:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["relating_element"]:
+    for rel in related_element.ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == relating_element:
             incompatible_connections.append(rel)
 
-    for rel in settings["related_element"].ConnectedFrom:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == settings["relating_element"]:
+    for rel in related_element.ConnectedFrom:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == relating_element:
             incompatible_connections.append(rel)
 
     if incompatible_connections:

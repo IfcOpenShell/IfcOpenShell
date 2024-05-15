@@ -16,13 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import collections.abc
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
 from mathutils import Vector
 from math import cos, radians
-
-import collections
+from typing import Any, Optional, Literal, Union
+import dataclasses
 
 
 SUPPORTED_DOOR_TYPES = (
@@ -38,9 +40,14 @@ SUPPORTED_DOOR_TYPES = (
 )
 
 
+def mm(x: float) -> float:
+    """mm to meters shortcut for readability"""
+    return x / 1000
+
+
 def create_ifc_door_lining(
     builder: ShapeBuilder, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
-):
+) -> ifcopenshell.entity_instance:
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
     `thickness` can be also defined just as 1 float value.
@@ -69,80 +76,212 @@ def create_ifc_door_lining(
     return door_lining
 
 
-def create_ifc_box(builder: ShapeBuilder, size: Vector, position: Vector = V(0, 0, 0).freeze()):
+def create_ifc_box(
+    builder: ShapeBuilder, size: Vector, position: Vector = V(0, 0, 0).freeze()
+) -> ifcopenshell.entity_instance:
     rect = builder.rectangle(size.xy)
     box = builder.extrude(rect, size.z, position=position, extrusion_vector=V(0, 0, 1))
     return box
 
 
-def add_door_representation(file, **usecase_settings) -> None:
-    """units in usecase_settings expected to be in ifc project units"""
+# we use dataclass as we need default values for arguments
+# it's okay to use slots since we don't need dynamic attributes
+@dataclasses.dataclass(slots=True)
+class DoorLiningProperties:
+    LiningDepth: Optional[float] = None
+    """Optional, defaults to 50mm."""
+
+    LiningThickness: Optional[float] = None
+    """Optional, defaults to 50mm."""
+
+    LiningOffset: Optional[float] = None
+    """Offset from the outer side of the wall (by Y-axis). Optional, defaults to 0.0."""
+
+    LiningToPanelOffsetX: Optional[float] = None
+    """Offset from the wall. Optional, defaults to 25mm."""
+
+    LiningToPanelOffsetY: Optional[float] = None
+    """Offset from the X-axis (unlike windows). Optional, defaults to 25mm."""
+
+    TransomThickness: Optional[float] = None
+    """Vertical distance between door and window panels. Optional, defaults to 0.0."""
+
+    TransomOffset: Optional[float] = None
+    """Distance from the bottom door opening
+    to the beginning of the transom
+    unlike windows TransomOffset which goes to the center of the transom.
+    Optional, defaults 1.525m."""
+
+    ShapeAspectStyle: None = None
+    """Optional. Deprecated argument."""
+
+    CasingDepth: Optional[float] = None
+    """Casing cover wall faces around the opening
+    on the left, right and upper sides
+    Casing should be either on both sides of the wall or no casing
+    If `LiningOffset` is present then therefore casing is not possible on outer wall
+    therefore there will be no casing on inner wall either. Optional, defaults to 5mm."""
+
+    CasingThickness: Optional[float] = None
+    """Casing thickness by Z-axis. Optional, defaults to 75mm."""
+
+    ThresholdDepth: Optional[float] = None
+    """Threshold covers the bottom side of the opening. Optional, defaults to 100mm."""
+
+    ThresholdThickness: Optional[float] = None
+    """Theshold thickness by Z-axis. Optional, defaults to 25mm."""
+
+    ThresholdOffset: Optional[float] = None
+    """Threshold offset by Y-axis. Optional, defaults to 0.0."""
+
+    def initialize_properties(self, unit_scale: float) -> None:
+        # in meters
+        # fmt: off
+        default_values: dict[str, float] = dict(
+            LiningDepth          = mm(50),
+            LiningThickness      = mm(50),
+            LiningOffset         = 0.0,
+            LiningToPanelOffsetX = mm(25),
+            LiningToPanelOffsetY = mm(25),
+            TransomThickness     = 0.0,
+            TransomOffset        = mm(1525),
+            CasingDepth          = mm(5),
+            CasingThickness      = mm(75),
+            ThresholdDepth       = mm(100),
+            ThresholdThickness   = mm(25),
+            ThresholdOffset      = 0.0,
+        )
+        # fmt: on
+
+        si_conversion = 1 / unit_scale
+        for attr, default_value in default_values.items():
+            if getattr(self, attr) is not None:
+                continue
+            setattr(self, attr, default_value * si_conversion)
+
+
+@dataclasses.dataclass(slots=True)
+class DoorPanelProperties:
+    PanelDepth: Optional[float] = None
+    """Frame thickness by Y axis. Optional, defaults to 35 mm."""
+
+    PanelWidth: float = 1.0
+    """Ratio to the clear door opening. Optional, defaults to 1.0."""
+
+    FrameDepth: Optional[float] = None
+    """Frame thickness by Y axis. Optional, defaults to 35 mm."""
+
+    FrameThickness: Optional[float] = None
+    """Frame thickness by X axis. Optional, defaults to 35 mm."""
+
+    PanelPosition: None = None
+    """Optional, value is never used"""
+
+    PanelOperation: None = None
+    """Optional, value is never used.
+    Defines the basic ways to describe how door panels operate."""
+
+    ShapeAspectStyle: None = None
+    """Optional. Deprecated argument."""
+
+    def initialize_properties(self, unit_scale: float) -> None:
+        # in meters
+        # fmt: off
+        default_values: dict[str, float] = dict(
+            PanelDepth     = mm(35),
+            FrameDepth     = mm(35),
+            FrameThickness = mm(35),
+        )
+        # fmt: on
+
+        si_conversion = 1 / unit_scale
+        for attr, default_value in default_values.items():
+            if getattr(self, attr) is not None:
+                continue
+            setattr(self, attr, default_value * si_conversion)
+
+
+def add_door_representation(
+    file: ifcopenshell.file,
+    *,  # keywords only as this API implementation is probably not final
+    context: ifcopenshell.entity_instance,
+    overall_height: Optional[float] = None,
+    overall_width: Optional[float] = None,
+    # door type
+    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm
+    operation_type: Literal[
+        "SINGLE_SWING_LEFT",
+        "SINGLE_SWING_RIGHT",
+        "DOUBLE_SWING_RIGHT",
+        "DOUBLE_SWING_LEFT",
+        "DOUBLE_DOOR_SINGLE_SWING",
+        "DOUBLE_DOOR_DOUBLE_SWING",
+        "SLIDING_TO_LEFT",
+        "SLIDING_TO_RIGHT",
+        "DOUBLE_DOOR_SLIDING",
+    ] = "SINGLE_SWING_LEFT",
+    lining_properties: Optional[Union[DoorLiningProperties, dict[str, Any]]] = None,
+    panel_properties: Optional[Union[DoorPanelProperties, dict[str, Any]]] = None,
+    unit_scale: Optional[float] = None,
+) -> ifcopenshell.entity_instance:
+    """units in usecase_settings expected to be in ifc project units
+
+    :param context: IfcGeometricRepresentationContext for the representation.
+    :type context: ifcopenshell.entity_instance
+    :param overall_height: Overall door height. Defaults to 2m.
+    :type overall_height: float, optional
+    :param overall_width: Overall door width. Defaults to 0.9m.
+    :type overall_width: float, optional
+    :param operation_type: Type of the door. Defaults to SINGLE_SWING_LEFT.
+    :type operation_type: str, optional
+    :param lining_properties: DoorLiningProperties or a dictionary to create one.
+        See DoorLiningProperties description for details.
+    :type lining_properties: Union[DoorLiningProperties, dict[str, Any]]]
+    :param panel_properties: DoorPanelProperties or a dictionary to create one.
+        See DoorPanelProperties description for details.
+    :type panel_properties: Union[DoorPanelProperties, dict[str, Any]]]
+    :param unit_scale: The unit scale as calculated by
+        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
+        will be automatically calculated for you.
+    :type unit_scale: float, optional
+    :return: IfcShapeRepresentation for a door.
+    :rtype: ifcopenshell.entity_instance
+
+    """
     usecase = Usecase()
     usecase.file = file
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoor.htm
-    # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorLiningProperties.htm
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorPanelProperties.htm
-    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
-    usecase.settings.update(
+    # define unit_scale first as it's going to be used setting default arguments
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale
+    settings: dict[str, Any] = {"unit_scale": unit_scale}
+
+    if lining_properties is None:
+        lining_properties = DoorLiningProperties()
+    elif not isinstance(lining_properties, DoorLiningProperties):
+        lining_properties = DoorLiningProperties(**lining_properties)
+    lining_properties.initialize_properties(unit_scale)
+    lining_properties = dataclasses.asdict(lining_properties)
+
+    if panel_properties is None:
+        panel_properties = DoorPanelProperties()
+    elif not isinstance(panel_properties, DoorPanelProperties):
+        panel_properties = DoorPanelProperties(**panel_properties)
+    panel_properties.initialize_properties(unit_scale)
+    panel_properties = dataclasses.asdict(panel_properties)
+
+    settings.update(
         {
-            "context": None,  # IfcGeometricRepresentationContext
-            "overall_height": usecase.convert_si_to_unit(2.0),
-            "overall_width": usecase.convert_si_to_unit(0.9),
-            # DOUBLE_DOOR_DOUBLE_SWING, DOUBLE_DOOR_FOLDING, DOUBLE_DOOR_LIFTING_VERTICAL,
-            # DOUBLE_DOOR_SINGLE_SWING, DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_LEFT,
-            # DOUBLE_DOOR_SINGLE_SWING_OPPOSITE_RIGHT, DOUBLE_DOOR_SLIDING,
-            # DOUBLE_SWING_LEFT, DOUBLE_SWING_RIGHT, FOLDING_TO_LEFT,
-            # FOLDING_TO_RIGHT, LIFTING_HORIZONTAL, LIFTING_VERTICAL_LEFT,
-            # LIFTING_VERTICAL_RIGHT, REVOLVING, REVOLVING_VERTICAL,
-            # ROLLINGUP, SINGLE_SWING_LEFT, SINGLE_SWING_RIGHT, SLIDING_TO_LEFT,
-            # SLIDING_TO_RIGHT, SWING_FIXED_LEFT, SWING_FIXED_RIGHT
-            "operation_type": "SINGLE_SWING_LEFT",  # door type
-            "lining_properties": {
-                "LiningDepth": usecase.convert_si_to_unit(0.050),
-                "LiningThickness": usecase.convert_si_to_unit(0.050),
-                # offset from the outer side of the wall (by Y-axis)
-                "LiningOffset": usecase.convert_si_to_unit(0.0),
-                # offset from the wall
-                "LiningToPanelOffsetX": usecase.convert_si_to_unit(0.025),
-                # offset from the X-axis (unlike windows)
-                "LiningToPanelOffsetY": usecase.convert_si_to_unit(0.025),
-                # transom - vertical distance between door and window panels
-                "TransomThickness": usecase.convert_si_to_unit(0.000),
-                # TransomOffset - distance from the bottom door opening
-                # to the beginning of the transom
-                # unlike windows TransomOffset which goes to the center of the transom
-                "TransomOffset": usecase.convert_si_to_unit(1.525),
-                "ShapeAspectStyle": None,  # DEPRECATED
-                # Casing cover wall faces around the opening
-                # on the left, right and upper sides
-                # Casing should be either on both sides of the wall or no casing
-                # If `LiningOffset` is present then therefore casing is not possible on outer wall
-                # therefore there will be no casing on inner wall either
-                "CasingDepth": usecase.convert_si_to_unit(0.005),
-                "CasingThickness": usecase.convert_si_to_unit(0.075),  # by Z-axis
-                # Threshold covers the bottom side of the opening
-                "ThresholdDepth": usecase.convert_si_to_unit(0.1),
-                "ThresholdThickness": usecase.convert_si_to_unit(0.025),  # by Z-axis
-                # offset by Y-axis
-                "ThresholdOffset": usecase.convert_si_to_unit(0.000),
-            },
-            "panel_properties": {
-                "PanelDepth": usecase.convert_si_to_unit(0.035),  # by Y
-                "PanelWidth": 1.0,  # as ratio to the clear door opening
-                "FrameDepth": usecase.convert_si_to_unit(0.035),  # by Y
-                "FrameThickness": usecase.convert_si_to_unit(0.035),  # by X
-                # LEFT, MIDDLE, RIGHT, NOTDEFINED
-                "PanelPosition": ...,  # NEVER USED
-                # defines the basic ways to describe how door panels operate
-                # basically how it opens
-                "PanelOperation": None,  # NEVER USED
-                "ShapeAspectStyle": None,  # DEPRECATED
-            },
+            "context": context,
+            "overall_height": overall_height if overall_height is not None else usecase.convert_si_to_unit(2.0),
+            "overall_width": overall_width if overall_width is not None else usecase.convert_si_to_unit(0.9),
+            "operation_type": operation_type,
+            "lining_properties": lining_properties,
+            "panel_properties": panel_properties,
         }
     )
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
+    usecase.settings = settings
     return usecase.execute()
 
 

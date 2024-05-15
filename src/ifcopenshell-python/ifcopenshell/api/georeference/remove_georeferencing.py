@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 
-def remove_georeferencing(file) -> None:
+
+def remove_georeferencing(file: ifcopenshell.file) -> None:
     """Remove georeferencing data
 
     All georeferencing parameters such as projected CRS and map conversion
