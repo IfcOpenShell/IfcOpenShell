@@ -20,18 +20,24 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
+from typing import Optional
 
 
-def connect_path(file, **usecase_settings) -> None:
+def connect_path(
+    file: ifcopenshell.file,
+    relating_element: ifcopenshell.entity_instance,
+    related_element: ifcopenshell.entity_instance,
+    relating_connection: str = "NOTDEFINED",
+    related_connection: str = "NOTDEFINED",
+    description: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     settings = {
-        "relating_element": None,
-        "related_element": None,
-        "relating_connection": "NOTDEFINED",
-        "related_connection": "NOTDEFINED",
-        "description": None,
+        "relating_element": relating_element,
+        "related_element": related_element,
+        "relating_connection": relating_connection,
+        "related_connection": related_connection,
+        "description": description,
     }
-    for key, value in usecase_settings.items():
-        settings[key] = value
 
     incompatible_connections = []
     for rel in settings["relating_element"].ConnectedTo:

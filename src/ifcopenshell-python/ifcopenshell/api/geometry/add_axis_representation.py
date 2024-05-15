@@ -17,9 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Union
+
+COORD = Union[tuple[float, float], tuple[float, float, float]]
 
 
-def add_axis_representation(file, context=None, axis=None) -> None:
+def add_axis_representation(
+    file: ifcopenshell.file, context: ifcopenshell.entity_instance, axis: tuple[COORD, COORD]
+) -> ifcopenshell.entity_instance:
     """Adds a new axis representation
 
     Certain objects are typically "axis-based", such as walls, beams,

@@ -24,7 +24,7 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Union, Callable
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -379,7 +379,7 @@ class file:
 
         return e
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         elif attr == "schema":

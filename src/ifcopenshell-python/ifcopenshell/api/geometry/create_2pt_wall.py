@@ -22,8 +22,16 @@ import ifcopenshell.util.unit
 
 
 def create_2pt_wall(
-    file, element=None, context=None, p1=None, p2=None, elevation=None, height=None, thickness=None, is_si=True
-) -> None:
+    file: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    context: ifcopenshell.entity_instance,
+    p1: tuple[float, float],
+    p2: tuple[float, float],
+    elevation: float,
+    height: float,
+    thickness: float,
+    is_si: bool = True,
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {

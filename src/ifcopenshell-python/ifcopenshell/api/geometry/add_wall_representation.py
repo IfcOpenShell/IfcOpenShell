@@ -18,27 +18,39 @@
 
 import ifcopenshell.util.unit
 from math import sin, cos
+from typing import Optional, Union, Any
 from ifcopenshell.util.data import Clipping
 
 
-def add_wall_representation(file, **usecase_settings) -> None:
+def add_wall_representation(
+    file: ifcopenshell.file,
+    context: ifcopenshell.entity_instance,  # IfcGeometricRepresentationContext
+    # all lengths are in meters
+    length: float = 1.0,
+    height: float = 3.0,
+    offset: float = 0.0,
+    thickness: float = 0.2,
+    # Sloped walls along the wall's X axis, provided in radians
+    x_angle: float = 0.0,
+    # A list of planes that define clipping half space solids
+    # Planes are defined either by Clipping objects
+    # or by dictionaries of arguments for `Clipping.parse`
+    clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+    # Any existing IfcBooleanResults
+    booleans: Optional[list[ifcopenshell.entity_instance]] = None,
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "context": None,  # IfcGeometricRepresentationContext
-        "length": 1.0,
-        "height": 3.0,
-        "offset": 0.0,
-        "thickness": 0.2,
-        # Sloped walls along the wall's X axis, provided in radians
-        "x_angle": 0,
-        # Planes are defined either by Clipping objects
-        # or by dictionaries of arguments for `Clipping.parse`
-        "clippings": [],  # A list of planes that define clipping half space solids
-        "booleans": [],  # Any existing IfcBooleanResults
+        "context": context,
+        "length": length,
+        "height": height,
+        "offset": offset,
+        "thickness": thickness,
+        "x_angle": x_angle,
+        "clippings": clippings if clippings is not None else [],
+        "booleans": booleans if booleans is not None else [],
     }
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

@@ -19,9 +19,12 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
+from typing import Optional
 
 
-def add_group(file, Name="Unnamed", Description=None) -> None:
+def add_group(
+    file: ifcopenshell.file, Name: str = "Unnamed", Description: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new group
 
     An IFC group is an arbitrary collection of products, which are typically

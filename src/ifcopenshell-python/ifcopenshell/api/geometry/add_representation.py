@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
-import bpy
+import bpy.types
 import math
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector, Matrix
+from typing import Union, Optional, Literal
 
 
 Z_AXIS = Vector((0, 0, 1))
@@ -28,7 +29,44 @@ X_AXIS = Vector((1, 0, 0))
 EPSILON = 1e-6
 
 
-def add_representation(file: ifcopenshell.file, **usecase_settings) -> ifcopenshell.entity_instance:
+def add_representation(
+    file: ifcopenshell.file,
+    *,  # keywords only as this API implementation is probably not final
+    # IfcGeometricRepresentationContext
+    context: ifcopenshell.entity_instance,
+    # This is (currently) a Blender object, hence this depends on Blender now
+    blender_object: bpy.types.Object,
+    # This is (currently) a Blender data object, hence this depends on Blender now
+    geometry: Union[bpy.types.Mesh, bpy.types.Curve],
+    # Optionally apply a vector offset to all coordinates
+    coordinate_offset: Optional[Vector] = None,
+    # How many representation items to create
+    total_items: int = 1,
+    # A scale factor to apply for all vectors in case the unit is different
+    unit_scale: Optional[float] = None,
+    # If we should force faceted breps for meshes
+    should_force_faceted_brep: bool = False,
+    # If we should force triangulation for meshes
+    should_force_triangulation: bool = False,
+    # If UV coordinates should also be generated
+    should_generate_uvs: bool = False,
+    # Whether to cast a mesh into a particular class
+    ifc_representation_class: Optional[
+        Literal[
+            "IfcExtrudedAreaSolid/IfcRectangleProfileDef",
+            "IfcExtrudedAreaSolid/IfcCircleProfileDef",
+            "IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef",
+            "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids",
+            "IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage",
+            "IfcGeometricCurveSet/IfcTextLiteral",
+            "IfcTextLiteral",
+        ]
+    ] = None,
+    # The material profile set if the extrusion requires it
+    profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
+    # The text literal if the representation requires it
+    text_literal: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     # lazy import Helper to avoid circular import
     if "Helper" not in globals():
         from blenderbim.bim.module.geometry.helper import Helper
@@ -37,30 +75,20 @@ def add_representation(file: ifcopenshell.file, **usecase_settings) -> ifcopensh
     # TODO: This usecase currently depends on Blender's data model
     usecase.file = file
     usecase.settings = {
-        "context": None,  # IfcGeometricRepresentationContext
-        "blender_object": None,  # This is (currently) a Blender object, hence this depends on Blender now
-        "geometry": None,  # This is (currently) a Blender data object, hence this depends on Blender now
-        "coordinate_offset": None,  # Optionally apply a vector offset to all coordinates
-        "total_items": 1,  # How many representation items to create
-        "unit_scale": None,  # A scale factor to apply for all vectors in case the unit is different
-        "should_force_faceted_brep": False,  # If we should force faceted breps for meshes
-        "should_force_triangulation": False,  # If we should force triangulation for meshes
-        "should_generate_uvs": False,  # If UV coordinates should also be generated
-        #  Possible IFC representation classes:
-        #  IfcExtrudedAreaSolid/IfcRectangleProfileDef
-        #  IfcExtrudedAreaSolid/IfcCircleProfileDef
-        #  IfcExtrudedAreaSolid/IfcArbitraryClosedProfileDef
-        #  IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids
-        #  IfcExtrudedAreaSolid/IfcMaterialProfileSetUsage
-        #  IfcGeometricCurveSet/IfcTextLiteral
-        #  IfcTextLiteral
-        "ifc_representation_class": None,  # Whether to cast a mesh into a particular class
-        "profile_set_usage": None,  # The material profile set if the extrusion requires it
-        "text_literal": None,  # The text literal if the representation requires it
+        "context": context,
+        "blender_object": blender_object,
+        "geometry": geometry,
+        "coordinate_offset": coordinate_offset,
+        "total_items": total_items,
+        "unit_scale": unit_scale,
+        "should_force_faceted_brep": should_force_faceted_brep,
+        "should_force_triangulation": should_force_triangulation,
+        "should_generate_uvs": should_generate_uvs,
+        "ifc_representation_class": ifc_representation_class,
+        "profile_set_usage": profile_set_usage,
+        "text_literal": text_literal,
     }
     usecase.ifc_vertices = []
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

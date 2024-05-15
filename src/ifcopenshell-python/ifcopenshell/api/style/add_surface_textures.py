@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 def add_surface_textures(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     material: Optional[bpy.types.Material] = None,
     textures: Optional[list[dict]] = None,
     uv_maps: Optional[list[ifcopenshell.entity_instance]] = None,

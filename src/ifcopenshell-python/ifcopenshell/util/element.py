@@ -979,7 +979,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
 def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
-    :param element: The IFC element
+    :param element: IfcGroup entity
     :type element: ifcopenshell.entity_instance
     :return: All subelements of the group
     :rtype: list[ifcopenshell.entity_instance]
