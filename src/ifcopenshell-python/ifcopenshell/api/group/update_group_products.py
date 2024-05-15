@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
+import ifcopenshell.util.element
 
 
 def update_group_products(
@@ -60,11 +61,17 @@ def update_group_products(
             }
         )
     else:
-        # assumes 1:1 cardinality, will need to be updated to reflect IFC4 changes
-        # where the cardinality is 0:? - vulevukusej
-        rel = settings["group"].IsGroupedBy[0]
-        existing_sub_groups = [g for g in rel.RelatedObjects if g.is_a("IfcGroup")]
+        rels = settings["group"].IsGroupedBy
+        objects = set(settings["products"])
+        for rel in rels:
+            objects.update([g for g in rel.RelatedObjects if g.is_a("IfcGroup")])
+        to_purge = rels[1:]
 
-        rel.RelatedObjects = settings["products"]
-        for g in existing_sub_groups:
-            rel.RelatedObjects.add(g)
+        for rel in to_purge:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+
+        rels[0].RelatedObjects = list(objects)
+        return rels[0]
