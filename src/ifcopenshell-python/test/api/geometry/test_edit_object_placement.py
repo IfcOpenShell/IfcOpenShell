@@ -268,7 +268,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
     def test_changing_placements_relative_to_a_nest_parent(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         subelement = ifcopenshell.api.run("system.add_port", self.file, element=element)
         matrix = numpy.array(
             (
@@ -546,7 +546,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
     def test_changing_placements_always_affecting_child_ports_as_a_special_case(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
         subelement = ifcopenshell.api.run("system.add_port", self.file, element=element)
 
         matrix = numpy.eye(4)
@@ -662,7 +662,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement), matrix)
 
 
-class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3):
+class TestEditObjectPlacementIFC2X3(test.bootstrap.IFC2X3, TestEditObjectPlacement):
     def test_changing_placements_relative_to_a_distribution_element(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("unit.assign_unit", self.file)

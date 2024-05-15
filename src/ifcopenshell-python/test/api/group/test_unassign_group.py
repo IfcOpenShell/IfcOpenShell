@@ -22,9 +22,9 @@ import ifcopenshell.api
 
 class TestAssignGroup(test.bootstrap.IFC4):
     def test_group_unassignment(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         group = ifcopenshell.api.run("group.add_group", self.file)
         ifcopenshell.api.run("group.assign_group", self.file, products=[element, element2, element3], group=group)
         ifcopenshell.api.run("group.unassign_group", self.file, products=[element2, element3], group=group)
@@ -35,9 +35,13 @@ class TestAssignGroup(test.bootstrap.IFC4):
         assert rel.RelatedObjects == (element,)
 
     def test_remove_relationship_unassigning_last_element(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         group = ifcopenshell.api.run("group.add_group", self.file)
         ifcopenshell.api.run("group.assign_group", self.file, products=[element, element2], group=group)
         ifcopenshell.api.run("group.unassign_group", self.file, products=[element, element2], group=group)
         assert len(self.file.by_type("IfcRelAssignsToGroup")) == 0
+
+
+class TestAssignGroupIFC2X3(test.bootstrap.IFC2X3, TestAssignGroup):
+    pass

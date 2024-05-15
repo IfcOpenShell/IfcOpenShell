@@ -27,7 +27,7 @@ class TestRemoveGroup(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcGroup")) == 0
 
     def test_removing_orphaned_group_relationships(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         group = ifcopenshell.api.run("group.add_group", self.file)
         ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group)
         ifcopenshell.api.run("group.remove_group", self.file, group=group)
@@ -41,3 +41,7 @@ class TestRemoveGroup(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelDefinesByProperties")
         assert not self.file.by_type("IfcPropertySet")
         assert not self.file.by_type("IfcPropertySingleValue")
+
+
+class TestRemoveGroupIFC2X3(test.bootstrap.IFC2X3, TestRemoveGroup):
+    pass
