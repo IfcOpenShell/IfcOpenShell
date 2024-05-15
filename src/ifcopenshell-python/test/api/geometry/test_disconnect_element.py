@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestDisconnectPath(test.bootstrap.IFC4):
+class TestDisconnectElement(test.bootstrap.IFC4):
     def test_disconnecting_an_element(self):
         wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -34,3 +34,7 @@ class TestDisconnectPath(test.bootstrap.IFC4):
         ifcopenshell.api.run("geometry.connect_element", self.file, relating_element=wall1, related_element=wall2)
         ifcopenshell.api.run("geometry.disconnect_element", self.file, relating_element=wall2, related_element=wall1)
         assert not self.file.by_type("IfcRelConnectsElements")
+
+
+class TestDisconnectElementIFC2X3(test.bootstrap.IFC2X3, TestDisconnectElement):
+    pass
