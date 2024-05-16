@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
 import blenderbim.core.tool
+import blenderbim.core.root
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore

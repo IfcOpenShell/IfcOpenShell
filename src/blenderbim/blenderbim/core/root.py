@@ -16,8 +16,18 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def copy_class(ifc, collector, geometry, root, obj=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def copy_class(
+    ifc: tool.Ifc, collector: tool.Collector, geometry: tool.Geometry, root: tool.Root, obj: bpy.types.Object
+) -> ifcopenshell.entity_instance:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -48,16 +58,16 @@ def copy_class(ifc, collector, geometry, root, obj=None):
 
 
 def assign_class(
-    ifc,
-    collector,
-    root,
-    obj=None,
-    ifc_class=None,
-    predefined_type=None,
-    should_add_representation=True,
-    context=None,
-    ifc_representation_class=None,
-):
+    ifc: tool.Ifc,
+    collector: tool.Collector,
+    root: tool.Root,
+    obj: bpy.types.Object,
+    ifc_class: str,
+    context: ifcopenshell.entity_instance,
+    predefined_type: Optional[str] = None,
+    should_add_representation: bool = True,
+    ifc_representation_class: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     if ifc.get_entity(obj):
         return
 

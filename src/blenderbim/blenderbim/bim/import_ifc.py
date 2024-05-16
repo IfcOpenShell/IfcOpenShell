@@ -26,6 +26,7 @@ import bmesh
 import logging
 import mathutils
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -303,22 +304,22 @@ class IfcImporter:
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element):
+    def is_element_far_away(self, element: ifcopenshell.entity_instance) -> bool:
         try:
             placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
             point = placement[:, 3][0:3]
             return self.is_point_far_away(point, is_meters=False)
         except:
-            pass
+            return False
 
-    def is_point_far_away(self, point, is_meters=True):
+    def is_point_far_away(
+        self, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]], is_meters: bool = True
+    ) -> bool:
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         limit = self.ifc_import_settings.distance_limit
         limit = limit if is_meters else (limit / self.unit_scale)
-        coords = point
-        if hasattr(point, "Coordinates"):
-            coords = point.Coordinates
+        coords = getattr(point, "Coordinates", point)
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_context_filter(self):
@@ -683,7 +684,7 @@ class IfcImporter:
         props.blender_orthogonal_height = str(offset_point[2])
         props.has_blender_offset = True
 
-    def get_offset_point(self):
+    def get_offset_point(self) -> Union[npt.NDArray[np.float64], None]:
         elements_checked = 0
         # If more than these elements aren't far away, the file probably isn't absolutely positioned
         element_checking_threshold = 10
@@ -718,7 +719,7 @@ class IfcImporter:
             if self.is_point_far_away(point, is_meters=False):
                 return point
 
-    def does_element_likely_have_geometry_far_away(self, element):
+    def does_element_likely_have_geometry_far_away(self, element: ifcopenshell.entity_instance) -> bool:
         for representation in element.Representation.Representations:
             items = []
             for item in representation.Items:
@@ -735,13 +736,14 @@ class IfcImporter:
                     if subelement.is_a("IfcCartesianPoint"):
                         if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
+        return False
 
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             if obj.data and obj.data.get("has_cartesian_point_offset", None):
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-            elif self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
+            elif self.is_point_far_away((matrix[:3, 3])):
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
                 matrix = ifcopenshell.util.geolocation.global2local(
                     matrix,

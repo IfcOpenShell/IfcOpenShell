@@ -29,6 +29,7 @@ import blenderbim.core.style
 import blenderbim.tool as tool
 from mathutils import Vector
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from typing import Union, Optional
 
 
 class Root(blenderbim.core.tool.Root):
@@ -129,7 +130,7 @@ class Root(blenderbim.core.tool.Root):
         return ifcopenshell.util.representation.get_representation(element, context=context.ContextType)
 
     @classmethod
-    def get_element_type(cls, element):
+    def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
@@ -282,8 +283,12 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def run_geometry_add_representation(
-        cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
-    ):
+        cls,
+        obj: bpy.types.Object,
+        context: ifcopenshell.entity_instance,
+        ifc_representation_class: Optional[str] = None,
+        profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
+    ) -> ifcopenshell.entity_instance:
         return blenderbim.core.geometry.add_representation(
             tool.Ifc,
             tool.Geometry,

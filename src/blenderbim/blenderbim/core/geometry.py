@@ -18,10 +18,11 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
-import blenderbim.core.tool as tool
 
 if TYPE_CHECKING:
     import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
 
 
 def edit_object_placement(
@@ -37,8 +38,15 @@ def edit_object_placement(
 
 
 def add_representation(
-    ifc, geometry, style, surveyor, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
-):
+    ifc: tool.Ifc,
+    geometry: tool.Geometry,
+    style: tool.Style,
+    surveyor: tool.Surveyor,
+    obj: bpy.types.Object,
+    context: ifcopenshell.entity_instance,
+    ifc_representation_class: Optional[str] = None,
+    profile_set_usage: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -89,15 +97,15 @@ def add_representation(
 
 
 def switch_representation(
-    ifc,
-    geometry,
-    obj=None,
-    representation=None,
-    should_reload=True,
-    is_global=True,
-    should_sync_changes_first=False,
-    apply_openings=True,
-):
+    ifc: tool.Ifc,
+    geometry: tool.Geometry,
+    obj: bpy.types.Object,
+    representation: ifcopenshell.entity_instance,
+    should_reload: bool = True,
+    is_global: bool = True,
+    should_sync_changes_first: bool = False,
+    apply_openings: bool = True,
+) -> None:
     """Function can switch to representation that wasn't yet assigned to that object. See #2766.
 
     `should_sync_changes_first` - sync ifc representation with current state of `obj.data`;

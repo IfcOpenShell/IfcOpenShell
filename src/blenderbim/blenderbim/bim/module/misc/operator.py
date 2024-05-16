@@ -23,6 +23,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.misc as core
 import blenderbim.core.geometry as core_geometry
+import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
@@ -144,6 +145,7 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
         cutter = context.active_object
         objs = [o for o in context.selected_objects if o != cutter]
 
+        objs_to_cut = []
         # Splitting only works on meshes
         for obj in objs:
             # You cannot split meshes if the representation is mapped.
@@ -153,7 +155,13 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
                 if relating_type and tool.Root.does_type_have_representations(relating_type):
                     bpy.ops.bim.unassign_type(related_object=obj.name)
 
+            # refresh representation
             representation = tool.Geometry.get_active_representation(obj)
+
+            # skip empty objects that might get in the way
+            if not representation:
+                continue
+
             core_geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -168,11 +176,13 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
             if not tool.Geometry.is_meshlike(representation):
                 bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="IfcTessellatedFaceSet")
 
-        new_objs = tool.Misc.split_objects_with_cutter(objs, cutter)
+            objs_to_cut.append(obj)
+
+        new_objs = tool.Misc.split_objects_with_cutter(objs_to_cut, cutter)
         for obj in new_objs:
             blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
             bpy.ops.bim.update_representation(obj=obj.name)
-        for obj in objs:
+        for obj in objs_to_cut:
             bpy.ops.bim.update_representation(obj=obj.name)
 
             representation = tool.Geometry.get_active_representation(obj)

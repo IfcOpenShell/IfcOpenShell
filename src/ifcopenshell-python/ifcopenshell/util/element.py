@@ -446,13 +446,13 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     return predefined_type
 
 
-def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """Retrieves the construction type element of an element occurrence
 
     :param element: The element occurrence
     :type: ifcopenshell.entity_instance
     :return: The related type element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
