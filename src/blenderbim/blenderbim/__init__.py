@@ -122,7 +122,7 @@ if sys.modules.get("bpy", None):
             def draw(self, context):
                 layout = self.layout
                 layout.label(text="BlenderBIM could not load.", icon="ERROR")
-                layout.label(text="View the console for full logs.", icon="CONSOLE")
+                layout.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
                 box = layout.box()
                 info = get_debug_info()
                 py = ".".join(info["python_version"].split(".")[0:2])
