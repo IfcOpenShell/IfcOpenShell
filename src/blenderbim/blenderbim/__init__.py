@@ -149,14 +149,7 @@ if sys.modules.get("bpy", None):
 
             def execute(self, context):
                 info = format_debug_info(get_debug_info())
-
-                if platform.system() == "Windows":
-                    command = "echo | set /p nul=" + info
-                elif platform.system() == "Darwin":  # for MacOS
-                    command = 'printf "' + info.replace("\n", "\\n").replace('"', "") + '" | pbcopy'
-                else:  # Linux
-                    command = 'printf "' + info.replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
-                subprocess.run(command, shell=True, check=True)
+                context.window_manager.clipboard = info
                 return {"FINISHED"}
 
         class HiddenPanel:
