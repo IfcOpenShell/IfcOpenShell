@@ -97,7 +97,9 @@ class Misc(blenderbim.core.tool.Misc):
         IfcStore.edited_objs.add(obj)
 
     @classmethod
-    def split_objects_with_cutter(cls, objs, cutter):
+    def split_objects_with_cutter(
+        cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
+    ) -> list[bpy.types.Object]:
         cutter_mesh = cutter.data
 
         bm = bmesh.new()

@@ -18,11 +18,11 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, Union
-import blenderbim.core.tool as tool
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+    import blenderbim.tool as tool
 
 
 def reference_structure(
