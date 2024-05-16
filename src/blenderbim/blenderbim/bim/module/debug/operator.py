@@ -60,13 +60,7 @@ class CopyDebugInformation(bpy.types.Operator):
         print(text)
         print("-" * 80)
 
-        if platform.system() == "Windows":
-            command = "echo | set /p nul=" + text
-        elif platform.system() == "Darwin":  # for MacOS
-            command = 'printf "' + text.replace("\n", "\\n").replace('"', "") + '" | pbcopy'
-        else:  # Linux
-            command = 'printf "' + text.replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
-        subprocess.run(command, shell=True, check=True)
+        context.window_manager.clipboard = text
         return {"FINISHED"}
 
 
