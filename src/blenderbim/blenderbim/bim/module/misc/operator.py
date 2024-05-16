@@ -135,6 +135,10 @@ class ResizeToStorey(bpy.types.Operator, Operator):
 class SplitAlongEdge(bpy.types.Operator, Operator):
     bl_idname = "bim.split_along_edge"
     bl_label = "Split Along Edge"
+    bl_description = (
+        "Active object is considered to be a cutting object."
+        "Will unassign element from a type if type has a representation."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -150,10 +154,12 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
         for obj in objs:
             # You cannot split meshes if the representation is mapped.
             element = tool.Ifc.get_entity(obj)
-            if element:
-                relating_type = tool.Root.get_element_type(element)
-                if relating_type and tool.Root.does_type_have_representations(relating_type):
-                    bpy.ops.bim.unassign_type(related_object=obj.name)
+            if not element:
+                continue
+
+            relating_type = tool.Root.get_element_type(element)
+            if relating_type and tool.Root.does_type_have_representations(relating_type):
+                bpy.ops.bim.unassign_type(related_object=obj.name)
 
             # refresh representation
             representation = tool.Geometry.get_active_representation(obj)
@@ -196,6 +202,8 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
                 should_sync_changes_first=False,
                 apply_openings=True,
             )
+
+        self.report({"INFO"}, f"Splitting finished, {len(new_objs)} new objects created.")
 
 
 class GetConnectedSystemElements(bpy.types.Operator, Operator):
