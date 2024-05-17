@@ -481,7 +481,7 @@ def set_element_value(
                 except:
                     pass
             return
-        elif isinstance(element, (list, tuple)):  # If we use regex
+        elif isinstance(element, (list, tuple, set)):  # If we use regex
             if key.isnumeric():
                 try:
                     element = element[int(key)]
