@@ -504,11 +504,10 @@ class Usecase:
         geom_data = self.settings["geometry"]
 
         if isinstance(geom_data, bpy.types.Mesh):
-            if not self.is_mesh_curve_consecutive(geom_data):
-                return
-            if self.file.schema == "IFC2X3":
-                return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
-            return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+            if self.is_mesh_curve_consecutive(geom_data):
+                if self.file.schema == "IFC2X3":
+                    return self.create_curves_from_mesh_ifc2x3(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
+                return self.create_curves_from_mesh(should_exclude_faces=should_exclude_faces, is_2d=is_2d)
 
         import blenderbim.tool as tool
 
