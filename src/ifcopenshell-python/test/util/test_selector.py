@@ -311,6 +311,13 @@ class TestSetElementValue(test.bootstrap.IFC4):
         subject.set_element_value(self.file, element, "Name", 123)
         assert element.Name == "123"
 
+    def test_set_attributes_attribute(self):
+        material = self.file.create_entity("IfcMaterial")
+        layer = self.file.create_entity("IfcMaterialLayer")
+        layer.Material = material
+        subject.set_element_value(self.file, layer, "Material.Name", "Foo")
+        assert material.Name == "Foo"
+
 
 class TestSelector(test.bootstrap.IFC4):
     def test_selecting_from_specified_elements(self):
