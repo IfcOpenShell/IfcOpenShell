@@ -17,12 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-from typing import Optional
+from typing import Optional, Literal
 
 
 def add_context(
     file: ifcopenshell.file,
-    context_type: str,
+    context_type: Optional[Literal["Model", "Plan"]] = None,
     context_identifier: Optional[str] = None,
     target_view: Optional[str] = None,
     parent: Optional[ifcopenshell.entity_instance] = None,
@@ -96,7 +96,7 @@ def add_context(
 
     :param context_type: The type of the context, must be one of "Model" or
         "Plan" only.
-    :type context_type: str
+    :type context_type: str, optional
     :param context_identifier: The identifier of the context, chosen from
         one of the common identifiers above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional

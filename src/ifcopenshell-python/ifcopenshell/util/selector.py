@@ -21,6 +21,7 @@ import lark
 import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util
+import ifcopenshell.util.attribute
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -30,7 +31,7 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 from decimal import Decimal
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Iterable
 
 
 filter_elements_grammar = lark.Lark(
@@ -326,10 +327,10 @@ def filter_elements(
 
 def set_element_value(
     ifc_file: ifcopenshell.file,
-    element: ifcopenshell.entity_instance,
+    element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
     query: Union[str, list[str]],
-    value: Optional[str],
-) -> Union[ifcopenshell.entity_instance, None]:
+    value: Any,
+) -> None:
     if isinstance(query, (list, tuple)):
         keys = query
     else:

@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.bim.schema
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute, StrProperty
