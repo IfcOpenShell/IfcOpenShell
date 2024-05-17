@@ -419,7 +419,7 @@ def set_element_value(
                             if value in ("True", "true", "TRUE", "Yes", "1"):
                                 value = True
                             elif value in ("False", "false", "FALSE", "No", "0"):
-                                value = True
+                                value = False
                             else:
                                 value = bool(value)
                         return setattr(element, key, value)
