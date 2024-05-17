@@ -397,8 +397,14 @@ def set_element_value(
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-            if isinstance(key, str) and hasattr(element, key):
-                if getattr(element, key) != value:
+            if isinstance(key, str) and ((current_value := getattr(element, key, ...)) is not ...):
+                # check if key is not last
+                if len(keys) != i + 1:
+                    element = current_value
+                    continue
+
+                if current_value != value:
+                    # check if key is not last
                     try:
                         # Try our luck
                         return setattr(element, key, value)
@@ -422,6 +428,10 @@ def set_element_value(
                                 value = False
                             else:
                                 value = bool(value)
+                        elif data_type == "entity":
+                            value = ifc_file.by_guid(value)
+                        if current_value == value:
+                            return
                         return setattr(element, key, value)
             else:
                 # Try to extract pset
