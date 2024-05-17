@@ -286,9 +286,9 @@ endif
 
 	# Required by bcf
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/ad/c7/17c9d16320d8e2cfdb27d2fd298b5e8f7a3f211025b0c1bc7a39a85bd690/xsdata-22.11.tar.gz
+	cd dist/working && wget https://files.pythonhosted.org/packages/b4/ef/35d8118f903510f9e028f8a6a4edb615fa69e28a30d955593425a88e587a/xsdata-24.5.tar.gz
 	cd dist/working && tar -xzvf xsdata*
-	cp -r dist/working/xsdata-22.11/xsdata dist/blenderbim/libs/site/packages/
+	cp -r dist/working/xsdata-24.5/xsdata dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by bcf
