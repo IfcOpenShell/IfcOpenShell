@@ -325,12 +325,16 @@ def filter_elements(
     return transformer.get_results()
 
 
+class SetElementValueException(Exception): ...
+
+
 def set_element_value(
     ifc_file: ifcopenshell.file,
     element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
     query: Union[str, list[str]],
     value: Any,
 ) -> None:
+    original_element = element
     if isinstance(query, (list, tuple)):
         keys = query
     else:
@@ -393,6 +397,7 @@ def set_element_value(
             ifcopenshell.api.run(
                 "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
             )
+            return
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
@@ -403,7 +408,9 @@ def set_element_value(
                     element = current_value
                     continue
 
-                if current_value != value:
+                if current_value == value:
+                    return
+                else:
                     # check if key is not last
                     try:
                         # Try our luck
@@ -485,6 +492,9 @@ def set_element_value(
                     set_element_value(ifc_file, v, keys[i:], value)
                 return
 
+    raise SetElementValueException(
+        f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
+    )
 
 class FacetTransformer(lark.Transformer):
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
