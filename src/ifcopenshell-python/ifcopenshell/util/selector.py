@@ -471,9 +471,8 @@ def set_element_value(
                 except IndexError:
                     return
             else:
-                results = []
                 for v in element:
-                    cls.set_element_value(ifc_file, v, keys[i + 1 :], value)
+                    set_element_value(ifc_file, v, keys[i:], value)
                 return
 
 
