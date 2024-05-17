@@ -400,7 +400,11 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             representation_data["profile_set_usage"] = tool.Geometry.get_profile_set_usage(product)
             representation_data["text_literal"] = tool.Geometry.get_text_literal(old_representation)
 
+        # TODO: replace with core.add_representation?
         new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
+        if new_representation is None:
+            self.report({"ERROR"}, "Error creating representation for Blender object.")
+            return {"CANCELLED"}
 
         if tool.Geometry.is_body_representation(new_representation):
             [
