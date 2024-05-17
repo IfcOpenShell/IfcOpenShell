@@ -59,7 +59,6 @@
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom_Plane.hxx>
 #include <IntTools_FaceFace.hxx>
-#include <STEPConstruct_PointHasher.hxx>
 #include "clash_utils.h"
 
 #ifdef WITH_HDF5
