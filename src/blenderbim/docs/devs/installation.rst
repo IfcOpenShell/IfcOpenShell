@@ -105,6 +105,7 @@ For Linux or Mac:
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/bcf
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -117,6 +118,7 @@ For Linux or Mac:
     $ ln -s $PWD/src/ifccsv/ifccsv.py $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ ln -s $PWD/src/ifcdiff/ifcdiff.py $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
     $ ln -s $PWD/src/bsdd/bsdd.py $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
+    $ ln -s $PWD/src/bcf/src/bcf $BLENDER_ADDON_PATH/libs/site/packages/bcf
     $ ln -s $PWD/src/ifc4d/ifc4d $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ ln -s $PWD/src/ifc5d/ifc5d $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ ln -s $PWD/src/ifccityjson/ifccityjson $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -172,6 +174,7 @@ Before running it follow the instructions descibed after `rem` tags.
     del "%blenderbim%\libs\site\packages\ifccsv.py"
     del "%blenderbim%\libs\site\packages\ifcdiff.py"
     del "%blenderbim%\libs\site\packages\bsdd.py"
+    rd /S /Q "%blenderbim%\libs\site\packages\bcf"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc4d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc5d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifccityjson"
@@ -184,6 +187,7 @@ Before running it follow the instructions descibed after `rem` tags.
     mklink "%blenderbim%\libs\site\packages\ifccsv.py" "%cd%\src\ifccsv\ifccsv.py"
     mklink "%blenderbim%\libs\site\packages\ifcdiff.py" "%cd%\src\ifcdiff\ifcdiff.py"
     mklink "%blenderbim%\libs\site\packages\bsdd.py" "%cd%\src\bsdd\bsdd.py"
+    mklink /D "%blenderbim%\libs\site\packages\bcf" "%cd%\src\bcf\src\bcf"
     mklink /D "%blenderbim%\libs\site\packages\ifc4d" "%cd%\src\ifc4d\ifc4d"
     mklink /D "%blenderbim%\libs\site\packages\ifc5d" "%cd%\src\ifc5d\ifc5d"
     mklink /D "%blenderbim%\libs\site\packages\ifccityjson" "%cd%\src\ifccityjson\ifccityjson"
