@@ -24,6 +24,7 @@ import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -570,11 +571,11 @@ class Geometry(blenderbim.core.tool.Geometry):
                             new.value = element[i]
 
     @classmethod
-    def is_body_representation(cls, representation):
+    def is_body_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Body"
 
     @classmethod
-    def is_box_representation(cls, representation):
+    def is_box_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod

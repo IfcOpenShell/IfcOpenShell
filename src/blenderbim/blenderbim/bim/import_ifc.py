@@ -756,7 +756,9 @@ class IfcImporter:
 
         return mathutils.Matrix(matrix.tolist())
 
-    def find_decomposed_ifc_class(self, element, ifc_class):
+    def find_decomposed_ifc_class(
+        self, element: ifcopenshell.entity_instance, ifc_class: str
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if element.is_a(ifc_class):
             return element
         rel_aggregates = element.IsDecomposedBy

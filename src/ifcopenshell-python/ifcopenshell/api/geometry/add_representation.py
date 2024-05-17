@@ -21,7 +21,7 @@ import math
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector, Matrix
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, Any
 
 
 Z_AXIS = Vector((0, 0, 1))
@@ -93,6 +93,9 @@ def add_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.is_manifold = None
         if (

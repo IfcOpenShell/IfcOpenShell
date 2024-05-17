@@ -16,8 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from typing import Union
 
-def get_primitive_type(attribute_or_data_type):
+
+def get_primitive_type(
+    attribute_or_data_type: Union[ifcopenshell_wrapper.attribute, ifcopenshell_wrapper.parameter_type]
+) -> Union[str, tuple[str, list[str]]]:
     if hasattr(attribute_or_data_type, "type_of_attribute"):
         data_type = str(attribute_or_data_type.type_of_attribute())
     else:

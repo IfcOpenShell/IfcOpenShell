@@ -36,8 +36,9 @@ class AbstractXmlParserSerializer(Protocol):
             xml: The XML file as bytes.
             clazz: The class to parse to.
         """
+        ...
 
-    def serialize(self, obj: T, ns_map: Optional[dict[str, str]] = None) -> str:
+    def serialize(self, obj: object, ns_map: Optional[dict[str, str]] = None) -> str:
         """
         Serialize an object to XML.
 
@@ -48,6 +49,7 @@ class AbstractXmlParserSerializer(Protocol):
         Returns:
             The XML as string.
         """
+        ...
 
 
 class XmlParserSerializer:
@@ -68,7 +70,7 @@ class XmlParserSerializer:
         """
         return self.parser.from_bytes(xml, clazz)
 
-    def serialize(self, obj: T, ns_map: Optional[dict[Optional[str], str]] = None) -> str:
+    def serialize(self, obj: object, ns_map: Optional[dict[Optional[str], str]] = None) -> str:
         """
         Serialize an object to XML.
 
