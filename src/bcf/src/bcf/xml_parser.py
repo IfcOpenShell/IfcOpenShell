@@ -17,7 +17,7 @@ def build_xml_parser(context: Optional[XmlContext] = None) -> XmlParser:
 def build_serializer(context: Optional[XmlContext] = None) -> XmlSerializer:
     """Return a serializer for an XML file."""
     return XmlSerializer(
-        config=SerializerConfig(pretty_print=True),
+        config=SerializerConfig(indent="  "),
         context=context or XmlContext(),
     )
 
