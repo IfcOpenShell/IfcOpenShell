@@ -277,34 +277,6 @@ endif
 	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/5b/ef/f97c3e1a7efa00e989a793fe15297214fc95ad7d9e3810586bd08ce9f0f3/xmlschema-2.0.2.tar.gz
-	cd dist/working && tar -xzvf xmlschema*
-	cp -r dist/working/xmlschema-2.0.2/xmlschema dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/b4/ef/35d8118f903510f9e028f8a6a4edb615fa69e28a30d955593425a88e587a/xsdata-24.5.tar.gz
-	cd dist/working && tar -xzvf xsdata*
-	cp -r dist/working/xsdata-24.5/xsdata dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
-	cd dist/working && tar -xzvf elementpath*
-	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz
-	cd dist/working && tar -xzvf six*
-	cp -r dist/working/six-1.14.0/six.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Required by IFCCSV and ifcopenshell.util.selector
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/18/4d/8d522136c37d9e1ea74062b41b8d5e1318ebf45063ae46ce72ed60af223b/lark-parser-0.8.5.tar.gz
@@ -366,7 +338,12 @@ endif
 	# Provides Brickschema functionality
 	cd dist/working && . env/bin/activate && $(PIP) install "brickschema[persistence]==0.7.6a2" --target=./site-packages
 	# Required for SVG to DXF conversion
-	cd dist/working && . env/bin/activate && $(PIP) install "ezdxf" --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install ezdxf --target=./site-packages
+	# Required by bcf
+	cd dist/working && . env/bin/activate && $(PIP) install xsdata --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install xmlschema --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install elementpath --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install six --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
