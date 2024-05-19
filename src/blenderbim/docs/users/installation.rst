@@ -42,7 +42,7 @@ Installation
    
       You do not need to unzip the add-on file. You should install it as a zipped file.
 
-   You should now see **Import-Export: BlenderBIM** available in your add-ons list. Enable the add-on by pressing the checkbox.
+   You should now see **System: BlenderBIM** available in your add-ons list. Enable the add-on by pressing the checkbox.
 
    .. image:: images/install-blenderbim-3.png
 
