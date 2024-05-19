@@ -36,7 +36,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # use extra version to make pre-release using eg semver
-set(EXTRA_VERSION "-alpha.3")
+if(NOT DEFINED EXTRA_VERSION)
+    set(EXTRA_VERSION "-alpha.3")
+endif()
 
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
@@ -1147,9 +1149,10 @@ endif()
 
 # Packaging
 list(APPEND CPACK_SOURCE_IGNORE_FILES
-    .git
-    .gitignore
+    "/\\\\.git"
+    "/build/"
 )
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}/..;/")
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}${EXTRA_VERSION}")
 SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
