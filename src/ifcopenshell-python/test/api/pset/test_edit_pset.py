@@ -59,7 +59,9 @@ class TestEditPset(test.bootstrap.IFC4):
             pset=pset,
             properties={"Reference": "foo", "Status": ["NEW"], "Combustible": True, "ThermalTransmittance": 42},
         )
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": "bar", "Status": []})
+        ifcopenshell.api.run(
+            "pset.edit_pset", self.file, pset=pset, properties={"Reference": "bar", "Status": []}, should_purge=False
+        )
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
 
         assert pset.HasProperties[0].Name == "Reference"
@@ -88,8 +90,7 @@ class TestEditPset(test.bootstrap.IFC4):
     def test_adding_a_property_if_it_is_none(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
-        # should_purge is false by default
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None})
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None}, should_purge=False)
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 1
 
@@ -105,6 +106,16 @@ class TestEditPset(test.bootstrap.IFC4):
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": "Foo"})
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Reference": None}, should_purge=True)
+        pset = element.IsDefinedBy[0].RelatingPropertyDefinition
+        assert len(pset.HasProperties) == 0
+
+    def test_removing_a_none_enumeration_property_if_specified(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": ["NEW"]})
+        assert pset.HasProperties[0].Name == "Status"
+        assert pset.HasProperties[0].EnumerationValues[0].wrappedValue == "NEW"
+        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": []}, should_purge=True)
         pset = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(pset.HasProperties) == 0
 
