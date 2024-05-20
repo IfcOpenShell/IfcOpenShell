@@ -171,7 +171,9 @@ class curve_segment_evaluator {
             } else {
                 // This functor is f'(x) = dy/dx
                  auto df = [fnX,fnY](double t) -> double {
-                     return fnY(t) / fnX(t);
+                    auto dy = fnY(t);
+                    auto dx = fnX(t);
+                    return dx ? dy / dx : 0.0;
                  };
 
                  // This functor computes the curve length
