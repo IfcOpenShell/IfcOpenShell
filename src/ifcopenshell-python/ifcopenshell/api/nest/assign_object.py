@@ -104,20 +104,20 @@ def assign_object(
         return
 
     ifc2x3 = file.schema == "IFC2X3"
+    related_objects_set = set(related_objects)
 
-    related_objects = set(settings["related_objects"])
-    relating_object = settings["relating_object"]
     if ifc2x3:
         is_nested_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelNests")), None)
     else:
         is_nested_by = next((i for i in relating_object.IsNestedBy), None)
 
+    # NOTE: maintain .RelatedObjects order as it has meaning in IFC
     previous_nests_rels: set[ifcopenshell.entity_instance] = set()
     objects_without_nests: list[ifcopenshell.entity_instance] = []
     objects_with_nests: list[ifcopenshell.entity_instance] = []
 
     # check if there is anything to change
-    for object in related_objects:
+    for object in related_objects_set:
         if ifc2x3:
             object_rel = next((i for i in object.Decomposes if i.is_a("IfcRelNests")), None)
         else:
@@ -143,7 +143,7 @@ def assign_object(
 
     # unassign elements from previous nests
     for nests in previous_nests_rels:
-        cur_related_objects = set(nests.RelatedObjects) - related_objects
+        cur_related_objects = [o for o in nests.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             nests.RelatedObjects = list(cur_related_objects)
             ifcopenshell.api.run("owner.update_owner_history", file, **{"element": nests})
@@ -155,7 +155,11 @@ def assign_object(
 
     # assign elements to a new nesting
     if is_nested_by:
-        is_nested_by.RelatedObjects = list(set(is_nested_by.RelatedObjects) | related_objects)
+        cur_related_objects = list(is_nested_by.RelatedObjects)
+        cur_related_objects_set = set(cur_related_objects)
+        is_nested_by.RelatedObjects = cur_related_objects + [
+            o for o in related_objects if o not in cur_related_objects_set
+        ]
         ifcopenshell.api.run("owner.update_owner_history", file, **{"element": is_nested_by})
     else:
         is_nested_by = file.create_entity(
@@ -163,7 +167,7 @@ def assign_object(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
-                "RelatedObjects": list(related_objects),
+                "RelatedObjects": related_objects,
                 "RelatingObject": relating_object,
             }
         )
