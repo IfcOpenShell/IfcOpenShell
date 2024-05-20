@@ -40,14 +40,10 @@ class EnableEditingAttributes(bpy.types.Operator):
     bl_label = "Enable Editing Attributes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
+        obj = bpy.data.objects.get(self.obj)
         props = obj.BIMAttributeProperties
         props.attributes.clear()
 
@@ -85,13 +81,9 @@ class DisableEditingAttributes(bpy.types.Operator):
     bl_label = "Disable Editing Attributes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
+        obj = bpy.data.objects.get(self.obj)
         props = obj.BIMAttributeProperties
         props.is_editing_attributes = False
         return {"FINISHED"}
@@ -102,14 +94,10 @@ class EditAttributes(bpy.types.Operator, Operator):
     bl_label = "Edit Attributes"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
-    obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        if self.obj_type == "Object":
-            obj = bpy.data.objects.get(self.obj)
-        elif self.obj_type == "Material":
-            obj = bpy.data.materials.get(self.obj)
+        obj = bpy.data.objects.get(self.obj)
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
 
@@ -126,7 +114,7 @@ class EditAttributes(bpy.types.Operator, Operator):
 
         attributes = blenderbim.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
-        bpy.ops.bim.disable_editing_attributes(obj=obj.name, obj_type=self.obj_type)
+        bpy.ops.bim.disable_editing_attributes(obj=obj.name)
         return {"FINISHED"}
 
 
