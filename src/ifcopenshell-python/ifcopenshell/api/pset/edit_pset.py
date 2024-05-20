@@ -27,7 +27,7 @@ def edit_pset(
     name: Optional[str] = None,
     properties: Optional[dict[str, Any]] = None,
     pset_template: Optional[ifcopenshell.entity_instance] = None,
-    should_purge: bool = False,
+    should_purge: bool = True,
 ) -> None:
     """Edits a property set and its properties
 
@@ -77,9 +77,10 @@ def edit_pset(
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
     :type pset_template: ifcopenshell.entity_instance, optional
-    :param should_purge: If left as False, properties set to None will be
+    :param should_purge: If set as False, properties set to None will be
         left as None but not removed. If set to true, properties set to None
-        will actually be removed.
+        will actually be removed. The default of true is the same behaviour as
+        :func:`ifcopenshell.api.pset.edit_qto`.
     :type should_purge: bool, optional
     :return: None
     :rtype: None
@@ -241,6 +242,9 @@ class Usecase:
 
         if isinstance(value, (tuple, list)):
             sel_vals = []
+            if not value:
+                if self._try_purge(prop):
+                    return
             for val in value:
                 primary_measure_type = prop.EnumerationReference.EnumerationValues[
                     0
