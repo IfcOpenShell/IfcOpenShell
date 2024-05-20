@@ -49,23 +49,23 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
         # nothing is returned, relationship is removed
         ifcopenshell.api.run("nest.unassign_object", model, related_objects=[subtask2])
     """
-    settings = {"related_objects": related_objects}
 
-    related_objects = set(settings["related_objects"])
+    # NOTE: maintain .RelatedObjects order as it has meaning in IFC
+    related_objects_set = set(related_objects)
     ifc2x3 = file.schema == "IFC2X3"
     if ifc2x3:
         rels = set(
             rel
-            for object in related_objects
+            for object in related_objects_set
             if (rel := next((rel for rel in object.Decomposes if rel.is_a("IfcRelNests")), None))
         )
     else:
         rels = set(rel for object in related_objects if (rel := next((rel for rel in object.Nests), None)))
 
     for rel in rels:
-        related_objects = set(rel.RelatedObjects) - related_objects
-        if related_objects:
-            rel.RelatedObjects = list(related_objects)
+        cur_related_objects = [o for o in rel.RelatedObjects if o not in related_objects_set]
+        if cur_related_objects:
+            rel.RelatedObjects = cur_related_objects
             ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
         else:
             history = rel.OwnerHistory
