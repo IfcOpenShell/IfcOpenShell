@@ -628,7 +628,7 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
 
 
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
-    bl_idname = "import_csv.bim"
+    bl_idname = "bim.import_csv"
     bl_label = "Import CSV"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
@@ -653,7 +653,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
 
 class ImportP6(bpy.types.Operator, ImportHelper):
-    bl_idname = "import_p6.bim"
+    bl_idname = "bim.import_p6"
     bl_label = "Import P6"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
@@ -679,7 +679,7 @@ class ImportP6(bpy.types.Operator, ImportHelper):
 
 
 class ImportP6XER(bpy.types.Operator, ImportHelper):
-    bl_idname = "import_p6xer.bim"
+    bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xer"
@@ -705,7 +705,7 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
 
 class ImportPP(bpy.types.Operator, ImportHelper):
-    bl_idname = "import_pp.bim"
+    bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".pp"
@@ -731,7 +731,7 @@ class ImportPP(bpy.types.Operator, ImportHelper):
 
 
 class ImportMSP(bpy.types.Operator, ImportHelper):
-    bl_idname = "import_msp.bim"
+    bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
@@ -757,7 +757,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
 
 
 class ExportMSP(bpy.types.Operator, ImportHelper):
-    bl_idname = "export_msp.bim"
+    bl_idname = "bim.export_msp"
     bl_label = "Export MSP"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
@@ -787,7 +787,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
 
 
 class ExportP6(bpy.types.Operator, ImportHelper):
-    bl_idname = "export_p6.bim"
+    bl_idname = "bim.export_p6"
     bl_label = "Export P6"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"

@@ -53,7 +53,7 @@ class BIM_PT_cost_schedules(Panel):
                 row.label(text="No Cost Schedules found.", icon="TEXT")
 
             row.operator("bim.add_cost_schedule", icon="ADD", text="")
-            row.operator("import_cost_schedule_csv.bim",icon="IMPORT",text="")
+            row.operator("bim.import_cost_schedule_csv",icon="IMPORT",text="")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)

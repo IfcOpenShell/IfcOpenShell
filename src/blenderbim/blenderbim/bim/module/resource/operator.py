@@ -328,7 +328,7 @@ class EditResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
-    bl_idname = "import_resources.bim"
+    bl_idname = "bim.import_resources"
     bl_label = "Import Resources"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
