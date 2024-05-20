@@ -36,7 +36,7 @@ class Cost(blenderbim.core.tool.Cost):
         blenderbim.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
 
     @classmethod
-    def enable_editing_cost_items(cls, cost_schedule):
+    def enable_editing_cost_items(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.active_cost_schedule_id = cost_schedule.id()
         props.is_editing = "COST_ITEMS"
@@ -473,7 +473,9 @@ class Cost(blenderbim.core.tool.Cost):
         cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
 
     @classmethod
-    def create_new_cost_item_li(cls, props_collection, cost_item, level_index, type="cost_rate"):
+    def create_new_cost_item_li(
+        cls, props_collection, cost_item: ifcopenshell.entity_instance, level_index: int, type: str = "cost_rate"
+    ) -> None:
         new = props_collection.add()
         new.ifc_definition_id = cost_item.id()
         new.name = cost_item.Name or "Unnamed"

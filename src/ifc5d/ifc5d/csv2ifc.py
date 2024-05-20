@@ -23,22 +23,25 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
+from typing import Any, Optional
+
+CostItem = dict[str, Any]
 
 
 class Csv2Ifc:
     def __init__(self):
-        self.csv = None
-        self.file = None
-        self.cost_items = []
-        self.cost_schedule = None
-        self.is_schedule_of_rates = False
-        self.units = {}
+        self.csv: str = None
+        self.file: ifcopenshell.file = None
+        self.cost_items: list[CostItem] = []
+        self.cost_schedule: ifcopenshell.entity_instance = None
+        self.is_schedule_of_rates: bool = False
+        self.units: dict[str, ifcopenshell.entity_instance] = {}
 
-    def execute(self):
+    def execute(self) -> None:
         self.parse_csv()
         self.create_ifc()
 
-    def parse_csv(self):
+    def parse_csv(self) -> None:
         self.parents = {}
         self.headers = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
@@ -64,7 +67,7 @@ class Csv2Ifc:
                     self.parents[hierarchy_key - 1]["children"].append(cost_data)
                 self.parents[hierarchy_key] = cost_data
 
-    def get_row_cost_data(self, row):
+    def get_row_cost_data(self, row: list[str]) -> CostItem:
         name = row[self.headers["Name"]]
         identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         quantity = row[self.headers["Quantity"]]
@@ -99,7 +102,7 @@ class Csv2Ifc:
             "children": [],
         }
 
-    def create_ifc(self):
+    def create_ifc(self) -> None:
         if not self.file:
             self.create_boilerplate_ifc()
         if not self.cost_schedule:
@@ -108,11 +111,13 @@ class Csv2Ifc:
                 self.cost_schedule.PredefinedType = "SCHEDULEOFRATES"
         self.create_cost_items(self.cost_items)
 
-    def create_cost_items(self, cost_items, parent=None):
+    def create_cost_items(
+        self, cost_items: list[CostItem], parent: Optional[ifcopenshell.entity_instance] = None
+    ) -> None:
         for cost_item in cost_items:
             self.create_cost_item(cost_item, parent)
 
-    def create_cost_item(self, cost_item, parent):
+    def create_cost_item(self, cost_item: CostItem, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
         if parent is None:
             cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=self.cost_schedule)
         else:
@@ -161,6 +166,7 @@ class Csv2Ifc:
             quantity = ifcopenshell.api.run(
                 "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
             )
+            # 3 IfcPhysicalSimpleQuantity Value
             quantity[3] = cost_item["Quantity"]
 
         if cost_item["assignments"]["Query"]:
@@ -184,7 +190,7 @@ class Csv2Ifc:
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
-    def create_unit(self, symbol):
+    def create_unit(self, symbol) -> ifcopenshell.entity_instance:
         unit = self.units.get(symbol, None)
         if unit:
             return unit
@@ -194,12 +200,12 @@ class Csv2Ifc:
         self.units[symbol] = unit
         return unit
 
-    def create_boilerplate_ifc(self):
+    def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
 
 
-def has_property(self, product, property_name):
+def has_property(self, product, property_name) -> bool:
     if not property_name:
         return True
     qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)
