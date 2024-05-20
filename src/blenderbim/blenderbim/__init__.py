@@ -120,11 +120,15 @@ if sys.modules.get("bpy", None):
             bl_context = "scene"
 
             def draw(self, context):
+                info = get_debug_info()
+
                 layout = self.layout
                 layout.label(text="BlenderBIM could not load.", icon="ERROR")
-                layout.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+                if info["os"] == "Windows":
+                    layout.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+                else:
+                    layout.label(text="View the console for full logs.", icon="CONSOLE")
                 box = layout.box()
-                info = get_debug_info()
                 py = ".".join(info["python_version"].split(".")[0:2])
                 b3d = ".".join(info["blender_version"].split(".")[0:2])
                 box.label(text=f"Blender {b3d} {info['os']} {info['machine']}", icon="BLENDER")
@@ -132,6 +136,21 @@ if sys.modules.get("bpy", None):
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
                 op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#installation-issues"
+
+                layout.label(text="Try Reinstalling:", icon="IMPORT")
+                op = layout.operator("bim.open_uri", text="Re-download Add-on")
+                bbim_date = info["blenderbim_version"].split(".")[-1]
+                py_tag = py.replace(".", "")
+                if "Linux" in info["os"]:
+                    os = "linux"
+                elif "Darwin" in info["os"]:
+                    if "arm64" in info["machine"]:
+                        os = "macosm1"
+                    else:
+                        os = "macos"
+                else:
+                    os = "win"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_date}/blenderbim-{bbim_date}-py{py_tag}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
