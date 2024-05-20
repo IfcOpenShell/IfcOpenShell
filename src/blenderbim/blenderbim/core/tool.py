@@ -487,12 +487,12 @@ class Material:
     def disable_editing_materials(cls): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
-    def get_active_material_type(cls): pass
     def get_active_material(cls): pass
+    def get_active_material_type(cls): pass
     def get_active_object_material(cls, obj): pass
     def get_elements_by_material(cls, material): pass
-    def get_material_attributes(cls): pass
     def get_material(cls, element, should_inherit): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
@@ -503,6 +503,7 @@ class Material:
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
+    def sync_blender_material_name(cls, material): pass
 
 
 @interface

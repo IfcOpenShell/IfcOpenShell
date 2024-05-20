@@ -242,3 +242,16 @@ class Material(blenderbim.core.tool.Material):
             meshes_to_objects[mesh] = obj
         for obj in meshes_to_objects.values():
             tool.Geometry.reload_representation(obj)
+
+    @classmethod
+    def sync_blender_material_name(cls, material):
+        name = material.Name or "Unnamed"
+        obj = tool.Ifc.get_object(material)
+        if obj:
+            obj.name = name
+        style = tool.Style.get_style(obj)
+        if style:
+            style.Name = name
+            obj = tool.Ifc.get_object(style)
+            if obj:
+                obj.name = name
