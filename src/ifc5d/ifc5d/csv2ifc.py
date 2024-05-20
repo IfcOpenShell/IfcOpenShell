@@ -50,6 +50,7 @@ class Csv2Ifc:
             for row in reader:
                 if not row[0]:
                     continue
+                # parse header
                 if row[0] == "Hierarchy":
                     self.has_categories = True
                     for i, col in enumerate(row):
@@ -58,6 +59,17 @@ class Csv2Ifc:
                         if col == "Value":
                             self.has_categories = False
                         self.headers[col] = i
+
+                    # validate header
+                    mandatory_fields = {"Name", "Quantity", "Unit"}
+                    if not self.is_schedule_of_rates:
+                        mandatory_fields.update({"Property", "Query"})
+                    available_fields = set(self.headers.keys())
+                    if not mandatory_fields.issubset(available_fields):
+                        raise Exception(
+                            f"Missing mandatory fields in CSV header: {', '.join(mandatory_fields-available_fields)}"
+                        )
+
                     continue
                 cost_data = self.get_row_cost_data(row)
                 hierarchy_key = int(row[0])
