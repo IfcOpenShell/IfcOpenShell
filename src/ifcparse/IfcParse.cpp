@@ -2737,3 +2737,31 @@ std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 bool IfcParse::IfcFile::lazy_load_ = true;
 bool IfcParse::IfcFile::guid_map_ = true;
 
+template <typename T>
+void IfcUtil::IfcBaseClass::set_value(int index, const T& value) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    attr->set(value);
+    data_->setArgument(index, attr);
+}
+
+void IfcUtil::IfcBaseClass::unset_value(int index) {
+    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
+    data_->setArgument(index, attr);
+}
+
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<int>(int index, const int& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<bool>(int index, const bool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<boost::logic::tribool>(int index, const boost::logic::tribool& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<double>(int index, const double& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::string>(int index, const std::string& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<boost::dynamic_bitset<>>(int index, const boost::dynamic_bitset<>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<IfcWrite::IfcWriteArgument::EnumerationReference>(int index, const IfcWrite::IfcWriteArgument::EnumerationReference& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<IfcUtil::IfcBaseClass*>(int index, IfcUtil::IfcBaseClass* const& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<int>>(int index, const std::vector<int>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<double>>(int index, const std::vector<double>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::string>>(int index, const std::vector<std::string>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<boost::dynamic_bitset<>>>(int index, const std::vector<boost::dynamic_bitset<>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_instance::ptr>(int index, const aggregate_of_instance::ptr& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<int>>>(int index, const std::vector<std::vector<int>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<double>>>(int index, const std::vector<std::vector<double>>& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_aggregate_of_instance::ptr>(int index, const aggregate_of_aggregate_of_instance::ptr& value);

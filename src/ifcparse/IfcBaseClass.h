@@ -106,6 +106,11 @@ class IFC_PARSE_API IfcBaseClass : public virtual IfcBaseInterface {
 
     virtual const IfcParse::declaration& declaration() const = 0;
 
+    template <typename T>
+    void set_value(int index, const T& value);
+
+    void unset_value(int index);
+
     uint32_t identity() const { return identity_; }
 };
 
