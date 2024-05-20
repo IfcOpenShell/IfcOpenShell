@@ -1106,8 +1106,8 @@ class ToggleLinkVisibility(bpy.types.Operator):
         ]
 
 
-class ExportIFC(bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
+class ExportIFCBase:
+    bl_idname = "bim.export_ifc"
     bl_label = "Save IFC"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
@@ -1224,14 +1224,20 @@ class ExportIFC(bpy.types.Operator):
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
-class ImportIFC(bpy.types.Operator):
-    bl_idname = "import_ifc.bim"
-    bl_label = "Import IFC"
-    bl_options = {"REGISTER", "UNDO"}
+class ExportIFC(ExportIFCBase, bpy.types.Operator):
+    bl_idname = "bim.export_ifc"
+
+
+# TODO: remove as deprecated, better wait couple releases since
+# this operator is used for saving IFC files in user scripts.
+class ExportIFCDeprecated(ExportIFCBase, bpy.types.Operator):
+    bl_idname = "export_ifc.bim"
 
     def execute(self, context):
-        bpy.ops.bim.load_project("INVOKE_DEFAULT")
-        return {"FINISHED"}
+        msg = f"'{ExportIFCDeprecated.bl_idname}' operator name is deprecated, use '{ExportIFC.bl_idname}'."
+        self.report({"WARNING"}, msg)
+        print(msg)
+        return super().execute(context)
 
 
 class LoadLinkedProject(bpy.types.Operator):
