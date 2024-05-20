@@ -1,11 +1,3 @@
-%typemap(out) aggregate_of_instance::ptr {
-	const unsigned size = $1 ? $1->size() : 0;
-	$result = PyTuple_New(size);
-	for (unsigned i = 0; i < size; ++i) {
-		PyTuple_SetItem($result, i, pythonize((*$1)[i]));
-	}
-}
-
 %typemap(out) IfcUtil::ArgumentType {
 	$result = SWIG_Python_str_FromChar(IfcUtil::ArgumentTypeToString($1));
 }
@@ -141,7 +133,7 @@ CREATE_VECTOR_TYPEMAP_OUT(int)
 CREATE_VECTOR_TYPEMAP_OUT(unsigned int)
 CREATE_VECTOR_TYPEMAP_OUT(double)
 CREATE_VECTOR_TYPEMAP_OUT(std::string)
-// CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::Material)
+CREATE_VECTOR_TYPEMAP_OUT(entity_instance)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::inverse_attribute const *)
 CREATE_VECTOR_TYPEMAP_OUT(IfcParse::entity const *)

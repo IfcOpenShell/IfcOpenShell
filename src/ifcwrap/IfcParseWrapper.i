@@ -46,9 +46,9 @@ private:
 
 %ignore IfcUtil::IfcBaseClass::is;
 
-%rename("by_id") instance_by_id;
-%rename("by_type") instances_by_type;
-%rename("by_type_excl_subtypes") instances_by_type_excl_subtypes;
+%ignore IfcParse::IfcFile::instance_by_id;
+%ignore IfcParse::IfcFile::instances_by_type;
+%ignore IfcParse::IfcFile::instances_by_type_excl_subtypes;
 
 %rename("file") IfcFile;
 %ignore IfcParse::IfcFile::addEntity;
@@ -183,6 +183,28 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 
 	entity_instance by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
+	}
+
+	entity_instance by_id(int i) {
+		return $self->instance_by_id_2(i);
+	}
+
+	std::vector<entity_instance> by_type(const std::string& ty) {
+		std::vector<entity_instance> vec;
+		auto range = $self->instances_by_type_range(ty);
+		for (auto& inst : boost::make_iterator_range(range)) {
+			vec.push_back(inst);
+		}
+		return vec;
+	}
+
+	std::vector<entity_instance> by_type_excl_subtypes(const std::string& ty) {
+		std::vector<entity_instance> vec;
+		auto range = $self->instances_by_type_excl_subtypes_range(ty);
+		for (auto& inst : boost::make_iterator_range(range)) {
+			vec.push_back(inst);
+		}
+		return vec;
 	}
 
 	entity_instance add(entity_instance& e, int i) {
@@ -405,13 +427,17 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 		}
 	}
 
-	void setArgumentAsNull(unsigned int i) {
+	void setAttribute(unsigned int i, PyObject* obj) {
 		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
+
+		if ()
 		if (is_optional) {
 			self->data().setArgument(i, new IfcWrite::IfcWriteArgument());
 		} else {
 			throw IfcParse::IfcException("Attribute not set");
 		}
+
+		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
 	}
 
 	void setArgumentAsInt(unsigned int i, int v) {

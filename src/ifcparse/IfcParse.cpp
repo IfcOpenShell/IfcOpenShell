@@ -2390,20 +2390,20 @@ void IfcFile::process_deletion_() {
     batch_deletion_ids_.clear();
 }
 
-IfcFile::type_iterator_range_t IfcFile::instances_by_type(const IfcParse::declaration* t) {
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_range(const IfcParse::declaration* t) {
     return bytype_.equal_range(t);
 }
 
-IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes(const IfcParse::declaration* t) {
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes_range(const IfcParse::declaration* t) {
     return bytype_.equal_range(t);
 }
 
-IfcFile::type_iterator_range_t IfcFile::instances_by_type(const std::string& t) {
-    return instances_by_type(schema()->declaration_by_name(t));
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_range(const std::string& t) {
+    return instances_by_type_range(schema()->declaration_by_name(t));
 }
 
-IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes(const std::string& t) {
-    return instances_by_type_excl_subtypes(schema()->declaration_by_name(t));
+IfcFile::type_iterator_range_t IfcFile::instances_by_type_excl_subtypes_range(const std::string& t) {
+    return instances_by_type_excl_subtypes_range(schema()->declaration_by_name(t));
 }
 
 aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
@@ -2623,10 +2623,10 @@ void IfcFile::setDefaultHeaderValues() {
 std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
     std::pair<IfcUtil::IfcBaseClass*, double> return_value(0, 1.);
 
-    auto projects = instances_by_type(schema()->declaration_by_name("IfcProject"));
+    auto projects = instances_by_type_range(schema()->declaration_by_name("IfcProject"));
     if (std::distance(projects.first, projects.second) == 0) {
         try {
-            projects = instances_by_type(schema()->declaration_by_name("IfcContext"));
+            projects = instances_by_type_range(schema()->declaration_by_name("IfcContext"));
         } catch (IfcException& e) {
         }
     }
@@ -2709,7 +2709,31 @@ void IfcParse::IfcFile::build_inverses() {
     }
 }
 
+/// Compatibility functions that take the ranges from above and turn into an aggregate
+aggregate_of_instance::ptr IfcParse::IfcFile::instances_by_type(const IfcParse::declaration* decl) {
+    aggregate_of_instance::ptr aggr(new aggregate_of_instance);
+    for (auto& inst : boost::make_iterator_range(instances_by_type_range(decl))) {
+        aggr->push(&*inst);
+    }
+    return aggr;
+}
+aggregate_of_instance::ptr IfcParse::IfcFile::instances_by_type_excl_subtypes(const IfcParse::declaration* decl) {
+    aggregate_of_instance::ptr aggr(new aggregate_of_instance);
+    for (auto& inst : boost::make_iterator_range(instances_by_type_excl_subtypes_range(decl))) {
+        aggr->push(&*inst);
+    }
+    return aggr;
+}
+aggregate_of_instance::ptr IfcParse::IfcFile::instances_by_type(const std::string& type) {
+    return instances_by_type(schema()->declaration_by_name(type));
+}
+aggregate_of_instance::ptr IfcParse::IfcFile::instances_by_type_excl_subtypes(const std::string& type) {
+    return instances_by_type_excl_subtypes(schema()->declaration_by_name(type));
+}
+
+
 std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 
 bool IfcParse::IfcFile::lazy_load_ = true;
 bool IfcParse::IfcFile::guid_map_ = true;
+

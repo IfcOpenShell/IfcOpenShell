@@ -232,7 +232,7 @@ class IFC_PARSE_API IfcFile {
     /// IfcWall will also return IfcWallStandardCase entities
     template <class T>
     typename T::list::ptr instances_by_type() {
-        auto range = instances_by_type(&T::Class());
+        auto range = instances_by_type_range(&T::Class());
         typename T::list::ptr vec(new typename T::list);
         for (auto it = range.first; it != range.second; ++it) {
             vec->push((*it)->template as<T>());
@@ -242,7 +242,7 @@ class IFC_PARSE_API IfcFile {
 
     template <class T>
     typename T::list::ptr instances_by_type_excl_subtypes() {
-        auto range = instances_by_type_excl_subtypes(&T::Class());
+        auto range = instances_by_type_excl_subtypes_range(&T::Class());
         typename T::list::ptr vec(new typename T::list);
         for (auto it = range.first; it != range.second; ++it) {
             vec->push((*it)->template as<T>());
@@ -253,18 +253,24 @@ class IFC_PARSE_API IfcFile {
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    type_iterator_range_t instances_by_type(const IfcParse::declaration*);
+    type_iterator_range_t instances_by_type_range(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
-    type_iterator_range_t instances_by_type_excl_subtypes(const IfcParse::declaration*);
+    type_iterator_range_t instances_by_type_excl_subtypes_range(const IfcParse::declaration*);
 
     /// Returns all entities in the file that match the positional argument.
     /// NOTE: This also returns subtypes of the requested type, for example:
     /// IfcWall will also return IfcWallStandardCase entities
-    type_iterator_range_t instances_by_type(const std::string& type);
+    type_iterator_range_t instances_by_type_range(const std::string& type);
 
     /// Returns all entities in the file that match the positional argument.
-    type_iterator_range_t instances_by_type_excl_subtypes(const std::string& type);
+    type_iterator_range_t instances_by_type_excl_subtypes_range(const std::string& type);
+
+    /// Compatibility functions that take the ranges from above and turn into an aggregate
+    aggregate_of_instance::ptr instances_by_type(const IfcParse::declaration* decl);
+    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const IfcParse::declaration* decl);
+    aggregate_of_instance::ptr instances_by_type(const std::string& type);
+    aggregate_of_instance::ptr instances_by_type_excl_subtypes(const std::string& type);
 
     /// Returns all entities in the file that reference the id
     aggregate_of_instance::ptr instances_by_reference(int id);

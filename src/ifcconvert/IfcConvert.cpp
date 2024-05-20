@@ -1514,40 +1514,44 @@ namespace latebound_access {
 
 void fix_quantities(IfcParse::IfcFile& f, bool no_progress, bool quiet, bool stderr_progress) {
 	{
-		auto delete_range = [&f](const IfcParse::IfcFile::type_iterator_range_t& insts) {
+		auto delete_reversed = [&f](const aggregate_of_instance::ptr& insts) {
+			if (!insts) {
+				return;
+			}
 			// Lists are traversed back to front as the list may be mutated when
 			// instances are removed from the grouping by type.
-			for (auto it = insts.first; it != insts.second; ++it) {
-				f.removeEntity(&**it);
+			for (auto it = insts->end() - 1; it >= insts->begin(); --it) {
+				IfcUtil::IfcBaseClass* const inst = *it;
+				f.removeEntity(inst);
 			}
 		};
 
 		// Delete quantities
 		auto quantities = f.instances_by_type("IfcPhysicalQuantity");
-		for (auto& q : boost::make_iterator_range(quantities)) {
-			// @todo test iterator invalidation
-			if (q->declaration().name() == "IfcPhysicalComplexQuantity") {
-				f.removeEntity(&*q);
-			}
+		if (quantities) {
+			quantities = quantities->filtered({ f.schema()->declaration_by_name("IfcPhysicalComplexQuantity") });
+			delete_reversed(quantities);
 		}
 
 		// Delete complexes
-		delete_range(f.instances_by_type("IfcPhysicalComplexQuantity"));
+		delete_reversed(f.instances_by_type("IfcPhysicalComplexQuantity"));
 
 		auto element_quantities = f.instances_by_type("IfcElementQuantity");
 
 		// Capture relationship nodes
 		std::vector<IfcUtil::IfcBaseClass*> relationships;
 		auto IfcRelDefinesByProperties = f.schema()->declaration_by_name("IfcRelDefinesByProperties");
-		for (auto& eq : boost::make_iterator_range(element_quantities)) {
-			auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
-			for (auto& rel : *rels) {
-				relationships.push_back(rel);
+		if (element_quantities) {
+			for (auto& eq : *element_quantities) {
+				auto rels = eq->data().getInverse(IfcRelDefinesByProperties, -1);
+				for (auto& rel : *rels) {
+					relationships.push_back(rel);
+				}
 			}
-		}
 
-		// Delete element quantities
-		delete_range(element_quantities);
+			// Delete element quantities
+			delete_reversed(element_quantities);
+		}
 
 
 		// Delete relationship nodes
