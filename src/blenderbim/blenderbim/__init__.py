@@ -123,6 +123,7 @@ if sys.modules.get("bpy", None):
                 info = get_debug_info()
 
                 layout = self.layout
+                layout.alert = True
                 layout.label(text="BlenderBIM could not load.", icon="ERROR")
                 if info["os"] == "Windows":
                     layout.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
