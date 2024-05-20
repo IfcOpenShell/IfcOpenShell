@@ -19,6 +19,7 @@
 import os
 import bpy
 import addon_utils
+import platform
 from pathlib import Path
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
@@ -410,7 +411,10 @@ class BIM_PT_tabs(Panel):
                 row = box.row(align=True)
                 row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
-                box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+                if platform.system() == "Windows":
+                    box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
+                else:
+                    box.label(text="View the console for full logs.", icon="CONSOLE")
                 box.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = box.operator("bim.open_uri", text="How Can I Fix This?")
                 op.uri = "https://docs.blenderbim.org/users/troubleshooting.html"
