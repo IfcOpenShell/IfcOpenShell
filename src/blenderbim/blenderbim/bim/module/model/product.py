@@ -138,7 +138,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if not relating_type_id:
             return {"FINISHED"}
 
-        if self.from_invoke:
+        # Check relating_type_id enum_items since it's possible
+        # that we're adding e.g. IfcRoofType being in a Slab Tool
+        # and roof type id won't be present in the relating_type_id enum.
+        if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
