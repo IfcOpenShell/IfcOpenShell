@@ -223,7 +223,7 @@ class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
 class AssignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_item_type"
-    bl_label = "Assign Cost Item Type Product"
+    bl_label = "Assign Cost Item To Product Types"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     prop_name: bpy.props.StringProperty()
