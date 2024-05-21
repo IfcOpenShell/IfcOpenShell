@@ -29,6 +29,7 @@ classes = (
     operator.GetRepresentationIfcParameters,
     operator.DuplicateMoveLinkedAggregate,
     operator.DuplicateMoveLinkedAggregateMacro,
+    operator.DuplicateLinkedAggregateTo3dCursor,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
