@@ -157,13 +157,13 @@ def get_psets(
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     # NOTE: doesn't account for IFC2X3 missing HasProperties
     elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
         for definition in getattr(element, "HasProperties", None) or []:
             if qtos_only:
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         # other IfcObjectDefinition
         if should_inherit:
