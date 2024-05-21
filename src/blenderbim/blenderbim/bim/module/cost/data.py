@@ -159,6 +159,7 @@ class CostSchedulesData:
         data["UnitSymbol"] = "-"
         if cost_item.CostQuantities:
             quantity = cost_item.CostQuantities[0]
+            data["QuantityType"] = quantity.is_a()
             unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
             if unit:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)

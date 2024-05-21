@@ -29,7 +29,7 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Union
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
@@ -91,7 +91,11 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 
 # A more elegant attribute importer signature, intended to supersede import_attributes
-def import_attributes2(element, props, callback=None):
+def import_attributes2(
+    element: Union[str, ifcopenshell.entity_instance],
+    props: bpy.types.PropertyGroup,
+    callback: Optional[Callable] = None,
+) -> None:
     if isinstance(element, str):
         attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
         info = {a.name(): None for a in attributes}

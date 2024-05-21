@@ -21,6 +21,7 @@ import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.cost.data import CostSchedulesData
+from typing import Any
 
 
 class BIM_PT_cost_schedules(Panel):
@@ -178,24 +179,33 @@ class BIM_PT_cost_schedules(Panel):
             "active_cost_item_index",
         )
         if self.props.active_cost_item_id:
+            cost_item = CostSchedulesData.data["cost_items"][ifc_definition_id]
             if self.props.cost_item_editing_type == "ATTRIBUTES":
                 self.draw_editable_cost_item_attributes_ui()
             elif self.props.cost_item_editing_type == "QUANTITIES":
-                self.draw_editable_cost_item_quantities_ui()
+                self.draw_editable_cost_item_quantities_ui(cost_item)
             elif self.props.cost_item_editing_type == "VALUES":
                 self.draw_editable_cost_item_values_ui()
 
     def draw_editable_cost_item_attributes_ui(self):
         blenderbim.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
-    def draw_editable_cost_item_quantities_ui(self):
+    def draw_editable_cost_item_quantities_ui(self, cost_item: dict[str, Any]):
+        quantities = CostSchedulesData.data["cost_quantities"]
         row = self.layout.row(align=True)
-        row.prop(self.props, "quantity_types", text="")
+        # In IFC, all quantities of IfcCostTime should have 1 type.
+        if quantities:
+            quantity_class = cost_item["QuantityType"]
+            row.label(text=quantity_class)
+        else:
+            row.prop(self.props, "quantity_types", text="")
+            quantity_class = self.props.quantity_types
+
         op = row.operator("bim.add_cost_item_quantity", text="", icon="ADD")
         op.cost_item = self.props.active_cost_item_id
-        op.ifc_class = self.props.quantity_types
+        op.ifc_class = quantity_class
 
-        for quantity in CostSchedulesData.data["cost_quantities"]:
+        for quantity in quantities:
             row = self.layout.row(align=True)
             row.label(text=quantity["name"])
             row.label(text=quantity["value"])
