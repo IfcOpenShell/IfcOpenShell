@@ -105,7 +105,7 @@ class Usecase:
                 element.ObjectType = self.settings["predefined_type"]
         if self.file.schema == "IFC2X3":
             self.handle_2x3_defaults(element)
-        elif self.file.schema == "IFC4":
+        else:
             self.handle_4_defaults(element)
         return element
 
@@ -131,7 +131,7 @@ class Usecase:
             if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
 
-        if element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle"):
+        if element.file.schema == "IFC4" and (element.is_a("IfcDoorStyle") or element.is_a("IfcWindowStyle")):
             element.OperationType = "NOTDEFINED"
             element.ConstructionType = "NOTDEFINED"
             element.ParameterTakesPrecedence = False
