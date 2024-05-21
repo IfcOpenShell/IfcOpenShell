@@ -40,7 +40,12 @@ def get_primitive_applied_value(applied_value: Union[ifcopenshell.entity_instanc
 def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[float, None]:
     # 3 IfcPhysicalQuantity Value
     if root_element.is_a("IfcCostItem"):
-        return sum([q[3] for q in root_element.CostQuantities or []]) or None
+        # Different output for no quantities and zero quantites
+        # as they have different meaning in IFC.
+        quantities = root_element.CostQuantities
+        if not quantities:
+            return None
+        return sum([q[3] for q in quantities])
     elif root_element.is_a("IfcConstructionResource"):
         quantity = root_element.BaseQuantity
         return quantity[3] if quantity else 1.0

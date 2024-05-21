@@ -140,7 +140,7 @@ class CostSchedulesData:
                 data["UnitBasisUnitSymbol"] = "U"
             if cost_value.Category == "*":
                 is_sum = True
-        cost_quantity = data["TotalCostQuantity"] or 1
+        cost_quantity = 1 if data["TotalCostQuantity"] is None else data["TotalCostQuantity"]
         if has_unit_basis:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity / data["UnitBasisValueComponent"]
         else:
