@@ -19,10 +19,13 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
+from typing import Any
 
 
 def refresh():
@@ -34,6 +37,7 @@ def refresh():
 class CostSchedulesData:
     data = {}
     is_loaded = False
+    _cost_values: dict[int, dict[str, Any]]
 
     @classmethod
     def load(cls):

@@ -90,7 +90,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def delete_ifc_object(cls, obj):
+    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return

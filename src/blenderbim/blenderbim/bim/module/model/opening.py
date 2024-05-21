@@ -44,6 +44,7 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
+from typing import Union, Optional, Any
 
 
 class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
@@ -59,7 +60,12 @@ class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class FilledOpeningGenerator:
-    def generate(self, filling_obj, voided_obj, target=None):
+    def generate(
+        self,
+        filling_obj: Union[bpy.types.Object, None],
+        voided_obj: Union[bpy.types.Object, None],
+        target: Optional[Vector] = None,
+    ) -> None:
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -187,7 +193,7 @@ class FilledOpeningGenerator:
                     should_sync_changes_first=False,
                 )
 
-    def regenerate_from_type(self, usecase_path, ifc_file, settings):
+    def regenerate_from_type(self, usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
         relating_type = settings["relating_type"]
 
         for related_object in settings["related_objects"]:
@@ -252,7 +258,9 @@ class FilledOpeningGenerator:
                 should_sync_changes_first=False,
             )
 
-    def generate_opening_from_filling(self, filling, filling_obj):
+    def generate_opening_from_filling(
+        self, filling: ifcopenshell.entity_instance, filling_obj: bpy.types.Object
+    ) -> ifcopenshell.entity_instance:
         # Since openings are reused later, we give a default thickness of 1.2m
         # which should cover the majority of curved, or super thick walls.
         thickness = 1.2
@@ -346,7 +354,9 @@ class FilledOpeningGenerator:
                 return True
         return False
 
-    def get_existing_opening_occurrence_if_any(self, filling):
+    def get_existing_opening_occurrence_if_any(
+        self, filling: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         filling_type = ifcopenshell.util.element.get_type(filling)
         if filling_type:
             filling_occurrences = ifcopenshell.util.element.get_types(filling_type)

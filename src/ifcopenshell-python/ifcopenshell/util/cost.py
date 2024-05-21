@@ -17,13 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import lark
+import ifcopenshell
+from typing import Optional, Union
 
 
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
 
 
-def get_primitive_applied_value(applied_value):
+def get_primitive_applied_value(applied_value: Union[ifcopenshell.entity_instance, float, None]) -> float:
     if not applied_value:
         return 0.0
     elif isinstance(applied_value, float):
@@ -32,17 +34,21 @@ def get_primitive_applied_value(applied_value):
         return applied_value.wrappedValue
     elif applied_value.is_a("IfcMeasureWithUnit"):
         return applied_value.ValueComponent
-    assert False, "Applied value {applied_value} not implemented"
+    assert False, f"Applied value {applied_value} not implemented"
 
 
-def get_total_quantity(root_element):
+def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[float, None]:
+    # 3 IfcPhysicalQuantity Value
     if root_element.is_a("IfcCostItem"):
         return sum([q[3] for q in root_element.CostQuantities or []]) or None
     elif root_element.is_a("IfcConstructionResource"):
-        return root_element.BaseQuantity[3] if root_element.BaseQuantity else 1.0
+        quantity = root_element.BaseQuantity
+        return quantity[3] if quantity else 1.0
 
 
-def calculate_applied_value(root_element, cost_value, category_filter=None):
+def calculate_applied_value(
+    root_element: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance, category_filter=None
+) -> float:
     if cost_value.ArithmeticOperator and cost_value.Components:
         component_values = []
         for component in cost_value.Components:
@@ -75,11 +81,11 @@ def calculate_applied_value(root_element, cost_value, category_filter=None):
             return sum_child_root_elements(root_element, category_filter=cost_value.Category)
         else:
             return get_primitive_applied_value(cost_value.AppliedValue)
-    return 0
+    return 0.0
 
 
-def sum_child_root_elements(root_element, category_filter=None):
-    result = 0
+def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category_filter: Optional[str] = None) -> float:
+    result = 0.0
     for rel in root_element.IsNestedBy:
         for child_root_element in rel.RelatedObjects:
             if root_element.is_a("IfcCostItem"):
@@ -99,14 +105,14 @@ def sum_child_root_elements(root_element, category_filter=None):
     return result
 
 
-def serialise_cost_value(cost_value):
+def serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
     result = _serialise_cost_value(cost_value)
     if result and result[0] == "(" and result[-1] == ")":
         return result[1:-1]
     return result
 
 
-def _serialise_cost_value(cost_value):
+def _serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
     value = ""
     if cost_value.ArithmeticOperator and cost_value.Components:
         operator = arithmetic_operator_symbols[cost_value.ArithmeticOperator]
@@ -133,7 +139,7 @@ def _serialise_cost_value(cost_value):
     return value
 
 
-def serialise_applied_value(applied_value):
+def serialise_applied_value(applied_value: ifcopenshell.entity_instance) -> str:
     if applied_value.is_a("IfcMonetaryMeasure"):
         return str(applied_value.wrappedValue)
     return "?"

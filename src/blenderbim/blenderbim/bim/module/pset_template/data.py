@@ -21,6 +21,7 @@ import bpy
 import pathlib
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.util.doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
