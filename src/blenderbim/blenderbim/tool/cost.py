@@ -1,11 +1,13 @@
 import os
 import bpy
+import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import json
+from typing import Optional
 
 
 class Cost(blenderbim.core.tool.Cost):
@@ -163,7 +165,7 @@ class Cost(blenderbim.core.tool.Cost):
         return
 
     @classmethod
-    def load_cost_item_types(cls, cost_item=None):
+    def load_cost_item_types(cls, cost_item: Optional[ifcopenshell.entity_instance] = None) -> None:
         if not cost_item:
             cost_item = cls.get_highlighted_cost_item()
             if not cost_item:

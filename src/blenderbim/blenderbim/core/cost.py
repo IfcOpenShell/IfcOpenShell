@@ -109,7 +109,9 @@ def edit_cost_item(ifc: tool.Ifc, cost: tool.Cost):
     cost.load_cost_schedule_tree()
 
 
-def assign_cost_item_type(ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item, prop_name):
+def assign_cost_item_type(
+    ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item: ifcopenshell.entity_instance, prop_name
+):
     product_types = spatial.get_selected_product_types()
     [
         ifc.run("control.assign_control", relating_control=cost_item, related_object=product_type)
@@ -118,7 +120,9 @@ def assign_cost_item_type(ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial,
     cost.load_cost_item_types(cost_item)
 
 
-def unassign_cost_item_type(ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item, product_types):
+def unassign_cost_item_type(
+    ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item: ifcopenshell.entity_instance, product_types
+):
     if not product_types:
         product_types = spatial.get_selected_product_types()
     [
@@ -133,7 +137,9 @@ def load_cost_item_types(cost: tool.Cost):
     cost.load_cost_item_types(cost_item)
 
 
-def assign_cost_item_quantity(ifc: tool.Ifc, cost: tool.Cost, cost_item, related_object_type, prop_name):
+def assign_cost_item_quantity(
+    ifc: tool.Ifc, cost: tool.Cost, cost_item: ifcopenshell.entity_instance, related_object_type, prop_name
+):
     products = cost.get_products(related_object_type)
     if products:
         ifc.run("cost.assign_cost_item_quantity", cost_item=cost_item, products=products, prop_name=prop_name)
@@ -159,7 +165,7 @@ def load_cost_item_resource_quantities(cost: tool.Cost):
     cost.load_cost_item_quantity_assignments(cost_item, related_object_type="RESOURCE")
 
 
-def assign_cost_value(ifc: tool.Ifc, cost_item, cost_rate):
+def assign_cost_value(ifc: tool.Ifc, cost_item: ifcopenshell.entity_instance, cost_rate):
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
 
 
@@ -167,7 +173,7 @@ def load_schedule_of_rates(cost: tool.Cost, schedule_of_rates):
     cost.load_schedule_of_rates_tree(schedule_of_rates)
 
 
-def unassign_cost_item_quantity(ifc: tool.Ifc, cost: tool.Cost, cost_item, products):
+def unassign_cost_item_quantity(ifc: tool.Ifc, cost: tool.Cost, cost_item: ifcopenshell.entity_instance, products):
     ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)
     cost.load_cost_item_quantities()
 
@@ -180,11 +186,11 @@ def enable_editing_cost_item_values(cost: tool.Cost, cost_item: ifcopenshell.ent
     cost.enable_editing_cost_item_values(cost_item)
 
 
-def add_cost_item_quantity(ifc: tool.Ifc, cost_item, ifc_class):
+def add_cost_item_quantity(ifc: tool.Ifc, cost_item: ifcopenshell.entity_instance, ifc_class):
     ifc.run("cost.add_cost_item_quantity", cost_item=cost_item, ifc_class=ifc_class)
 
 
-def remove_cost_item_quantity(ifc: tool.Ifc, cost_item, physical_quantity):
+def remove_cost_item_quantity(ifc: tool.Ifc, cost_item: ifcopenshell.entity_instance, physical_quantity):
     ifc.run("cost.remove_cost_item_quantity", cost_item=cost_item, physical_quantity=physical_quantity)
 
 
@@ -288,7 +294,9 @@ def export_cost_schedules(cost: tool.Cost, filepath, format, cost_schedule=None)
     return cost.export_cost_schedules(filepath, format, cost_schedule)
 
 
-def clear_cost_item_assignments(ifc: tool.Ifc, cost: tool.Cost, cost_item, related_object_type):
+def clear_cost_item_assignments(
+    ifc: tool.Ifc, cost: tool.Cost, cost_item: ifcopenshell.entity_instance, related_object_type
+):
     products = cost.get_cost_item_assignments(cost_item, filter_by_type=related_object_type)
     if products:
         ifc.run("cost.unassign_cost_item_quantity", cost_item=cost_item, products=products)

@@ -23,6 +23,7 @@ import collections
 import collections.abc
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -468,7 +469,7 @@ class Model(blenderbim.core.tool.Model):
                     has_deleted_opening = True
 
     @classmethod
-    def get_material_layer_parameters(cls, element):
+    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_set_direction = "AXIS2"
         offset = 0.0

@@ -468,7 +468,7 @@ class Blender(blenderbim.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
-    def enum_property_has_valid_index(cls, props, prop_name: str, enum_items: tuple) -> bool:
+    def enum_property_has_valid_index(cls, props: bpy.types.PropertyGroup, prop_name: str, enum_items: tuple) -> bool:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
         """
