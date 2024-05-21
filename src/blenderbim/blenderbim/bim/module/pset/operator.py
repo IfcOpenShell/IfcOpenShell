@@ -61,15 +61,16 @@ def get_pset_props(context, obj, obj_type):
     elif obj_type == "Group":
         return context.scene.GroupPsetProperties
 
+
 class TogglePsetExpansion(bpy.types.Operator, Operator):
     bl_idname = "bim.toggle_pset_expansion"
     bl_label = "Toggle Pset Expansion"
     pset_id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        blenderbim.bim.module.pset.data.is_expanded[
-            self.pset_id
-        ] = not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
+        blenderbim.bim.module.pset.data.is_expanded[self.pset_id] = (
+            not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
+        )
 
 
 class EnablePsetEditing(bpy.types.Operator):
@@ -99,8 +100,7 @@ class EnablePsetEditing(bpy.types.Operator):
 
         if pset_template:
             self.load_from_pset_template(pset_template, pset)
-        else:
-            self.load_from_pset_data(pset)
+        self.load_from_pset_data(pset)
 
         self.props.active_pset_id = self.pset_id
         return {"FINISHED"}
@@ -141,10 +141,14 @@ class EnablePsetEditing(bpy.types.Operator):
         metadata.data_type = self.get_data_type(prop_template)
 
         special_type = ""
-        if prop_template.PrimaryMeasureType in (
-            "IfcPositiveLengthMeasure",
-            "IfcLengthMeasure",
-        ) or prop_template.TemplateType == "Q_LENGTH":
+        if (
+            prop_template.PrimaryMeasureType
+            in (
+                "IfcPositiveLengthMeasure",
+                "IfcLengthMeasure",
+            )
+            or prop_template.TemplateType == "Q_LENGTH"
+        ):
             special_type = "LENGTH"
         elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
             special_type = "AREA"
@@ -196,6 +200,9 @@ class EnablePsetEditing(bpy.types.Operator):
             new.is_selected = enum in selected_enum_items
 
     def load_from_pset_data(self, pset):
+        if pset is None:
+            return
+
         props = []
         if pset.is_a("IfcElementQuantity"):
             props = pset.Quantities
@@ -205,6 +212,8 @@ class EnablePsetEditing(bpy.types.Operator):
             props = pset.Properties
 
         for prop in props:
+            if self.props.properties.get(prop.Name):
+                continue  # This property has already been added from a template
             if prop.is_a("IfcPropertyEnumeratedValue"):
                 simple_prop = self.props.properties.add()
                 simple_prop.name = prop.Name
