@@ -635,12 +635,14 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
 
+    key: bpy.props.StringProperty()
+
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        key = props.element_key
-        if props.element_key == "PredefinedType":
+        key = self.key
+        if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
         for obj in context.visible_objects:
