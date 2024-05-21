@@ -512,10 +512,7 @@ class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         element = tool.Ifc.get().by_id(self.element)
         obj = tool.Ifc.get_object(element)
-        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
-        if obj:
-            tool.Ifc.unlink(obj=obj)
-            bpy.data.objects.remove(obj)
+        tool.Geometry.delete_ifc_object(obj)
 
 
 class RenameType(bpy.types.Operator, tool.Ifc.Operator):
