@@ -7,7 +7,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import json
-from typing import Optional
+from typing import Optional, Any, Generator
 
 
 class Cost(blenderbim.core.tool.Cost):
@@ -261,7 +261,7 @@ class Cost(blenderbim.core.tool.Cost):
         blenderbim.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
 
     @classmethod
-    def enable_editing_cost_item_values(cls, cost_item=None):
+    def enable_editing_cost_item_values(cls, cost_item: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.active_cost_item_id = cost_item.id()
         props.cost_item_editing_type = "VALUES"
@@ -289,7 +289,7 @@ class Cost(blenderbim.core.tool.Cost):
         return attributes
 
     @classmethod
-    def load_cost_item_value_attributes(cls, cost_value=None):
+    def load_cost_item_value_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
         def import_attributes(name, prop, data, cost_value, is_rates, props_collection):
             if name == "AppliedValue":
                 # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
@@ -336,36 +336,38 @@ class Cost(blenderbim.core.tool.Cost):
         blenderbim.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
 
     @classmethod
-    def calculate_applied_value(cls, cost_item, cost_value):
+    def calculate_applied_value(
+        cls, cost_item: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance
+    ) -> float:
         return ifcopenshell.util.cost.calculate_applied_value(cost_item, cost_value)
 
     @classmethod
-    def is_active_schedule_of_rates(cls):
+    def is_active_schedule_of_rates(cls) -> bool:
         return (
             tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id).PredefinedType
             == "SCHEDULEOFRATES"
         )
 
     @classmethod
-    def enable_editing_cost_item_value(cls, cost_value=None):
+    def enable_editing_cost_item_value(cls, cost_value: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.active_cost_value_id = cost_value.id()
         props.cost_value_editing_type = "ATTRIBUTES"
 
     @classmethod
-    def disable_editing_cost_item_value(cls):
+    def disable_editing_cost_item_value(cls) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.active_cost_value_id = 0
         props.cost_value_editing_type = ""
 
     @classmethod
-    def load_cost_item_value_formula_attributes(cls, cost_value=None):
+    def load_cost_item_value_formula_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.cost_value_attributes.clear()
         bpy.context.scene.BIMCostProperties.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value)
 
     @classmethod
-    def enable_editing_cost_item_value_formula(cls, cost_value=None):
+    def enable_editing_cost_item_value_formula(cls, cost_value: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.active_cost_value_id = cost_value.id()
         props.cost_value_editing_type = "FORMULA"
@@ -375,7 +377,7 @@ class Cost(blenderbim.core.tool.Cost):
         return bpy.context.scene.BIMCostProperties.cost_value_formula
 
     @classmethod
-    def get_cost_value_attributes(cls):
+    def get_cost_value_attributes(cls) -> dict[str, Any]:
         def export_attributes(attributes, prop):
             if prop.name == "UnitBasisValue":
                 if prop.is_null:
@@ -394,13 +396,18 @@ class Cost(blenderbim.core.tool.Cost):
         return blenderbim.bim.helper.export_attributes(props.cost_value_attributes, callback)
 
     @classmethod
-    def get_cost_value_unit_component(cls):
+    def get_cost_value_unit_component(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(
             int(bpy.context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
         )
 
     @classmethod
-    def get_cost_item_assignments(cls, cost_item, filter_by_type=None, is_deep=False):
+    def get_cost_item_assignments(
+        cls,
+        cost_item: ifcopenshell.entity_instance,
+        filter_by_type: Optional[ifcopenshell.util.cost.FILTER_BY_TYPE] = None,
+        is_deep: bool = False,
+    ) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.cost.get_cost_item_assignments(
             cost_item, filter_by_type=filter_by_type, is_deep=is_deep
         )
@@ -410,30 +417,40 @@ class Cost(blenderbim.core.tool.Cost):
         return bpy.context.scene.BIMCostProperties.show_nested_elements
 
     @classmethod
-    def get_cost_item_products(cls, cost_item, is_deep=False):
+    def get_cost_item_products(
+        cls, cost_item: ifcopenshell.entity_instance, is_deep: bool = False
+    ) -> list[ifcopenshell.entity_instance]:
         return cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=is_deep)
 
     @classmethod
-    def get_cost_item_resources(cls, cost_item, is_deep=False):
+    def get_cost_item_resources(
+        cls, cost_item: ifcopenshell.entity_instance, is_deep: bool = False
+    ) -> list[ifcopenshell.entity_instance]:
         return cls.get_cost_item_assignments(cost_item, filter_by_type="RESOURCE", is_deep=is_deep)
 
     @classmethod
-    def get_cost_item_processes(cls, cost_item, is_deep=False):
+    def get_cost_item_processes(
+        cls, cost_item: ifcopenshell.entity_instance, is_deep: bool = False
+    ) -> list[ifcopenshell.entity_instance]:
         return cls.get_cost_item_assignments(cost_item, filter_by_type="PROCESS", is_deep=is_deep)
 
     @classmethod
-    def get_schedule_cost_items(cls, cost_schedule):
+    def get_schedule_cost_items(
+        cls, cost_schedule: ifcopenshell.entity_instance
+    ) -> Generator[ifcopenshell.entity_instance, None, None]:
         return ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule)
 
     @classmethod
-    def get_cost_schedule_products(cls, cost_schedule):
+    def get_cost_schedule_products(
+        cls, cost_schedule: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         products = []
         for cost_item in ifcopenshell.util.cost.get_schedule_cost_items(cost_schedule):
             products.extend(cls.get_cost_item_products(cost_item))
         return products
 
     @classmethod
-    def import_cost_schedule_csv(cls, file_path=None, is_schedule_of_rates=False):
+    def import_cost_schedule_csv(cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False) -> None:
         if not file_path:
             return
         from ifc5d.csv2ifc import Csv2Ifc
