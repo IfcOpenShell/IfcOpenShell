@@ -473,6 +473,8 @@ ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::pi
        num_steps = (unsigned)std::ceil(param);
    }
 
+	num_steps = std::max(1u, num_steps); // never have fewer than 1 step
+
 	return evaluate(0.0, curve_length, num_steps);
 }
 
