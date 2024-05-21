@@ -43,7 +43,10 @@ def draw_ui(context, layout, attributes):
         for attribute in attributes:
             row = layout.row(align=True)
             row.label(text=attribute["name"])
-            row.label(text=attribute["value"])
+            # row.label(text=attribute["value"])
+            op = row.operator("bim.select_similar", text=attribute["value"], icon="NONE", emboss=False)
+            op.key = attribute['name']
+            
 
     # TODO: reimplement, see #1222
     # if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
