@@ -68,6 +68,7 @@ class FilledOpeningGenerator:
     ) -> None:
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        opening_thickness_si = None
 
         filling = tool.Ifc.get_entity(filling_obj)
         element = tool.Ifc.get_entity(voided_obj)
@@ -98,6 +99,7 @@ class FilledOpeningGenerator:
             # In this prototype, we assume openings are only added to axis-based elements
             layers = tool.Model.get_material_layer_parameters(element)
             if layers["layer_set_direction"] == "AXIS2":
+                opening_thickness_si = layers["thickness"] * 2
                 axis = tool.Model.get_wall_axis(voided_obj, layers=layers)["base"]
                 new_matrix = voided_obj.matrix_world.copy()
                 point_on_axis = tool.Cad.point_on_edge(target, axis)
@@ -151,7 +153,9 @@ class FilledOpeningGenerator:
                 "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
-            representation = self.generate_opening_from_filling(filling, filling_obj)
+            representation = self.generate_opening_from_filling(
+                filling, filling_obj, opening_thickness_si=opening_thickness_si
+            )
             opening = ifcopenshell.api.run(
                 "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
             )
@@ -259,11 +263,14 @@ class FilledOpeningGenerator:
             )
 
     def generate_opening_from_filling(
-        self, filling: ifcopenshell.entity_instance, filling_obj: bpy.types.Object
+        self,
+        filling: ifcopenshell.entity_instance,
+        filling_obj: bpy.types.Object,
+        opening_thickness_si: Optional[float] = None,
     ) -> ifcopenshell.entity_instance:
         # Since openings are reused later, we give a default thickness of 1.2m
         # which should cover the majority of curved, or super thick walls.
-        thickness = 1.2
+        thickness = 1.2 if opening_thickness_si is None else opening_thickness_si
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
