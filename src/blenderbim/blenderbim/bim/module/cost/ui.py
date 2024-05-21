@@ -634,7 +634,7 @@ class BIM_UL_cost_items_trait:
         layout.label(text=cost_item["UnitBasisUnitSymbol"])
 
     def draw_total_quantity_column(self, layout, cost_item):
-        if cost_item["TotalCostQuantity"]:
+        if cost_item["TotalCostQuantity"] is not None:
             label = "{0:.2f}".format(cost_item["TotalCostQuantity"]) + f" {cost_item['UnitSymbol'] or '-'}"
             layout.label(text=label)
         else:
