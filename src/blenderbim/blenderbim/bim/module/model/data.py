@@ -53,7 +53,7 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
-        cls.data["predefined_type"] = cls.predefined_type()
+        cls.data["predefined_type"] = cls.predefined_type() # only after .relating_type_id()
         cls.data["type_class"] = cls.type_class()
 
         # only after .type_class()
@@ -251,6 +251,8 @@ class AuthoringData:
 
     @classmethod
     def predefined_type(cls):
+        if not tool.Blender.enum_property_has_valid_index(cls.props, "relating_type_id", cls.data["relating_type_id"]):
+            return
         relating_type_id = cls.props.relating_type_id
         if not relating_type_id:
             return

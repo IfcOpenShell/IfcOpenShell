@@ -472,11 +472,16 @@ class Blender(blenderbim.core.tool.Blender):
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
         """
+        items_amount = len(enum_items)
+        # If enum has no items it seems to always produce a warning.
+        # E.g. if you try to get it's value directly: `BIMModelProperties.relating_type_id`.
+        if items_amount == 0:
+            return False
         current_value_index = props.get(prop_name, None)
         # assuming the default value is fine
         if current_value_index is None:
             return True
-        return current_value_index < len(enum_items)
+        return current_value_index < items_amount
 
     @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
