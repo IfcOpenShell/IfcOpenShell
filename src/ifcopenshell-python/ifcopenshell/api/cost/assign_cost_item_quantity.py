@@ -44,6 +44,10 @@ def assign_cost_item_quantity(
     cost item and the product, so it is not necessary to use
     ifcopenshell.api.control.assign_control.
 
+    If cost item has just 1 quantity and it's IfcQuantityCount, API will
+    assume that quantity is used for counting controlled objects
+    and it will recalculate the quantity value at the end of the API call.
+
     :param cost_item: The IfcCostItem to assign parametric quantities to
     :type cost_item: ifcopenshell.entity_instance
     :param products: The IfcObjects to assign parametric quantities to
