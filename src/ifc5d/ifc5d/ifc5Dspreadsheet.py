@@ -26,13 +26,18 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+from typing import Union, Optional
 
 
 class IfcDataGetter:
     @staticmethod
-    def get_schedules(file, filter_by_schedule=None):
+    def get_schedules(
+        file: ifcopenshell.file, filter_by_schedule: Optional[ifcopenshell.entity_instance] = None
+    ) -> list[ifcopenshell.entity_instance]:
         return [
-            schedule for schedule in file.by_type("IfcCostSchedule") if not filter_by_schedule or schedule == filter_by_schedule
+            schedule
+            for schedule in file.by_type("IfcCostSchedule")
+            if not filter_by_schedule or schedule == filter_by_schedule
         ]
 
     @staticmethod
@@ -195,7 +200,18 @@ class IfcDataGetter:
 
 
 class Ifc5Dwriter:
-    def __init__(self, file=None, output=None, cost_schedule=None):
+    file: ifcopenshell.file
+
+    def __init__(
+        self,
+        file: Union[str, ifcopenshell.file],
+        output: str,
+        cost_schedule: Optional[ifcopenshell.entity_instance] = None,
+    ):
+        """
+        Args:
+            cost_schedule: exported cost schedule. If not provided, will export all available schedules.
+        """
         self.output = output
         if isinstance(file, str):
             self.file = ifcopenshell.open(file)

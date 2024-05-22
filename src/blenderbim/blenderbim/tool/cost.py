@@ -529,7 +529,7 @@ class Cost(blenderbim.core.tool.Cost):
         props.is_cost_update_enabled = True
 
     @classmethod
-    def export_cost_schedules(cls, filepath, format=None, cost_schedule=None):
+    def export_cost_schedules(cls, filepath: str, format: str, cost_schedule=None):
         import subprocess
         import os
         import sys
@@ -642,7 +642,7 @@ class Cost(blenderbim.core.tool.Cost):
         return bool(cost_items)
 
     @classmethod
-    def load_product_cost_items(cls, product):
+    def load_product_cost_items(cls, product: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.is_cost_update_enabled = False
         props.product_cost_items.clear()

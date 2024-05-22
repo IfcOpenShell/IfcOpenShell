@@ -17,14 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
-from typing import Optional
+from typing import Any
 
 
 def assign_cost_item_quantity(
     file: ifcopenshell.file,
     cost_item: ifcopenshell.entity_instance,
     products: list[ifcopenshell.entity_instance],
-    prop_name: Optional[str] = "",
+    prop_name: str = "",
 ) -> None:
     """Adds a cost item quantity that is parametrically connected to a product
 
@@ -96,6 +96,9 @@ def assign_cost_item_quantity(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if self.settings["prop_name"]:
             self.quantities = set(self.settings["cost_item"].CostQuantities or [])
@@ -113,7 +116,9 @@ class Usecase:
         else:
             self.update_cost_item_count()
 
-    def assign_cost_control(self, related_object, cost_item):
+    def assign_cost_control(
+        self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         return ifcopenshell.api.run(
             "control.assign_control",
             self.file,
@@ -121,12 +126,12 @@ class Usecase:
             relating_control=cost_item,
         )
 
-    def add_quantity_from_related_object(self, element):
+    def add_quantity_from_related_object(self, element: ifcopenshell.entity_instance) -> None:
         for relationship in element.IsDefinedBy:
             if relationship.is_a("IfcRelDefinesByProperties"):
                 self.add_quantity_from_qto(relationship.RelatingPropertyDefinition)
 
-    def add_quantity_from_qto(self, qto):
+    def add_quantity_from_qto(self, qto: ifcopenshell.entity_instance) -> None:
         if not qto.is_a("IfcElementQuantity"):
             return
         for prop in qto.Quantities:
