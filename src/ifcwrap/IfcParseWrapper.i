@@ -50,9 +50,14 @@ private:
 %ignore IfcParse::IfcFile::instances_by_type;
 %ignore IfcParse::IfcFile::instances_by_type_excl_subtypes;
 
-%rename("file") IfcFile;
 %ignore IfcParse::IfcFile::addEntity;
+%ignore IfcParse::IfcFile::addEntities;
 %ignore IfcParse::IfcFile::removeEntity;
+
+%ignore IfcParse::IfcFile;
+%ignore IfcUtil::IfcBaseClass;
+%ignore IfcUtil::IfcBaseEntity;
+%ignore IfcUtil::IfcBaseInterface;
 
 class attribute_value_derived {};
 %{
@@ -87,63 +92,188 @@ PyObject* get_feature(const std::string& x) {
 
 %}
 
+%ignore entity_instance::entity_instance;
+
 %{
 class entity_instance;
 const std::string& helper_fn_declaration_get_name(const IfcParse::declaration* decl);
 IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsigned i);
+bool check_aggregate_of_type(PyObject* aggregate, void* type_obj);
+bool check_aggregate_of_aggregate_of_type(PyObject* aggregate, void* type_obj);
 %}
 
+%pythoncode %{
+### hack hack hack
+### we trick swig into inheriting from our own extension class
+### that way we do not constantly need to decorate/undecorate
+# @todo is there no official way to do this?
+_old_object = _object
+from .entity_instance import entity_instance as custom_base
+_object = custom_base
+%}
+
+%include "utils/type_conversion.i"
+%include "utils/typemaps_in.i"
+%include "utils/typemaps_out.i"
 
 %inline %{
 class entity_instance {
 	boost::variant<
-		IfcParse::IfcFile::instance_storage_type,
-		std::weak_ptr<IfcUtil::IfcBaseClass>
+		IfcUtil::IfcBaseClass*,
+		std::weak_ptr<IfcUtil::IfcBaseClass>,
+		boost::blank
 	> data_;
+	std::shared_ptr<IfcParse::IfcFile> file_;
 
 	struct visitor {
-		IfcParse::IfcFile::instance_storage_type operator()(const IfcParse::IfcFile::instance_storage_type& t) {
+		const IfcUtil::IfcBaseClass* const operator()(const IfcUtil::IfcBaseClass* const & t) {
 			return t;
 		}
-		IfcParse::IfcFile::instance_storage_type operator()(const std::weak_ptr<IfcUtil::IfcBaseClass>& t) {
+		const IfcUtil::IfcBaseClass* const operator()(const std::weak_ptr<IfcUtil::IfcBaseClass>& t) {
 			auto u = t.lock();
 			if (u) {
-				return u;
+				// @todo this is not really safe, nor ideal as we don't retain the scope
+				// until used.
+				return &*u;
+			} else {
+				throw std::runtime_error("No longer availabe");
+			}
+		}
+		IfcUtil::IfcBaseClass* operator()(boost::blank) {
+			throw std::runtime_error("No longer availabe");
+		}
+		IfcUtil::IfcBaseClass* operator()(IfcUtil::IfcBaseClass* & t) {
+			return t;
+		}
+		IfcUtil::IfcBaseClass* operator()(std::weak_ptr<IfcUtil::IfcBaseClass>& t) {
+			auto u = t.lock();
+			if (u) {
+				// @todo this is not really safe, nor ideal as we don't retain the scope
+				// until used.
+				return &*u;
 			} else {
 				throw std::runtime_error("No longer availabe");
 			}
 		}
 	};
 public:
-	entity_instance(const IfcParse::IfcFile::instance_storage_type& shared)
+	entity_instance(
+		const IfcParse::IfcFile::instance_storage_type& shared,
+		const std::shared_ptr<IfcParse::IfcFile>& file
+	)
 		: data_(std::weak_ptr<IfcUtil::IfcBaseClass>(shared))
-	{}
+		, file_(file)
+	{
+		std::cout << "init " << this << " " << data_.which() << std::endl;
+	}
 
 	entity_instance(IfcUtil::IfcBaseClass* naked)
-		: data_(IfcParse::IfcFile::instance_storage_type(naked))
-	{}
+		: data_(naked)
+	{
+		std::cout << "init " << this << " " << data_.which() << std::endl;
+	}
 
-	operator IfcUtil::IfcBaseClass*() const {
-		return &*boost::apply_visitor(visitor{}, data_);
+	~entity_instance() {
+		if (data_.which() == 0) {
+			delete (const IfcUtil::IfcBaseClass*)*this;
+		}
+	}
+
+	IfcUtil::IfcBaseClass* move() {
+		auto old = i();
+		data_ = boost::blank{};
+		std::cout << "reset " << this << " " << data_.which() << std::endl;
+		return old;
+	}
+
+	entity_instance(const entity_instance&) = delete;
+	entity_instance& operator=(const entity_instance&) = delete;
+
+	operator const IfcUtil::IfcBaseClass*() const {
+		std::cout << "visit" << this << std::endl;
+		return boost::apply_visitor(visitor{}, data_);
+	}
+
+	const IfcUtil::IfcBaseClass* i() const {
+		std::cout << "visit" << this << std::endl;
+		return boost::apply_visitor(visitor{}, data_);
+	}
+	
+	operator IfcUtil::IfcBaseClass*() {
+		std::cout << "visit" << this << std::endl;
+		return boost::apply_visitor(visitor{}, data_);
+	}
+
+	IfcUtil::IfcBaseClass* i() {
+		std::cout << "visit" << this << std::endl;
+		return boost::apply_visitor(visitor{}, data_);
 	}
 
 	const IfcParse::declaration& declaration() const {
+		std::cout << "visit" << this << std::endl;
 		return boost::apply_visitor(visitor{}, data_)->declaration();
 	}
 
-	const IfcEntityInstanceData& data() const { 
+    const IfcEntityInstanceData& data() const { 
+		std::cout << "visit" << this << std::endl;
 		return boost::apply_visitor(visitor{}, data_)->data();
 	}
 
-    IfcEntityInstanceData& data() { 
+	IfcEntityInstanceData& data() { 
+		std::cout << "visit" << this << std::endl;
 		return boost::apply_visitor(visitor{}, data_)->data();
 	}
 
 	uint32_t identity() const {
+		std::cout << "visit" << this << std::endl;
 		return boost::apply_visitor(visitor{}, data_)->identity();
 	}
+
+	const std::shared_ptr<IfcParse::IfcFile>& file_pointer() const {
+        return file_;
+    }
 };
 
+%}
+
+%pythoncode %{
+### hack hack hack
+### restore
+_object = _old_object
+%}
+
+%inline %{
+// Using swig's builtin shared_ptr() feature does not work,
+// because we wouldn't actually get access to this pointer
+// in extend() calls, which is need to propagate the shared_ptr
+// control block to the references to it in dependent instances.
+class file {
+private:
+	std::shared_ptr<IfcParse::IfcFile> ptr_;
+
+public:
+	file()
+		: ptr_(new IfcParse::IfcFile)
+	{}
+
+	IfcParse::IfcFile& operator* ()
+    {
+        return *ptr_;
+    }
+
+    IfcParse::IfcFile* operator-> ()
+    {
+        return &*ptr_;
+    }
+
+	operator const std::shared_ptr<IfcParse::IfcFile>&() const {
+		return ptr_;
+	}
+
+	std::string __repr__() const {
+		return "ifcopenshell.file object at " + std::to_string(reinterpret_cast<size_t>(ptr_.get()));
+	}
+};
 %}
 
 %{
@@ -174,99 +304,101 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 }
 %}
 
-%extend IfcParse::IfcFile {
+%extend file {
 	// Use to correlate to entity_instance.file_pointer, so that we
 	// can trace file ownership of instances on the python side.
-	size_t file_pointer() const {
-		return reinterpret_cast<size_t>($self);
+	size_t file_pointer() {
+		return reinterpret_cast<size_t>(&**self);
 	}
 
-	entity_instance by_guid(const std::string& guid) {
-		return $self->instance_by_guid(guid);
+	entity_instance* by_guid(const std::string& guid) {
+		return new entity_instance((*$self)->instance_by_guid(guid), (*$self));
 	}
 
-	entity_instance by_id(int i) {
-		return $self->instance_by_id_2(i);
+	entity_instance* by_id(int i) {
+		return new entity_instance((*$self)->instance_by_id_2(i), (*$self));
 	}
 
-	std::vector<entity_instance> by_type(const std::string& ty) {
-		std::vector<entity_instance> vec;
-		auto range = $self->instances_by_type_range(ty);
+	std::vector<entity_instance*> by_type(const std::string& ty) {
+		std::vector<entity_instance*> vec;
+		auto range = (*$self)->instances_by_type_range(ty);
 		for (auto& inst : boost::make_iterator_range(range)) {
-			vec.push_back(inst);
+			vec.push_back(new entity_instance(inst, *$self));
 		}
 		return vec;
 	}
 
-	std::vector<entity_instance> by_type_excl_subtypes(const std::string& ty) {
-		std::vector<entity_instance> vec;
-		auto range = $self->instances_by_type_excl_subtypes_range(ty);
+	std::vector<entity_instance*> by_type_excl_subtypes(const std::string& ty) {
+		std::vector<entity_instance*> vec;
+		auto range = (*$self)->instances_by_type_excl_subtypes_range(ty);
 		for (auto& inst : boost::make_iterator_range(range)) {
-			vec.push_back(inst);
+			vec.push_back(new entity_instance(inst, *$self));
 		}
 		return vec;
 	}
 
-	entity_instance add(entity_instance& e, int i) {
-		return $self->addEntity(e, i);
+	entity_instance* add(entity_instance* e, int i) {
+		return new entity_instance((*$self)->addEntity(e->move(), i), *self);
 	}
 
-	void remove(entity_instance& e) {
-		return $self->removeEntity(e);
+	void remove(entity_instance* e) {
+		return (*$self)->removeEntity(*e);
 	}
 	
-	aggregate_of_instance::ptr get_inverse(entity_instance& e) {
-		return $self->getInverse(e.data().id(), 0, -1);
+	aggregate_of_instance::ptr get_inverse(entity_instance* e) {
+		return (*$self)->getInverse(e->data().id(), 0, -1);
 	}
 
-	std::vector<int> get_inverse_indices(entity_instance& e) {
-		return $self->get_inverse_indices(e.data().id());
+	std::vector<int> get_inverse_indices(entity_instance* e) {
+		return (*$self)->get_inverse_indices(e->data().id());
 	}
 
-	int get_total_inverses(entity_instance& e) {
-		return $self->getTotalInverses(e.data().id());
+	int get_total_inverses(entity_instance* e) {
+		return (*$self)->getTotalInverses(e->data().id());
 	}
 
 	void write(const std::string& fn) {
 		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
-		f << (*$self);
+		f << (**$self);
 	}
 
 	std::string to_string() {
 		std::stringstream s;
-		s << (*$self);
+		s << (**$self);
 		return s.str();
 	}
 
-	std::vector<unsigned> entity_names() const {
+	std::vector<unsigned> entity_names() {
 		std::vector<unsigned> keys;
-		keys.reserve(std::distance($self->begin(), $self->end()));
-		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = $self->begin(); it != $self->end(); ++ it) {
+		keys.reserve(std::distance((*$self)->begin(), (*$self)->end()));
+		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = (*$self)->begin(); it != (*$self)->end(); ++ it) {
 			keys.push_back(it->first);
 		}
 		return keys;
 	}
 
-	std::vector<std::string> types() const {
-		const size_t n = std::distance($self->types_begin(), $self->types_end());
+	std::vector<std::string> types() {
+		const size_t n = std::distance((*$self)->types_begin(), (*$self)->types_end());
 		std::vector<std::string> ts;
 		ts.reserve(n);
-		std::transform($self->types_begin(), $self->types_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
+		std::transform((*$self)->types_begin(), (*$self)->types_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
 		return ts;
 	}
 
-	std::vector<std::string> types_with_super() const {
-		const size_t n = std::distance($self->types_incl_super_begin(), $self->types_incl_super_end());
+	std::vector<std::string> types_with_super() {
+		const size_t n = std::distance((*$self)->types_incl_super_begin(), (*$self)->types_incl_super_end());
 		std::vector<std::string> ts;
 		ts.reserve(n);
-		std::transform($self->types_incl_super_begin(), $self->types_incl_super_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
+		std::transform((*$self)->types_incl_super_begin(), (*$self)->types_incl_super_end(), std::back_inserter(ts), helper_fn_declaration_get_name);
 		return ts;
 	}
 
-	std::string schema_name() const {
-		if ($self->schema() == 0) return "";
-		return $self->schema()->name();
+	std::string schema_name() {
+		if ((*$self)->schema() == 0) return "";
+		return (*$self)->schema()->name();
 	}
+
+	IfcParse::IfcSpfHeader& header() { return (*$self)->header(); }
 
 	%pythoncode %{
         # Hide the getters with read-only property implementations
@@ -287,6 +419,10 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 		std::vector<const IfcParse::attribute*>::const_iterator it = attrs.begin();
 		for (; it != attrs.end(); ++it) {
 			if ((*it)->name() == name) {
+				if (self->declaration().as_entity()->derived()[std::distance(attrs.begin(), it)]) {
+					// derived
+                    return 3;
+                }
 				return 1;
 			}
 		}
@@ -368,13 +504,13 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 		return t;
 	}
 
-	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(unsigned i) {
-		return std::pair<IfcUtil::ArgumentType,Argument*>($self->data().getArgument(i)->type(), $self->data().getArgument(i));
+	std::tuple<IfcUtil::ArgumentType, Argument*, entity_instance*> get_argument(unsigned i) {
+		return { $self->data().getArgument(i)->type(), $self->data().getArgument(i), self };
 	}
 
-	std::pair<IfcUtil::ArgumentType,Argument*> get_argument(const std::string& a) {
+	std::tuple<IfcUtil::ArgumentType, Argument*, entity_instance*> get_argument(const std::string& a) {
 		unsigned i = $self->declaration().as_entity()->attribute_index(a);
-		return std::pair<IfcUtil::ArgumentType,Argument*>($self->data().getArgument(i)->type(), $self->data().getArgument(i));
+		return { $self->data().getArgument(i)->type(), $self->data().getArgument(i), self };
 	}
 
 	bool __eq__(entity_instance* other) const {
@@ -430,201 +566,212 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 	void setAttribute(unsigned int i, PyObject* obj) {
 		bool is_optional = $self->declaration().as_entity()->attribute_by_index(i)->optional();
 
-		if ()
-		if (is_optional) {
-			self->data().setArgument(i, new IfcWrite::IfcWriteArgument());
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
-		}
-
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-	}
-
-	void setArgumentAsInt(unsigned int i, int v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_INT) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);	
-		} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v == 1);
-			self->data().setArgument(i, arg);	
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
-		}
-	}
-
-	void setArgumentAsBool(unsigned int i, bool v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_BOOL) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);	
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
-		}
-	}
-
-	void setArgumentAsLogical(unsigned int i, boost::logic::tribool v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_LOGICAL) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);	
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
-		}
-	}
-
-	void setArgumentAsDouble(unsigned int i, double v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_DOUBLE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);	
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
-		}
-	}
-
-	void setArgumentAsString(unsigned int i, const std::string& a) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_STRING) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(a);
-			self->data().setArgument(i, arg);	
-		} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
-			const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
-			attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
-		
-			std::vector<std::string>::const_iterator it = std::find(
-				enum_type->enumeration_items().begin(), 
-				enum_type->enumeration_items().end(), 
-				a);
-		
-			if (it == enum_type->enumeration_items().end()) {
-				throw IfcParse::IfcException(a + " does not name a valid item for " + enum_type->name());
-			}
-
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
-			self->data().setArgument(i, arg);
-		} else if (arg_type == IfcUtil::Argument_BINARY) {
-			if (IfcUtil::valid_binary_string(a)) {
-				boost::dynamic_bitset<> bits(a);
-				IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-				arg->set(bits);
-				self->data().setArgument(i, arg);
+		if (obj == Py_None) {
+			if (is_optional) {
+				self->i()->unset_value(i);
+				return;
 			} else {
-				throw IfcParse::IfcException("String not a valid binary representation");
+				throw IfcParse::IfcException("Attribute not set");
 			}
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
 		}
-	}
-
-	void setArgumentAsAggregateOfInt(unsigned int i, const std::vector<int>& v) {
+		
 		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+
+		if (PyLong_Check(obj)) {
+			long v = PyLong_AsLong(obj);
+			if (arg_type == IfcUtil::Argument_INT) {
+				self->i()->set_value<int>(i, v);
+			} else if ( (arg_type == IfcUtil::Argument_BOOL) && ( (v == 0) || (v == 1) ) ) {
+				self->i()->set_value<int>(i, v == 1);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfDouble(unsigned int i, const std::vector<double>& v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (PyBool_Check(obj)) {
+			bool v = PyObject_IsTrue(obj);
+			if (arg_type == IfcUtil::Argument_BOOL || arg_type == IfcUtil::Argument_LOGICAL) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfString(unsigned int i, const std::vector<std::string>& v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
-			std::vector< boost::dynamic_bitset<> > bits;
-			bits.reserve(v.size());
-			for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
-				if (IfcUtil::valid_binary_string(*it)) {
-					bits.push_back(boost::dynamic_bitset<>(*it));
+		else if (PyUnicode_Check(obj)) {
+			PyObject* ascii = PyUnicode_AsEncodedString(obj, "UTF-8", "strict");
+			if (ascii) {
+				auto s = std::string(PyBytes_AS_STRING(ascii));
+				Py_DECREF(ascii);
+				if (arg_type == IfcUtil::Argument_LOGICAL) {
+					if (s == "UNKNOWN") {
+						self->i()->set_value(i, boost::logic::tribool(boost::logic::indeterminate));
+					} else {
+						throw IfcParse::IfcException("Attribute not set");
+					}
+				} else if (arg_type == IfcUtil::Argument_STRING) {
+					self->i()->set_value<std::string>(i, s);
+				} else if (arg_type == IfcUtil::Argument_ENUMERATION) {
+					const IfcParse::enumeration_type* enum_type = $self->declaration().schema()->declaration_by_name($self->declaration().type())->as_entity()->
+						attribute_by_index(i)->type_of_attribute()->as_named_type()->declared_type()->as_enumeration_type();
+		
+					std::vector<std::string>::const_iterator it = std::find(
+						enum_type->enumeration_items().begin(), 
+						enum_type->enumeration_items().end(), 
+						s);
+		
+					if (it == enum_type->enumeration_items().end()) {
+						throw IfcParse::IfcException(s + " does not name a valid item for " + enum_type->name());
+					}
+
+					self->i()->set_value(i, IfcWrite::IfcWriteArgument::EnumerationReference(it - enum_type->enumeration_items().begin(), it->c_str()));
+				} else if (arg_type == IfcUtil::Argument_BINARY) {
+					if (IfcUtil::valid_binary_string(s)) {
+						boost::dynamic_bitset<> bits(s);
+						self->i()->set_value(i, bits);
+					} else {
+						throw IfcParse::IfcException("String not a valid binary representation");
+					}
 				} else {
-					throw IfcParse::IfcException("String not a valid binary representation");
-				}			
+					throw IfcParse::IfcException("Attribute not set");
+				}
 			}
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(bits);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
 		}
-	}
 
-	void setArgumentAsEntityInstance(unsigned int i, entity_instance* v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (PyFloat_Check(obj)) {
+	        double v = PyFloat_AsDouble(obj);
+			if (arg_type == IfcUtil::Argument_DOUBLE) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfEntityInstance(unsigned int i, aggregate_of_instance::ptr v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (check_aggregate_of_type(obj, get_python_type<int>())) {
+			auto v = python_sequence_as_vector<int>(obj);
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_INT) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfAggregateOfInt(unsigned int i, const std::vector< std::vector<int> >& v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (check_aggregate_of_type(obj, get_python_type<double>())) {
+			auto v = python_sequence_as_vector<double>(obj);
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfAggregateOfDouble(unsigned int i, const std::vector< std::vector<double> >& v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (check_aggregate_of_type(obj, get_python_type<std::string>())) {
+			auto v = python_sequence_as_vector<std::string>(obj);
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_STRING) {
+				self->i()->set_value(i, v);
+			} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_BINARY) {
+				std::vector< boost::dynamic_bitset<> > bits;
+				bits.reserve(v.size());
+				for (std::vector<std::string>::const_iterator it = v.begin(); it != v.end(); ++it) {
+					if (IfcUtil::valid_binary_string(*it)) {
+						bits.push_back(boost::dynamic_bitset<>(*it));
+					} else {
+						throw IfcParse::IfcException("String not a valid binary representation");
+					}			
+				}
+				self->i()->set_value(i, bits);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
-	}
 
-	void setArgumentAsAggregateOfAggregateOfEntityInstance(unsigned int i, aggregate_of_aggregate_of_instance::ptr v) {
-		IfcUtil::ArgumentType arg_type = helper_fn_attribute_type($self, i);
-		if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-			IfcWrite::IfcWriteArgument* arg = new IfcWrite::IfcWriteArgument();
-			arg->set(v);
-			self->data().setArgument(i, arg);
-		} else {
-			throw IfcParse::IfcException("Attribute not set");
+		else if (auto inst = cast_pyobject<entity_instance*>(obj)) {
+			if (arg_type == IfcUtil::Argument_ENTITY_INSTANCE) {
+				self->i()->set_value(i, inst->i());
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
+		}
+
+		else if (check_aggregate_of_aggregate_of_type(obj, get_python_type<int>())) {
+			auto v = python_sequence_as_vector_of_vector<int>(obj);
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
+		}
+
+		else if (check_aggregate_of_aggregate_of_type(obj, get_python_type<double>())) {
+			auto v = python_sequence_as_vector_of_vector<double>(obj);
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
+				self->i()->set_value(i, v);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
+		}
+
+		else if (PySequence_Check(obj)) {
+			aggregate_of_instance::ptr insts1d(new aggregate_of_instance);
+			aggregate_of_aggregate_of_instance::ptr insts2d(new aggregate_of_aggregate_of_instance);
+			for(Py_ssize_t i = 0; i < PySequence_Size(obj); ++i) {
+				PyObject* element_i = PySequence_GetItem(obj, i);
+				if (auto inst = cast_pyobject<entity_instance*>(element_i); insts1d) {
+					insts2d.reset();
+
+					insts1d->push(*inst);
+				} else if (PySequence_Check(element_i) && insts2d) {
+					insts1d.reset();
+
+					std::vector<IfcUtil::IfcBaseClass*> inner;
+					for(Py_ssize_t j = 0; j < PySequence_Size(element_i); ++j) {
+						PyObject* element_j = PySequence_GetItem(element_i, j);
+						if (auto inst = cast_pyobject<entity_instance*>(element_j); insts2d) {
+							inner.push_back(*inst);
+						} else {
+							insts2d.reset();
+						}
+						Py_DECREF(element_j);
+						if (!insts2d) {
+							break;
+						}
+					}
+					if (insts2d) {
+						insts2d->push(inner);
+					}
+				} else {
+					insts1d.reset();
+					insts2d.reset();
+				}
+				Py_DECREF(element_i);
+				if (!insts1d && !insts2d) {
+					break;
+				}
+			}
+			if (arg_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE && insts1d) {
+				self->i()->set_value(i, insts1d);
+			} else if (arg_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE && insts2d) {
+				self->i()->set_value(i, insts2d);
+			} else {
+				throw IfcParse::IfcException("Attribute not set");
+			}
 		}
 	}
 }
+
+%extend entity_instance {
+	%pythoncode %{
+		def __getattr__(self, name):
+			try:
+				return custom_base.__getattr__(self, name)
+			except:
+				return _swig_getattr(self, entity_instance, name)
+		def __setattr__(self, name, value):
+			try:
+				return custom_base.__setattr__(self, name, value)
+			except:
+				return _swig_setattr(self, entity_instance, name, value)
+	%}
+};
 
 %extend IfcParse::IfcSpfHeader {
 	%pythoncode %{
@@ -696,7 +843,7 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 		return IFCOPENSHELL_VERSION;
 	}
 
-	entity_instance new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
+	entity_instance* make_instance(const std::string& schema_identifier, const std::string& name) {
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
 		IfcEntityInstanceData* data = new IfcEntityInstanceData(decl);
@@ -719,7 +866,7 @@ IfcUtil::ArgumentType helper_fn_attribute_type(const entity_instance* inst, unsi
 			}
 		}
 		
-		return schema->instantiate(data);
+		return new entity_instance(schema->instantiate(data));
 	}
 %}
 

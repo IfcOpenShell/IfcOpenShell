@@ -1902,8 +1902,6 @@ IfcFile::instance_storage_type IfcFile::addEntity(IfcUtil::IfcBaseClass* entity,
         return mit->second;
     }
 
-    instance_storage_type new_entity = instance_storage_type(entity);
-
     // Obtain all forward references by a depth-first
     // traversal and add them to the file.
     if (parsing_complete_) {
@@ -1922,12 +1920,17 @@ IfcFile::instance_storage_type IfcFile::addEntity(IfcUtil::IfcBaseClass* entity,
         }
     }
 
+    instance_storage_type new_entity;
+
     // See whether the instance is already part of a file
-    if (entity->data().file != 0) {
+    if (entity->data().file == 0) {
+        // We can simply wrap it into a new smart pointer
+        new_entity = instance_storage_type(entity);
+    } else {
         if (entity->data().file == this) {
             if (entity->declaration().as_entity() == nullptr) {
                 // While not a mapping that can be queried, we do need to free the instance later on
-                byidentity_[new_entity->identity()] = new_entity;
+                byidentity_[entity->identity()] = instance_storage_type(entity);
             }
 
             // If it is part of this file

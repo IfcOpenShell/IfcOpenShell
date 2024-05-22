@@ -79,10 +79,10 @@
 	}
 
 	template <>
-	IfcUtil::IfcBaseClass* cast_pyobject(PyObject* element) {
+	entity_instance* cast_pyobject(PyObject* element) {
 		void *arg = 0;
-		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);
-		return static_cast<IfcUtil::IfcBaseClass*>(SWIG_IsOK(res) ? arg : 0);
+		int res = SWIG_ConvertPtr(element, &arg, SWIGTYPE_p_entity_instance, 0);
+		return static_cast<entity_instance*>(SWIG_IsOK(res) ? arg : 0);
 	}
 
 	template<typename T>
@@ -156,6 +156,7 @@
 	PyObject* pythonize(const double& t)                { return PyFloat_FromDouble(t);                                                              }
 	PyObject* pythonize(const std::string& t)           { return PyUnicode_FromString(t.c_str());                                                    }
 	PyObject* pythonize(const IfcUtil::IfcBaseClass* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcUtil__IfcBaseClass, 0);        }
+	PyObject* pythonize(const entity_instance* t)       { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_entity_instance, SWIG_POINTER_OWN);}
 	PyObject* pythonize(const IfcParse::attribute* t)   { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__attribute, 0);          }
 	PyObject* pythonize(const IfcParse::inverse_attribute* t) { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__inverse_attribute, 0); }
 	PyObject* pythonize(const IfcParse::entity* t)      { return SWIG_NewPointerObj(SWIG_as_voidptr(t), SWIGTYPE_p_IfcParse__entity, 0);             }

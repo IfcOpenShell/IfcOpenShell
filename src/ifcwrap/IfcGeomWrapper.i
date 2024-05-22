@@ -587,13 +587,6 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	%}
 };
 
-%extend IfcGeom::Matrix {
-	%pythoncode %{
-        # Hide the getters with read-only property implementations
-        data = property(data)
-	%}
-};
-
 %{
 	template <typename T>
 	std::string to_locale_invariant_string(const T& t) {

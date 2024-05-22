@@ -149,12 +149,6 @@
 // Create docstrings for generated python code.
 %feature("autodoc", "1");
 
-%include "utils/type_conversion.i"
-
-%include "utils/typemaps_in.i"
-
-%include "utils/typemaps_out.i"
-
 %module ifcopenshell_wrapper %{
 	#include "../ifcgeom/Converter.h"
 	#include "../ifcgeom/taxonomy.h"

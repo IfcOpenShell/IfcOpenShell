@@ -23,13 +23,17 @@
 	$result = SWIG_Python_str_FromChar(data_type_strings[(int)$1]);
 }
 
-%typemap(out) std::pair<IfcUtil::ArgumentType, Argument*> {
+%typemap(out) std::tuple<IfcUtil::ArgumentType, Argument*, entity_instance*> {
 	// The SWIG %exception directive does not take care
 	// of our typemap. So the attribute conversion block
 	// is wrapped in a try-catch block manually.
 	try {
-	const Argument& arg = *($1.second);
-	const IfcUtil::ArgumentType type = $1.first;
+	
+	std::tuple<IfcUtil::ArgumentType, Argument*, entity_instance*>& res = $1;
+	const Argument& arg = *std::get<Argument*>(res);
+	const IfcUtil::ArgumentType type = std::get<IfcUtil::ArgumentType>(res);
+	entity_instance* host = std::get<entity_instance*>(res);
+
 	if (arg.isNull()) {
 		Py_INCREF(Py_None);
 		$result = Py_None;
@@ -81,7 +85,10 @@
 		break; }
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
 			IfcUtil::IfcBaseClass* v = arg;
-			$result = pythonize(v);
+			if (!v->data().file) {
+				throw std::runtime_error("No file");
+			}
+			$result = pythonize(new entity_instance(v->data().file->instance_by_id_2(v->data().id()), host->file_pointer()));
 		break; }
 		case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
 			aggregate_of_instance::ptr v = arg;
