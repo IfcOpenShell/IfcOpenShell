@@ -107,7 +107,7 @@ class curve_segment_evaluator {
     double projected_length_; // for vertical segments, this is the length of curve projected onto the "Distance Along" axis
 
     std::optional<std::function<Eigen::Matrix4d(double)>> parent_curve_fn_; // function for the parent curve. Function takes distances along, u, and returns the 4x4 position matrix
-    std::optional<Eigen::Matrix4d> parent_curve_placement_;                 // placement matrix for the parent curve
+    std::optional<Eigen::Matrix4d> parent_curve_start_point_;                 // placement matrix for the parent curve
 
   public:
     curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit, segment_type_t segment_type)
@@ -136,8 +136,8 @@ class curve_segment_evaluator {
         return parent_curve_fn_;
     }
 
-    const std::optional<Eigen::Matrix4d>& parent_curve_placement() const {
-        return parent_curve_placement_;
+    const std::optional<Eigen::Matrix4d>& parent_curve_start_point() const {
+        return parent_curve_start_point_;
     }
 
     void set_spiral_function(double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
@@ -162,7 +162,7 @@ class curve_segment_evaluator {
             p.col(0) = Eigen::Vector4d(pcStartDx, pcStartDy, 0, 0);
             p.col(1) = Eigen::Vector4d(-pcStartDy, pcStartDx, 0, 0);
             p.col(3) = Eigen::Vector4d(pcStartX, pcStartY, 0, 1);
-            parent_curve_placement_ = p;
+            parent_curve_start_point_ = p;
 
             std::function<double(double)> convert_u;
             if (segment_type_ == ST_HORIZONTAL)
@@ -233,7 +233,7 @@ class curve_segment_evaluator {
             return m;
         };
 
-        parent_curve_placement_ = (*parent_curve_fn_)(0.0);
+        parent_curve_start_point_ = (*parent_curve_fn_)(0.0);
     }
 
 #ifdef SCHEMA_HAS_IfcClothoid
@@ -443,7 +443,7 @@ class curve_segment_evaluator {
             // angle from X = 0 to the parent curve X-axis
             auto pc_axis_angle = atan2(pcDy, pcDx);
             // sweep angle from the parent curve X-axis to the first point on the trimmed curve
-            auto sweep_start_angle = start_ / R;
+            auto sweep_start_angle = R ? start_ / R : 0.0;
             // angle from X = 0 to the first point on the trimmed curve
             auto start_angle = pc_axis_angle + sweep_start_angle;
 
@@ -469,19 +469,19 @@ class curve_segment_evaluator {
                     // x and y are coordinates on the curve segment for horizontal distance u from the start point
                     // u is a horizontal distance so x = csStartX + u
                     // Recognizing the triangle
-                    // R^2 = (csStartX - csCenterX + u)^2 + (y - csCenterY)^2
+                    // R^2 = (u + csStartX - csCenterX)^2 + (y - csCenterY)^2
                     // solve for y
-                    // (y - csCenterY) = sqrt( R^2 - (csStartX - csCenterX + u)^2 )
-                    // y = csCenterY + sqrt( R^2 - (csStartX - csCenterX + u)^2 )
+                    // (y - csCenterY) = sqrt( R^2 - (u + csStartX - csCenterX)^2 )
+                    // y = csCenterY + sqrt( R^2 - (u + csStartX - csCenterX)^2 )
                     auto x = csStartX + u;
-                    auto y = csCenterY - sign_l * sqrt(pow(R, 2) - pow(csStartX - csCenterX + u, 2));
+                    auto y = csCenterY - sign_l * sqrt(pow(R, 2) - pow(u + csStartX - csCenterX, 2));
 
                     // compute the chord distance between the start point and (x,y)
                     auto c = sqrt(pow(x - csStartX, 2.0) + pow(y - csStartY, 2.0));
 
                     // compute the subtended angle
                     // c = 2R*sin(delta/2)
-                    auto delta = 2 * asin(c / (2 * R));
+                    auto delta = R ? 2.0 * asin(c / (2 * R)) : 0.0;
 
                     // compute the arc length (this will always be a positive value)
                     u = R * fabs(delta);
@@ -494,7 +494,7 @@ class curve_segment_evaluator {
 
                 // u is measured along the circle
                 // angle from the X=0 axis to the current point
-                auto delta = sign_l * u / R;
+                auto delta = R ? sign_l * u / R : 0.0;
                 auto sweep_angle = start_angle + delta;
                 auto cos_sweep_angle = cos(sweep_angle);
                 auto sin_sweep_angle = sin(sweep_angle);
@@ -513,7 +513,32 @@ class curve_segment_evaluator {
                 return m;
             };
 
-            parent_curve_placement_ = (*parent_curve_fn_)(start_);
+            if (segment_type_ == ST_HORIZONTAL) {
+                parent_curve_start_point_ = (*parent_curve_fn_)(start_);
+            } else {
+               // @todo - find a way to simplify this
+               // For vertical circle "u" is a horizontal measurement and it needs to be converted
+               // to a distance along the circle. However, when evaluating the start point,
+               // start_ is distance along. parent_curve_fn_ will call it's convert_u method
+               // which would be wrong in this case. For this reason, the start point of the parent curve
+               // is explicitly computed here. This code is a little redundant with parent_curve_fn_.
+                auto cos_start_angle = cos(start_angle);
+                auto sin_start_angle = sin(start_angle);
+
+                // point on the parent curve
+                auto pcStartX = R * cos_start_angle + pcCenterX;
+                auto pcStartY = R * sin_start_angle + pcCenterY;
+
+                auto pcStartDx = -sign_l * sin_start_angle;
+                auto pcStartDy =  sign_l * cos_start_angle;
+
+                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                m.col(0) = Eigen::Vector4d(pcStartDx, pcStartDy, 0, 0);
+                m.col(1) = Eigen::Vector4d(-pcStartDy, pcStartDx, 0, 0);
+                m.col(3) = Eigen::Vector4d(pcStartX, pcStartY, 0.0, 1.0);
+                parent_curve_start_point_ = m;
+            }
+
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -534,8 +559,10 @@ class curve_segment_evaluator {
        // 8.9.3.30 IfcDirection https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/lexical/IfcDirection.htm
        // "The IfcDirection does not imply a vector length, and the direction ratios does not have to be normalized."
        //
-       // Therefore, the direction ratios need to be normalized to compute points on the line. Magnitude is not used
-       // because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment
+       // Therefore, the direction ratios need to be normalized to compute points on the line. 
+       // 
+       // Magnitude is not used because it relates to the parameterization of the line, which isn't currently done for IfcCurveSegment
+       // @todo - parameterization was recently added so Magnitude needs to be taking into consideration
        auto dr = l->Dir()->Orientation()->DirectionRatios();
 
        // normalize the direction ratios
@@ -567,8 +594,8 @@ class curve_segment_evaluator {
               return m;
           };
 
-          parent_curve_placement_ = (*parent_curve_fn_)(start_);
-        } else {
+          parent_curve_start_point_ = (*parent_curve_fn_)(start_);
+       } else {
             Logger::Warning(std::runtime_error("Unexpected segment type encountered"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
         }
@@ -689,7 +716,7 @@ class curve_segment_evaluator {
                 return m;
             };
 
-            parent_curve_placement_ = (*parent_curve_fn_)(start_);
+            parent_curve_start_point_ = (*parent_curve_fn_)(0.0); // start is added to u in parent_curve_fn_, so use 0.0 here
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -731,21 +758,21 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     curve_segment_evaluator cse(this, inst, length_unit_, segment_type);
     boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
     const auto& parent_curve_fn = cse.parent_curve_function();
-    const auto& parent_curve_placement = cse.parent_curve_placement();
+    const auto& parent_curve_start_point = cse.parent_curve_start_point();
 
-    if (!parent_curve_fn || !parent_curve_placement) {
+    if (!parent_curve_fn || !parent_curve_start_point) {
         Logger::Error(std::runtime_error(inst->ParentCurve()->declaration().name() + " not implemented"), inst);
     }
 
     // Do a negative translation of the parent curve point relative to the start of the parent curve.
     // This moves parent_curve_fn(u=0.0) to coordinate (0,0).
     // This is done so the curve_segment_placement is applied relative to (0,0)
-    Eigen::Matrix4d translation = Eigen::Matrix4d::Identity();
-    translation.col(3) = -1.0 * (*parent_curve_placement).col(3);
-    translation(3, 3) = 1.0;
+    Eigen::Matrix4d remove_parent_curve_translation = Eigen::Matrix4d::Identity();
+    remove_parent_curve_translation.col(3) = -1.0 * (*parent_curve_start_point).col(3);
+    remove_parent_curve_translation(3, 3) = 1.0;
 
-    // does a rotation so that the tangent of the parent curve is in the direction (1,0)
-    // example: if the parent curve IfcLine is at a 30 degree clockwise angle, this does
+    // Do a rotation so that the tangent of the parent curve is in the direction (1,0)
+    // Example: if the parent curve IfcLine is at a 30 degree clockwise angle, this does
     // a 30 degree counter-clockwise rotation
     // Clockwise rotation matrix = [cos(angle) -sin(angle)]
     //                             [sin(angle)  cos(angle)]
@@ -754,17 +781,35 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     //                              [-sin(angle) cos(angle)]
     //
     // That's just a sign flip in positions (0,1) and (1,0)
-    Eigen::Matrix4d rotation = *parent_curve_placement;
-    rotation(0, 1) *= -1.0;
-    rotation(1, 0) *= -1.0;
-    rotation.col(3) = Eigen::Vector4d(0, 0, 0, 1);
+    Eigen::Matrix4d remove_parent_curve_rotation = *parent_curve_start_point;
+    remove_parent_curve_rotation(0, 1) *= -1.0;
+    remove_parent_curve_rotation(1, 0) *= -1.0;
+    remove_parent_curve_rotation.col(3) = Eigen::Vector4d(0, 0, 0, 1); // remove the parent curve placement point
 
     const Eigen::Matrix4d& curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
 
-    auto fn = [curve_segment_placement, rotation, translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
-        const Eigen::Matrix4d& p = (*parent_curve_fn)(u);
-        return curve_segment_placement * rotation * translation * p;
-    };
+    std::function<Eigen::Matrix4d(double u)> fn;
+    if (segment_type == ST_CANT)
+    {
+       // not sure if this is correct, but when applying my general formula to compute the 4x4 matrix of a point on curve segment,
+       // p = curve_segment_placement * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point,
+       // the directional vectors of curve_segment_placement are multiplied with the cant value (eg parent_curve_point(3,3)) and
+       // cause the resulting z value to be slightly off. My solution is to change the upper 3x3 of the curve_segment_placement
+       // matrix to identity. This results in correct cant values, but I think it messes up the resulting direction vectors
+        Eigen::Matrix4d c = Eigen::Matrix4d::Identity();
+        c.col(3) = curve_segment_placement.col(3);
+
+        fn = [c, remove_parent_curve_rotation, remove_parent_curve_translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
+            Eigen::Matrix4d parent_curve_point = (*parent_curve_fn)(u);
+            Eigen::Matrix4d p = c * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point;
+            return p;
+        };
+    } else {
+        fn = [curve_segment_placement, remove_parent_curve_rotation, remove_parent_curve_translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
+            auto parent_curve_point = (*parent_curve_fn)(u);
+            return curve_segment_placement * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point;
+        };
+    }
 
     auto length = cse.length();
 

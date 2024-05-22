@@ -177,6 +177,7 @@ typedef item const* ptr;
 				}
 
 				item::ptr evaluate() const override;
+            std::pair<item::ptr,std::vector<double>> evaluate2() const;
 
             /// @brief evaluates the piecewise function between ustart and uend
             /// @param ustart starting location - taken as 0.0 if before start
