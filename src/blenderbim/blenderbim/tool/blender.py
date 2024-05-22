@@ -468,20 +468,41 @@ class Blender(blenderbim.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
-    def enum_property_has_valid_index(cls, props: bpy.types.PropertyGroup, prop_name: str, enum_items: tuple) -> bool:
+    def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
         """
-        items_amount = len(enum_items)
+        # Yes, accessing items through annotations is a bit hacky
+        # but it's the only way to get the dynamic enum items
+        # besides providing them to get_enum_safe explicitly.
+        prop_keywords = props.__annotations__[prop_name].keywords
+        items = prop_keywords.get("items")
+        if items is None:
+            return None
+        if not isinstance(items, (list, tuple)):
+            # items are retrieved through a callback, not a static list / tuple :
+            items = items(props, bpy.context)
+
+        items_amount = len(items)
         # If enum has no items it seems to always produce a warning.
         # E.g. if you try to get it's value directly: `BIMModelProperties.relating_type_id`.
         if items_amount == 0:
-            return False
-        current_value_index = props.get(prop_name, None)
-        # assuming the default value is fine
-        if current_value_index is None:
-            return True
-        return current_value_index < items_amount
+            return None
+
+        index = props.get(prop_name)
+        # If value was never changed (still default), we can just retrieve it from the enum.
+        if index is None:
+            default_value = prop_keywords.get("default")
+            if isinstance(default_value, int):
+                index = default_value
+            else:
+                # If default value is a string then it's a static enum
+                # and we can just return it.
+                return default_value
+        # Ensure index is valid.
+        if items_amount > index >= 0:
+            return items[index][0]
+        return None
 
     @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
