@@ -458,24 +458,28 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ifcopenshell::geometry::taxonomy::item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate() const {
+    return evaluate2().first;
+}
+
+std::pair<item::ptr, std::vector<double>> ifcopenshell::geometry::taxonomy::piecewise_function::evaluate2() const {
     double curve_length = length();
 
-   std::vector<taxonomy::point3::ptr> polygon;
-	
-	auto param_type = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepType>().get() : ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE;
-   auto param = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get() : 0.5;
-   unsigned num_steps = 0;
-   if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
-	   // parameter is max step size
-       num_steps = (unsigned)std::ceil(curve_length / param);
-   } else {
-	   // parameter is minimum number of steps
-       num_steps = (unsigned)std::ceil(param);
-   }
+    std::vector<taxonomy::point3::ptr> polygon;
 
-	num_steps = std::max(1u, num_steps); // never have fewer than 1 step
+    auto param_type = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepType>().get() : ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE;
+    auto param = settings_ ? settings_->get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get() : 0.5;
+    unsigned num_steps = 0;
+    if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
+        // parameter is max step size
+        num_steps = (unsigned)std::ceil(curve_length / param);
+    } else {
+        // parameter is minimum number of steps
+        num_steps = (unsigned)std::ceil(param);
+    }
 
-	return evaluate(0.0, curve_length, num_steps);
+    num_steps = std::max(1u, num_steps); // never have fewer than 1 step
+
+    return evaluate2(0.0, curve_length, num_steps);
 }
 
 item::ptr ifcopenshell::geometry::taxonomy::piecewise_function::evaluate(double ustart, double uend,unsigned nsteps) const {
