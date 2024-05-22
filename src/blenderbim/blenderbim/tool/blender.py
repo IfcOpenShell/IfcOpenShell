@@ -492,7 +492,7 @@ class Blender(blenderbim.core.tool.Blender):
         index = props.get(prop_name)
         # If value was never changed (still default), we can just retrieve it from the enum.
         if index is None:
-            default_value = prop_keywords.get("default")
+            default_value = prop_keywords.get("default", 0)
             if isinstance(default_value, int):
                 index = default_value
             else:
