@@ -212,7 +212,7 @@ class Csv2Ifc:
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
-    def create_unit(self, symbol) -> ifcopenshell.entity_instance:
+    def create_unit(self, symbol: str) -> ifcopenshell.entity_instance:
         unit = self.units.get(symbol, None)
         if unit:
             return unit
@@ -227,7 +227,7 @@ class Csv2Ifc:
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
 
 
-def has_property(self, product, property_name) -> bool:
+def has_property(self, product: ifcopenshell.entity_instance, property_name: str) -> bool:
     if not property_name:
         return True
     qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)

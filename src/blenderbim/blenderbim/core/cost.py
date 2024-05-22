@@ -289,7 +289,7 @@ def calculate_cost_item_resource_value(ifc: tool.Ifc, cost_item: ifcopenshell.en
     ifc.run("cost.calculate_cost_item_resource_value", cost_item=cost_item)
 
 
-def export_cost_schedules(cost: tool.Cost, filepath, format, cost_schedule=None):
+def export_cost_schedules(cost: tool.Cost, filepath: str, format: str, cost_schedule=None):
     cost.play_sound()
     return cost.export_cost_schedules(filepath, format, cost_schedule)
 
