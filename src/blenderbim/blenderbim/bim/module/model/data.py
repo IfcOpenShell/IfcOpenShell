@@ -121,9 +121,10 @@ class AuthoringData:
     def type_thumbnail(cls):
         if not cls.data["relating_type_id"]:
             return 0
-        if not tool.Blender.enum_property_has_valid_index(cls.props, "relating_type_id", cls.data["relating_type_id"]):
+        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
+        if relating_type_id is None:
             return 0
-        element = tool.Ifc.get().by_id(int(cls.props.relating_type_id))
+        element = tool.Ifc.get().by_id(int(relating_type_id))
         return cls.type_thumbnails.get(element.id(), None) or 0
 
     @classmethod
@@ -251,10 +252,8 @@ class AuthoringData:
 
     @classmethod
     def predefined_type(cls):
-        if not tool.Blender.enum_property_has_valid_index(cls.props, "relating_type_id", cls.data["relating_type_id"]):
-            return
-        relating_type_id = cls.props.relating_type_id
-        if not relating_type_id:
+        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
+        if relating_type_id is None:
             return
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         if not hasattr(relating_type, "PredefinedType"):
