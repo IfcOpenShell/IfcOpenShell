@@ -102,7 +102,8 @@ def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category
                 if category_filter and child_cost_value.Category != category_filter:
                     continue
                 child_applied_value = calculate_applied_value(child_root_element, child_cost_value)
-                child_quantity = get_total_quantity(child_root_element) or 1.0
+                child_quantity = get_total_quantity(child_root_element)
+                child_quantity = 1.0 if child_quantity is None else child_quantity
                 if child_cost_value.UnitBasis:
                     value_component = child_cost_value.UnitBasis.ValueComponent.wrappedValue
                     result += child_quantity / value_component * child_applied_value
