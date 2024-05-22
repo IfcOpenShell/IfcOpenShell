@@ -31,7 +31,6 @@ import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
-from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Operator:
@@ -39,27 +38,6 @@ class Operator:
         IfcStore.execute_ifc_operator(self, context)
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
-
-
-def get_pset_props(context, obj, obj_type):
-    if obj_type == "Object":
-        return bpy.data.objects.get(obj).PsetProperties
-    elif obj_type == "Material":
-        return bpy.data.materials.get(obj).PsetProperties
-    elif obj_type == "MaterialSet":
-        return bpy.data.objects.get(obj).MaterialSetPsetProperties
-    elif obj_type == "MaterialSetItem":
-        return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
-    elif obj_type == "Task":
-        return context.scene.TaskPsetProperties
-    elif obj_type == "Resource":
-        return context.scene.ResourcePsetProperties
-    elif obj_type == "Profile":
-        return context.scene.ProfilePsetProperties
-    elif obj_type == "WorkSchedule":
-        return context.scene.WorkSchedulePsetProperties
-    elif obj_type == "Group":
-        return context.scene.GroupPsetProperties
 
 
 class TogglePsetExpansion(bpy.types.Operator, Operator):
@@ -84,167 +62,14 @@ class EnablePsetEditing(bpy.types.Operator):
     obj_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.props = get_pset_props(context, self.obj, self.obj_type)
-        self.props.properties.clear()
-
         if self.pset_id:
             pset = tool.Ifc.get().by_id(self.pset_id)
-            self.props.active_pset_name = pset.Name
-            self.props.active_pset_type = ""
-            pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(pset.Name)
+            self.pset_name = pset.Name
         else:
             pset = None
-            self.props.active_pset_name = self.pset_name
-            self.props.active_pset_type = self.pset_type
-            pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(self.pset_name)
 
-        if pset_template:
-            self.load_from_pset_template(pset_template, pset)
-        self.load_from_pset_data(pset)
-
-        self.props.active_pset_id = self.pset_id
+        core.enable_pset_editing(tool.Pset, pset, self.pset_name, self.pset_type, self.obj, self.obj_type)
         return {"FINISHED"}
-
-    def load_from_pset_template(self, pset_template, pset):
-        if pset:
-            data = ifcopenshell.util.element.get_property_definition(pset)
-            del data["id"]
-        else:
-            data = {}
-        for prop_template in pset_template.HasPropertyTemplates:
-            if not prop_template.is_a("IfcSimplePropertyTemplate"):
-                continue  # Other types not yet supported
-            if prop_template.TemplateType == "P_SINGLEVALUE":
-                self.load_single_value(pset_template, prop_template, data)
-            elif prop_template.TemplateType.startswith("Q_"):
-                self.load_single_value(pset_template, prop_template, data)
-            elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
-                self.load_enumerated_value(prop_template, data)
-            else:
-                # NOTE: currently unsupported types:
-                # - P_BOUNDEDVALUE
-                # - P_LISTVALUE
-                # - P_REFERENCEVALUE
-                # - P_TABLEVALUE
-                pass
-
-    def load_single_value(self, pset_template, prop_template, data):
-        prop = self.props.properties.add()
-        prop.name = prop_template.Name
-        prop.value_type = "IfcPropertySingleValue"
-        metadata = prop.metadata
-        metadata.name = prop_template.Name
-        metadata.is_null = data.get(prop_template.Name, None) is None
-        metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-        metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
-        metadata.data_type = self.get_data_type(prop_template)
-
-        special_type = ""
-        if (
-            prop_template.PrimaryMeasureType
-            in (
-                "IfcPositiveLengthMeasure",
-                "IfcLengthMeasure",
-            )
-            or prop_template.TemplateType == "Q_LENGTH"
-        ):
-            special_type = "LENGTH"
-        elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
-            special_type = "AREA"
-        elif prop_template.PrimaryMeasureType == "IfcVolumeMeasure" or prop_template.TemplateType == "Q_VOLUME":
-            special_type = "VOLUME"
-        metadata.special_type = special_type
-
-        if metadata.data_type == "string":
-            metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
-        elif metadata.data_type == "integer":
-            metadata.int_value = 0 if metadata.is_null else int(data[prop_template.Name])
-        elif metadata.data_type == "float":
-            metadata.float_value = 0.0 if metadata.is_null else float(data[prop_template.Name])
-        elif metadata.data_type == "boolean":
-            metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
-
-        metadata.ifc_class = pset_template.Name
-        blenderbim.bim.helper.add_attribute_description(metadata, prop_template)
-
-    def get_data_type(self, prop_template):
-        if prop_template.TemplateType in ["Q_LENGTH", "Q_AREA", "Q_VOLUME", "Q_WEIGHT", "Q_TIME"]:
-            return "float"
-        elif prop_template.TemplateType == "Q_COUNT":
-            return "integer"
-        return ifcopenshell.util.attribute.get_primitive_type(
-            IfcStore.get_schema().declaration_by_name(prop_template.PrimaryMeasureType or "IfcLabel")
-        )
-
-    def load_enumerated_value(self, prop_template, data):
-        enum_items = [v.wrappedValue for v in prop_template.Enumerators.EnumerationValues]
-        selected_enum_items = data.get(prop_template.Name, []) or []
-
-        prop = self.props.properties.add()
-        prop.name = prop_template.Name
-        prop.value_type = "IfcPropertyEnumeratedValue"
-        metadata = prop.metadata
-        metadata.name = prop_template.Name
-        metadata.is_null = data.get(prop_template.Name, None) is None
-        metadata.is_optional = True
-        metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-
-        # Cute hack to abuse the metadata to find the Blender data_type
-        metadata.set_value(enum_items[0])
-        data_type = metadata.get_value_name()
-
-        for enum in enum_items:
-            new = prop.enumerated_value.enumerated_values.add()
-            setattr(new, data_type, enum)
-            new.is_selected = enum in selected_enum_items
-
-    def load_from_pset_data(self, pset):
-        if pset is None:
-            return
-
-        props = []
-        if pset.is_a("IfcElementQuantity"):
-            props = pset.Quantities
-        elif pset.is_a("IfcPropertySet"):
-            props = pset.HasProperties
-        elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
-            props = pset.Properties
-
-        for prop in props:
-            if self.props.properties.get(prop.Name):
-                continue  # This property has already been added from a template
-            if prop.is_a("IfcPropertyEnumeratedValue"):
-                simple_prop = self.props.properties.add()
-                simple_prop.name = prop.Name
-                simple_prop.value_type = "IfcPropertyEnumeratedValue"
-                metadata = simple_prop.metadata
-                metadata.name = prop.Name
-                metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
-                metadata.is_optional = True
-                metadata.set_value(prop.EnumerationReference.EnumerationValues[0].wrappedValue)
-
-                enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
-                selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
-                data_type = metadata.get_value_name(display_only=True)
-
-                for enum in enum_items:
-                    new = simple_prop.enumerated_value.enumerated_values.add()
-                    setattr(new, data_type, enum)
-                    new.is_selected = enum in selected_enum_items
-            else:
-                if prop.is_a("IfcPropertySingleValue"):
-                    value = prop.NominalValue.wrappedValue if prop.NominalValue else None
-                elif prop.is_a("IfcPhysicalSimpleQuantity"):
-                    value = prop[3]
-                new_prop = self.props.properties.add()
-                new_prop.name = prop.Name
-                metadata = new_prop.metadata
-                metadata.set_value(value)
-                metadata.name = prop.Name
-                metadata.is_null = value is None
-                metadata.is_optional = True
-                metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
 
 class DisablePsetEditing(bpy.types.Operator, Operator):
@@ -255,7 +80,7 @@ class DisablePsetEditing(bpy.types.Operator, Operator):
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = get_pset_props(context, self.obj, self.obj_type)
+        props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         if props.active_pset_id:
             pset = tool.Ifc.get().by_id(props.active_pset_id)
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
@@ -279,7 +104,7 @@ class EditPset(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
+        props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
         properties = {}
@@ -350,7 +175,7 @@ class RemovePset(bpy.types.Operator, Operator):
             objects = [self.obj]
         pset_name = tool.Ifc.get().by_id(self.pset_id).Name
         for obj in objects:
-            props = get_pset_props(context, obj, self.obj_type)
+            props = tool.Pset.get_pset_props(obj, self.obj_type)
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             element = tool.Ifc.get().by_id(ifc_definition_id)
             pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
@@ -381,7 +206,7 @@ class AddQto(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = get_pset_props(context, self.obj, self.obj_type)
+        props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
         bpy.ops.bim.enable_pset_editing(

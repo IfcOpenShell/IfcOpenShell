@@ -42,3 +42,19 @@ def add_pset(ifc, pset, blender, obj_name, obj_type):
         if not pset.is_pset_applicable(element, pset_name):
             continue
         pset.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj_name, obj_type=obj_type)
+
+
+def enable_pset_editing(pset_tool, pset, pset_name, pset_type, obj_name, obj_type):
+    props = pset_tool.get_pset_props(obj_name, obj_type)
+    pset_tool.clear_blender_pset_properties(props)
+
+    pset_template = pset_tool.get_pset_template(pset_name)
+
+    if pset_template:
+        pset_tool.import_pset_from_template(pset_template, pset, props)
+
+    if pset:
+        pset_tool.import_pset_from_existing(pset, props)
+        pset_tool.set_active_pset(props, pset)
+    else:
+        pset_tool.enable_proposed_pset(props, pset_name, pset_type)
