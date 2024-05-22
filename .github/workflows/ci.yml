@@ -90,7 +90,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
                -DPYTHON_LIBRARY:FILEPATH=${{ env.pythonLocation }}/lib/libpython3.11.so \
                -DCOLLADA_SUPPORT=Off \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3_add2" \
+               "-DSCHEMA_VERSIONS=2x3;4;4x3;4x3_add1;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
                -DCGAL_INCLUDE_DIR=/usr/include \
