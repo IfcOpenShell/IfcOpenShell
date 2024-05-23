@@ -505,6 +505,11 @@ class file:
     ) -> list[ifcopenshell.entity_instance]:
         """Return a list of entities that reference this entity
 
+        Warning: this is a slow function, especially when there is a large
+        number of inverses (such as for a shared owner history). If you are
+        only interested in the total number of inverses (typically 0, 1, or N),
+        consider using :func:`get_total_inverses`.
+
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
@@ -529,6 +534,9 @@ class file:
 
     def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
         """Returns the number of entities that reference this entity
+
+        This is equivalent to `len(model.get_inverse(element))`, but
+        significantly faster.
 
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance
