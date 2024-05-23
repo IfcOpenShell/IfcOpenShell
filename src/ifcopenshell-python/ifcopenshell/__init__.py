@@ -254,7 +254,7 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Union[str | None]:
+def guess_format(path: Path) -> Union[str, None]:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
