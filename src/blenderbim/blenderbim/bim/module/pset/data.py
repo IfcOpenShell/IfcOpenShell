@@ -101,9 +101,7 @@ class ObjectPsetsData(Data):
         )
         psetnames = cls.format_pset_enum(psets)
         assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True, should_inherit=False).keys()
-        return [("BBIM_CUSTOM_PSET", "Custom Pset", "Create a property set without using a template."), None] + [
-            p for p in psetnames if p[0] not in assigned_names
-        ]
+        return [p for p in psetnames if p[0] not in assigned_names]
 
     @classmethod
     def qto_name(cls):

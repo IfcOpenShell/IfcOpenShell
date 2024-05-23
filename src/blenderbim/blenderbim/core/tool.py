@@ -624,7 +624,7 @@ class Pset:
     def enable_proposed_pset(cls, props, pset_name, pset_type, has_template): pass
     def get_element_pset(cls, element, pset_name): pass
     def get_prop_template_primitive_type(cls, prop_template): pass
-    def get_pset_name(cls, obj, obj_type): pass
+    def get_pset_name(cls, obj, obj_type, pset_type): pass
     def get_pset_template(cls, name): pass
     def import_enumerated_value_from_template(cls, prop_template, data, props): pass
     def import_pset_from_existing(cls, pset, props): pass
