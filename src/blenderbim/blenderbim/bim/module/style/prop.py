@@ -122,7 +122,7 @@ class ColourRgb(PropertyGroup):
     name: StringProperty()
     color_value: FloatVectorProperty(size=3, subtype="COLOR", default=(1, 1, 1))
     # not exposed in the UI, here just to preserve the data
-    color_name: StringProperty("Color Name")
+    color_name: StringProperty(name="Color Name")
 
     # to fit blender.bim.helper.export_attributes
     def get_value(self):

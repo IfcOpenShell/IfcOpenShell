@@ -662,7 +662,7 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
     cost_schedule: bpy.props.IntProperty()
-    format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
+    format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
     directory: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_folder: bpy.props.BoolProperty(
         name="Filter Folders",
