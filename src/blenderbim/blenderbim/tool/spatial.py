@@ -196,7 +196,7 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
-        for obj in bpy.context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcTypeProduct"):
                 yield entity
