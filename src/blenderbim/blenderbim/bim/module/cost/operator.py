@@ -663,12 +663,16 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
     cost_schedule: bpy.props.IntProperty()
     format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    directory: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_folder: bpy.props.BoolProperty(
+        name="Filter Folders",
+        default=True,
+    )
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
@@ -682,6 +686,7 @@ class ExportCostSchedules(bpy.types.Operator):
     def draw(self, context):
         self.layout.label(text="Choose a format")
         self.layout.prop(self, "format")
+        self.layout.label(text="Select a directory.")
 
 
 class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
