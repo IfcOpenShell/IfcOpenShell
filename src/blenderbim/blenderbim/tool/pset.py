@@ -57,9 +57,10 @@ class Pset(blenderbim.core.tool.Pset):
             return bpy.context.scene.GroupPsetProperties
 
     @classmethod
-    def get_pset_name(cls, obj, obj_type):
-        pset = cls.get_pset_props(obj, obj_type)
-        if (name := pset.pset_name) == "BBIM_CUSTOM_PSET":
+    def get_pset_name(cls, obj, obj_type, pset_type="PSET"):
+        props = cls.get_pset_props(obj, obj_type)
+        name = props.pset_name if pset_type == "PSET" else props.qto_name
+        if name == "BBIM_CUSTOM":
             return ""
         return name
 
@@ -244,7 +245,7 @@ class Pset(blenderbim.core.tool.Pset):
     @classmethod
     def enable_proposed_pset(cls, props, pset_name, pset_type, has_template):
         props.active_pset_id = 0
-        props.active_pset_name = pset_name or "My_Pset"
+        props.active_pset_name = pset_name or "My_Data"
         props.active_pset_type = pset_type
         props.active_pset_has_template = has_template
 

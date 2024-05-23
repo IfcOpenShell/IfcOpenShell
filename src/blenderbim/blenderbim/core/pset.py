@@ -31,13 +31,12 @@ def copy_property_to_selection(ifc, pset, is_pset=True, obj=None, pset_name=None
 
 
 def add_pset(ifc, pset, blender, obj_name, obj_type):
-    pset_name = pset.get_pset_name(obj_name, obj_type)
+    pset_name = pset.get_pset_name(obj_name, obj_type, pset_type="PSET")
     if obj_type == "Object":
         elements = [ifc.get_entity(obj) for obj in blender.get_selected_objects()]
     else:
         elements = [ifc.get().by_id(blender.get_obj_ifc_definition_id(obj_name, obj_type))]
     for element in elements:
-        print('checking', element, pset_name)
         if not element:
             continue
         if pset_name and not pset.is_pset_applicable(element, pset_name):

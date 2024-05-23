@@ -144,6 +144,8 @@ class EditPset(bpy.types.Operator, Operator):
             for key, value in properties.items():
                 if isinstance(value, float):
                     properties[key] = round(value, 4)
+                elif not isinstance(value, int):
+                    properties[key] = 0
             ifcopenshell.api.run(
                 "pset.edit_qto",
                 self.file,
@@ -206,11 +208,9 @@ class AddQto(bpy.types.Operator, Operator):
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
-        props = tool.Pset.get_pset_props(self.obj, self.obj_type)
-        ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
-        element = tool.Ifc.get().by_id(ifc_definition_id)
+        qto_name = tool.Pset.get_pset_name(self.obj, self.obj_type, pset_type="QTO")
         bpy.ops.bim.enable_pset_editing(
-            pset_id=0, pset_name=props.qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
+            pset_id=0, pset_name=qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
         )
 
 
