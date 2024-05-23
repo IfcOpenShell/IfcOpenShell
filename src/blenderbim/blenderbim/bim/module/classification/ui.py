@@ -155,7 +155,7 @@ class ReferenceUI:
             blenderbim.bim.helper.draw_attributes(self.props.reference_attributes, self.layout)
             row = self.layout.row(align=True)
             op = row.operator("bim.add_manual_classification_reference", text="Save", icon="CHECKMARK")
-            op.type = self.data.data["object_type"]
+            op.obj_type = self.data.data["object_type"]
             row.operator("bim.disable_adding_manual_classification_reference", text="", icon="CANCEL")
         else:
             row = self.layout.row()
