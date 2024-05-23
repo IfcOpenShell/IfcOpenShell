@@ -1315,6 +1315,8 @@ def remove_deep2(
     :type element: ifcopenshell.entity_instance
     """
     # ifc_file.batch()
+    if ifc_file.get_total_inverses(element):
+        return
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -1325,7 +1327,12 @@ def remove_deep2(
         if (
             subelement.id()
             and subelement not in do_not_delete
-            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            and (
+                # 0 or 1 inverses means it only exists in this subgraph
+                ifc_file.get_total_inverses(subelement) < 2
+                # Alternatively, let's ensure all inverses are within the subgrpah
+                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            )
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])
