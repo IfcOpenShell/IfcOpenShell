@@ -29,6 +29,17 @@
 	}
 }
 
+%typemap(out) Eigen::Matrix4d {
+	$result = PyTuple_New(4);
+	for (int i = 0; i < 4; ++i) {
+		auto row = PyTuple_New(4);
+		for (int j = 0; j < 4; ++j) {
+			PyTuple_SetItem(row, j, PyFloat_FromDouble($1(i, j)));
+		}
+		PyTuple_SetItem($result, i, row);
+	}
+}
+
 %template(material_vector) std::vector<ifcopenshell::geometry::taxonomy::style>;
 
 // SWIG does not support bool references in a meaningful way, so the
@@ -88,6 +99,87 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
     return { reinterpret_cast<const char*>(t.data()), t.size() * sizeof(typename V::value_type) };
 }
 %}
+
+%ignore ifcopenshell::geometry::taxonomy::item::print;
+
+
+%typemap(in) ifcopenshell::geometry::taxonomy::item::ptr {
+	// @this is really annoying, but apparently inheritance
+	// is lost in swig in the shared_ptr type hiearchy
+	using namespace ifcopenshell::geometry::taxonomy;
+	if (!$1) $1 = try_upcast<bspline_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t);
+	if (!$1) $1 = try_upcast<bspline_surface>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_surface_t);
+	if (!$1) $1 = try_upcast<circle>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__circle_t);
+	if (!$1) $1 = try_upcast<collection>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__collection_t);
+	if (!$1) $1 = try_upcast<colour>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__colour_t);
+	if (!$1) $1 = try_upcast<cylinder>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cylinder_t);
+	if (!$1) $1 = try_upcast<direction3>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__direction3_t);
+	if (!$1) $1 = try_upcast<edge>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__edge_t);
+	if (!$1) $1 = try_upcast<ellipse>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__ellipse_t);
+	if (!$1) $1 = try_upcast<extrusion>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__extrusion_t);
+	if (!$1) $1 = try_upcast<face>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__face_t);
+	if (!$1) $1 = try_upcast<line>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__line_t);
+	if (!$1) $1 = try_upcast<loft>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loft_t);
+	if (!$1) $1 = try_upcast<loop>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loop_t);
+	if (!$1) $1 = try_upcast<matrix4>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__matrix4_t);
+	if (!$1) $1 = try_upcast<node>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__node_t);
+	if (!$1) $1 = try_upcast<offset_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_curve_t);
+	if (!$1) $1 = try_upcast<piecewise_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__piecewise_function_t);
+	if (!$1) $1 = try_upcast<plane>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__plane_t);
+	if (!$1) $1 = try_upcast<point3>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t);
+	if (!$1) $1 = try_upcast<revolve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__revolve_t);
+	if (!$1) $1 = try_upcast<shell>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__shell_t);
+	if (!$1) $1 = try_upcast<solid>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__solid_t);
+	if (!$1) $1 = try_upcast<sphere>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t);
+	if (!$1) $1 = try_upcast<style>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t);
+	if (!$1) $1 = try_upcast<surface_curve_sweep>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__surface_curve_sweep_t);
+}
+
+%inline %{
+std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
+	std::ostringstream oss;
+	i->print(oss);
+	return oss.str();
+}
+%}
+
+%shared_ptr(ifcopenshell::geometry::taxonomy::item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::implicit_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::piecewise_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::less_functor);
+%shared_ptr(ifcopenshell::geometry::taxonomy::eigen_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::matrix4);
+%shared_ptr(ifcopenshell::geometry::taxonomy::colour);
+%shared_ptr(ifcopenshell::geometry::taxonomy::style);
+%shared_ptr(ifcopenshell::geometry::taxonomy::geom_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cartesian_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::point3);
+%shared_ptr(ifcopenshell::geometry::taxonomy::direction3);
+%shared_ptr(ifcopenshell::geometry::taxonomy::curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::line);
+%shared_ptr(ifcopenshell::geometry::taxonomy::circle);
+%shared_ptr(ifcopenshell::geometry::taxonomy::ellipse);
+%shared_ptr(ifcopenshell::geometry::taxonomy::bspline_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::offset_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::trimmed_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::edge);
+%shared_ptr(ifcopenshell::geometry::taxonomy::collection_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::collection);
+%shared_ptr(ifcopenshell::geometry::taxonomy::loop);
+%shared_ptr(ifcopenshell::geometry::taxonomy::face);
+%shared_ptr(ifcopenshell::geometry::taxonomy::shell);
+%shared_ptr(ifcopenshell::geometry::taxonomy::solid);
+%shared_ptr(ifcopenshell::geometry::taxonomy::loft);
+%shared_ptr(ifcopenshell::geometry::taxonomy::surface);
+%shared_ptr(ifcopenshell::geometry::taxonomy::plane);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cylinder);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sphere);
+%shared_ptr(ifcopenshell::geometry::taxonomy::bspline_surface);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sweep);
+%shared_ptr(ifcopenshell::geometry::taxonomy::extrusion);
+%shared_ptr(ifcopenshell::geometry::taxonomy::revolve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::surface_curve_sweep);
+%shared_ptr(ifcopenshell::geometry::taxonomy::node);
 
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
@@ -732,6 +824,69 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
+%typemap(out) ifcopenshell::geometry::taxonomy::item::ptr {
+	using namespace ifcopenshell::geometry::taxonomy;
+	auto kind = $1->kind();
+	// @todo this is not automatically generated :(
+	// we can probably use the dispatch mechanism for this we already have in the kernel
+	if (kind == BSPLINE_CURVE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<bspline_curve>(std::static_pointer_cast<bspline_curve>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == BSPLINE_SURFACE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<bspline_surface>(std::static_pointer_cast<bspline_surface>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_surface_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == CIRCLE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<circle>(std::static_pointer_cast<circle>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__circle_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == COLLECTION) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<collection>(std::static_pointer_cast<collection>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__collection_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == COLOUR) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<colour>(std::static_pointer_cast<colour>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__colour_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == CYLINDER) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<cylinder>(std::static_pointer_cast<cylinder>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cylinder_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == DIRECTION3) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<direction3>(std::static_pointer_cast<direction3>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__direction3_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == EDGE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<edge>(std::static_pointer_cast<edge>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__edge_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == ELLIPSE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ellipse>(std::static_pointer_cast<ellipse>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__ellipse_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == EXTRUSION) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<extrusion>(std::static_pointer_cast<extrusion>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__extrusion_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == FACE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<face>(std::static_pointer_cast<face>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__face_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == LINE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<line>(std::static_pointer_cast<line>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__line_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == LOFT) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<loft>(std::static_pointer_cast<loft>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loft_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == LOOP) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<loop>(std::static_pointer_cast<loop>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loop_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == MATRIX4) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<matrix4>(std::static_pointer_cast<matrix4>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__matrix4_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == NODE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<node>(std::static_pointer_cast<node>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__node_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == OFFSET_CURVE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<offset_curve>(std::static_pointer_cast<offset_curve>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_curve_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == PIECEWISE_FUNCTION) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<piecewise_function>(std::static_pointer_cast<piecewise_function>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__piecewise_function_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == PLANE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<plane>(std::static_pointer_cast<plane>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__plane_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == POINT3) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<point3>(std::static_pointer_cast<point3>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == REVOLVE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<revolve>(std::static_pointer_cast<revolve>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__revolve_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == SHELL) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<shell>(std::static_pointer_cast<shell>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__shell_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == SOLID) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<solid>(std::static_pointer_cast<solid>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__solid_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == SPHERE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<sphere>(std::static_pointer_cast<sphere>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == STYLE) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<style>(std::static_pointer_cast<style>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == SURFACE_CURVE_SWEEP) { $result = SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<surface_curve_sweep>(std::static_pointer_cast<surface_curve_sweep>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__surface_curve_sweep_t, 0 | SWIG_POINTER_OWN); }
+}
+
+%{
+template <typename T>
+ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_info* info) {
+    typename T::ptr *arg1 = 0 ;
+    void *argp1 ;
+    typename T::ptr tempshared1 ;
+
+    int newmem = 0;
+    auto res1 = SWIG_ConvertPtrAndOwn(obj0, &argp1, info,  0 , &newmem);
+    if (SWIG_IsOK(res1)) {
+        if (newmem & SWIG_CAST_NEW_MEMORY) {
+            if (argp1) tempshared1 = *reinterpret_cast< typename T::ptr * >(argp1);
+            delete reinterpret_cast< typename T::ptr * >(argp1);
+            arg1 = &tempshared1;
+        } else {
+            arg1 = (argp1) ? reinterpret_cast< typename T::ptr * >(argp1) : &tempshared1;
+        }
+        return std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(*arg1);
+    }
+    return nullptr;
+}
+%}
+
+%inline %{
+	ifcopenshell::geometry::taxonomy::item::ptr map_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance) {
+        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance->data().file, settings));
+		return mapping->map(instance);
+	}
+%}
+
 %inline %{
 	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance->declaration().schema()->name();
@@ -945,5 +1100,42 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		}
 	}
 %}
+
+%define assign_repr(item_name)
+
+%extend item_name {
+	%pythoncode %{
+		__repr__ = taxonomy_item_repr
+	%}
+};
+
+%enddef
+
+assign_repr(ifcopenshell::geometry::taxonomy::bspline_curve)
+assign_repr(ifcopenshell::geometry::taxonomy::bspline_surface)
+assign_repr(ifcopenshell::geometry::taxonomy::circle)
+assign_repr(ifcopenshell::geometry::taxonomy::collection)
+assign_repr(ifcopenshell::geometry::taxonomy::colour)
+assign_repr(ifcopenshell::geometry::taxonomy::cylinder)
+assign_repr(ifcopenshell::geometry::taxonomy::direction3)
+assign_repr(ifcopenshell::geometry::taxonomy::edge)
+assign_repr(ifcopenshell::geometry::taxonomy::ellipse)
+assign_repr(ifcopenshell::geometry::taxonomy::extrusion)
+assign_repr(ifcopenshell::geometry::taxonomy::face)
+assign_repr(ifcopenshell::geometry::taxonomy::line)
+assign_repr(ifcopenshell::geometry::taxonomy::loft)
+assign_repr(ifcopenshell::geometry::taxonomy::loop)
+assign_repr(ifcopenshell::geometry::taxonomy::matrix4)
+assign_repr(ifcopenshell::geometry::taxonomy::node)
+assign_repr(ifcopenshell::geometry::taxonomy::offset_curve)
+assign_repr(ifcopenshell::geometry::taxonomy::piecewise_function)
+assign_repr(ifcopenshell::geometry::taxonomy::plane)
+assign_repr(ifcopenshell::geometry::taxonomy::point3)
+assign_repr(ifcopenshell::geometry::taxonomy::revolve)
+assign_repr(ifcopenshell::geometry::taxonomy::shell)
+assign_repr(ifcopenshell::geometry::taxonomy::solid)
+assign_repr(ifcopenshell::geometry::taxonomy::sphere)
+assign_repr(ifcopenshell::geometry::taxonomy::style)
+assign_repr(ifcopenshell::geometry::taxonomy::surface_curve_sweep)
 
 #endif

@@ -52,6 +52,7 @@
 %include "std_vector.i"
 %include "std_string.i"
 %include "exception.i"
+%include "std_shared_ptr.i"
 
 %ignore IfcGeom::NumberNativeDouble;
 %ignore ifcopenshell::geometry::Converter;
