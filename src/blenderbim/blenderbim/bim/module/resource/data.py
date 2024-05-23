@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.util.resource
 
 
 def refresh():
@@ -139,7 +140,7 @@ class ResourceData:
         return results
 
     @classmethod
-    def active_resource_ids(cls):
+    def active_resource_ids(cls) -> list[int]:
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj)
         if not element:

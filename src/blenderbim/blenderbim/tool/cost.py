@@ -7,7 +7,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import json
-from typing import Optional, Any, Generator
+from typing import Optional, Any, Generator, Union
 
 
 class Cost(blenderbim.core.tool.Cost):
@@ -149,7 +149,7 @@ class Cost(blenderbim.core.tool.Cost):
         return blenderbim.bim.helper.export_attributes(props.cost_item_attributes)
 
     @classmethod
-    def get_active_cost_item(cls):
+    def get_active_cost_item(cls) -> Union[ifcopenshell.entity_instance, None]:
         props = bpy.context.scene.BIMCostProperties
         if not props.active_cost_item_id:
             return None

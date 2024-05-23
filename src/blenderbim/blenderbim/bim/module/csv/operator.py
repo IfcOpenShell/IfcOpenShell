@@ -23,6 +23,7 @@ import ifccsv
 import logging
 import tempfile
 import ifcopenshell
+import ifcopenshell.util.selector
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.scheduler as scheduler
 from blenderbim.bim.ifc import IfcStore
