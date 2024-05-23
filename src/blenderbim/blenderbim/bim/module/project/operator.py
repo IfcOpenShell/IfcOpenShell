@@ -1107,7 +1107,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
 
 
 class ExportIFCBase:
-    bl_idname = "bim.export_ifc"
+    bl_idname = "bim.save_project"
     bl_label = "Save IFC"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
@@ -1225,7 +1225,7 @@ class ExportIFCBase:
 
 
 class ExportIFC(ExportIFCBase, bpy.types.Operator):
-    bl_idname = "bim.export_ifc"
+    pass
 
 
 # TODO: remove as deprecated, better wait couple releases since
