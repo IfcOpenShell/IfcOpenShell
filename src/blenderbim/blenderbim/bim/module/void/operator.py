@@ -77,6 +77,10 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"INFO"}, "You can't add an opening to another opening.")
                 continue
 
+            if not hasattr(element1, "HasOpenings"):
+                self.report({"INFO"}, f"An {element1.is_a()} is not allowed to have an opening.")
+                continue
+
             if tool.Ifc.is_moved(obj1):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
