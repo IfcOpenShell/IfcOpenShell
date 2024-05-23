@@ -29,7 +29,6 @@ def refresh():
 class ResourceData:
     data = {}
     is_loaded = False
-    cost_values = {}
 
     @classmethod
     def load(cls):
