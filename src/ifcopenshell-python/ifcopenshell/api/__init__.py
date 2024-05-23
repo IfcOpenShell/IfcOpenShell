@@ -342,7 +342,7 @@ def wrap_usecase(usecase_path, usecase):
 
         try:
             result = usecase(*args, **settings)
-        except NotImplementedError as e:
+        except TypeError as e:
             if not e.args[0].startswith(f"{usecase.__name__}()"):
                 # signature errors typically start with function name
                 # e.g. "TypeError: edit_library() got an unexpected keyword argument 'test'"
