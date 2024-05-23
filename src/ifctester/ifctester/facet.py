@@ -48,6 +48,16 @@ def cast_to_value(from_value, to_value):
         pass
 
 
+# See bug 4716.
+def is_x(value, cast_value):
+    if cast_value >= 0:
+        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+            return False
+    elif value > cast_value * (1.0 - 1e-6) or value < cast_value * (1.0 + 1e-6):
+        return False
+    return True
+
+
 @lru_cache
 def get_pset(element, pset):
     return ifcopenshell.util.element.get_pset(element, pset)
@@ -332,7 +342,7 @@ class Attribute(Facet):
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
                     if isinstance(value, float) and isinstance(cast_value, float):
-                        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                        if not is_x(value, cast_value):
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break
@@ -858,7 +868,7 @@ class Property(Facet):
                             # "42" = 42
                             cast_value = cast_to_value(self.value, value)
                             if isinstance(value, float) and isinstance(cast_value, float):
-                                if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                                if not is_x(value, cast_value):
                                     is_pass = False
                                     reason = {"type": "VALUE", "actual": value}
                                     break
