@@ -59,7 +59,9 @@ class Pset(blenderbim.core.tool.Pset):
     @classmethod
     def get_pset_name(cls, obj, obj_type):
         pset = cls.get_pset_props(obj, obj_type)
-        return pset.pset_name
+        if (name := pset.pset_name) == "BBIM_CUSTOM_PSET":
+            return ""
+        return name
 
     @classmethod
     def is_pset_applicable(cls, element: ifcopenshell.entity_instance, pset_name: str) -> bool:
@@ -234,16 +236,51 @@ class Pset(blenderbim.core.tool.Pset):
         props.properties.clear()
 
     @classmethod
-    def set_active_pset(cls, props, pset):
+    def set_active_pset(cls, props, pset, has_template):
         props.active_pset_id = pset.id()
         props.active_pset_name = pset.Name
+        props.active_pset_has_template = has_template
 
     @classmethod
-    def enable_proposed_pset(cls, props, pset_name, pset_type):
+    def enable_proposed_pset(cls, props, pset_name, pset_type, has_template):
         props.active_pset_id = 0
-        props.active_pset_name = pset_name
+        props.active_pset_name = pset_name or "My_Pset"
         props.active_pset_type = pset_type
+        props.active_pset_has_template = has_template
 
     @classmethod
     def get_pset_template(cls, name):
         return blenderbim.bim.schema.ifc.psetqto.get_by_name(name)
+
+    @classmethod
+    def add_proposed_property(cls, name, value, props):
+        if props.properties.get(name):
+            return
+        prop = props.properties.add()
+        prop.name = name
+        metadata = prop.metadata
+        metadata.set_value(value)
+        metadata.name = name
+        metadata.is_null = value is None
+        metadata.is_optional = True
+        metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
+
+    @classmethod
+    def cast_string_to_primitive(cls, value: str):
+        value = value.strip()
+        if value.lower() == "true":
+            return True
+        elif value.lower() == "false":
+            return False
+        elif value.lower() == "null" or value == "":
+            return None
+        try:
+            value = int(value)
+            return value
+        except:
+            try:
+                value = float(value)
+                return value
+            except:
+                return value
+        return value

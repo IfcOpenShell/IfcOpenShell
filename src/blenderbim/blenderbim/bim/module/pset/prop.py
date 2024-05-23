@@ -199,15 +199,19 @@ class IfcProperty(PropertyGroup):
 
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_name, name="Qto Name")
+    prop_name: StringProperty(name="Property Name", default="MyProperty")
+    prop_value: StringProperty(name="Property Value", default="Some Value")
 
 
 class MaterialPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -216,6 +220,7 @@ class MaterialPsetProperties(PropertyGroup):
 
 class MaterialSetPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -224,6 +229,7 @@ class MaterialSetPsetProperties(PropertyGroup):
 
 class MaterialSetItemPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -232,6 +238,7 @@ class MaterialSetItemPsetProperties(PropertyGroup):
 
 class TaskPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -240,6 +247,7 @@ class TaskPsetProperties(PropertyGroup):
 
 class ResourcePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -249,6 +257,7 @@ class ResourcePsetProperties(PropertyGroup):
 
 class GroupPsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -257,6 +266,7 @@ class GroupPsetProperties(PropertyGroup):
 
 class ProfilePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
@@ -265,6 +275,7 @@ class ProfilePsetProperties(PropertyGroup):
 
 class WorkSchedulePsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)

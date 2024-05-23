@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AddProposedProp,
     operator.AddPset,
     operator.AddQto,
     operator.CopyPropertyToSelection,
