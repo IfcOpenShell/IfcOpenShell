@@ -94,7 +94,6 @@ class DumbProfileGenerator:
             obj=obj,
             ifc_class=ifc_class,
             should_add_representation=False,
-            context=self.body_context,
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
 

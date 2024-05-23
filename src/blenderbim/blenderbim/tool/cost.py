@@ -2,6 +2,7 @@ import os
 import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
@@ -188,7 +189,7 @@ class Cost(blenderbim.core.tool.Cost):
                 new.name = related_object.Name or "Unnamed"
 
     @classmethod
-    def load_cost_item_quantity_assignments(cls, cost_item, related_object_type):
+    def load_cost_item_quantity_assignments(cls, cost_item: ifcopenshell.entity_instance, related_object_type):
         def create_list_items(collection, cost_item, is_deep):
             products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
             for product in products:
@@ -217,12 +218,16 @@ class Cost(blenderbim.core.tool.Cost):
             create_list_items(props.cost_item_resources, cost_item, is_deep)
 
     @classmethod
-    def calculate_parametric_quantity(cls, cost_item=None, product=None):
+    def calculate_parametric_quantity(
+        cls, cost_item: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance
+    ) -> tuple[float, Union[str, None]]:
         quantities, unit = cls.get_assigned_quantities(cost_item, product)
         return sum(quantity[3] for quantity in quantities), unit
 
     @classmethod
-    def get_assigned_quantities(cls, cost_item, product):
+    def get_assigned_quantities(
+        cls, cost_item: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance
+    ) -> tuple[list[ifcopenshell.entity_instance], Union[str, None]]:
         selected_quantitites = []
         unit = ""
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
@@ -465,13 +470,13 @@ class Cost(blenderbim.core.tool.Cost):
         print("Import finished in {:.2f} seconds".format(time.time() - start))
 
     @classmethod
-    def add_cost_column(cls, name):
+    def add_cost_column(cls, name: str) -> None:
         props = bpy.context.scene.BIMCostProperties
         new = props.columns.add()
         new.name = name
 
     @classmethod
-    def remove_cost_column(cls, name):
+    def remove_cost_column(cls, name: str) -> None:
         props = bpy.context.scene.BIMCostProperties
         props.columns.remove(props.columns.find(name))
 

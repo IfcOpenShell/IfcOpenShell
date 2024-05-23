@@ -20,8 +20,12 @@
 import bpy
 import bmesh
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
 import blenderbim
+import blenderbim.core.root
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.door import bm_sort_out_geom
