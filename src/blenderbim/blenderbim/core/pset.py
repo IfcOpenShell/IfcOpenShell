@@ -37,9 +37,10 @@ def add_pset(ifc, pset, blender, obj_name, obj_type):
     else:
         elements = [ifc.get().by_id(blender.get_obj_ifc_definition_id(obj_name, obj_type))]
     for element in elements:
+        print('checking', element, pset_name)
         if not element:
             continue
-        if not pset.is_pset_applicable(element, pset_name):
+        if pset_name and not pset.is_pset_applicable(element, pset_name):
             continue
         pset.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj_name, obj_type=obj_type)
 
@@ -52,9 +53,17 @@ def enable_pset_editing(pset_tool, pset, pset_name, pset_type, obj_name, obj_typ
 
     if pset_template:
         pset_tool.import_pset_from_template(pset_template, pset, props)
+        has_template = True
+    else:
+        has_template = False
 
     if pset:
         pset_tool.import_pset_from_existing(pset, props)
-        pset_tool.set_active_pset(props, pset)
+        pset_tool.set_active_pset(props, pset, has_template)
     else:
-        pset_tool.enable_proposed_pset(props, pset_name, pset_type)
+        pset_tool.enable_proposed_pset(props, pset_name, pset_type, has_template)
+
+
+def add_proposed_prop(pset, obj_name, obj_type, name, value):
+    props = pset.get_pset_props(obj_name, obj_type)
+    pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)

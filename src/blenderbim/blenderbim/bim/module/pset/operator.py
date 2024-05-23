@@ -468,3 +468,17 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
 
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
+
+
+class AddProposedProp(bpy.types.Operator):
+    bl_idname = "bim.add_proposed_prop"
+    bl_label = "Add Proposed Prop"
+    bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
+    obj_type: bpy.props.StringProperty()
+    prop_name: bpy.props.StringProperty()
+    prop_value: bpy.props.StringProperty()
+
+    def execute(self, context):
+        core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
+        return {"FINISHED"}

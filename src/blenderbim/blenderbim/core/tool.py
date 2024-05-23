@@ -618,8 +618,10 @@ class Profile:
 
 @interface
 class Pset:
+    def add_proposed_property(cls, name, value, props): pass
+    def cast_string_to_primitive(cls, value: str): pass
     def clear_blender_pset_properties(cls, props): pass
-    def enable_proposed_pset(cls, props, pset_name, pset_type): pass
+    def enable_proposed_pset(cls, props, pset_name, pset_type, has_template): pass
     def get_element_pset(cls, element, pset_name): pass
     def get_prop_template_primitive_type(cls, prop_template): pass
     def get_pset_name(cls, obj, obj_type): pass
@@ -629,7 +631,7 @@ class Pset:
     def import_pset_from_template(cls, pset_template, pset, props): pass
     def import_single_value_from_template(cls, pset_template, prop_template, data, props): pass
     def is_pset_applicable(cls,element, pset_name): pass
-    def set_active_pset(cls, props, pset): pass
+    def set_active_pset(cls, props, pset, has_template): pass
 
 
 @interface
