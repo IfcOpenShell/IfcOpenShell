@@ -544,7 +544,7 @@ class RemoveCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.remove_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
 
