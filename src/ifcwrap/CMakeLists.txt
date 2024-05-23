@@ -44,6 +44,10 @@ INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
+
+# track file modifications to reinvoke swig wrapper code gen
+set(USE_SWIG_DEPENDENCIES TRUE)
+
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
 # NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
@@ -68,6 +72,15 @@ endif()
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
 IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+# Find Python interpreter and get its version
+    execute_process(
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
+        OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    set_target_properties(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
+
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()

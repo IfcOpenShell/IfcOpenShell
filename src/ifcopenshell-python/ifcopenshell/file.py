@@ -328,7 +328,7 @@ class file(object):
         """
         eid = kwargs.pop("id", -1)
 
-        e = entity_instance((self.schema_identifier, type), self)
+        e = ifcopenshell_wrapper.make_instance(self.schema_identifier, type)
 
         # Create pairs of {attribute index, attribute value}.
         # Keyword arguments are mapped to their corresponding
@@ -337,7 +337,7 @@ class file(object):
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        attrs = list(enumerate(args)) + [(e.get_argument_index(name), arg) for name, arg in kwargs.items()]
 
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
@@ -353,14 +353,13 @@ class file(object):
         if attrs:
             self.transaction = transaction
 
-        # Once the values are populated add the instance
+        # Once the values are populated move the instance
         # to the file.
-        self.wrapped_data.add(e.wrapped_data, eid)
+        e = self.wrapped_data.add(e, eid)
 
         # The file container now handles the lifetime of
         # this instance. Tell SWIG that it is no longer
         # the owner.
-        e.wrapped_data.this.disown()
 
         if self.transaction:
             self.transaction.store_create(e)
@@ -398,9 +397,9 @@ class file(object):
 
     def __getitem__(self, key):
         if isinstance(key, numbers.Integral):
-            return entity_instance(self.wrapped_data.by_id(key), self)
+            return self.wrapped_data.by_id(key)
         elif isinstance(key, basestring):
-            return entity_instance(self.wrapped_data.by_guid(str(key)), self)
+            return self.wrapped_data.by_guid(str(key))
 
     def by_id(self, id: int) -> ifcopenshell.entity_instance:
         """Return an IFC entity instance filtered by IFC ID.
@@ -441,8 +440,8 @@ class file(object):
 
         if self.transaction:
             max_id = self.wrapped_data.getMaxId()
-        inst.wrapped_data.this.disown()
-        result = entity_instance(self.wrapped_data.add(inst.wrapped_data, -1 if _id is None else _id), self)
+        # inst.wrapped_data.this.disown()
+        result = self.wrapped_data.add(inst, -1 if _id is None else _id)
         if self.transaction:
             added_elements = [e for e in self.traverse(result) if e.id() > max_id]
             [self.transaction.store_create(e) for e in reversed(added_elements)]
@@ -461,8 +460,8 @@ class file(object):
         :rtype: list[ifcopenshell.entity_instance.entity_instance]
         """
         if include_subtypes:
-            return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
-        return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
+            return self.wrapped_data.by_type(type)
+        return self.wrapped_data.by_type_excl_subtypes(type)
 
     def traverse(
         self, inst: ifcopenshell.entity_instance, max_levels=None, breadth_first=False
@@ -486,7 +485,7 @@ class file(object):
         else:
             fn = self.wrapped_data.traverse
 
-        return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
+        return fn(inst, max_levels)
 
     def get_inverse(
         self, inst: ifcopenshell.entity_instance, allow_duplicate=False, with_attribute_indices=False
@@ -504,11 +503,11 @@ class file(object):
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
 
-        inverses = [entity_instance(e, self) for e in self.wrapped_data.get_inverse(inst.wrapped_data)]
+        inverses = self.wrapped_data.get_inverse(inst)
 
         if allow_duplicate:
             if with_attribute_indices:
-                idxs = self.wrapped_data.get_inverse_indices(inst.wrapped_data)
+                idxs = self.wrapped_data.get_inverse_indices(inst)
                 return list(zip(inverses, idxs))
             else:
                 return inverses
@@ -523,7 +522,7 @@ class file(object):
         :returns: The total number of references
         :rtype: int
         """
-        return self.wrapped_data.get_total_inverses(inst.wrapped_data)
+        return self.wrapped_data.get_total_inverses(inst)
 
     def remove(self, inst: ifcopenshell.entity_instance) -> None:
         """Deletes an IFC object in the file.
@@ -538,7 +537,7 @@ class file(object):
         """
         if self.transaction:
             self.transaction.store_delete(inst)
-        return self.wrapped_data.remove(inst.wrapped_data)
+        return self.wrapped_data.remove(inst)
 
     def batch(self):
         """Low-level mechanism to speed up deletion of large subgraphs"""
@@ -605,4 +604,4 @@ class file(object):
 
     @staticmethod
     def from_pointer(v):
-        return file_dict.get(v)()
+        return file_dict.get(v)() if v else None

@@ -42,66 +42,8 @@ except ImportError as e:
 
 T = TypeVar("T")
 
-
-def set_derived_attribute(*args):
-    raise TypeError("Unable to set derived attribute")
-
-
-def set_unsupported_attribute(*args):
-    raise TypeError("This is an unsupported attribute type")
-
-
-# For every schema and its entities populate a list
-# of functions for every entity attribute (including
-# inherited attributes) to set that particular
-# attribute by index.
-# For example. IFC2X3.IfcWall with have a list of
-# 9 methods. The first will point at
-# ifcopenshell.ifcopenshell_wrapper.entity_instance.setArgumentAsString
-# because the first attribute GlobalId ultimately
-# is of type string.
-# Previously, resolving the appropriate function was
-# done for each invocation of __setitem__. Now this
-# mapping is built once during initialization of the
-# module.
-_method_dict = {}
-
-
-def register_schema_attributes(schema):
-    for decl in schema.declarations():
-        if hasattr(decl, "argument_types"):
-            fq_name = ".".join((schema.name(), decl.name()))
-
-            # get type strings as reported by IfcOpenShell C++
-            type_strs = decl.argument_types()
-
-            # convert case for setter function
-            type_strs = [x.title().replace(" ", "") for x in type_strs]
-
-            # binary and enumeration are passed from python as string as well
-            type_strs = [x.replace("Binary", "String") for x in type_strs]
-            type_strs = [x.replace("Enumeration", "String") for x in type_strs]
-
-            # prefix to get method names
-            fn_names = ["setArgumentAs" + x for x in type_strs]
-
-            # resolve to actual functions in wrapper
-            functions = [
-                set_derived_attribute
-                if mname == "setArgumentAsDerived"
-                else set_unsupported_attribute
-                if mname == "setArgumentAsUnknown"
-                else getattr(ifcopenshell_wrapper.entity_instance, mname)
-                for mname in fn_names
-            ]
-
-            _method_dict[fq_name] = functions
-
-
-for nm in ifcopenshell_wrapper.schema_names():
-    schema = ifcopenshell_wrapper.schema_by_name(nm)
-    register_schema_attributes(schema)
-
+# poor man's enum
+ATTR_INVALID, ATTR_FORWARD, ATTR_INVERSE, ATTR_FORWARD_DERIVED = range(4)
 
 class entity_instance(object):
     """Base class for all IFC objects.
@@ -120,44 +62,22 @@ class entity_instance(object):
         >>> #423=IfcProductDefinitionShape($,$,(#409,#421))
     """
 
-    wrapped_data: ifcopenshell_wrapper.entity_instance
-
-    def __init__(self, e, file=None):
-        if isinstance(e, tuple):
-            e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super(entity_instance, self).__setattr__("wrapped_data", e)
-        super(entity_instance, self).__setattr__("method_list", None)
-
-        # Make sure the file is not gc'ed while we have live instances
-        self.wrapped_data.file = file
-
-    def __del__(self):
-        """
-        #2471 while the precise chain of action is unclear, creating
-        instance references prevents file gc, even with all instance
-        refs deleted. This is a work-around for that.
-        """
-        self.wrapped_data.file = None
-
     @property
     def file(self):
         # ugh circular imports, name collisions
         from . import file
 
-        return file.from_pointer(self.wrapped_data.file_pointer())
+        return file.from_pointer(self.file_pointer())
 
     def __getattr__(self, name):
-        INVALID, FORWARD, INVERSE = range(3)
-        attr_cat = self.wrapped_data.get_attribute_category(name)
-        if attr_cat == FORWARD:
-            idx = self.wrapped_data.get_argument_index(name)
-            if _method_dict[self.is_a(True)][idx] != set_derived_attribute:
-                # A bit ugly, but we fall through to derived attribute handling below
-                return entity_instance.wrap_value(self.wrapped_data.get_argument(idx), self.wrapped_data.file)
-        elif attr_cat == INVERSE:
-            vs = entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
+        attr_cat = self.get_attribute_category(name)
+        if attr_cat == ATTR_FORWARD:
+            idx = self.get_argument_index(name)
+            return self.get_argument(idx)
+        elif attr_cat == ATTR_INVERSE:
+            vs = self.get_inverse(name)
             if settings.unpack_non_aggregate_inverses:
-                schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                schema_name = self.is_a(True).split(".")[0]
                 ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
                 inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
                 if (inv.bound1(), inv.bound2()) == (-1, -1):
@@ -166,9 +86,9 @@ class entity_instance(object):
                     else:
                         vs = None
             return vs
-
+    
         # derived attribute perhaps?
-        schema_name = self.wrapped_data.is_a(True).split(".")[0]
+        schema_name = self.is_a(True).split(".")[0]
         try:
             rules = importlib.import_module(f"ifcopenshell.express.rules.{schema_name}")
         except:
@@ -180,21 +100,21 @@ class entity_instance(object):
                 subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
                 time.sleep(1.)
             rules = importlib.import_module(schema_name)
-
+    
         def yield_supertypes():
             decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
             while decl:
                 yield decl.name()
                 decl = decl.supertype()
-
+    
         for sty in yield_supertypes():
             fn = getattr(rules, f"calc_{sty}_{name}", None)
             if fn:
                 return fn(self)
-
+    
         if attr_cat != FORWARD:
             raise AttributeError(
-                "entity instance of type '%s' has no attribute '%s'" % (self.wrapped_data.is_a(True), name)
+                "entity instance of type '%s' has no attribute '%s'" % (self.is_a(True), name)
             )
 
     @staticmethod
@@ -235,26 +155,6 @@ class entity_instance(object):
         else:
             return value
 
-    @staticmethod
-    def wrap_value(v, file):
-        def wrap(e):
-            return entity_instance(e, file)
-
-        def is_instance(e):
-            return isinstance(e, ifcopenshell_wrapper.entity_instance)
-
-        return entity_instance.walk(is_instance, wrap, v)
-
-    @staticmethod
-    def unwrap_value(v):
-        def unwrap(e):
-            return e.wrapped_data
-
-        def is_instance(e):
-            return isinstance(e, entity_instance)
-
-        return entity_instance.walk(is_instance, unwrap, v)
-
     def attribute_type(self, attr: int) -> str:
         """Return the data type of a positional attribute of the element
 
@@ -262,8 +162,8 @@ class entity_instance(object):
         :type attr: int
         :rtype: string
         """
-        attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
-        return self.wrapped_data.get_argument_type(attr_idx)
+        attr_idx = attr if isinstance(attr, numbers.Integral) else self.get_argument_index(attr)
+        return self.get_argument_type(attr_idx)
 
     def attribute_name(self, attr_idx: int) -> str:
         """Return the name of a positional attribute of the element
@@ -272,37 +172,28 @@ class entity_instance(object):
         :type attr_idx: int
         :rtype: string
         """
-        return self.wrapped_data.get_argument_name(attr_idx)
+        return self.get_argument_name(attr_idx)
 
     def __setattr__(self, key: str, value: Any) -> None:
-        index = self.wrapped_data.get_argument_index(key)
+        index = self.get_argument_index(key)
         self[index] = value
 
     def __getitem__(self, key: int) -> Any:
         if key < 0 or key >= len(self):
             raise IndexError("Attribute index {} out of range for instance of type {}".format(key, self.is_a()))
-        return entity_instance.wrap_value(self.wrapped_data.get_argument(key), self.wrapped_data.file)
+        return self.get_argument(key)
 
     def __setitem__(self, idx: int, value: T) -> T:
-        if self.wrapped_data.file and self.wrapped_data.file.transaction:
-            self.wrapped_data.file.transaction.store_edit(self, idx, value)
-
-        if self.method_list is None:
-            super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
-
-        method = self.method_list[idx]
-
-        if value is None:
-            if method is not set_derived_attribute:
-                self.wrapped_data.setArgumentAsNull(idx)
-        else:
-            self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
-
+        if self.file and self.file.transaction:
+            self.file.transaction.store_edit(self, idx, value)
+    
+        self.setAttribute(idx, value)
+    
         return value
-
+    
     def __len__(self):
         return len(self.wrapped_data)
-
+    
     def __repr__(self):
         return repr(self.wrapped_data)
 
@@ -315,7 +206,7 @@ class entity_instance(object):
         the specific control directives.
         """
 
-        return self.wrapped_data.to_string(valid_spf)
+        return self.to_string(valid_spf)
 
     @overload
     def is_a(self) -> str: ...
@@ -348,19 +239,19 @@ class entity_instance(object):
             f.is_a('IfcPerson')
             >>> True
         """
-        return self.wrapped_data.is_a(*args)
+        return self.is_a(*args)
 
     def id(self) -> int:
         """Return the STEP numerical identifier
 
         :rtype: int
         """
-        return self.wrapped_data.id()
+        return self.id()
 
     def __eq__(self, other):
         if not isinstance(self, type(other)):
             return False
-        elif None in (self.wrapped_data.file, other.wrapped_data.file):
+        elif None in (self.file, other.file):
             # when not added to a file, we can only compare attribute values
             # and we need this for where rule evaluation
             return self.get_info(recursive=True, include_identifier=False) == other.get_info(
@@ -373,10 +264,10 @@ class entity_instance(object):
             if self.id():
                 return self.wrapped_data == other.wrapped_data
             else:
-                return (self.is_a(), self[0], self.wrapped_data.file_pointer()) == (
+                return (self.is_a(), self[0], self.file_pointer()) == (
                     other.is_a(),
                     other[0],
-                    other.wrapped_data.file_pointer(),
+                    other.file_pointer(),
                 )
 
     def is_entity(self) -> bool:
@@ -385,7 +276,7 @@ class entity_instance(object):
         Returns:
             bool: True if the instance is an entity
         """
-        schema_name = self.wrapped_data.is_a(True).split(".")[0]
+        schema_name = self.is_a(True).split(".")[0]
         decl = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
         return isinstance(decl, ifcopenshell_wrapper.entity)
 
@@ -459,17 +350,17 @@ class entity_instance(object):
         # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
         # always have id=0, so we hash <type, value, file pointer>
         if self.id():
-            return hash((self.id(), self.wrapped_data.file_pointer()))
+            return hash((self.id(), self.file_pointer()))
         else:
-            return hash((self.is_a(), self[0], self.wrapped_data.file_pointer()))
+            return hash((self.is_a(), self[0], self.file_pointer()))
 
     def __dir__(self):
         return sorted(
             set(
                 itertools.chain(
                     dir(type(self)),
-                    map(str, self.wrapped_data.get_attribute_names()),
-                    map(str, self.wrapped_data.get_inverse_attribute_names()),
+                    map(str, self.get_attribute_names()),
+                    map(str, self.get_inverse_attribute_names()),
                 )
             )
         )
@@ -513,7 +404,7 @@ class entity_instance(object):
                 logging.exception("unhandled exception while getting id / type info on {}".format(self))
             for i in range(len(self)):
                 try:
-                    if self.wrapped_data.get_attribute_names()[i] in ignore:
+                    if self.get_attribute_names()[i] in ignore:
                         continue
                     attr_value = self[i]
 
@@ -548,7 +439,8 @@ class entity_instance(object):
 
         return return_type(_())
 
-    __dict__ = property(get_info)
+    # @todo this is no longer possible with the direct integration into the swig type
+    # __dict__ = property(get_info)
 
     def get_info_2(self, include_identifier=True, recursive=False, return_type=dict, ignore=()):
         """More perfomant version of `.get_info()` but with limited arguments values.\n

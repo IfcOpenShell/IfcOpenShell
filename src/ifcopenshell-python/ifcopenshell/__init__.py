@@ -71,7 +71,7 @@ except Exception as e:
 
 from . import guid
 from .file import file
-from .entity_instance import entity_instance, register_schema_attributes
+from .entity_instance import entity_instance
 from .sql import sqlite, sqlite_entity
 try:
     from .stream import stream, stream_entity
@@ -171,7 +171,7 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
         model = ifcopenshell.file()
         model.add(person) # #1=IfcPerson($,$,$,$,$,$,$,$)
     """
-    e = entity_instance((schema, type))
+    e = ifcopenshell_wrapper.make_instance(schema, type)
     attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
     for idx, arg in attrs:
         e[idx] = arg
@@ -195,7 +195,6 @@ def register_schema(schema):
     schema.schema.this.disown()
     schema.disown()
     ifcopenshell_wrapper.register_schema(schema.schema)
-    register_schema_attributes(schema.schema)
 
 
 def schema_by_name(

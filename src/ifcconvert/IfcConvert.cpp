@@ -1508,7 +1508,7 @@ namespace latebound_access {
 			IfcParse::IfcGlobalId guid;
 			latebound_access::set(inst, "GlobalId", (std::string) guid);
 		}
-		return f.addEntity(inst);
+		return &*f.addEntity(inst);
 	}
 }
 
