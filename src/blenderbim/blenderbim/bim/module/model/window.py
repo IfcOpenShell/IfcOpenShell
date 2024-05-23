@@ -26,6 +26,11 @@ import blenderbim.tool as tool
 import blenderbim.core.root
 import blenderbim.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector

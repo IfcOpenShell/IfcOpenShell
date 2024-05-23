@@ -21,7 +21,10 @@ import math
 import bmesh
 import ifcopenshell.util.unit
 from mathutils import Vector, Matrix
-from typing import Union, Optional, Literal, Any
+from typing import Union, Optional, Literal, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from blenderbim.bim.module.geometry.helper import Helper
 
 
 Z_AXIS = Vector((0, 0, 1))

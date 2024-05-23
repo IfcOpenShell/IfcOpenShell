@@ -21,6 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 

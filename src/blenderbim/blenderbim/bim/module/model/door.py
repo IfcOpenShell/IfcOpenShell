@@ -22,21 +22,24 @@ import bmesh
 from bmesh.types import BMVert, BMFace
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
+import blenderbim.core.geometry
 import blenderbim.core.geometry as core
 import blenderbim.core.root
 from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
-from pprint import pprint
 
 import json
 import collections
 
 
-def update_door_modifier_representation(context, obj):
+def update_door_modifier_representation(context: bpy.types.Context, obj: bpy.types.Object) -> None:
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()

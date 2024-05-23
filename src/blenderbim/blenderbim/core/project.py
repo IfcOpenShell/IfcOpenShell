@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def create_project(ifc, project, schema=None, template=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def create_project(ifc: tool.Ifc, project: tool.Project, schema: str, template: Optional[str] = None) -> None:
     if ifc.get():
         return
 

@@ -351,7 +351,7 @@ def get_direct_task_outputs(task: ifcopenshell.entity_instance) -> list[ifcopens
     ]
 
 
-def get_task_outputs(task: ifcopenshell.entity_instance, is_deep=False):
+def get_task_outputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
     if not is_deep:
         return get_direct_task_outputs(task)
     else:
@@ -362,7 +362,7 @@ def get_task_outputs(task: ifcopenshell.entity_instance, is_deep=False):
         ]
 
 
-def get_task_inputs(task: ifcopenshell.entity_instance, is_deep=False):
+def get_task_inputs(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
     if not is_deep:
         return [
             object
@@ -385,7 +385,7 @@ def get_task_inputs(task: ifcopenshell.entity_instance, is_deep=False):
         ]
 
 
-def get_task_resources(task: ifcopenshell.entity_instance, is_deep=False):
+def get_task_resources(task: ifcopenshell.entity_instance, is_deep: bool = False) -> list[ifcopenshell.entity_instance]:
     if not is_deep:
         return [
             object

@@ -148,7 +148,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
 
     @classmethod
-    def select_products(cls, products, unhide=False):
+    def select_products(cls, products: list[ifcopenshell.entity_instance], unhide: bool = False) -> None:
         bpy.ops.object.select_all(action="DESELECT")
         for product in products:
             obj = tool.Ifc.get_object(product)

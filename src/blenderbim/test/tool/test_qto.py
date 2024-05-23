@@ -18,8 +18,10 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
 import test.bim.bootstrap
 import blenderbim.core.tool
+import blenderbim.core.root
 import blenderbim.tool as tool
 from blenderbim.tool.qto import Qto as subject
 from blenderbim.bim.module.pset.qto_calculator import QtoCalculator

@@ -27,6 +27,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import blenderbim.core.geometry
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
@@ -39,7 +40,7 @@ from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
-from typing import Optional, Union, TypeVar, Any
+from typing import Optional, Union, TypeVar, Any, Iterable
 
 T = TypeVar("T")
 
@@ -904,7 +905,7 @@ class Model(blenderbim.core.tool.Model):
         return Matrix(placement)
 
     @classmethod
-    def reload_body_representation(cls, obj_or_objects):
+    def reload_body_representation(cls, obj_or_objects: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
         """Update body representation including all decomposed objects"""
         if isinstance(obj_or_objects, collections.abc.Iterable):
             objects = set(obj_or_objects)

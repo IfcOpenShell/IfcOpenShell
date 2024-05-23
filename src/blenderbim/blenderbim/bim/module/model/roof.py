@@ -20,7 +20,11 @@ import bpy
 import bmesh
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim
+import blenderbim.core.root
 import blenderbim.tool as tool
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.module.model.door import bm_sort_out_geom
