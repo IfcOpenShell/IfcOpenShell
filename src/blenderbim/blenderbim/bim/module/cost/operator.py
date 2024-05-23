@@ -224,35 +224,39 @@ class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
 class AssignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_item_type"
     bl_label = "Assign Cost Item To Product Types"
+    bl_description = "Assign cost item to currently selected or active product types"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     prop_name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.assign_cost_item_type(
+        product_types = core.assign_cost_item_type(
             tool.Ifc,
             tool.Cost,
             tool.Spatial,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             prop_name=self.prop_name,  # TODO: REVIEW PROP_NAME USABILITY
         )
+        self.report({"INFO"}, f"Cost item was assigned to {len(product_types)} product types.")
 
 
 class UnassignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_cost_item_type"
     bl_label = "Unassign Cost Item Type"
+    bl_description = "Unassign cost item from currently selected or active product types"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.unassign_cost_item_type(
+        product_types = core.unassign_cost_item_type(
             tool.Ifc,
             tool.Cost,
             tool.Spatial,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
-            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
+            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else None,
         )
+        self.report({"INFO"}, f"Cost item was unassigned from {len(product_types)} product types.")
         return {"FINISHED"}
 
 
@@ -287,9 +291,11 @@ class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
-            products=[tool.Ifc.get().by_id(self.related_object)]
-            if self.related_object
-            else tool.Spatial.get_selected_products(),
+            products=(
+                [tool.Ifc.get().by_id(self.related_object)]
+                if self.related_object
+                else tool.Spatial.get_selected_products()
+            ),
         )
 
 

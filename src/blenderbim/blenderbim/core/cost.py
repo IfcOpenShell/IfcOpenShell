@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
@@ -111,25 +111,39 @@ def edit_cost_item(ifc: tool.Ifc, cost: tool.Cost):
 
 def assign_cost_item_type(
     ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item: ifcopenshell.entity_instance, prop_name
-):
-    product_types = spatial.get_selected_product_types()
-    [
+) -> list[ifcopenshell.entity_instance]:
+    """
+    Returns:
+        List of found product types.
+    """
+    product_types = list(spatial.get_selected_product_types())
+    rels = [
         ifc.run("control.assign_control", relating_control=cost_item, related_object=product_type)
         for product_type in product_types
     ]
     cost.load_cost_item_types(cost_item)
+    return product_types
 
 
 def unassign_cost_item_type(
-    ifc: tool.Ifc, cost: tool.Cost, spatial: tool.Spatial, cost_item: ifcopenshell.entity_instance, product_types
-):
+    ifc: tool.Ifc,
+    cost: tool.Cost,
+    spatial: tool.Spatial,
+    cost_item: ifcopenshell.entity_instance,
+    product_types: Optional[list[ifcopenshell.entity_instance]] = None,
+) -> list[ifcopenshell.entity_instance]:
+    """
+    Returns:
+        List of found product types.
+    """
     if not product_types:
-        product_types = spatial.get_selected_product_types()
+        product_types = list(spatial.get_selected_product_types())
     [
         ifc.run("control.unassign_control", relating_control=cost_item, related_object=product_type)
         for product_type in product_types
     ]
     cost.load_cost_item_types(cost_item)
+    return product_types
 
 
 def load_cost_item_types(cost: tool.Cost):
