@@ -210,7 +210,11 @@ class BIMCostProperties(PropertyGroup):
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
     cost_value_formula: StringProperty(name="Cost Value Formula")
     cost_column: StringProperty(name="Cost Column")
-    should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    should_show_column_ui: BoolProperty(
+        name="Should Show Column UI",
+        description="Display UI for adding cost schedule columns, column names represent a category for cost item values",
+        default=False,
+    )
     should_show_currency_ui: BoolProperty(name="Should Show Currency UI", default=False)
     columns: CollectionProperty(name="Columns", type=StrProperty)
     active_column_index: IntProperty(name="Active Column Index")
