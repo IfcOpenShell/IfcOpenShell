@@ -68,7 +68,7 @@ class FilledOpeningGenerator:
     ) -> None:
         props = bpy.context.scene.BIMModelProperties
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        opening_thickness_si = None
+        opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)
         element = tool.Ifc.get_entity(voided_obj)
@@ -266,11 +266,11 @@ class FilledOpeningGenerator:
         self,
         filling: ifcopenshell.entity_instance,
         filling_obj: bpy.types.Object,
-        opening_thickness_si: Optional[float] = None,
+        opening_thickness_si: float = 0.0,
     ) -> ifcopenshell.entity_instance:
         # Since openings are reused later, we give a default thickness of 1.2m
         # which should cover the majority of curved, or super thick walls.
-        thickness = 1.2 if opening_thickness_si is None else opening_thickness_si
+        thickness = max(1.2, opening_thickness_si)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
 
