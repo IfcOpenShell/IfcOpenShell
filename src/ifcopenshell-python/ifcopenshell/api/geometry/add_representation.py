@@ -71,6 +71,8 @@ def add_representation(
     if "Helper" not in globals():
         from blenderbim.bim.module.geometry.helper import Helper
 
+        globals()["Helper"] = Helper
+
     usecase = Usecase()
     # TODO: This usecase currently depends on Blender's data model
     usecase.file = file
