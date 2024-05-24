@@ -155,10 +155,6 @@ def add_task(
     sequence.load_task_properties()
 
 
-def enable_editing_task(sequence, task=None) -> None:
-    sequence.enable_editing_task(task)
-
-
 def enable_editing_task_attributes(sequence: tool.Sequence, task: ifcopenshell.entity_instance) -> None:
     sequence.load_task_attributes(task)
     sequence.enable_editing_task_attributes(task)

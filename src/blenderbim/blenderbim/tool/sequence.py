@@ -481,11 +481,6 @@ class Sequence(blenderbim.core.tool.Sequence):
         return ifcopenshell.util.sequence.get_direct_task_outputs(task)
 
     @classmethod
-    def get_task_outputs(cls, task):
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
-        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
-
-    @classmethod
     def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.active_work_calendar_id = work_calendar.id()
