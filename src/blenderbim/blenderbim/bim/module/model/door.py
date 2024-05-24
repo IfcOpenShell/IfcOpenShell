@@ -26,7 +26,8 @@ from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box, update_simple_openings
+import blenderbim.core.root
+from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
 from pprint import pprint
@@ -159,7 +160,7 @@ def update_door_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element)
+    tool.Model.update_simple_openings(element)
 
 
 # TODO: move it out to tools

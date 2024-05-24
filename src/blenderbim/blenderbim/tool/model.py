@@ -37,6 +37,7 @@ from functools import partial
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
 from typing import Optional, Union, TypeVar, Any
 
@@ -1204,3 +1205,49 @@ class Model(blenderbim.core.tool.Model):
 
         vertices = (v.to_3d().xzy for v in vertices)
         return (vertices, edges, faces)
+
+    @classmethod
+    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
+
+        voided_objs = set()
+        has_replaced_opening_representation = False
+        for filling in fillings:
+            if not filling.FillsVoids:
+                continue
+
+            opening = filling.FillsVoids[0].RelatingOpeningElement
+            voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+            voided_objs.add(voided_obj)
+
+            # We assume all occurrences of the same element type (e.g. a window)
+            # will use openings of the same thickness.
+            # Generator we use by default will create a really thick opening representation
+            # to make sure it will fit for walls with different thickness.
+            if has_replaced_opening_representation:
+                continue
+
+            old_representation = ifcopenshell.util.representation.get_representation(
+                opening, "Model", "Body", "MODEL_VIEW"
+            )
+            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+            ifcopenshell.api.run(
+                "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
+            )
+
+            new_representation = FilledOpeningGenerator().generate_opening_from_filling(
+                filling, fillings[filling], voided_obj.dimensions[1]
+            )
+
+            for inverse in ifc_file.get_inverse(old_representation):
+                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+
+            has_replaced_opening_representation = True
+
+        tool.Model.reload_body_representation(voided_objs)
+        if fillings:
+            with bpy.context.temp_override(selected_objects=list(fillings.values())):
+                bpy.ops.bim.recalculate_fill()
