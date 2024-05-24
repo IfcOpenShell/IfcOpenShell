@@ -835,12 +835,16 @@ class Sequence(blenderbim.core.tool.Sequence):
         def create_task_bar_data(tasks, vertical_increment, collection):
             props = bpy.context.scene.BIMWorkScheduleProperties
             settings = {
-                "viz_start": parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
-                if props.visualisation_start
-                else None,
-                "viz_finish": parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
-                if props.visualisation_finish
-                else None,
+                "viz_start": (
+                    parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
+                    if props.visualisation_start
+                    else None
+                ),
+                "viz_finish": (
+                    parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
+                    if props.visualisation_finish
+                    else None
+                ),
                 "start_frame": bpy.context.scene.frame_start,
                 "end_frame": bpy.context.scene.frame_end,
             }
@@ -1518,9 +1522,11 @@ class Sequence(blenderbim.core.tool.Sequence):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
-            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
-            if (task_time and task_time.ScheduleDuration)
-            else "",
+            "ifcduration": (
+                str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+                if (task_time and task_time.ScheduleDuration)
+                else ""
+            ),
             "resourceUsage": resources_usage,
         }
         if task_time and task_time.IsCritical:
