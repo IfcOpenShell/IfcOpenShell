@@ -130,46 +130,37 @@ class FilledOpeningGenerator:
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
-        if existing_opening_occurrence:
-            opening = ifcopenshell.api.run(
-                "root.create_entity",
-                tool.Ifc.get(),
-                ifc_class="IfcOpeningElement",
-                predefined_type="OPENING",
-                name="Opening",
-            )
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
-            )
+        opening = ifcopenshell.api.run(
+            "root.create_entity",
+            tool.Ifc.get(),
+            ifc_class="IfcOpeningElement",
+            predefined_type="OPENING",
+            name="Opening",
+        )
+        ifcopenshell.api.run(
+            "geometry.edit_object_placement",
+            tool.Ifc.get(),
+            product=opening,
+            matrix=np.array(filling_obj.matrix_world),
+            is_si=True,
+        )
 
+        if existing_opening_occurrence:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             representation = ifcopenshell.util.representation.resolve_representation(representation)
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
-            )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
-            )
         else:
             representation = self.generate_opening_from_filling(
                 filling, filling_obj, opening_thickness_si=opening_thickness_si
             )
-            opening = ifcopenshell.api.run(
-                "root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement", predefined_type="OPENING"
-            )
 
-            matrix = np.array(filling_obj.matrix_world)
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=matrix, is_si=True
-            )
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
-            )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
-            )
+        mapped_representation = ifcopenshell.api.run(
+            "geometry.map_representation", tool.Ifc.get(), representation=representation
+        )
+        ifcopenshell.api.run(
+            "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+        )
 
         ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
         ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
