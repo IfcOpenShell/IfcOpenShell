@@ -533,6 +533,13 @@ class AddCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMCostProperties.cost_column:
+            cls.poll_message_set("Cost column name is empty")
+            return False
+        return True
+
     def execute(self, context):
         core.add_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
