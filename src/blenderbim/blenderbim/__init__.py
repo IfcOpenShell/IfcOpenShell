@@ -18,7 +18,15 @@
 
 import os
 import sys
-import bpy
+
+# Ensure we don't try to import bpy or blenderbim.bim
+# to support running core tests.
+# We assume if bpy was never loaded in current python session
+# then we're not in Blender. It's still possible to use
+# bpy in core and core tests for annotations using TYPE_CHECKING.
+IN_BLENDER = sys.modules.get("bpy", None)
+if IN_BLENDER:
+    import bpy
 import platform
 import traceback
 import subprocess
@@ -78,7 +86,7 @@ def format_debug_info(info: dict):
     return text.strip()
 
 
-if sys.modules.get("bpy", None):
+if IN_BLENDER:
     # Process *.pth in /libs/site/packages to setup globally importable modules
     # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
     # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
