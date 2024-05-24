@@ -39,8 +39,9 @@ def disable_editing_cost_schedule(cost: tool.Cost):
     cost.disable_editing_cost_schedule()
 
 
-def remove_cost_schedule(ifc: tool.Ifc, cost_schedule: ifcopenshell.entity_instance):
+def remove_cost_schedule(ifc: tool.Ifc, cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> None:
     ifc.run("cost.remove_cost_schedule", cost_schedule=cost_schedule)
+    cost.remove_stored_schedule_columns(cost_schedule)
 
 
 def enable_editing_cost_schedule_attributes(cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance):
@@ -50,6 +51,7 @@ def enable_editing_cost_schedule_attributes(cost: tool.Cost, cost_schedule: ifco
 
 def enable_editing_cost_items(cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance):
     cost.enable_editing_cost_items(cost_schedule)
+    cost.load_active_schedule_columns()
     cost.load_cost_schedule_tree()
     cost.play_sound()
 

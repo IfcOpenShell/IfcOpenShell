@@ -19,8 +19,58 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def disable_editing_cost_schedule(cls):
+        cls.store_active_schedule_columns()
         bpy.context.scene.BIMCostProperties.active_cost_schedule_id = 0
         cls.disable_editing_cost_item()
+
+    @classmethod
+    def load_active_schedule_columns(cls) -> None:
+        props = bpy.context.scene.BIMCostProperties
+        active_columns = props.columns
+        storage = props.columns_storage
+        active_cost_schedule_id = cls.get_active_cost_schedule().id()
+
+        # store column names to keep the original order
+        cols_to_add = []
+
+        # collection property only support removal by index
+        for storage_col_i, storage_col in reversed(list(enumerate(storage[:]))):
+            if storage_col.schedule_id != active_cost_schedule_id:
+                continue
+            cols_to_add.insert(0, storage_col.name)
+            # We don't store active schedule columns in storage
+            # so it will be easy to edit them.
+            storage.remove(storage_col_i)
+
+        for col_name in cols_to_add:
+            col = active_columns.add()
+            col.name = col_name
+
+    @classmethod
+    def store_active_schedule_columns(cls) -> None:
+        props = bpy.context.scene.BIMCostProperties
+        active_columns = props.columns
+        storage = props.columns_storage
+        active_cost_schedule_id = cls.get_active_cost_schedule().id()
+
+        for col in active_columns:
+            storage_col = storage.add()
+            storage_col.name = col.name
+            storage_col.schedule_id = active_cost_schedule_id
+
+        props.columns.clear()
+
+    @classmethod
+    def remove_stored_schedule_columns(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMCostProperties
+        storage = props.columns_storage
+        active_cost_schedule_id = cost_schedule.id()
+
+        # collection property only support removal by index
+        for storage_col_i, storage_col in reversed(list(enumerate(storage[:]))):
+            if storage_col.schedule_id != active_cost_schedule_id:
+                continue
+            storage.remove(storage_col_i)
 
     @classmethod
     def enable_editing_cost_schedule_attributes(cls, cost_schedule):
