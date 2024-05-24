@@ -82,6 +82,7 @@ classes = (
     prop.CostItem,
     prop.CostItemQuantity,
     prop.CostItemType,
+    prop.ScheduleColumn,
     prop.BIMCostProperties,
     ui.BIM_PT_cost_schedules,
     ui.BIM_PT_cost_item_quantities,

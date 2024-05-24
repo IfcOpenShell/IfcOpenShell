@@ -73,7 +73,7 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_cost_schedule(tool.Ifc, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        core.remove_cost_schedule(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class EnableEditingCostSchedule(bpy.types.Operator):
