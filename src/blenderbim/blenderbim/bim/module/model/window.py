@@ -29,52 +29,6 @@ from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SC
 from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
-
-
-# TODO: move to some utils helpers/tool module
-def update_simple_openings(element: ifcopenshell.entity_instance) -> None:
-    ifc_file = tool.Ifc.get()
-    fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
-
-    voided_objs = set()
-    has_replaced_opening_representation = False
-    for filling in fillings:
-        if not filling.FillsVoids:
-            continue
-
-        opening = filling.FillsVoids[0].RelatingOpeningElement
-        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
-        voided_objs.add(voided_obj)
-
-        # We assume all occurrences of the same element type (e.g. a window)
-        # will use openings of the same thickness.
-        # Generator we use by default will create a really thick opening representation
-        # to make sure it will fit for walls with different thickness.
-        if has_replaced_opening_representation:
-            continue
-
-        old_representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
-        )
-
-        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
-            filling, fillings[filling], voided_obj.dimensions[1]
-        )
-
-        for inverse in ifc_file.get_inverse(old_representation):
-            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-
-        ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
-
-        has_replaced_opening_representation = True
-
-    tool.Model.reload_body_representation(voided_objs)
-    if fillings:
-        with bpy.context.temp_override(selected_objects=list(fillings.values())):
-            bpy.ops.bim.recalculate_fill()
 
 
 def update_window_modifier_representation(context, obj):
@@ -166,7 +120,7 @@ def update_window_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element)
+    tool.Model.update_simple_openings(element)
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
