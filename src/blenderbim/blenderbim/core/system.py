@@ -94,7 +94,7 @@ def hide_ports(ifc, system, element=None):
 def add_port(ifc, system, element=None):
     system.load_ports(element, system.get_ports(element))
     obj = system.create_empty_at_cursor_with_element_orientation(element)
-    port = system.run_root_assign_class(obj=obj, ifc_class="IfcDistributionPort")
+    port = system.run_root_assign_class(obj=obj, ifc_class="IfcDistributionPort", should_add_representation=False)
     ifc.run("system.assign_port", element=element, port=port)
 
 
