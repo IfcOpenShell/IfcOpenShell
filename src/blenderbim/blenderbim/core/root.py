@@ -63,11 +63,15 @@ def assign_class(
     root: tool.Root,
     obj: bpy.types.Object,
     ifc_class: str,
-    context: ifcopenshell.entity_instance,
+    context: Optional[ifcopenshell.entity_instance] = None,
     predefined_type: Optional[str] = None,
     should_add_representation: bool = True,
     ifc_representation_class: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
+    """
+    Args:
+        context: is not optional if `should_add_representation` is True
+    """
     if ifc.get_entity(obj):
         return
 
@@ -77,6 +81,7 @@ def assign_class(
     ifc.link(element, obj)
 
     if should_add_representation:
+        assert context, "Context is required for adding a representation"
         root.run_geometry_add_representation(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
