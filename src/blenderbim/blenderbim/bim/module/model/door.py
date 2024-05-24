@@ -159,7 +159,7 @@ def update_door_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
+    update_simple_openings(element)
 
 
 # TODO: move it out to tools

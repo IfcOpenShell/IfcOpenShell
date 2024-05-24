@@ -29,12 +29,13 @@ from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SC
 from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
 
 # TODO: move to some utils helpers/tool module
-def update_simple_openings(element, opening_width, opening_height):
+def update_simple_openings(element: ifcopenshell.entity_instance) -> None:
     ifc_file = tool.Ifc.get()
-    fillings = tool.Ifc.get_all_element_occurrences(element)
+    fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
 
     voided_objs = set()
     has_replaced_opening_representation = False
@@ -46,10 +47,10 @@ def update_simple_openings(element, opening_width, opening_height):
         voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
         voided_objs.add(voided_obj)
 
-        # we assume that the same element type (e.g. window)
-        # will be used only for voiding objects of the same thickness (by y-dimension)
-        # (e.g. all walls window's attached to will share the same thickness)
-        # If that's not the case it will some linings will be too thick or too thin
+        # We assume all occurrences of the same element type (e.g. a window)
+        # will use openings of the same thickness.
+        # Generator we use by default will create a really thick opening representation
+        # to make sure it will fit for walls with different thickness.
         if has_replaced_opening_representation:
             continue
 
@@ -59,19 +60,9 @@ def update_simple_openings(element, opening_width, opening_height):
             "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
         )
 
-        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
-        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-
-        extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height]).xz),
-            magnitude=thickness / unit_scale,
-            position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            **shape_builder.extrude_kwargs("Y")
+        new_representation = FilledOpeningGenerator().generate_opening_from_filling(
+            filling, fillings[filling], voided_obj.dimensions[1]
         )
-
-        new_representation = shape_builder.get_representation(context, extrusion)
 
         for inverse in ifc_file.get_inverse(old_representation):
             ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
@@ -82,7 +73,7 @@ def update_simple_openings(element, opening_width, opening_height):
 
     tool.Model.reload_body_representation(voided_objs)
     if fillings:
-        with bpy.context.temp_override(selected_objects=[tool.Ifc.get_object(f) for f in fillings]):
+        with bpy.context.temp_override(selected_objects=list(fillings.values())):
             bpy.ops.bim.recalculate_fill()
 
 
@@ -175,7 +166,7 @@ def update_window_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
+    update_simple_openings(element)
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
