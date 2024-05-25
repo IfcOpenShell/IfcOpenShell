@@ -21,10 +21,10 @@ def unlink_material(ifc, obj=None):
     ifc.unlink(obj=obj)
 
 
-def add_material(ifc, material, style, obj=None, name=None):
+def add_material(ifc, material, style, obj=None, name=None, category=None, description=None):
     if not obj:
         obj = material.add_default_material_object(name)
-    ifc_material = ifc.run("material.add_material", name=material.get_name(obj))
+    ifc_material = ifc.run("material.add_material", name=material.get_name(obj), category=category, description=description)
     ifc.link(ifc_material, obj)
     ifc_style = style.get_style(obj)
     if ifc_style:
