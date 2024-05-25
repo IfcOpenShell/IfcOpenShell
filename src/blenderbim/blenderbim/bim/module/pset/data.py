@@ -157,9 +157,14 @@ class MaterialPsetsData(Data):
 
     @classmethod
     def load(cls):
+        ifc_definition_id = None
+        props = bpy.context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+
         cls.data = {
-            "ifc_definition_id": bpy.context.active_object.active_material.BIMObjectProperties.ifc_definition_id,
-            "psets": cls.psetqtos(tool.Ifc.get_entity(bpy.context.active_object.active_material)),
+            "ifc_definition_id": ifc_definition_id,
+            "psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id)),
         }
         cls.is_loaded = True
 
