@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_classification(file: ifcopenshell.entity_instance, classification: ifcopenshell.entity_instance) -> None:
+def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.entity_instance) -> None:
     """Removes an IfcClassification from the project and all references
 
     The classification and all of its relationships, children references,
@@ -58,15 +58,20 @@ class Usecase:
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-        for rel in self.file.by_type("IfcExternalReferenceRelationship"):
-            if not rel.RelatingReference:
-                self.file.remove(rel)
 
-    def get_references(self, classification):
+        if self.file.schema != "IFC2X3":
+            for rel in self.file.by_type("IfcExternalReferenceRelationship"):
+                if not rel.RelatingReference:
+                    self.file.remove(rel)
+
+    def get_references(self, classification: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
-        if not classification.HasReferences:
-            return results
-        for reference in classification.HasReferences:
-            results.append(reference)
-            results.extend(self.get_references(reference))
+        if self.file.schema == "IFC2X3":
+            for reference in self.file.by_type("IfcClassificationReference"):
+                if reference.ReferencedSource == classification:
+                    results.append(reference)
+        else:
+            for reference in classification.HasReferences:
+                results.append(reference)
+                results.extend(self.get_references(reference))
         return results

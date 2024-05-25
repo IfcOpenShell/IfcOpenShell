@@ -20,7 +20,9 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-def assign_workplan(file, work_schedule=None, work_plan=None) -> None:
+def assign_workplan(
+    file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, work_plan: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Assigns a work schedule to a work plan
 
     Typically, work schedules would be assigned to a work plan at creation.

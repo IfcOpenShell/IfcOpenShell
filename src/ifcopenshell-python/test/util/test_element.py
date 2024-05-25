@@ -19,6 +19,7 @@
 import pytest
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element as subject
 
 

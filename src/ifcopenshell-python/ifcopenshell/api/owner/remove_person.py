@@ -19,11 +19,13 @@
 import ifcopenshell.api
 
 
-def remove_person(file, person=None) -> None:
+def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance) -> None:
     """Remove an person
 
     All roles and addresses assigned to the person will also be
     removed.
+    In IFC2X3 will also remove related inventories if `person` was
+    the only responsile person for them.
 
     :param person: The IfcPerson to remove
     :type person: ifcopenshell.entity_instance
@@ -52,7 +54,9 @@ def remove_person(file, person=None) -> None:
                 inverse.Creators = None
         elif inverse.is_a("IfcInventory"):
             if inverse.ResponsiblePersons == (settings["person"],):
-                inverse.ResponsiblePersons = None
+                # in IFC2X3 ResponsiblePersons is not optional and without it IfcInventory is not valid
+                if file.schema == "IFC2X3":
+                    ifcopenshell.api.run("root.remove_product", file, product=inverse)
         elif inverse.is_a("IfcDocumentInformation"):
             if inverse.Editors == (settings["person"],):
                 inverse.Editors = None

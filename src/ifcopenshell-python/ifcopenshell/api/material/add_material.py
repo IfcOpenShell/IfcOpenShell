@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def add_material(file, name=None, category=None) -> None:
+def add_material(
+    file: ifcopenshell.file, name: Optional[str] = None, category: Optional[str] = None, description: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new material
 
     A material in IFC represents a physical material, such as timber, steel,
@@ -46,11 +50,16 @@ def add_material(file, name=None, category=None) -> None:
     Note that categories are not available in IFC2X3. This shortcoming is
     one of the big reasons projects should upgrade to IFC4.
 
+    Additionally, a material's description provides more information beyond 
+    its name or category. 
+
     :param name: The name of the material, typically tagged in a finishes
         drawing or schedule.
-    :type name: str
+    :type name: str, optional
     :param category: The category of the material.
     :type category: str, optional
+    :param description: A description of the material.
+    :type description: str, optional
     :return: The newly created IfcMaterial
     :rtype: ifcopenshell.entity_instance
 
@@ -59,8 +68,8 @@ def add_material(file, name=None, category=None) -> None:
     .. code:: python
 
         # Let's create two materials with their respective categories
-        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete", description="Garage Slab")
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel", description="Corten Steel")
 
         # Let's imagine an urban concrete bench which is purely made out of concrete
         concrete_bench = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
@@ -69,9 +78,11 @@ def add_material(file, name=None, category=None) -> None:
         # "Style" has been specified.
         ifcopenshell.api.run("material.assign_material", model, products=[concrete_bench], material=concrete)
     """
-    settings = {"name": name or "Unnamed", "category": category}
+    settings = {"name": name or "Unnamed", "category": category, "description": description }
 
     material = file.create_entity("IfcMaterial", **{"Name": settings["name"] or "Unnamed"})
     if settings["category"]:
         material.Category = settings["category"]
+    if settings["description"]:
+        material.Description = settings["description"]
     return material

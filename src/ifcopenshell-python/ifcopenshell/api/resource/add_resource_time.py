@@ -19,7 +19,7 @@
 import ifcopenshell.util.date
 
 
-def add_resource_time(file, resource=None) -> None:
+def add_resource_time(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
     """Adds the time that a resource is used for
 
     For labour and equipment resources, the total duration that the resource
@@ -56,10 +56,6 @@ def add_resource_time(file, resource=None) -> None:
         ifcopenshell.api.run("resource.edit_resource_time", model,
             resource_time=time, attributes={"ScheduleWork": "PT16H"})
     """
-    settings = {
-        "resource": resource,
-    }
-
     resource_time = file.create_entity("IfcResourceTime")
-    settings["resource"].Usage = resource_time
+    resource.Usage = resource_time
     return resource_time

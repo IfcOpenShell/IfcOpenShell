@@ -19,34 +19,34 @@
 import blenderbim.bim.helper
 from bpy.types import Panel
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.attribute.data import AttributesData, MaterialAttributesData
+from blenderbim.bim.module.attribute.data import AttributesData
 
 
-def draw_ui(context, layout, obj_type, attributes):
-    obj = context.active_object if obj_type == "Object" else context.active_object.active_material
+def draw_ui(context, layout, attributes):
+    obj = context.active_object
     oprops = obj.BIMObjectProperties
     props = obj.BIMAttributeProperties
 
     if props.is_editing_attributes:
         row = layout.row(align=True)
         op = row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
-        op.obj_type = obj_type
         op.obj = obj.name
         op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
-        op.obj_type = obj_type
         op.obj = obj.name
 
         blenderbim.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
-        op.obj_type = obj_type
         op.obj = obj.name
 
         for attribute in attributes:
             row = layout.row(align=True)
             row.label(text=attribute["name"])
-            row.label(text=attribute["value"])
+            # row.label(text=attribute["value"])
+            op = row.operator("bim.select_similar", text=attribute["value"], icon="NONE", emboss=False)
+            op.key = attribute['name']
+            
 
     # TODO: reimplement, see #1222
     # if "IfcSite/" in context.active_object.name or "IfcBuilding/" in context.active_object.name:
@@ -72,32 +72,4 @@ class BIM_PT_object_attributes(Panel):
     def draw(self, context):
         if not AttributesData.is_loaded:
             AttributesData.load()
-        draw_ui(context, self.layout, "Object", AttributesData.data["attributes"])
-
-
-class BIM_PT_material_attributes(Panel):
-    bl_label = "Material Attributes"
-    bl_idname = "BIM_PT_material_attributes"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        if not IfcStore.get_file():
-            return False
-        try:
-            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
-        except:
-            return False
-
-    def draw(self, context):
-        if not MaterialAttributesData.is_loaded:
-            MaterialAttributesData.load()
-        elif (
-            context.active_object.active_material.BIMObjectProperties.ifc_definition_id
-            != MaterialAttributesData.data["ifc_definition_id"]
-        ):
-            MaterialAttributesData.load()
-
-        draw_ui(context, self.layout, "Material", MaterialAttributesData.data["attributes"])
+        draw_ui(context, self.layout, AttributesData.data["attributes"])

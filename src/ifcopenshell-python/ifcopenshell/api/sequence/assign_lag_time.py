@@ -19,7 +19,9 @@
 import ifcopenshell.util.date
 
 
-def assign_lag_time(file, rel_sequence=None, lag_value=None, duration_type="WORKTIME") -> None:
+def assign_lag_time(
+    file: ifcopenshell.file, rel_sequence: ifcopenshell.entity_instance, lag_value: str, duration_type: str = "WORKTIME"
+) -> ifcopenshell.entity_instance:
     """Assign a lag time to a sequence relationship between tasks
 
     A task sequence (e.g. finish to start) may optionally have a lag time
@@ -94,3 +96,4 @@ def assign_lag_time(file, rel_sequence=None, lag_value=None, duration_type="WORK
         if settings["rel_sequence"].TimeLag and len(file.get_inverse(settings["rel_sequence"].TimeLag)) == 1:
             file.remove(settings["rel_sequence"].TimeLag)
     settings["rel_sequence"].TimeLag = lag_time
+    return lag_time

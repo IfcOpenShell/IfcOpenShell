@@ -19,9 +19,12 @@
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime
+from typing import Optional
 
 
-def add_cost_schedule(file, name=None, predefined_type="NOTDEFINED") -> None:
+def add_cost_schedule(
+    file: ifcopenshell.file, name: Optional[str] = None, predefined_type: str = "NOTDEFINED"
+) -> ifcopenshell.entity_instance:
     """Add a new cost schedule
 
     A cost schedule is a group of cost items which typically represent a
@@ -61,5 +64,17 @@ def add_cost_schedule(file, name=None, predefined_type="NOTDEFINED") -> None:
         predefined_type=settings["predefined_type"],
         name=settings["name"],
     )
-    cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    if file.schema == "IFC2X3":
+        cost_schedule.UpdateDate = createIfcDateAndTime(file, datetime.now())
+    else:
+        cost_schedule.UpdateDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
     return cost_schedule
+
+
+def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
+    ifc_dt = file.create_entity("IfcDateAndTime")
+    ifc_dt.DateComponent = file.create_entity(
+        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
+    )
+    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
+    return ifc_dt

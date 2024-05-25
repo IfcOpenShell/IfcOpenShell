@@ -32,3 +32,7 @@ class TestRemoveStructuralAnalysisModel(test.bootstrap.IFC4):
         )
         models = self.file.by_type("IfcStructuralAnalysisModel")
         assert len(models) == 0
+
+
+class TestRemoveStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestRemoveStructuralAnalysisModel):
+    pass

@@ -315,9 +315,7 @@ class RasterStyleProperty(enum.Enum):
     SPACE_SHADING = "space.shading"
 
 
-RASTER_STYLE_PROPERTIES_EXCLUDE = (
-    "scene.render.filepath",
-)
+RASTER_STYLE_PROPERTIES_EXCLUDE = ("scene.render.filepath",)
 
 
 class DocProperties(PropertyGroup):
@@ -371,6 +369,7 @@ class DocProperties(PropertyGroup):
         default=os.path.join("drawings", "assets", "shading_styles.json"), name="Default Shading Styles"
     )
     shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
+    drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
 
 
 class BIMCameraProperties(PropertyGroup):

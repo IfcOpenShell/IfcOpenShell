@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def add_layer(file, Name=None) -> None:
+def add_layer(file: ifcopenshell.file, name: str = "Unnamed") -> ifcopenshell.entity_instance:
     """Adds a new layer
 
     An IFC layer is like a CAD layer. Portions of an object's geometry
@@ -32,15 +34,13 @@ def add_layer(file, Name=None) -> None:
     Some software that are still based on layers, such as Tekla or ArchiCAD
     may also use this layer information for filtering.
 
-    :param Name: The name of the layer. Defaults to "Unnamed".
-    :type Name: str, optional
+    :param name: The name of the layer. Defaults to "Unnamed".
+    :type name: str, optional
     :return: The newly created IfcPresentationLayerAssignment element
     :rtype: ifcopenshell.entity_instance
 
     Example:
 
-        ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL-FULL-DIMS-N")
+        ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL-FULL-DIMS-N")
     """
-    settings = {"Name": Name or "Unnamed"}
-
-    return file.create_entity("IfcPresentationLayerAssignment", Name=settings["Name"])
+    return file.create_entity("IfcPresentationLayerAssignment", Name=name)

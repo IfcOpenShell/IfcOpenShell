@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_task_time(file, task=None, is_recurring=False) -> None:
+def add_task_time(
+    file: ifcopenshell.file, task: ifcopenshell.entity_instance, is_recurring: bool = False
+) -> ifcopenshell.entity_instance:
     """Adds a task time to a task
 
     Some tasks, such as activities within a work breakdown structure or

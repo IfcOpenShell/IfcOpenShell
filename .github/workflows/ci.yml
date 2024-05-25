@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil
+          pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely
           pip install src/bcf --no-deps
           pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
 
@@ -90,7 +90,7 @@ jobs:
                -DPYTHON_INCLUDE_DIR:PATH=${{ env.pythonLocation }}/include/python3.11 \
                -DPYTHON_LIBRARY:FILEPATH=${{ env.pythonLocation }}/lib/libpython3.11.so \
                -DCOLLADA_SUPPORT=Off \
-               "-DSCHEMA_VERSIONS=2x3;4;4x3_add1" \
+               "-DSCHEMA_VERSIONS=2x3;4;4x3;4x3_add1;4x3_add2" \
                -DGLTF_SUPPORT=On \
                -DJSON_INCLUDE_DIR=/usr/include \
                -DCGAL_INCLUDE_DIR=/usr/include \

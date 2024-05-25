@@ -186,6 +186,7 @@ Valid keys are:
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"
+    "``profiles``", "Gets a list of IfcProfileDefs assigned (such as via a material profile) or used (such as in an extrusion) in the element"
     "``x``", "Gets the X coordinate of the element's placement"
     "``y``", "Gets the Y coordinate of the element's placement"
     "``z``", "Gets the Z coordinate of the element's placement"

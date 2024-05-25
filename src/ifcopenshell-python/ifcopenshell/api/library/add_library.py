@@ -21,7 +21,7 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.date
 
 
-def add_library(file, name=None) -> None:
+def add_library(file: ifcopenshell.file, name: str) -> ifcopenshell.entity_instance:
     """Adds a new library to the project
 
     A library is an external data source that is related to the project. It
@@ -60,6 +60,4 @@ def add_library(file, name=None) -> None:
 
         ifcopenshell.api.run("library.add_library", model, name="Brickschema")
     """
-    settings = {"name": name}
-
-    return file.create_entity("IfcLibraryInformation", Name=settings["name"])
+    return file.create_entity("IfcLibraryInformation", Name=name)

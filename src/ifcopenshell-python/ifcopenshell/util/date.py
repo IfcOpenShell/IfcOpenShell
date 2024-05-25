@@ -19,11 +19,12 @@
 import datetime
 from re import findall
 from dateutil import parser
+from typing import Literal, Union, Any
 
 try:
     import isodate
-except:
-    pass  # Duration parsing not supported
+except ModuleNotFoundError as e:
+    print(f"Note: duration parsing not available due to missing dependencies: util.date - {e}")
 
 
 def timedelta2duration(timedelta):
@@ -104,7 +105,18 @@ def readable_ifc_duration(string):
     return final_string
 
 
-def datetime2ifc(dt, ifc_type):
+def datetime2ifc(
+    dt: Union[datetime.date, str],
+    ifc_type: Literal[
+        "IfcDuration",
+        "IfcTimeStamp",
+        "IfcDateTime",
+        "IfcDate",
+        "IfcTime",
+        "IfcCalendarDate",
+        "IfcLocalTime",
+    ],
+) -> Union[int, str, dict[str, Any]]:
     if isinstance(dt, str):
         if ifc_type == "IfcDuration":
             return dt
@@ -145,6 +157,7 @@ def datetime2ifc(dt, ifc_type):
             "MinuteComponent": dt.minute,
             "SecondComponent": dt.second,
         }
+    raise TypeError(f"Unsupported ifc_type for conversion from datetime.datetime = {ifc_type}.")
 
 
 def string_to_date(string):
@@ -187,8 +200,6 @@ def parse_duration(value):
         if "P" in value:
             try:
                 return isodate.parse_duration(value)
-            except ModuleNotFoundError:
-                print("Duration parsing not supported: isodate module not found")
             except:
                 print("Error parsing ISO string duration")
             return None

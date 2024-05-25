@@ -15,12 +15,14 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-
 import ifcopenshell.geom
 import ifcopenshell.util.representation
+from typing import Any
 
 
-def edit_profile_usage(file, usage=None, attributes=None) -> None:
+def edit_profile_usage(
+    file: ifcopenshell.file, usage: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcMaterialProfileSetUsage
 
     This is typically used to change the cardinal point of the profile.
@@ -34,7 +36,7 @@ def edit_profile_usage(file, usage=None, attributes=None) -> None:
     :param usage: The IfcMaterialProfileSetUsage entity you want to edit
     :type usage: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -91,7 +93,7 @@ def edit_profile_usage(file, usage=None, attributes=None) -> None:
     usecase = Usecase()
 
     usecase.file = file
-    usecase.settings = {"usage": usage, "attributes": attributes or {}}
+    usecase.settings = {"usage": usage, "attributes": attributes}
     return usecase.execute()
 
 

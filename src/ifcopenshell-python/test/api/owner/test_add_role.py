@@ -34,3 +34,7 @@ class TestAddRole(test.bootstrap.IFC4):
         assert role.is_a("IfcActorRole")
         assert role.Role == "ARCHITECT"
         assert organisation.Roles == (role,)
+
+
+class TestAddRoleIFC2X3(test.bootstrap.IFC2X3, TestAddRole):
+    pass

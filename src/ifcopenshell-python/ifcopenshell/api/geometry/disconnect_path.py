@@ -19,33 +19,36 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
+from typing import Optional
 
 
-def disconnect_path(file, **usecase_settings) -> None:
-    settings = {
-        "relating_element": None,
-        "related_element": None,
-        "element": None,
-        "connection_type": None,
-    }
-    for key, value in usecase_settings.items():
-        settings[key] = value
-
-    if settings["connection_type"] and settings["element"]:
+def disconnect_path(
+    file: ifcopenshell.file,
+    element: Optional[ifcopenshell.entity_instance] = None,
+    connection_type: Optional[str] = None,
+    relating_element: Optional[ifcopenshell.entity_instance] = None,
+    related_element: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
+    """There are two options to use this API method:
+    - provide `element` (connected from) and `connection_type` that should be disconnected.
+    - provide connected elements to disconnect explicitly:
+    `relating_element` (connected from) and `related_element` (connected to)
+    """
+    if connection_type and element:
         connections = [
             r
-            for r in settings["element"].ConnectedTo
-            if r.is_a("IfcRelConnectsPathElements") and r.RelatingConnectionType == settings["connection_type"]
+            for r in element.ConnectedTo
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatingConnectionType == connection_type
         ] + [
             r
-            for r in settings["element"].ConnectedFrom
-            if r.is_a("IfcRelConnectsPathElements") and r.RelatedConnectionType == settings["connection_type"]
+            for r in element.ConnectedFrom
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatedConnectionType == connection_type
         ]
-    else:
+    elif related_element:
         connections = [
             r
-            for r in settings["relating_element"].ConnectedTo
-            if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == settings["related_element"]
+            for r in relating_element.ConnectedTo
+            if r.is_a("IfcRelConnectsPathElements") and r.RelatedElement == related_element
         ]
 
     for connection in set(connections):

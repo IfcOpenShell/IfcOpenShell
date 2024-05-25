@@ -15,9 +15,13 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_prop_template(file, prop_template=None, attributes=None) -> None:
+def edit_prop_template(
+    file: ifcopenshell.file, prop_template: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcSimplePropertyTemplate
 
     For more information about the attributes and data types of an
@@ -26,7 +30,7 @@ def edit_prop_template(file, prop_template=None, attributes=None) -> None:
     :param prop_template: The IfcSimplePropertyTemplate entity you want to edit
     :type prop_template: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -43,7 +47,20 @@ def edit_prop_template(file, prop_template=None, attributes=None) -> None:
         ifcopenshell.api.run("pset_template.edit_prop_template", model,
             prop_template=prop, attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLengthMeasure"})
     """
-    settings = {"prop_template": prop_template, "attributes": attributes or {}}
+    if enum_values := attributes.get("Enumerators", None):
+        prop_name = attributes.get("Name", None) or getattr(prop_template, "Name", None) or "Unnamed"
+        primary_measure_type = (
+            attributes.get("PrimaryMeasureType", None) or getattr(prop_template, "PrimaryMeasureType", None) or "IfcLabel"
+        )
+        enum_values = [file.create_entity(primary_measure_type, v) for v in enum_values]
+        if enumerators := prop_template.Enumerators:
+            enumerators.Name = prop_name
+            enumerators.EnumerationValues = enum_values
+        else:
+            prop_template.Enumerators = file.create_entity("IfcPropertyEnumeration", prop_name, enum_values)
 
-    for name, value in settings["attributes"].items():
-        setattr(settings["prop_template"], name, value)
+    if "Enumerators" in attributes:
+        del attributes["Enumerators"]
+
+    for name, value in attributes.items():
+        setattr(prop_template, name, value)

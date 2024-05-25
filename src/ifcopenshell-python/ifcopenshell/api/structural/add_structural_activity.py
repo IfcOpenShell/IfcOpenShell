@@ -17,15 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Literal
 
 
 def add_structural_activity(
-    file,
-    ifc_class="IfcStructuralPlanarAction",
-    predefined_type="CONST",
-    global_or_local="GLOBAL_COORDS",
-    applied_load=None,
-    structural_member=None,
+    file: ifcopenshell.file,
+    applied_load: ifcopenshell.entity_instance,
+    structural_member: ifcopenshell.entity_instance,
+    ifc_class: str = "IfcStructuralPlanarAction",
+    predefined_type: str = "CONST",
+    global_or_local: Literal["GLOBAL_COORDS", "LOCAL_COORDS"] = "GLOBAL_COORDS",
 ) -> None:
     """Adds a new structural activity
 

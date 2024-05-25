@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_cost_item_quantity(file, cost_item=None, physical_quantity=None) -> None:
+def remove_cost_item_quantity(
+    file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance, physical_quantity: ifcopenshell.entity_instance
+) -> None:
     """Removes a quantity assigned to a cost item
 
     If the quantity is part of a product (e.g. wall), then the quantity will

@@ -24,7 +24,6 @@ import random
 import logging
 import platform
 import subprocess
-import addon_utils
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -34,38 +33,17 @@ import blenderbim.tool as tool
 import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
-import blenderbim.tool as tool
+from blenderbim import get_debug_info, format_debug_info
 from blenderbim.bim.ifc import IfcStore
 
 
 class CopyDebugInformation(bpy.types.Operator):
     bl_idname = "bim.copy_debug_information"
     bl_label = "Copy Debug Information"
-    bl_description = "Copies debugging information to your clipboard for use in bugreports"
+    bl_description = "Copies debugging information to your clipboard for use in bug reports"
 
     def execute(self, context):
-        version = ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
-        info = {
-            "os": platform.system(),
-            "os_version": platform.version(),
-            "python_version": platform.python_version(),
-            "architecture": platform.architecture(),
-            "machine": platform.machine(),
-            "processor": platform.processor(),
-            "blender_version": bpy.app.version_string,
-            "blenderbim_version": version,
-            "ifc": False,
-        }
-
+        info = get_debug_info()
         if tool.Ifc.get():
             info.update(
                 {
@@ -76,17 +54,15 @@ class CopyDebugInformation(bpy.types.Operator):
                 }
             )
 
-        # Format it in a readable way
-        text = "\n".join(f"{k}: {v}" for k, v in info.items())
-        print(text)
+        text = format_debug_info(info)
 
-        if platform.system() == "Windows":
-            command = "echo | set /p nul=" + text.strip()
-        elif platform.system() == "Darwin":  # for MacOS
-            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | pbcopy'
-        else:  # Linux
-            command = 'printf "' + text.strip().replace("\n", "\\n").replace('"', "") + '" | xclip -selection clipboard'
-        subprocess.run(command, shell=True, check=True)
+        text_with_backticks = f"```\n{text}\n```"
+
+        print("-" * 80)
+        print(text_with_backticks)
+        print("-" * 80)
+
+        context.window_manager.clipboard = text_with_backticks
         return {"FINISHED"}
 
 

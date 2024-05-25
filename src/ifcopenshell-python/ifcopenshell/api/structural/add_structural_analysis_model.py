@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-def add_structural_analysis_model(file) -> None:
+def add_structural_analysis_model(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
     """Add a new structural analysis model
 
     A structural analysis model is a group of all the loads, reactions,
@@ -39,8 +39,6 @@ def add_structural_analysis_model(file) -> None:
         # Create a fresh blank structural analysis
         analysis = ifcopenshell.api.run("structural.add_structural_analysis_model", model)
     """
-    settings = {}
-
     return ifcopenshell.api.run(
         "root.create_entity", file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
     )

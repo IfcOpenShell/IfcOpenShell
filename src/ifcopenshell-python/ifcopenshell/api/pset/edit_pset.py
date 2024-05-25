@@ -22,12 +22,12 @@ from typing import Optional, Any, Union
 
 
 def edit_pset(
-    file: ifcopenshell.entity_instance,
+    file: ifcopenshell.file,
     pset: ifcopenshell.entity_instance,
     name: Optional[str] = None,
     properties: Optional[dict[str, Any]] = None,
     pset_template: Optional[ifcopenshell.entity_instance] = None,
-    should_purge: bool = False,
+    should_purge: bool = True,
 ) -> None:
     """Edits a property set and its properties
 
@@ -77,9 +77,10 @@ def edit_pset(
         be used to determine data types. If no user-defined template is
         provided, the built-in buildingSMART templates will be loaded.
     :type pset_template: ifcopenshell.entity_instance, optional
-    :param should_purge: If left as False, properties set to None will be
+    :param should_purge: If set as False, properties set to None will be
         left as None but not removed. If set to true, properties set to None
-        will actually be removed.
+        will actually be removed. The default of true is the same behaviour as
+        :func:`ifcopenshell.api.pset.edit_qto`.
     :type should_purge: bool, optional
     :return: None
     :rtype: None
@@ -241,6 +242,9 @@ class Usecase:
 
         if isinstance(value, (tuple, list)):
             sel_vals = []
+            if not value:
+                if self._try_purge(prop):
+                    return
             for val in value:
                 primary_measure_type = prop.EnumerationReference.EnumerationValues[
                     0
@@ -378,18 +382,29 @@ class Usecase:
     def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
+
+        # Material / Profile properties
         elif hasattr(self.settings["pset"], "Properties"):
             self.settings["pset"].Properties = props
+
+        # IFC2X3 IfcMaterialProperties
+        elif self.settings["pset"].is_a("IfcMaterialProperties"):
+            self.settings["pset"].ExtendedProperties = props
 
     def get_properties(self) -> list[ifcopenshell.entity_instance]:
         """
         Returns list of existing properties
         """
-        if hasattr(self.settings["pset"], "HasProperties"):
-            return self.settings["pset"].HasProperties or []
+        if (props := getattr(self.settings["pset"], "HasProperties", ...)) is not ...:
+            return props or []
 
-        elif hasattr(self.settings["pset"], "Properties"):  # For IfcMaterialProperties
-            return self.settings["pset"].Properties or []
+        # Material / Profile properties
+        elif (props := getattr(self.settings["pset"], "Properties", ...)) is not ...:
+            return props or []
+
+        # IFC2X3 IfcMaterialProperties
+        elif (props := getattr(self.settings["pset"], "ExtendedProperties", ...)) is not ...:
+            return props or []
 
         raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 

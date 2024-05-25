@@ -38,16 +38,22 @@ class TestRemoveContext(test.bootstrap.IFC4):
         subcontext = self.file.createIfcGeometricRepresentationSubcontext()
         subcontext.ParentContext = context
         representation = self.file.createIfcRepresentation(ContextOfItems=subcontext)
-        projected_crs = self.file.createIfcProjectedCRS()
-        map_conversion = self.file.createIfcMapConversion(SourceCRS=subcontext, TargetCRS=projected_crs)
+        if self.file.schema != "IFC2X3":
+            projected_crs = self.file.createIfcProjectedCRS()
+            map_conversion = self.file.createIfcMapConversion(SourceCRS=subcontext, TargetCRS=projected_crs)
         ifcopenshell.api.run("context.remove_context", self.file, context=subcontext)
         assert len(self.file.by_type("IfcGeometricRepresentationSubcontext")) == 0
         assert representation in self.file.get_inverse(context)
-        assert len(self.file.by_type("IfcMapConversion")) == 0
-        assert len(self.file.by_type("IfcProjectedCRS")) == 0
+        if self.file.schema != "IFC2X3":
+            assert len(self.file.by_type("IfcMapConversion")) == 0
+            assert len(self.file.by_type("IfcProjectedCRS")) == 0
 
     def test_removing_a_context_with_references(self):
         context = self.file.createIfcGeometricRepresentationContext()
         representation = self.file.createIfcRepresentation(ContextOfItems=context)
         ifcopenshell.api.run("context.remove_context", self.file, context=context)
         assert len([e for e in self.file]) == 0
+
+
+class TestRemoveContextIFC2X3(test.bootstrap.IFC2X3, TestRemoveContext):
+    pass

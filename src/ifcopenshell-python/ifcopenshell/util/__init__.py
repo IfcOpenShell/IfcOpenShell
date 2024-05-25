@@ -25,4 +25,20 @@ through these relationships which can be tedious.
 This module makes it easy to get commonly requested data from IFC
 relationships, such as properties of a wall, what elements are connected to
 pipes, dates from work schedules, filtering maintainable elements, and more.
+
+The most commonly used utilities to help you get started are:
+
+- See :mod:`ifcopenshell.util.element` which contains a lot of useful functions
+  for getting most common relationships on elements.
+- See :func:`ifcopenshell.util.element.get_psets` to get all properties of an
+  entity, like a wall.
+- See :func:`ifcopenshell.util.element.get_type` to get the corresponding type
+  object (e.g. the wall type definition) of a single occurrence (e.g. an
+  individual wall).
+- See :func:`ifcopenshell.util.placement.get_local_placement` to get the XYZ
+  placement point of a single object.
+- See :func:`ifcopenshell.util.unit.calculate_unit_scale` to convert between SI
+  units and project units.
+- See :mod:`ifcopenshell.util.shape` to calculate quantities from processed
+  geometry.
 """

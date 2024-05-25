@@ -23,6 +23,7 @@ import pymeshlab
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
+import ifcopenshell.guid
 from pathlib import Path
 
 import numpy as np

@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class TestRemovePset(test.bootstrap.IFC4):

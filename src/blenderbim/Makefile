@@ -151,8 +151,10 @@ endif
 	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.7.0.zip
 	cd dist/working && unzip v0.7.0.zip
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
-	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/util/* dist/blenderbim/libs/site/packages/ifcopenshell/util/
-	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api/* dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/util/
+	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/api/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/util dist/blenderbim/libs/site/packages/ifcopenshell/
+	cp -r dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/api dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/*.py dist/blenderbim/libs/site/packages/ifcopenshell/
 	cp dist/working/IfcOpenShell-0.7.0/src/ifcopenshell-python/ifcopenshell/express/rule_executor.py dist/blenderbim/libs/site/packages/ifcopenshell/express/
 	# Provides bcf functionality
@@ -275,34 +277,6 @@ endif
 	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/5b/ef/f97c3e1a7efa00e989a793fe15297214fc95ad7d9e3810586bd08ce9f0f3/xmlschema-2.0.2.tar.gz
-	cd dist/working && tar -xzvf xmlschema*
-	cp -r dist/working/xmlschema-2.0.2/xmlschema dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/ad/c7/17c9d16320d8e2cfdb27d2fd298b5e8f7a3f211025b0c1bc7a39a85bd690/xsdata-22.11.tar.gz
-	cd dist/working && tar -xzvf xsdata*
-	cp -r dist/working/xsdata-22.11/xsdata dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/11/bc/5afb61dd5d863e5cf77cd952445c50c17e65953405986f19e97e4389692a/elementpath-3.0.2.tar.gz
-	cd dist/working && tar -xzvf elementpath*
-	cp -r dist/working/elementpath-3.0.2/elementpath dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by bcf
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/21/9f/b251f7f8a76dec1d6651be194dfba8fb8d7781d10ab3987190de8391d08e/six-1.14.0.tar.gz
-	cd dist/working && tar -xzvf six*
-	cp -r dist/working/six-1.14.0/six.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Required by IFCCSV and ifcopenshell.util.selector
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/18/4d/8d522136c37d9e1ea74062b41b8d5e1318ebf45063ae46ce72ed60af223b/lark-parser-0.8.5.tar.gz
@@ -364,7 +338,12 @@ endif
 	# Provides Brickschema functionality
 	cd dist/working && . env/bin/activate && $(PIP) install "brickschema[persistence]==0.7.6a2" --target=./site-packages
 	# Required for SVG to DXF conversion
-	cd dist/working && . env/bin/activate && $(PIP) install "ezdxf" --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install ezdxf --target=./site-packages
+	# Required by bcf
+	cd dist/working && . env/bin/activate && $(PIP) install xsdata --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install xmlschema --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install elementpath --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install six --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 

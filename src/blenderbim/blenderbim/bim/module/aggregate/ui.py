@@ -73,7 +73,7 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
-                row.label(text="No Aggregate", icon="TRIA_UP")
+                row.label(text="No Whole relation defined", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
@@ -144,7 +144,7 @@ class BIM_PT_linked_aggregate(Panel):
                 row.label(text="Not a Linked Aggregate")
             else:
                 row.label(text=f"{Number_Linked_Aggregates} Linked Aggregates")
-            op = row.operator("bim.object_duplicate_move_linked_aggregate", text="", icon="DUPLICATE")
+            op = row.operator("bim.duplicate_linked_aggregate_to_3d_cursor", text="", icon="DUPLICATE")
             if type(Number_Linked_Aggregates) is int:
                 if Number_Linked_Aggregates > 0:
                     op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")

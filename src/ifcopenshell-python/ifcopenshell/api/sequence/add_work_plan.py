@@ -17,11 +17,18 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.date
-from datetime import datetime
+from datetime import datetime, time
+from typing import Optional, Union
 
 
-def add_work_plan(file, name=None, predefined_type="NOTDEFINED", start_time=None) -> None:
+def add_work_plan(
+    file: ifcopenshell.file,
+    name: Optional[str] = None,
+    predefined_type: str = "NOTDEFINED",
+    start_time: Optional[Union[str, time]] = None,
+) -> ifcopenshell.entity_instance:
     """Add a new work plan
 
     A work plan is a group of work schedules. Since work schedules may have

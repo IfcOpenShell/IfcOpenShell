@@ -128,9 +128,9 @@ class ContractResource(bpy.types.Operator):
 class AssignResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_resource"
     bl_label = "Assign Resource"
+    bl_description = "Assign resource to the selected objects"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.assign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
@@ -139,9 +139,9 @@ class AssignResource(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignResource(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_resource"
     bl_label = "Unassign Resource"
+    bl_description = "Unassign resource from the selected objects"
     bl_options = {"REGISTER", "UNDO"}
     resource: bpy.props.IntProperty()
-    related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.unassign_resource(tool.Ifc, tool.Spatial, resource=tool.Ifc.get().by_id(self.resource))
@@ -328,7 +328,7 @@ class EditResourceQuantity(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class ImportResources(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
-    bl_idname = "import_resources.bim"
+    bl_idname = "bim.import_resources"
     bl_label = "Import Resources"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"

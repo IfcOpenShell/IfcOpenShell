@@ -18,6 +18,7 @@
 
 import abc
 import inspect
+from typing import Optional
 
 # fmt: off
 # pylint: skip-file
@@ -72,20 +73,21 @@ class Aggregate:
 
 @interface
 class Blender:
-    def set_active_object(cls, obj): pass
-    def get_name(cls, ifc_class, name): pass
-    def get_selected_objects(cls): pass
-    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
-    def is_ifc_object(cls, obj): pass
-    def is_ifc_class_active(cls, ifc_class): pass
-    def get_viewport_context(cls): pass
-    def update_viewport(cls): pass
-    def get_default_selection_keypmap(cls): pass
-    def get_object_bounding_box(cls, obj): pass
+    def activate_camera(cls, obj): pass
     def apply_bmesh(cls, mesh, bm, obj=None): pass
-    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
     def bmesh_join(cls, bm_a, bm_b, callback=None): pass
+    def create_ifc_object(cls, ifc_class: str, name: Optional[str] = None, data=None): pass
+    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+    def get_default_selection_keypmap(cls): pass
+    def get_name(cls, ifc_class, name): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
+    def get_object_bounding_box(cls, obj): pass
+    def get_selected_objects(cls): pass
+    def get_viewport_context(cls): pass
+    def is_ifc_class_active(cls, ifc_class): pass
+    def is_ifc_object(cls, obj): pass
+    def set_active_object(cls, obj): pass
+    def update_viewport(cls): pass
 
 
 @interface
@@ -485,12 +487,12 @@ class Material:
     def disable_editing_materials(cls): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
-    def get_active_material_type(cls): pass
     def get_active_material(cls): pass
+    def get_active_material_type(cls): pass
     def get_active_object_material(cls, obj): pass
     def get_elements_by_material(cls, material): pass
-    def get_material_attributes(cls): pass
     def get_material(cls, element, should_inherit): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
@@ -501,6 +503,7 @@ class Material:
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
+    def sync_blender_material_name(cls, material): pass
 
 
 @interface
@@ -615,9 +618,20 @@ class Profile:
 
 @interface
 class Pset:
+    def add_proposed_property(cls, name, value, props): pass
+    def cast_string_to_primitive(cls, value: str): pass
+    def clear_blender_pset_properties(cls, props): pass
+    def enable_proposed_pset(cls, props, pset_name, pset_type, has_template): pass
     def get_element_pset(cls, element, pset_name): pass
-    def get_pset_name(cls, obj, obj_type): pass
+    def get_prop_template_primitive_type(cls, prop_template): pass
+    def get_pset_name(cls, obj, obj_type, pset_type): pass
+    def get_pset_template(cls, name): pass
+    def import_enumerated_value_from_template(cls, prop_template, data, props): pass
+    def import_pset_from_existing(cls, pset, props): pass
+    def import_pset_from_template(cls, pset_template, pset, props): pass
+    def import_single_value_from_template(cls, pset_template, prop_template, data, props): pass
     def is_pset_applicable(cls,element, pset_name): pass
+    def set_active_pset(cls, props, pset, has_template): pass
 
 
 @interface

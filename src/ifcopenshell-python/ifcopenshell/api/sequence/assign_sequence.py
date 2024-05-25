@@ -18,14 +18,15 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
 def assign_sequence(
-    file,
-    relating_process=None,
-    related_process=None,
-    sequence_type="FINISH_START",
-) -> None:
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_process: ifcopenshell.entity_instance,
+    sequence_type: str = "FINISH_START",
+) -> ifcopenshell.entity_instance:
     """Assign a sequential relationship between tasks
 
     Tasks in construction sequencing typically have sequence relationships

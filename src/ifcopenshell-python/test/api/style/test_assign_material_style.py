@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-class TestAssignMaterialStyle(test.bootstrap.IFC4):
+class TestAssignMaterialStyleIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):
         material = ifcopenshell.api.run("material.add_material", self.file)
         context = self.file.createIfcGeometricRepresentationContext()
@@ -38,7 +38,12 @@ class TestAssignMaterialStyle(test.bootstrap.IFC4):
         assert len(representation.Items) == 1
         item = representation.Items[0]
         assert item.is_a("IfcStyledItem")
-        assert item.Styles == (style,)
+        if self.file.schema != "IFC2X3":
+            assert item.Styles == (style,)
+        else:
+            # IfcPresentationStyleAssignment
+            assert len(item.Styles[0]) == 1
+            assert item.Styles[0].Styles == (style,)
 
         style2 = self.file.createIfcSurfaceStyle()
         ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style2, context=context)
@@ -48,8 +53,16 @@ class TestAssignMaterialStyle(test.bootstrap.IFC4):
         assert definition.Representations == (representation,)
         assert len(representation.Items) == 1
         assert representation.Items[0] == item
-        assert representation.Items[0].Styles == (style2,)
+        if self.file.schema != "IFC2X3":
+            assert representation.Items[0].Styles == (style2,)
+        else:
+            # IfcPresentationStyleAssignment
+            assert len(representation.Items[0].Styles) == 1
+            assert representation.Items[0].Styles == (style2,)
 
+
+class TestAssignMaterialStyleIFC4(test.bootstrap.IFC4, TestAssignMaterialStyleIFC2X3):
+    # IfcMaterialConstituentSet was added in IFC4
     def test_update_shape_aspect_representations_items_styles_if_material_is_part_of_matching_material_constituents(
         self,
     ):

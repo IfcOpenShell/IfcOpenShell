@@ -22,6 +22,7 @@ import brickschema
 import brickschema.persistent
 from brickschema.namespaces import REF, A
 import ifcopenshell
+import ifcopenshell.guid
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from rdflib.namespace import RDF

@@ -19,17 +19,24 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+import blenderbim.core.aggregate
+import blenderbim.core.context
 import blenderbim.core.tool
+import blenderbim.core.root
+import blenderbim.core.unit
+import blenderbim.core.owner
 import blenderbim.bim.schema
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
+from typing import Optional
 
 
 class Project(blenderbim.core.tool.Project):
     @classmethod
-    def append_all_types_from_template(cls, template):
+    def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
         filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "projects", template)
         bpy.ops.bim.select_library_file(filepath=filepath)
@@ -95,13 +102,13 @@ class Project(blenderbim.core.tool.Project):
     @classmethod
     def run_root_assign_class(
         cls,
-        obj=None,
-        ifc_class=None,
-        predefined_type=None,
-        should_add_representation=True,
-        context=None,
-        ifc_representation_class=None,
-    ):
+        obj: bpy.types.Object,
+        ifc_class: str,
+        predefined_type: Optional[str] = None,
+        should_add_representation: bool = True,
+        context: Optional[ifcopenshell.entity_instance] = None,
+        ifc_representation_class: Optional[str] = None,
+    ) -> ifcopenshell.entity_instance:
         return blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,

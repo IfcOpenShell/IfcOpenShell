@@ -16,8 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+from typing import Optional, Literal
 
-def add_context(file, context_type=None, context_identifier=None, target_view=None, parent=None) -> None:
+
+def add_context(
+    file: ifcopenshell.file,
+    context_type: Optional[Literal["Model", "Plan"]] = None,
+    context_identifier: Optional[str] = None,
+    target_view: Optional[str] = None,
+    parent: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     """Adds a new geometric representation context
 
     In IFC, physical objects may have zero, one, or multiple geometric
@@ -87,7 +96,7 @@ def add_context(file, context_type=None, context_identifier=None, target_view=No
 
     :param context_type: The type of the context, must be one of "Model" or
         "Plan" only.
-    :type context_type: str
+    :type context_type: str, optional
     :param context_identifier: The identifier of the context, chosen from
         one of the common identifiers above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional
@@ -104,7 +113,7 @@ def add_context(file, context_type=None, context_identifier=None, target_view=No
     :type parent: ifcopenshell.entity_instance, optional
     :return: the newly created IfcGeometricRepresentationContext or
         IfcGeometricRepresentationSubContext entity
-    :rtype: ifcopenshell.entity_instance, optional
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 

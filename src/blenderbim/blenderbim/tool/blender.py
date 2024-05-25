@@ -50,6 +50,23 @@ class Blender(blenderbim.core.tool.Blender):
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
     @classmethod
+    def activate_camera(cls, obj: bpy.types.Object) -> None:
+        area = tool.Blender.get_view3d_area()
+        is_local_view = area.spaces[0].local_view is not None
+        if is_local_view:
+            # Turn off local view before activating drawing, and then turn it on again.
+            for a in bpy.context.screen.areas:
+                if a.type == "VIEW_3D":
+                    override = bpy.context.copy()
+                    override["area"] = a
+                    bpy.ops.view3d.localview(override)
+            bpy.context.scene.camera = obj
+            bpy.ops.view3d.localview(override)
+        else:
+            bpy.context.scene.camera = obj
+        area.spaces[0].region_3d.view_perspective = "CAMERA"
+
+    @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> Any:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
@@ -451,15 +468,41 @@ class Blender(blenderbim.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
-    def enum_property_has_valid_index(cls, props, prop_name: str, enum_items: tuple) -> bool:
+    def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
         """
-        current_value_index = props.get(prop_name, None)
-        # assuming the default value is fine
-        if current_value_index is None:
-            return True
-        return current_value_index < len(enum_items)
+        # Yes, accessing items through annotations is a bit hacky
+        # but it's the only way to get the dynamic enum items
+        # besides providing them to get_enum_safe explicitly.
+        prop_keywords = props.__annotations__[prop_name].keywords
+        items = prop_keywords.get("items")
+        if items is None:
+            return None
+        if not isinstance(items, (list, tuple)):
+            # items are retrieved through a callback, not a static list / tuple :
+            items = items(props, bpy.context)
+
+        items_amount = len(items)
+        # If enum has no items it seems to always produce a warning.
+        # E.g. if you try to get it's value directly: `BIMModelProperties.relating_type_id`.
+        if items_amount == 0:
+            return None
+
+        index = props.get(prop_name)
+        # If value was never changed (still default), we can just retrieve it from the enum.
+        if index is None:
+            default_value = prop_keywords.get("default", 0)
+            if isinstance(default_value, int):
+                index = default_value
+            else:
+                # If default value is a string then it's a static enum
+                # and we can just return it.
+                return default_value
+        # Ensure index is valid.
+        if items_amount > index >= 0:
+            return items[index][0]
+        return None
 
     @classmethod
     def append_data_block(cls, filepath: str, data_block_type: str, name: str, link=False, relative=False) -> dict:
@@ -845,9 +888,7 @@ class Blender(blenderbim.core.tool.Blender):
             bpy.utils.register_tool(ws_model.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_model.BimTool, after={"bim.pipe_tool"}, separator=False, group=False)
             bpy.utils.register_tool(ws_drawing.AnnotationTool, after={"bim.bim_tool"}, separator=True, group=False)
-            bpy.utils.register_tool(
-                ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False
-            )
+            bpy.utils.register_tool(ws_spatial.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
             bpy.utils.register_tool(
                 ws_structural.StructuralTool, after={"bim.spatial_tool"}, separator=False, group=False
             )

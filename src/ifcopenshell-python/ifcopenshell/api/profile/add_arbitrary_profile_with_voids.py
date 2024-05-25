@@ -17,9 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Optional
 
 
-def add_arbitrary_profile_with_voids(file, outer_profile=None, inner_profiles=None, name=None) -> None:
+def add_arbitrary_profile_with_voids(
+    file: ifcopenshell.file,
+    outer_profile: list[tuple[float, float]],
+    inner_profiles: list[list[tuple[float, float]]],
+    name: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     """Adds a new arbitrary polyline-based profile with voids
 
     The outer profile is represented as a polyline defined by a list of
@@ -35,9 +41,9 @@ def add_arbitrary_profile_with_voids(file, outer_profile=None, inner_profiles=No
     provided in SI meters.
 
     :param outer_profile: A list of coordinates
-    :type profile: list[float]
+    :type profile: list[tuple[float, float]]
     :param inner_profiles: A list of polylines
-    :type profile: list[list[float]]
+    :type profile: list[list[tuple[float, float]]]
     :param name: If the profile is semantically significant (i.e. to be
         managed and reused by the user) then it must be named. Otherwise,
         this may be left as none.

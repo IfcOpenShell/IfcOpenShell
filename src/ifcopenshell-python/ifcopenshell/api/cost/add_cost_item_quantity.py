@@ -17,9 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.unit
 
 
-def add_cost_item_quantity(file, cost_item=None, ifc_class="IfcQuantityCount") -> None:
+def add_cost_item_quantity(
+    file: ifcopenshell.file,
+    cost_item: ifcopenshell.entity_instance,
+    ifc_class: ifcopenshell.util.unit.QUANTITY_CLASS = "IfcQuantityCount",
+) -> ifcopenshell.entity_instance:
     """Adds a new quantity associated with a cost item
 
     Cost items calculate their subtotal by multiplying the sum of the cost

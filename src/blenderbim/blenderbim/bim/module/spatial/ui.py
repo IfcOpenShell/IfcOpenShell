@@ -116,7 +116,7 @@ class BIM_PT_SpatialManager(Panel):
         self.props = context.scene.BIMSpatialManagerProperties
         row = self.layout.row()
         row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="Load Spatial Structure")
-        if self.props.active_container_index < len(self.props.containers):
+        if 0 <= self.props.active_container_index < len(self.props.containers):
             ifc_definition_id = self.props.containers[self.props.active_container_index].ifc_definition_id
             row = self.layout.row()
             row.alignment = "RIGHT"
@@ -134,7 +134,7 @@ class BIM_PT_SpatialManager(Panel):
             "active_container_index",
         )
         row = self.layout.row()
-        if self.props.active_container_index < len(self.props.containers):
+        if 0 <= self.props.active_container_index < len(self.props.containers):
             row.prop(self.props, "container_name", text="")
             row.prop(self.props, "elevation", text="")
             op = row.operator("bim.edit_container_attributes", icon="CHECKMARK", text="Apply")

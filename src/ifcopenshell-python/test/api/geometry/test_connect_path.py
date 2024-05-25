@@ -146,3 +146,7 @@ class TestConnectPath(test.bootstrap.IFC4):
             related_connection=related_connection,
             description=description,
         )
+
+
+class TestConnectPathIFC2X3(test.bootstrap.IFC2X3, TestConnectPath):
+    pass

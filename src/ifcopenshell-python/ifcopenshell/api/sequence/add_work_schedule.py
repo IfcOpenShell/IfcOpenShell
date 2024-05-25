@@ -17,18 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.date
+from datetime import time
 from datetime import datetime
+from typing import Union, Optional
 
 
 def add_work_schedule(
-    file,
-    name="Unnamed",
-    predefined_type="NOTDEFINED",
+    file: ifcopenshell.file,
+    name: str = "Unnamed",
+    predefined_type: str = "NOTDEFINED",
     object_type=None,
-    start_time=None,
-    work_plan=None,
-) -> None:
+    start_time: Optional[Union[str, time]] = None,
+    work_plan: Optional[ifcopenshell.entity_instance] = None,
+) -> ifcopenshell.entity_instance:
     """Add a new work schedule
 
     A work schedule is a group of tasks, where the tasks are typically
@@ -87,11 +90,17 @@ def add_work_schedule(
         predefined_type=settings["predefined_type"],
         name=settings["name"],
     )
-    work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
+    if file.schema == "IFC2X3":
+        work_schedule.CreationDate = createIfcDateAndTime(file, datetime.now())
+    else:
+        work_schedule.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
         work_schedule.Creators = [user.ThePerson]
-    work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcDateTime")
+    if file.schema == "IFC2X3":
+        work_schedule.StartTime = createIfcDateAndTime(file, settings["start_time"])
+    else:
+        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcDateTime")
     if settings["object_type"]:
         work_schedule.ObjectType = settings["object_type"]
     if settings["work_plan"]:
@@ -103,7 +112,7 @@ def add_work_schedule(
                 "relating_object": settings["work_plan"],
             }
         )
-    else:
+    elif file.schema != "IFC2X3":
         # TODO: this is an ambiguity by buildingSMART
         # See https://forums.buildingsmart.org/t/is-the-ifcworkschedule-project-declaration-mutually-exclusive-to-aggregation-within-a-relating-ifcworkplan/3510
         context = file.by_type("IfcContext")[0]
@@ -114,3 +123,12 @@ def add_work_schedule(
             relating_context=context,
         )
     return work_schedule
+
+
+def createIfcDateAndTime(file: ifcopenshell.file, dt: datetime):
+    ifc_dt = file.create_entity("IfcDateAndTime")
+    ifc_dt.DateComponent = file.create_entity(
+        "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
+    )
+    ifc_dt.TimeComponent = file.create_entity("IfcLocalTime", **ifcopenshell.util.date.datetime2ifc(dt, "IfcLocalTime"))
+    return ifc_dt

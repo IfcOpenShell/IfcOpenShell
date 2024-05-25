@@ -27,3 +27,7 @@ class TestUnassignProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("drawing.assign_product", self.file, relating_product=wall, related_object=label)
         ifcopenshell.api.run("drawing.unassign_product", self.file, relating_product=wall, related_object=label)
         assert len(self.file.by_type("IfcRelAssignsToProduct")) == 0
+
+
+class TestUnassignProductIFC2X3(test.bootstrap.IFC2X3, TestUnassignProduct):
+    pass

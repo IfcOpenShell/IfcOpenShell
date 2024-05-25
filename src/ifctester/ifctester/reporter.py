@@ -91,6 +91,9 @@ class ResultsSpecification(TypedDict):
 
 
 class ResultsRequirement(TypedDict):
+    facet_type: str
+    label: str
+    value: str
     description: str
     status: bool
     failed_entities: list[ResultsFailedEntity]
@@ -291,8 +294,48 @@ class Json(Reporter):
             percent_pass = math.floor((total_pass / total_applicable) * 100) if total_applicable else "N/A"
             total_checks += total_applicable
             total_checks_pass += total_pass
+            facet_type = type(requirement).__name__
+            value = ""
+            if facet_type == "Entity":
+                if requirement.predefinedType:
+                    label = "IFC Class / Predefined Type"
+                    value = f"{requirement.name}.{requirement.predefinedType}"
+                else:
+                    label = "IFC Class"
+                    value = requirement.name
+            elif facet_type == "Attribute":
+                label = requirement.name
+                if requirement.value:
+                    value = requirement.value
+            elif facet_type == "Classification":
+                if requirement.system and requirement.value:
+                    label = "System / Reference"
+                    value = f"{requirement.system} / {requirement.value}"
+                elif requirement.system:
+                    label = "System"
+                    value = requirement.system
+                elif requirement.value:
+                    label = "Reference"
+                    value = requirement.value
+            elif facet_type == "PartOf":
+                label = requirement.relation
+                if requirement.predefinedType:
+                    value = f"{requirement.name}.{requirement.predefinedType}"
+                else:
+                    value = requirement.name
+            elif facet_type == "Property":
+                label = f"{requirement.propertySet}.{requirement.baseName}"
+                if requirement.value:
+                    value = requirement.value
+            elif facet_type == "Material":
+                label = "Name / Category"
+                if requirement.value:
+                    value = requirement.value
             requirements.append(
                 ResultsRequirement(
+                    facet_type=facet_type,
+                    label=label,
+                    value=value,
                     description=requirement.to_string("requirement", specification, requirement),
                     status=requirement.status,
                     failed_entities=self.report_failed_entities(requirement),
@@ -494,6 +537,128 @@ class Ods(Json):
                 tc.addElement(P(text=header))
                 tr.addElement(tc)
             table.addElement(tr)
+            for requirement in specification["requirements"]:
+                if requirement["status"]:
+                    continue
+                for failure in requirement["failed_entities"]:
+                    element = failure.get("element", None)
+                    element_type = failure.get("element_type", None)
+                    row = [
+                        requirement["description"],
+                        failure.get("reason", "No reason provided"),
+                        failure["class"],
+                        failure["predefined_type"],
+                        failure["name"],
+                        failure["description"],
+                        failure["global_id"],
+                        failure["tag"],
+                        str(element) if element else "N/A",
+                        str(element_type) if element_type else "N/A",
+                    ]
+                    tr = TableRow()
+                    c = 0
+                    for col in row:
+                        tc = TableCell(valuetype="string", stylename="t")
+                        if col is None:
+                            col = "NULL"
+                        tc.addElement(P(text=col))
+                        tr.addElement(tc)
+                        c += 1
+                    table.addElement(tr)
+            self.doc.spreadsheet.addElement(table)
+
+        self.doc.save(filepath, addsuffix=not filepath.lower().endswith(".ods"))
+
+
+class OdsSummary(Json):
+    def __init__(self, ids: Ids, excel_safe=False):
+        super().__init__(ids)
+        self.excel_safe = excel_safe
+        self.colours = {
+            "h": "cccccc",  # Header
+            "p": "97cc64",  # Pass
+            "f": "fb5a3e",  # Fail
+            "t": "ffffff",  # Regular text
+        }
+
+    def excel_safe_spreadsheet_name(self, name: str) -> str:
+        if not self.excel_safe:
+            return name
+
+        warning = (
+            f'WARNING. Sheet name "{name}" is not valid for Excel and will be changed. '
+            "See: https://support.microsoft.com/en-us/office/rename-a-worksheet-3f1f7148-ee83-404d-8ef0-9ff99fbad1f9"
+        )
+
+        if not name or name == "History":
+            print(warning)
+            return "placeholder spreadsheet name"
+
+        if name.startswith("'") or name.endswith("'"):
+            print(warning)
+            name = name.strip("'")
+
+        pattern = r"[\\\/\?\*\:\[\]]"
+        if re.search(pattern, name):
+            name = re.sub(pattern, "", name)
+            print(warning)
+
+        if len(name) > 31:
+            name = name[:31]
+            print(warning)
+        return name
+
+    def to_file(self, filepath: str) -> None:
+        from odf.opendocument import OpenDocumentSpreadsheet
+        from odf.style import Style, TableCellProperties
+        from odf.table import Table, TableRow, TableCell
+        from odf.text import P
+
+        self.doc = OpenDocumentSpreadsheet()
+
+        self.cell_formats = {}
+        for key, value in self.colours.items():
+            style = Style(name=key, family="table-cell")
+            style.addElement(TableCellProperties(backgroundcolor="#" + value))
+            self.doc.automaticstyles.addElement(style)
+            self.cell_formats[key] = style
+
+        table = Table(name=self.excel_safe_spreadsheet_name(self.results["title"]))
+        tr = TableRow()
+        for header in ["Specification", "Applicability", "Facet Type", "Data Name", "Value Requirements"]:
+            tc = TableCell(valuetype="string", stylename="h")
+            tc.addElement(P(text=header))
+            tr.addElement(tc)
+        table.addElement(tr)
+
+        rows = []
+        for specification in self.results["specifications"]:
+            applicability = ", ".join(specification["applicability"])
+            for requirement in specification["requirements"]:
+                rows.append(
+                    [
+                        specification["name"],
+                        applicability,
+                        requirement["facet_type"],
+                        requirement["label"],
+                        requirement["value"],
+                    ]
+                )
+
+        for row in rows:
+            tr = TableRow()
+            c = 0
+            for col in row:
+                tc = TableCell(valuetype="string")
+                if col is None:
+                    col = "NULL"
+                tc.addElement(P(text=col))
+                tr.addElement(tc)
+                c += 1
+            table.addElement(tr)
+        self.doc.spreadsheet.addElement(table)
+
+        while False:
             for requirement in specification["requirements"]:
                 if requirement["status"]:
                     continue

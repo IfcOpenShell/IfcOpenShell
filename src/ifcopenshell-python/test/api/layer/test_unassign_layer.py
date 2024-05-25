@@ -37,3 +37,7 @@ class TestUnassignLayer(test.bootstrap.IFC4):
         ifcopenshell.api.run("layer.assign_layer", self.file, items=items, layer=layer)
         ifcopenshell.api.run("layer.unassign_layer", self.file, items=items, layer=layer)
         assert not self.file.by_type("IfcPresentationLayerAssignment")
+
+
+class TestUnassignLayerIFC2X3(test.bootstrap.IFC2X3, TestUnassignLayer):
+    pass

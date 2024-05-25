@@ -101,6 +101,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
     if props.active_pset_id == pset_id:
         row.prop(props, "active_pset_name", icon="COPY_ID", text="")
         op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
+        op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
         op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
@@ -132,6 +133,16 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
         if props.active_pset_id == pset_id:
             for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
+
+            if not props.active_pset_has_template:
+                row = box.row(align=True)
+                row.prop(props, "prop_name", text="")
+                row.prop(props, "prop_value", text="")
+                op = row.operator("bim.add_proposed_prop", text="", icon="ADD")
+                op.obj = obj_name
+                op.obj_type = obj_type
+                op.prop_name = props.prop_name
+                op.prop_value = props.prop_value
         else:
             has_props_displayed = False
             for prop in pset["Properties"]:
@@ -143,7 +154,9 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                row.label(text=str(prop["NominalValue"]))
+                op = row.operator("bim.select_similar", text=str(prop["NominalValue"]), icon="NONE", emboss=False)
+                op.key = pset['Name']
+
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8

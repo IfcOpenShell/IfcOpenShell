@@ -33,3 +33,7 @@ class TestRemoveBoundary(test.bootstrap.IFC4):
         ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=boundary)
         assert not self.file.by_type("IfcRelSpaceBoundary")
         assert not self.file.by_type("IfcConnectionSurfaceGeometry")
+
+
+class TestRemoveBoundaryIFC2X3(test.bootstrap.IFC2X3, TestRemoveBoundary):
+    pass

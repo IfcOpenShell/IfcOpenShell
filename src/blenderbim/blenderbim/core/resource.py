@@ -18,42 +18,57 @@
 
 # ############################################################################ #
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union, Iterable
 
-def load_resources(resource):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def load_resources(resource: tool.Resource) -> None:
     resource.load_resources()
 
 
-def add_resource(tool_ifc, resource_tool, ifc_class, parent_resource=None):
+def add_resource(
+    tool_ifc: tool.Ifc,
+    resource_tool: tool.Resource,
+    ifc_class,
+    parent_resource: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
     tool_ifc.run("resource.add_resource", ifc_class=ifc_class, parent_resource=parent_resource)
     resource_tool.load_resources()
 
 
-def disable_editing_resource(resource_tool):
+def disable_editing_resource(resource_tool: tool.Resource) -> None:
     resource_tool.disable_editing_resource()
 
 
-def disable_resource_editing_ui(resource_tool):
+def disable_resource_editing_ui(resource_tool: tool.Resource) -> None:
     resource_tool.disable_resource_editing_ui()
 
 
-def enable_editing_resource(resource_tool, resource):
+def enable_editing_resource(resource_tool: tool.Resource, resource) -> None:
     resource_tool.enable_editing_resource(resource)
     resource_tool.load_resource_attributes(resource)
 
 
-def edit_resource(ifc, resource_tool, resource):
+def edit_resource(ifc: tool.Ifc, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     attributes = resource_tool.get_resource_attributes()
     ifc.run("resource.edit_resource", resource=resource, attributes=attributes)
     resource_tool.load_resource_properties()
     resource_tool.disable_editing_resource()
 
 
-def remove_resource(ifc, resource_tool, resource=None):
+def remove_resource(ifc: tool.Ifc, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     ifc.run("resource.remove_resource", resource=resource)
     resource_tool.load_resources()
 
 
-def enable_editing_resource_time(ifc_tool, resource_tool, resource):
+def enable_editing_resource_time(
+    ifc_tool, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance
+) -> None:
     resource_time = resource_tool.get_resource_time(resource)
     if resource_time is None:
         resource_time = ifc_tool.run("resource.add_resource_time", resource=resource)
@@ -61,17 +76,21 @@ def enable_editing_resource_time(ifc_tool, resource_tool, resource):
     resource_tool.load_resource_time_attributes(resource_time)
 
 
-def edit_resource_time(ifc, resource_tool, resource_time):
+def edit_resource_time(
+    ifc: tool.Ifc, resource_tool: tool.Resource, resource_time: ifcopenshell.entity_instance
+) -> None:
     attributes = resource_tool.get_resource_time_attributes()
     ifc.run("resource.edit_resource_time", resource_time=resource_time, attributes=attributes)
     resource_tool.disable_editing_resource()
 
 
-def disable_editing_resource_time(resource_tool):
+def disable_editing_resource_time(resource_tool: tool.Resource) -> None:
     resource_tool.disable_editing_resource()
 
 
-def calculate_resource_work(ifc, resource_tool, resource):
+def calculate_resource_work(
+    ifc: tool.Ifc, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance
+) -> None:
     if resource_tool.get_task_assignments(resource):
         ifc.run("resource.calculate_resource_work", resource=resource)
     else:
@@ -81,92 +100,112 @@ def calculate_resource_work(ifc, resource_tool, resource):
     resource_tool.load_resources()
 
 
-def enable_editing_resource_costs(resource_tool, resource):
+def enable_editing_resource_costs(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.enable_editing_resource_costs(resource)
     resource_tool.disable_editing_resource_cost_value()
 
 
-def disable_editing_resource_cost_value(resource_tool):
+def disable_editing_resource_cost_value(resource_tool: tool.Resource) -> None:
     resource_tool.disable_editing_resource_cost_value()
 
 
-def enable_editing_resource_cost_value(resource_tool, cost_value):
+def enable_editing_resource_cost_value(resource_tool: tool.Resource, cost_value: ifcopenshell.entity_instance) -> None:
     resource_tool.enable_editing_cost_value_attributes(cost_value)
     resource_tool.load_cost_value_attributes(cost_value)
 
 
-def enable_editing_resource_cost_value_formula(resource_tool, cost_value):
+def enable_editing_resource_cost_value_formula(
+    resource_tool: tool.Resource, cost_value: ifcopenshell.entity_instance
+) -> None:
     resource_tool.enable_editing_resource_cost_value_formula(cost_value)
 
 
-def edit_resource_cost_value_formula(ifc, resource_tool, cost_value):
+def edit_resource_cost_value_formula(
+    ifc: tool.Ifc, resource_tool: tool.Resource, cost_value: ifcopenshell.entity_instance
+) -> None:
     formula = resource_tool.get_resource_cost_value_formula()
     ifc.run("cost.edit_cost_value_formula", cost_value=cost_value, formula=formula)
     resource_tool.disable_editing_resource_cost_value()
 
 
-def edit_resource_cost_value(ifc, resource_tool, cost_value):
+def edit_resource_cost_value(
+    ifc: tool.Ifc, resource_tool: tool.Resource, cost_value: ifcopenshell.entity_instance
+) -> None:
     attributes = resource_tool.get_resource_cost_value_attributes()
     ifc.run("cost.edit_cost_value", cost_value=cost_value, attributes=attributes)
     resource_tool.disable_editing_resource_cost_value()
 
 
-def enable_editing_resource_base_quantity(resource_tool, resource):
+def enable_editing_resource_base_quantity(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.enable_editing_resource_base_quantity(resource)
 
 
-def add_resource_quantity(ifc, ifc_class, resource):
+def add_resource_quantity(ifc: tool.Ifc, ifc_class: str, resource: ifcopenshell.entity_instance) -> None:
     ifc.run("resource.add_resource_quantity", resource=resource, ifc_class=ifc_class)
 
 
-def remove_resource_quantity(ifc, resource):
+def remove_resource_quantity(ifc: tool.Ifc, resource: ifcopenshell.entity_instance) -> None:
     ifc.run("resource.remove_resource_quantity", resource=resource)
 
 
-def enable_editing_resource_quantity(resource_tool, resource_quantity=None):
+def enable_editing_resource_quantity(
+    resource_tool: tool.Resource, resource_quantity: ifcopenshell.entity_instance
+) -> None:
     resource_tool.enable_editing_resource_quantity(resource_quantity)
 
 
-def disable_editing_resource_quantity(resource_tool):
+def disable_editing_resource_quantity(resource_tool: tool.Resource) -> None:
     resource_tool.disable_editing_resource_quantity()
 
 
-def edit_resource_quantity(resource_tool, ifc, physical_quantity=None):
+def edit_resource_quantity(
+    resource_tool: tool.Resource, ifc: tool.Ifc, physical_quantity: ifcopenshell.entity_instance
+) -> None:
     attributes = resource_tool.get_resource_quantity_attributes()
     ifc.run("resource.edit_resource_quantity", physical_quantity=physical_quantity, attributes=attributes)
     resource_tool.disable_editing_resource_quantity()
 
 
-def import_resources(resource_tool, file_path):
+def import_resources(resource_tool: tool.Resource, file_path: str) -> None:
     resource_tool.import_resources(file_path)
     resource_tool.load_resources()
 
 
-def expand_resource(resource_tool, resource):
+def expand_resource(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.expand_resource(resource)
     resource_tool.load_resources()
 
 
-def contract_resource(resource_tool, resource):
+def contract_resource(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.contract_resource(resource)
     resource_tool.load_resources()
 
 
-def assign_resource(ifc, spatial, resource=None, products=None):
+def assign_resource(
+    ifc: tool.Ifc,
+    spatial: tool.Spatial,
+    resource: ifcopenshell.entity_instance,
+    products: Optional[Iterable[ifcopenshell.entity_instance]] = None,
+) -> None:
     if not products:
         products = spatial.get_selected_products()
     for product in products:
         rel = ifc.run("resource.assign_resource", relating_resource=resource, related_object=product)
 
 
-def unassign_resource(ifc, spatial, resource=None, products=None):
+def unassign_resource(
+    ifc: tool.Ifc,
+    spatial: tool.Spatial,
+    resource: ifcopenshell.entity_instance,
+    products: Optional[Iterable[ifcopenshell.entity_instance]] = None,
+) -> None:
     if not products:
         products = spatial.get_selected_products()
     for product in products:
         ifc.run("resource.unassign_resource", relating_resource=resource, related_object=product)
 
 
-def edit_productivity_pset(ifc, resource_tool):
+def edit_productivity_pset(ifc: tool.Ifc, resource_tool: tool.Resource) -> None:
     resource = resource_tool.get_highlighted_resource()
     if resource is None:
         return
@@ -178,7 +217,9 @@ def edit_productivity_pset(ifc, resource_tool):
     ifc.run("pset.edit_pset", pset=pset, properties=resource_tool.get_productivity_attributes())
 
 
-def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None):
+def add_usage_constraint(
+    ifc: tool.Ifc, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance, reference_path: str
+) -> None:
     metric = resource_tool.has_metric_constraint(resource, "Usage")
     if metric:
         return print("Must remove existing metric first")
@@ -198,7 +239,9 @@ def add_usage_constraint(ifc, resource_tool, resource=None, reference_path=None)
     ifc.run("constraint.assign_constraint", products=[resource], constraint=objective)
 
 
-def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
+def remove_usage_constraint(
+    ifc: tool.Ifc, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance, reference_path: str
+) -> None:
     constraints = resource_tool.get_constraints(resource)
     for constraint in constraints:
         metrics = resource_tool.get_metrics(constraint)
@@ -210,10 +253,12 @@ def remove_usage_constraint(ifc, resource_tool, resource, reference_path):
                 ifc.run("constraint.remove_constraint", constraint=constraint)
 
 
-def go_to_resource(resource_tool, resource):
+def go_to_resource(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.go_to_resource(resource)
 
 
-def calculate_resource_usage(ifc, resource_tool, resource):
+def calculate_resource_usage(
+    ifc: tool.Resource, resource_tool: tool.Resource, resource: ifcopenshell.entity_instance
+) -> None:
     ifc.run("resource.calculate_resource_usage", resource=resource)
     resource_tool.load_resources()

@@ -73,7 +73,7 @@ class RemoveCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     cost_schedule: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.remove_cost_schedule(tool.Ifc, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
+        core.remove_cost_schedule(tool.Ifc, tool.Cost, cost_schedule=tool.Ifc.get().by_id(self.cost_schedule))
 
 
 class EnableEditingCostSchedule(bpy.types.Operator):
@@ -223,36 +223,40 @@ class EditCostItem(bpy.types.Operator, tool.Ifc.Operator):
 
 class AssignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_item_type"
-    bl_label = "Assign Cost Item Type Product"
+    bl_label = "Assign Cost Item To Product Types"
+    bl_description = "Assign cost item to currently selected or active product types"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     prop_name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        core.assign_cost_item_type(
+        product_types = core.assign_cost_item_type(
             tool.Ifc,
             tool.Cost,
             tool.Spatial,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             prop_name=self.prop_name,  # TODO: REVIEW PROP_NAME USABILITY
         )
+        self.report({"INFO"}, f"Cost item was assigned to {len(product_types)} product types.")
 
 
 class UnassignCostItemType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_cost_item_type"
     bl_label = "Unassign Cost Item Type"
+    bl_description = "Unassign cost item from currently selected or active product types"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.unassign_cost_item_type(
+        product_types = core.unassign_cost_item_type(
             tool.Ifc,
             tool.Cost,
             tool.Spatial,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
-            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else [],
+            product_types=[tool.Ifc.get().by_id(self.related_object)] if self.related_object else None,
         )
+        self.report({"INFO"}, f"Cost item was unassigned from {len(product_types)} product types.")
         return {"FINISHED"}
 
 
@@ -287,9 +291,11 @@ class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
-            products=[tool.Ifc.get().by_id(self.related_object)]
-            if self.related_object
-            else tool.Spatial.get_selected_products(),
+            products=(
+                [tool.Ifc.get().by_id(self.related_object)]
+                if self.related_object
+                else tool.Spatial.get_selected_products()
+            ),
         )
 
 
@@ -509,7 +515,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
 
 
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
-    bl_idname = "import_cost_schedule_csv.bim"
+    bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
@@ -527,6 +533,13 @@ class AddCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMCostProperties.cost_column:
+            cls.poll_message_set("Cost column name is empty")
+            return False
+        return True
+
     def execute(self, context):
         core.add_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
@@ -538,7 +551,7 @@ class RemoveCostColumn(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.remove_cost_column(tool.Cost, self.name)
         return {"FINISHED"}
 
@@ -656,13 +669,17 @@ class ExportCostSchedules(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
     cost_schedule: bpy.props.IntProperty()
-    format: bpy.props.EnumProperty("Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
+    directory: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_folder: bpy.props.BoolProperty(
+        name="Filter Folders",
+        default=True,
+    )
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.filepath, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
@@ -676,6 +693,7 @@ class ExportCostSchedules(bpy.types.Operator):
     def draw(self, context):
         self.layout.label(text="Choose a format")
         self.layout.prop(self, "format")
+        self.layout.label(text="Select a directory.")
 
 
 class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):

@@ -190,4 +190,4 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
-    new_template_filename: StringProperty("New TemplateFileName")
+    new_template_filename: StringProperty(name="New TemplateFileName")

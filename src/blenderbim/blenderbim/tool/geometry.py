@@ -24,7 +24,10 @@ import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.geom
+import ifcopenshell.guid
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.core.drawing
@@ -87,7 +90,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def delete_ifc_object(cls, obj):
+    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -318,7 +321,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return new_mesh
 
     @classmethod
-    def get_active_representation(cls, obj):
+    def get_active_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         """< IfcShapeRepresentation or None"""
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -458,7 +461,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
-    def get_styles(cls, obj, only_assigned_to_faces=False):
+    def get_styles(
+        cls, obj: bpy.types.Object, only_assigned_to_faces: bool = False
+    ) -> list[Union[ifcopenshell.entity_instance, None]]:
         styles = [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
         if not only_assigned_to_faces:
             return styles
@@ -466,8 +471,15 @@ class Geometry(blenderbim.core.tool.Geometry):
         usage_count = [0] * len(obj.material_slots)
         if not usage_count:  # if there are no materials, polygons will still use index 0
             return []
+
         for poly in obj.data.polygons:
             usage_count[poly.material_index] += 1
+
+        # remove usages for empty material slots
+        for i, slot in reversed(list(enumerate(obj.material_slots))):
+            if not slot.material:
+                del usage_count[i]
+
         styles = [style for style, usage in zip(styles, usage_count, strict=True) if usage > 0]
         return styles
 
@@ -559,11 +571,11 @@ class Geometry(blenderbim.core.tool.Geometry):
                             new.value = element[i]
 
     @classmethod
-    def is_body_representation(cls, representation):
+    def is_body_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Body"
 
     @classmethod
-    def is_box_representation(cls, representation):
+    def is_box_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod
@@ -571,11 +583,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
 
     @classmethod
-    def is_mapped_representation(cls, representation):
+    def is_mapped_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.RepresentationType == "MappedRepresentation"
 
     @classmethod
-    def is_meshlike(cls, representation):
+    def is_meshlike(cls, representation: ifcopenshell.entity_instance) -> bool:
         if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "AdvancedBrep",
             "Annotation2D",
@@ -655,7 +667,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.objects.remove(obj)
 
     @classmethod
-    def resolve_mapped_representation(cls, representation):
+    def resolve_mapped_representation(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         if representation.RepresentationType == "MappedRepresentation":
             return cls.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
         return representation

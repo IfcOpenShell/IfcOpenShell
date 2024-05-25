@@ -19,9 +19,16 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
+import ifcopenshell.util.element
+from typing import Optional, Any, Union
 
 
-def append_asset(file, library=None, element=None, reuse_identities=None) -> None:
+def append_asset(
+    file: ifcopenshell.file,
+    library: ifcopenshell.file,
+    element: ifcopenshell.entity_instance,
+    reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
     A BIM library asset may be a type product (e.g. wall type), product
@@ -118,11 +125,16 @@ def append_asset(file, library=None, element=None, reuse_identities=None) -> Non
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         # mapping of old element ids to new elements
         self.added_elements: dict[int, ifcopenshell.entity_instance] = {}
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
+        self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
+
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
             return self.append_type_product()
@@ -173,7 +185,7 @@ class Usecase:
     def append_type_product(self):
         self.whitelisted_inverse_attributes = {
             "IfcObjectDefinition": ["HasAssociations"],
-            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
@@ -186,7 +198,7 @@ class Usecase:
             "IfcObjectDefinition": ["HasAssociations"],
             "IfcObject": ["IsDefinedBy.IfcRelDefinesByProperties"],
             "IfcElement": ["HasOpenings"],
-            "IfcMaterialDefinition": ["HasExternalReferences", "HasProperties", "HasRepresentation"],
+            self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
@@ -215,7 +227,7 @@ class Usecase:
 
         return element
 
-    def add_element(self, element):
+    def add_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() == 0:
             return
         existing_element = self.get_existing_element(element)
@@ -254,7 +266,7 @@ class Usecase:
                 elif value:
                     return True
 
-    def check_inverses(self, element):
+    def check_inverses(self, element: ifcopenshell.entity_instance) -> None:
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue

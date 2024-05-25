@@ -18,6 +18,7 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class TestAddCostItem(test.bootstrap.IFC4):
@@ -33,4 +34,8 @@ class TestAddCostItem(test.bootstrap.IFC4):
         item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
         item2 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=item1)
         assert item2.is_a("IfcCostItem")
-        assert item2.Nests[0].RelatingObject == item1
+        assert ifcopenshell.util.element.get_nest(item2) == item1
+
+
+class TestAddCostItemIFC2X3(test.bootstrap.IFC2X3, TestAddCostItem):
+    pass

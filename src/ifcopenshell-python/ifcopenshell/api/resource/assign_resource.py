@@ -18,9 +18,14 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
-def assign_resource(file, relating_resource=None, related_object=None) -> None:
+def assign_resource(
+    file: ifcopenshell.file,
+    relating_resource: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Assigns a resource to an object
 
     Two types of objects are typically assigned to resources: products and
@@ -88,7 +93,7 @@ def assign_resource(file, relating_resource=None, related_object=None) -> None:
                 assignment.is_a("IfclRelAssignsToResource")
                 and assignment.RelatingResource == settings["relating_resource"]
             ):
-                return
+                return assignment
 
     resource_of = None
     if settings["relating_resource"].ResourceOf:

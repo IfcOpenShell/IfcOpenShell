@@ -16,27 +16,51 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import ifcopenshell.util.unit
 import numpy as np
+import numpy.typing as npt
+from typing import Optional, TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    import bpy.types
 
 
-def add_boolean(file, **usecase_settings) -> None:
+NPArrayOfFloats = npt.NDArray[np.float64]
+
+
+def add_boolean(
+    file: ifcopenshell.file,
+    representation: ifcopenshell.entity_instance,
+    # A matrix to define a clipping Ifchalfspacesolid.
+    # The XY plane is the clipping boundary and +Z is removed.
+    operator: str = "DIFFERENCE",
+    # IfcHalfSpaceSolid, Mesh
+    type: Literal["IfcHalfSpaceSolid", "Mesh"] = "IfcHalfSpaceSolid",
+    matrix: Optional[NPArrayOfFloats] = None,
+    # A Blender OBJ to define the voided OBJ for a "Mesh" type
+    blender_obj: Optional[bpy.types.Object] = None,
+    # A Blender OBJ to define the void OBJ for a "Mesh" type
+    blender_void: Optional[bpy.types.Object] = None,
+    should_force_faceted_brep: bool = False,
+    should_force_triangulation: bool = False,
+) -> list[ifcopenshell.entity_instance]:
+    """For `type` values:
+    - "IfcHalfSpaceSolid" - `matrix` is not optional.
+    - "Mesh" - `blender_obj` and `blender_void` are not optional
+    """
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "representation": None,
-        "operator": "DIFFERENCE",
-        # IfcHalfSpaceSolid, Mesh
-        "type": "IfcHalfSpaceSolid",
-        # The XY plane is the clipping boundary and +Z is removed.
-        "matrix": None,  # A matrix to define a clipping Ifchalfspacesolid.
-        "blender_obj": None,  # A Blender OBJ to define the voided OBJ for a "Mesh" type
-        "blender_void": None,  # A Blender OBJ to define the void OBJ for a "Mesh" type
-        "should_force_faceted_brep": False,
-        "should_force_triangulation": False,
+        "representation": representation,
+        "operator": operator,
+        "type": type,
+        "matrix": matrix,
+        "blender_obj": blender_obj,
+        "blender_void": blender_void,
+        "should_force_faceted_brep": should_force_faceted_brep,
+        "should_force_triangulation": should_force_triangulation,
     }
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

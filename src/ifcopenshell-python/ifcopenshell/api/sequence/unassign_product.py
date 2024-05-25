@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_product(file, relating_product=None, related_object=None) -> None:
+def unassign_product(
+    file: ifcopenshell.file,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
     """Unassigns a product and object relationship
 
     See ifcopenshell.api.sequence.assign_product for details.

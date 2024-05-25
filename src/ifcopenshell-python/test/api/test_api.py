@@ -348,3 +348,14 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         )
         assert get_context(element_type) == None
         assert len(self.file.by_type("IfcRelDeclares")) == 0
+
+    @deprecation_check
+    def test_add_group(self):
+        group = ifcopenshell.api.run("group.add_group", self.file, Name="Name", Description="Description")
+        assert group.Name == "Name"
+        assert group.Description == "Description"
+
+    @deprecation_check
+    def test_add_layer(self):
+        layer = ifcopenshell.api.run("layer.add_layer", self.file, Name="Name")
+        assert layer.Name == "Name"

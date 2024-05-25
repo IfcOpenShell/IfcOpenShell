@@ -28,11 +28,16 @@ class TestEditOrganisation(test.bootstrap.IFC4):
             self.file,
             organisation=organisation,
             attributes={
-                "Identification": "Identification",
+                "Identification" if self.file.schema != "IFC2X3" else "Id": "Identification",
                 "Name": "Name",
                 "Description": "Description",
             },
         )
-        assert organisation.Identification == "Identification"
+        # 0 IfcOrganization Identification(>IFC2X3) / Id (IFC2X3)
+        assert organisation[0] == "Identification"
         assert organisation.Name == "Name"
         assert organisation.Description == "Description"
+
+
+class TestEditOrganisationIFC2X3(test.bootstrap.IFC2X3, TestEditOrganisation):
+    pass

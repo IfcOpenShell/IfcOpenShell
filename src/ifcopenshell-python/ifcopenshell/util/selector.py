@@ -21,6 +21,7 @@ import lark
 import numpy as np
 import ifcopenshell.api
 import ifcopenshell.util
+import ifcopenshell.util.attribute
 import ifcopenshell.util.fm
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -30,7 +31,7 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 from decimal import Decimal
-from typing import Optional, Any, Union
+from typing import Optional, Any, Union, Iterable
 
 
 filter_elements_grammar = lark.Lark(
@@ -324,12 +325,16 @@ def filter_elements(
     return transformer.get_results()
 
 
+class SetElementValueException(Exception): ...
+
+
 def set_element_value(
     ifc_file: ifcopenshell.file,
-    element: ifcopenshell.entity_instance,
+    element: Union[ifcopenshell.entity_instance, Iterable[ifcopenshell.entity_instance], None],
     query: Union[str, list[str]],
-    value: Optional[str],
-) -> Union[ifcopenshell.entity_instance, None]:
+    value: Any,
+) -> None:
+    original_element = element
     if isinstance(query, (list, tuple)):
         keys = query
     else:
@@ -392,12 +397,21 @@ def set_element_value(
             ifcopenshell.api.run(
                 "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
             )
+            return
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
                 key = "LayerSetName"  # This oddity in the IFC spec is annoying so we account for it.
 
-            if isinstance(key, str) and hasattr(element, key):
-                if getattr(element, key) != value:
+            if isinstance(key, str) and ((current_value := getattr(element, key, ...)) is not ...):
+                # check if key is not last
+                if len(keys) != i + 1:
+                    element = current_value
+                    continue
+
+                if current_value == value:
+                    return
+                else:
+                    # check if key is not last
                     try:
                         # Try our luck
                         return setattr(element, key, value)
@@ -418,9 +432,13 @@ def set_element_value(
                             if value in ("True", "true", "TRUE", "Yes", "1"):
                                 value = True
                             elif value in ("False", "false", "FALSE", "No", "0"):
-                                value = True
+                                value = False
                             else:
                                 value = bool(value)
+                        elif data_type == "entity":
+                            value = ifc_file.by_guid(value)
+                        if current_value == value:
+                            return
                         return setattr(element, key, value)
             else:
                 # Try to extract pset
@@ -463,18 +481,20 @@ def set_element_value(
                 except:
                     pass
             return
-        elif isinstance(element, (list, tuple)):  # If we use regex
+        elif isinstance(element, (list, tuple, set)):  # If we use regex
             if key.isnumeric():
                 try:
                     element = element[int(key)]
                 except IndexError:
                     return
             else:
-                results = []
                 for v in element:
-                    cls.set_element_value(ifc_file, v, keys[i + 1 :], value)
+                    set_element_value(ifc_file, v, keys[i:], value)
                 return
 
+    raise SetElementValueException(
+        f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
+    )
 
 class FacetTransformer(lark.Transformer):
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
@@ -970,6 +990,8 @@ class Selector:
                 value = ifcopenshell.util.element.get_material(value, should_skip_usage=True)
             elif key in ("materials", "mats"):
                 value = ifcopenshell.util.element.get_materials(value)
+            elif key == "profiles":
+                value = ifcopenshell.util.shape.get_profiles(value)
             elif key == "styles":
                 value = ifcopenshell.util.element.get_styles(value)
             elif key in ("item", "i"):

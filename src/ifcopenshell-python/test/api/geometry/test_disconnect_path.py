@@ -68,3 +68,7 @@ class TestDisconnectPath(test.bootstrap.IFC4):
         total_elements = len([e for e in self.file])
         ifcopenshell.api.run("geometry.disconnect_path", self.file, relating_element=wall2, related_element=wall1)
         assert len([e for e in self.file]) == total_elements
+
+
+class TestDisconnectPathIFC2X3(test.bootstrap.IFC2X3, TestDisconnectPath):
+    pass

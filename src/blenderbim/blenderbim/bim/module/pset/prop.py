@@ -19,6 +19,7 @@
 import bpy
 import blenderbim.bim.schema
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute, StrProperty
@@ -58,6 +59,30 @@ def blender_formatted_enum_from_psets(psets):
 
 
 def get_pset_name(self, context):
+    pset_type = repr(self)
+    prop_type = pset_type.split(".")[-1]
+    results = []
+    if "bpy.data.objects" in pset_type:
+        if prop_type == "PsetProperties":
+            results = get_object_pset_name(self, context)
+        elif prop_type == "MaterialSetPsetProperties":
+            results = get_material_set_pset_names(self, context)
+        elif prop_type == "MaterialSetItemPsetProperties":
+            results = get_material_set_item_pset_names(self, context)
+    elif "bpy.data.materials" in pset_type:
+        results = get_material_pset_names(self, context)
+    elif prop_type == "ResourcePsetProperties":
+        results = get_resource_pset_names(self, context)
+    elif prop_type == "GroupPsetProperties":
+        results = get_group_pset_names(self, context)
+    elif prop_type == "ProfilePsetProperties":
+        results = get_profile_pset_names(self, context)
+    elif prop_type == "WorkSchedulePsetProperties":
+        results = get_work_schedule_pset_names(self, context)
+    return [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template."), None] + results
+
+
+def get_object_pset_name(self, context):
     if not ObjectPsetsData.is_loaded:
         ObjectPsetsData.load()
     return ObjectPsetsData.data["pset_name"]
@@ -167,6 +192,21 @@ def get_work_schedule_pset_names(self, context):
 
 
 def get_qto_name(self, context):
+    pset_type = repr(self)
+    prop_type = pset_type.split(".")[-1]
+    if "bpy.data.objects" in pset_type:
+        if prop_type == "PsetProperties":
+            results = get_object_qto_name(self, context)
+    elif prop_type == "TaskPsetProperties":
+        results = get_task_qto_names(self, context)
+    elif prop_type == "ResourcePsetProperties":
+        results = get_resource_qto_names(self, context)
+    elif prop_type == "GroupPsetProperties":
+        results = get_group_qto_names(self, context)
+    return [("BBIM_CUSTOM", "Custom Qto", "Create a quantity set without using a template."), None] + results
+
+
+def get_object_qto_name(self, context):
     if not ObjectPsetsData.is_loaded:
         ObjectPsetsData.load()
     return ObjectPsetsData.data["qto_name"]
@@ -198,76 +238,14 @@ class IfcProperty(PropertyGroup):
 
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
+    active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
     active_pset_type: StringProperty(name="Active Pset Type")
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_name, name="Qto Name")
-
-
-class MaterialPsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_material_pset_names, name="Pset Name")
-
-
-class MaterialSetPsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_material_set_pset_names, name="Pset Name")
-
-
-class MaterialSetItemPsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_material_set_item_pset_names, name="Pset Name")
-
-
-class TaskPsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    qto_name: EnumProperty(items=get_task_qto_names, name="Qto Name")
-
-
-class ResourcePsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_resource_pset_names, name="Pset Name")
-    qto_name: EnumProperty(items=get_resource_qto_names, name="Qto Name")
-
-
-class GroupPsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_group_pset_names, name="Pset Name")
-    qto_name: EnumProperty(items=get_group_qto_names, name="Qto Name")
-
-class ProfilePsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_profile_pset_names, name="Pset Name")
-
-
-class WorkSchedulePsetProperties(PropertyGroup):
-    active_pset_id: IntProperty(name="Active Pset ID")
-    active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
-    properties: CollectionProperty(name="Properties", type=IfcProperty)
-    pset_name: EnumProperty(items=get_work_schedule_pset_names, name="Pset Name")
+    prop_name: StringProperty(name="Property Name", default="MyProperty")
+    prop_value: StringProperty(name="Property Value", default="Some Value")
 
 
 class RenameProperties(PropertyGroup):

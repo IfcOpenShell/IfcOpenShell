@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_surface_style(file, style=None) -> None:
+def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
     """Removes a presentation item from a presentation style
 
     :param style: The IfcPresentationItem to remove.
@@ -45,22 +45,25 @@ def remove_surface_style(file, style=None) -> None:
         # Remove the shading item
         ifcopenshell.api.run("style.remove_surface_style", model, style=shading)
     """
-    settings = {"style": style}
 
     to_delete = set()
-    if settings["style"].is_a("IfcSurfaceStyleWithTextures"):
-        for texture in settings["style"].Textures or []:
-            if texture.IsMappedBy:
-                for coordinate in texture.IsMappedBy:
-                    to_delete.add(coordinate)
-            else:
-                to_delete.add(texture)
+    if style.is_a("IfcSurfaceStyleWithTextures"):
+        textures = style.Textures
+        if file.schema == "IFC2X3":
+            to_delete.update(textures)
+        else:
+            for texture in textures:
+                if coords := texture.IsMappedBy:
+                    for coordinate in coords:
+                        to_delete.add(coordinate)
+                else:
+                    to_delete.add(texture)
 
-    for attribute in settings["style"]:
+    for attribute in style:
         if isinstance(attribute, ifcopenshell.entity_instance) and attribute.id():
             to_delete.add(attribute)
 
-    file.remove(settings["style"])
+    file.remove(style)
 
     for element in to_delete:
         ifcopenshell.util.element.remove_deep2(file, element)

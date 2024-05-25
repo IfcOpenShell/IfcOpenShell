@@ -18,10 +18,13 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.placement
 
 
-def assign_port(file, element=None, port=None) -> None:
+def assign_port(
+    file: ifcopenshell.file, element: ifcopenshell.entity_instance, port: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Assigns a port to an element
 
     If you have an orphaned port, you may assign it to a distribution
@@ -72,7 +75,7 @@ class Usecase:
 
         for rel in rels:
             if self.settings["port"] in rel.RelatedObjects:
-                return
+                return rel
 
         if rels:
             rel = rels[0]
@@ -96,7 +99,7 @@ class Usecase:
     def execute_ifc2x3(self):
         for rel in self.settings["element"].HasPorts or []:
             if rel.RelatingPort == self.settings["port"]:
-                return
+                return rel
         rel = self.file.create_entity(
             "IfcRelConnectsPortToElement",
             GlobalId=ifcopenshell.guid.new(),

@@ -31,6 +31,7 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon, MultiPolygon
+from typing import Generator
 
 
 class Spatial(blenderbim.core.tool.Spatial):
@@ -111,16 +112,17 @@ class Spatial(blenderbim.core.tool.Spatial):
         for rel in parent.IsDecomposedBy or []:
             related_objects = []
             for element in rel.RelatedObjects:
+                # skip objects without placements
+                if not element.is_a("IfcProduct"):
+                    continue
                 related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
             related_objects = sorted(related_objects, key=lambda e: e[1])
-            for element in related_objects:
-                element = element[0]
+            for element, _ in related_objects:
                 new = props.containers.add()
                 new.name = element.Name or "Unnamed"
                 new.long_name = element.LongName or ""
                 new.has_decomposition = bool(element.IsDecomposedBy)
                 new.ifc_definition_id = element.id()
-                new.elevation = element[1]
 
     @classmethod
     def run_root_copy_class(cls, obj=None):
@@ -146,7 +148,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
 
     @classmethod
-    def select_products(cls, products, unhide=False):
+    def select_products(cls, products: list[ifcopenshell.entity_instance], unhide: bool = False) -> None:
         bpy.ops.object.select_all(action="DESELECT")
         for product in products:
             obj = tool.Ifc.get_object(product)
@@ -186,15 +188,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         ]
 
     @classmethod
-    def get_selected_products(cls):
+    def get_selected_products(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
         for obj in bpy.context.selected_objects:
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcProduct"):
                 yield entity
 
     @classmethod
-    def get_selected_product_types(cls):
-        for obj in bpy.context.selected_objects:
+    def get_selected_product_types(cls) -> Generator[ifcopenshell.entity_instance, None, None]:
+        for obj in tool.Blender.get_selected_objects():
             entity = tool.Ifc.get_entity(obj)
             if entity and entity.is_a("IfcTypeProduct"):
                 yield entity

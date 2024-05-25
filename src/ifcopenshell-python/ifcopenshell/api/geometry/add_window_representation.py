@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import collections.abc
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from itertools import chain
 from mathutils import Vector
-import collections
+import dataclasses
+from typing import Any, Optional, Literal, Union
 
 
 # SCHEMAS describe panels setup
@@ -40,6 +43,11 @@ DEFAULT_PANEL_SCHEMAS = {
     "TRIPLE_PANEL_HORIZONTAL": [[0], [1], [2]],
     "TRIPLE_PANEL_VERTICAL": [[0, 1, 2]],
 }
+
+
+def mm(x: float) -> float:
+    """mm to meters shortcut for readability"""
+    return x / 1000
 
 
 def create_ifc_window_frame_simple(
@@ -210,71 +218,209 @@ def create_ifc_window(
     return output_items
 
 
-def add_window_representation(file, **usecase_settings) -> None:
-    """units in usecase_settings expected to be in ifc project units"""
+# we use dataclass as we need default values for arguments
+# it's okay to use slots since we don't need dynamic attributes
+@dataclasses.dataclass(slots=True)
+class WindowLiningProperties:
+    LiningDepth: Optional[float] = None
+    """Optional, defaults to 50mm."""
+
+    LiningThickness: Optional[float] = None
+    """Optional, defaults to 50mm."""
+
+    LiningOffset: Optional[float] = None
+    """Offset to the wall. Optional, defaults to 50mm."""
+
+    LiningToPanelOffsetX: Optional[float] = None
+    """Offset from the wall. Optional, defaults to 25mm."""
+
+    # that way it allows you to define overall_depth constant between all panels
+    # and still have panels with different size:
+    # overall_depth = lining_depth + offset_y
+    # full offset from X axis = overall_depth - frame_depth.
+    LiningToPanelOffsetY: Optional[float] = None
+    """Offset from the lining. Optional, defaults to 25mm."""
+
+    MullionThickness: Optional[float] = None
+    """Mullion thickness (horizontal distance between panels).
+
+    Applies to windows of types: DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
+    TriplePanelLeft, TriplePanelRight.
+
+    Optional, defaults to 50mm."""
+
+    FirstMullionOffset: Optional[float] = None
+    """Distance from the first lining to the mullion center. Optional, defaults to 300mm."""
+
+    SecondMullionOffset: Optional[float] = None
+    """Distance from the first lining to the second mullion center. 
+
+    Applies to windows of type: TriplePanelVertical.
+
+    Optional, defaults to 450mm."""
+
+    TransomThickness: Optional[float] = None
+    """Transom thickness (vertical distance between panels), works similar way to mullions.
+
+    Applies to windows of types:DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
+    TriplePanelLeft, TriplePanelRight.
+
+    Optional, defaults to 50mm."""
+
+    FirstTransomOffset: Optional[float] = None
+    """Optional, defaults to 300mm."""
+
+    SecondTransomOffset: Optional[float] = None
+    """
+    Applies to windows of type: TriplePanelHorizontal.
+    Optional, defaults to 600mm."""
+
+    ShapeAspectStyle: None = None
+    """Optional. Deprecated argument."""
+
+    def initialize_properties(self, unit_scale: float) -> None:
+        # in meters
+        # fmt: off
+        default_values: dict[str, float] = dict(
+            LiningDepth          = mm(50),
+            LiningThickness      = mm(50),
+            LiningOffset         = mm(50),
+            LiningToPanelOffsetX = mm(25),
+            LiningToPanelOffsetY = mm(25),
+            MullionThickness     = mm(50),
+            FirstMullionOffset   = mm(300),
+            SecondMullionOffset  = mm(450),
+            TransomThickness     = mm(50),
+            FirstTransomOffset   = mm(300),
+            SecondTransomOffset  = mm(600),
+        )
+        # fmt: on
+
+        si_conversion = 1 / unit_scale
+        for attr, default_value in default_values.items():
+            if getattr(self, attr) is not None:
+                continue
+            setattr(self, attr, default_value * si_conversion)
+
+
+@dataclasses.dataclass(slots=True)
+class WindowPanelProperties:
+    FrameDepth: Optional[float] = None
+    """Frame thickness by Y axis. Optional, defaults to 35 mm."""
+
+    FrameThickness: Optional[float] = None
+    """Frame thickness by X axis. Optional, defaults to 35 mm."""
+
+    PanelPosition: None = None
+    """Optional, value is never used"""
+
+    PanelOperation: None = None
+    """Optional, value is never used.
+    Defines the basic ways to describe how window panels operate."""
+
+    ShapeAspectStyle: None = None
+    """Optional. Deprecated argument."""
+
+    def initialize_properties(self, unit_scale: float) -> None:
+        # in meters
+        # fmt: off
+        default_values: dict[str, float] = dict(
+            FrameDepth     = mm(35),
+            FrameThickness = mm(35),
+        )
+        # fmt: on
+
+        si_conversion = 1 / unit_scale
+        for attr, default_value in default_values.items():
+            if getattr(self, attr) is not None:
+                continue
+            setattr(self, attr, default_value * si_conversion)
+
+
+def add_window_representation(
+    file: ifcopenshell.file,
+    *,  # keywords only as this API implementation is probably not final
+    context: ifcopenshell.entity_instance,
+    overall_height: Optional[float] = None,
+    overall_width: Optional[float] = None,
+    partition_type: Literal[
+        "SINGLE_PANEL",
+        "DOUBLE_PANEL_HORIZONTAL",
+        "DOUBLE_PANEL_VERTICAL",
+        "TRIPLE_PANEL_BOTTOM",
+        "TRIPLE_PANEL_HORIZONTAL",
+        "TRIPLE_PANEL_LEFT",
+        "TRIPLE_PANEL_RIGHT",
+        "TRIPLE_PANEL_TOP",
+        "TRIPLE_PANEL_VERTICAL",
+    ] = "SINGLE_PANEL",
+    lining_properties: Optional[Union[WindowLiningProperties, dict[str, Any]]] = None,
+    panel_properties: Optional[list[Union[WindowPanelProperties, dict[str, Any]]]] = None,
+    unit_scale: Optional[float] = None,
+) -> ifcopenshell.entity_instance:
+    """units in usecase_settings expected to be in ifc project units
+
+    :param context: IfcGeometricRepresentationContext for the representation.
+    :type context: ifcopenshell.entity_instance
+    :param overall_height: Overall window height. Defaults to 0.9m.
+    :type overall_height: float, optional
+    :param overall_width: Overall window width. Defaults to 0.6m.
+    :type overall_width: float, optional
+    :param partition_type: Type of the window. Defaults to SINGLE_PANEL.
+    :type partition_type: str, optional
+    :param lining_properties: WindowLiningProperties or a dictionary to create one.
+        See WindowLiningProperties description for details.
+    :type lining_properties: Union[WindowLiningProperties, dict[str, Any]]]
+    :param panel_properties: A list of WindowPanelProperties or dictionaries to create one.
+        See WindowPanelProperties description for details.
+    :type panel_properties: list[Union[WindowPanelProperties, dict[str, Any]]]]
+    :param unit_scale: The unit scale as calculated by
+        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
+        will be automatically calculated for you.
+    :type unit_scale: float, optional
+    :return: IfcShapeRepresentation for a window.
+    :rtype: ifcopenshell.entity_instance
+
+    """
     usecase = Usecase()
     usecase.file = file
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindow.htm
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypePartitioningEnum.htm
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowLiningProperties.htm
     # http://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelProperties.htm
-    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
-    usecase.settings.update(
+    # define unit_scale first as it's going to be used setting default arguments
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale
+    settings: dict[str, Any] = {"unit_scale": unit_scale}
+
+    if lining_properties is None:
+        lining_properties = WindowLiningProperties()
+    elif not isinstance(lining_properties, WindowLiningProperties):
+        lining_properties = WindowLiningProperties(**lining_properties)
+    lining_properties.initialize_properties(unit_scale)
+    lining_properties = dataclasses.asdict(lining_properties)
+
+    if panel_properties is None:
+        panel_properties = [WindowPanelProperties()]
+
+    for i in range(len(panel_properties)):
+        properties = panel_properties[i]
+        if not isinstance(properties, WindowPanelProperties):
+            properties = WindowPanelProperties(**properties)
+        properties.initialize_properties(unit_scale)
+        panel_properties[i] = dataclasses.asdict(properties)
+
+    settings.update(
         {
-            "context": None,  # IfcGeometricRepresentationContext
-            # SINGLE_PANEL, DOUBLE_PANEL_HORIZONTAL, DOUBLE_PANEL_VERTICAL,
-            # TRIPLE_PANEL_BOTTOM, TRIPLE_PANEL_HORIZONTAL, TRIPLE_PANEL_LEFT,
-            # TRIPLE_PANEL_RIGHT, TRIPLE_PANEL_TOP, TRIPLE_PANEL_VERTICAL
-            "partition_type": "SINGLE_PANEL",
-            "overall_height": usecase.convert_si_to_unit(0.9),
-            "overall_width": usecase.convert_si_to_unit(0.6),
-            "lining_properties": {
-                "LiningDepth": usecase.convert_si_to_unit(0.050),
-                "LiningThickness": usecase.convert_si_to_unit(0.050),
-                "LiningOffset": usecase.convert_si_to_unit(0.050),  # offset to the wall
-                # offset from the wall
-                "LiningToPanelOffsetX": usecase.convert_si_to_unit(0.025),
-                # offset from the lining
-                # that way it allows you to define overall_depth constant between all panels
-                # and still have panels with different size:
-                # overall_depth = lining_depth + offset_y
-                # full offset from X axis = overall_depth - frame_depth
-                "LiningToPanelOffsetY": usecase.convert_si_to_unit(0.025),
-                # applies to DoublePanelVertical, TriplePanelBottom, TriplePanelTop,
-                # TriplePanelLeft, TriplePanelRight
-                # mullion - horizontal distance between panels
-                "MullionThickness": usecase.convert_si_to_unit(0.050),
-                # distance from the first lining to the mullion center
-                "FirstMullionOffset": usecase.convert_si_to_unit(0.3),
-                # applies to TriplePanelVertical
-                # distance from the first lining to the second mullion center
-                "SecondMullionOffset": usecase.convert_si_to_unit(0.45),
-                # applies to DoublePanelHorizontal, TriplePanelBottom, TriplePanelTop,
-                # TriplePanelLeft, TriplePanelRight
-                # works similar way to mullion
-                "TransomThickness": usecase.convert_si_to_unit(0.050),
-                "FirstTransomOffset": usecase.convert_si_to_unit(0.3),
-                # applies to TriplePanelHorizontal
-                "SecondTransomOffset": usecase.convert_si_to_unit(0.6),
-                "ShapeAspectStyle": None,  # DEPRECATED
-            },
-            "panel_properties": [
-                {
-                    "FrameDepth": usecase.convert_si_to_unit(0.035),  # by Y
-                    "FrameThickness": usecase.convert_si_to_unit(0.035),  # by X
-                    # BOTTOM, LEFT, MIDDLE, RIGHT, TOP
-                    "PanelPosition": ...,  # NEVER USED
-                    # defines the basic ways to describe how window panels operate
-                    # how it's hanged, how it opens
-                    "OperationType": None,  # NEVER USED
-                    "ShapeAspectStyle": None,  # DEPRECATED
-                },
-            ],
+            "context": context,
+            "overall_height": overall_height if overall_height is not None else usecase.convert_si_to_unit(0.9),
+            "overall_width": overall_width if overall_width is not None else usecase.convert_si_to_unit(0.6),
+            "partition_type": partition_type,
+            "lining_properties": lining_properties,
+            "panel_properties": panel_properties,
         }
     )
 
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
+    usecase.settings = settings
     usecase.settings["panel_schema"] = DEFAULT_PANEL_SCHEMAS[usecase.settings["partition_type"]]
     return usecase.execute()
 

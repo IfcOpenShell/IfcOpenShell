@@ -15,15 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
 def edit_attributes(
-    file,
-    entity=None,
-    relating_space=None,
-    related_building_element=None,
-    parent_boundary=None,
-    corresponding_boundary=None,
+    file: ifcopenshell.file,
+    entity: ifcopenshell.entity_instance,
+    relating_space: ifcopenshell.entity_instance,
+    related_building_element: ifcopenshell.entity_instance,
+    parent_boundary: Optional[ifcopenshell.entity_instance] = None,
+    corresponding_boundary: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
     """Modify the relationships of a space boundary relationship
 

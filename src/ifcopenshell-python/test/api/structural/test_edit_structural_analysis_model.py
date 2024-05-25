@@ -34,3 +34,7 @@ class TestEditStructuralAnalysisModel(test.bootstrap.IFC4):
         models = self.file.by_type("IfcStructuralAnalysisModel")
         assert subject == models[0]
         assert subject.is_a("IfcStructuralAnalysisModel")
+
+
+class TestEditStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestEditStructuralAnalysisModel):
+    pass

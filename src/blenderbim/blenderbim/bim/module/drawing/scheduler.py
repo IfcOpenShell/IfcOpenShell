@@ -16,22 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from blenderbim.bim.module.drawing.svgwriter import SvgWriter
+import os
+import re
+import bpy
+import string
 import svgwrite
 import openpyxl
 
+from blenderbim.bim.module.drawing.svgwriter import SvgWriter
 from odf.opendocument import load as load_ods
 from odf.table import Table, TableRow, TableColumn, TableCell
 from odf.text import P
 from odf.style import Style
 from textwrap import wrap
 from pathlib import Path
-import string
 
-FONT_SIZE = 4.13
-FONT_WIDTH = lambda size: size * 0.45
-FONT_SIZE_PT = 12
-FONT_FAMILY = "OpenGost Type B TT"
 DEBUG = False
 
 
@@ -63,10 +62,28 @@ class Scheduler:
         )
         self.padding = 1
         self.margin = 1
+
+        self.parse_css(infile)
         if infile.endswith("ods"):
             self.schedule_ods(infile, outfile)
         elif infile.endswith("xlsx"):
             self.schedule_xlsx(infile, outfile)
+
+    def parse_css(self, infile):
+        stylesheet_path = os.path.splitext(infile)[0] + ".css"
+        if not os.path.exists(stylesheet_path):
+            stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
+        with open(stylesheet_path, "r") as stylesheet:
+            css = stylesheet.read()
+
+        matches = re.search("--font-size-pt:\s*([0-9.]+);", css)
+        self.font_size_pt = float(matches.groups()[0]) if matches else 12  # Default to 12pt
+        matches = re.search("--font-size-px:\s*([0-9.]+);", css)
+        self.font_size_px = float(matches.groups()[0]) if matches else 4.13  # Magic number 4.13px ~= 12pt
+        matches = re.search("--font-width:\s*([0-9.]+);", css)
+        self.font_width = float(matches.groups()[0]) if matches else 0.45  # A magic number for OpenGost
+
+        self.svg.defs.add(self.svg.style(css))
 
     def schedule_xlsx(self, infile, outfile):
         workbook = openpyxl.open(infile, data_only=True)
@@ -144,8 +161,8 @@ class Scheduler:
                     x += unmerged_width
                     continue
 
-                font_size = cell.font.size or 11  # 11pt default
-                font_size = font_size / FONT_SIZE_PT * FONT_SIZE  # Magic?
+                font_size = cell.font.size or self.font_size_pt  # 12pt default
+                font_size = font_size / self.font_size_pt * self.font_size_px  # Magic?
 
                 text_position = [0.0, 0.0]
                 if cell.alignment.horizontal == "left":
@@ -424,9 +441,9 @@ class Scheduler:
                         italic_text = final_cell_style.get("font-style", None) == "italic"
                         # NOTE: very naive since we're scaling text proportionally
                         font_size = (
-                            float(final_cell_style.get("font-size", f"{FONT_SIZE_PT}pt")[:-2])
-                            / FONT_SIZE_PT
-                            * FONT_SIZE
+                            float(final_cell_style.get("font-size", f"{self.font_size_pt}pt")[:-2])
+                            / self.font_size_pt
+                            * self.font_size_px
                         )
 
                         if p_tags:
@@ -523,10 +540,7 @@ class Scheduler:
         """
         text_lines = [str(p) for p in p_tags]
         box_alignment_params = SvgWriter.get_box_alignment_parameters(box_alignment)
-        text_params = {
-            "font-size": font_size,
-            "font-family": FONT_FAMILY,
-        }
+        text_params = {"font-size": font_size}
         if bold:
             text_params["font-weight"] = "bold"
         if italic:
@@ -546,13 +560,13 @@ class Scheduler:
 
         text_tag = self.svg.text("", **(text_params | {"font-size": "0"} | box_alignment_params))
 
-        # TODO: should be done in less naive way
-        # without using magic number for FONT_WIDTH
-        # currently it might not work for all fonts and font sizes
+        # TODO: Should be done without using magic number for self.font_width 
         if wrap_text:
             wrapped_lines = []
             for line in text_lines:
-                wrapped_line = wrap(line, width=int(cell_width // FONT_WIDTH(font_size)), break_long_words=False)
+                wrapped_line = wrap(
+                    line, width=int(cell_width // (font_size * self.font_width)), break_long_words=False
+                )
                 wrapped_lines.extend(wrapped_line)
         else:
             wrapped_lines = text_lines

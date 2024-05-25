@@ -29,7 +29,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 try:
     from odf.namespaces import OFFICENS
@@ -53,6 +53,14 @@ except:
     pass  # No Pandas support
 
 
+FILE_FORMAT = Literal[
+    "csv",
+    "ods",
+    "xlsx",
+    "pd",
+]
+
+
 class IfcCsv:
     def __init__(self):
         self.headers = []
@@ -66,7 +74,7 @@ class IfcCsv:
         attributes,
         headers=None,
         output=None,
-        format=None,
+        format: FILE_FORMAT = None,
         should_preserve_existing: bool = False,
         include_global_id: bool = True,
         delimiter: str = ",",
@@ -392,7 +400,11 @@ class IfcCsv:
         bool_true: str = "YES",
         bool_false: str = "NO",
     ) -> None:
-        ext = table.split(".")[-1].lower()
+        """
+        Args:
+            table: filepath to the table.
+        """
+        ext: FILE_FORMAT = table.split(".")[-1].lower()
 
         if ext == "csv":
             self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false)

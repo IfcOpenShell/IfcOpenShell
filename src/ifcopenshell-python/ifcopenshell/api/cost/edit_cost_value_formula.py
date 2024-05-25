@@ -17,12 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 
 
-def edit_cost_value_formula(file, cost_value=None, formula=None) -> None:
+def edit_cost_value_formula(file: ifcopenshell.file, cost_value: ifcopenshell.entity_instance, formula: str) -> None:
     """Sets a cost value based on a formula, similar to formulas in spreadsheets
 
     Costs may be made up of many components (e.g. labour, material, waste

@@ -23,7 +23,7 @@ import ifcopenshell.api
 class TestAssignFlowControl(test.bootstrap.IFC4):
     def test_run(self):
         flow_element = self.file.createIfcFlowSegment()
-        flow_control = self.file.createIfcController()
+        flow_control = self.file.create_entity("IfcDistributionControlElement")
 
         # simple assignment
         relation = ifcopenshell.api.run(
@@ -56,7 +56,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
         assert relation is None
 
         # assigning another control to the same object
-        flow_control1 = self.file.createIfcController()
+        flow_control1 = self.file.create_entity("IfcDistributionControlElement")
         relation = ifcopenshell.api.run(
             "system.assign_flow_control",
             self.file,
@@ -66,3 +66,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelFlowControlElements")) == 1
         assert relation.RelatingFlowElement == flow_element
         assert set(relation.RelatedControlElements) == set((flow_control, flow_control1))
+
+
+class TestAssignFlowControlIFC2X3(test.bootstrap.IFC2X3, TestAssignFlowControl):
+    pass

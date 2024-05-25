@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
 import ifcsverchok.helper
 from sverchok.node_tree import SverchCustomTreeNode
 

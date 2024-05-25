@@ -19,7 +19,7 @@
 import ifcopenshell.util.element
 
 
-def remove_grid_axis(file, axis=None) -> None:
+def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance) -> None:
     """Removes a grid axis from a grid
 
     :param axis: The IfcGridAxis you want to remove.
@@ -43,9 +43,8 @@ def remove_grid_axis(file, axis=None) -> None:
         # Let's remove it!
         ifcopenshell.api.run("grid.remove_grid_axis", model, axis=axis_2)
     """
-    settings = {"axis": axis}
-
-    if len(file.get_inverse(settings["axis"].AxisCurve)) == 1:
-        ifcopenshell.util.element.remove_deep(file, settings["axis"].AxisCurve)
-        file.remove(settings["axis"].AxisCurve)
-    file.remove(settings["axis"])
+    axis_curve = axis.AxisCurve
+    if len(file.get_inverse(axis_curve)) == 1:
+        ifcopenshell.util.element.remove_deep(file, axis_curve)
+        file.remove(axis_curve)
+    file.remove(axis)

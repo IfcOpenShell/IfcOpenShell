@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_filling(file, element=None) -> None:
+def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> None:
     """Remove a filling relationship
 
     If an element is filling an opening, this removes the relationship such

@@ -26,6 +26,7 @@ import bmesh
 import logging
 import mathutils
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -303,22 +304,22 @@ class IfcImporter:
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element):
+    def is_element_far_away(self, element: ifcopenshell.entity_instance) -> bool:
         try:
             placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
             point = placement[:, 3][0:3]
             return self.is_point_far_away(point, is_meters=False)
         except:
-            pass
+            return False
 
-    def is_point_far_away(self, point, is_meters=True):
+    def is_point_far_away(
+        self, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]], is_meters: bool = True
+    ) -> bool:
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         limit = self.ifc_import_settings.distance_limit
         limit = limit if is_meters else (limit / self.unit_scale)
-        coords = point
-        if hasattr(point, "Coordinates"):
-            coords = point.Coordinates
+        coords = getattr(point, "Coordinates", point)
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
     def process_context_filter(self):
@@ -608,7 +609,9 @@ class IfcImporter:
 
         threshold = 10000  # Just from experience.
 
-        faces = [len(e.CfsFaces) for e in self.file.by_type("IfcClosedShell")]
+        # The check for CfsFaces/Faces/CoordIndex accommodates invalid data from Cadwork
+        # 0 IfcClosedShell.CfsFaces
+        faces = [len(faces) for e in self.file.by_type("IfcClosedShell") if (faces := e[0])]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
             return
@@ -616,12 +619,14 @@ class IfcImporter:
         if self.file.schema == "IFC2X3":
             return
 
-        faces = [len(e.Faces) for e in self.file.by_type("IfcPolygonalFaceSet")]
+        # 2 IfcPolygonalFaceSet.Faces
+        faces = [len(faces) for e in self.file.by_type("IfcPolygonalFaceSet") if (faces := e[2])]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
             return
 
-        faces = [len(e.CoordIndex) for e in self.file.by_type("IfcTriangulatedFaceSet")]
+        # 3 IfcTriangulatedFaceSet.CoordIndex
+        faces = [len(index) for e in self.file.by_type("IfcTriangulatedFaceSet") if (index := e[3])]
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
 
@@ -679,7 +684,7 @@ class IfcImporter:
         props.blender_orthogonal_height = str(offset_point[2])
         props.has_blender_offset = True
 
-    def get_offset_point(self):
+    def get_offset_point(self) -> Union[npt.NDArray[np.float64], None]:
         elements_checked = 0
         # If more than these elements aren't far away, the file probably isn't absolutely positioned
         element_checking_threshold = 10
@@ -702,17 +707,19 @@ class IfcImporter:
             mat = np.array(
                 ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
             )
-            point = np.array(
+            point = mat @ np.array(
                 (
-                    shape.geometry.verts[0] / self.unit_scale,
-                    shape.geometry.verts[1] / self.unit_scale,
-                    shape.geometry.verts[2] / self.unit_scale,
+                    shape.geometry.verts[0],
+                    shape.geometry.verts[1],
+                    shape.geometry.verts[2],
                     0.0,
                 )
             )
-            return mat @ point
+            point = point / self.unit_scale
+            if self.is_point_far_away(point, is_meters=False):
+                return point
 
-    def does_element_likely_have_geometry_far_away(self, element):
+    def does_element_likely_have_geometry_far_away(self, element: ifcopenshell.entity_instance) -> bool:
         for representation in element.Representation.Representations:
             items = []
             for item in representation.Items:
@@ -729,13 +736,14 @@ class IfcImporter:
                     if subelement.is_a("IfcCartesianPoint"):
                         if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
                             return True
+        return False
 
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             if obj.data and obj.data.get("has_cartesian_point_offset", None):
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-            elif self.is_point_far_away((matrix[0, 3], matrix[1, 3], matrix[2, 3])):
+            elif self.is_point_far_away((matrix[:3, 3])):
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
                 matrix = ifcopenshell.util.geolocation.global2local(
                     matrix,
@@ -748,7 +756,9 @@ class IfcImporter:
 
         return mathutils.Matrix(matrix.tolist())
 
-    def find_decomposed_ifc_class(self, element, ifc_class):
+    def find_decomposed_ifc_class(
+        self, element: ifcopenshell.entity_instance, ifc_class: str
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if element.is_a(ifc_class):
             return element
         rel_aggregates = element.IsDecomposedBy
@@ -1500,9 +1510,8 @@ class IfcImporter:
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
         types_collection = project_collection.children[self.type_collection.name]
         types_collection.hide_viewport = False
-        for obj in types_collection.collection.objects: #turn off all objects inside Types collection.
+        for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
             obj.hide_set(True)
-
 
     def clean_mesh(self):
         obj = None
@@ -1912,11 +1921,7 @@ class IfcImporter:
                 and geometry.verts
                 and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
             ):
-                m = shape.transformation.matrix.data
-                mat = np.array(
-                    ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-                )
-                offset_point = np.linalg.inv(mat) @ np.array(
+                offset_point = np.array(
                     (
                         float(props.blender_eastings),
                         float(props.blender_northings),
@@ -1924,8 +1929,15 @@ class IfcImporter:
                         0.0,
                     )
                 )
+                if geometry != shape:
+                    m = shape.transformation.matrix.data
+                    mat = np.array(
+                        ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
+                    )
+                    offset_point = np.linalg.inv(mat) @ offset_point
                 verts = [None] * len(geometry.verts)
                 for i in range(0, len(geometry.verts), 3):
+                    # Note: this enh2xyz call is crazy slow.
                     verts[i], verts[i + 1], verts[i + 2] = ifcopenshell.util.geolocation.enh2xyz(
                         geometry.verts[i],
                         geometry.verts[i + 1],

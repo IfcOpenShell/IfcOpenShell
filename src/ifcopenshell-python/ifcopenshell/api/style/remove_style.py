@@ -15,11 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_style(file, style=None) -> None:
+def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
     """Removes a presentation style
 
     All of the presentation items of the style will also be removed.

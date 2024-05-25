@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Any, Callable, Optional, Union, Literal, overload
 from collections import namedtuple
@@ -156,12 +157,13 @@ def get_psets(
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
+    # NOTE: doesn't account for IFC2X3 missing HasProperties
     elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
         for definition in getattr(element, "HasProperties", None) or []:
             if qtos_only:
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         # other IfcObjectDefinition
         if should_inherit:
@@ -444,13 +446,13 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     return predefined_type
 
 
-def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """Retrieves the construction type element of an element occurrence
 
     :param element: The element occurrence
     :type: ifcopenshell.entity_instance
     :return: The related type element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -977,7 +979,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
 def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
-    :param element: The IFC element
+    :param element: IfcGroup entity
     :type element: ifcopenshell.entity_instance
     :return: All subelements of the group
     :rtype: list[ifcopenshell.entity_instance]
@@ -1313,6 +1315,19 @@ def remove_deep2(
     :type element: ifcopenshell.entity_instance
     """
     # ifc_file.batch()
+    also_considered_inverses = 0
+
+    def increment_considered_inverses(_):
+        nonlocal also_considered_inverses
+        also_considered_inverses += 1
+
+    for considered_element in also_consider:
+        for attribute in considered_element:
+            considered_element.walk(lambda x: x == element, increment_considered_inverses, attribute)
+
+    if ifc_file.get_total_inverses(element) > 0 + also_considered_inverses:
+        return
+
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -1323,7 +1338,12 @@ def remove_deep2(
         if (
             subelement.id()
             and subelement not in do_not_delete
-            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            and (
+                # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
+                ifc_file.get_total_inverses(subelement) < 2
+                # Alternatively, let's ensure all inverses are within the subgrpah
+                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            )
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])

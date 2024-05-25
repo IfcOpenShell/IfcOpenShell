@@ -268,7 +268,6 @@ class RemovePropTemplate(bpy.types.Operator, Operator):
     prop_template: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
         ifcopenshell.api.run(
             "pset_template.remove_prop_template",
             IfcStore.pset_template_file,
@@ -287,21 +286,21 @@ class EditPropTemplate(bpy.types.Operator, Operator):
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         if props.active_prop_template.template_type == "P_ENUMERATEDVALUE":
-            enumerator = self.generate_prop_enum(props)
+            data_type = props.active_prop_template.get_value_name()
+            prop = props.active_prop_template
+            enumerators = [getattr(ev, data_type) for ev in prop.enum_values]
         else:
-            enumerator = None
+            enumerators = None
         ifcopenshell.api.run(
             "pset_template.edit_prop_template",
             IfcStore.pset_template_file,
-            **{
-                "prop_template": IfcStore.pset_template_file.by_id(props.active_prop_template_id),
-                "attributes": {
-                    "Name": props.active_prop_template.name,
-                    "Description": props.active_prop_template.description,
-                    "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
-                    "TemplateType": props.active_prop_template.template_type,
-                    "Enumerators": enumerator,
-                },
+            prop_template=IfcStore.pset_template_file.by_id(props.active_prop_template_id),
+            attributes={
+                "Name": props.active_prop_template.name,
+                "Description": props.active_prop_template.description,
+                "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
+                "TemplateType": props.active_prop_template.template_type,
+                "Enumerators": enumerators,
             }
         )
         bpy.ops.bim.disable_editing_prop_template()
@@ -309,18 +308,3 @@ class EditPropTemplate(bpy.types.Operator, Operator):
         blenderbim.bim.handler.refresh_ui_data()
         if tool.Ifc.get():
             blenderbim.bim.schema.reload(tool.Ifc.get().schema)
-
-    # TODO -This will need to go into the
-    # api code at some point - vulevukusej
-    def generate_prop_enum(self, props):
-        self.file = IfcStore.pset_template_file
-        data_type = props.active_prop_template.get_value_name()
-        prop = props.active_prop_template
-        prop_enum = self.file.create_entity(
-            "IFCPROPERTYENUMERATION",
-            Name=prop.name,
-            EnumerationValues=tuple(
-                self.file.create_entity(prop.primary_measure_type, getattr(ev, data_type)) for ev in prop.enum_values
-            ),
-        )
-        return prop_enum

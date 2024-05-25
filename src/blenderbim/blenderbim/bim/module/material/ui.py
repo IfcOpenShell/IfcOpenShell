@@ -45,7 +45,7 @@ class BIM_PT_materials(Panel):
         self.props = context.scene.BIMMaterialProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Materials".format(MaterialsData.data["total_materials"]), icon="NODE_MATERIAL")
+        row.label(text=f"{MaterialsData.data['total_materials']} Materials", icon="NODE_MATERIAL")
         if self.props.is_editing:
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
@@ -68,6 +68,8 @@ class BIM_PT_materials(Panel):
                     op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
+                    op.material = material.ifc_definition_id
+                    op = row.operator("bim.unlink_material", icon="UNLINKED", text="")
                     op.material = material.ifc_definition_id
                     row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
 
@@ -112,29 +114,6 @@ class BIM_PT_materials(Panel):
             row = self.layout.row(align=True)
             row.operator("bim.edit_material_style", text="Assign Style", icon="CHECKMARK")
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")
-
-
-class BIM_PT_material(Panel):
-    bl_label = "Material"
-    bl_idname = "BIM_PT_material"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file() and context.active_object and context.active_object.active_material
-
-    def draw(self, context):
-        row = self.layout.row(align=True)
-        material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
-        if bool(material_id):
-            row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
-            row.operator("bim.copy_material", icon="DUPLICATE", text="")
-            row.operator("bim.unlink_material", icon="UNLINKED", text="")
-        else:
-            op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
-            op.obj = context.active_object.active_material.name
 
 
 class BIM_PT_object_material(Panel):

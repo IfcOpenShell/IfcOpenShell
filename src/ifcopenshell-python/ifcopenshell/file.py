@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-
+from __future__ import annotations
 import os
 import re
 import numbers
@@ -24,7 +24,7 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Union, Callable
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -332,7 +332,14 @@ class file:
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        kwargs_attrs = [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        attrs = list(enumerate(args)) + kwargs_attrs
+
+        if len(attrs) > len(e):
+            raise ValueError(
+                "entity instance of type '%s' has only %s attributes but %s attributes were provided."
+                % (e.is_a(True), len(e), len(attrs))
+            )
 
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
@@ -341,8 +348,18 @@ class file:
             transaction = self.transaction
             self.transaction = None
 
-        for idx, arg in attrs:
-            e[idx] = arg
+        try:
+            for idx, arg in attrs:
+                e[idx] = arg
+        except IndexError:
+            invalid_attrs = []
+            for (attr_index, _), attr_name in zip(kwargs_attrs, kwargs):
+                if attr_index == 0xFFFFFFFF:
+                    invalid_attrs.append(attr_name)
+                raise ValueError(
+                    "entity instance of type '%s' doesn't have the following attributes: %s."
+                    % (e.is_a(True), ", ".join(invalid_attrs))
+                )
 
         # Restore transaction status
         if attrs:
@@ -362,7 +379,7 @@ class file:
 
         return e
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         elif attr == "schema":
@@ -488,6 +505,11 @@ class file:
     ) -> list[ifcopenshell.entity_instance]:
         """Return a list of entities that reference this entity
 
+        Warning: this is a slow function, especially when there is a large
+        number of inverses (such as for a shared owner history). If you are
+        only interested in the total number of inverses (typically 0, 1, or N),
+        consider using :func:`get_total_inverses`.
+
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
@@ -512,6 +534,9 @@ class file:
 
     def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
         """Returns the number of entities that reference this entity
+
+        This is equivalent to `len(model.get_inverse(element))`, but
+        significantly faster.
 
         :param inst: The entity instance to get inverse relationships
         :type inst: ifcopenshell.entity_instance

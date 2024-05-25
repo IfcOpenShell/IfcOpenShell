@@ -48,3 +48,7 @@ class TestAddAddress(test.bootstrap.IFC4):
         assert postal.Purpose == telecom.Purpose == "OFFICE"
         assert postal in organisation.Addresses
         assert telecom in organisation.Addresses
+
+
+class TestAddAddressIFC2X3(test.bootstrap.IFC2X3, TestAddAddress):
+    pass

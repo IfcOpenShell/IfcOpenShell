@@ -337,6 +337,25 @@ unit_symbols = {
     "fahrenheit": "°F",
 }
 
+QUANTITY_CLASS = Literal[
+    "IfcQuantityCount",
+    "IfcQuantityNumber",
+    "IfcQuantityLength",
+    "IfcQuantityArea",
+    "IfcQuantityVolume",
+    "IfcQuantityWeight",
+    "IfcQuantityTime",
+    "IfcQuantityCount",
+]
+
+MEASURE_CLASS = Literal[
+    "IfcNumericMeasure",
+    "IfcLengthMeasure",
+    "IfcAreaMeasure",
+    "IfcVolumeMeasure",
+    "IfcMassMeasure",
+]
+
 
 def get_prefix(text):
     if text:
@@ -468,14 +487,14 @@ def get_property_unit(
         return units[0]
 
 
-def get_unit_measure_class(unit_type: str) -> str:
+def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
     if unit_type == "USERDEFINED":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "IfcNumericMeasure"
     return "Ifc" + unit_type[0:-4].lower().capitalize() + "Measure"
 
 
-def get_measure_unit_type(measure_class: str) -> str:
+def get_measure_unit_type(measure_class: MEASURE_CLASS) -> str:
     if measure_class == "IfcNumericMeasure":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "USERDEFINED"
@@ -484,7 +503,7 @@ def get_measure_unit_type(measure_class: str) -> str:
     return measure_class.upper() + "UNIT"
 
 
-def get_symbol_measure_class(symbol: Optional[str] = None) -> str:
+def get_symbol_measure_class(symbol: Optional[str] = None) -> MEASURE_CLASS:
     # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
         return "IfcNumericMeasure"
@@ -502,7 +521,7 @@ def get_symbol_measure_class(symbol: Optional[str] = None) -> str:
     return "IfcNumericMeasure"
 
 
-def get_symbol_quantity_class(symbol: Optional[str] = None) -> str:
+def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
     # Dumb, but everybody gets it, unlike regex golf
     if not symbol:
         return "IfcQuantityCount"

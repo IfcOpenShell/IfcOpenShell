@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_actor(file, actor=None) -> None:
+def remove_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance) -> None:
     """Removes an actor
 
     :param actor: The IfcActor to remove.

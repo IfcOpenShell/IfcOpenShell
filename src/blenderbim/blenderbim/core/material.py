@@ -21,10 +21,10 @@ def unlink_material(ifc, obj=None):
     ifc.unlink(obj=obj)
 
 
-def add_material(ifc, material, style, obj=None, name=None):
+def add_material(ifc, material, style, obj=None, name=None, category=None, description=None):
     if not obj:
         obj = material.add_default_material_object(name)
-    ifc_material = ifc.run("material.add_material", name=material.get_name(obj))
+    ifc_material = ifc.run("material.add_material", name=material.get_name(obj), category=category, description=description)
     ifc.link(ifc_material, obj)
     ifc_style = style.get_style(obj)
     if ifc_style:
@@ -85,6 +85,7 @@ def enable_editing_material(material_tool, material):
 def edit_material(ifc, material_tool, material):
     attributes = material_tool.get_material_attributes()
     ifc.run("material.edit_material", material=material, attributes=attributes)
+    material_tool.sync_blender_material_name(material)
     material_tool.disable_editing_material()
     material_type = material_tool.get_active_material_type()
     material_tool.import_material_definitions(material_type)

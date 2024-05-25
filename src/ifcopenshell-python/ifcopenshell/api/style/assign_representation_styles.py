@@ -15,15 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
 def assign_representation_styles(
-    file,
-    shape_representation=None,
-    styles=None,
-    replace_previous_same_type_style=True,
-    should_use_presentation_style_assignment=False,
-) -> None:
+    file: ifcopenshell.file,
+    shape_representation: ifcopenshell.entity_instance,
+    styles: list[ifcopenshell.entity_instance],
+    replace_previous_same_type_style: bool = True,
+    should_use_presentation_style_assignment: bool = False,
+) -> list[ifcopenshell.entity_instance]:
     """Assigns a style directly to an object representation
 
     A style may either be assigned directly to an object's representation,
@@ -56,7 +57,7 @@ def assign_representation_styles(
         that this is no longer a valid IFC. Blame Autodesk.
     :type should_use_presentation_style_assignment: bool
     :return: List of created IfcStyledItems
-    :rtype: ifcopenshell.entity_instance
+    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 

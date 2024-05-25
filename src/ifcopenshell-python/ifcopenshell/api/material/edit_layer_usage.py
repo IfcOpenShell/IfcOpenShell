@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_layer_usage(file, usage=None, attributes=None) -> None:
+def edit_layer_usage(file: ifcopenshell.file, usage: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcMaterialLayerSetUsage
 
     This is typically used to change the offset from the reference line to
@@ -29,7 +31,7 @@ def edit_layer_usage(file, usage=None, attributes=None) -> None:
     :param usage: The IfcMaterialLayerSetUsage entity you want to edit
     :type usage: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -73,7 +75,7 @@ def edit_layer_usage(file, usage=None, attributes=None) -> None:
         ifcopenshell.api.run("material.edit_layer_usage", model,
             usage=rel.RelatingMaterial, attributes={"OffsetFromReferenceLine": 200})
     """
-    settings = {"usage": usage, "attributes": attributes or {}}
+    settings = {"usage": usage, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["usage"], name, value)

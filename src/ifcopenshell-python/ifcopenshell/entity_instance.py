@@ -281,11 +281,11 @@ class entity_instance:
 
         return entity_instance.walk(is_instance, unwrap, v)
 
-    def attribute_type(self, attr: int) -> str:
+    def attribute_type(self, attr: Union[int, str]) -> str:
         """Return the data type of a positional attribute of the element
 
-        :param attr: The index of the attribute
-        :type attr: int
+        :param attr: The index or name of the attribute
+        :type attr: Union[int, str]
         :rtype: string
         """
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
@@ -338,7 +338,18 @@ class entity_instance:
                         )
                     raise e
         else:
-            self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            try:
+                self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            except TypeError:
+                raise TypeError(
+                    "attribute '%s' for entity '%s' is expecting value of type '%s', got '%s'."
+                    % (
+                        self.wrapped_data.get_argument_name(idx),
+                        self.wrapped_data.is_a(True),
+                        self.wrapped_data.get_argument_type(idx),
+                        type(value).__name__,
+                    )
+                )
 
         return value
 

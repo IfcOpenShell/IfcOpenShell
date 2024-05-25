@@ -39,3 +39,7 @@ class TestAddContextDependentUnit(test.bootstrap.IFC4):
         assert unit.Dimensions.LuminousIntensityExponent == 7
         assert unit.UnitType == "LENGTHUNIT"
         assert unit.Name == "foobar"
+
+
+class TestAddContextDependentUnitIFC2X3(test.bootstrap.IFC2X3, TestAddContextDependentUnit):
+    pass

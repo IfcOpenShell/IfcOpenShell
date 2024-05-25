@@ -19,12 +19,15 @@
 import os
 import bpy
 import uuid
+import shutil
 import hashlib
 import zipfile
 import tempfile
+import traceback
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
+import blenderbim
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
@@ -37,19 +40,19 @@ IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 class IfcStore:
     path: str = ""
-    file: ifcopenshell.file = None
-    schema: ifcopenshell.ifcopenshell_wrapper.schema_definition = None
-    cache: ifcopenshell.ifcopenshell_wrapper.HdfSerializer = None
-    cache_path: str = None
+    file: Optional[ifcopenshell.file] = None
+    schema: Optional[ifcopenshell.ifcopenshell_wrapper.schema_definition] = None
+    cache: Optional[ifcopenshell.ifcopenshell_wrapper.HdfSerializer] = None
+    cache_path: Optional[str] = None
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
     edited_objs: Set[bpy.types.Object] = set()
     pset_template_path: str = ""
-    pset_template_file: ifcopenshell.file = None
+    pset_template_file: Optional[ifcopenshell.file] = None
     classification_path: str = ""
-    classification_file: ifcopenshell.file = None
+    classification_file: Optional[ifcopenshell.file] = None
     library_path: str = ""
-    library_file: ifcopenshell.file = None
+    library_file: Optional[ifcopenshell.file] = None
     current_transaction = ""
     last_transaction = ""
     history = []
@@ -119,7 +122,13 @@ class IfcStore:
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
         new_cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
         IfcStore.cache = None
-        os.replace(IfcStore.cache_path, new_cache_path)
+        try:
+            shutil.move(IfcStore.cache_path, new_cache_path)
+        except PermissionError:
+            try:
+                shutil.copy2(IfcStore.cache_path, new_cache_path)
+            except PermissionError:
+                pass  # Well we tried. No cache for you!
         IfcStore.get_cache()
 
     @staticmethod
@@ -329,6 +338,7 @@ class IfcStore:
 
     @staticmethod
     def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
+        blenderbim.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
@@ -343,10 +353,14 @@ class IfcStore:
         else:
             operator.transaction_key = IfcStore.current_transaction
 
-        if is_invoke:
-            result = getattr(operator, "_invoke")(context, None)
-        else:
-            result = getattr(operator, "_execute")(context)
+        try:
+            if is_invoke:
+                result = getattr(operator, "_invoke")(context, None)
+            else:
+                result = getattr(operator, "_execute")(context)
+        except:
+            blenderbim.last_error = traceback.format_exc()
+            raise
 
         if is_top_level_operator:
             if tool.Ifc.get():

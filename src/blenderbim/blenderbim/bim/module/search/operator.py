@@ -20,6 +20,8 @@ import re
 import bpy
 import json
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
@@ -213,7 +215,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
             group.Description = description
         else:
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
         if results:
             ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
 
@@ -366,7 +368,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description = json.dumps(
                 {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
             )
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -633,12 +635,14 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
 
+    key: bpy.props.StringProperty()
+
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        key = props.element_key
-        if props.element_key == "PredefinedType":
+        key = self.key
+        if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
         for obj in context.visible_objects:

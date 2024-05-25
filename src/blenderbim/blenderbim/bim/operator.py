@@ -90,6 +90,15 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CloseError(bpy.types.Operator):
+    bl_idname = "bim.close_error"
+    bl_label = "Close Error"
+
+    def execute(self, context):
+        blenderbim.last_error = None
+        return {"FINISHED"}
+
+
 class SelectURIAttribute(bpy.types.Operator):
     bl_idname = "bim.select_uri_attribute"
     bl_label = "Select URI Attribute"
