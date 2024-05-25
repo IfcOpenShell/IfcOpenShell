@@ -30,7 +30,6 @@ classes = (
     operator.AssignMaterial,
     operator.AssignParameterizedProfile,
     operator.ContractMaterialCategory,
-    operator.CopyMaterial,
     operator.DisableEditingAssignedMaterial,
     operator.DisableEditingMaterial,
     operator.DisableEditingMaterialSetItem,
@@ -64,7 +63,6 @@ classes = (
     prop.BIMMaterialProperties,
     prop.BIMObjectMaterialProperties,
     ui.BIM_PT_materials,
-    ui.BIM_PT_material,
     ui.BIM_PT_object_material,
     ui.BIM_UL_materials,
 )
