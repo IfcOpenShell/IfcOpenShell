@@ -144,7 +144,9 @@ class Blender(blenderbim.core.tool.Blender):
         if obj_type == "Object":
             return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
         elif obj_type == "Material":
-            return bpy.data.materials.get(obj).BIMObjectProperties.ifc_definition_id
+            return context.scene.BIMMaterialProperties.materials[
+                context.scene.BIMMaterialProperties.active_material_index
+            ].ifc_definition_id
         elif obj_type == "MaterialSet":
             return ifcopenshell.util.element.get_material(
                 tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True

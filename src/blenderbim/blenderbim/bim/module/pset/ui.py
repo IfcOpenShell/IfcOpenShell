@@ -79,13 +79,7 @@ def draw_enumerated_property(prop, layout, copy_operator=None):
 
 
 def get_active_pset_obj_name(context, obj_type):
-    if obj_type == "Object":
-        return context.active_object.name
-    elif obj_type == "Material":
-        return context.active_object.active_material.name
-    elif obj_type == "MaterialSet":
-        return context.active_object.name
-    elif obj_type == "MaterialSetItem":
+    if obj_type in ("Object", "Material", "MaterialSet", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
@@ -286,36 +280,36 @@ class BIM_PT_material_psets(Panel):
     bl_idname = "BIM_PT_material_psets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "material"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_materials"
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not context.active_object.active_material:
-            return False
-        props = context.active_object.active_material.BIMObjectProperties
-        if not props.ifc_definition_id:
-            return False
-        file = IfcStore.get_file()
-        if not file or file.schema == "IFC2X3":
+        ifc_file = tool.Ifc.get()
+        if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
-        return True
+        props = context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index]
+            if material.ifc_definition_id:
+                return True
+        return False
 
     def draw(self, context):
+        props = context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+
         if not MaterialPsetsData.is_loaded:
             MaterialPsetsData.load()
-        elif (
-            context.active_object.active_material.BIMObjectProperties.ifc_definition_id
-            != MaterialPsetsData.data["ifc_definition_id"]
-        ):
+        elif ifc_definition_id != MaterialPsetsData.data["ifc_definition_id"]:
             MaterialPsetsData.load()
 
-        props = context.active_object.active_material.PsetProperties
+        props = context.scene.MaterialPsetProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.active_material.name
+        op.obj = context.active_object.name
         op.obj_type = "Material"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":

@@ -69,7 +69,7 @@ def get_pset_name(self, context):
             results = get_material_set_pset_names(self, context)
         elif prop_type == "MaterialSetItemPsetProperties":
             results = get_material_set_item_pset_names(self, context)
-    elif "bpy.data.materials" in pset_type:
+    elif prop_type == "MaterialPsetProperties":
         results = get_material_pset_names(self, context)
     elif prop_type == "ResourcePsetProperties":
         results = get_resource_pset_names(self, context)

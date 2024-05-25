@@ -40,7 +40,7 @@ class Pset(blenderbim.core.tool.Pset):
         if obj_type == "Object":
             return bpy.data.objects.get(obj).PsetProperties
         elif obj_type == "Material":
-            return bpy.data.materials.get(obj).PsetProperties
+            return bpy.context.scene.MaterialPsetProperties
         elif obj_type == "MaterialSet":
             return bpy.data.objects.get(obj).MaterialSetPsetProperties
         elif obj_type == "MaterialSetItem":

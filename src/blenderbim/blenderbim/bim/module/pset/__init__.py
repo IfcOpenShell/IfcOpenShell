@@ -64,9 +64,9 @@ classes = (
 
 def register():
     bpy.types.Object.PsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
+    bpy.types.Scene.MaterialPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Object.MaterialSetPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Object.MaterialSetItemPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
-    bpy.types.Material.PsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.TaskPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.ResourcePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.GroupPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
@@ -79,7 +79,9 @@ def register():
 
 def unregister():
     del bpy.types.Object.PsetProperties
-    del bpy.types.Material.PsetProperties
+    del bpy.types.Object.MaterialPsetProperties
+    del bpy.types.Object.MaterialSetPsetProperties
+    del bpy.types.Object.MaterialSetItemPsetProperties
     del bpy.types.Scene.TaskPsetProperties
     del bpy.types.Scene.ResourcePsetProperties
     del bpy.types.Scene.GroupPsetProperties
