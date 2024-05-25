@@ -28,6 +28,7 @@ from pathlib import Path
 from mathutils import Vector
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
     bl_label = "Save Current Shading Style"
@@ -53,6 +54,7 @@ class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "Check the system console to see saved style properties")
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleTextures(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_textures"
     bl_label = "Update Style Textures"
@@ -93,9 +95,10 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty(default=0)
 
     def _execute(self, context):
-        core.unlink_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.unlink_style(tool.Ifc, style=tool.Ifc.get().by_id(self.style))
 
 
 class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):

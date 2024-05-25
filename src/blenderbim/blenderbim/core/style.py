@@ -111,8 +111,9 @@ def update_style_textures(ifc, style, obj=None, representation=None):
         ifc.run("style.remove_surface_style", style=texture_style)
 
 
-def unlink_style(ifc, style, obj=None):
-    ifc.unlink(obj=obj, element=style.get_style(obj))
+def unlink_style(ifc, style=None):
+    obj = ifc.get_object(style)
+    ifc.unlink(obj=obj, element=style)
 
 
 def enable_editing_style(style, obj=None):

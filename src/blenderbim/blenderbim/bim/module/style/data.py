@@ -24,7 +24,6 @@ from ifcopenshell.util.doc import get_entity_doc
 
 def refresh():
     StylesData.is_loaded = False
-    StyleAttributesData.is_loaded = False
 
 
 class StylesData:
@@ -68,30 +67,3 @@ class StylesData:
     @classmethod
     def total_styles(cls):
         return len(tool.Ifc.get().by_type("IfcPresentationStyle"))
-
-
-class StyleAttributesData:
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        cls.data = {
-            "ifc_style_id": cls.ifc_style_id(),
-            "attributes": cls.attributes(),
-        }
-        cls.is_loaded = True
-
-    @classmethod
-    def ifc_style_id(cls):
-        return bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id
-
-    @classmethod
-    def attributes(cls):
-        style = tool.Ifc.get().by_id(bpy.context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
-        results = []
-        for name, value in style.get_info().items():
-            if name in ["id", "type", "Styles"]:
-                continue
-            results.append({"name": name, "value": str(value)})
-        return results
