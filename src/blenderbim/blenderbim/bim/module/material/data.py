@@ -36,31 +36,17 @@ class MaterialsData:
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "total_materials": cls.total_materials(),
-            "material_types": cls.material_types(),
-            "profiles": cls.profiles(),
-            "styles": cls.styles(),
-            "contexts": cls.contexts(),
-            "active_styles": cls.active_styles(),
-        }
         cls.is_loaded = True
+        cls.data["material_types"] = cls.material_types()
+        cls.data["total_materials"] = cls.total_materials()
+        cls.data["profiles"] = cls.profiles()
+        cls.data["styles"] = cls.styles()
+        cls.data["contexts"] = cls.contexts()
+        cls.data["active_styles"] = cls.active_styles()
 
     @classmethod
     def total_materials(cls):
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return (
-                len(tool.Ifc.get().by_type("IfcMaterial"))
-                + len(tool.Ifc.get().by_type("IfcMaterialLayerSet"))
-                + len(tool.Ifc.get().by_type("IfcMaterialList"))
-            )
-        return (
-            len(tool.Ifc.get().by_type("IfcMaterial"))
-            + len(tool.Ifc.get().by_type("IfcMaterialConstituentSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialLayerSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialProfileSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialList"))
-        )
+        return len(tool.Ifc.get().by_type(bpy.context.scene.BIMMaterialProperties.material_type))
 
     @classmethod
     def material_types(cls):

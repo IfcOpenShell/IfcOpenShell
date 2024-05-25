@@ -45,7 +45,7 @@ class BIM_PT_materials(Panel):
         self.props = context.scene.BIMMaterialProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Materials".format(MaterialsData.data["total_materials"]), icon="NODE_MATERIAL")
+        row.label(text=f"{MaterialsData.data['total_materials']} Materials", icon="NODE_MATERIAL")
         if self.props.is_editing:
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
