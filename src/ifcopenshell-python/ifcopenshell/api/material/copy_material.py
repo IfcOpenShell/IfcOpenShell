@@ -29,6 +29,9 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
     If a material set is copied, the set items are also copied. However the
     underlying materials (and profiles) used within the set items are reused.
 
+    If a material is associated with a presentation style, that presentation
+    style is reused.
+
     :param material: The IfcMaterialDefinition to copy
     :type material: ifcopenshell.entity_instance
     :return: The new copy of the material
@@ -92,7 +95,7 @@ def _copy_material_with_inverses(file, material):
 
         elif inverse.is_a("IfcMaterialDefinitionRepresentation"):
             inverse = ifcopenshell.util.element.copy_deep(
-                file, inverse, exclude=["IfcRepresentationContext", "IfcMaterial"]
+                file, inverse, exclude=["IfcRepresentationContext", "IfcMaterial", "IfcPresentationStyle"]
             )
             inverse.RepresentedMaterial = new
     return new

@@ -67,6 +67,7 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         ifcopenshell.api.run("style.assign_material_style", self.file, material=material, style=style, context=context)
         new = ifcopenshell.api.run("material.copy_material", self.file, material=material)
         assert new.Name == "CON01"
+        assert len(self.file.by_type("IfcPresentationStyle")) == 1
         assert len(self.file.by_type("IfcMaterialDefinitionRepresentation")) == 2
         assert new.HasRepresentation[0] != material.HasRepresentation[0]
         assert new.HasRepresentation[0].Representations[0] != material.HasRepresentation[0].Representations[0]
