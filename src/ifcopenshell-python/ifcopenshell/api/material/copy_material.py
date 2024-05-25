@@ -63,6 +63,8 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
         return new
     elif material.is_a("IfcMaterialProfile"):
         return _copy_material_with_inverses(file, material)
+    elif material.is_a("IfcMaterialList"):
+        return _copy_material_with_inverses(file, material)
 
 
 def _copy_material_with_inverses(file, material):
