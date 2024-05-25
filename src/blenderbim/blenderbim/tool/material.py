@@ -39,12 +39,6 @@ class Material(blenderbim.core.tool.Material):
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 
     @classmethod
-    def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        new_material = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), material)
-        new_material.Name = material.Name + "_copy"
-        return new_material
-
-    @classmethod
     def enable_editing_materials(cls):
         bpy.context.scene.BIMMaterialProperties.is_editing = True
 
@@ -255,3 +249,12 @@ class Material(blenderbim.core.tool.Material):
             obj = tool.Ifc.get_object(style)
             if obj:
                 obj.name = name
+
+    @classmethod
+    def get_style(cls, material):
+        for material_representation in material.HasRepresentation:
+            for representation in material_representation.Representations:
+                for item in representation.Items:
+                    for style in item.Styles:
+                        if style.is_a("IfcSurfaceStyle"):
+                            return style
