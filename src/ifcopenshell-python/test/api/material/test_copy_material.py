@@ -72,5 +72,74 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         assert new.HasRepresentation[0].Representations[0] != material.HasRepresentation[0].Representations[0]
         assert new.HasRepresentation[0].Representations[0].ContextOfItems == context
 
+    def test_copy_a_material_constituent_set(self):
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="Foo", set_type="IfcMaterialConstituentSet"
+        )
+        item = ifcopenshell.api.run(
+            "material.add_constituent", self.file, constituent_set=material_set, material=material
+        )
+
+        new = ifcopenshell.api.run("material.copy_material", self.file, material=material_set)
+        assert new != material_set
+        assert new.Name == "Foo"
+        assert new.MaterialConstituents[0] != item
+        assert new.MaterialConstituents[0].Material == material
+        assert len(self.file.by_type("IfcMaterialConstituentSet")) == 2
+        assert len(self.file.by_type("IfcMaterialConstituent")) == 2
+        assert len(self.file.by_type("IfcMaterial")) == 1
+
+    def test_copy_a_material_layer_set(self):
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="Foo", set_type="IfcMaterialLayerSet"
+        )
+        item = ifcopenshell.api.run("material.add_layer", self.file, layer_set=material_set, material=material)
+
+        new = ifcopenshell.api.run("material.copy_material", self.file, material=material_set)
+        assert new != material_set
+        assert new.LayerSetName == "Foo"
+        assert new.MaterialLayers[0] != item
+        assert new.MaterialLayers[0].Material == material
+        assert len(self.file.by_type("IfcMaterialLayerSet")) == 2
+        assert len(self.file.by_type("IfcMaterialLayer")) == 2
+        assert len(self.file.by_type("IfcMaterial")) == 1
+
+    def test_copy_a_material_profile_set(self):
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        profile = self.file.create_entity(
+            "IfcIShapeProfileDef",
+            ProfileName="HEA100",
+            ProfileType="AREA",
+            OverallWidth=100,
+            OverallDepth=96,
+            WebThickness=5,
+            FlangeThickness=8,
+            FilletRadius=12,
+        )
+        material_set = ifcopenshell.api.run(
+            "material.add_material_set", self.file, name="Foo", set_type="IfcMaterialProfileSet"
+        )
+        item = ifcopenshell.api.run(
+            "material.add_profile", self.file, profile_set=material_set, material=material, profile=profile
+        )
+
+        new = ifcopenshell.api.run("material.copy_material", self.file, material=material_set)
+        assert new != material_set
+        assert new.Name == "Foo"
+        assert new.MaterialProfiles[0] != item
+        assert new.MaterialProfiles[0].Material == material
+        assert new.MaterialProfiles[0].Profile == profile
+        assert len(self.file.by_type("IfcMaterialProfileSet")) == 2
+        assert len(self.file.by_type("IfcMaterialProfile")) == 2
+        assert len(self.file.by_type("IfcMaterial")) == 1
+        assert len(self.file.by_type("IfcProfileDef")) == 1
+
+
 class TestCopyMaterialIFC2X3(test.bootstrap.IFC2X3, TestCopyMaterial):
-    pass
+    def test_copy_a_material_constituent_set(self):
+        return
+
+    def test_copy_a_material_profile_set(self):
+        return
