@@ -40,7 +40,7 @@ from blenderbim.bim.ifc import IfcStore
 class CopyDebugInformation(bpy.types.Operator):
     bl_idname = "bim.copy_debug_information"
     bl_label = "Copy Debug Information"
-    bl_description = "Copies debugging information to your clipboard for use in bugreports"
+    bl_description = "Copies debugging information to your clipboard for use in bug reports"
 
     def execute(self, context):
         info = get_debug_info()
@@ -56,11 +56,13 @@ class CopyDebugInformation(bpy.types.Operator):
 
         text = format_debug_info(info)
 
+        text_with_backticks = f"```\n{text}\n```"
+
         print("-" * 80)
-        print(text)
+        print(text_with_backticks)
         print("-" * 80)
 
-        context.window_manager.clipboard = text
+        context.window_manager.clipboard = text_with_backticks
         return {"FINISHED"}
 
 
