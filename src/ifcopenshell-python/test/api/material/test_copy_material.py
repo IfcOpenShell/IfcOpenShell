@@ -136,6 +136,17 @@ class TestCopyMaterial(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcMaterial")) == 1
         assert len(self.file.by_type("IfcProfileDef")) == 1
 
+    def test_copy_a_material_list(self):
+        material = ifcopenshell.api.run("material.add_material", self.file, name="CON01")
+        material_set = ifcopenshell.api.run("material.add_material_set", self.file, set_type="IfcMaterialList")
+        ifcopenshell.api.run("material.add_list_item", self.file, material_list=material_set, material=material)
+
+        new = ifcopenshell.api.run("material.copy_material", self.file, material=material_set)
+        assert new != material_set
+        assert new.Materials[0] == material
+        assert len(self.file.by_type("IfcMaterialList")) == 2
+        assert len(self.file.by_type("IfcMaterial")) == 1
+
 
 class TestCopyMaterialIFC2X3(test.bootstrap.IFC2X3, TestCopyMaterial):
     def test_copy_a_material_constituent_set(self):
