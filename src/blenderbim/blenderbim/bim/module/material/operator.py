@@ -141,8 +141,19 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material: bpy.props.IntProperty(name="Material ID")
 
     def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        tool.Material.duplicate_material(ifc_file.by_id(self.material))
+        material = tool.Ifc.get().by_id(self.material)
+        new = tool.Ifc.run("material.copy_material", material=material)
+
+        blender_material = tool.Ifc.get_object(material)
+        new_blender = blender_material.copy()
+        new_blender.use_fake_user = True
+        tool.Ifc.link(new, new_blender)
+
+        if not new.is_a("IfcMaterialList"):
+            name = new[0] + " Copy"
+            new[0] = name
+            new_blender.name = name
+
         material_prop_purge()
         bpy.ops.bim.load_materials()
 
@@ -185,9 +196,10 @@ class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_material"
     bl_label = "Unlink Material"
     bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty(name="Material ID")
 
     def _execute(self, context):
-        core.unlink_material(tool.Ifc, obj=context.active_object.active_material)
+        core.unlink_material(tool.Ifc, obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.material)))
 
 
 class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -677,35 +689,6 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
             pass
 
         bpy.ops.bim.disable_editing_material_set_item(obj=obj.name)
-
-
-class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.copy_material"
-    bl_label = "Copy Material"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        blender_material = context.active_object.active_material
-        material = tool.Ifc.get_entity(blender_material)
-
-        if tool.Ifc.has_changed_shading(blender_material):
-            blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=blender_material)
-
-        copied_material = ifcopenshell.api.run("material.copy_material", tool.Ifc.get(), material=material)
-        copied_blender_material = blender_material.copy()
-        copied_style = self.get_style(copied_material)
-        tool.Ifc.link(copied_material, copied_blender_material)
-        if copied_style:
-            tool.Ifc.link(copied_style, copied_blender_material)
-        context.active_object.active_material = copied_blender_material
-
-    def get_style(self, material):
-        for material_representation in material.HasRepresentation:
-            for representation in material_representation.Representations:
-                for item in representation.Items:
-                    for style in item.Styles:
-                        if style.is_a("IfcSurfaceStyle"):
-                            return style
 
 
 class ExpandMaterialCategory(bpy.types.Operator):
