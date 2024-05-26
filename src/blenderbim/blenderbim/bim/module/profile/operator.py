@@ -175,7 +175,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 def disable_editing_arbitrary_profile(context):
     obj = context.active_object
-    if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+    if obj and obj.type == "MESH" and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
         ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
         profile_mesh = obj.data
