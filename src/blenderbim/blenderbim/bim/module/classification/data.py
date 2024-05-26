@@ -88,7 +88,7 @@ class ClassificationReferencesData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "OBJECT"
+        cls.data["object_type"] = "Object"
 
     @classmethod
     def references(cls):
@@ -112,7 +112,7 @@ class MaterialClassificationsData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "MATERIAL"
+        cls.data["object_type"] = "Material"
 
     @classmethod
     def references(cls):
@@ -140,7 +140,7 @@ class CostClassificationsData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "COST"
+        cls.data["object_type"] = "Cost"
 
     @classmethod
     def references(cls):

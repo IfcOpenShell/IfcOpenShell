@@ -120,7 +120,7 @@ class ReferenceUI:
         obj = context.active_object
         self.sprops = context.scene.BIMClassificationProperties
         self.bprops = context.scene.BIMBSDDProperties
-        self.props = obj.BIMClassificationReferenceProperties
+        self.props = context.scene.BIMClassificationReferenceProperties
         self.file = IfcStore.get_file()
 
         self.draw_add_ui(context)
@@ -318,7 +318,7 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
 
 
 class BIM_PT_cost_classifications(Panel, ReferenceUI):
-    bl_label = "Cost Classifications"
+    bl_label = "Cost Item Classifications"
     bl_idname = "BIM_PT_cost_classifications"
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
