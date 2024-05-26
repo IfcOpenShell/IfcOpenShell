@@ -60,3 +60,9 @@ class TestPsetQto:
         names = self.pset_qto.get_applicable_names("IfcFurnitureType" )
         names2 = self.pset_qto.get_applicable_names("IfcFurnitureType", "CUSTOM")
         assert names == names2
+
+    def test_getting_applicables_for_a_material_category(self):
+        names = self.pset_qto.get_applicable_names("IfcMaterial")
+        assert "Pset_MaterialConcrete" not in names
+        names = self.pset_qto.get_applicable_names("IfcMaterial", "concrete")
+        assert "Pset_MaterialConcrete" in names

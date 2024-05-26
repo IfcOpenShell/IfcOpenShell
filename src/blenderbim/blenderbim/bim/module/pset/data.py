@@ -61,6 +61,15 @@ class Data:
             )
         return sorted(results, key=lambda v: v["Name"])
 
+    @classmethod
+    def format_pset_enum(cls, psets):
+        enum_items = []
+        version = tool.Ifc.get_schema()
+        for pset in psets:
+            doc = ifcopenshell.util.doc.get_property_set_doc(version, pset.Name) or {}
+            enum_items.append((pset.Name, pset.Name, doc.get("description", "")))
+        return enum_items
+
 
 class ObjectPsetsData(Data):
     data = {}
@@ -114,15 +123,6 @@ class ObjectPsetsData(Data):
         )
         return cls.format_pset_enum(qtos)
 
-    @classmethod
-    def format_pset_enum(cls, psets):
-        enum_items = []
-        version = tool.Ifc.get_schema()
-        for pset in psets:
-            doc = ifcopenshell.util.doc.get_property_set_doc(version, pset.Name) or {}
-            enum_items.append((pset.Name, pset.Name, doc.get("description", "")))
-        return enum_items
-
 
 class ObjectQtosData(Data):
     data = {}
@@ -165,8 +165,25 @@ class MaterialPsetsData(Data):
         cls.data = {
             "ifc_definition_id": ifc_definition_id,
             "psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id)),
+            "pset_name": cls.pset_name(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def pset_name(cls):
+        props = bpy.context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index]
+            if material.ifc_definition_id:
+                material = tool.Ifc.get().by_id(material.ifc_definition_id)
+                category = getattr(material, "Category", None) or None
+                psets = blenderbim.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
+                psetnames = cls.format_pset_enum(psets)
+                assigned_names = ifcopenshell.util.element.get_psets(
+                    material, psets_only=True, should_inherit=False
+                ).keys()
+                return [p for p in psetnames if p[0] not in assigned_names]
+        return []
 
 
 class MaterialSetPsetsData(Data):
