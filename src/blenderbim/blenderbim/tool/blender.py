@@ -49,22 +49,30 @@ class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
+
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
+
+        
         area = tool.Blender.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
+
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
-                if a.type == "VIEW_3D":
-                    override = bpy.context.copy()
-                    override["area"] = a
-                    bpy.ops.view3d.localview(override)
-            bpy.context.scene.camera = obj
-            bpy.ops.view3d.localview(override)
+                if a.type == 'VIEW_3D':
+                    override = {'area': a, 'region': a.regions[-1], 'space': a.spaces[0], 'scene': bpy.context.scene}
+                    with bpy.context.temp_override(**override):
+                        bpy.ops.view3d.localview()
+                    bpy.context.scene.camera = obj
+
         else:
             bpy.context.scene.camera = obj
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+
+        area.spaces[0].region_3d.view_perspective = 'CAMERA'
+
+
+
 
     @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> Any:
