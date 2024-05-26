@@ -79,7 +79,7 @@ def register():
 
 def unregister():
     del bpy.types.Object.PsetProperties
-    del bpy.types.Object.MaterialPsetProperties
+    del bpy.types.Scene.MaterialPsetProperties
     del bpy.types.Object.MaterialSetPsetProperties
     del bpy.types.Object.MaterialSetItemPsetProperties
     del bpy.types.Scene.TaskPsetProperties
