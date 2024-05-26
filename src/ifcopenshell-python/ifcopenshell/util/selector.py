@@ -371,6 +371,7 @@ def set_element_value(
         elif key == "class":
             if element.is_a().lower() != value.lower():
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
+            return
         elif key == "id":
             return
         elif key == "classification":
