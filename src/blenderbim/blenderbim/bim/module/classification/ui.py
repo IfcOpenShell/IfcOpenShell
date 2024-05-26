@@ -118,7 +118,6 @@ class BIM_PT_classifications(Panel):
 class ReferenceUI:
     def draw_ui(self, context):
         obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
         self.sprops = context.scene.BIMClassificationProperties
         self.bprops = context.scene.BIMBSDDProperties
         self.props = obj.BIMClassificationReferenceProperties
@@ -295,22 +294,25 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
     bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "material"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_materials"
 
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get():
             return False
-        try:
-            return bool(context.active_object.active_material.BIMObjectProperties.ifc_definition_id)
-        except:
-            return False
+        props = context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index]
+            if material.ifc_definition_id:
+                return True
+        return False
 
     def draw(self, context):
         if not MaterialClassificationsData.is_loaded:
             MaterialClassificationsData.load()
         self.data = MaterialClassificationsData
-        self.obj = context.active_object.active_material.name
+        self.obj = ""
         self.obj_type = "Material"
         self.draw_ui(context)
 

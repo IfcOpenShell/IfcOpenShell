@@ -309,7 +309,7 @@ class BIM_PT_material_psets(Panel):
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = ""
         op.obj_type = "Material"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
