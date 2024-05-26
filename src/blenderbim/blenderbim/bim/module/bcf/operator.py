@@ -938,7 +938,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
-        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions or []}
+        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []}
 
         if viewpoint.visualization_info.components.visibility.default_visibility:
             old = context.area.type
@@ -958,11 +958,13 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             if objs:
                 old = context.area.type
                 context.area.type = "VIEW_3D"
+                bpy.ops.object.hide_view_clear()
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = objs[0]
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
                 with context.temp_override(**context_override):
                     bpy.ops.object.hide_view_set(unselected=True)
+                    bpy.data.objects["Viewpoint"].hide_set(False)
                 context.area.type = old
 
         if viewpoint.visualization_info.components.view_setup_hints:
@@ -1000,6 +1002,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             obj = IfcStore.get_element(global_id)
             if obj:
                 obj.select_set(True)
+                obj.hide_set(False)
 
     def set_colours(self, viewpoint):
         global_id_colours = {}
