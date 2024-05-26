@@ -23,7 +23,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute, StrProperty
-from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData
+from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
 from blenderbim.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -89,12 +89,9 @@ def get_object_pset_name(self, context):
 
 
 def get_material_pset_names(self, context):
-    global psetnames
-    ifc_class = "IfcMaterial"
-    if ifc_class not in psetnames:
-        psets = blenderbim.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
-        psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
-    return psetnames[ifc_class]
+    if not MaterialPsetsData.is_loaded:
+        MaterialPsetsData.load()
+    return MaterialPsetsData.data["pset_name"]
 
 
 def get_material_set_pset_names(self, context):
