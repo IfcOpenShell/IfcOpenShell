@@ -421,8 +421,8 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
     :param unit_type: The type of unit, taken from the list of IFC unit types,
         such as "LENGTHUNIT".
     :type unit_type: str
-    :return: The IFC unit entity, or nothing if there is no default project unit
-        defined.
+    :return: The IFC unit entity, or nothing if there is no default project
+        unit defined.
     :rtype: Union[ifcopenshell.entity_instance, None]
     """
     unit_assignment = get_unit_assignment(ifc_file)
@@ -435,6 +435,20 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
 def get_property_unit(
     prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file
 ) -> Union[ifcopenshell.entity_instance, None]:
+    """Gets the unit definition of a property or quantity
+
+    Properties and quantities in psets and qtos can be associated with a unit.
+    This unit may be defined at the property itself explicitly, or if not
+    specified, fallback to the project default.
+
+    :param prop: The property instance. You can fetch this via the instance ID
+        if doing :func:`ifcopenshell.util.element.get_psets` with
+        ``verbose=True``.
+    :param ifc_file: The IFC file being used. This is necessary to check
+        default project units.
+    :return: The IFC unit entity, or nothing if there is no default project
+        unit defined.
+    """
     unit = getattr(prop, "Unit", None)
     if unit:
         return unit
@@ -488,6 +502,16 @@ def get_property_unit(
 
 
 def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
+    """Get the IFC measure class for a unit type.
+
+    IFC has specific classes used to measure different units. An example of an
+    IFC measure class is ``IfcLengthMeasure``. An example of the correlating
+    unit type (i.e. the IfcUnitEnum) is ``LENGTHUNIT``.
+
+    The inverse function of this is :func:`get_measure_unit_type`
+
+    :param unit_type: A string chosen from IfcUnitEnum, such as LENGTHUNIT
+    """
     if unit_type == "USERDEFINED":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "IfcNumericMeasure"
@@ -495,6 +519,20 @@ def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
 
 
 def get_measure_unit_type(measure_class: MEASURE_CLASS) -> str:
+    """Get the unit type of an IFC measure class
+
+    IFC has different unit types which can be associated with units (e.g. SI
+    units, imperial units, derived units, etc). An example of a unit type (i.e.
+    an IfcUnitEnum) is ``LENGTHUNIT``. An example of the correlating measure
+    class used to store length data is ``IfcLengthMeasure``.
+
+    The inverse fucntion of this is :func:`get_unit_measure_class`
+
+    :param measure_class: The measure class, such as ``IfcLengthMeasure``. If
+        you have an ``IfcPropertySingleValue``, you can get this using
+        ``prop.NominalValue.is_a()``.
+    :return: The unit type, as an uppercase value of IfcUnitEnum.
+    """
     if measure_class == "IfcNumericMeasure":
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/71
         return "USERDEFINED"
