@@ -127,7 +127,7 @@ three ways you can do so:
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
     "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expresions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regexone.com/>`_."
 
 Getting element values
 ----------------------
@@ -204,7 +204,7 @@ do so:
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
     "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expresions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regexone.com/>`_."
 
 Formatting
 ----------
