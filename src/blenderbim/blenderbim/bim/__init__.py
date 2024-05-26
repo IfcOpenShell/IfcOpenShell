@@ -154,9 +154,10 @@ classes = [
     ui.BIM_PT_tab_representations,
     ui.BIM_PT_tab_geometric_relationships,
     ui.BIM_PT_tab_parametric_geometry,
-    ui.BIM_PT_tab_profiles,
+    ui.BIM_PT_tab_object_materials,
     ui.BIM_PT_tab_materials,
     ui.BIM_PT_tab_styles,
+    ui.BIM_PT_tab_profiles,
     # Drawings and documents
     ui.BIM_PT_tab_sheets,
     ui.BIM_PT_tab_drawings,
