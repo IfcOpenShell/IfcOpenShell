@@ -1625,11 +1625,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
 
     @classmethod
-    def get_drawing_elements(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    def get_drawing_elements(
+        cls, drawing: ifcopenshell.entity_instance, ifc_file: Optional[ifcopenshell.file] = None
+    ) -> set[ifcopenshell.entity_instance]:
         """returns a set of elements that are included in the drawing"""
-        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            ifc_file = tool.Ifc.get()
+            elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
+        else:
+            # This can probably be smarter
+            elements = set(ifc_file.by_type("IfcElement"))
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
-        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
             elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
