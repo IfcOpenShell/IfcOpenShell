@@ -122,7 +122,8 @@ class BIM_PT_object_material(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_materials"
+    bl_parent_id = "BIM_PT_tab_object_materials"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):

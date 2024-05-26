@@ -741,6 +741,21 @@ class BIM_PT_tab_parametric_geometry(Panel):
         pass
 
 
+class BIM_PT_tab_object_materials(Panel):
+    bl_label = "Object Materials"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_order = 1
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_materials(Panel):
     bl_label = "Materials"
     bl_space_type = "PROPERTIES"
