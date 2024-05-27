@@ -132,7 +132,15 @@ class BIMResourceProperties(PropertyGroup):
     is_loaded: BoolProperty(name="Is Editing")
     active_resource_time_id: IntProperty(name="Active Resource Usage Id")
     resource_time_attributes: CollectionProperty(name="Resource Usage Attributes", type=Attribute)
-    editing_resource_type: StringProperty(name="Editing Resource Type")
+    editing_resource_type: EnumProperty(
+        name="Editing Resource Type",
+        items=(
+            ("ATTRIBUTES", "", ""),
+            ("USAGE", "", ""),
+            ("COSTS", "", ""),
+            ("QUANTITY", "", ""),
+        ),
+    )
     cost_types: EnumProperty(
         items=[
             ("FIXED", "Fixed", "The cost value is a fixed number"),
