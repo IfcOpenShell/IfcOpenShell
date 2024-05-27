@@ -110,7 +110,7 @@ def update_relating_array_from_object(self, context):
     self.relating_array_object = parent_of_relating_array_object
     bpy.ops.bim.enable_editing_array(item=self.is_editing)
 
-    return self.relating_array_object
+    return
 
 
 def is_object_array_applicable(self, obj):
