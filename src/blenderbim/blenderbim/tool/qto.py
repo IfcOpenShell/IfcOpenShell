@@ -78,7 +78,8 @@ class Qto(blenderbim.core.tool.Qto):
         applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
             product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
         )
-        return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name and "Base" in qto_name), None)
+        # See https://github.com/buildingSMART/IFC4.3.x-development/issues/851 for anomalies in Qto naming
+        return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name), None)
 
     @classmethod
     def get_new_calculated_quantity(cls, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
