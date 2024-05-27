@@ -593,17 +593,20 @@ def generate_gantt_chart(sequence: tool.Sequence, work_schedule: ifcopenshell.en
     sequence.generate_gantt_browser_chart(json, work_schedule)
 
 
-def load_product_related_tasks(sequence: tool.Sequence, product: ifcopenshell.entity_instance) -> Union[None, str]:
+def load_product_related_tasks(
+    sequence: tool.Sequence, product: ifcopenshell.entity_instance
+) -> Union[list[ifcopenshell.entity_instance], str]:
     filter_by_schedule = sequence.is_filter_by_active_schedule()
     if filter_by_schedule:
         work_schedule = sequence.get_active_work_schedule()
         if work_schedule:
             task_inputs, task_ouputs = sequence.get_tasks_for_product(product, work_schedule)
         else:
-            return "No active work schedule"
+            return "No active work schedule."
     else:
         task_inputs, task_ouputs = sequence.get_tasks_for_product(product)
     sequence.load_product_related_tasks(task_inputs, task_ouputs)
+    return task_inputs + task_ouputs
 
 
 def reorder_task_nesting(

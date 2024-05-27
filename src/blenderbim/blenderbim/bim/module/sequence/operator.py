@@ -1409,9 +1409,13 @@ class LoadProductTasks(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        core.load_product_related_tasks(
+        result = core.load_product_related_tasks(
             tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
         )
+        if isinstance(result, str):
+            self.report({"INFO"}, result)
+        else:
+            self.report({"INFO"}, f"{len(result)} product tasks loaded.")
         return {"FINISHED"}
 
 
