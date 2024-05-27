@@ -535,6 +535,20 @@ class BIM_PT_tab_status(Panel):
         pass
 
 
+class BIM_PT_tab_qto(Panel):
+    bl_label = "Quantity Take-off"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_resources(Panel):
     bl_label = "Resources"
     bl_space_type = "PROPERTIES"

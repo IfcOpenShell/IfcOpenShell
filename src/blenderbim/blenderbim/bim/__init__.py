@@ -170,6 +170,7 @@ classes = [
     ui.BIM_PT_tab_structural,
     # Construction scheduling
     ui.BIM_PT_tab_status,
+    ui.BIM_PT_tab_qto,
     ui.BIM_PT_tab_resources,
     ui.BIM_PT_tab_cost,
     ui.BIM_PT_tab_sequence,
