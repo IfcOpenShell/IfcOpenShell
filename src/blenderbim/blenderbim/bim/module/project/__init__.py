@@ -76,6 +76,11 @@ classes = (
     gizmo.ClippingPlane,
 )
 
+if bpy.app.version >= (4, 1, 0):
+    classes += (
+        operator.IFCFileHandlerOperator,
+        operator.BIM_FH_import_ifc,
+    )
 
 addon_keymaps = []
 

@@ -2085,3 +2085,46 @@ class BIM_OT_load_clipping_planes(bpy.types.Operator):
             obj.location = values["location"]
             obj.rotation_euler = values["rotation"]
         return {"FINISHED"}
+
+
+if bpy.app.version >= (4, 1, 0):
+
+    class IFCFileHandlerOperator(bpy.types.Operator):
+        bl_idname = "bim.load_project_file_handler"
+        bl_label = "Import .ifc file"
+        bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+        directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+        files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
+
+        def invoke(self, context, event):
+            # Keeping code in .invoke() as we'll probably add some
+            # popup windows later.
+
+            # `files` contain only .ifc files.
+            filepath = Path(self.directory)
+            # If user is just drag'n'dropping a single file -> load it as a new project,
+            # if they're holding ALT -> link the file/files to the current project.
+            if event.alt:
+                # Passing self.files directly results in TypeError.
+                serialized_files = [{"name": f.name} for f in self.files]
+                return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
+            else:
+                if len(self.files) == 1:
+                    return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
+                else:
+                    self.report(
+                        {"INFO"},
+                        "To link multiple IFC files hold ALT while drag'n'dropping them.",
+                    )
+                    return {"FINISHED"}
+
+    class BIM_FH_import_ifc(bpy.types.FileHandler):
+        bl_label = "IFC File Handler"
+        bl_import_operator = IFCFileHandlerOperator.bl_idname
+        bl_file_extensions = ".ifc"
+
+        # FileHandler won't work without poll_drop defined.
+        @classmethod
+        def poll_drop(cls, context):
+            return True
