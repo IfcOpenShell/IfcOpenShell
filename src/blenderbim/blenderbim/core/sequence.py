@@ -533,20 +533,6 @@ def go_to_task(sequence: tool.Sequence, task: ifcopenshell.entity_instance) -> U
         return "Work schedule is not active"
 
 
-def highlight_product_related_task(sequence: tool.Sequence, spatial: tool.Spatial, product_type=None) -> None:
-    products = spatial.get_selected_products()
-    if products:
-        if product_type == "Output":
-            tasks = sequence.find_related_output_tasks(products[0])
-        elif product_type == "Input":
-            tasks = sequence.find_related_input_tasks(products[0])
-        for task in tasks:
-            work_schedule = sequence.get_work_schedule(task)
-            is_work_schedule_active = sequence.is_work_schedule_active(work_schedule)
-            if is_work_schedule_active:
-                sequence.go_to_task(task)
-
-
 def guess_date_range(sequence: tool.Sequence, work_schedule: ifcopenshell.entity_instance) -> None:
     start, finish = sequence.guess_date_range(work_schedule)
     sequence.update_visualisation_date(start, finish)
