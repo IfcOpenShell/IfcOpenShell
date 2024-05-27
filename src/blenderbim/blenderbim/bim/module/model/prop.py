@@ -94,7 +94,8 @@ def update_relating_array_from_object(self, context):
     if not element:
         return
     # If a child is selected, the following assigns the parent to the relating_array_object
-    parent_globalid = element.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[0].NominalValue.wrappedValue
+    pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+    parent_globalid = pset["Parent"]
     parent_element = tool.Ifc.get().by_guid(parent_globalid)
     parent_of_relating_array_object = tool.Ifc.get_object(parent_element)
     #The following error handling is used to break out when an array parent is selected
