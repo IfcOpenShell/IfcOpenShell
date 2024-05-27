@@ -88,24 +88,16 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         relating_obj = props.relating_array_object
         
         if relating_obj:
-            relating_props = relating_obj.BIMArrayProperties
-            
-            props.count = relating_props.count
-            props.x = relating_props.x
-            props.y = relating_props.y
-            props.z = relating_props.z
-            props.use_local_space = relating_props.use_local_space
-            props.sync_children = relating_props.sync_children
-            props.method = relating_props.method
-        else:
-            data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            props.x = data["x"] * si_conversion
-            props.y = data["y"] * si_conversion
-            props.z = data["z"] * si_conversion
-            props.use_local_space = data.get("use_local_space", False)
-            props.sync_children = data.get("sync_children", False)
-            props.method = data.get("method", "OFFSET")
+            element = tool.Ifc.get_entity(relating_obj)
+        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
+        props.count = data["count"]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        props.x = data["x"] * si_conversion
+        props.y = data["y"] * si_conversion
+        props.z = data["z"] * si_conversion
+        props.use_local_space = data.get("use_local_space", False)
+        props.sync_children = data.get("sync_children", False)
+        props.method = data.get("method", "OFFSET")
         
         props.is_editing = self.item
         
