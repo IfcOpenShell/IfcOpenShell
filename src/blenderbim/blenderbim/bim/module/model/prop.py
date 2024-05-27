@@ -117,7 +117,7 @@ def is_object_array_applicable(self, obj):
     element = tool.Ifc.get_entity(obj)
     if not element:
         return False
-    return element.IsDefinedBy[0].RelatingPropertyDefinition.Name == "BBIM_Array"
+    return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
 
 
