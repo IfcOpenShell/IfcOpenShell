@@ -195,18 +195,19 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
-    should_hide_empty_props: BoolProperty(name="Should Hide Empty Properties", default=True)
-    should_setup_workspace: BoolProperty(name="Should Setup Workspace Layout for BIM", default=True)
+    should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
+    activate_workspace: BoolProperty(name="Activate BIM Workspace on Startup", default=True)
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
     should_play_chaching_sound: BoolProperty(
-        name="Should Make A Cha-Ching Sound When Project Costs Updates", default=False
+        name="Play A Cha-Ching Sound When Project Costs Updates", default=False
     )
-    lock_grids_on_import: BoolProperty(name="Should Lock Grids By Default", default=True)
-    spatial_elements_unselectable: BoolProperty(name="Should Make Spatial Elements Unselectable By Default", default=True)
+    lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
+    spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
         name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
@@ -282,6 +283,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "should_hide_empty_props")
         row = layout.row()
         row.prop(self, "should_setup_workspace")
+        row = layout.row()
+        row.prop(self, "activate_workspace")
         row = layout.row()
         row.prop(self, "should_setup_toolbar")
         row = layout.row()
