@@ -1683,20 +1683,11 @@ class OverrideModeSetObject(bpy.types.Operator):
             apply_openings=True,
         )
 
-    def draw(self, context):
-        if self.is_valid:
-            row = self.layout.row()
-            row.prop(self, "should_save")
-        else:
-            row = self.layout.row()
-            row.label(text="No Geometry Found: Object will revert to previous state.")
-
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
         self.is_valid = True
-        self.should_save = True
 
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
 
@@ -1758,8 +1749,6 @@ class OverrideModeSetObject(bpy.types.Operator):
                 else:
                     tool.Ifc.finish_edit(obj)
 
-        if self.edited_objs:
-            return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
 
 
