@@ -301,7 +301,8 @@ def load_post(scene):
 
     if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
         if "BIM" in bpy.data.workspaces:
-            bpy.context.window.workspace = bpy.data.workspaces["BIM"]
+            if bpy.context.preferences.addons["blenderbim"].preferences.activate_workspace:
+                bpy.context.window.workspace = bpy.data.workspaces["BIM"]
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
