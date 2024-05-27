@@ -755,9 +755,11 @@ class BIM_UL_product_cost_items(UIList):
 class BIM_PT_Costing_Tools(Panel):
     bl_label = "5D Tools"
     bl_idname = "BIM_PT_Costing_Tools"
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "4D/5D Toolkit"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_cost"
 
     def draw(self, context):
         self.props = context.scene.BIMCostProperties

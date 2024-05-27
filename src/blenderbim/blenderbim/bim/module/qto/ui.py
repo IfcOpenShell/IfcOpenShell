@@ -24,9 +24,11 @@ class BIM_PT_qto_utilities(bpy.types.Panel):
     bl_idname = "BIM_PT_qto_utilities"
     bl_label = "Quantity Take-off"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_qto"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not QtoData.is_loaded:
