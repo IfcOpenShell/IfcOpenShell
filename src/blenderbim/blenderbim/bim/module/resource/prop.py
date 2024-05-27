@@ -37,13 +37,29 @@ from bpy.props import (
     CollectionProperty,
 )
 
+quantitytypes_enum = {}
 
-quantitytypes_enum = []
+
+def setup_quantity_types_enum():
+    # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H
+    resources = {
+        "IfcCrewResource": ("IfcQuantityTime",),
+        "IfcLaborResource": ("IfcQuantityTime",),
+        "IfcSubContractResource": ("IfcQuantityTime",),
+        "IfcConstructionEquipmentResource": ("IfcQuantityTime",),
+        "IfcConstructionMaterialResource": (
+            "IfcQuantityVolume",
+            "IfcQuantityArea",
+            "IfcQuantityLength",
+            "IfcQuantityWeight",
+        ),
+        "IfcConstructionProductResource": ("IfcQuantityCount",),
+    }
+    for resource, quantities in resources.items():
+        quantitytypes_enum[resource] = [(q, q, "") for q in quantities]
 
 
-def purge():
-    global quantitytypes_enum
-    quantitytypes_enum = []
+setup_quantity_types_enum()
 
 
 def updateResourceName(self, context):
@@ -63,15 +79,7 @@ def updateResourceName(self, context):
 
 
 def get_quantity_types(self, context):
-    global quantitytypes_enum
-    if len(quantitytypes_enum) == 0 and IfcStore.get_schema():
-        quantitytypes_enum.extend(
-            [
-                (t.name(), t.name(), "")
-                for t in IfcStore.get_schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
-            ]
-        )
-    return quantitytypes_enum
+    return quantitytypes_enum[self.active_resource_class]
 
 
 def update_active_resource_index(self, context):
@@ -88,9 +96,7 @@ def updateResourceUsage(self, context):
     resource = tool.Ifc.get().by_id(self.ifc_definition_id)
     if resource.Usage and resource.Usage.ScheduleUsage == self.schedule_usage:
         return
-    tool.Resource.run_edit_resource_time(resource, attributes={
-        "ScheduleUsage": self.schedule_usage
-    })
+    tool.Resource.run_edit_resource_time(resource, attributes={"ScheduleUsage": self.schedule_usage})
     tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
@@ -127,6 +133,7 @@ class BIMResourceProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     active_resource_index: IntProperty(name="Active Resource Index", update=update_active_resource_index)
     active_resource_id: IntProperty(name="Active Resource Id")
+    active_resource_class: StringProperty(name="Active Resource Type")
     contracted_resources: StringProperty(name="Contracted Resources", default="[]")
     is_resource_update_enabled: BoolProperty(name="Is Resource Update Enabled", default=True)
     is_loaded: BoolProperty(name="Is Editing")

@@ -264,6 +264,7 @@ class Resource(blenderbim.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProperties
         props.active_resource_id = resource.id()
         props.editing_resource_type = "QUANTITY"
+        props.active_resource_class = resource.is_a()
 
     @classmethod
     def enable_editing_resource_quantity(cls, resource_quantity: ifcopenshell.entity_instance) -> None:
