@@ -146,7 +146,7 @@ class Cityjson2ifc:
         # Georeferencing
         self.properties["local_translation"] = None
         self.properties["local_scale"] = None
-        if not self.city_model.is_transformed:
+        if self.city_model.is_transformed:
             self.properties["local_scale"] = self.city_model.transform["scale"]
             local_translation = self.city_model.transform["translate"]
             self.properties["local_translation"] = {
