@@ -296,10 +296,10 @@ def load_post(scene):
     ifcopenshell.api.owner.settings.get_application = get_application
     AuthoringData.type_thumbnails = {}
 
-    if not bpy.context.preferences.addons["blenderbim"].preferences.should_setup_toolbar:
+    if not bpy.context.preferences.addons["blenderbim"].preferences.setup_toolbar:
         tool.Blender.unregister_toolbar()
 
-    if bpy.context.preferences.addons["blenderbim"].preferences.should_setup_workspace:
+    if bpy.context.preferences.addons["blenderbim"].preferences.setup_workspace:
         if "BIM" in bpy.data.workspaces:
             bpy.context.window.workspace = bpy.data.workspaces["BIM"]
         else:
