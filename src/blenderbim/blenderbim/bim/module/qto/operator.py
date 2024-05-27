@@ -170,6 +170,7 @@ class QuantifyObjects(bpy.types.Operator):
             ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={props.prop_name: result})
         return {"FINISHED"}
 
+
 class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_objects_base_qto"
     bl_label = "Assign IFC Object Quantity Set"
@@ -181,8 +182,9 @@ class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.assign_objects_base_qto(tool.Ifc, tool.Qto, selected_objects = context.selected_objects)
+        core.assign_objects_base_qto(tool.Ifc, tool.Qto, selected_objects=context.selected_objects)
         return {"FINISHED"}
+
 
 class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_all_quantities"
@@ -195,5 +197,7 @@ class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.calculate_objects_base_quantities(tool.Ifc, tool.Cost, tool.Qto, QtoCalculator(), selected_objects = context.selected_objects)
+        core.calculate_objects_base_quantities(
+            tool.Ifc, tool.Cost, tool.Qto, QtoCalculator(), selected_objects=context.selected_objects
+        )
         return {"FINISHED"}
