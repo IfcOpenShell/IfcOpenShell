@@ -197,6 +197,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
     hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
     setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
+    switch_workspace: BoolProperty(name="Switch to BIM Workspace on Startup", default=True)
     setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
@@ -282,6 +283,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "hide_empty_props")
         row = layout.row()
         row.prop(self, "setup_workspace")
+        row = layout.row()
+        row.prop(self, "switch_workspace")
         row = layout.row()
         row.prop(self, "setup_toolbar")
         row = layout.row()
