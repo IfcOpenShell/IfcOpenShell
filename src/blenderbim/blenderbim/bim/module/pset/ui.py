@@ -140,7 +140,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
         else:
             has_props_displayed = False
             for prop in pset["Properties"]:
-                if context.preferences.addons["blenderbim"].preferences.hide_empty_props and (
+                if context.preferences.addons["blenderbim"].preferences.should_hide_empty_props and (
                     prop["NominalValue"] is None or prop["NominalValue"] == ""
                 ):
                     continue

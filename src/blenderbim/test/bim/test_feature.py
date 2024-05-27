@@ -79,7 +79,7 @@ def an_empty_blender_session():
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
     bpy.context.scene.BIMProjectProperties.template_file = "0"
-    bpy.context.preferences.addons["blenderbim"].preferences.enable_chaching_sound = False
+    bpy.context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound = False
 
 
 @given("an empty IFC project")

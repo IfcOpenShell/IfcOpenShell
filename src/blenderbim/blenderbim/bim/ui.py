@@ -195,15 +195,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     pdf_command: StringProperty(name="PDF Command", description='E.g. [["firefox", "path"]]')
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
     openlca_port: IntProperty(name="OpenLCA IPC Port", default=8080)
-    hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
-    setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
-    switch_workspace: BoolProperty(name="Switch to BIM Workspace on Startup", default=True)
-    setup_toolbar: BoolProperty(
+    should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
+    should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
+    activate_workspace: BoolProperty(name="Activate BIM Workspace on Startup", default=True)
+    should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
-    enable_chaching_sound: BoolProperty(
+    should_play_chaching_sound: BoolProperty(
         name="Play A Cha-Ching Sound When Project Costs Updates", default=False
     )
     lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
@@ -280,15 +280,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.prop(self, "openlca_port")
         row = layout.row()
-        row.prop(self, "hide_empty_props")
+        row.prop(self, "should_hide_empty_props")
         row = layout.row()
-        row.prop(self, "setup_workspace")
+        row.prop(self, "should_setup_workspace")
         row = layout.row()
-        row.prop(self, "switch_workspace")
+        row.prop(self, "activate_workspace")
         row = layout.row()
-        row.prop(self, "setup_toolbar")
+        row.prop(self, "should_setup_toolbar")
         row = layout.row()
-        row.prop(self, "enable_chaching_sound")
+        row.prop(self, "should_play_chaching_sound")
         row = layout.row()
         row.prop(self, "lock_grids_on_import")
         row = layout.row()

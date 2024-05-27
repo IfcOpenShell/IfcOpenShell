@@ -96,7 +96,7 @@ class Cost(blenderbim.core.tool.Cost):
 
     @classmethod
     def play_sound(cls):
-        if bpy.context.preferences.addons["blenderbim"].preferences.enable_chaching_sound:
+        if bpy.context.preferences.addons["blenderbim"].preferences.should_play_chaching_sound:
             cls.play_chaching_sound()  # lol
 
     @classmethod
