@@ -100,8 +100,8 @@ def update_relating_array_from_object(self, context):
     parent_of_relating_array_object = tool.Ifc.get_object(parent_element)
     #The following error handling is used to break out when an array parent is selected
     try:
-        element.IsDefinedBy[0].RelatingPropertyDefinition.HasProperties[1].NominalValue.wrappedValue
-    except AttributeError:
+        pset['Data']
+    except Exception:
         pass
     else:
         bpy.ops.bim.enable_editing_array(item=self.is_editing)
