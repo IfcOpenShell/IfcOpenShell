@@ -88,6 +88,8 @@ def update_type_page(self, context):
 
 
 def update_relating_array_from_object(self, context):
+    bpy.ops.bim.enable_editing_array(item=self.is_editing)
+
     if self.relating_array_object is None:
         return
     element = tool.Ifc.get_entity(self.relating_array_object)
