@@ -79,6 +79,7 @@ class Qto(blenderbim.core.tool.Qto):
             product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
         )
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/851 for anomalies in Qto naming
+        # Should be in sync with cls.get_base_qto.
         applicable_qto: Union[str, None] = None
         for qto_name in applicable_qto_names:
             # No need for "Qto_" check since we use qto_only=True.
@@ -181,14 +182,24 @@ class Qto(blenderbim.core.tool.Qto):
     def get_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if not hasattr(product, "IsDefinedBy"):
             return
+        # Should be in sync with cls.get_applicable_base_quantity_name.
+        base_qto_definition = None
+        base_qto_definition_name: Union[str, None] = None
         for rel in product.IsDefinedBy or []:
-            if not (
-                rel.is_a("IfcRelDefinesByProperties")
-                and "Base" in rel.RelatingPropertyDefinition.Name
-                and "Qto_" in rel.RelatingPropertyDefinition.Name
-            ):
+            definition = rel.RelatingPropertyDefinition
+            if not rel.is_a("IfcRelDefinesByProperties"):
                 continue
-            return rel.RelatingPropertyDefinition
+            definition = rel.RelatingPropertyDefinition
+            definition_name = definition.Name
+            if "Qto_" not in definition_name:
+                continue
+            if "Base" in definition_name:
+                return definition
+            if base_qto_definition and "BodyGeometryValidation" not in base_qto_definition_name:
+                continue
+            base_qto_definition = definition
+            base_qto_definition_name = definition_name
+        return base_qto_definition
 
     @classmethod
     def get_related_cost_item_quantities(cls, product: ifcopenshell.entity_instance) -> list[dict]:

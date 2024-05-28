@@ -226,7 +226,7 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         assert subject.get_base_qto(product).id() == pset_qto.get_info()["id"]
         assert subject.get_base_qto(product).Name == pset_qto.Name
 
-    def test_isempty(self):
+    def test_no_quantities(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
@@ -234,6 +234,46 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         tool.Ifc.link(wall, wall_obj)
         product = tool.Ifc.get_entity(wall_obj)
         assert not subject.get_base_qto(product) == True
+
+    def test_anomaly_named_quantities(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingElementProxy")
+        tool.Ifc.run(
+            "pset.add_qto",
+            product=product,
+            name="EQto_BodyGeometryValidation",
+        )
+        tool.Ifc.run(
+            "pset.add_qto",
+            product=product,
+            name="Qto_BuildingElementProxyQuantities",
+        )
+        # Prioritized over Qto_BodyGeometryValidation.
+        base_qto_name = subject.get_base_qto(product).Name
+        assert base_qto_name == "Qto_BuildingElementProxyQuantities"
+        # Ensure methods are in sync.
+        assert base_qto_name == subject.get_applicable_base_quantity_name(product)
+
+    def test_prioritize_base_over_other_qto(self):
+        ifc = ifcopenshell.file(schema="IFC4X3")
+        tool.Ifc.set(ifc)
+        product = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        tool.Ifc.run(
+            "pset.add_qto",
+            product=product,
+            name="Qto_BodyGeometryValidation",
+        )
+        tool.Ifc.run(
+            "pset.add_qto",
+            product=product,
+            name="Qto_WallBaseQuantities",
+        )
+        # Prioritized over Qto_BodyGeometryValidation.
+        base_qto_name = subject.get_base_qto(product).Name
+        assert base_qto_name == "Qto_WallBaseQuantities"
+        # Ensure methods are in sync.
+        assert base_qto_name == subject.get_applicable_base_quantity_name(product)
 
 
 class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
