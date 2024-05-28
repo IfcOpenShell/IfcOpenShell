@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.pset
 import test.bim.bootstrap
 import blenderbim.core.tool
 import blenderbim.core.root
