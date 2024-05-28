@@ -575,3 +575,5 @@ mapper = {
         'OvertimeWork' : None,
     },
 }
+
+mapper["EQto_BodyGeometryValidation"] = mapper["Qto_BodyGeometryValidation"]
