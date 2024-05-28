@@ -291,9 +291,10 @@ def filter_elements(
     :type ifc_file: ifcopenshell.file
     :param query: Query to execute
     :type query: str
-    :param elements: Base set of IFC elements for the query.
-        If provided, new elements found for the current query will be added to `elements`.
-        Elements explicitly excluded in the `query` will also be excluded from `elements`
+    :param elements: Base set of IFC elements for the query. If not provided,
+        all elements in the IFC are queried. If provided, the query will be
+        applied to this set of elements, so the result will be a subset of
+        elements.
     :type elements: set[ifcopenshell.entity_instance], optional
     :param edit_in_place: If `True`, mutate the provided `elements` in place. Defaults to `False`
     :type edit_in_place: bool
@@ -497,11 +498,17 @@ def set_element_value(
         f"Failed to set value for element '{original_element}' with query '{query}' (invalid or unsupported query)."
     )
 
+
 class FacetTransformer(lark.Transformer):
     def __init__(self, ifc_file: ifcopenshell.file, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         self.file = ifc_file
         self.results = []
-        self.elements = set() if elements is None else elements
+        if elements is None:
+            self.base_elements = None
+            self.elements = set()
+        else:
+            self.base_elements = elements.copy()
+            self.elements = set()
         self.container_parents = {}
         self.container_trees = {}
 
@@ -517,28 +524,44 @@ class FacetTransformer(lark.Transformer):
             self.elements = set()
 
     def instance(self, args):
-        if args[0].data == "globalid":
-            try:
-                self.elements.add(self.file.by_guid(args[0].children[0].value))
-            except:
-                pass
+        if self.base_elements is None:
+            if args[0].data == "globalid":
+                try:
+                    self.elements.add(self.file.by_guid(args[0].children[0].value))
+                except:
+                    pass
+            else:
+                try:
+                    self.elements.remove(self.file.by_guid(args[1].children[0].value))
+                except:
+                    pass
         else:
-            try:
-                self.elements.remove(self.file.by_guid(args[1].children[0].value))
-            except:
-                pass
+            if args[0].data == "globalid":
+                self.elements |= {
+                    e for e in self.base_elements if getattr(e, "GlobalId", None) == args[0].children[0].value
+                }
+            else:
+                self.elements -= {
+                    e for e in self.base_elements if getattr(e, "GlobalId", None) == args[1].children[0].value
+                }
 
     def entity(self, args):
-        if args[0].data == "ifc_class":
-            try:
-                self.elements |= set(self.file.by_type(args[0].children[0].value))
-            except:
-                pass
+        if self.base_elements is None:
+            if args[0].data == "ifc_class":
+                try:
+                    self.elements |= set(self.file.by_type(args[0].children[0].value))
+                except:
+                    pass
+            else:
+                try:
+                    self.elements -= set(self.file.by_type(args[1].children[0].value))
+                except:
+                    pass
         else:
-            try:
-                self.elements -= set(self.file.by_type(args[1].children[0].value))
-            except:
-                pass
+            if args[0].data == "ifc_class":
+                self.elements |= {e for e in self.base_elements if e.is_a(args[0].children[0].value)}
+            else:
+                self.elements -= {e for e in self.base_elements if e.is_a(args[1].children[0].value)}
 
     def attribute(self, args):
         name, comparison, value = args
