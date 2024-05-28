@@ -117,6 +117,28 @@ def get_z(geometry) -> float:
     return max(z_values) - min(z_values)
 
 
+def get_max_xyz(geometry) -> float:
+    """Gets the maximum X, Y, or Z length of the geometry
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The maximum possible value out of the X, Y, and Z dimension
+    :rtype: float
+    """
+    return max(get_x(geometry), get_y(geometry), get_z(geometry))
+
+
+def get_min_xyz(geometry) -> float:
+    """Gets the minimum X, Y, or Z length of the geometry
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The minimum possible value out of the X, Y, and Z dimension
+    :rtype: float
+    """
+    return min(get_x(geometry), get_y(geometry), get_z(geometry))
+
+
 def get_shape_matrix(shape) -> MatrixType:
     """Formats the transformation matrix of a shape as a 4x4 numpy array
 
@@ -484,6 +506,19 @@ def get_side_area(
     filtered_face_indices = np.where(dot_products > normal_tol)[0]
     filtered_faces = faces[filtered_face_indices]
     return get_area_vf(vertices, filtered_faces)
+
+
+def get_max_side_area(geometry) -> float:
+    """Returns the maximum X, Y, or Z side area
+
+    See :func:`get_side_area` for how side area is calculated.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The maximum surface area from either the X, Y, or Z axis.
+    :rtype: float
+    """
+    return max(get_side_area(geometry, axis="X"), get_side_area(geometry, axis="Y"), get_side_area(geometry, axis="Z"))
 
 
 def get_footprint_area(
