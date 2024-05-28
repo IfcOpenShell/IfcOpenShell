@@ -25,41 +25,41 @@ import ifcopenshell.util.pset
 import numpy as np
 
 
-class TestFormat():
+class TestFormat:
     def test_no_formatting(self):
         assert subject.format("123") == "123"
-        assert subject.format('\"123\"') == "123"
-        assert subject.format('\"foo\"') == "foo"
+        assert subject.format('"123"') == "123"
+        assert subject.format('"foo"') == "foo"
 
     def test_string_formatting(self):
-        assert subject.format('upper(\"fOo\")') == "FOO"
-        assert subject.format('lower(\"fOo\")') == "foo"
-        assert subject.format('title(\"fOo\")') == "Foo"
-        assert subject.format('concat(\"fOo\", \"bar\")') == "fOobar"
-        assert subject.format('upper(concat(\"fOo\", \"bar\"))') == "FOOBAR"
-        assert subject.format('substr(\"foobar\", 3)') == "bar"
-        assert subject.format('substr(\"foobar\", 1, 2)') == "o"
-        assert subject.format('substr(\"foobar\", 1, -1)') == "ooba"
+        assert subject.format('upper("fOo")') == "FOO"
+        assert subject.format('lower("fOo")') == "foo"
+        assert subject.format('title("fOo")') == "Foo"
+        assert subject.format('concat("fOo", "bar")') == "fOobar"
+        assert subject.format('upper(concat("fOo", "bar"))') == "FOOBAR"
+        assert subject.format('substr("foobar", 3)') == "bar"
+        assert subject.format('substr("foobar", 1, 2)') == "o"
+        assert subject.format('substr("foobar", 1, -1)') == "ooba"
 
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"
-        assert subject.format('round(\"123\", 5)') == "125"
-        assert subject.format('number(123)') == "123"
-        assert subject.format('number(1234.56)') == "1,234.56"
+        assert subject.format('round("123", 5)') == "125"
+        assert subject.format("number(123)") == "123"
+        assert subject.format("number(1234.56)") == "1,234.56"
         assert subject.format('number(123, ".")') == "123"
-        assert subject.format('number(\"123\", ".")') == "123"
+        assert subject.format('number("123", ".")') == "123"
         assert subject.format('number(123.12, ".")') == "123.12"
         assert subject.format('number(123.12, ",")') == "123,12"
         assert subject.format('number(1234.12, ",", ".")') == "1.234,12"
-        assert subject.format('metric_length(123, 5, 2)') == "125.00"
-        assert subject.format('metric_length(123.123, 0.1, 2)') == "123.10"
-        assert subject.format('metric_length(\"123\", 5, 2)') == "125.00"
-        assert subject.format('imperial_length(1, 1)') == "1'"
-        assert subject.format('imperial_length(3.123, 1)') == "3' - 1\""
-        assert subject.format('imperial_length(3.123, 2)') == "3' - 1 1/2\""
-        assert subject.format('imperial_length(\"3.123\", 2)') == "3' - 1 1/2\""
-        assert subject.format('imperial_length(\"123.123\", 2, \"inch\", \"foot\")') == "10' - 3\""
-        assert subject.format('imperial_length(\"123.123\", 2, \"inch\", \"inch\")') == "123\""
+        assert subject.format("metric_length(123, 5, 2)") == "125.00"
+        assert subject.format("metric_length(123.123, 0.1, 2)") == "123.10"
+        assert subject.format('metric_length("123", 5, 2)') == "125.00"
+        assert subject.format("imperial_length(1, 1)") == "1'"
+        assert subject.format("imperial_length(3.123, 1)") == "3' - 1\""
+        assert subject.format("imperial_length(3.123, 2)") == "3' - 1 1/2\""
+        assert subject.format('imperial_length("3.123", 2)') == "3' - 1 1/2\""
+        assert subject.format('imperial_length("123.123", 2, "inch", "foot")') == "10' - 3\""
+        assert subject.format('imperial_length("123.123", 2, "inch", "inch")') == '123"'
 
 
 class TestGetElementValue(test.bootstrap.IFC4):
@@ -269,17 +269,19 @@ class TestFilterElements(test.bootstrap.IFC4):
     def test_using_elements_argument(self):
         wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         slab = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSlab")
+        door = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoor")
+        elements = {wall, slab}
+        results = subject.filter_elements(self.file, "IfcWall", {wall, slab})
+        assert results != elements
+        assert results == {wall}
+        elements = {wall, slab, door}
+        assert subject.filter_elements(self.file, "IfcWall, IfcSlab", elements) == {wall, slab}
 
-        # keep elements unaffected by expression
-        assert subject.filter_elements(self.file, "IfcWall", {slab}) == {wall, slab}
-
-        # filter out excluded elements
-        assert subject.filter_elements(self.file, "IfcWall, ! IfcSlab", {slab}) == {wall}
-
-        # edit_in_place to update original set
-        original_set = set()
+    def test_editing_in_place(self):
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        original_set = {wall}
         new_set = subject.filter_elements(self.file, "IfcWall", original_set, edit_in_place=True)
-        assert new_set == original_set
+        assert new_set == original_set == {wall}
 
 
 class TestSetElementValue(test.bootstrap.IFC4):
