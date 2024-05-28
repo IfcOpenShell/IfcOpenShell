@@ -89,7 +89,11 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         
         if relating_obj:
             element = tool.Ifc.get_entity(relating_obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
+            parent_globalid = ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Parent")
+            parent_element = tool.Ifc.get().by_guid(parent_globalid)
+            data = json.loads(ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array", "Data"))[self.item]
+        else:
+            data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props.count = data["count"]
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.x = data["x"] * si_conversion
