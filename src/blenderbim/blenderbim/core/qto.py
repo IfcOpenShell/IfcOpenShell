@@ -42,7 +42,7 @@ def assign_object_base_qto(ifc, qto, obj):
     )
 
 
-def calculate_objects_base_quantities(ifc, cost, qto, calculator, selected_objects):
+def calculate_all_quantities(ifc, cost, qto, calculator, selected_objects):
     if selected_objects:
         for obj in selected_objects:
             calculate_object_base_quantities(ifc, cost, qto, calculator, obj)

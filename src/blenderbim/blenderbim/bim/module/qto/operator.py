@@ -197,7 +197,34 @@ class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
         return tool.Ifc.get() and context.selected_objects
 
     def _execute(self, context):
-        core.calculate_objects_base_quantities(
+        core.calculate_all_quantities(
             tool.Ifc, tool.Cost, tool.Qto, QtoCalculator(), selected_objects=context.selected_objects
         )
+        return {"FINISHED"}
+
+
+class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.perform_quantity_take_off"
+    bl_label = "Perform Quantity Take-off"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Perform a quantity take off based of a QTO rule configuration"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get() and context.selected_objects
+
+    def _execute(self, context):
+        import ifc5d.qto
+
+        elements = set()
+        for obj in context.selected_objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                elements.add(element)
+
+        rules = ifc5d.qto.get_rules("IFC4QtoBaseQuantities")
+
+        ifc_file = tool.Ifc.get()
+        results = ifc5d.qto.quantify(ifc_file, elements, rules)
+        ifc5d.qto.edit_qtos(ifc_file, results)
         return {"FINISHED"}
