@@ -89,29 +89,6 @@ def update_type_page(self, context):
 
 def update_relating_array_from_object(self, context):
     bpy.ops.bim.enable_editing_array(item=self.is_editing)
-
-    if self.relating_array_object is None:
-        return
-    element = tool.Ifc.get_entity(self.relating_array_object)
-    if not element:
-        return
-    # If a child is selected, the following assigns the parent to the relating_array_object
-    pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-    parent_globalid = pset["Parent"]
-    parent_element = tool.Ifc.get().by_guid(parent_globalid)
-    parent_of_relating_array_object = tool.Ifc.get_object(parent_element)
-    #The following error handling is used to break out when an array parent is selected
-    try:
-        pset['Data']
-    except Exception:
-        pass
-    else:
-        bpy.ops.bim.enable_editing_array(item=self.is_editing)
-        return 
-
-    self.relating_array_object = parent_of_relating_array_object
-    bpy.ops.bim.enable_editing_array(item=self.is_editing)
-
     return
 
 
