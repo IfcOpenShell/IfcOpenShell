@@ -79,7 +79,16 @@ class Qto(blenderbim.core.tool.Qto):
             product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
         )
         # See https://github.com/buildingSMART/IFC4.3.x-development/issues/851 for anomalies in Qto naming
-        return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name), None)
+        applicable_qto: Union[str, None] = None
+        for qto_name in applicable_qto_names:
+            # No need for "Qto_" check since we use qto_only=True.
+            if "Base" in qto_name:
+                return qto_name
+            # Prioritize anomaly named base quantities over Qto_BodyGeometryValidation.
+            if applicable_qto and "BodyGeometryValidation" not in applicable_qto:
+                continue
+            applicable_qto = qto_name
+        return applicable_qto
 
     @classmethod
     def get_new_calculated_quantity(cls, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
