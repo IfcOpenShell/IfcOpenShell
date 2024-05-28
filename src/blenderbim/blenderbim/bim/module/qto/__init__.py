@@ -20,14 +20,15 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
+    operator.AssignBaseQto,
+    operator.CalculateAllQuantities,
     operator.CalculateCircleRadius,
     operator.CalculateEdgeLengths,
     operator.CalculateFaceAreas,
     operator.CalculateObjectVolumes,
     operator.ExecuteQtoMethod,
+    operator.PerformQuantityTakeOff,
     operator.QuantifyObjects,
-    operator.AssignBaseQto,
-    operator.CalculateAllQuantities,
     prop.BIMQtoProperties,
     ui.BIM_PT_qto_utilities,
 )
