@@ -1,0 +1,17 @@
+{
+    "name": "IFC4 Base Quantities",
+    "description": "This ruleset quantifies every single possible standardised base quantity in IFC4",
+    "calculators": {
+        "IOSTriangulation": {
+            "IfcWall": {
+                "Qto_WallBaseQuantities": {
+                    "Length": "net_get_x",
+                    "Width": "net_get_y",
+                    "Height": "net_get_z",
+                    "NetSideArea": "net_get_side_area",
+                    "NetVolume": "net_get_volume"
+                }
+            }
+        }
+    }
+}
