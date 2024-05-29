@@ -125,8 +125,38 @@ class IfcOpenShell:
     @staticmethod
     def get_functions() -> list[Function]:
         return [
+            Function("get_area", "Area", "The total surface area of the element"),
+            Function("get_bottom_elevation", "Bottom Elevation", "The local minimum Z ordinate"),
+            Function(
+                "get_footprint_area",
+                "Footprint Area",
+                "The area if the object's faces were projected along the Z-axis and seen top down",
+            ),
+            Function(
+                "get_footprint_perimeter",
+                "Footprint Perimeter",
+                "The perimeter if the object's faces were projected along the Z-axis and seen top down",
+            ),
+            Function(
+                "get_max_side_area",
+                "Max Side Area",
+                "The maximum side area when seen from either X, Y, or Z directions",
+            ),
+            Function("get_max_xyz", "Max XYZ", "The maximum X, Y, or Z local dimension"),
+            Function("get_min_xyz", "Min XYZ", "The minimum X, Y, or Z local dimension"),
+            Function(
+                "get_outer_surface_area",
+                "Outer Surface Area",
+                "The total surface area except for the top or bottom, such as the ends of columns or beams",
+            ),
+            Function(
+                "get_side_area", "Side area", "The side (non-projected) are of the shape as seen from the local Y-axis"
+            ),
+            Function("get_top_elevation", "Top elevation", "The local maximum Z ordinate"),
             Function("get_volume", "Volume", "Calculates the volume of a manifold shape"),
-            Function("get_x", "X Length", "Calculates the length along the local X axis"),
+            Function("get_x", "X", "Calculates the length along the local X axis"),
+            Function("get_y", "Y", "Calculates the length along the local Y axis"),
+            Function("get_z", "Z", "Calculates the length along the local Z axis"),
         ]
 
 
@@ -157,12 +187,40 @@ class Blender:
     @staticmethod
     def get_functions() -> list[Function]:
         return [
-            Function(
-                "get_linear_length",
-                "Maximum Bounding Length",
-                "Calculates the length of the maximum local bounding box",
-            ),
-            Function("get_length", "Length", "Calculates the length assumed as the maximum of the local X or Y axis"),
+            Function("get_covering_gross_area", "Covering Gross Area", ""),
+            Function("get_covering_net_area", "Covering Net Area", ""),
+            Function("get_covering_width", "Covering Width", ""),
+            Function("get_cross_section_area", "Cross Section Area", ""),
+            Function("get_finish_ceiling_height", "Finish Ceiling Height", ""),
+            Function("get_finish_floor_height", "Finish Floor Height", ""),
+            Function("get_gross_ceiling_area", "Gross Ceiling Area", ""),
+            Function("get_gross_footprint_area", "Gross Footprint Area", ""),
+            Function("get_gross_perimeter", "Gross Perimeter", ""),
+            Function("get_gross_side_area", "Gross Side Area", ""),
+            Function("get_gross_stair_area", "Gross Stair Area", ""),
+            Function("get_gross_surface_area", "Gross Surface Area", ""),
+            Function("get_gross_top_area", "Gross Top Area", ""),
+            Function("get_gross_volume", "Gross Volume", ""),
+            Function("get_gross_weight", "Gross Weight", ""),
+            Function("get_height", "Height", ""),
+            Function("get_length", "Length", ""),
+            Function("get_net_ceiling_area", "Net Ceiling Area", ""),
+            Function("get_net_floor_area", "Net Floor Area", ""),
+            Function("get_net_footprint_area", "Net Footprint Area", ""),
+            Function("get_net_side_area", "Net Side Area", ""),
+            Function("get_net_stair_area", "Net Stair Area", ""),
+            Function("get_net_surface_area", "Net Surface Area", ""),
+            Function("get_net_top_area", "Net Top Area", ""),
+            Function("get_net_volume", "Net Volume", ""),
+            Function("get_net_weight", "Net Weight", ""),
+            Function("get_opening_depth", "Opening Depth", ""),
+            Function("get_opening_height", "Opening Height", ""),
+            Function("get_opening_mapping_area", "Opening Mapping Area", ""),
+            Function("get_outer_surface_area", "Outer Surface Area", ""),
+            Function("get_rectangular_perimeter", "Rectangular Perimeter", ""),
+            Function("get_space_net_volume", "Space Net Volume", ""),
+            Function("get_stair_length", "Stair Length", ""),
+            Function("get_width", "Width", ""),
         ]
 
 
