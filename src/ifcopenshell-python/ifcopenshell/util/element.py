@@ -833,7 +833,7 @@ def get_layers(
 
 def get_container(
     element: ifcopenshell.entity_instance, should_get_direct: bool = False, ifc_class: Optional[str] = None
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the spatial structure container of an element.
 
@@ -849,7 +849,7 @@ def get_container(
         example, you may be after the storey, not a space.
     :type ifc_class: str, optional
     :return: The direct or indirect container of the element or None.
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 

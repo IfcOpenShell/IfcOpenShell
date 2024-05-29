@@ -20,6 +20,7 @@ import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.element
+from typing import Union
 
 
 class Aggregate(blenderbim.core.tool.Aggregate):
@@ -46,19 +47,21 @@ class Aggregate(blenderbim.core.tool.Aggregate):
         return False
 
     @classmethod
-    def disable_editing(cls, obj):
+    def disable_editing(cls, obj: bpy.types.Object) -> None:
         obj.BIMObjectAggregateProperties.is_editing = False
 
     @classmethod
-    def enable_editing(cls, obj):
+    def enable_editing(cls, obj: bpy.types.Object) -> None:
         obj.BIMObjectAggregateProperties.is_editing = True
 
     @classmethod
-    def get_container(cls, element):
+    def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_relating_object(cls, related_element):
+    def get_relating_object(
+        cls, related_element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for rel in related_element.Decomposes:
             if rel.is_a("IfcRelAggregates"):
                 return rel.RelatingObject

@@ -19,43 +19,45 @@
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
+import blenderbim.core.material
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+from typing import Union, Any
 
 
 class Material(blenderbim.core.tool.Material):
     @classmethod
-    def add_default_material_object(cls, name):
+    def add_default_material_object(cls, name: Union[str, None]) -> bpy.types.Material:
         return bpy.data.materials.new(name or "Default")
 
     @classmethod
-    def delete_object(cls, obj):
+    def delete_object(cls, obj: bpy.types.Material) -> None:
         bpy.data.materials.remove(obj)
 
     @classmethod
-    def disable_editing_materials(cls):
+    def disable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 
     @classmethod
-    def enable_editing_materials(cls):
+    def enable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = True
 
     @classmethod
-    def get_active_material_type(cls):
+    def get_active_material_type(cls) -> str:
         return bpy.context.scene.BIMMaterialProperties.material_type
 
     @classmethod
-    def get_elements_by_material(cls, material):
+    def get_elements_by_material(cls, material: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
 
     @classmethod
-    def get_name(cls, obj):
+    def get_name(cls, obj: bpy.types.Material) -> str:
         return obj.name
 
     @classmethod
-    def import_material_definitions(cls, material_type):
+    def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
         expanded_categories = {m.name for m in props.materials if m.is_expanded}
         props.materials.clear()
@@ -89,11 +91,11 @@ class Material(blenderbim.core.tool.Material):
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
 
     @classmethod
-    def is_editing_materials(cls):
+    def is_editing_materials(cls) -> bool:
         return bpy.context.scene.BIMMaterialProperties.is_editing
 
     @classmethod
-    def is_material_used_in_sets(cls, material):
+    def is_material_used_in_sets(cls, material: ifcopenshell.entity_instance) -> bool:
         for inverse in tool.Ifc.get().get_inverse(material):
             if inverse.is_a() in [
                 "IfcMaterialProfile",
@@ -105,48 +107,50 @@ class Material(blenderbim.core.tool.Material):
         return False
 
     @classmethod
-    def load_material_attributes(cls, material):
+    def load_material_attributes(cls, material: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMMaterialProperties
         props.material_attributes.clear()
         blenderbim.bim.helper.import_attributes2(material, props.material_attributes)
 
     @classmethod
-    def enable_editing_material(cls, material):
+    def enable_editing_material(cls, material: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = material.id()
         props.editing_material_type = "ATTRIBUTES"
 
     @classmethod
-    def get_material_attributes(cls):
+    def get_material_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
 
     @classmethod
-    def disable_editing_material(cls):
+    def disable_editing_material(cls) -> None:
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = 0
         props.editing_material_type = ""
 
     @classmethod
-    def get_type(cls, element):
+    def get_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_active_object_material(cls):
+    def get_active_object_material(cls) -> Union[str, None]:
         active_obj = bpy.context.active_object
         if not active_obj:
             return
         return active_obj.BIMObjectMaterialProperties.material_type
 
     @classmethod
-    def get_active_material(cls):
+    def get_active_material(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
 
     @classmethod
-    def get_material(cls, element, should_inherit=False):
+    def get_material(
+        cls, element: ifcopenshell.entity_instance, should_inherit: bool = False
+    ) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_material(element, should_inherit=should_inherit)
 
     @classmethod
-    def is_a_material_set(cls, material):
+    def is_a_material_set(cls, material: ifcopenshell.entity_instance) -> bool:
         return material.is_a() in [
             "IfcMaterialConstituentSet",
             "IfcMaterialLayerSet",
@@ -154,7 +158,9 @@ class Material(blenderbim.core.tool.Material):
         ]
 
     @classmethod
-    def add_material_to_set(cls, material_set, material):
+    def add_material_to_set(
+        cls, material_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+    ) -> None:
         if material_set.is_a("IfcMaterialConstituentSet"):
             if not material_set.MaterialConstituents:
                 tool.Ifc.run(
@@ -195,7 +201,7 @@ class Material(blenderbim.core.tool.Material):
                     )
 
     @classmethod
-    def has_material_profile(cls, element):
+    def has_material_profile(cls, element: ifcopenshell.entity_instance) -> bool:
         material = cls.get_material(element, should_inherit=False)
         inherited_material = cls.get_material(element, should_inherit=True)
         if material and "Profile" in material.is_a():
@@ -205,11 +211,13 @@ class Material(blenderbim.core.tool.Material):
         return False
 
     @classmethod
-    def is_a_flow_segment(cls, element):
+    def is_a_flow_segment(cls, element: ifcopenshell.entity_instance) -> bool:
         return element.is_a("IfcFlowSegment")
 
     @classmethod
-    def replace_material_with_material_profile(cls, element):
+    def replace_material_with_material_profile(
+        cls, element: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         old_material = cls.get_material(element, should_inherit=False)
         old_inherited_material = cls.get_material(element, should_inherit=True)
         material = old_material if old_material and old_material.is_a("IfcMaterial") else None
@@ -225,14 +233,14 @@ class Material(blenderbim.core.tool.Material):
         return material_profile
 
     @classmethod
-    def update_elements_using_material(cls, material):
+    def update_elements_using_material(cls, material: ifcopenshell.entity_instance) -> None:
         # update elements that are using this material
         elements = ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)
 
     @classmethod
-    def sync_blender_material_name(cls, material):
+    def sync_blender_material_name(cls, material: ifcopenshell.entity_instance) -> None:
         name = material.Name or "Unnamed"
         obj = tool.Ifc.get_object(material)
         if obj:
@@ -245,7 +253,7 @@ class Material(blenderbim.core.tool.Material):
                 obj.name = name
 
     @classmethod
-    def get_style(cls, material):
+    def get_style(cls, material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for material_representation in material.HasRepresentation:
             for representation in material_representation.Representations:
                 for item in representation.Items:

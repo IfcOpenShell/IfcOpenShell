@@ -198,8 +198,11 @@ class CostSchedulesData:
         #             data["DerivedUnitSymbol"] = "?"
         #         print("Total Cost", data["DerivedTotalCostQuantity"], cost_item.Name)
 
+    # TODO: dead code?
     @classmethod
-    def _get_object_quantities(cls, cost_item, element):
+    def _get_object_quantities(
+        cls, cost_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ) -> list[int]:
         if not element.is_a("IfcObject"):
             return []
         cost_quantities = cost_item.CostQuantities

@@ -17,18 +17,23 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import PIL.ImageDraw
 from blenderbim.bim.module.model.decorator import ProfileDecorator
+from typing import Union
 
 
 class Profile(blenderbim.core.tool.Profile):
     @classmethod
-    def draw_image_for_ifc_profile(cls, draw, profile, size):
+    def draw_image_for_ifc_profile(
+        cls, draw: PIL.ImageDraw.ImageDraw, profile: ifcopenshell.entity_instance, size: float
+    ) -> None:
         """generates image based on `profile` using `PIL.ImageDraw`"""
         settings = ifcopenshell.geom.settings()
         settings.set(settings.INCLUDE_CURVES, True)
@@ -57,11 +62,11 @@ class Profile(blenderbim.core.tool.Profile):
             draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
 
     @classmethod
-    def is_editing_profile(cls):
-        return ProfileDecorator.installed
+    def is_editing_profile(cls) -> bool:
+        return bool(ProfileDecorator.installed)
 
     @classmethod
-    def get_profile(cls, element):
+    def get_profile(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         representations = element.Representation
         for representation in representations.Representations:
             if not representation.is_a("IfcShapeRepresentation"):
@@ -74,7 +79,7 @@ class Profile(blenderbim.core.tool.Profile):
         return None
 
     @classmethod
-    def get_model_profiles(cls):
+    def get_model_profiles(cls) -> list[ifcopenshell.entity_instance]:
         return tool.Ifc.get().by_type("IfcProfileDef")
 
     @classmethod

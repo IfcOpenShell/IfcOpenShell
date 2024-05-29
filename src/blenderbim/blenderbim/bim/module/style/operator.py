@@ -22,6 +22,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
+import ifcopenshell.api
 import ifcopenshell.util.representation
 from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
