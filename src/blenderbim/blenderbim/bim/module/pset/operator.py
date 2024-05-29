@@ -140,6 +140,8 @@ class EditPset(bpy.types.Operator, Operator):
             )
         else:
             for key, value in properties.items():
+                if value is None:
+                    continue
                 if isinstance(value, float):
                     properties[key] = round(value, 4)
                 elif not isinstance(value, int):
