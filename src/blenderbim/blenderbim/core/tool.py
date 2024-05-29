@@ -640,8 +640,6 @@ class Qto:
     def add_product_base_qto(cls, product): pass
     def get_applicable_base_quantity_name(cls, product): pass
     def get_applicable_quantity_names(cls, qto_name): pass
-    def get_calculated_object_quantities(cls, calculator, baste_qto, object): pass
-    def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
     def get_radius_of_selected_vertices(cls, obj): pass
     def get_related_cost_item_quantities(cls, product): pass
     def get_rounded_value(cls, new_quantity): pass

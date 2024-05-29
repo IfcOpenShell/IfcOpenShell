@@ -214,33 +214,6 @@ class AddQto(bpy.types.Operator, Operator):
         )
 
 
-class CalculateQuantity(bpy.types.Operator):
-    bl_idname = "bim.calculate_quantity"
-    bl_label = "Calculate Quantity"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculates the quantity with a defined formula for this exact entity and quantity"
-    prop: bpy.props.StringProperty()
-
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        prop = obj.PsetProperties.properties.get(self.prop)
-        quantity = self.calculate_quantity(obj, context)
-
-        if quantity is None:
-            self.report({"ERROR"}, "Could not calculate quantity")
-            return {"CANCELLED"}
-
-        prop.metadata.float_value = quantity
-        return {"FINISHED"}
-
-    def calculate_quantity(self, obj, context):
-        quantity = self.qto_calculator.calculate_quantity(obj.PsetProperties.active_pset_name, self.prop, obj)
-        if quantity is None:
-            return
-        return round(quantity, 3)
-
-
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"

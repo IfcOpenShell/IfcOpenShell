@@ -177,7 +177,6 @@ class Pset(blenderbim.core.tool.Pset):
         metadata.is_null = data.get(prop_template.Name, None) is None
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
-        metadata.has_calculator = bool(mapper.get(pset_template.Name, {}).get(prop_template.Name, None))
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
 
         special_type = ""

@@ -92,27 +92,8 @@ class Qto(blenderbim.core.tool.Qto):
         return applicable_qto
 
     @classmethod
-    def get_new_calculated_quantity(cls, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
-        return QtoCalculator().calculate_quantity(qto_name, quantity_name, obj)
-
-    @classmethod
     def get_rounded_value(cls, new_quantity: float) -> float:
         return round(new_quantity, 3)
-
-    @classmethod
-    def get_calculated_object_quantities(
-        cls, calculator: QtoCalculator, qto_name: str, obj: bpy.types.Object
-    ) -> dict[str, float]:
-        return {
-            quantity_name: cls.get_rounded_value(value)
-            for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
-            if cls.has_calculator(qto_name, quantity_name)
-            and (value := calculator.calculate_quantity(qto_name, quantity_name, obj)) is not None
-        }
-
-    @classmethod
-    def has_calculator(cls, qto_name: str, quantity_name: str) -> bool:
-        return bool(mapper.get(qto_name, {}).get(quantity_name, None))
 
     @classmethod
     def convert_to_project_units(
