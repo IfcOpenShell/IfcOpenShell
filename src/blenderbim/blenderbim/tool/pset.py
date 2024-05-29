@@ -23,7 +23,6 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.schema
 from typing import Union
-from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
 
 
 class Pset(blenderbim.core.tool.Pset):

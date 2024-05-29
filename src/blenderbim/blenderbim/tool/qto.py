@@ -16,20 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from types import ClassMethodDescriptorType
 import bpy
 import blenderbim.core.tool
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 import ifcopenshell
-from mathutils import Vector
-from ifcopenshell import util
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-from blenderbim.bim.module.pset.qto_calculator import QtoCalculator, QuanityTypes
-from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
-import blenderbim.bim.schema
+from mathutils import Vector
 from typing import Optional, Union, Literal
 
+QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
 class Qto(blenderbim.core.tool.Qto):
     @classmethod
@@ -101,7 +98,7 @@ class Qto(blenderbim.core.tool.Qto):
         value: float,
         qto_name: Optional[str] = None,
         quantity_name: Optional[str] = None,
-        quantity_type: Optional[QuanityTypes] = None,
+        quantity_type: Optional[QuantityTypes] = None,
     ) -> Union[float, None]:
         """You can either specify `quantity_type` or provide `qto_name/quantity_name`
         to let method figure the `quantity_type` from the templates

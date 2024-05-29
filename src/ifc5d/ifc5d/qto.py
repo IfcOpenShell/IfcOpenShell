@@ -38,7 +38,8 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
         calculator = calculators[calculator]
         for query, qtos in queries.items():
             filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
-            calculator.calculate(ifc_file, filtered_elements, qtos, results)
+            if filtered_elements:
+                calculator.calculate(ifc_file, filtered_elements, qtos, results)
     return results
 
 
@@ -59,14 +60,11 @@ class IOSTriangulation:
         ifc_file: ifcopenshell.file,
         elements: set[ifcopenshell.entity_instance],
         qtos: dict,
-        results: Optional[dict] = None,
+        results: dict,
     ):
         import ifcopenshell
         import ifcopenshell.geom
         import ifcopenshell.util.shape
-
-        if results is None:
-            results = {}
 
         formula_functions = {}
 
@@ -109,8 +107,6 @@ class IOSTriangulation:
                     if not iterator.next():
                         break
 
-        return results
-
     @staticmethod
     def create_iterator(ifc_file, settings, elements):
         return ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
@@ -118,18 +114,23 @@ class IOSTriangulation:
 
 class Blender:
     @staticmethod
-    def calculate(ifc_file, elements, qtos):
+    def calculate(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict):
         import blenderbim.tool as tool
+        import blenderbim.bim.module.qto.calculator as calculator
+
+        formula_functions = {}
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
             if not obj:
                 continue
-
+            results.setdefault(element, {})
             for name, quantities in qtos.items():
+                results[element].setdefault(name, {})
                 for quantity, formula in quantities.items():
-                    getattr(tool.Qto, formula)
-                    # TODO
+                    if not (formula_function := formula_functions.get(formula)):
+                        formula_function = formula_functions[formula] = getattr(calculator, formula)
+                    results[element][name][quantity] = formula_function(obj)
 
 
 calculators = {"Blender": Blender, "IOSTriangulation": IOSTriangulation}

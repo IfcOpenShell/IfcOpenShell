@@ -1,8 +1,8 @@
 {
-    "name": "IFC4 Base Quantities - IfcOpenShell",
-    "description": "This ruleset quantifies every single possible standardised base quantity in IFC4 using only IfcOpenShell as a geometry processor.",
+    "name": "IFC4 Base Quantities - Blender",
+    "description": "This ruleset quantifies every single possible standardised base quantity in IFC4 using Blender.",
     "calculators": {
-        "IOSTriangulation": {
+        "Blender": {
             "IfcActuator": {
                 "Qto_ActuatorBaseQuantities": {
                     "GrossWeight": null
@@ -37,15 +37,15 @@
             },
             "IfcBeam": {
                 "Qto_BeamBaseQuantities": {
-                    "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null
+                    "CrossSectionArea": "get_cross_section_area",
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetSurfaceArea": "get_net_surface_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcBoiler": {
@@ -68,8 +68,8 @@
             },
             "IfcBuildingElementProxy": {
                 "Qto_BuildingElementProxyQuantities": {
-                    "NetSurfaceArea": null,
-                    "NetVolume": null
+                    "NetSurfaceArea": "get_net_surface_area",
+                    "NetVolume": "get_net_volume"
                 }
             },
             "IfcBuildingStorey": {
@@ -110,8 +110,8 @@
                 "Qto_CableSegmentBaseQuantities": {
                     "CrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
-                    "OuterSurfaceArea": null
+                    "Length": "get_length",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcChiller": {
@@ -121,7 +121,7 @@
             },
             "IfcChimney": {
                 "Qto_ChimneyBaseQuantities": {
-                    "Length": null
+                    "Length": "get_height"
                 }
             },
             "IfcCoil": {
@@ -131,15 +131,15 @@
             },
             "IfcColumn": {
                 "Qto_ColumnBaseQuantities": {
-                    "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null
+                    "CrossSectionArea": "get_cross_section_area",
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetSurfaceArea": "get_net_surface_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcCommunicationsAppliance": {
@@ -165,9 +165,9 @@
             },
             "IfcConstructionMaterialResource": {
                 "Qto_ConstructionMaterialResourceBaseQuantities": {
-                    "GrossVolume": null,
+                    "GrossVolume": "get_gross_volume",
                     "GrossWeight": null,
-                    "NetVolume": null,
+                    "NetVolume": "get_net_volume",
                     "NetWeight": null
                 }
             },
@@ -188,9 +188,9 @@
             },
             "IfcCovering": {
                 "Qto_CoveringBaseQuantities": {
-                    "GrossArea": null,
-                    "NetArea": null,
-                    "Width": null
+                    "GrossArea": "get_covering_gross_area",
+                    "NetArea": "get_covering_net_area",
+                    "Width": "get_covering_width"
                 }
             },
             "IfcCurtainWall": {
@@ -209,36 +209,36 @@
             },
             "IfcDistributionChamberElement": {
                 "Qto_DistributionChamberElementBaseQuantities": {
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "NetSurfaceArea": "get_net_surface_area",
+                    "NetVolume": "get_net_volume"
                 }
             },
             "IfcDoor": {
                 "Qto_DoorBaseQuantities": {
-                    "Area": null,
-                    "Height": null,
-                    "Perimeter": null,
-                    "Width": null
+                    "Area": "get_net_side_area",
+                    "Height": "get_height",
+                    "Perimeter": "get_rectangular_perimeter",
+                    "Width": "get_length"
                 }
             },
             "IfcDuctFitting": {
                 "Qto_DuctFittingBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "get_length",
                     "NetCrossSectionArea": null,
-                    "OuterSurfaceArea": null
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcDuctSegment": {
                 "Qto_DuctSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "get_length",
                     "NetCrossSectionArea": null,
-                    "OuterSurfaceArea": null
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcDuctSilencer": {
@@ -314,16 +314,16 @@
             },
             "IfcFooting": {
                 "Qto_FootingBaseQuantities": {
-                    "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Height": null,
-                    "Length": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null,
-                    "Width": null
+                    "CrossSectionArea": "get_cross_section_area",
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Height": "get_height",
+                    "Length": "get_length",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area",
+                    "Width": "get_width"
                 }
             },
             "IfcHeatExchanger": {
@@ -365,15 +365,15 @@
             },
             "IfcMember": {
                 "Qto_MemberBaseQuantities": {
-                    "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null
+                    "CrossSectionArea": "get_cross_section_area",
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetSurfaceArea": "get_net_surface_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcMotorConnection": {
@@ -383,11 +383,11 @@
             },
             "IfcOpeningElement": {
                 "Qto_OpeningElementBaseQuantities": {
-                    "Area": null,
-                    "Depth": null,
-                    "Height": null,
-                    "Volume": null,
-                    "Width": null
+                    "Area": "get_opening_mapping_area",
+                    "Depth": "get_opening_depth",
+                    "Height": "get_opening_height",
+                    "Volume": "get_net_volume",
+                    "Width": "get_length"
                 }
             },
             "IfcOutlet": {
@@ -397,14 +397,14 @@
             },
             "IfcPile": {
                 "Qto_PileBaseQuantities": {
-                    "CrossSectionArea": null,
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null
+                    "CrossSectionArea": "get_cross_section_area",
+                    "GrossSurfaceArea": "get_gross_surface_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcPipeFitting": {
@@ -420,29 +420,29 @@
             "IfcPipeSegment": {
                 "Qto_PipeSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetCrossSectionArea": null,
-                    "NetWeight": null,
-                    "OuterSurfaceArea": null
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetCrossSectionArea": "get_cross_section_area",
+                    "NetWeight": "get_net_weight",
+                    "OuterSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcPlate": {
                 "Qto_PlateBaseQuantities": {
-                    "GrossArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "NetArea": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "Perimeter": null,
-                    "Width": null
+                    "GrossArea": "get_gross_footprint_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "NetArea": "get_net_footprint_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "Perimeter": "get_gross_perimeter",
+                    "Width": "get_height"
                 }
             },
             "IfcProjectionElement": {
                 "Qto_ProjectionElementBaseQuantities": {
-                    "Area": null,
-                    "Volume": null
+                    "Area": "get_net_side_area",
+                    "Volume": "get_net_volume"
                 }
             },
             "IfcProtectiveDevice": {
@@ -462,30 +462,30 @@
             },
             "IfcRailing": {
                 "Qto_RailingBaseQuantities": {
-                    "Length": null
+                    "Length": "get_length"
                 }
             },
             "IfcRampFlight": {
                 "Qto_RampFlightBaseQuantities": {
-                    "GrossArea": null,
-                    "GrossVolume": null,
-                    "Length": null,
-                    "NetArea": null,
-                    "NetVolume": null,
-                    "Width": null
+                    "GrossArea": "get_gross_stair_area",
+                    "GrossVolume": "get_gross_volume",
+                    "Length": "get_stair_length",
+                    "NetArea": "get_net_stair_area",
+                    "NetVolume": "get_net_volume",
+                    "Width": "get_width"
                 }
             },
             "IfcReinforcingElement": {
                 "Qto_ReinforcingElementBaseQuantities": {
                     "Count": null,
-                    "Length": null,
+                    "Length": "get_length",
                     "Weight": null
                 }
             },
             "IfcRoof": {
                 "Qto_RoofBaseQuantities": {
-                    "GrossArea": null,
-                    "NetArea": null,
+                    "GrossArea": "get_gross_top_area",
+                    "NetArea": "get_net_top_area",
                     "ProjectedArea": null
                 }
             },
@@ -501,22 +501,22 @@
             },
             "IfcSite": {
                 "Qto_SiteBaseQuantities": {
-                    "GrossArea": null,
-                    "GrossPerimeter": null
+                    "GrossArea": "get_gross_footprint_area",
+                    "GrossPerimeter": "get_gross_perimeter"
                 }
             },
             "IfcSlab": {
                 "Qto_SlabBaseQuantities": {
-                    "Depth": null,
-                    "GrossArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Length": null,
-                    "NetArea": null,
-                    "NetVolume": null,
-                    "NetWeight": null,
-                    "Perimeter": null,
-                    "Width": null
+                    "Depth": "get_height",
+                    "GrossArea": "get_gross_footprint_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Length": "get_length",
+                    "NetArea": "get_net_footprint_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "Perimeter": "get_gross_perimeter",
+                    "Width": "get_width"
                 }
             },
             "IfcSolarDevice": {
@@ -527,25 +527,25 @@
             },
             "IfcSpace": {
                 "Qto_SpaceBaseQuantities": {
-                    "FinishCeilingHeight": null,
-                    "FinishFloorHeight": null,
-                    "GrossCeilingArea": null,
-                    "GrossFloorArea": null,
-                    "GrossPerimeter": null,
-                    "GrossVolume": null,
+                    "FinishCeilingHeight": "get_finish_ceiling_height",
+                    "FinishFloorHeight": "get_finish_floor_height",
+                    "GrossCeilingArea": "get_gross_ceiling_area",
+                    "GrossFloorArea": "get_gross_footprint_area",
+                    "GrossPerimeter": "get_gross_perimeter",
+                    "GrossVolume": "get_gross_volume",
                     "GrossWallArea": null,
-                    "Height": null,
-                    "NetCeilingArea": null,
-                    "NetFloorArea": null,
+                    "Height": "get_height",
+                    "NetCeilingArea": "get_net_ceiling_area",
+                    "NetFloorArea": "get_net_floor_area",
                     "NetPerimeter": null,
-                    "NetVolume": null,
+                    "NetVolume": "get_space_net_volume",
                     "NetWallArea": null
                 }
             },
             "IfcSpaceHeater": {
                 "Qto_SpaceHeaterBaseQuantities": {
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "get_length",
                     "NetWeight": null
                 }
             },
@@ -556,9 +556,9 @@
             },
             "IfcStairFlight": {
                 "Qto_StairFlightBaseQuantities": {
-                    "GrossVolume": null,
-                    "Length": null,
-                    "NetVolume": null
+                    "GrossVolume": "get_gross_volume",
+                    "Length": "get_stair_length",
+                    "NetVolume": "get_net_volume"
                 }
             },
             "IfcSwitchingDevice": {
@@ -570,7 +570,7 @@
                 "Qto_TankBaseQuantities": {
                     "GrossWeight": null,
                     "NetWeight": null,
-                    "TotalSurfaceArea": null
+                    "TotalSurfaceArea": "get_outer_surface_area"
                 }
             },
             "IfcTransformer": {
@@ -606,17 +606,17 @@
             },
             "IfcWall": {
                 "Qto_WallBaseQuantities": {
-                    "GrossFootprintArea": null,
-                    "GrossSideArea": null,
-                    "GrossVolume": null,
-                    "GrossWeight": null,
-                    "Height": "net_get_z",
-                    "Length": "net_get_x",
-                    "NetFootprintArea": null,
-                    "NetSideArea": "net_get_side_area",
-                    "NetVolume": "net_get_volume",
-                    "NetWeight": null,
-                    "Width": "net_get_y"
+                    "GrossFootprintArea": "get_gross_footprint_area",
+                    "GrossSideArea": "get_gross_side_area",
+                    "GrossVolume": "get_gross_volume",
+                    "GrossWeight": "get_gross_weight",
+                    "Height": "get_height",
+                    "Length": "get_length",
+                    "NetFootprintArea": "get_net_footprint_area",
+                    "NetSideArea": "get_net_side_area",
+                    "NetVolume": "get_net_volume",
+                    "NetWeight": "get_net_weight",
+                    "Width": "get_width"
                 }
             },
             "IfcWasteTerminal": {
@@ -626,10 +626,10 @@
             },
             "IfcWindow": {
                 "Qto_WindowBaseQuantities": {
-                    "Area": null,
-                    "Height": null,
-                    "Perimeter": null,
-                    "Width": null
+                    "Area": "get_net_side_area",
+                    "Height": "get_height",
+                    "Perimeter": "get_rectangular_perimeter",
+                    "Width": "get_length"
                 }
             }
         }
