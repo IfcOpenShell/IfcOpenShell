@@ -43,52 +43,6 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
-    def add_object_base_qto(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        product = tool.Ifc.get_entity(obj)
-        return cls.add_product_base_qto(product)
-
-    @classmethod
-    def add_product_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-        base_quantity_name = cls.get_applicable_base_quantity_name(product)
-        if base_quantity_name:
-            return tool.Ifc.run(
-                "pset.add_qto",
-                product=product,
-                name=base_quantity_name,
-            )
-
-    @classmethod
-    def get_applicable_quantity_names(cls, qto_name: str) -> list[str]:
-        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
-        return (
-            [property.Name for property in pset_template.HasPropertyTemplates]
-            if hasattr(pset_template, "HasPropertyTemplates")
-            else []
-        )
-
-    @classmethod
-    def get_applicable_base_quantity_name(
-        cls, product: Optional[ifcopenshell.entity_instance] = None
-    ) -> Union[str, None]:
-        if not product:
-            return
-        applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
-            product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
-        )
-        # See https://github.com/buildingSMART/IFC4.3.x-development/issues/851 for anomalies in Qto naming
-        # Should be in sync with cls.get_base_qto.
-        applicable_qto: Union[str, None] = None
-        for qto_name in applicable_qto_names:
-            # No need for "Qto_" check since we use qto_only=True.
-            if "Base" in qto_name:
-                return qto_name
-            # Prioritize anomaly named base quantities over Qto_BodyGeometryValidation.
-            if applicable_qto and "BodyGeometryValidation" not in applicable_qto:
-                continue
-            applicable_qto = qto_name
-        return applicable_qto
-
-    @classmethod
     def get_rounded_value(cls, new_quantity: float) -> float:
         return round(new_quantity, 3)
 
@@ -134,7 +88,6 @@ class Qto(blenderbim.core.tool.Qto):
     def get_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if not hasattr(product, "IsDefinedBy"):
             return
-        # Should be in sync with cls.get_applicable_base_quantity_name.
         base_qto_definition = None
         base_qto_definition_name: Union[str, None] = None
         for rel in product.IsDefinedBy or []:

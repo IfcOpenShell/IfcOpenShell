@@ -636,10 +636,6 @@ class Pset:
 
 @interface
 class Qto:
-    def add_object_base_qto(cls, object): pass
-    def add_product_base_qto(cls, product): pass
-    def get_applicable_base_quantity_name(cls, product): pass
-    def get_applicable_quantity_names(cls, qto_name): pass
     def get_radius_of_selected_vertices(cls, obj): pass
     def get_related_cost_item_quantities(cls, product): pass
     def get_rounded_value(cls, new_quantity): pass
