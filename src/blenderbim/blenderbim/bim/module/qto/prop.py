@@ -49,8 +49,13 @@ def get_calculator(self, context):
 def get_calculator_function(self, context):
     calculator = ifc5d.qto.calculators[self.calculator]
     results = []
-    for function in calculator.get_functions():
-        results.append((function.id, function.name, function.description))
+    previous_measure = None
+    for function_id, function in calculator.functions.items():
+        measure = function.measure.split("Measure")[0][3:]
+        if previous_measure is not None and measure != previous_measure:
+            results.append(None)
+        results.append((function_id, f"{measure}: {function.name}", function.description))
+        previous_measure = measure
     return results
 
 

@@ -21,13 +21,13 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
+import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import multiprocessing
 from collections import namedtuple
-from typing import Iterable
 
 
-Function = namedtuple("Function", ["id", "name", "description"])
+Function = namedtuple("Function", ["measure", "name", "description"])
 rules = {}
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -58,9 +58,76 @@ def edit_qtos(ifc_file, results) -> None:
             ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=quantities)
 
 
+class SI2ProjectUnitConverter:
+    def __init__(self, ifc_file):
+        self.project_units = {
+            "IfcAreaMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "AREAUNIT"),
+            "IfcLengthMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT"),
+            "IfcMassMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "MASSUNIT"),
+            "IfcTimeMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "TIMEUNIT"),
+            "IfcVolumeMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "VOLUMEUNIT"),
+        }
+        for key, value in self.project_units.items():
+            if value:
+                self.project_units[key] = (getattr(value, "Prefix", "None"), value.Name)
+
+        self.si_names = {
+            "IfcAreaMeasure": "SQUARE_METRE",
+            "IfcLengthMeasure": "METRE",
+            "IfcMassMeasure": "GRAM",
+            "IfcTimeMeasure": "SECOND",
+            "IfcVolumeMeasure": "CUBIE_METRE",
+        }
+
+    def convert(self, value, measure):
+        if measure_unit := self.project_units.get(measure, None):
+            return ifcopenshell.util.unit.convert(value, None, self.si_names[measure], *measure_unit)
+        return value
+
+
 class IfcOpenShell:
     """Calculates Model body context geometry using the default IfcOpenShell
     iterator on triangulation elements."""
+
+    functions = {
+        # IfcLengthMeasure
+        "get_x": Function("IfcLengthMeasure", "X", "Calculates the length along the local X axis"),
+        "get_y": Function("IfcLengthMeasure", "Y", "Calculates the length along the local Y axis"),
+        "get_z": Function("IfcLengthMeasure", "Z", "Calculates the length along the local Z axis"),
+        "get_max_xyz": Function("IfcLengthMeasure", "Max XYZ", "The maximum X, Y, or Z local dimension"),
+        "get_min_xyz": Function("IfcLengthMeasure", "Min XYZ", "The minimum X, Y, or Z local dimension"),
+        "get_top_elevation": Function("IfcLengthMeasure", "Top elevation", "The local maximum Z ordinate"),
+        "get_bottom_elevation": Function("IfcLengthMeasure", "Bottom Elevation", "The local minimum Z ordinate"),
+        "get_footprint_perimeter": Function(
+            "IfcLengthMeasure",
+            "Footprint Perimeter",
+            "The perimeter if the object's faces were projected along the Z-axis and seen top down",
+        ),
+        # IfcAreaMeasure
+        "get_area": Function("IfcAreaMeasure", "Area", "The total surface area of the element"),
+        "get_footprint_area": Function(
+            "IfcAreaMeasure",
+            "Footprint Area",
+            "The area if the object's faces were projected along the Z-axis and seen top down",
+        ),
+        "get_max_side_area": Function(
+            "IfcAreaMeasure",
+            "Max Side Area",
+            "The maximum side area when seen from either X, Y, or Z directions",
+        ),
+        "get_outer_surface_area": Function(
+            "IfcAreaMeasure",
+            "Outer Surface Area",
+            "The total surface area except for the top or bottom, such as the ends of columns or beams",
+        ),
+        "get_side_area": Function(
+            "IfcAreaMeasure",
+            "Side area",
+            "The side (non-projected) are of the shape as seen from the local Y-axis",
+        ),
+        # IfcVolumeMeasure
+        "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
+    }
 
     @staticmethod
     def calculate(
@@ -103,6 +170,8 @@ class IfcOpenShell:
         if net_qtos:
             tasks.append((IfcOpenShell.create_iterator(ifc_file, net_settings, list(elements)), net_qtos))
 
+        unit_converter = SI2ProjectUnitConverter(ifc_file)
+
         for iterator, qtos in tasks:
             if iterator.initialize():
                 while True:
@@ -112,7 +181,9 @@ class IfcOpenShell:
                     for name, quantities in qtos.items():
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
-                            results[element][name][quantity] = formula_functions[formula](shape.geometry)
+                            results[element][name][quantity] = unit_converter.convert(
+                                formula_functions[formula](shape.geometry), IfcOpenShell.functions[formula].measure
+                            )
                     if not iterator.next():
                         break
 
@@ -122,46 +193,50 @@ class IfcOpenShell:
     ) -> ifcopenshell.geom.iterator:
         return ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
 
-    @staticmethod
-    def get_functions() -> list[Function]:
-        return [
-            Function("get_area", "Area", "The total surface area of the element"),
-            Function("get_bottom_elevation", "Bottom Elevation", "The local minimum Z ordinate"),
-            Function(
-                "get_footprint_area",
-                "Footprint Area",
-                "The area if the object's faces were projected along the Z-axis and seen top down",
-            ),
-            Function(
-                "get_footprint_perimeter",
-                "Footprint Perimeter",
-                "The perimeter if the object's faces were projected along the Z-axis and seen top down",
-            ),
-            Function(
-                "get_max_side_area",
-                "Max Side Area",
-                "The maximum side area when seen from either X, Y, or Z directions",
-            ),
-            Function("get_max_xyz", "Max XYZ", "The maximum X, Y, or Z local dimension"),
-            Function("get_min_xyz", "Min XYZ", "The minimum X, Y, or Z local dimension"),
-            Function(
-                "get_outer_surface_area",
-                "Outer Surface Area",
-                "The total surface area except for the top or bottom, such as the ends of columns or beams",
-            ),
-            Function(
-                "get_side_area", "Side area", "The side (non-projected) are of the shape as seen from the local Y-axis"
-            ),
-            Function("get_top_elevation", "Top elevation", "The local maximum Z ordinate"),
-            Function("get_volume", "Volume", "Calculates the volume of a manifold shape"),
-            Function("get_x", "X", "Calculates the length along the local X axis"),
-            Function("get_y", "Y", "Calculates the length along the local Y axis"),
-            Function("get_z", "Z", "Calculates the length along the local Z axis"),
-        ]
-
 
 class Blender:
     """Calculates geometry based on currently loaded Blender objects."""
+
+    functions = {
+        # IfcLengthMeasure
+        "get_covering_width": Function("IfcLengthMeasure", "Covering Width", ""),
+        "get_finish_ceiling_height": Function("IfcLengthMeasure", "Finish Ceiling Height", ""),
+        "get_finish_floor_height": Function("IfcLengthMeasure", "Finish Floor Height", ""),
+        "get_gross_perimeter": Function("IfcLengthMeasure", "Gross Perimeter", ""),
+        "get_height": Function("IfcLengthMeasure", "Height", ""),
+        "get_length": Function("IfcLengthMeasure", "Length", ""),
+        "get_opening_depth": Function("IfcLengthMeasure", "Opening Depth", ""),
+        "get_opening_height": Function("IfcLengthMeasure", "Opening Height", ""),
+        "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
+        "get_stair_length": Function("IfcLengthMeasure", "Stair Length", ""),
+        "get_width": Function("IfcLengthMeasure", "Width", ""),
+        # IfcAreaMeasure
+        "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
+        "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),
+        "get_cross_section_area": Function("IfcAreaMeasure", "Cross Section Area", ""),
+        "get_gross_ceiling_area": Function("IfcAreaMeasure", "Gross Ceiling Area", ""),
+        "get_gross_footprint_area": Function("IfcAreaMeasure", "Gross Footprint Area", ""),
+        "get_gross_side_area": Function("IfcAreaMeasure", "Gross Side Area", ""),
+        "get_gross_stair_area": Function("IfcAreaMeasure", "Gross Stair Area", ""),
+        "get_gross_surface_area": Function("IfcAreaMeasure", "Gross Surface Area", ""),
+        "get_gross_top_area": Function("IfcAreaMeasure", "Gross Top Area", ""),
+        "get_net_ceiling_area": Function("IfcAreaMeasure", "Net Ceiling Area", ""),
+        "get_net_floor_area": Function("IfcAreaMeasure", "Net Floor Area", ""),
+        "get_net_footprint_area": Function("IfcAreaMeasure", "Net Footprint Area", ""),
+        "get_net_side_area": Function("IfcAreaMeasure", "Net Side Area", ""),
+        "get_net_stair_area": Function("IfcAreaMeasure", "Net Stair Area", ""),
+        "get_net_surface_area": Function("IfcAreaMeasure", "Net Surface Area", ""),
+        "get_net_top_area": Function("IfcAreaMeasure", "Net Top Area", ""),
+        "get_opening_mapping_area": Function("IfcAreaMeasure", "Opening Mapping Area", ""),
+        "get_outer_surface_area": Function("IfcAreaMeasure", "Outer Surface Area", ""),
+        # IfcVolumeMeasure
+        "get_gross_volume": Function("IfcVolumeMeasure", "Gross Volume", ""),
+        "get_net_volume": Function("IfcVolumeMeasure", "Net Volume", ""),
+        "get_space_net_volume": Function("IfcVolumeMeasure", "Space Net Volume", ""),
+        # IfcMassMeasure
+        "get_gross_weight": Function("IfcMassMeasure", "Gross Weight", ""),
+        "get_net_weight": Function("IfcMassMeasure", "Net Weight", ""),
+    }
 
     @staticmethod
     def calculate(
@@ -170,6 +245,7 @@ class Blender:
         import blenderbim.tool as tool
         import blenderbim.bim.module.qto.calculator as calculator
 
+        unit_converter = SI2ProjectUnitConverter(ifc_file)
         formula_functions = {}
 
         for element in elements:
@@ -182,46 +258,9 @@ class Blender:
                 for quantity, formula in quantities.items():
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
-                    results[element][name][quantity] = formula_function(obj)
-
-    @staticmethod
-    def get_functions() -> list[Function]:
-        return [
-            Function("get_covering_gross_area", "Covering Gross Area", ""),
-            Function("get_covering_net_area", "Covering Net Area", ""),
-            Function("get_covering_width", "Covering Width", ""),
-            Function("get_cross_section_area", "Cross Section Area", ""),
-            Function("get_finish_ceiling_height", "Finish Ceiling Height", ""),
-            Function("get_finish_floor_height", "Finish Floor Height", ""),
-            Function("get_gross_ceiling_area", "Gross Ceiling Area", ""),
-            Function("get_gross_footprint_area", "Gross Footprint Area", ""),
-            Function("get_gross_perimeter", "Gross Perimeter", ""),
-            Function("get_gross_side_area", "Gross Side Area", ""),
-            Function("get_gross_stair_area", "Gross Stair Area", ""),
-            Function("get_gross_surface_area", "Gross Surface Area", ""),
-            Function("get_gross_top_area", "Gross Top Area", ""),
-            Function("get_gross_volume", "Gross Volume", ""),
-            Function("get_gross_weight", "Gross Weight", ""),
-            Function("get_height", "Height", ""),
-            Function("get_length", "Length", ""),
-            Function("get_net_ceiling_area", "Net Ceiling Area", ""),
-            Function("get_net_floor_area", "Net Floor Area", ""),
-            Function("get_net_footprint_area", "Net Footprint Area", ""),
-            Function("get_net_side_area", "Net Side Area", ""),
-            Function("get_net_stair_area", "Net Stair Area", ""),
-            Function("get_net_surface_area", "Net Surface Area", ""),
-            Function("get_net_top_area", "Net Top Area", ""),
-            Function("get_net_volume", "Net Volume", ""),
-            Function("get_net_weight", "Net Weight", ""),
-            Function("get_opening_depth", "Opening Depth", ""),
-            Function("get_opening_height", "Opening Height", ""),
-            Function("get_opening_mapping_area", "Opening Mapping Area", ""),
-            Function("get_outer_surface_area", "Outer Surface Area", ""),
-            Function("get_rectangular_perimeter", "Rectangular Perimeter", ""),
-            Function("get_space_net_volume", "Space Net Volume", ""),
-            Function("get_stair_length", "Stair Length", ""),
-            Function("get_width", "Width", ""),
-        ]
+                    results[element][name][quantity] = unit_converter.convert(
+                        formula_function(obj), Blender.functions[formula].measure
+                    )
 
 
 calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
