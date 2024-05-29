@@ -121,14 +121,12 @@ class SelectFilterElements(bpy.types.Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         global_ids = []
         for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                global_id = getattr(element, "GlobalId", None)
-                if global_id:
+            if element := tool.Ifc.get_entity(obj):
+                if global_id := getattr(element, "GlobalId", None):
                     global_ids.append(global_id)
         if len(global_ids) > 50:
             # Too much to store in a string property
-            name = "globalid-filter-" + ifcopenshell.guid.new()
+            name = f"globalid-filter-{ifcopenshell.guid.new()}"
             text_data = bpy.data.texts.new(name)
             text_data.from_string(",".join(global_ids))
             filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
@@ -181,8 +179,7 @@ class Search(Operator):
 
         total_selected = 0
         for element in results:
-            obj = tool.Ifc.get_object(element)
-            if obj:
+            if obj := tool.Ifc.get_object(element):
                 obj.select_set(True)
         self.report({"INFO"}, f"{len(results)} Results")
         return {"FINISHED"}
@@ -284,8 +281,7 @@ class ColourByProperty(Operator):
             else:
                 colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
             obj.color = (*colourscheme[value]["colour"], 1)
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
+        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             areas[0].spaces[0].shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
@@ -298,8 +294,7 @@ class ColourByProperty(Operator):
         return {"FINISHED"}
 
     def store_state(self, context):
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
+        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
     def rollback(self, data):
@@ -449,8 +444,7 @@ class SelectIfcClass(Operator):
         classes = set()
         predefined_types = set()
         for obj in objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
+            if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
         for cls in classes:
@@ -460,9 +454,8 @@ class SelectIfcClass(Operator):
                     and ifcopenshell.util.element.get_predefined_type(element) not in predefined_types
                 ):
                     continue
-                obj = tool.Ifc.get_object(element)
-                if obj:
-                    obj.select_set(True)
+                if obj := tool.Ifc.get_object(element):
+                    tool.Blender.select_object(obj)
         return {"FINISHED"}
 
 
@@ -488,10 +481,7 @@ class ToggleFilterSelection(Operator):
 
     def execute(self, context):
         props = bpy.context.scene.BIMSearchProperties
-        if self.action == "SELECT":
-            self.selecting_actionbool = True
-        else:
-            self.selecting_actionbool = False
+        self.selecting_actionbool = self.action == "SELECT"
         if props.filter_type == "CLASSES":
             for ifc_class in props.filter_classes:
                 ifc_class.is_selected = self.selecting_actionbool
@@ -545,11 +535,7 @@ class ActivateIfcClassFilter(Operator):
             "filter_classes",
             context.scene.BIMSearchProperties,
             "filter_classes_index",
-            rows=(
-                20
-                if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20
-                else len(bpy.context.scene.BIMSearchProperties.filter_classes)
-            ),
+            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_classes), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -604,11 +590,7 @@ class ActivateContainerFilter(Operator):
             "filter_container",
             context.scene.BIMSearchProperties,
             "filter_container_index",
-            rows=(
-                20
-                if len(bpy.context.scene.BIMSearchProperties.filter_container) > 20
-                else len(bpy.context.scene.BIMSearchProperties.filter_container)
-            ),
+            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_container), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"

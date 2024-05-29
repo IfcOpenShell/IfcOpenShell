@@ -459,6 +459,13 @@ class Blender(blenderbim.core.tool.Blender):
             obj.select_set(False)
         context.view_layer.objects.active = active_object
         active_object.select_set(True)
+        
+    @classmethod
+    def select_object(cls, obj: bpy.types.Object):
+        try:
+            obj.select_set(True)
+        except RuntimeError:  # Trying to select a hidden object throws an error
+            pass
 
     @classmethod
     def set_objects_selection(
