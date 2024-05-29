@@ -40,7 +40,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import Union
+from typing import Union, Iterable
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -755,21 +755,35 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.context.view_layer.update()
 
     @classmethod
-    def reload_representation(cls, obj):
-        """reload `obj` active representation"""
-        if not obj.data:
-            return
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-            apply_openings=True,
-        )
+    def reload_representation(cls, obj_or_objs: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
+        """Reload object/objects active representation.
+
+        Ensures that same representations won't be reloaded multiple times.
+        """
+        objs = obj_or_objs if isinstance(obj_or_objs, Iterable) else [obj_or_objs]
+
+        # Filter out unique meshes to avoid
+        # reloading the same representation multiple times.
+        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
+        meshes_to_objects = dict()
+        for obj in objs:
+            mesh = obj.data
+            if not mesh:
+                continue
+            meshes_to_objects.setdefault(mesh, obj)
+
+        for obj in meshes_to_objects.values():
+            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
 
     @classmethod
     def remove_representation_item(cls, representation_item):
