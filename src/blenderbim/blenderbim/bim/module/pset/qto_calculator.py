@@ -53,19 +53,6 @@ class QtoCalculator:
                 else:
                     self.mapping_dict[key][item] = None
 
-    def calculate_quantity(self, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
-        """calculates the value of the quantity in the project units"""
-        string = "self.mapping_dict[qto_name][quantity_name](obj"
-        if isinstance(mapper[qto_name][quantity_name], dict):
-            args = mapper[qto_name][quantity_name]["args"]
-        else:
-            args = ""
-        string += args
-        string += ")"
-        value: float = eval(string)
-
-        return tool.Qto.convert_to_project_units(value, qto_name, quantity_name) or value
-
     def get_units(self, o: bpy.types.Object, vg_index: int) -> int:
         return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 

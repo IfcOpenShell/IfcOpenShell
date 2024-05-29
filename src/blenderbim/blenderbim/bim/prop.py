@@ -263,7 +263,6 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
-    has_calculator: BoolProperty(name="Has Calculator", default=False)
     value_min: FloatProperty(description="This is used to validate int_value and float_value")
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
     value_max: FloatProperty(description="This is used to validate int_value and float_value")

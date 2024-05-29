@@ -21,7 +21,6 @@ from . import ui, prop, operator
 
 classes = (
     operator.AssignBaseQto,
-    operator.CalculateAllQuantities,
     operator.CalculateCircleRadius,
     operator.CalculateEdgeLengths,
     operator.CalculateFaceAreas,

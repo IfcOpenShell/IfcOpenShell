@@ -186,23 +186,6 @@ class AssignBaseQto(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class CalculateAllQuantities(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.calculate_all_quantities"
-    bl_label = "Calculate All Quantities"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Calculate all possible quantities and assign them to selected object"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get() and context.selected_objects
-
-    def _execute(self, context):
-        core.calculate_all_quantities(
-            tool.Ifc, tool.Cost, tool.Qto, QtoCalculator(), selected_objects=context.selected_objects
-        )
-        return {"FINISHED"}
-
-
 class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.perform_quantity_take_off"
     bl_label = "Perform Quantity Take-off"
