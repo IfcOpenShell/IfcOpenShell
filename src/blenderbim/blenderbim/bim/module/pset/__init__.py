@@ -27,7 +27,6 @@ classes = (
     operator.DisablePsetEditing,
     operator.EditPset,
     operator.EnablePsetEditing,
-    operator.GuessQuantity,
     operator.CalculateQuantity,
     operator.RemovePset,
     operator.TogglePsetExpansion,
