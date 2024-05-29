@@ -27,10 +27,8 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
-import blenderbim.core.qto as QtoCore
 import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
 class Operator:

@@ -2,7 +2,7 @@
     "name": "IFC4 Base Quantities - IfcOpenShell",
     "description": "This ruleset quantifies every single possible standardised base quantity in IFC4 using only IfcOpenShell as a geometry processor.",
     "calculators": {
-        "IOSTriangulation": {
+        "IfcOpenShell": {
             "IfcActuator": {
                 "Qto_ActuatorBaseQuantities": {
                     "GrossWeight": null

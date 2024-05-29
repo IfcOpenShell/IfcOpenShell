@@ -23,16 +23,20 @@ import ifcopenshell.api
 import ifcopenshell.api.pset
 import ifcopenshell.util.selector
 import multiprocessing
-from typing import Optional
+from collections import namedtuple
+from typing import Iterable
 
 
-def get_rules(name: str):
-    cwd = os.path.dirname(os.path.realpath(__file__))
+Function = namedtuple("Function", ["id", "name", "description"])
+rules = {}
+
+cwd = os.path.dirname(os.path.realpath(__file__))
+for name in ("IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"):
     with open(os.path.join(cwd, name + ".json"), "r") as f:
-        return json.load(f)
+        rules[name] = json.load(f)
 
 
-def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict):
+def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> dict:
     results = {}
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
@@ -43,7 +47,7 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return results
 
 
-def edit_qtos(ifc_file, results):
+def edit_qtos(ifc_file, results) -> None:
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -54,14 +58,17 @@ def edit_qtos(ifc_file, results):
             ifcopenshell.api.pset.edit_qto(ifc_file, qto=qto, properties=quantities)
 
 
-class IOSTriangulation:
+class IfcOpenShell:
+    """Calculates Model body context geometry using the default IfcOpenShell
+    iterator on triangulation elements."""
+
     @staticmethod
     def calculate(
         ifc_file: ifcopenshell.file,
         elements: set[ifcopenshell.entity_instance],
         qtos: dict,
         results: dict,
-    ):
+    ) -> None:
         import ifcopenshell
         import ifcopenshell.geom
         import ifcopenshell.util.shape
@@ -89,10 +96,10 @@ class IOSTriangulation:
         tasks = []
 
         if gross_qtos:
-            tasks.append((IOSTriangulation.create_iterator(ifc_file, gross_settings, elements), gross_qtos))
+            tasks.append((IfcOpenShell.create_iterator(ifc_file, gross_settings, list(elements)), gross_qtos))
 
         if net_qtos:
-            tasks.append((IOSTriangulation.create_iterator(ifc_file, net_settings, elements), net_qtos))
+            tasks.append((IfcOpenShell.create_iterator(ifc_file, net_settings, list(elements)), net_qtos))
 
         for iterator, qtos in tasks:
             if iterator.initialize():
@@ -108,13 +115,26 @@ class IOSTriangulation:
                         break
 
     @staticmethod
-    def create_iterator(ifc_file, settings, elements):
+    def create_iterator(
+        ifc_file: ifcopenshell.file, settings: ifcopenshell.geom.settings, elements: list[ifcopenshell.entity_instance]
+    ) -> ifcopenshell.geom.iterator:
         return ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
+
+    @staticmethod
+    def get_functions() -> list[Function]:
+        return [
+            Function("get_volume", "Volume", "Calculates the volume of a manifold shape"),
+            Function("get_x", "X Length", "Calculates the length along the local X axis"),
+        ]
 
 
 class Blender:
+    """Calculates geometry based on currently loaded Blender objects."""
+
     @staticmethod
-    def calculate(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict):
+    def calculate(
+        ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], qtos: dict, results: dict
+    ) -> None:
         import blenderbim.tool as tool
         import blenderbim.bim.module.qto.calculator as calculator
 
@@ -132,5 +152,16 @@ class Blender:
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
                     results[element][name][quantity] = formula_function(obj)
 
+    @staticmethod
+    def get_functions() -> list[Function]:
+        return [
+            Function(
+                "get_linear_length",
+                "Maximum Bounding Length",
+                "Calculates the length of the maximum local bounding box",
+            ),
+            Function("get_length", "Length", "Calculates the length assumed as the maximum of the local X or Y axis"),
+        ]
 
-calculators = {"Blender": Blender, "IOSTriangulation": IOSTriangulation}
+
+calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
