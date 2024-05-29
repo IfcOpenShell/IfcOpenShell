@@ -38,16 +38,18 @@ VectorTuple = tuple[float, float, float]
 def get_units(o: bpy.types.Object, vg_index: int) -> int:
     return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 
-def get_linear_length(o: bpy.types.Object) -> float:
-    """_summary_: Returns the length of the longest edge of the object bounding box
 
-    :param blender-object o: Blender Object
-    :return float: Length
+def get_linear_length(o: bpy.types.Object) -> float:
+    """Returns the length of the longest edge of the object bounding box
+
+    :param o: Blender Object
+    :return: Length
     """
     x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
     y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
     z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
     return max(x, y, z)
+
 
 def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
     if vg_index is None:
@@ -74,21 +76,25 @@ def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: s
         length += get_edge_distance(o, e)
     return length
 
+
 def get_stair_length(obj: bpy.types.Object) -> float:
     length = get_length(obj)
     height = get_height(obj)
     stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
     return stair_length
 
+
 def get_net_stair_area(obj: bpy.types.Object) -> float:
     OBB_obj = get_OBB_object(obj)
     OBB_net_footprint_area = get_net_footprint_area(OBB_obj)
     return OBB_net_footprint_area
 
+
 def get_gross_stair_area(obj: bpy.types.Object) -> float:
     OBB_obj = get_OBB_object(obj)
     OBB_gross_footprint_area = get_gross_footprint_area(OBB_obj)
     return OBB_gross_footprint_area
+
 
 def get_parametric_axis(obj: bpy.types.Object) -> Literal["AXIS2", "AXIS3", None]:
     relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(obj))
@@ -105,6 +111,7 @@ def get_parametric_axis(obj: bpy.types.Object) -> Literal["AXIS2", "AXIS3", None
                 return None
     return None
 
+
 def get_covering_gross_area(obj: bpy.types.Object) -> float:
     parametrix_axis = get_parametric_axis(obj)
     if not parametrix_axis:
@@ -113,6 +120,7 @@ def get_covering_gross_area(obj: bpy.types.Object) -> float:
         return get_gross_side_area(obj)
     elif parametrix_axis == "AXIS3":
         return get_gross_footprint_area(obj)
+
 
 def get_covering_net_area(obj: bpy.types.Object) -> float:
     parametrix_axis = get_parametric_axis(obj)
@@ -123,6 +131,7 @@ def get_covering_net_area(obj: bpy.types.Object) -> float:
     elif parametrix_axis == "AXIS3":
         return get_net_footprint_area(obj)
 
+
 def get_covering_width(obj: bpy.types.Object) -> float:
     parametrix_axis = get_parametric_axis(obj)
     if not parametrix_axis:
@@ -131,6 +140,7 @@ def get_covering_width(obj: bpy.types.Object) -> float:
         return get_width(obj)
     elif parametrix_axis == "AXIS3":
         return get_height(obj)
+
 
 def get_width(o: bpy.types.Object) -> float:
     """_summary_: Returns the width of the object bounding box
@@ -142,6 +152,7 @@ def get_width(o: bpy.types.Object) -> float:
     y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
     return min(x, y)
 
+
 def get_height(o: bpy.types.Object) -> float:
     """_summary_: Returns the height of the object bounding box
 
@@ -150,11 +161,13 @@ def get_height(o: bpy.types.Object) -> float:
     """
     return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
+
 def get_opening_height(obj: bpy.types.Object) -> float:
     if is_opening_horizontal(obj):
         return get_width(obj)
     else:
         return get_height(obj)
+
 
 def get_opening_depth(obj: bpy.types.Object) -> float:
     if is_opening_horizontal(obj):
@@ -162,11 +175,13 @@ def get_opening_depth(obj: bpy.types.Object) -> float:
     else:
         return get_width(obj)
 
+
 def get_opening_mapping_area(obj: bpy.types.Object) -> float:
     if is_opening_horizontal(obj):
         return get_net_footprint_area(obj)
     else:
         return get_net_side_area(obj)
+
 
 def get_finish_ceiling_height(obj: bpy.types.Object) -> float:
     floor_height = get_finish_floor_height(obj)
@@ -174,13 +189,16 @@ def get_finish_ceiling_height(obj: bpy.types.Object) -> float:
     finish_ceiling_height = ceiling_height - floor_height
     return finish_ceiling_height
 
+
 def get_max_global_z(obj: bpy.types.Object) -> float:
     z_values = [(obj.matrix_world @ Vector(co))[2] for co in obj.bound_box]
     return max(z_values)
 
+
 def get_min_global_z(obj: bpy.types.Object) -> float:
     z_values = [(obj.matrix_world @ Vector(co))[2] for co in obj.bound_box]
     return min(z_values)
+
 
 def get_finish_floor_height(obj: bpy.types.Object) -> float:
     space_min_z_value = get_min_global_z(obj)
@@ -199,6 +217,7 @@ def get_finish_floor_height(obj: bpy.types.Object) -> float:
                 flooring_max_z_value = flooring_z_value
 
     return flooring_max_z_value - space_min_z_value
+
 
 def get_ceiling_height(obj: bpy.types.Object) -> float:
     space_min_z_value = get_min_global_z(obj)
@@ -219,6 +238,7 @@ def get_ceiling_height(obj: bpy.types.Object) -> float:
 
     return ceiling_min_z_value - space_min_z_value
 
+
 def get_net_perimeter(o: bpy.types.Object) -> float:
     parsed_edges = []
     shared_edges = []
@@ -234,6 +254,7 @@ def get_net_perimeter(o: bpy.types.Object) -> float:
         perimeter -= get_edge_key_distance(o, edge_key)
     return perimeter
 
+
 def get_gross_perimeter(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)
     mesh = get_gross_element_mesh(element)
@@ -242,13 +263,16 @@ def get_gross_perimeter(o: bpy.types.Object) -> float:
     delete_obj(gross_obj)
     return gross_perimeter
 
+
 def get_space_net_perimeter(obj: bpy.types.Object) -> float:
     pass
+
 
 def get_rectangular_perimeter(obj: bpy.types.Object) -> float:
     length = get_length(obj, main_axis="x")
     height = get_height(obj)
     return (length + height) * 2
+
 
 def get_lowest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
     lowest_polygons = []
@@ -266,6 +290,7 @@ def get_lowest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
             lowest_z = z
     return lowest_polygons
 
+
 def get_highest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
     highest_polygons = []
     highest_z = None
@@ -282,11 +307,14 @@ def get_highest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
             highest_z = z
     return highest_polygons
 
+
 def get_edge_key_distance(obj: bpy.types.Object, edge_key: tuple[int, int]) -> float:
     return (obj.data.vertices[edge_key[1]].co - obj.data.vertices[edge_key[0]].co).length
 
+
 def get_edge_distance(obj: bpy.types.Object, edge: bpy.types.MeshEdge) -> float:
     return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
+
 
 def get_net_floor_area(obj: bpy.types.Object) -> float:
     decompositions = get_obj_decompositions(obj)
@@ -304,6 +332,7 @@ def get_net_floor_area(obj: bpy.types.Object) -> float:
 
     return total_net_floor_area
 
+
 def get_gross_ceiling_area(obj: bpy.types.Object) -> float:
     decompositions = get_obj_decompositions(obj)
     if not decompositions:
@@ -319,6 +348,7 @@ def get_gross_ceiling_area(obj: bpy.types.Object) -> float:
             total_gross_ceiling_area += get_gross_footprint_area(decomposition_obj)
 
     return total_gross_ceiling_area
+
 
 def get_net_ceiling_area(obj: bpy.types.Object) -> float:
     decompositions = get_obj_decompositions(obj)
@@ -340,6 +370,7 @@ def get_net_ceiling_area(obj: bpy.types.Object) -> float:
 
     return total_net_ceiling_area
 
+
 def get_space_net_volume(obj: bpy.types.Object) -> float:
     decompositions = get_obj_decompositions(obj)
     if not decompositions:
@@ -355,6 +386,7 @@ def get_space_net_volume(obj: bpy.types.Object) -> float:
 
     return total_space_net_volume
 
+
 def get_net_footprint_area(o: bpy.types.Object) -> float:
     """_summary_: Returns the area of the footprint of the object, excluding any holes
 
@@ -365,6 +397,7 @@ def get_net_footprint_area(o: bpy.types.Object) -> float:
     for polygon in get_lowest_polygons(o):
         area += polygon.area
     return area
+
 
 def get_gross_footprint_area(o: bpy.types.Object) -> float:
     """_summary_: Returns the area of the footprint of the object, without related opening and excluding any holes
@@ -382,6 +415,7 @@ def get_gross_footprint_area(o: bpy.types.Object) -> float:
     delete_mesh(mesh)
     return gross_footprint_area
 
+
 def get_net_roofprint_area(o: bpy.types.Object) -> float:
     # Is roofprint the right word? Couldn't think of anything better - vulevukusej
     """_summary_: Returns the area of the net roofprint of the object, excluding any holes
@@ -394,6 +428,7 @@ def get_net_roofprint_area(o: bpy.types.Object) -> float:
         area += polygon.area
     return area
 
+
 def get_side_area(o: bpy.types.Object) -> float:
     # There are a few dumb options for this, but this seems the dumbest
     # until I get more practical experience on what works best.
@@ -401,6 +436,7 @@ def get_side_area(o: bpy.types.Object) -> float:
     y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
     z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
     return max(x * z, y * z)
+
 
 def get_cross_section_area(obj: bpy.types.Object) -> float:
     representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -417,6 +453,7 @@ def get_cross_section_area(obj: bpy.types.Object) -> float:
             area = get_end_area(obj)
             return area
     # TODO handle other types of sections, and then fall back to mesh parsing
+
 
 def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
     if vg_index is None:
@@ -436,8 +473,10 @@ def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) 
             area += polygon.area
     return area
 
+
 def get_net_surface_area(obj: bpy.types.Object) -> float:
     return get_mesh_area(obj.data)
+
 
 def get_mesh_area(mesh: bpy.types.Mesh) -> float:
     area = 0
@@ -445,11 +484,13 @@ def get_mesh_area(mesh: bpy.types.Mesh) -> float:
         area += polygon.area
     return area
 
+
 def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.types.MeshVertex]) -> bool:
     for v in polygon.vertices:
         if v not in vertices_in_vg:
             return False
     return True
+
 
 def get_net_volume(o: bpy.types.Object) -> float:
     o_mesh = bmesh.new()
@@ -457,6 +498,7 @@ def get_net_volume(o: bpy.types.Object) -> float:
     volume = o_mesh.calc_volume()
     o_mesh.free()
     return volume
+
 
 def get_gross_volume(o: bpy.types.Object) -> float:
     if not has_openings(o):
@@ -473,16 +515,17 @@ def get_gross_volume(o: bpy.types.Object) -> float:
 
     return gross_volume
 
-def has_openings(
-    obj: bpy.types.Object
-) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+
+def has_openings(obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
     element = tool.Ifc.get_entity(obj)
     return element and getattr(element, "HasOpenings", [])
+
 
 def get_obj_decompositions(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
     decompositions = ifcopenshell.util.element.get_decomposition(element)
     return decompositions
+
 
 def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
     obj_mass_density = get_obj_mass_density(obj)
@@ -492,6 +535,7 @@ def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
     gross_weight = obj_mass_density * gross_volume
     return gross_weight
 
+
 def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
@@ -499,6 +543,7 @@ def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
     net_volume = get_net_volume(obj)
     net_weight = obj_mass_density * net_volume
     return net_weight
+
 
 def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
     entity = tool.Ifc.get_entity(obj)
@@ -546,6 +591,7 @@ def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
         else:
             return
 
+
 def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Literal["OPENING", "RECESS"]:
     """_summary_: Returns the opening type - OPENING / RECESS
 
@@ -565,8 +611,8 @@ def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Litera
     # If an odd number of face-normal vectors intersect with the object, then the void is a recess, otherwise it's an opening
     return "OPENING" if ray_intersections % 2 == 0 else "RECESS"
 
+
 def get_opening_area(
-    
     obj: bpy.types.Object,
     angle_z1: int = 45,
     angle_z2: int = 135,
@@ -625,8 +671,8 @@ def get_opening_area(
 
     return total_opening_area
 
+
 def get_lateral_area(
-    
     obj: bpy.types.Object,
     subtract_openings: bool = True,
     exclude_end_areas: bool = False,
@@ -665,9 +711,7 @@ def get_lateral_area(
         top_axis = x_axis
 
     area = 0
-    total_opening_area = (
-        0 if subtract_openings else get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
-    )
+    total_opening_area = 0 if subtract_openings else get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
     polygons = obj.data.polygons
 
     for polygon in polygons:
@@ -685,6 +729,7 @@ def get_lateral_area(
         area += polygon.area
     return area + total_opening_area
 
+
 def get_gross_side_area(obj: bpy.types.Object) -> float:
     if not has_openings(obj):
         return get_net_side_area(obj)
@@ -693,13 +738,16 @@ def get_gross_side_area(obj: bpy.types.Object) -> float:
 
     return gross_side_area
 
+
 def get_net_side_area(obj: bpy.types.Object) -> float:
     net_side_area = get_lateral_area(obj, exclude_end_areas=True, main_axis="x") / 2
     return net_side_area
 
+
 def get_outer_surface_area(obj: bpy.types.Object) -> float:
     outer_surface_area = get_lateral_area(obj, exclude_end_areas=True, angle_z1=0, angle_z2=360)
     return outer_surface_area
+
 
 def get_end_area(obj: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(obj)
@@ -714,6 +762,7 @@ def get_end_area(obj: bpy.types.Object) -> float:
     delete_mesh(gross_mesh)
 
     return end_area
+
 
 def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
     """_summary_: Returns the gross top area of the object.
@@ -748,6 +797,7 @@ def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
             area += polygon.area
     return area + opening_area
 
+
 # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
 def get_net_top_area(obj: bpy.types.Object, angle: int = 45, ignore_internal: bool = True) -> float:
     """_summary_: Returns the net top area of the object.
@@ -774,6 +824,7 @@ def get_net_top_area(obj: bpy.types.Object, angle: int = 45, ignore_internal: bo
             area += polygon.area
 
     return area
+
 
 def get_projected_area(obj, projection_axis: AxisType = "z", is_gross: bool = True) -> float:
     """_summary_: Returns the projected area of the object.
@@ -813,6 +864,7 @@ def get_projected_area(obj, projection_axis: AxisType = "z", is_gross: bool = Tr
             void_area += void_polygon.area
         return projected_polygon.area + void_area
     return projected_polygon.area
+
 
 def get_OBB_object(obj: bpy.types.Object) -> bpy.types.Object:
     """_summary_: Returns the Oriented-Bounding-Box (OBB) of the object.
@@ -854,6 +906,7 @@ def get_OBB_object(obj: bpy.types.Object) -> bpy.types.Object:
         new_OBB_object.hide_set(True)
 
     return new_OBB_object
+
 
 def get_AABB_object(obj: bpy.types.Object) -> bpy.types.Object:
     """_summary_: Returns the Axis-Aligned-Bounding-Box (AABB) of the object.
@@ -909,8 +962,8 @@ def get_AABB_object(obj: bpy.types.Object) -> bpy.types.Object:
 
     return new_AABB_object
 
+
 def get_bisected_obj(
-    
     obj: bpy.types.Object,
     plane_co_pos: VectorTuple,
     plane_no_pos: VectorTuple,
@@ -954,6 +1007,7 @@ def get_bisected_obj(
 
     return bis_obj
 
+
 def get_total_contact_area(obj: bpy.types.Object, class_filter: list[str] = ["IfcElement"]) -> float:
     """_summary_: Returns the total contact area of the object with other objects.
 
@@ -969,6 +1023,7 @@ def get_total_contact_area(obj: bpy.types.Object, class_filter: list[str] = ["If
         total_contact_area += get_contact_area(obj, o)
 
     return total_contact_area
+
 
 def get_touching_objects(obj: bpy.types.Object, class_filter: list[str]) -> list[bpy.types.Object]:
     """_summary_: Returns a list of objects that are touching the object.
@@ -1019,6 +1074,7 @@ def get_touching_objects(obj: bpy.types.Object, class_filter: list[str]) -> list
 
     return touching_objects
 
+
 def get_contact_area(object1: bpy.types.Object, object2: bpy.types.Object) -> float:
     """_summary_: Returns the contact area between two objects.
 
@@ -1034,8 +1090,8 @@ def get_contact_area(object1: bpy.types.Object, object2: bpy.types.Object) -> fl
             total_area += get_intersection_between_polygons(object1, poly1, object2, poly2)
     return total_area
 
+
 def get_intersection_between_polygons(
-    
     object1: bpy.types.Object,
     poly1: bpy.types.MeshPolygon,
     object2: bpy.types.Object,
@@ -1083,9 +1139,8 @@ def get_intersection_between_polygons(
         # TopologicalError - Generated Geometry might be invalid
         return 0
 
-def create_shapely_polygon(
-    obj: bpy.types.Object, polygon: bpy.types.MeshPolygon, trans_matrix: Matrix
-) -> Polygon:
+
+def create_shapely_polygon(obj: bpy.types.Object, polygon: bpy.types.MeshPolygon, trans_matrix: Matrix) -> Polygon:
     """_summary_: Create a shapely polygon
 
     :param blender-object obj: Blender Object
@@ -1104,10 +1159,12 @@ def create_shapely_polygon(
         polygon_tuples.append((x, y))
     return Polygon(polygon_tuples)
 
+
 def get_gross_element_mesh(element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
     settings = ifcopenshell.geom.settings()
     settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
     return create_mesh_from_shape(element, settings)
+
 
 def create_mesh_from_shape(
     element: ifcopenshell.entity_instance, settings: Optional[ifcopenshell.geom.settings] = None
@@ -1138,10 +1195,12 @@ def create_mesh_from_shape(
     mesh.update()
     return mesh
 
+
 def get_bmesh_from_mesh(mesh: bpy.types.Mesh) -> bmesh.types.BMesh:
     bm = bmesh.new()
     bm.from_mesh(mesh)
     return bm
+
 
 def get_object_main_axis(o: bpy.types.Object) -> AxisType:
     """_summary_: Returns the main object axis. Useful for profile-defined objects.
@@ -1162,6 +1221,7 @@ def get_object_main_axis(o: bpy.types.Object) -> AxisType:
     else:
         return "x"
 
+
 def is_opening_horizontal(o: bpy.types.Object) -> bool:
     x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
     y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
@@ -1169,9 +1229,11 @@ def is_opening_horizontal(o: bpy.types.Object) -> bool:
 
     return z < x and z < y
 
+
 def delete_mesh(mesh: bpy.types.Mesh) -> None:
     mesh.user_clear()
     bpy.data.meshes.remove(mesh)
+
 
 def delete_obj(obj: bpy.types.Object) -> None:
     bpy.data.objects.remove(obj, do_unlink=True)
