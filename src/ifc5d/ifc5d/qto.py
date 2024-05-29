@@ -84,6 +84,8 @@ class IfcOpenShell:
 
         for name, quantities in qtos.items():
             for quantity, formula in quantities.items():
+                if not formula:
+                    continue
                 if formula.startswith("gross_"):
                     formula = formula[6:]
                     gross_qtos.setdefault(name, {})[quantity] = formula
