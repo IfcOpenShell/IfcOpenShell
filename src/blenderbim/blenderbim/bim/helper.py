@@ -225,15 +225,6 @@ def get_enum_items(data, prop_name, context=None):
     return items
 
 
-# hack to close popup
-# https://blender.stackexchange.com/a/202576/130742
-def close_operator_panel(event):
-    x, y = event.mouse_x, event.mouse_y
-    bpy.context.window.cursor_warp(10, 10)
-    move_back = lambda: bpy.context.window.cursor_warp(x, y)
-    bpy.app.timers.register(move_back, first_interval=0.01)
-
-
 def convert_property_group_from_si(property_group, skip_props=()):
     """Method converts property group values from si to current ifc project units
 
