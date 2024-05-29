@@ -26,7 +26,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
 
 class IfcDataGetter:
@@ -41,17 +41,17 @@ class IfcDataGetter:
         ]
 
     @staticmethod
-    def canonicalise_time(time):
+    def canonicalise_time(time: Union[datetime.datetime, None]) -> str:
         if not time:
             return "-"
         return time.strftime("%d/%m/%y")
 
     @staticmethod
-    def get_root_costs(cost_schedule):
+    def get_root_costs(cost_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return [obj for rel in cost_schedule.Controls or [] for obj in rel.RelatedObjects or []]
 
     @staticmethod
-    def get_cost_item_values(cost_item=None):
+    def get_cost_item_values(cost_item: Union[ifcopenshell.entity_instance, None]) -> Union[list[dict[str, Any]], None]:
         if not cost_item:
             return None
         values = []
@@ -71,14 +71,14 @@ class IfcDataGetter:
         return values
 
     @staticmethod
-    def process_categories(cost_item, categories):
+    def process_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
         for cost_value in cost_item.CostValues or []:
             if cost_value.Category:
                 categories.add("{}{}".format(cost_value.Category, " Cost"))
         return categories
 
     @staticmethod
-    def process_cost_item_categories(cost_item, categories):
+    def process_cost_item_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
         IfcDataGetter.process_categories(cost_item, categories)
         for rel in cost_item.IsNestedBy or []:
             for child in rel.RelatedObjects or []:
@@ -86,14 +86,20 @@ class IfcDataGetter:
         return categories
 
     @staticmethod
-    def get_cost_rates_categories(schedule):
+    def get_cost_rates_categories(schedule: ifcopenshell.entity_instance) -> set[str]:
         categories = set()
         for cost_item in IfcDataGetter.get_root_costs(schedule):
             IfcDataGetter.process_cost_item_categories(cost_item, categories)
         return categories
 
     @staticmethod
-    def process_cost_data(file, cost_item, cost_items_data, index, hierarchy="1"):
+    def process_cost_data(
+        file: ifcopenshell.file,
+        cost_item: ifcopenshell.entity_instance,
+        cost_items_data: list[dict[str, Any]],
+        index: int,
+        hierarchy: str = "1",
+    ) -> None:
         def listToString(s):
             return ", ".join([str(i) for i in s])
 
@@ -134,7 +140,7 @@ class IfcDataGetter:
             )
 
     @staticmethod
-    def get_cost_items_data(file, schedule):
+    def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         cost_items_data = []
         index = 0
         for cost_item in IfcDataGetter.get_root_costs(schedule):
@@ -142,7 +148,7 @@ class IfcDataGetter:
         return cost_items_data
 
     @staticmethod
-    def format_unit(unit):
+    def format_unit(unit: ifcopenshell.entity_instance) -> str:
         if unit.is_a("IfcContextDependentUnit"):
             return f"{unit.UnitType} / {unit.Name}"
         else:
@@ -152,7 +158,7 @@ class IfcDataGetter:
             return f"{unit.UnitType} / {name}"
 
     @staticmethod
-    def get_cost_value_unit(cost_value=None):
+    def get_cost_value_unit(cost_value: Optional[ifcopenshell.entity_instance] = None) -> Union[str, None]:
         if not cost_value:
             return None
         unit = cost_value.UnitBasis
@@ -161,9 +167,9 @@ class IfcDataGetter:
         return IfcDataGetter.format_unit(unit.UnitComponent)
 
     @staticmethod
-    def get_cost_item_quantity(file, cost_item=None):
+    def get_cost_item_quantity(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> dict[str, Any]:
         # TODO: handle multiple quantities, THOSE WHHICH ARE JUYST ASSIGNED TO THE COST ITEM DIRECTLY, NOT THROUGH OBJECTS.
-        def add_quantity(quantity, take_off_name):
+        def add_quantity(quantity: ifcopenshell.entity_instance, take_off_name: str) -> float:
             accounted_for.append(quantity)
             if take_off_name == "":
                 take_off_name = quantity[0]

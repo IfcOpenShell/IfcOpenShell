@@ -20,11 +20,12 @@ import bpy
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from mathutils import Color
-from typing import Union
+from typing import Union, Any, Optional
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -45,19 +46,19 @@ STYLE_PROPS_MAP = {
 
 class Style(blenderbim.core.tool.Style):
     @classmethod
-    def can_support_rendering_style(cls, obj):
+    def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
 
     @classmethod
-    def disable_editing(cls, obj):
+    def disable_editing(cls, obj: bpy.types.Material) -> None:
         obj.BIMStyleProperties.is_editing = False
 
     @classmethod
-    def disable_editing_external_style(cls, obj):
+    def disable_editing_external_style(cls, obj: bpy.types.Material) -> None:
         obj.BIMStyleProperties.is_editing_external_style = False
 
     @classmethod
-    def disable_editing_styles(cls):
+    def disable_editing_styles(cls) -> None:
         bpy.context.scene.BIMStylesProperties.is_editing = False
 
     @classmethod
@@ -67,39 +68,40 @@ class Style(blenderbim.core.tool.Style):
         return new_style
 
     @classmethod
-    def enable_editing(cls, obj):
+    def enable_editing(cls, obj: bpy.types.Material) -> None:
         obj.BIMStyleProperties.is_editing = True
 
     @classmethod
-    def enable_editing_external_style(cls, obj):
+    def enable_editing_external_style(cls, obj: bpy.types.Material) -> None:
         obj.BIMStyleProperties.is_editing_external_style = True
 
     @classmethod
-    def enable_editing_styles(cls):
+    def enable_editing_styles(cls) -> None:
         bpy.context.scene.BIMStylesProperties.is_editing = True
 
     @classmethod
-    def export_surface_attributes(cls, obj):
+    def export_surface_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.attributes)
 
     @classmethod
-    def export_external_style_attributes(cls, obj):
+    def export_external_style_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.external_style_attributes)
 
     @classmethod
-    def get_active_style_type(cls):
+    def get_active_style_type(cls) -> str:
         return bpy.context.scene.BIMStylesProperties.style_type
 
+    # TODO: `obj` argument is unused?
     @classmethod
-    def get_context(cls, obj):
+    def get_context(cls, obj) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_elements_by_style(cls, style):
+    def get_elements_by_style(cls, style: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
 
     @classmethod
-    def get_name(cls, obj):
+    def get_name(cls, obj: bpy.types.Material) -> str:
         return obj.name
 
     @classmethod
@@ -126,7 +128,7 @@ class Style(blenderbim.core.tool.Style):
         return style_elements
 
     @classmethod
-    def get_shading_style_data_from_props(cls) -> dict:
+    def get_shading_style_data_from_props(cls) -> dict[str, Any]:
         """returns style data from blender props in similar way to `Loader.surface_style_to_dict`
         to be compatible with `Loader.create_surface_style_rendering`"""
         surface_style_data = dict()
@@ -154,7 +156,7 @@ class Style(blenderbim.core.tool.Style):
         return surface_style_data
 
     @classmethod
-    def get_texture_style_data_from_props(cls) -> list[dict]:
+    def get_texture_style_data_from_props(cls) -> list[dict[str, Any]]:
         """returns style data from blender props in similar way to `Loader.surface_texture_to_dict`
         to be compatible with `Loader.create_surface_style_with_textures`"""
         props = bpy.context.scene.BIMStylesProperties
@@ -174,7 +176,7 @@ class Style(blenderbim.core.tool.Style):
         return textures
 
     @classmethod
-    def set_surface_style_props(cls):
+    def set_surface_style_props(cls) -> None:
         """set blender style props based on currently edited IfcSurfaceStyle,
         reset unrelated props to default values"""
 
@@ -241,7 +243,7 @@ class Style(blenderbim.core.tool.Style):
         props["update_graph"] = prev_update_graph_value
 
     @classmethod
-    def get_surface_rendering_attributes(cls, obj, verbose=False):
+    def get_surface_rendering_attributes(cls, obj: bpy.types.Material, verbose: bool = False) -> dict[str, Any]:
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
         def color_to_ifc_format(color):
@@ -403,22 +405,22 @@ class Style(blenderbim.core.tool.Style):
         return attributes
 
     @classmethod
-    def get_surface_rendering_style(cls, obj):
+    def get_surface_rendering_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcSurfaceStyleRendering", None)
 
     @classmethod
-    def get_texture_style(cls, obj):
+    def get_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcSurfaceStyleWithTextures", None)
 
     @classmethod
-    def get_external_style(cls, obj):
+    def get_external_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         style_elements = cls.get_style_elements(obj)
         return style_elements.get("IfcExternallyDefinedSurfaceStyle", None)
 
     @classmethod
-    def get_surface_shading_attributes(cls, obj):
+    def get_surface_shading_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
         data = {
             "SurfaceColour": {
                 "Name": None,
@@ -433,7 +435,7 @@ class Style(blenderbim.core.tool.Style):
         return data
 
     @classmethod
-    def get_surface_shading_style(cls, obj):
+    def get_surface_shading_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         if obj.BIMMaterialProperties.ifc_style_id:
             style = tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
             items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
@@ -441,7 +443,7 @@ class Style(blenderbim.core.tool.Style):
                 return items[0]
 
     @classmethod
-    def get_surface_texture_style(cls, obj):
+    def get_surface_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         if obj.BIMMaterialProperties.ifc_style_id:
             style = tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
             items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures")]
@@ -449,7 +451,7 @@ class Style(blenderbim.core.tool.Style):
                 return items[0]
 
     @classmethod
-    def get_uv_maps(cls, representation):
+    def get_uv_maps(cls, representation: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         items = []
         for item in representation.Items:
             if item.is_a("IfcMappedItem"):
@@ -464,7 +466,7 @@ class Style(blenderbim.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type):
+    def get_style_ui_props_attributes(cls, style_type: str) -> Union[bpy.types.PropertyGroup, None]:
         props = bpy.context.scene.BIMStylesProperties
         if style_type == "IfcExternallyDefinedSurfaceStyle":
             return props.external_style_attributes
@@ -474,7 +476,7 @@ class Style(blenderbim.core.tool.Style):
             return props.lighting_style_colours
 
     @classmethod
-    def import_presentation_styles(cls, style_type):
+    def import_presentation_styles(cls, style_type: str) -> None:
         color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         props = bpy.context.scene.BIMStylesProperties
         props.styles.clear()
@@ -497,13 +499,13 @@ class Style(blenderbim.core.tool.Style):
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
 
     @classmethod
-    def import_surface_attributes(cls, style, obj):
+    def import_surface_attributes(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Material) -> None:
         attributes = obj.BIMStyleProperties.attributes
         attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, attributes)
 
     @classmethod
-    def import_external_style_attributes(cls, style, obj):
+    def import_external_style_attributes(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Material) -> None:
         attributes = obj.BIMStyleProperties.external_style_attributes
         attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, attributes)
@@ -514,26 +516,26 @@ class Style(blenderbim.core.tool.Style):
         return bool(external_style and external_style.Location and external_style.Location.endswith(".blend"))
 
     @classmethod
-    def is_editing_styles(cls):
+    def is_editing_styles(cls) -> bool:
         return bpy.context.scene.BIMStylesProperties.is_editing
 
     @classmethod
-    def record_shading(cls, obj):
+    def record_shading(cls, obj: bpy.types.Material) -> None:
         obj.BIMMaterialProperties.shading_checksum = repr(np.array(obj.diffuse_color).tobytes())
 
     @classmethod
-    def select_elements(cls, elements):
+    def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
             if obj:
                 obj.select_set(True)
 
     @classmethod
-    def change_current_style_type(cls, blender_material, style_type):
+    def change_current_style_type(cls, blender_material: bpy.types.Material, style_type: str) -> None:
         blender_material.BIMStyleProperties.active_style_type = style_type
 
     @classmethod
-    def get_styled_items(cls, style):
+    def get_styled_items(cls, style: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
 
         inverses = list(ifc_file.get_inverse(style))
@@ -554,13 +556,15 @@ class Style(blenderbim.core.tool.Style):
         return items
 
     @classmethod
-    def assign_style_to_object(cls, style, obj):
+    def assign_style_to_object(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
         """assigns `style` to `object` current representation"""
         representation = tool.Geometry.get_active_representation(obj)
         tool.Ifc.run("style.assign_representation_styles", shape_representation=representation, styles=[style])
 
     @classmethod
-    def assign_style_to_representation_item(cls, representation_item, style=None):
+    def assign_style_to_representation_item(
+        cls, representation_item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
+    ) -> None:
         ifc_file = tool.Ifc.get()
         if not representation_item.StyledByItem:
             if style is None:
@@ -574,12 +578,14 @@ class Style(blenderbim.core.tool.Style):
         styled_item.Styles = (style,)
 
     @classmethod
-    def get_representation_item_style(cls, representation_item):
+    def get_representation_item_style(
+        cls, representation_item: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for inverse in tool.Ifc.get().get_inverse(representation_item):
             if inverse.is_a("IfcStyledItem"):
                 for style in inverse.Styles:
                     return style
 
     @classmethod
-    def reload_material_from_ifc(cls, blender_material):
+    def reload_material_from_ifc(cls, blender_material: bpy.types.Material) -> None:
         blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type

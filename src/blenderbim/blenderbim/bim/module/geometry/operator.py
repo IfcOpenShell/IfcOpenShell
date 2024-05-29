@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
+import blenderbim.core.geometry
 import blenderbim.core.geometry as core
 import blenderbim.core.aggregate
 import blenderbim.core.style

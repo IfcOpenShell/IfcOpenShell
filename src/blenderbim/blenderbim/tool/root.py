@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import blenderbim.core.tool
 import blenderbim.core.aggregate
 import blenderbim.core.geometry
@@ -29,17 +30,17 @@ import blenderbim.core.style
 import blenderbim.tool as tool
 from mathutils import Vector
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
-from typing import Union, Optional
+from typing import Union, Optional, Any
 
 
 class Root(blenderbim.core.tool.Root):
     @classmethod
-    def add_tracked_opening(cls, obj):
+    def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
         new = bpy.context.scene.BIMModelProperties.openings.add()
         new.obj = obj
 
     @classmethod
-    def assign_body_styles(cls, element, obj):
+    def assign_body_styles(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
         # Should this even be here? Should it be in the geometry tool?
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if body:
@@ -56,7 +57,7 @@ class Root(blenderbim.core.tool.Root):
             )
 
     @classmethod
-    def copy_representation(cls, source, dest):
+    def copy_representation(cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance) -> None:
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
@@ -80,11 +81,13 @@ class Root(blenderbim.core.tool.Root):
             ]
 
     @classmethod
-    def does_type_have_representations(cls, element):
+    def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
         return bool(element.RepresentationMaps)
 
     @classmethod
-    def get_decomposition_relationships(cls, objs):
+    def get_decomposition_relationships(
+        cls, objs: list[bpy.types.Object]
+    ) -> dict[ifcopenshell.entity_instance, dict[str, Any]]:
         relationships = {}
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
@@ -96,7 +99,9 @@ class Root(blenderbim.core.tool.Root):
         return relationships
 
     @classmethod
-    def get_connection_relationships(cls, objs):
+    def get_connection_relationships(
+        cls, objs: list[bpy.types.Object]
+    ) -> dict[ifcopenshell.entity_instance, dict[str, Any]]:
         relationships = {}
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
@@ -119,7 +124,9 @@ class Root(blenderbim.core.tool.Root):
         return relationships
 
     @classmethod
-    def get_element_representation(cls, element, context):
+    def get_element_representation(
+        cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if context.is_a("IfcGeometricRepresentationSubContext"):
             return ifcopenshell.util.representation.get_representation(
                 element,
@@ -134,13 +141,13 @@ class Root(blenderbim.core.tool.Root):
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_object_name(cls, obj):
+    def get_object_name(cls, obj: bpy.types.Object) -> None:
         if "." in obj.name and obj.name.split(".")[-1].isnumeric():
             return ".".join(obj.name.split(".")[:-1])
         return obj.name
 
     @classmethod
-    def get_object_representation(cls, obj):
+    def get_object_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         element = tool.Ifc.get_entity(obj)
@@ -152,19 +159,21 @@ class Root(blenderbim.core.tool.Root):
                 return element.Representation.Representations[0]
 
     @classmethod
-    def get_representation_context(cls, representation):
+    def get_representation_context(cls, representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return representation.ContextOfItems
 
     @classmethod
-    def is_element_a(cls, element, ifc_class):
+    def is_element_a(cls, element: ifcopenshell.entity_instance, ifc_class: str) -> bool:
         return element.is_a(ifc_class)
 
     @classmethod
-    def link_object_data(cls, source_obj, destination_obj):
+    def link_object_data(cls, source_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:
         destination_obj.data = source_obj.data
 
     @classmethod
-    def recreate_decompositions(cls, relationships, old_to_new):
+    def recreate_decompositions(
+        cls, relationships, old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+    ) -> None:
         for subelement, data in relationships.items():
             new_subelements = old_to_new.get(subelement)
             new_elements = old_to_new.get(data["element"])
@@ -227,7 +236,11 @@ class Root(blenderbim.core.tool.Root):
                             )
 
     @classmethod
-    def recreate_connections(cls, relationship, old_to_new):
+    def recreate_connections(
+        cls,
+        relationship: dict[ifcopenshell.entity_instance, dict[str, Any]],
+        old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
+    ) -> None:
         for element, data in relationship.items():
             try:
                 new_relating_element = old_to_new.get(data["relating_element"])[0]
@@ -244,7 +257,9 @@ class Root(blenderbim.core.tool.Root):
             )
 
     @classmethod
-    def recreate_aggregate(cls, old_to_new):
+    def recreate_aggregate(
+        cls, old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
+    ) -> None:
         for old, new in old_to_new.items():
             old_aggregate = ifcopenshell.util.element.get_aggregate(old)
             if old_aggregate:
@@ -301,7 +316,7 @@ class Root(blenderbim.core.tool.Root):
         )
 
     @classmethod
-    def set_object_name(cls, obj, element):
+    def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         # This disables the Blender name event handler
         obj.BIMObjectProperties.is_renaming = True
         name = getattr(element, "Name", getattr(element, "AxisTag", None))
@@ -309,7 +324,7 @@ class Root(blenderbim.core.tool.Root):
         obj.BIMObjectProperties.is_renaming = False
 
     @classmethod
-    def unlink_object(cls, obj):
+    def unlink_object(cls, obj: bpy.types.Object) -> None:
         tool.Ifc.unlink(obj=obj)
         if hasattr(obj.data, "BIMMeshProperties"):
             obj.data.BIMMeshProperties.ifc_definition_id = 0
