@@ -87,6 +87,21 @@ def update_type_page(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
 
 
+def update_relating_array_from_object(self, context):
+    bpy.ops.bim.enable_editing_array(item=self.is_editing)
+    return
+
+
+def is_object_array_applicable(self, obj):
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return False
+    return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+
+
+
+
+
 class BIMModelProperties(PropertyGroup):
     ifc_class: bpy.props.EnumProperty(items=get_ifc_class, name="Construction Class", update=update_ifc_class)
     relating_type_id: bpy.props.EnumProperty(
@@ -203,6 +218,14 @@ class BIMArrayProperties(PropertyGroup):
         description="Regenerate all children based on the parent object",
         default=False,
     )
+    relating_array_object: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Array Properties",
+        update=update_relating_array_from_object,
+        poll=is_object_array_applicable,
+    )
+
+
 
 
 class BIMStairProperties(PropertyGroup):
