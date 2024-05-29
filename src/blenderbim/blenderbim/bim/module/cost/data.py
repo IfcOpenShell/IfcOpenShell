@@ -202,6 +202,9 @@ class CostSchedulesData:
     def _get_object_quantities(cls, cost_item, element):
         if not element.is_a("IfcObject"):
             return []
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
+            return []
         results = []
         for relationship in element.IsDefinedBy:
             if not relationship.is_a("IfcRelDefinesByProperties"):
@@ -210,7 +213,7 @@ class CostSchedulesData:
             if not qto.is_a("IfcElementQuantity"):
                 continue
             for prop in qto.Quantities:
-                if prop in cost_item.CostQuantities or []:
+                if prop in cost_quantities:
                     results.append(prop.id())
         return results
 

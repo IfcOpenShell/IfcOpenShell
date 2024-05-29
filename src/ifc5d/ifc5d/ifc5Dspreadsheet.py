@@ -171,26 +171,25 @@ class IfcDataGetter:
                     take_off_name = "mixed-takeoff-quantities"
             return quantity[3]
 
-        if not cost_item:
-            return None
         take_off_name = ""
-        has_changed_name = False
         total_cost_quantity = 0
         accounted_for = []
-        for rel in cost_item.Controls or []:
-            for related_object in rel.RelatedObjects:
-                qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
-                for quantities in qtos.values() or []:
-                    qto = file.by_id(quantities["id"])
-                    for quantity in qto.Quantities:
-                        if not quantity in cost_item.CostQuantities:
-                            continue
-                        total_cost_quantity += add_quantity(quantity, take_off_name)
-                        accounted_for.append(quantity)
+        cost_item_quantities = cost_item.CostQuantities
+        if cost_item_quantities:
+            for rel in cost_item.Controls or []:
+                for related_object in rel.RelatedObjects:
+                    qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
+                    for quantities in qtos.values() or []:
+                        qto = file.by_id(quantities["id"])
+                        for quantity in qto.Quantities:
+                            if quantity not in cost_item_quantities:
+                                continue
+                            total_cost_quantity += add_quantity(quantity, take_off_name)
+                            accounted_for.append(quantity)
 
-        for quantity in cost_item.CostQuantities or []:
-            if not quantity in accounted_for:
-                total_cost_quantity += add_quantity(quantity, take_off_name)
+            for quantity in cost_item_quantities:
+                if not quantity in accounted_for:
+                    total_cost_quantity += add_quantity(quantity, take_off_name)
 
         return {
             "id": cost_item.id(),
