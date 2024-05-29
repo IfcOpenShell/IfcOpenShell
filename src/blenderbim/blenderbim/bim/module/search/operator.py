@@ -27,7 +27,6 @@ import ifcopenshell.util.selector
 from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import close_operator_panel
 from blenderbim.bim.module.group import ui
 import blenderbim.core.search as core
 from itertools import cycle

@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
-from blenderbim.bim.helper import prop_with_search, close_operator_panel
+from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.drawing.data import DecoratorData
