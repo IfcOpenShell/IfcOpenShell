@@ -89,7 +89,7 @@ class IfcOpenShell:
     """Calculates Model body context geometry using the default IfcOpenShell
     iterator on triangulation elements."""
 
-    functions = {
+    raw_functions = {
         # IfcLengthMeasure
         "get_x": Function("IfcLengthMeasure", "X", "Calculates the length along the local X axis"),
         "get_y": Function("IfcLengthMeasure", "Y", "Calculates the length along the local Y axis"),
@@ -128,6 +128,11 @@ class IfcOpenShell:
         # IfcVolumeMeasure
         "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
     }
+
+    functions = {}
+    for k, v in raw_functions.items():
+        functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
+        functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
     @staticmethod
     def calculate(
@@ -182,7 +187,7 @@ class IfcOpenShell:
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             results[element][name][quantity] = unit_converter.convert(
-                                formula_functions[formula](shape.geometry), IfcOpenShell.functions[formula].measure
+                                formula_functions[formula](shape.geometry), IfcOpenShell.raw_functions[formula].measure
                             )
                     if not iterator.next():
                         break
