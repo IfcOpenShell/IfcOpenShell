@@ -228,14 +228,8 @@ class Material(blenderbim.core.tool.Material):
     def update_elements_using_material(cls, material):
         # update elements that are using this material
         elements = ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
-        # filter only unique representations to avoid reloading same representations multiple times
-        meshes_to_objects = dict()
-        for e in elements:
-            obj = tool.Ifc.get_object(e)
-            mesh = obj.data
-            meshes_to_objects[mesh] = obj
-        for obj in meshes_to_objects.values():
-            tool.Geometry.reload_representation(obj)
+        objects = [tool.Ifc.get_object(e) for e in elements]
+        tool.Geometry.reload_representation(objects)
 
     @classmethod
     def sync_blender_material_name(cls, material):
