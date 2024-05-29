@@ -315,7 +315,7 @@ class Root(blenderbim.core.tool.Root):
             obj.data.BIMMeshProperties.ifc_definition_id = 0
         for material_slot in obj.material_slots:
             if material_slot.material:
-                blenderbim.core.style.unlink_style(tool.Ifc, tool.Style, obj=material_slot.material)
+                blenderbim.core.style.unlink_style(tool.Ifc, style=material_slot.material)
                 blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
         if "Ifc" in obj.name and "/" in obj.name:
             obj.name = obj.name.split("/", 1)[1]
