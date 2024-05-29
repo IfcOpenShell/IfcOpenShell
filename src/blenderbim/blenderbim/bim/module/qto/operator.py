@@ -126,17 +126,21 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get() and context.selected_objects
+        return tool.Ifc.get()
 
     def _execute(self, context):
         import ifc5d.qto
 
         props = context.scene.BIMQtoProperties
-        elements = set()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                elements.add(element)
+
+        if context.selected_objects:
+            elements = set()
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element:
+                    elements.add(element)
+        else:
+            elements = set(tool.Ifc.get().by_type("IfcElement"))
 
         rules = ifc5d.qto.rules[props.qto_rule]
 
