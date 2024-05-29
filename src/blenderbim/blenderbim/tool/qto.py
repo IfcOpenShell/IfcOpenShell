@@ -96,12 +96,6 @@ class Qto(blenderbim.core.tool.Qto):
         return QtoCalculator().calculate_quantity(qto_name, quantity_name, obj)
 
     @classmethod
-    def get_new_guessed_quantity(
-        cls, obj: bpy.types.Object, quantity_name: str, alternative_prop_names: list[str]
-    ) -> Union[float, None]:
-        return QtoCalculator().guess_quantity(quantity_name, alternative_prop_names, obj)
-
-    @classmethod
     def get_rounded_value(cls, new_quantity: float) -> float:
         return round(new_quantity, 3)
 
@@ -157,26 +151,6 @@ class Qto(blenderbim.core.tool.Qto):
             to_unit=project_unit.Name,
         )
         return value
-
-    @classmethod
-    def get_guessed_quantities(
-        cls, obj: bpy.types.Object, pset_qto_properties: list[ifcopenshell.entity_instance]
-    ) -> dict[str, float]:
-        calculated_quantities = {}
-        for pset_qto_property in pset_qto_properties:
-            quantity_name = pset_qto_property.get_info()["Name"]
-            alternative_prop_names = [p.get_info()["Name"] for p in pset_qto_properties]
-
-            new_quantity = cls.get_new_guessed_quantity(obj, quantity_name, alternative_prop_names)
-
-            if not new_quantity:
-                new_quantity = 0
-            else:
-                new_quantity = cls.get_rounded_value(new_quantity)
-
-            calculated_quantities[quantity_name] = new_quantity
-
-        return calculated_quantities
 
     @classmethod
     def get_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

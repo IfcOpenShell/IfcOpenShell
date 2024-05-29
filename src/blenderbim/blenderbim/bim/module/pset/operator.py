@@ -241,28 +241,6 @@ class CalculateQuantity(bpy.types.Operator):
         return round(quantity, 3)
 
 
-class GuessQuantity(bpy.types.Operator):
-    bl_idname = "bim.guess_quantity"
-    bl_label = "Guess Quantity"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = (
-        "Calculate the quantity by guessing the formula from the quantity name. "
-        "Less reliable than Calculate Quantity"
-    )
-    prop: bpy.props.StringProperty()
-
-    def execute(self, context):
-        self.qto_calculator = QtoCalculator()
-        obj = context.active_object
-        prop = obj.PsetProperties.properties.get(self.prop)
-        prop.metadata.float_value = self.guess_quantity(obj, context)
-        return {"FINISHED"}
-
-    def guess_quantity(self, obj, context):
-        quantity = self.qto_calculator.guess_quantity(self.prop, [p.name for p in obj.PsetProperties.properties], obj)
-        return round(quantity, 3) if quantity is not None else None
-
-
 class CopyPropertyToSelection(bpy.types.Operator, Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
