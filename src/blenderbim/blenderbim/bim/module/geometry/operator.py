@@ -714,6 +714,10 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             else:
                 bpy.data.objects.remove(obj)
         for collection in collections_to_delete:
+            # Removing an aggregate object would also remove it's collection
+            # making the collection data-block invalid.
+            if not tool.Blender.is_valid_data_block(collection):
+                continue
             bpy.data.collections.remove(collection)
         if self.is_batch:
             old_file = tool.Ifc.get()
