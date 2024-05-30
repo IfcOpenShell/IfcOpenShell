@@ -197,6 +197,21 @@ class Blender(blenderbim.core.tool.Blender):
         return False
 
     @classmethod
+    def is_valid_data_block(cls, data_block: bpy.types.ID) -> bool:
+        """Check if Blender data-block is still valid.
+
+        If Blender data-block (e.g. an Object) is removed then it's
+        python object gets invalidated and accessing any of it's attributes
+        leads to ReferenceError: StructRNA of type Object has been removed.
+        This method helps avoiding try / except ReferenceError constructions.
+        """
+        try:
+            data_block.bl_rna
+            return True
+        except ReferenceError:
+            return False
+
+    @classmethod
     def show_info_message(cls, text: str, message_type: Literal["INFO", "ERROR"] = "INFO") -> None:
         """useful for showing error messages outside blender operators
 
