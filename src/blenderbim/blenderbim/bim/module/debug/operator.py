@@ -93,7 +93,8 @@ class ConvertToBlender(bpy.types.Operator):
                 if obj.data:
                     obj.data.BIMMeshProperties.ifc_definition_id = 0
         for material in bpy.data.materials:
-            material.BIMMaterialProperties.ifc_style_id = False
+            material.BIMObjectProperties.ifc_definition_id = 0
+            material.BIMMaterialProperties.ifc_style_id = 0
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
