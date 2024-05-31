@@ -50,7 +50,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
         if not relating_obj:
             return
 
-        for obj in bpy.context.selected_objects:
+        for obj in bpy.context.selected_objects + [bpy.context.active_object]:
             if obj == relating_obj:
                 continue
             element = tool.Ifc.get_entity(obj)
