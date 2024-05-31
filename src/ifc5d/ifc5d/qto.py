@@ -255,7 +255,7 @@ class Blender:
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            if not obj:
+            if not obj or obj.type != "MESH":
                 continue
             results.setdefault(element, {})
             for name, quantities in qtos.items():
