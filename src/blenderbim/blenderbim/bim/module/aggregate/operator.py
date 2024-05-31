@@ -40,11 +40,16 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
     bl_label = "Assign Object To Aggregation"
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
+    related_object: bpy.props.IntProperty()
 
     def _execute(self, context):
         relating_obj = None
         if self.relating_object:
             relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+        elif self.related_object:
+            aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get().by_id(self.related_object))
+            if aggregate:
+                relating_obj = tool.Ifc.get_object(aggregate)
         elif context.active_object:
             relating_obj = context.active_object
         if not relating_obj:

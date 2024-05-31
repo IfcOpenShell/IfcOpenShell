@@ -53,12 +53,21 @@ class BIM_PT_aggregate(Panel):
         props = context.active_object.BIMObjectAggregateProperties
 
         if props.is_editing:
+            row = layout.row()
+            row.prop(props, "relating_object", text="Whole")
+            row = layout.row()
+            row.prop(props, "related_object", text="Or Part")
             row = layout.row(align=True)
-            row.prop(props, "relating_object", text="")
+            col = row.column(align=True)
+            if not props.relating_object and not props.related_object:
+                col.enabled = False
+            op = col.operator("bim.aggregate_assign_object", icon="CHECKMARK")
             if props.relating_object:
-                op = row.operator("bim.aggregate_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
+            elif props.related_object:
+                op.related_object = props.related_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
+            return
         else:
             row = layout.row(align=True)
             if AggregateData.data["has_relating_object"]:
@@ -73,7 +82,7 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
-                row.label(text="No Whole relation defined", icon="TRIA_UP")
+                row.label(text="No Whole Relationship Found", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
