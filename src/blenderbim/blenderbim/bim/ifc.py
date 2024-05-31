@@ -222,7 +222,7 @@ class IfcStore:
         elif existing_obj:
             try:
                 existing_obj.name
-                IfcStore.unlink_element(obj=existing_obj)
+                IfcStore.unlink_element(element=element, obj=existing_obj)
             except:
                 pass
         IfcStore.id_map[element.id()] = obj
