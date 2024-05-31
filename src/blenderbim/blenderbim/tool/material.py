@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
@@ -25,7 +26,11 @@ import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any
+from typing import Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Avoid circular imports.
+    from blenderbim.bim.module.material.prop import Material as MaterialItem
 
 
 class Material(blenderbim.core.tool.Material):
@@ -58,8 +63,24 @@ class Material(blenderbim.core.tool.Material):
         return obj.name
 
     @classmethod
+    def get_active_material_item(cls) -> Union[MaterialItem, None]:
+        """Get active material props item if index is valid, otherwise, return None."""
+        props = bpy.context.scene.BIMMaterialProperties
+        if 0 <= props.active_material_index < len(props.materials):
+            return props.materials[props.active_material_index]
+        return None
+
+    @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
+
+        # Store active category name to reselect it later.
+        # Occurs when we expand/contract all categories.
+        active_item = cls.get_active_material_item()
+        previously_selected_category = None
+        if active_item and active_item.is_category:
+            previously_selected_category = active_item.name
+
         expanded_categories = {m.name for m in props.materials if m.is_category and m.is_expanded}
         props.materials.clear()
         get_name = lambda x: x.Name or "Unnamed"
@@ -70,16 +91,23 @@ class Material(blenderbim.core.tool.Material):
         materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
         categories = defaultdict(list)
         if material_type == "IfcMaterial":
+            category_index_to_reselect = None
+
             for m in materials:
                 # IfcMaterial has Category since IFC4.
                 category = getattr(m, "Category", None)
                 category = category or "Uncategorised"
                 categories[category].append(m)
+
             for category, mats in categories.items():
                 cat = props.materials.add()
                 cat.name = category
                 cat.is_category = True
                 cat.is_expanded = cat.name in expanded_categories
+
+                if previously_selected_category == category:
+                    category_index_to_reselect = len(props.materials) - 1
+
                 for material in mats if cat.is_expanded else []:
                     new = props.materials.add()
                     new.ifc_definition_id = material.id()
@@ -88,6 +116,9 @@ class Material(blenderbim.core.tool.Material):
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
                     )
                     new.has_style = bool(material.HasRepresentation)
+
+            if category_index_to_reselect is not None:
+                props.active_material_index = category_index_to_reselect
             return
         for material in materials:
             new = props.materials.add()
