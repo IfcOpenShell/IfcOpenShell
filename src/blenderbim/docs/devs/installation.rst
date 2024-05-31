@@ -25,6 +25,9 @@ You will need to choose which build to download.
 - Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
   ``win`` depending on your operating system
 
+For users who don't follow the `VFX Platform <https://vfxplatform.com/>`_
+standard, we also provide py312 builds.
+
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
 
