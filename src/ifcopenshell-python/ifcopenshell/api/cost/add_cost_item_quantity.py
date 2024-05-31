@@ -69,7 +69,7 @@ def add_cost_item_quantity(
         schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
         item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
         ifcopenshell.api.run("control.assign_control", model,
-            relating_control=cost_item, related_object=chair)
+            relating_control=item, related_object=chair)
 
         # Let's assume we want to count the amount of chairs to calculate our cost item
         # Because this is an IfcQuantityCount the count will be automatically set to "1" chair
