@@ -40,6 +40,7 @@ from mathutils import Vector, Matrix
 from time import time
 from blenderbim.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
+from typing import Any
 
 
 class Operator:
@@ -729,7 +730,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             IfcStore.add_transaction_operation(self)
         return {"FINISHED"}
 
-    def get_collection_objects_and_children(self, collection):
+    def get_collection_objects_and_children(self, collection: bpy.types.Collection) -> dict[str, Any]:
         objects = set()
         children = set()
         queue = [collection]
