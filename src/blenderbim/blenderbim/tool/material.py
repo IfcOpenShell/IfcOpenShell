@@ -60,7 +60,7 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
-        expanded_categories = {m.name for m in props.materials if m.is_expanded}
+        expanded_categories = {m.name for m in props.materials if m.is_category and m.is_expanded}
         props.materials.clear()
         get_name = lambda x: x.Name or "Unnamed"
         if material_type == "IfcMaterialLayerSet":
