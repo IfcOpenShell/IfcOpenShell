@@ -261,6 +261,8 @@ class Blender:
             for name, quantities in qtos.items():
                 results[element].setdefault(name, {})
                 for quantity, formula in quantities.items():
+                    if not formula:
+                        continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
                     results[element][name][quantity] = unit_converter.convert(
