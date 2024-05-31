@@ -700,17 +700,28 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.expand_material_category"
     bl_label = "Expand Material Category"
+    bl_description = "Expand material category.\n\nSHIFT+CLICK to expand all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Expanding all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
         for index, category in [
-            (i, c) for i, c in enumerate(props.materials)
-            if c.is_category and c.name == self.category
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.expand_all or c.name == self.category)
         ]:
             category.is_expanded = True
-            props.active_material_index = index
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
@@ -718,17 +729,28 @@ class ExpandMaterialCategory(bpy.types.Operator):
 class ContractMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.contract_material_category"
     bl_label = "Contract Material Category"
+    bl_description = "Contract material category.\n\nSHIFT+CLICK to contract all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Contracting all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.contract_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
         for index, category in [
-            (i, c) for i, c in enumerate(props.materials)
-            if c.is_category and c.name == self.category
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.contract_all or c.name == self.category)
         ]:
             category.is_expanded = False
-            props.active_material_index = index
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
