@@ -55,10 +55,14 @@ PYLIBDIR:=python3.11
 PYNUMBER:=311
 PYPI_VERSION:=3.11
 endif
+ifeq ($(PYVERSION), py312)
+PYLIBDIR:=python3.12
+PYNUMBER:=312
+PYPI_VERSION:=3.12
+endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
-LXML_ARCH:=manylinux_2_28_x86_64
 SHAPELY_ARCH:=manylinux_2_17_x86_64.manylinux2014_x86_64
 PILLOW_ARCH:=manylinux_2_28_x86_64
 endif
@@ -67,27 +71,16 @@ ifeq ($(PLATFORM), macos)
 PYPI_PLATFORM:=--platform macosx_10_9_x86_64
 SHAPELY_ARCH:=macosx_10_9_x86_64
 PILLOW_ARCH:=macosx_10_10_x86_64
-ifeq ($(PYVERSION), py39)
-LXML_ARCH:=macosx_11_0_x86_64
-endif
-ifeq ($(PYVERSION), py310)
-LXML_ARCH:=macosx_11_0_x86_64
-endif
-ifeq ($(PYVERSION), py311)
-LXML_ARCH:=macosx_11_0_universal2
-endif
 endif
 
 ifeq ($(PLATFORM), macosm1)
 PYPI_PLATFORM:=--platform macosx_11_0_arm64
-LXML_ARCH:=macosx_11_0_universal2
 SHAPELY_ARCH:=macosx_11_0_arm64
 PILLOW_ARCH:=macosx_11_0_arm64
 endif
 
 ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
-LXML_ARCH:=win_amd64
 SHAPELY_ARCH:=win_amd64
 PILLOW_ARCH:=win_amd64
 endif
@@ -102,20 +95,6 @@ PILLOW_VER:=9.5.0
 SHAPELY_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/s/$(SHAPELY_NAME)/$(SHAPELY_NAME)-$(SHAPELY_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(SHAPELY_ARCH).whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/p/$(PILLOW_NAME)/$(PILLOW_PKG_NAME)-$(PILLOW_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(PILLOW_ARCH).whl
 
-ifeq ($(PLATFORM), macosm1)
-ifeq ($(PYVERSION), py39)
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py39h0520ce3_1.tar.bz2
-endif
-ifeq ($(PYVERSION), py310)
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py310h02f21da_0.tar.bz2
-endif
-ifeq ($(PYVERSION), py311)
-LXML_URL:=https://anaconda.org/conda-forge/lxml/4.9.1/download/osx-arm64/lxml-4.9.1-py311h246f609_1.tar.bz2
-endif
-else
-LXML_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/l/$(LXML_NAME)/$(LXML_NAME)-$(LXML_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(LXML_ARCH).whl
-endif
-$(info $$LXML_URL is [${LXML_URL}])
 $(info $$SHAPELY_URL is [${SHAPELY_URL}])
 $(info $$PILLOW_URL is [${PILLOW_URL}])
 
@@ -344,6 +323,8 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install xmlschema --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install elementpath --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install six --target=./site-packages
+	# Required by drawing module
+	cd dist/working && . env/bin/activate && $(PIP) install lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
@@ -361,24 +342,6 @@ endif
 	cd dist/working/ && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.7.0/src/ifcbimtester/patch/junit.patch
 	cd dist/working/ && $(PATCH) ../blenderbim/libs/site/packages/behave/reporter/junit.py < junit.patch
 	rm -rf dist/working
-
-	# Required by ids - uh, not any more, but I'm trying it out in the drawing module
-ifeq ($(PLATFORM), macosm1)
-	# No wheels available for MacOS M1, but turns out this Anaconda build works
-	mkdir dist/working
-	cd dist/working && wget $(LXML_URL)
-	cd dist/working && tar -xf lxml*
-	cp -r dist/working/lib/$(PYLIBDIR)/site-packages/lxml dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-else
-	# Wheels are preferred for other OSes. A first attempt at using Anaconda
-	# builds for everything shows it breaks on windows. See #2422.
-	mkdir dist/working
-	cd dist/working && wget $(LXML_URL)
-	cd dist/working && cp *.whl lxml.zip && unzip lxml.zip
-	cp -r dist/working/lxml dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-endif
 
 	# Required by behave
 	mkdir dist/working
