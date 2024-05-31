@@ -343,7 +343,7 @@ class BIM_UL_materials(UIList):
                     row.operator(
                         "bim.expand_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                     ).category = item.name
-                row.label(text=item.name or "Uncategorised")
+                row.label(text=item.name)
             else:
                 row.label(text="", icon="BLANK1")
                 row.label(text=item.name, icon="MATERIAL")

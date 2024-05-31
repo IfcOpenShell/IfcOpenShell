@@ -24,6 +24,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+from collections import defaultdict
 from typing import Union, Any
 
 
@@ -67,12 +68,16 @@ class Material(blenderbim.core.tool.Material):
         elif material_type == "IfcMaterialList":
             get_name = lambda x: "Unnamed"
         materials = sorted(tool.Ifc.get().by_type(material_type), key=get_name)
-        categories = {}
+        categories = defaultdict(list)
         if material_type == "IfcMaterial":
-            [categories.setdefault(getattr(m, "Category", "Uncategorised"), []).append(m) for m in materials]
+            for m in materials:
+                # IfcMaterial has Category since IFC4.
+                category = getattr(m, "Category", None)
+                category = category or "Uncategorised"
+                categories[category].append(m)
             for category, mats in categories.items():
                 cat = props.materials.add()
-                cat.name = category or ""
+                cat.name = category
                 cat.is_category = True
                 cat.is_expanded = cat.name in expanded_categories
                 for material in mats if cat.is_expanded else []:
