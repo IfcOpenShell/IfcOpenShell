@@ -79,14 +79,16 @@ def add_cost_item_quantity(
     settings = {"cost_item": cost_item, "ifc_class": ifc_class}
 
     quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
-    quantity[3] = 0.0
+    # 3 IfcPhysicalSimpleQuantity Value
     # This is a bold assumption
     # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-    if settings["ifc_class"] == "IfcQuantityCount" and settings["cost_item"].Controls:
+    if settings["ifc_class"] == "IfcQuantityCount":
         count = 0
         for rel in settings["cost_item"].Controls:
             count += len(rel.RelatedObjects)
         quantity[3] = count
+    else:
+        quantity[3] = 0.0
     quantities = list(settings["cost_item"].CostQuantities or [])
     quantities.append(quantity)
     settings["cost_item"].CostQuantities = quantities

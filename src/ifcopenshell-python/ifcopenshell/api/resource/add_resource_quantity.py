@@ -68,7 +68,10 @@ def add_resource_quantity(
 
     quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
     # 3 IfcPhysicalSimpleQuantity Value
-    quantity[3] = 0.0
+    if settings["ifc_class"] == "IfcQuantityCount":
+        quantity[3] = 0
+    else:
+        quantity[3] = 0.0
     old_quantity = settings["resource"].BaseQuantity
     settings["resource"].BaseQuantity = quantity
     if old_quantity:
