@@ -185,7 +185,7 @@ class Csv2Ifc:
                 "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
             )
             # 3 IfcPhysicalSimpleQuantity Value
-            quantity[3] = cost_item["Quantity"]
+            quantity[3] = int(cost_item["Quantity"]) if quantity_class == "IfcQuantityCount" else cost_item["Quantity"]
             if prop_name:
                 quantity.Name = prop_name
 
