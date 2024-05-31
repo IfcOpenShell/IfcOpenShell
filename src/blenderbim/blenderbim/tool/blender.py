@@ -21,6 +21,7 @@ import bmesh
 import json
 import ifcopenshell.api
 import ifcopenshell.util.element
+import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim
 import addon_utils

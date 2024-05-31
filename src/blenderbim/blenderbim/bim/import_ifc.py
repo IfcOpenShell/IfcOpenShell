@@ -1703,18 +1703,18 @@ class IfcImporter:
                 self.type_collection.children.link(aggregate["collection"])
                 continue
 
-    def create_materials(self):
+    def create_materials(self) -> None:
         for material in self.file.by_type("IfcMaterial"):
             self.create_material(material)
 
-    def create_material(self, material):
+    def create_material(self, material: ifcopenshell.entity_instance) -> bpy.types.Material:
         blender_material = bpy.data.materials.new(material.Name)
         self.link_element(material, blender_material)
         self.material_creator.materials[material.id()] = blender_material
         blender_material.use_fake_user = True
         return blender_material
 
-    def create_styles(self):
+    def create_styles(self) -> None:
         parsed_styles = set()
 
         for material_definition_representation in self.file.by_type("IfcMaterialDefinitionRepresentation"):
