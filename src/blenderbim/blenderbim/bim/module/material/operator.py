@@ -705,8 +705,12 @@ class ExpandMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c) for i, c in enumerate(props.materials)
+            if c.is_category and c.name == self.category
+        ]:
             category.is_expanded = True
+            props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
@@ -719,8 +723,12 @@ class ContractMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c) for i, c in enumerate(props.materials)
+            if c.is_category and c.name == self.category
+        ]:
             category.is_expanded = False
+            props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
