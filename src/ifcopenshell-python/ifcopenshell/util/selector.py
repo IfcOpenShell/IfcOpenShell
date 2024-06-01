@@ -660,7 +660,7 @@ class FacetTransformer(lark.Transformer):
             containers = self.get_container_tree(container)
             result = False if containers else None
             for container in containers:
-                if self.compare(container.Name, comparison, value):
+                if self.compare(container.Name, "=", value):
                     result = True
             if result is not None:
                 return result if comparison == "=" else not result
@@ -675,7 +675,7 @@ class FacetTransformer(lark.Transformer):
             result = False
             for rel in getattr(element, "HasAssignments", []):
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
-                    if self.compare(rel.RelatingGroup.Name, comparison, value):
+                    if self.compare(rel.RelatingGroup.Name, "=", value):
                         result = True
             return result if comparison == "=" else not result
 
