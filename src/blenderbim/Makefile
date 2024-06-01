@@ -164,21 +164,6 @@ endif
 	cp dist/working/jsgantt* dist/blenderbim/bim/data/gantt/
 	rm -rf dist/working
 
-	# Required by IFC4D
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/b0/bb/9c4dddd3ca173cb56241cfb2eddfae24690dc676d357ac4cab17d0a36d9d/PyP6Xer-1.13.0.tar.gz
-	cd dist/working && tar -xzvf PyP6Xer*
-	cp -r dist/working/PyP6Xer-1.13.0/xerparser dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by xerparser and IFC4D
-	# TODO: remove this dependency. It's only used to show a progress bar.
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/9f/7b/76c4e5ef1a1b528fcaada4133f972e77d33c252831676cf414119ca6093d/tqdm-4.50.0.tar.gz
-	cd dist/working && tar -xzvf tqdm*
-	cp -r dist/working/tqdm-4.50.0/tqdm dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	mkdir dist/working
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
@@ -221,6 +206,8 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install deepdiff --target=./site-packages
 	# Required by IFCCSV and ifcopenshell.util.selector
 	cd dist/working && . env/bin/activate && $(PIP) install lark --target=./site-packages
+	# Required by IFC4D
+	cd dist/working && . env/bin/activate && $(PIP) install PyP6Xer --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
