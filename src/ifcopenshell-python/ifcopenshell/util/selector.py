@@ -370,6 +370,8 @@ def set_element_value(
             element = ifcopenshell.util.element.get_container(element, ifc_class="IfcBuilding")
         elif key == "site":
             element = ifcopenshell.util.element.get_container(element, ifc_class="IfcSite")
+        elif key == "parent":
+            element = ifcopenshell.util.element.get_parent(element)
         elif key == "class":
             if element.is_a().lower() != value.lower():
                 return ifcopenshell.util.schema.reassign_class(ifc_file, element, value)
