@@ -168,15 +168,12 @@ class BaseDecorator:
     def get_camera_width_mm(self):
         # Horrific prototype code to ensure bgl draws at drawing scales
         # https://blender.stackexchange.com/questions/16493/is-there-a-way-to-fit-the-viewport-to-the-current-field-of-view
-        def is_landscape(render):
-            return render.resolution_x > render.resolution_y
+
 
         camera = bpy.context.scene.camera
         render = bpy.context.scene.render
-        if is_landscape(render):
-            camera_width_model = camera.data.ortho_scale
-        else:
-            camera_width_model = camera.data.ortho_scale / render.resolution_y * render.resolution_x
+        camera_width_model = camera.data.ortho_scale
+
 
         scale = tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
         camera_width_mm = scale * camera_width_model
