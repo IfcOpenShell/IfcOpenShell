@@ -1058,7 +1058,7 @@ class Selector:
             elif key == "site":
                 value = ifcopenshell.util.element.get_container(value, ifc_class="IfcSite")
             elif key == "parent":
-                element = ifcopenshell.util.element.get_parent(element)
+                value = ifcopenshell.util.element.get_parent(value)
             elif key in ("types", "occurrences"):
                 value = ifcopenshell.util.element.get_types(value)
             elif key == "count":
