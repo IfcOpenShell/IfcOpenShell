@@ -63,39 +63,31 @@ endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
-SHAPELY_ARCH:=manylinux_2_17_x86_64.manylinux2014_x86_64
 PILLOW_ARCH:=manylinux_2_28_x86_64
 endif
 
 ifeq ($(PLATFORM), macos)
 PYPI_PLATFORM:=--platform macosx_10_9_x86_64
-SHAPELY_ARCH:=macosx_10_9_x86_64
 PILLOW_ARCH:=macosx_10_10_x86_64
 endif
 
 ifeq ($(PLATFORM), macosm1)
 PYPI_PLATFORM:=--platform macosx_11_0_arm64
-SHAPELY_ARCH:=macosx_11_0_arm64
 PILLOW_ARCH:=macosx_11_0_arm64
 endif
 
 ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
-SHAPELY_ARCH:=win_amd64
 PILLOW_ARCH:=win_amd64
 endif
 
 LXML_NAME:=lxml
 LXML_VER:=4.9.4
-SHAPELY_NAME:=shapely
-SHAPELY_VER:=2.0.2
 PILLOW_NAME:=pillow
 PILLOW_PKG_NAME:=Pillow
 PILLOW_VER:=9.5.0
-SHAPELY_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/s/$(SHAPELY_NAME)/$(SHAPELY_NAME)-$(SHAPELY_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(SHAPELY_ARCH).whl
 PILLOW_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/p/$(PILLOW_NAME)/$(PILLOW_PKG_NAME)-$(PILLOW_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(PILLOW_ARCH).whl
 
-$(info $$SHAPELY_URL is [${SHAPELY_URL}])
 $(info $$PILLOW_URL is [${PILLOW_URL}])
 
 .PHONY: bump
@@ -270,19 +262,6 @@ endif
 	cp -r dist/working/PyP6Xer-1.13.0/xerparser dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Required by QTOCalculator
-	mkdir dist/working
-	cd dist/working && wget $(SHAPELY_URL)
-	cd dist/working && cp *.whl shapely.zip && unzip shapely.zip
-	cp -r dist/working/shapely dist/blenderbim/libs/site/packages/
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/shapely.libs dist/blenderbim/libs/site/packages/
-endif
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/shapely.libs dist/blenderbim/libs/site/packages/
-endif
-	rm -rf dist/working
-
 	# Required by the BIM tool thumbnail generator
 	mkdir dist/working
 	cd dist/working && wget $(PILLOW_URL)
@@ -324,7 +303,9 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install elementpath --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install six --target=./site-packages
 	# Required by drawing module
-	cd dist/working && . env/bin/activate && $(PIP) install lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# Required by qto and drawing module
+	cd dist/working && . env/bin/activate && $(PIP) install shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
