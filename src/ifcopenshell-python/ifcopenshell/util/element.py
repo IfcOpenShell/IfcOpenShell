@@ -1024,14 +1024,85 @@ def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return groups
 
 
-def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """Get the parent in the spatial heirarchy
+
+    IFC features a spatial hierarchy tree of all objects. Each spatial element
+    or physical element must be located inside this hierarchy exactly once.
+
+    The top level parent of this tree is the IfcProject, which has no parent.
+
+    All children may have parent-child relationships of one of the following types:
+
+    - Spatial containment: a physical object is located in a space
+    - Aggregation: a physical object is broken up into parts, or a spatial location is split into sub locations
+    - Nesting: components are attached to a host parent
+    - Filling: the physical element fills an opening, such as a window filling a hole
+    - Voiding: the opening voids another physical element, such as a hole in a wall
+
+    :param element: Any physical or spatial element in the tree
+    :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcWall")[0]
+        parent = ifcopenshell.util.element.get_parent(element)
+    """
+    return (
+        get_container(element, should_get_direct=True)
+        or get_aggregate(element)
+        or get_nest(element)
+        or get_filled_void(element)
+        or get_voided_element(element)
+    )
+
+
+def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """If the element is filling a void, get the void
+
+    Examples include windows and doors which fill a opening inside a wall.
+
+    :param element: The building element, typically a window or door
+    :return: The IfcOpeningElement that it is filling
+
+    Example:
+
+    .. code:: python
+
+        window = file.by_type("IfcWindow")[0]
+        opening = ifcopenshell.util.element.get_filled_void(window)
+    """
+    if rel := getattr(element, "FillsVoids", None):
+        return rel[0].RelatingOpeningElement
+
+
+def get_voided_element(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """For an opening, get the building element that the opening is voiding
+
+    For all valid models, this should never return None.
+
+    :param element: The IfcOpeningElement
+    :return: The building element, such as a wall or slab
+
+    Example:
+
+    .. code:: python
+
+        opening = file.by_type("IfcOpeningElement")[0]
+        element = ifcopenshell.util.element.get_voided_element(opening)
+    """
+    if rel := getattr(element, "VoidsElements", None):
+        return rel[0].RelatingBuildingElement
+
+
+def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
-    :type element: ifcopenshell.entity_instance
     :return: The aggregate of the element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -1045,7 +1116,7 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_
             return decomposes[0].RelatingObject
 
 
-def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance]:
     """
     Retrieves the nest parent of an element.
 
