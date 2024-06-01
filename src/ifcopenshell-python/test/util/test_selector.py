@@ -238,6 +238,7 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, classification=NULL") == {element2}
         assert subject.filter_elements(self.file, "IfcWall, classification=X") == {element}
         assert subject.filter_elements(self.file, "IfcWall, classification=Foobar") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, classification!=X") == {element2}
 
     def test_selecting_by_location(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -255,6 +256,15 @@ class TestFilterElements(test.bootstrap.IFC4):
         assert subject.filter_elements(self.file, "IfcWall, location=Space") == {element}
         assert subject.filter_elements(self.file, "IfcWall, location=G") == {element, element2}
         assert subject.filter_elements(self.file, "IfcWall, location=Building") == {element, element2}
+        assert subject.filter_elements(self.file, "IfcWall, location!=Space") == {element2}
+
+    def test_selecting_by_group(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        group = ifcopenshell.api.run("group.add_group", self.file, name="Foo")
+        ifcopenshell.api.run("group.assign_group", self.file, products=[element], group=group)
+        assert subject.filter_elements(self.file, "IfcWall, group=Foo") == {element}
+        assert subject.filter_elements(self.file, "IfcWall, group!=Foo") == {element2}
 
     def test_selecting_multiple_filter_groups(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
