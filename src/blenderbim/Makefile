@@ -66,7 +66,7 @@ PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
 endif
 
 ifeq ($(PLATFORM), macos)
-PYPI_PLATFORM:=--platform macosx_10_9_x86_64
+PYPI_PLATFORM:=--platform macosx_10_10_x86_64
 endif
 
 ifeq ($(PLATFORM), macosm1)
