@@ -39,7 +39,7 @@ filter_elements_grammar = lark.Lark(
     filter_group: facet_list ("+" facet_list)*
     facet_list: facet ("," facet)*
 
-    facet: instance | entity | attribute | type | material | query | classification | location | property | group
+    facet: instance | entity | attribute | type | material | query | classification | location | property | group | parent
 
     instance: not? globalid
     globalid: /[0-3][a-zA-Z0-9_$]{21}/
@@ -51,6 +51,7 @@ filter_elements_grammar = lark.Lark(
     classification: "classification" comparison value
     location: "location" comparison value
     group: "group" comparison value
+    parent: "parent" comparison value
     query: "query:" keys comparison value
 
     pset: quoted_string | regex_string | unquoted_string
@@ -677,6 +678,25 @@ class FacetTransformer(lark.Transformer):
                 if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup:
                     if self.compare(rel.RelatingGroup.Name, "=", value):
                         result = True
+            return result if comparison == "=" else not result
+
+        self.elements = set(filter(filter_function, self.elements))
+
+    def parent(self, args):
+        comparison, value = args
+
+        def filter_function(element):
+            parents = []
+            result = False
+            if parent := ifcopenshell.util.element.get_parent(element):
+                parents.append(parent)
+            while parents:
+                parent = parents.pop()
+                if self.compare(parent.Name, comparison, value):
+                    result = True
+                    break
+                if grandparent := ifcopenshell.util.element.get_parent(parent):
+                    parents.append(grandparent)
             return result if comparison == "=" else not result
 
         self.elements = set(filter(filter_function, self.elements))
