@@ -22,7 +22,6 @@ import bpy
 import math
 import bmesh
 import shutil
-import pystache
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite

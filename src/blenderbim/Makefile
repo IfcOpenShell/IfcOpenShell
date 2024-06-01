@@ -63,32 +63,19 @@ endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
-PILLOW_ARCH:=manylinux_2_28_x86_64
 endif
 
 ifeq ($(PLATFORM), macos)
 PYPI_PLATFORM:=--platform macosx_10_9_x86_64
-PILLOW_ARCH:=macosx_10_10_x86_64
 endif
 
 ifeq ($(PLATFORM), macosm1)
 PYPI_PLATFORM:=--platform macosx_11_0_arm64
-PILLOW_ARCH:=macosx_11_0_arm64
 endif
 
 ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
-PILLOW_ARCH:=win_amd64
 endif
-
-LXML_NAME:=lxml
-LXML_VER:=4.9.4
-PILLOW_NAME:=pillow
-PILLOW_PKG_NAME:=Pillow
-PILLOW_VER:=9.5.0
-PILLOW_URL:=https://files.pythonhosted.org/packages/cp$(PYNUMBER)/p/$(PILLOW_NAME)/$(PILLOW_PKG_NAME)-$(PILLOW_VER)-cp$(PYNUMBER)-cp$(PYNUMBER)-$(PILLOW_ARCH).whl
-
-$(info $$PILLOW_URL is [${PILLOW_URL}])
 
 .PHONY: bump
 bump:
@@ -163,49 +150,6 @@ endif
 	cp -r dist/working/site-packages/git dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
-	# Provides Mustache templating in construction documentation
-	# TODO: remove this dependency, it seems overkill and we seem to get by with str replaces
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/3f/e7/8750ba6c6101d6aa5ceeb20c013adf2c6f3554a12c71d75654b468404bfa/pystache-0.6.0.tar.gz
-	cd dist/working && tar -xzvf pystache*
-	cd dist/working/pystache-0.6.0/ && $(PYTHON) setup.py build && cp -r build/lib/pystache ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Provides SVG export in construction documentation
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/79/e8/7eb2ba188eda14a4b47e33b51f3b4978985f4116655c699bcd18c79279b5/svgwrite-1.3.1.zip
-	cd dist/working && unzip svgwrite*
-	cp -r dist/working/svgwrite-1.3.1/svgwrite dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Provides fuzzy date parsing for construction sequencing
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/be/ed/5bbc91f03fa4c839c4c7360375da77f9659af5f7086b7a7bdda65771c8e0/python-dateutil-2.8.1.tar.gz
-	cd dist/working && tar -xzvf python-dateutil*
-	cp -r dist/working/python-dateutil-2.8.1/dateutil dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Provides duration parsing for construction sequencing
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/b1/80/fb8c13a4cd38eb5021dc3741a9e588e4d1de88d895c1910c6fc8a08b7a70/isodate-0.6.0.tar.gz
-	cd dist/working && tar -xzvf isodate*
-	cp -r dist/working/isodate-0.6.0/src/isodate dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Provides networkx graph analysis for project dependency calculations
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/b0/21/adfbf6168631e28577e4af9eb9f26d75fe72b2bb1d33762a5f2c425e6c2a/networkx-2.5.1.tar.gz
-	cd dist/working && tar -xzvf networkx*
-	cp -r dist/working/networkx-2.5.1/networkx dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by networkx
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/4f/51/15a4f6b8154d292e130e5e566c730d8ec6c9802563d58760666f1818ba58/decorator-5.0.9.tar.gz
-	cd dist/working && tar -xzvf decorator*
-	cp -r dist/working/decorator-5.0.9/src/decorator.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Provides audio playback for costing
 	mkdir -p dist/working
 	git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
@@ -220,56 +164,11 @@ endif
 	cp dist/working/jsgantt* dist/blenderbim/bim/data/gantt/
 	rm -rf dist/working
 
-	# Required by IFCDiff
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/0f/ca/caead2949fbb824c7142e3774fa841aa853bb4d4331b440da8c8514dfc6f/deepdiff-5.8.1.tar.gz
-	cd dist/working && tar -xzvf deepdiff*
-	cp -r dist/working/deepdiff-5.8.1/deepdiff dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by deepdiff
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/00/55/ce2cbc6d64034b30cad81a29ba61bdba456f190f5e83c09831304bf68d6b/jsonpickle-1.2.tar.gz
-	cd dist/working && tar -xzvf jsonpickle*
-	cp -r dist/working/jsonpickle-1.2/jsonpickle dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by deepdiff
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/a3/b7/d4d69641cbe707a45c23b190f2d717466ba5accc4c70b5f7a8a450387895/ordered-set-3.1.1.tar.gz
-	cd dist/working && tar -xzvf ordered-set*
-	cp -r dist/working/ordered-set-3.1.1/ordered_set.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by lark
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/00/32/8076fa13e832bb4dcff379f18f228e5a53412be0631808b9ca2610c0f566/pyparsing-2.4.5.tar.gz
-	cd dist/working && tar -xzvf pyparsing*
-	cp -r dist/working/pyparsing-2.4.5/pyparsing.py dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by IFCCSV and ifcopenshell.util.selector
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/18/4d/8d522136c37d9e1ea74062b41b8d5e1318ebf45063ae46ce72ed60af223b/lark-parser-0.8.5.tar.gz
-	cd dist/working && tar -xzvf lark-parser*
-	cp -r dist/working/lark-parser-0.8.5/lark dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
 	# Required by IFC4D
 	mkdir dist/working
 	cd dist/working && wget https://files.pythonhosted.org/packages/b0/bb/9c4dddd3ca173cb56241cfb2eddfae24690dc676d357ac4cab17d0a36d9d/PyP6Xer-1.13.0.tar.gz
 	cd dist/working && tar -xzvf PyP6Xer*
 	cp -r dist/working/PyP6Xer-1.13.0/xerparser dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by the BIM tool thumbnail generator
-	mkdir dist/working
-	cd dist/working && wget $(PILLOW_URL)
-	cd dist/working && cp *.whl pillow.zip && unzip pillow.zip
-	cp -r dist/working/PIL dist/blenderbim/libs/site/packages/
-ifeq ($(PLATFORM), linux)
-	cp -r dist/working/Pillow.libs dist/blenderbim/libs/site/packages/
-endif
 	rm -rf dist/working
 
 	# Required by xerparser and IFC4D
@@ -306,6 +205,22 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 	# Required by qto and drawing module
 	cd dist/working && . env/bin/activate && $(PIP) install shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# Required by the BIM type manager thumbnail generator
+	cd dist/working && . env/bin/activate && $(PIP) install pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# Provides mustache templating in construction docs and web UI data
+	cd dist/working && . env/bin/activate && $(PIP) install pystache --target=./site-packages
+	# Provides SVG export in construction documentation
+	cd dist/working && . env/bin/activate && $(PIP) install svgwrite --target=./site-packages
+	# Provides fuzzy date parsing for construction sequencing
+	cd dist/working && . env/bin/activate && $(PIP) install python-dateutil --target=./site-packages
+	# Provides duration parsing for construction sequencing
+	cd dist/working && . env/bin/activate && $(PIP) install isodate --target=./site-packages
+	# Provides networkx graph analysis for project dependency calculations
+	cd dist/working && . env/bin/activate && $(PIP) install networkx --target=./site-packages
+	# Required by IFCDiff
+	cd dist/working && . env/bin/activate && $(PIP) install deepdiff --target=./site-packages
+	# Required by IFCCSV and ifcopenshell.util.selector
+	cd dist/working && . env/bin/activate && $(PIP) install lark --target=./site-packages
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
