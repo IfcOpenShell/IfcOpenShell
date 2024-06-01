@@ -306,7 +306,7 @@ def filter_elements(
 
     .. code:: python
 
-        # Select all walls in the file.
+        # Select all the walls and slabs in the file.
         elements = ifcopenshell.util.selector.filter_elements(ifc_file, "IfcWall, IfcSlab")
 
         # Add doors to the elements too.
