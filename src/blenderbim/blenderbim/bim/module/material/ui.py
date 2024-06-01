@@ -228,7 +228,7 @@ class BIM_PT_object_material(Panel):
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
-            if len(self.props.material_set_item_profile_attributes):
+            if len(self.props.material_set_item_profile_attributes) and self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_profile_ui(set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(set_item)

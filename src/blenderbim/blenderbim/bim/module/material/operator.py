@@ -562,6 +562,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         blenderbim.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
@@ -577,6 +578,7 @@ class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         return {"FINISHED"}
 
