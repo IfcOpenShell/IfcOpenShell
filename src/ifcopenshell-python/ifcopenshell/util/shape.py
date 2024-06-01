@@ -117,6 +117,17 @@ def get_z(geometry) -> float:
     return max(z_values) - min(z_values)
 
 
+def get_max_xy(geometry) -> float:
+    """Gets the maximum X or Y length of the geometry
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The maximum possible value out of the X and Y dimension
+    :rtype: float
+    """
+    return max(get_x(geometry), get_y(geometry))
+
+
 def get_max_xyz(geometry) -> float:
     """Gets the maximum X, Y, or Z length of the geometry
 
