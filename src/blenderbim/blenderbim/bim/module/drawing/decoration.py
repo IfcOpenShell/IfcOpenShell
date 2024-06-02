@@ -39,7 +39,61 @@ from timeit import default_timer as timer
 from functools import lru_cache
 from typing import Optional, Iterator, Type, Union
 
+
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
+
+
+import sys
+from fontTools.ttLib import TTFont, TTLibError
+
+def normalize_font_name(font_name):
+    return font_name.lower().replace(' ', '_').replace('-', '_')
+
+def get_font_name_from_file(font_path):
+    try:
+        font = TTFont(font_path)
+        name_table = font['name']
+        for record in name_table.names:
+            if record.nameID == 1 and record.platformID == 3 and record.langID == 0x409:
+                return record.toUnicode()
+        return None
+    except Exception as e:
+        raise ValueError(f"Error processing font '{font_path}': {e}")
+
+def find_font(font_name):
+    normalized_font_name = normalize_font_name(font_name)
+    
+    if sys.platform == 'win32':
+        font_dirs = [r'C:\Windows\Fonts']
+    elif sys.platform == 'darwin':
+        font_dirs = ['/Library/Fonts', '/System/Library/Fonts']
+    elif sys.platform == 'linux' or sys.platform == 'linux2':
+        font_dirs = ['/usr/share/fonts', '/usr/local/share/fonts', os.path.expanduser('~/.fonts')]
+    else:
+        raise RuntimeError(f"Unsupported platform: {sys.platform}")
+
+    for font_dir in font_dirs:
+        if os.path.exists(font_dir):
+            for root, _, files in os.walk(font_dir):
+                for file in files:
+                    normalized_file_name = normalize_font_name(file)
+                    # if "open" in normalized_file_name:
+                    if normalized_file_name.endswith(('.ttf', '.otf')):
+                        font_path = os.path.join(root, file)
+                        actual_font_name = get_font_name_from_file(font_path)
+                        if actual_font_name and normalize_font_name(actual_font_name) == normalized_font_name.split('.')[0]:
+                            return font_path
+    return None
+
+def get_font_metrics(ttf_path, char='M'):
+    """Get the advance width and LSB of a character from a TTF file."""
+    font_name = bpy.context.scene.DocProperties.drawing_font
+    ttf_path = find_font(font_name)
+    font = TTFont(ttf_path)
+    glyph = font.getGlyphSet()[char]
+    advance_width, lsb = glyph.width, glyph.lsb
+    return advance_width, lsb
+
 
 
 class profile_consequential:
@@ -368,6 +422,7 @@ class BaseDecorator:
         box_alignment=None,
         multiline=False,
         multiline_to_bottom=True,
+
     ):
         """Draw text label
 
@@ -415,15 +470,18 @@ class BaseDecorator:
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
         mm_to_px = camera_width_px / self.get_camera_width_mm()
-        # 0.004118616 is a magic constant number I visually discovered to get the right number.
-        # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
-        # It probably should be dynamically calculated using system.dpi or something.
-        # font_size = 16 <-- this is a good default
-        # TODO: need to synchronize it better with svg
-        font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
+        # Get font metrics from the TTF file
+        font_name = bpy.context.scene.DocProperties.drawing_font
+        ttf_path = find_font(font_name)
+
+        advance_width, lsb = get_font_metrics(ttf_path)
+
+
+
+        font_size_px = (font_size_mm / 2.5) * (advance_width / mm_to_px)*55
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
-        blf.size(font_id, font_size_px)
+        blf.size(font_id, int(font_size_px))
 
         if box_alignment or center or vcenter:
             w, h = blf.dimensions(font_id, text)
