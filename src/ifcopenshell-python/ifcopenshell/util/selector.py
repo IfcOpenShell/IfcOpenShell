@@ -687,21 +687,45 @@ class FacetTransformer(lark.Transformer):
     def parent(self, args):
         comparison, value = args
 
-        def filter_function(element):
-            parents = []
-            result = False
-            if parent := ifcopenshell.util.element.get_parent(element):
-                parents.append(parent)
-            while parents:
-                parent = parents.pop()
-                if self.compare(parent.Name, comparison, value):
-                    result = True
-                    break
-                if grandparent := ifcopenshell.util.element.get_parent(parent):
-                    parents.append(grandparent)
-            return result if comparison == "=" else not result
+        parents = set()
+        for rel in self.file.by_type("IfcRelAggregates"):
+            parent = rel.RelatingObject
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
 
-        self.elements = set(filter(filter_function, self.elements))
+        for rel in self.file.by_type("IfcRelContainedInSpatialStructure"):
+            parent = rel.RelatingStructure
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
+
+        for rel in self.file.by_type("IfcRelNests"):
+            parent = rel.RelatingObject
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
+
+        for rel in self.file.by_type("IfcRelVoidsElement"):
+            parent = rel.RelatingBuildingElement
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
+
+        for rel in self.file.by_type("IfcRelVoidsElement"):
+            parent = rel.RelatingBuildingElement
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
+
+        for rel in self.file.by_type("IfcRelFillsElement"):
+            parent = rel.RelatingOpeningElement
+            if parent and self.compare(parent.Name, comparison, value):
+                parents.add(parent)
+
+        children = set()
+        for parent in parents:
+            children |= set(ifcopenshell.util.element.get_decomposition(parent))
+
+        if comparison == "=":
+            self.elements = self.elements & children
+        else:
+            self.elements -= children
 
     def query(self, args):
         keys, comparison, value = args
