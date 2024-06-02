@@ -1519,40 +1519,48 @@ class ActivateDrawing(bpy.types.Operator):
     bl_idname = "bim.activate_drawing"
     bl_label = "Activate Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Activates the selected drawing view.\n\n" + "ALT+CLICK to keep the viewport position"
+    bl_description = "Activates the selected drawing view.\n\n" + "ALT+CLICK to keep the viewport position.\n\n" + "SHIFT+CLICK activiate drawing without turning objects on/off."
 
     drawing: bpy.props.IntProperty()
     camera_view_point: bpy.props.BoolProperty(name="Camera View Point", default=True, options={"SKIP_SAVE"})
+    switch_camera_only: bpy.props.BoolProperty(name="Only Changes Camera View", default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         # keep the viewport position on alt+click
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
         if event.type == "LEFTMOUSE" and event.alt:
             self.camera_view_point = False
+        # Only activates the camera view on alt+shift.  Does not turn on/off objects in scene
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.switch_camera_only = True
         return self.execute(context)
 
     def execute(self, context):
         drawing = tool.Ifc.get().by_id(self.drawing)
         dprops = bpy.context.scene.DocProperties
+        camera = tool.Drawing.import_drawing(drawing)
 
-        if not self.camera_view_point:
-            viewport_position = tool.Blender.get_viewport_position()
+        if self.switch_camera_only:
+            tool.Blender.activate_camera(camera)
+        else:
+            if not self.camera_view_point:
+                viewport_position = tool.Blender.get_viewport_position()
 
-        core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
-        if not self.camera_view_point:
-            tool.Blender.set_viewport_position(viewport_position)
 
-        dprops.active_drawing_id = self.drawing
-        # reset DrawingsData to reload_drawing_styles work correctly
-        DrawingsData.is_loaded = False
-        dprops.drawing_styles.clear()
-        if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
-            bpy.ops.bim.reload_drawing_styles()
-            bpy.ops.bim.activate_drawing_style()
-        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
-        CutDecorator.install(context)
-        tool.Drawing.show_decorations()
+            if not self.camera_view_point:
+                tool.Blender.set_viewport_position(viewport_position)
+
+            dprops.active_drawing_id = self.drawing
+            # reset DrawingsData to reload_drawing_styles work correctly
+            DrawingsData.is_loaded = False
+            dprops.drawing_styles.clear()
+            if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
+                bpy.ops.bim.reload_drawing_styles()
+                bpy.ops.bim.activate_drawing_style()
+            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
+            CutDecorator.install(context)
+            tool.Drawing.show_decorations()
         return {"FINISHED"}
 
 
