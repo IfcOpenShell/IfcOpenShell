@@ -87,14 +87,16 @@ class BIM_PT_qto_simple(bpy.types.Panel):
         row = layout.row()
         row.prop(props, "qto_result", text="Results")
 
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_circle_radius")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_edge_lengths")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_face_areas")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_object_volumes")
+        row = layout.row()
+        row.operator("bim.calculate_formwork_area")
 
 
 class BIM_PT_qto_cost(bpy.types.Panel):

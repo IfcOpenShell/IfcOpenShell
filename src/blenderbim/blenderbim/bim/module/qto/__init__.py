@@ -23,6 +23,7 @@ classes = (
     operator.CalculateCircleRadius,
     operator.CalculateEdgeLengths,
     operator.CalculateFaceAreas,
+    operator.CalculateFormworkArea,
     operator.CalculateObjectVolumes,
     operator.CalculateSingleQuantity,
     operator.PerformQuantityTakeOff,
