@@ -1752,6 +1752,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
+        selected_objects_before = bpy.context.selected_objects
+        
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
@@ -1838,6 +1840,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         ]
 
         cls.import_camera_props(drawing, camera)
+
+        for obj in selected_objects_before:
+            obj.hide_set(False) 
+            obj.select_set(True)
 
     @classmethod
     def get_elements_in_camera_view(
