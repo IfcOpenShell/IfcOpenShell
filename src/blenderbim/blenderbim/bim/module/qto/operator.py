@@ -84,6 +84,21 @@ class CalculateObjectVolumes(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class CalculateFormworkArea(bpy.types.Operator):
+    bl_idname = "bim.calculate_formwork_area"
+    bl_label = "Calculate Formwork Area"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.selected_objects and context.active_object
+
+    def execute(self, context):
+        result = helper.calculate_formwork_area([o for o in context.selected_objects if o.type == "MESH"], context)
+        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        return {"FINISHED"}
+
+
 class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_single_quantity"
     bl_label = "Calculate Single Quantity"
