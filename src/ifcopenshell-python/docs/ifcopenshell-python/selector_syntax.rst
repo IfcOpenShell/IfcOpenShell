@@ -102,6 +102,7 @@ elements in your filter group based on their criteria.
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
     "Classification", "Filter", "``classification{{=}}{{value}}``", "``classification=Foo`` specifies the criteria that elements must have an IfcClassificationReference with an ``Identification`` attribute with a value of ``Foo``."
     "Location", "Filter", "``location{{=}}{{value}}``", "``location=Foo`` specifies the criteria that elements must be contained directly or indirectly in a spatial element with a ``Name`` attribute with a value of ``Foo``."
+    "Parent", "Filter", "``parent{{=}}{{value}}``", "``parent=Foo`` specifies the criteria that elements must be a direct or indirect child in the spatial hierarchy to an element with a ``Name`` attribute with a value of ``Foo``."
     "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:types.count=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section"
 
 When you specify a filter with a ``{{=}}`` check, you can choose from one of
@@ -183,6 +184,7 @@ Valid keys are:
     "``storey``", "Gets the first IfcBuildingStorey spatial element that an element is contained in."
     "``building``", "Gets the first IfcBuilding spatial element that an element is contained in."
     "``site``", "Gets the first IccSite spatial element that an element is contained in."
+    "``parent``", "Gets the parent element in the spatial hierarchy."
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"
