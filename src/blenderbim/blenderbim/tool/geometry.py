@@ -761,16 +761,25 @@ class Geometry(blenderbim.core.tool.Geometry):
         Ensures that same representations won't be reloaded multiple times.
         """
         objs = obj_or_objs if isinstance(obj_or_objs, Iterable) else [obj_or_objs]
+        ifc_file = tool.Ifc.get()
+
+        # Find all objects that use the same representation
+        # as there are possibility that some of them have openings
+        # (each representation with opening has a unique Mesh)
+        # and therefore reloading Mesh of it's type or occurrence
+        # might not be enough.
+        elements = set()
+        for obj in objs:
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = tool.Geometry.resolve_mapped_representation(representation)
+            elements.update(ifcopenshell.util.element.get_elements_by_representation(ifc_file, representation))
 
         # Filter out unique meshes to avoid
         # reloading the same representation multiple times.
         meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
-        meshes_to_objects = dict()
-        for obj in objs:
-            mesh = obj.data
-            if not mesh:
-                continue
-            meshes_to_objects.setdefault(mesh, obj)
+        meshes_to_objects = {(obj:=tool.Ifc.get_object(element)).data: obj for element in elements}
 
         for obj in meshes_to_objects.values():
             representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
