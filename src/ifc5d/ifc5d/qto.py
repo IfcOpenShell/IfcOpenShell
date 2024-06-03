@@ -76,7 +76,7 @@ class SI2ProjectUnitConverter:
             "IfcLengthMeasure": "METRE",
             "IfcMassMeasure": "GRAM",
             "IfcTimeMeasure": "SECOND",
-            "IfcVolumeMeasure": "CUBIE_METRE",
+            "IfcVolumeMeasure": "CUBIC_METRE",
         }
 
     def convert(self, value, measure):
