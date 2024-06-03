@@ -24,6 +24,7 @@ classes = (
     operator.AddPresentationStyle,
     operator.AddStyle,
     operator.AddSurfaceTexture,
+    operator.AssignStyleToSelected,
     operator.BrowseExternalStyle,
     operator.RemoveTextureMap,
     operator.ChooseTextureMapPath,
