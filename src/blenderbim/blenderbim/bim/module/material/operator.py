@@ -703,7 +703,7 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.expand_material_category"
     bl_label = "Expand Material Category"
-    bl_description = "Expand material category.\n\nSHIFT+CLICK to expand all material categories"
+    bl_description = "SHIFT+CLICK to expand all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
     expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
@@ -732,7 +732,7 @@ class ExpandMaterialCategory(bpy.types.Operator):
 class ContractMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.contract_material_category"
     bl_label = "Contract Material Category"
-    bl_description = "Contract material category.\n\nSHIFT+CLICK to contract all material categories"
+    bl_description = "SHIFT+CLICK to contract all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
     contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
