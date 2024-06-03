@@ -1538,14 +1538,7 @@ class ActivateDrawing(bpy.types.Operator):
         if not self.camera_view_point:
             viewport_position = tool.Blender.get_viewport_position()
 
-        try:
-            core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
-        except core.CameraNotAvailableError:
-            self.report(
-                {"ERROR"},
-                "The drawing view is not available. Ensure you have not excluded it in the active view layer.",
-            )
-            return {"CANCELLED"}
+        core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
         if not self.camera_view_point:
             tool.Blender.set_viewport_position(viewport_position)

@@ -485,7 +485,3 @@ def activate_drawing_view(
     blender.activate_camera(camera)
     drawing_tool.isolate_camera_collection(camera)
     drawing_tool.activate_drawing(camera)
-
-
-class CameraNotAvailableError(Exception):
-    pass
