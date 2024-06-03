@@ -33,3 +33,10 @@ from .reassign_class import reassign_class
 from .remove_product import remove_product
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "copy_class",
+    "create_entity",
+    "reassign_class",
+    "remove_product",
+]

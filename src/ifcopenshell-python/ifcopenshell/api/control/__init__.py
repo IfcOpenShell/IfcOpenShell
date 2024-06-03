@@ -27,3 +27,8 @@ from .assign_control import assign_control
 from .unassign_control import unassign_control
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_control",
+    "unassign_control",
+]

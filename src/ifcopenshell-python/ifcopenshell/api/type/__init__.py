@@ -30,3 +30,9 @@ from .map_type_representations import map_type_representations
 from .unassign_type import unassign_type
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_type",
+    "map_type_representations",
+    "unassign_type",
+]

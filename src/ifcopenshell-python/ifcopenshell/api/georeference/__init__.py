@@ -29,3 +29,9 @@ from .edit_georeferencing import edit_georeferencing
 from .remove_georeferencing import remove_georeferencing
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_georeferencing",
+    "edit_georeferencing",
+    "remove_georeferencing",
+]

@@ -36,3 +36,12 @@ from .remove_classification import remove_classification
 from .remove_reference import remove_reference
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_classification",
+    "add_reference",
+    "edit_classification",
+    "edit_reference",
+    "remove_classification",
+    "remove_reference",
+]

@@ -38,3 +38,18 @@ from .unassign_material_style import unassign_material_style
 from .unassign_representation_styles import unassign_representation_styles
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_style",
+    "add_surface_style",
+    "add_surface_textures",
+    "assign_material_style",
+    "assign_representation_styles",
+    "edit_presentation_style",
+    "edit_surface_style",
+    "remove_style",
+    "remove_styled_representation",
+    "remove_surface_style",
+    "unassign_material_style",
+    "unassign_representation_styles",
+]

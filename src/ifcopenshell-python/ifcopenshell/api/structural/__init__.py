@@ -46,3 +46,27 @@ from .remove_structural_load_group import remove_structural_load_group
 from .unassign_structural_analysis_model import unassign_structural_analysis_model
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_structural_activity",
+    "add_structural_analysis_model",
+    "add_structural_boundary_condition",
+    "add_structural_load",
+    "add_structural_load_case",
+    "add_structural_load_group",
+    "add_structural_member_connection",
+    "assign_structural_analysis_model",
+    "edit_structural_analysis_model",
+    "edit_structural_boundary_condition",
+    "edit_structural_connection_cs",
+    "edit_structural_item_axis",
+    "edit_structural_load",
+    "edit_structural_load_case",
+    "remove_structural_analysis_model",
+    "remove_structural_boundary_condition",
+    "remove_structural_connection_condition",
+    "remove_structural_load",
+    "remove_structural_load_case",
+    "remove_structural_load_group",
+    "unassign_structural_analysis_model",
+]

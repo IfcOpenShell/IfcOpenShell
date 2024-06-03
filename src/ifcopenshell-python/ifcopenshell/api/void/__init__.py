@@ -31,3 +31,10 @@ from .remove_filling import remove_filling
 from .remove_opening import remove_opening
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_filling",
+    "add_opening",
+    "remove_filling",
+    "remove_opening",
+]

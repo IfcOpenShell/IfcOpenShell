@@ -29,3 +29,10 @@ from .reference_structure import reference_structure
 from .unassign_container import unassign_container
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_container",
+    "dereference_structure",
+    "reference_structure",
+    "unassign_container",
+]

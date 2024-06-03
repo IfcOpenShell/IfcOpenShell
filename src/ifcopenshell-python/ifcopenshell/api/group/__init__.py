@@ -32,3 +32,12 @@ from .unassign_group import unassign_group
 from .update_group_products import update_group_products
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_group",
+    "assign_group",
+    "edit_group",
+    "remove_group",
+    "unassign_group",
+    "update_group_products",
+]

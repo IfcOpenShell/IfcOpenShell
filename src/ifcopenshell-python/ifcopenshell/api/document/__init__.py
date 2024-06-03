@@ -35,3 +35,14 @@ from .remove_reference import remove_reference
 from .unassign_document import unassign_document
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_information",
+    "add_reference",
+    "assign_document",
+    "edit_information",
+    "edit_reference",
+    "remove_information",
+    "remove_reference",
+    "unassign_document",
+]

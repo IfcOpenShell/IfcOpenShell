@@ -30,3 +30,11 @@ from .edit_profile import edit_profile
 from .remove_profile import remove_profile
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_arbitrary_profile",
+    "add_arbitrary_profile_with_voids",
+    "add_parameterized_profile",
+    "edit_profile",
+    "remove_profile",
+]
