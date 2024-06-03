@@ -34,3 +34,14 @@ from .remove_reference import remove_reference
 from .unassign_reference import unassign_reference
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_library",
+    "add_reference",
+    "assign_reference",
+    "edit_library",
+    "edit_reference",
+    "remove_library",
+    "remove_reference",
+    "unassign_reference",
+]

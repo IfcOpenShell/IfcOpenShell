@@ -33,3 +33,12 @@ from .remove_prop_template import remove_prop_template
 from .remove_pset_template import remove_pset_template
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_prop_template",
+    "add_pset_template",
+    "edit_prop_template",
+    "edit_pset_template",
+    "remove_prop_template",
+    "remove_pset_template",
+]

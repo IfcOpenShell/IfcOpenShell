@@ -34,3 +34,15 @@ from .remove_metric import remove_metric
 from .unassign_constraint import unassign_constraint
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_metric",
+    "add_metric_reference",
+    "add_objective",
+    "assign_constraint",
+    "edit_metric",
+    "edit_objective",
+    "remove_constraint",
+    "remove_metric",
+    "unassign_constraint",
+]

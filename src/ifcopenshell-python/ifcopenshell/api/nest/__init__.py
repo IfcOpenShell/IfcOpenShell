@@ -34,3 +34,10 @@ from .reorder_nesting import reorder_nesting
 from .unassign_object import unassign_object
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_object",
+    "change_nest",
+    "reorder_nesting",
+    "unassign_object",
+]

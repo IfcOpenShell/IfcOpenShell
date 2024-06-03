@@ -27,3 +27,7 @@ from .. import wrap_usecases
 from .edit_attributes import edit_attributes
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "edit_attributes",
+]
