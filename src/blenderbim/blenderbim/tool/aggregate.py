@@ -30,9 +30,9 @@ class Aggregate(blenderbim.core.tool.Aggregate):
         related_object = tool.Ifc.get_entity(related_obj)
         if not relating_object or not related_object:
             return False
-        if (relating_object.is_a("IfcElement") or relating_object.is_a("IfcElementType")) and related_object.is_a("IfcElement"):
-            if relating_obj.data:  # See #3973
-                return False
+        if (relating_object.is_a("IfcElement") or relating_object.is_a("IfcElementType")) and related_object.is_a(
+            "IfcElement"
+        ):
             return True
         if tool.Ifc.get_schema() == "IFC2X3":
             if relating_object.is_a("IfcSpatialStructureElement") and related_object.is_a("IfcSpatialStructureElement"):
@@ -43,6 +43,13 @@ class Aggregate(blenderbim.core.tool.Aggregate):
             if relating_object.is_a("IfcSpatialElement") and related_object.is_a("IfcSpatialElement"):
                 return True
             if relating_object.is_a("IfcProject") and related_object.is_a("IfcSpatialElement"):
+                return True
+        return False
+
+    @classmethod
+    def has_physical_body_representation(cls, element: ifcopenshell.entity_instance) -> bool:
+        if element.is_a("IfcElement") or element.is_a("IfcElementType"):  # See 3973
+            if ifcopenshell.util.representation.get_representation(element, "Model", "Body"):
                 return True
         return False
 
