@@ -95,9 +95,12 @@ class Collector(blenderbim.core.tool.Collector):
             # NOTE: won't allow assigning IfcElements to the IfcProject directly
             # and some elements might get missing in other viewers if they're don't support displaying
             # elements without hierarchy
-            blenderbim.core.aggregate.assign_object(
-                tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
-            )
+            try:
+                blenderbim.core.aggregate.assign_object(
+                    tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
+                )
+            except blenderbim.core.aggregate.IncompatibleAggregateError:
+                pass
 
     @classmethod
     def assign(cls, obj: bpy.types.Object) -> None:
