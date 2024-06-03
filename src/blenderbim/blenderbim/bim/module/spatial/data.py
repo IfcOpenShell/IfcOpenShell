@@ -31,14 +31,27 @@ class SpatialData:
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "parent_container_id": cls.parent_container_id(),
-            "is_directly_contained": cls.is_directly_contained(),
-            "label": cls.label(),
-            "references": cls.references(),
-            "containers": cls.containers(),
-        }
         cls.is_loaded = True
+        cls.data["poll"] = cls.poll()
+        if cls.data["poll"]:
+            cls.data.update({
+                "parent_container_id": cls.parent_container_id(),
+                "is_directly_contained": cls.is_directly_contained(),
+                "label": cls.label(),
+                "references": cls.references(),
+                "containers": cls.containers(),
+            })
+
+    @classmethod
+    def poll(cls):
+        if not bpy.context.active_object:
+            return False
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        if not element:
+            return False
+        if element.is_a("IfcElement") or element.is_a("IfcAnnotation") or element.is_a("IfcGrid"):
+            return True
+        return False
 
     @classmethod
     def containers(cls):
