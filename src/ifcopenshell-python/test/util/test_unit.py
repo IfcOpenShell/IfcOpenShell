@@ -16,11 +16,20 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.util.unit as subject
 from math import pi
+
+
+class TestConvert(test.bootstrap.IFC4):
+    def test_run(self):
+        assert subject.convert(1, None, "METRE", None, "METRE") == 1
+        assert subject.convert(1, None, "METRE", "MILLI", "METRE") == 1000
+        assert subject.convert(1000, "MILLI", "METRE", None, "METRE") == 1
+        assert subject.convert(1, None, "SQUARE_METRE", None, "SQUARE_METRE") == 1
+        assert subject.convert(1, None, "SQUARE_METRE", "MILLI", "SQUARE_METRE") == 1000000
+        assert subject.convert(1, None, "CUBIC_METRE", "MILLI", "CUBIC_METRE") == 1000000000
 
 
 class TestCalculateUnitScale(test.bootstrap.IFC4):
