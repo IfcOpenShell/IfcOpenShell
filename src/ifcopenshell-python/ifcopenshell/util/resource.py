@@ -23,6 +23,20 @@ from typing import Union, Any
 
 
 PRODUCTIVITY_PSET_DATA = Union[dict[str, Any], None]
+# https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H
+RESOURCES_TO_QUANTITIES: dict[str, tuple[str, ...]] = {
+    "IfcCrewResource": ("IfcQuantityTime",),
+    "IfcLaborResource": ("IfcQuantityTime",),
+    "IfcSubContractResource": ("IfcQuantityTime",),
+    "IfcConstructionEquipmentResource": ("IfcQuantityTime",),
+    "IfcConstructionMaterialResource": (
+        "IfcQuantityVolume",
+        "IfcQuantityArea",
+        "IfcQuantityLength",
+        "IfcQuantityWeight",
+    ),
+    "IfcConstructionProductResource": ("IfcQuantityCount",),
+}
 
 
 def get_productivity(resource: ifcopenshell.entity_instance, should_inherit: bool = True) -> PRODUCTIVITY_PSET_DATA:

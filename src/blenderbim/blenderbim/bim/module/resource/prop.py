@@ -41,20 +41,7 @@ quantitytypes_enum = {}
 
 
 def setup_quantity_types_enum():
-    # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionResource.htm#Table-7.3.3.7.1.3.H
-    resources = {
-        "IfcCrewResource": ("IfcQuantityTime",),
-        "IfcLaborResource": ("IfcQuantityTime",),
-        "IfcSubContractResource": ("IfcQuantityTime",),
-        "IfcConstructionEquipmentResource": ("IfcQuantityTime",),
-        "IfcConstructionMaterialResource": (
-            "IfcQuantityVolume",
-            "IfcQuantityArea",
-            "IfcQuantityLength",
-            "IfcQuantityWeight",
-        ),
-        "IfcConstructionProductResource": ("IfcQuantityCount",),
-    }
+    resources = ifcopenshell.util.resource.RESOURCES_TO_QUANTITIES
     for resource, quantities in resources.items():
         quantitytypes_enum[resource] = [(q, q, "") for q in quantities]
 
