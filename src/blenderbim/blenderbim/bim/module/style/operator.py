@@ -161,13 +161,6 @@ class UpdateCurrentStyle(bpy.types.Operator):
     update_all: bpy.props.BoolProperty(name="Update All", default=False, options={"SKIP_SAVE"})
     style_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
 
-    @classmethod
-    def poll(cls, context):
-        if not context.selected_objects:
-            cls.poll_message_set("No objects selected")
-            return False
-        return True
-
     def invoke(self, context, event):
         # updating all styles on shift+click
         # make sure to use SKIP_SAVE on property, otherwise it might get stuck
