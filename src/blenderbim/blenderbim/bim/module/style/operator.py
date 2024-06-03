@@ -23,6 +23,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
 import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
 from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
@@ -950,4 +951,50 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"INFO"}, f"UV saved to the style {style.Name}")
 
+        return {"FINISHED"}
+
+
+class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_style_to_selected"
+    bl_label = "Assign Style To Selected"
+    bl_description = "Assign style to the selected objects' active representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    style_id: bpy.props.IntProperty(name="Style ID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected")
+            return False
+        return True
+
+    def _execute(self, context):
+        if self.style_id == 0:
+            self.report({"ERROR"}, "No style provided")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+
+        representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
+        for obj in context.selected_objects:
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = tool.Geometry.resolve_mapped_representation(representation)
+            representations.setdefault(representation, obj)
+
+        if not representations:
+            self.report({"INFO"}, "No IFC objects with representations selected.")
+            return {"FINISHED"}
+
+        for representation in representations:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=representation,
+                styles=[style],
+                should_use_presentation_style_assignment=tool.Geometry.should_use_presentation_style_assignment(),
+            )
+
+        tool.Geometry.reload_representation(representations.values())
         return {"FINISHED"}
