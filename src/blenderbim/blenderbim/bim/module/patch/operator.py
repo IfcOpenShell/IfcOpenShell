@@ -121,12 +121,16 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
             for arg_name in inputs:
                 arg_info = inputs[arg_name]
                 new_attr = patch_args.add()
+                data_type = arg_info.get("type", "str")
+                if isinstance(data_type, list):
+                    data_type = [dt for dt in data_type if dt != "NoneType"][0]
                 new_attr.data_type = {
+                    "Literal": "string",
                     "str": "string",
                     "float": "float",
                     "int": "integer",
                     "bool": "boolean",
-                }[arg_info.get("type", "str")]
+                }[data_type]
                 new_attr.name = arg_name
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
