@@ -55,21 +55,24 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
         if not relating_obj:
             return
 
-        for obj in bpy.context.selected_objects + [bpy.context.active_object]:
+        for obj in tool.Blender.get_selected_objects():
             if obj == relating_obj:
                 continue
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
-            result = core.assign_object(
-                tool.Ifc,
-                tool.Aggregate,
-                tool.Collector,
-                relating_obj=relating_obj,
-                related_obj=obj,
-            )
-            if not result:
-                self.report({"ERROR"}, f" Cannot aggregate {obj.name} to {relating_obj.name}")
+            try:
+                core.assign_object(
+                    tool.Ifc,
+                    tool.Aggregate,
+                    tool.Collector,
+                    relating_obj=relating_obj,
+                    related_obj=obj,
+                )
+            except core.IncompatibleAggregateError:
+                self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {relating_obj.name}")
+            except core.AggregateRepresentationError:
+                self.report({"ERROR"}, f"Cannot aggregate to {relating_obj.name} with a body representation")
 
 
 class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):

@@ -41,9 +41,12 @@ def assign_object(
     related_obj: Optional[bpy.types.Object] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
     if not aggregator.can_aggregate(relating_obj, related_obj):
-        return
+        raise IncompatibleAggregateError
+    relating_object = ifc.get_entity(relating_obj)
+    if aggregator.has_physical_body_representation(relating_object):
+        raise AggregateRepresentationError
     rel = ifc.run(
-        "aggregate.assign_object", products=[ifc.get_entity(related_obj)], relating_object=ifc.get_entity(relating_obj)
+        "aggregate.assign_object", products=[ifc.get_entity(related_obj)], relating_object=relating_object
     )
     collector.assign(relating_obj)
     collector.assign(related_obj)
@@ -84,3 +87,11 @@ def add_part_to_object(
     part_obj = blender.create_ifc_object(ifc_class=part_class, name=part_name)
     assign_object(ifc, aggregator, collector, relating_obj=obj, related_obj=part_obj)
     blender.set_active_object(obj)
+
+
+class IncompatibleAggregateError(Exception):
+    pass
+
+
+class AggregateRepresentationError(Exception):
+    pass
