@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
+import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
 from typing import Optional, Union, TypedDict
@@ -98,12 +99,12 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
 
 
 class ResolvedItemDict(TypedDict):
-    matrix: np.array
+    matrix: npt.NDArray[np.float64]
     item: ifcopenshell.entity_instance
 
 
 def resolve_items(
-    representation: ifcopenshell.entity_instance, matrix: Optional[np.array] = None
+    representation: ifcopenshell.entity_instance, matrix: Optional[npt.NDArray[np.float64]] = None
 ) -> list[ResolvedItemDict]:
     if matrix is None:
         matrix = np.eye(4)
