@@ -1632,7 +1632,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-        camera_props = context.active_object.data.BIMCameraProperties
+        camera_props = context.scene.camera.data.BIMCameraProperties
 
         # added this part as a temporary fallback
         # TODO: should remove it a bit later when projects get more accommodated
