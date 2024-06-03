@@ -332,7 +332,7 @@ class entity_instance:
                     self.wrapped_data.setArgumentAsNull(idx)
                 except RuntimeError as e:
                     if e.args == ("Attribute not set",):
-                        raise ValueError(
+                        raise TypeError(
                             "attribute '%s' is not optional for entity instance of type '%s'"
                             % (self.wrapped_data.get_argument_name(idx), self.wrapped_data.is_a(True))
                         )
