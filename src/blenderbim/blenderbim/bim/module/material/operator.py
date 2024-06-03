@@ -596,6 +596,7 @@ class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
         attributes = blenderbim.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
 
