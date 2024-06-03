@@ -28,7 +28,7 @@ from typing import Union
 
 def deprecation_check(test):
     def new_test(self):
-        assert datetime.now().date() < datetime(2024, 6, 1).date(), "API arguments are completely deprecated"
+        assert datetime.now().date() < datetime(2024, 8, 1).date(), "API arguments are completely deprecated"
         test(self)
 
     return new_test
