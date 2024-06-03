@@ -725,11 +725,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
-    def should_use_presentation_style_assignment(cls):
+    def should_use_presentation_style_assignment(cls) -> bool:
         return bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
 
     @classmethod
-    def get_model_representations(cls):
+    def get_model_representations(cls) -> list[ifcopenshell.entity_instance]:
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
 
     @classmethod

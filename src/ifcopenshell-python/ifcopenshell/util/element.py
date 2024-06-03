@@ -648,6 +648,8 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return styles
 
 
+# TODO: ifc_file argument is unnecessary for some methods now
+# since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
 ) -> list[ifcopenshell.entity_instance]:
@@ -1041,7 +1043,9 @@ def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.enti
     - Voiding: the opening voids another physical element, such as a hole in a wall
 
     :param element: Any physical or spatial element in the tree
+    :type element: ifcopenshell.entity_instance
     :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1065,7 +1069,9 @@ def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell
     Examples include windows and doors which fill a opening inside a wall.
 
     :param element: The building element, typically a window or door
+    :type element: ifcopenshell.entity_instance
     :return: The IfcOpeningElement that it is filling
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1084,7 +1090,9 @@ def get_voided_element(element: ifcopenshell.entity_instance) -> Union[ifcopensh
     For all valid models, this should never return None.
 
     :param element: The IfcOpeningElement
+    :type element: ifcopenshell.entity_instance
     :return: The building element, such as a wall or slab
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1102,7 +1110,9 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
     Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
+    :type element: ifcopenshell.entity_instance
     :return: The aggregate of the element
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1116,14 +1126,14 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
             return decomposes[0].RelatingObject
 
 
-def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance]:
+def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the nest parent of an element.
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance
     :return: The nested whole of the element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1159,6 +1169,7 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
     if (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
         if is_decomposed_by[0].is_a("IfcRelAggregates"):
             return is_decomposed_by[0].RelatedObjects
+    return []
 
 
 def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
@@ -1188,6 +1199,7 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
     elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
         if is_decomposed_by[0].is_a("IfcRelNests"):
             return is_decomposed_by[0].RelatedObjects
+    return []
 
 
 ReferenceData = namedtuple("ReferenceData", "inverse_attribute, rel_class, relating_element_attribute")
