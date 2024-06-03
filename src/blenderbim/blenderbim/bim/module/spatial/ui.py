@@ -17,7 +17,6 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.spatial.data import SpatialData
 import blenderbim.tool as tool
 
@@ -32,14 +31,9 @@ class BIM_PT_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        oprops = context.active_object.BIMObjectProperties
-        if not oprops.ifc_definition_id:
-            return False
-        if not IfcStore.get_element(oprops.ifc_definition_id):
-            return False
-        return True
+        if not SpatialData.is_loaded:
+            SpatialData.load()
+        return SpatialData.data["poll"]
 
     def draw(self, context):
         if not SpatialData.is_loaded:
@@ -156,12 +150,12 @@ class BIM_UL_containers_manager(UIList):
             row.label(text="", icon="BLANK1")
         if item.has_children:
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).container = item.ifc_definition_id
+                row.operator("bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").container = (
+                    item.ifc_definition_id
+                )
             else:
-                row.operator(
-                    "bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).container = item.ifc_definition_id
+                row.operator("bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").container = (
+                    item.ifc_definition_id
+                )
         else:
             row.label(text="", icon="DOT")
