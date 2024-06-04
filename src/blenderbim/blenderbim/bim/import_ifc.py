@@ -1702,6 +1702,7 @@ class IfcImporter:
             if aggregate["element"].is_a("IfcElementType"):
                 self.type_collection.children.link(aggregate["collection"])
                 continue
+            self.project["blender"].children.link(aggregate["collection"])
 
     def create_materials(self) -> None:
         for material in self.file.by_type("IfcMaterial"):
