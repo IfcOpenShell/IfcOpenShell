@@ -42,7 +42,7 @@ classes = (
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
     prop.BIMContainer,
-    prop.BIMSpatialManagerProperties,
+    prop.BIMProjectTreeProperties,
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers,
     ui.BIM_UL_containers_manager,
@@ -56,7 +56,7 @@ def register():
         bpy.utils.register_tool(workspace.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMSpatialProperties = bpy.props.PointerProperty(type=prop.BIMSpatialProperties)
     bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
-    bpy.types.Scene.BIMSpatialManagerProperties = bpy.props.PointerProperty(type=prop.BIMSpatialManagerProperties)
+    bpy.types.Scene.BIMProjectTreeProperties = bpy.props.PointerProperty(type=prop.BIMProjectTreeProperties)
 
 
 def unregister():
@@ -64,4 +64,4 @@ def unregister():
         bpy.utils.unregister_tool(workspace.SpatialTool)
     del bpy.types.Scene.BIMSpatialProperties
     del bpy.types.Object.BIMObjectSpatialProperties
-    del bpy.types.Scene.BIMSpatialManagerProperties
+    del bpy.types.Scene.BIMProjectTreeProperties

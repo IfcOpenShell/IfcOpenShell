@@ -29,13 +29,9 @@ def register():
     if not bpy.app.background:
         bpy.utils.register_tool(workspace.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMCoveringProperties = bpy.props.PointerProperty(type=prop.BIMCoveringProperties)
-#    bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
-#    bpy.types.Scene.BIMSpatialManagerProperties = bpy.props.PointerProperty(type=prop.BIMSpatialManagerProperties)
 
 
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.CoveringTool)
     del bpy.types.Scene.BIMCoveringProperties
-#    del bpy.types.Object.BIMObjectSpatialProperties
-#    del bpy.types.Scene.BIMSpatialManagerProperties

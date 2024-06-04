@@ -97,7 +97,8 @@ class BIM_PT_project_tree(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_project_setup"
+    bl_parent_id = "BIM_PT_tab_project_tree"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
@@ -106,18 +107,18 @@ class BIM_PT_project_tree(Panel):
     def draw(self, context):
         if not ProjectTreeData.is_loaded:
             ProjectTreeData.load()
-        self.props = context.scene.BIMSpatialManagerProperties
+        self.props = context.scene.BIMProjectTreeProperties
         row = self.layout.row()
         row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="Load Spatial Structure")
-        if 0 <= self.props.active_container_index < len(self.props.containers):
+        if self.props.active_container:
             ifc_definition_id = self.props.containers[self.props.active_container_index].ifc_definition_id
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.alignment = "RIGHT"
-            row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="Select Children")
+            row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
             spatial_data = ProjectTreeData.data["containers"].get(ifc_definition_id, None)
             if spatial_data and spatial_data["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
                 row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
-            row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id
+            row.operator("bim.delete_container", icon="X", text="").container = ifc_definition_id
         self.layout.template_list(
             "BIM_UL_containers_manager",
             "",
@@ -126,12 +127,6 @@ class BIM_PT_project_tree(Panel):
             self.props,
             "active_container_index",
         )
-        row = self.layout.row()
-        if 0 <= self.props.active_container_index < len(self.props.containers):
-            row.prop(self.props, "container_name", text="")
-            row.prop(self.props, "elevation", text="")
-            op = row.operator("bim.edit_container_attributes", icon="CHECKMARK", text="Apply")
-            op.container = self.props.containers[self.props.active_container_index].ifc_definition_id
 
 
 class BIM_UL_containers_manager(UIList):
@@ -143,7 +138,7 @@ class BIM_UL_containers_manager(UIList):
             split1.prop(item, "name", emboss=False, text="")
             split2 = row.split(factor=1)
             split2.alignment = "RIGHT"
-            split2.label(icon="BLANK1", text=tool.Unit.blender_format_unit(item.elevation))
+            split2.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):

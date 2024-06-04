@@ -202,9 +202,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
-    should_play_chaching_sound: BoolProperty(
-        name="Play A Cha-Ching Sound When Project Costs Updates", default=False
-    )
+    should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     lock_grids_on_import: BoolProperty(name="Lock Grids By Default", default=True)
     spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
     decorations_colour: bpy.props.FloatVectorProperty(
@@ -407,7 +405,7 @@ class BIM_PT_tabs(Panel):
 
             if blenderbim.last_error:
                 box = self.layout.box()
-                box.alert=True
+                box.alert = True
                 row = box.row(align=True)
                 row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
@@ -430,6 +428,20 @@ class BIM_PT_tabs(Panel):
 
 class BIM_PT_tab_project_info(Panel):
     bl_label = "Project Info"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "PROJECT")
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_project_tree(Panel):
+    bl_label = "Project Tree"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -490,7 +502,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED","HEADER_LAYOUT_EXPAND"}
+    bl_options = {"DEFAULT_CLOSED", "HEADER_LAYOUT_EXPAND"}
 
     @classmethod
     def poll(cls, context):
@@ -503,8 +515,9 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
         # Draws help button on the right
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.operator("bim.open_uri", text="", icon="HELP").uri = \
+        row.operator("bim.open_uri", text="", icon="HELP").uri = (
             "https://docs.ifcopenshell.org/ifcopenshell-python/selector_syntax.html"
+        )
 
 
 class BIM_PT_tab_geometry(Panel):

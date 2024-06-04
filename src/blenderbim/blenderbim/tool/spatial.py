@@ -208,44 +208,44 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def load_container_manager(cls):
-        cls.props = bpy.context.scene.BIMSpatialManagerProperties
-        previous_container_index = cls.props.active_container_index
-        cls.props.containers.clear()
-        cls.contracted_containers = json.loads(cls.props.contracted_containers)
-        cls.props.is_container_update_enabled = False
+        props = bpy.context.scene.BIMProjectTreeProperties
+        previous_container_index = props.active_container_index
+        props.containers.clear()
+        cls.contracted_containers = json.loads(props.contracted_containers)
+        props.is_container_update_enabled = False
         parent = tool.Ifc.get().by_type("IfcProject")[0]
 
-        for object in ifcopenshell.util.element.get_parts(parent) or []:
-            if object.is_a("IfcSpatialElement") or object.is_a("IfcSpatialStructureElement"):
-                cls.create_new_storey_li(object, 0)
-        cls.props.is_container_update_enabled = True
+        for subelement in ifcopenshell.util.element.get_parts(parent) or []:
+            if subelement.is_a("IfcSpatialElement") or subelement.is_a("IfcSpatialStructureElement"):
+                cls.import_spatial_structure(subelement, 0)
+        props.is_container_update_enabled = True
         # triggers spatial manager props setup
-        cls.props.active_container_index = min(previous_container_index, len(cls.props.containers) - 1)
+        props.active_container_index = min(previous_container_index, len(props.containers) - 1)
 
     @classmethod
-    def create_new_storey_li(cls, element, level_index):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        new = cls.props.containers.add()
+    def import_spatial_structure(cls, element, level_index):
+        props = bpy.context.scene.BIMProjectTreeProperties
+        new = props.containers.add()
+        new.ifc_class = element.is_a()
         new.name = element.Name or "Unnamed"
+        new.description = element.Description or ""
         new.long_name = element.LongName or ""
-        new.has_decomposition = bool(element.IsDecomposedBy)
-        new.ifc_definition_id = element.id()
-        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element) * si_conversion
-
+        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
-        if new.has_decomposition:
-            new.has_children = True
-            if new.is_expanded:
-                for related_object in ifcopenshell.util.element.get_parts(element) or []:
-                    if related_object.is_a("IfcSpatialElement") or related_object.is_a("IfcSpatialStructureElement"):
-                        cls.create_new_storey_li(related_object, level_index + 1)
+        children = ifcopenshell.util.element.get_parts(element)
+        new.has_children = bool(children)
+        new.ifc_definition_id = element.id()
+        if new.is_expanded:
+            for child in children or []:
+                cls.import_spatial_structure(child, level_index + 1)
 
     @classmethod
     def edit_container_attributes(cls, entity):
+        # TODO
         obj = tool.Ifc.get_object(entity)
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        name = bpy.context.scene.BIMSpatialManagerProperties.container_name
+        name = bpy.context.scene.BIMProjectTreeProperties.container_name
         if name != entity.Name:
             cls.edit_container_name(entity, name)
 
@@ -255,21 +255,21 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_active_container(cls):
-        props = bpy.context.scene.BIMSpatialManagerProperties
+        props = bpy.context.scene.BIMProjectTreeProperties
         if props.active_container_index < len(props.containers):
             container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
             return container
 
     @classmethod
     def contract_container(cls, container):
-        props = bpy.context.scene.BIMSpatialManagerProperties
+        props = bpy.context.scene.BIMProjectTreeProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.append(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
     @classmethod
     def expand_container(cls, container):
-        props = bpy.context.scene.BIMSpatialManagerProperties
+        props = bpy.context.scene.BIMProjectTreeProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
