@@ -27,9 +27,13 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional
+from typing import TypeVar, Union, Optional, Generator
 
 T = TypeVar("T")
+ShapeElementType = Union[
+    ifcopenshell_wrapper.BRepElement, ifcopenshell_wrapper.TriangulationElement, ifcopenshell_wrapper.SerializedElement
+]
+ShapeType = Union[ifcopenshell_wrapper.BRep, ifcopenshell_wrapper.Triangulation, ifcopenshell_wrapper.Serialization]
 
 
 def wrap_shape_creation(settings, shape):
@@ -122,7 +126,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[ShapeElementType, None, None]:
         if self.initialize():
             while True:
                 yield self.get()

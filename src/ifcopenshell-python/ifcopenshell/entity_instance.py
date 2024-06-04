@@ -169,7 +169,7 @@ class entity_instance:
 
         return file.from_pointer(self.wrapped_data.file_pointer())
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:

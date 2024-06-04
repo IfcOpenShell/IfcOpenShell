@@ -232,19 +232,19 @@ class IfcImporter:
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
 
-    def profile_code(self, message):
+    def profile_code(self, message: str) -> None:
         if not self.time:
             self.time = time.time()
         print("{} :: {:.2f}".format(message, time.time() - self.time))
         self.time = time.time()
         self.update_progress(self.progress + 1)
 
-    def update_progress(self, progress):
+    def update_progress(self, progress: float) -> None:
         if progress <= 100:
             self.progress = progress
         bpy.context.window_manager.progress_update(self.progress)
 
-    def execute(self):
+    def execute(self) -> None:
         bpy.context.window_manager.progress_begin(0, 100)
         self.profile_code("Starting import process")
         self.load_file()
@@ -324,7 +324,7 @@ class IfcImporter:
         coords = getattr(point, "Coordinates", point)
         return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
 
-    def process_context_filter(self):
+    def process_context_filter(self) -> None:
         # Annotation ContextType is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         type_priority = ["Model", "Plan", "Annotation"]
@@ -412,7 +412,7 @@ class IfcImporter:
             settings.set_context_ids([context.id()])
             self.gross_context_settings.append(settings)
 
-    def process_element_filter(self):
+    def process_element_filter(self) -> None:
         offset = self.ifc_import_settings.element_offset
         offset_limit = offset + self.ifc_import_settings.element_limit
 
@@ -479,7 +479,7 @@ class IfcImporter:
                     break
         return results
 
-    def parse_native_elements(self):
+    def parse_native_elements(self) -> None:
         if not self.ifc_import_settings.should_load_geometry:
             return
         for element in self.elements:
@@ -487,13 +487,13 @@ class IfcImporter:
                 self.native_elements.add(element)
         self.elements -= self.native_elements
 
-    def is_native(self, element):
+    def is_native(self, element: ifcopenshell.entity_instance) -> bool:
         if (
             not element.Representation
             or not element.Representation.Representations
             or getattr(element, "HasOpenings", None)
         ):
-            return
+            return False
 
         representation = None
         representation_priority = None
@@ -508,7 +508,7 @@ class IfcImporter:
                     context = rep.ContextOfItems
 
         if not representation:
-            return
+            return False
 
         matrix = np.eye(4)
         representation_id = None
@@ -566,8 +566,11 @@ class IfcImporter:
                 "type": "IfcFaceBasedSurfaceModel",
             }
             return True
+        return False
 
-    def is_native_swept_disk_solid(self, element, representation):
+    def is_native_swept_disk_solid(
+        self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> bool:
         items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
         if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
             if tool.Blender.Modifier.is_railing(element):
@@ -583,20 +586,20 @@ class IfcImporter:
             return True
         return False
 
-    def is_native_faceted_brep(self, representation):
+    def is_native_faceted_brep(self, representation: ifcopenshell.entity_instance) -> bool:
         # TODO handle mapped items
         for i in representation.Items:
             if i.is_a() != "IfcFacetedBrep":
                 return False
         return True
 
-    def is_native_face_based_surface_model(self, representation):
+    def is_native_face_based_surface_model(self, representation: ifcopenshell.entity_instance) -> bool:
         for i in representation.Items:
             if i.is_a() != "IfcFaceBasedSurfaceModel":
                 return False
         return True
 
-    def get_products_from_shape_representation(self, element):
+    def get_products_from_shape_representation(self, element: ifcopenshell.entity_instance) -> None:
         products = [pr.ShapeOfProduct[0] for pr in element.OfProductRepresentation]
         for rep_map in element.RepresentationMap:
             for usage in rep_map.MapUsage:
@@ -605,7 +608,7 @@ class IfcImporter:
                         products.extend(self.get_products_from_shape_representation(inverse_element))
         return products
 
-    def predict_dense_mesh(self):
+    def predict_dense_mesh(self) -> None:
         if self.ifc_import_settings.should_use_native_meshes:
             return
 
@@ -632,7 +635,7 @@ class IfcImporter:
         if faces and max(faces) > threshold:
             self.ifc_import_settings.should_use_native_meshes = True
 
-    def calculate_model_offset(self):
+    def calculate_model_offset(self) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
@@ -650,14 +653,14 @@ class IfcImporter:
             return self.guess_false_origin_and_project_north(building)
         return self.guess_false_origin()
 
-    def set_manual_blender_offset(self):
+    def set_manual_blender_offset(self) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.blender_eastings = str(self.ifc_import_settings.false_origin[0])
         props.blender_northings = str(self.ifc_import_settings.false_origin[1])
         props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
         props.has_blender_offset = True
 
-    def guess_false_origin_and_project_north(self, element):
+    def guess_false_origin_and_project_north(self, element: ifcopenshell.entity_instance) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -672,7 +675,7 @@ class IfcImporter:
             props.blender_x_axis_ordinate = str(placement[1][0])
         props.has_blender_offset = True
 
-    def guess_false_origin(self):
+    def guess_false_origin(self) -> None:
         # Civil BIM applications like to work in absolute coordinates, where the
         # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
         # check for the actual transformation) but each individual coordinate of
@@ -1909,13 +1912,17 @@ class IfcImporter:
             polyline.points[-1].co = mathutils.Vector(v2)
         return curve
 
-    def create_mesh(self, element: ifcopenshell.entity_instance, shape) -> bpy.types.Mesh:
+    def create_mesh(
+        self,
+        element: ifcopenshell.entity_instance,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+    ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
                 # shape is ifcopenshell_wrapper.TriangulationElement
-                geometry: ifcopenshell_wrapper.Triangulation = shape.geometry
+                geometry = shape.geometry
             else:
-                geometry: ifcopenshell_wrapper.Triangulation = shape
+                geometry = shape
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name(geometry))
 

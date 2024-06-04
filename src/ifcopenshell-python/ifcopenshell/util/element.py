@@ -738,7 +738,7 @@ def get_elements_by_style(
 
 def get_elements_by_representation(
     ifc_file: ifcopenshell.file, representation: ifcopenshell.entity_instance
-) -> list[ifcopenshell.entity_instance]:
+) -> set[ifcopenshell.entity_instance]:
     """Gets all elements using a geometric representation
 
     :param ifc_file: The IFC file
@@ -746,7 +746,7 @@ def get_elements_by_representation(
     :param representation: The IfcShapeRepresentation representation
     :type representation: ifcopenshell.entity_instance
     :return: The elements using the geometric representation
-    :rtype: list[ifcopenshell.entity_instance]
+    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
