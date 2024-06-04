@@ -23,6 +23,7 @@ import ifcopenshell.util.element
 
 def refresh():
     SpatialData.is_loaded = False
+    ProjectTreeData.is_loaded = False
 
 
 class SpatialData:
@@ -34,13 +35,14 @@ class SpatialData:
         cls.is_loaded = True
         cls.data["poll"] = cls.poll()
         if cls.data["poll"]:
-            cls.data.update({
-                "parent_container_id": cls.parent_container_id(),
-                "is_directly_contained": cls.is_directly_contained(),
-                "label": cls.label(),
-                "references": cls.references(),
-                "containers": cls.containers(),
-            })
+            cls.data.update(
+                {
+                    "parent_container_id": cls.parent_container_id(),
+                    "is_directly_contained": cls.is_directly_contained(),
+                    "label": cls.label(),
+                    "references": cls.references(),
+                }
+            )
 
     @classmethod
     def poll(cls):
@@ -52,20 +54,6 @@ class SpatialData:
         if element.is_a("IfcElement") or element.is_a("IfcAnnotation") or element.is_a("IfcGrid"):
             return True
         return False
-
-    @classmethod
-    def containers(cls):
-        results = {}
-        if tool.Ifc.get_schema() == "IFC2X3":
-            spatial_elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-        else:
-            spatial_elements = tool.Ifc.get().by_type("IfcSpatialElement")
-        for container in spatial_elements:
-            results[container.id()] = {
-                "type": container.is_a(),
-                "id": container.id(),
-            }
-        return results
 
     @classmethod
     def parent_container_id(cls):
@@ -94,3 +82,29 @@ class SpatialData:
     @classmethod
     def is_directly_contained(cls):
         return bool(getattr(tool.Ifc.get_entity(bpy.context.active_object), "ContainedInStructure", False))
+
+
+class ProjectTreeData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {
+            "containers": cls.containers(),
+        }
+
+    @classmethod
+    def containers(cls):
+        results = {}
+        if tool.Ifc.get_schema() == "IFC2X3":
+            spatial_elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+        else:
+            spatial_elements = tool.Ifc.get().by_type("IfcSpatialElement")
+        for container in spatial_elements:
+            results[container.id()] = {
+                "type": container.is_a(),
+                "id": container.id(),
+            }
+        return results

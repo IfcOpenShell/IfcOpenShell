@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.spatial.data import SpatialData
+from blenderbim.bim.module.spatial.data import SpatialData, ProjectTreeData
 import blenderbim.tool as tool
 
 
@@ -91,13 +91,12 @@ class BIM_UL_containers(UIList):
             )
 
 
-class BIM_PT_SpatialManager(Panel):
-    bl_label = "Spatial Manager"
-    bl_idname = "BIM_PT_SpatialManager"
+class BIM_PT_project_tree(Panel):
+    bl_label = "Project Tree"
+    bl_idname = "BIM_PT_project_tree"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_parent_id = "BIM_PT_tab_project_setup"
 
     @classmethod
@@ -105,8 +104,8 @@ class BIM_PT_SpatialManager(Panel):
         return tool.Ifc.get() and tool.Ifc.schema().name() != "IFC2X3"
 
     def draw(self, context):
-        if not SpatialData.is_loaded:
-            SpatialData.load()
+        if not ProjectTreeData.is_loaded:
+            ProjectTreeData.load()
         self.props = context.scene.BIMSpatialManagerProperties
         row = self.layout.row()
         row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="Load Spatial Structure")
@@ -115,7 +114,7 @@ class BIM_PT_SpatialManager(Panel):
             row = self.layout.row()
             row.alignment = "RIGHT"
             row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="Select Children")
-            spatial_data = SpatialData.data["containers"].get(ifc_definition_id, None)
+            spatial_data = ProjectTreeData.data["containers"].get(ifc_definition_id, None)
             if spatial_data and spatial_data["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
                 row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
             row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id
@@ -143,6 +142,7 @@ class BIM_UL_containers_manager(UIList):
             split1 = row.split(factor=0.7)
             split1.prop(item, "name", emboss=False, text="")
             split2 = row.split(factor=1)
+            split2.alignment = "RIGHT"
             split2.label(icon="BLANK1", text=tool.Unit.blender_format_unit(item.elevation))
 
     def draw_hierarchy(self, row, item):
@@ -158,4 +158,14 @@ class BIM_UL_containers_manager(UIList):
                     item.ifc_definition_id
                 )
         else:
-            row.label(text="", icon="DOT")
+            row.label(text="", icon="BLANK1")
+        if item.ifc_class == "IfcSite":
+            row.label(text="", icon="WORLD")
+        elif item.ifc_class == "IfcBuilding":
+            row.label(text="", icon="HOME")
+        elif item.ifc_class == "IfcBuildingStorey":
+            row.label(text="", icon="LINENUMBERS_OFF")
+        elif item.ifc_class == "IfcSpace":
+            row.label(text="", icon="ANTIALIASED")
+        else:
+            row.label(text="", icon="META_PLANE")
