@@ -26,7 +26,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
-from typing import Union, Optional, Literal, Any
+from typing import Union, Optional, Literal, Any, Sequence
 from itertools import chain
 from mathutils import Vector, Matrix
 
@@ -304,9 +304,9 @@ class ShapeBuilder:
         x_axis_radius: float,
         y_axis_radius: float,
         position=Vector((0.0, 0.0)).freeze(),
-        trim_points: list[Vector] = (),
+        trim_points: Sequence[Vector] = (),
         ref_x_direction: Vector = Vector((1.0, 0.0)),
-        trim_points_mask: list[int] = (),
+        trim_points_mask: Sequence[int] = (),
     ) -> ifcopenshell.entity_instance:
         """
         Ellipse trimming points should be specified in counter clockwise order.
@@ -345,7 +345,7 @@ class ShapeBuilder:
         self,
         outer_curve: ifcopenshell.entity_instance,
         name: Optional[str] = None,
-        inner_curves: list[ifcopenshell.entity_instance] = (),
+        inner_curves: Sequence[ifcopenshell.entity_instance] = (),
         profile_type: str = "AREA",
     ) -> ifcopenshell.entity_instance:
         # > inner_curves - list of IfcCurve;
@@ -882,8 +882,8 @@ class ShapeBuilder:
     def get_simple_2dcurve_data(
         self,
         coords: list[Vector],
-        fillets: list[int] = (),
-        fillet_radius: list[float] = (),
+        fillets: Sequence[int] = (),
+        fillet_radius: Sequence[float] = (),
         closed: bool = True,
         create_ifc_curve: bool = False,
     ) -> tuple[list[Vector], list[tuple[int, int], Union[ifcopenshell.entity_instance, None]]]:

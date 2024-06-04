@@ -19,6 +19,7 @@
 import re
 import bpy
 import bmesh
+import ifcopenshell.geom
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
@@ -55,9 +56,12 @@ class Loader(blenderbim.core.tool.Loader):
         return collection
 
     @classmethod
-    def get_mesh_name(cls, geometry) -> str:
+    def get_mesh_name(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
         representation_id = geometry.id
         if "-" in representation_id:
+            # Example: 2432-openings-2468, where
+            # 2432 is mapped representation id
+            # and 2468 is IFCRELVOIDSELEMENT
             representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
         else:
             representation_id = int(re.sub(r"\D", "", representation_id))
