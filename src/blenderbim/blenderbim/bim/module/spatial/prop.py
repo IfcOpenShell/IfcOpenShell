@@ -105,6 +105,9 @@ class BIMObjectSpatialProperties(PropertyGroup):
 
 class BIMContainer(PropertyGroup):
     name: StringProperty(name="Name", update=updateContainerName)
+    ifc_class: StringProperty(name="IFC Class")
+    description: StringProperty(name="Description")
+    long_name: StringProperty(name="Long Name")
     elevation: FloatProperty(name="Elevation", subtype="DISTANCE")
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
