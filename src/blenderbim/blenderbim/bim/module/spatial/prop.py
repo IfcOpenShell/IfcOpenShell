@@ -36,27 +36,17 @@ import ifcopenshell
 
 
 def update_elevation(self, context):
-    entity = tool.Ifc.get().by_id(self.active_container_id)
-    obj = tool.Ifc.get_object(entity)
-    if not obj:
-        return
-    obj.location.z = self.elevation
+    if ifc_definition_id := self.ifc_definition_id:
+        entity = tool.Ifc.get().by_id(ifc_definition_id)
+        obj = tool.Ifc.get_object(entity)
+        if not obj:
+            return
+        obj.location.z = self.elevation
 
 
-def update_active_container_index(self, context):
-    if self.active_container_index < 0:
-        return
-    self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
-    self.container_name = self.containers[self.active_container_index].name
-    self.elevation = self.containers[self.active_container_index].elevation
-
-
-def updateContainerName(self, context):
-    props = context.scene.BIMSpatialManagerProperties
-    if not props.is_container_update_enabled or self.name == "Unnamed":
-        return
-    tool.Spatial.edit_container_name(tool.Ifc.get().by_id(props.active_container_id), self.name)
-    props.container_name = self.name
+def update_name(self, context):
+    if ifc_definition_id := self.ifc_definition_id:
+        tool.Spatial.edit_container_name(tool.Ifc.get().by_id(ifc_definition_id), self.name)
 
 
 def update_relating_container_from_object(self, context):
@@ -104,23 +94,24 @@ class BIMObjectSpatialProperties(PropertyGroup):
 
 
 class BIMContainer(PropertyGroup):
-    name: StringProperty(name="Name", update=updateContainerName)
+    name: StringProperty(name="Name", update=update_name)
     ifc_class: StringProperty(name="IFC Class")
     description: StringProperty(name="Description")
     long_name: StringProperty(name="Long Name")
-    elevation: FloatProperty(name="Elevation", subtype="DISTANCE")
+    elevation: FloatProperty(name="Elevation", subtype="DISTANCE", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
-class BIMSpatialManagerProperties(PropertyGroup):
+class BIMProjectTreeProperties(PropertyGroup):
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")
-    active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
-    active_container_id: IntProperty(name="Active Container Id")
-    container_name: StringProperty(name="Container Name")
-    elevation: FloatProperty(name="Elevation", update=update_elevation, subtype="DISTANCE")
-    is_container_update_enabled: BoolProperty(name="Is Container Update Enabled", default=True)  # TODO:review
+    active_container_index: IntProperty(name="Active Container Index")
+
+    @property
+    def active_container(self):
+        if self.active_container_index < len(self.containers):
+            return self.containers[self.active_container_index]
