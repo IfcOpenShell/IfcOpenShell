@@ -376,7 +376,6 @@ class BIM_PT_tabs(Panel):
             self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
             self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
             self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-            self.draw_tab_entry(row, "BLENDER", "BLENDER", True, aprops.tab == "BLENDER")
             row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
             # Yes, that's right.

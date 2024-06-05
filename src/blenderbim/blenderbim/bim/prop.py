@@ -328,6 +328,7 @@ def get_tab(self, context):
         ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
         ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+        None,
         ("BLENDER", "Blender Properties", "", "BLENDER", 9),
     ]
 
