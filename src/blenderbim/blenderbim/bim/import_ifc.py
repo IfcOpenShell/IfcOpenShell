@@ -689,7 +689,7 @@ class IfcImporter:
     def get_offset_point(self) -> Union[npt.NDArray[np.float64], None]:
         elements_checked = 0
         # If more than these elements aren't far away, the file probably isn't absolutely positioned
-        element_checking_threshold = 10
+        element_checking_threshold = 3
         for element in self.file.by_type("IfcElement"):
             if not element.Representation:
                 continue
