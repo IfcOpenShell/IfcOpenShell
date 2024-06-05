@@ -49,6 +49,10 @@ def update_name(self, context):
         tool.Spatial.edit_container_name(tool.Ifc.get().by_id(ifc_definition_id), self.name)
 
 
+def update_active_container_index(self, context):
+    tool.Spatial.load_contained_elements()
+
+
 def update_relating_container_from_object(self, context):
     if self.relating_container_object is None or context.active_object is None:
         return
@@ -105,13 +109,23 @@ class BIMContainer(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
+class Element(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_class: BoolProperty(name="Is Class", default=False)
+    is_type: BoolProperty(name="Is Type", default=False)
+    total: IntProperty(name="Total")
+
+
 class BIMProjectTreeProperties(PropertyGroup):
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")
-    active_container_index: IntProperty(name="Active Container Index")
+    active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
+    elements: CollectionProperty(name="Elements", type=Element)
+    active_element_index: IntProperty(name="Active Element Index")
+    total_elements: IntProperty(name="Total Elements")
 
     @property
     def active_container(self):
-        if self.active_container_index < len(self.containers):
+        if self.containers and self.active_container_index < len(self.containers):
             return self.containers[self.active_container_index]
