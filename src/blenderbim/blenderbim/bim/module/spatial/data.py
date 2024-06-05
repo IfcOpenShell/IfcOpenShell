@@ -92,19 +92,71 @@ class ProjectTreeData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {
-            "containers": cls.containers(),
+            "subelement_class": cls.subelement_class(),
         }
 
     @classmethod
-    def containers(cls):
-        results = {}
+    def subelement_class(cls):
+        results = []
+        props = bpy.context.scene.BIMProjectTreeProperties
+        if not (container := props.active_container):
+            return results
+        container_class = tool.Ifc.get().by_id(container.ifc_definition_id).is_a()
         if tool.Ifc.get_schema() == "IFC2X3":
-            spatial_elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-        else:
-            spatial_elements = tool.Ifc.get().by_type("IfcSpatialElement")
-        for container in spatial_elements:
-            results[container.id()] = {
-                "type": container.is_a(),
-                "id": container.id(),
-            }
-        return results
+            results = {
+                "IfcBuilding": ["IfcBuilding", "IfcBuildingStorey", "IfcSpace"],
+                "IfcBuildingStorey": ["IfcBuildingStorey", "IfcSpace"],
+                "IfcProject": ["IfcBuilding", "IfcSite", "IfcSpace"],
+                "IfcSite": ["IfcBuilding", "IfcSite", "IfcSpace"],
+                "IfcSpace": ["IfcSpace"],
+            }[container_class]
+        elif tool.Ifc.get_schema() == "IFC4":
+            results = {
+                "IfcBuilding": ["IfcBuilding", "IfcBuildingStorey", "IfcSpace"],
+                "IfcBuildingStorey": ["IfcBuildingStorey", "IfcSpace"],
+                "IfcExternalSpatialElement": ["IfcExternalSpatialElement"],
+                "IfcProject": ["IfcBuilding", "IfcExternalSpatialElement", "IfcSite", "IfcSpace"],
+                "IfcSite": ["IfcBuilding", "IfcExternalSpatialElement", "IfcSite", "IfcSpace"],
+                "IfcSpace": ["IfcSpace"],
+            }[container_class]
+        elif tool.Ifc.get_schema() == "IFC4X3":
+            results = {
+                "IfcBridge": ["IfcBridge", "IfcBridgePart", "IfcSpace"],
+                "IfcBridgePart": ["IfcSpace"],
+                "IfcBuilding": ["IfcBuilding", "IfcBuildingStorey", "IfcSpace"],
+                "IfcBuildingStorey": ["IfcBuildingStorey", "IfcSpace"],
+                "IfcExternalSpatialElement": ["IfcExternalSpatialElement"],
+                "IfcFacility": ["IfcFacility", "IfcFacilityPartCommon", "IfcSpace"],
+                "IfcFacilityPartCommon": ["IfcSpace"],
+                "IfcMarineFacility": ["IfcMarineFacility", "IfcMarinePart", "IfcSpace"],
+                "IfcMarinePart": ["IfcSpace"],
+                "IfcProject": [
+                    "IfcBridge",
+                    "IfcBuilding",
+                    "IfcExternalSpatialElement",
+                    "IfcFacility",
+                    "IfcMarineFacility",
+                    "IfcRailway",
+                    "IfcRoad",
+                    "IfcSite",
+                    "IfcSpace",
+                ],
+                "IfcRailway": ["IfcRailway", "IfcRailwayPart", "IfcSpace"],
+                "IfcRailwayPart": ["IfcSpace"],
+                "IfcRoad": ["IfcRoad", "IfcRoadPart", "IfcSpace"],
+                "IfcRoadPart": ["IfcSpace"],
+                "IfcSite": [
+                    "IfcBridge",
+                    "IfcBuilding",
+                    "IfcExternalSpatialElement",
+                    "IfcFacility",
+                    "IfcMarineFacility",
+                    "IfcRailway",
+                    "IfcRoad",
+                    "IfcSite",
+                    "IfcSpace",
+                ],
+                "IfcSpace": ["IfcSpace"],
+            }[container_class]
+
+        return [(r, r, "") for r in results]

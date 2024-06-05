@@ -36,7 +36,6 @@ class AggregateData:
             "relating_object_label": cls.get_relating_object_label(),
             "has_related_objects": cls.has_related_objects(),
             "total_parts": cls.total_parts(),
-            "ifc_class": cls.ifc_class(),
             "total_linked_aggregate": cls.total_linked_aggregate(),
         }
         cls.is_loaded = True
@@ -67,12 +66,6 @@ class AggregateData:
     @classmethod
     def has_related_objects(cls) -> bool:
         return bool(cls.get_related_objects())
-
-    @classmethod
-    def ifc_class(cls) -> str:
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            return element.is_a()
 
     @classmethod
     def total_linked_aggregate(cls):

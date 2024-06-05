@@ -99,19 +99,6 @@ class BIM_PT_aggregate(Panel):
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name
 
-        ifc_class = AggregateData.data["ifc_class"]
-        part_class = ""
-        if ifc_class == "IfcBuilding":
-            part_class = "IfcBuildingStorey"
-        elif ifc_class == "IfcSite":
-            part_class = "IfcBuilding"
-        elif ifc_class == "IfcProject":
-            part_class = "IfcSite"
-        if part_class != "":
-            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
-            op.part_class = part_class
-            op.obj = context.active_object.name
-            
             
 class BIM_PT_linked_aggregate(Panel):
     bl_label = "Linked Aggregates"

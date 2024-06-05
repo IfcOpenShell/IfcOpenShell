@@ -246,14 +246,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
-        props.is_container_update_enabled = False
-        parent = tool.Ifc.get().by_type("IfcProject")[0]
-
-        for subelement in ifcopenshell.util.element.get_parts(parent) or []:
-            if subelement.is_a("IfcSpatialElement") or subelement.is_a("IfcSpatialStructureElement"):
-                cls.import_spatial_structure(subelement, 0)
-        props.is_container_update_enabled = True
-        # triggers spatial manager props setup
+        cls.import_spatial_structure(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = min(previous_container_index, len(props.containers) - 1)
 
     @classmethod
@@ -264,7 +257,8 @@ class Spatial(blenderbim.core.tool.Spatial):
         new.name = element.Name or "Unnamed"
         new.description = element.Description or ""
         new.long_name = element.LongName or ""
-        new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
+        if not element.is_a("IfcProject"):
+            new.elevation = ifcopenshell.util.placement.get_storey_elevation(element)
         new.is_expanded = element.id() not in cls.contracted_containers
         new.level_index = level_index
         children = ifcopenshell.util.element.get_parts(element)
