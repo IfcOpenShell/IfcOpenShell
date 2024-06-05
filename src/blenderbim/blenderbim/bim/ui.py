@@ -361,6 +361,7 @@ class BIM_PT_tabs(Panel):
                 aprops = context.screen.BIMTabProperties
 
             row = self.layout.row()
+            row.alignment = "CENTER"
             row.operator(
                 "bim.set_tab",
                 text="",
@@ -380,6 +381,7 @@ class BIM_PT_tabs(Panel):
 
             # Yes, that's right.
             row = self.layout.row()
+            row.alignment = "CENTER"
             row.scale_y = 0.2
             for tab in [
                 "PROJECT",
@@ -391,7 +393,6 @@ class BIM_PT_tabs(Panel):
                 "SCHEDULING",
                 "FM",
                 "QUALITY",
-                "BLENDER",
                 "SWITCH",
             ]:
                 if aprops.tab == tab:
