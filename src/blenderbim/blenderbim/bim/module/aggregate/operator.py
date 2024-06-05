@@ -275,23 +275,23 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
     bl_options = {"REGISTER", "UNDO"}
     part_class: bpy.props.StringProperty(name="Class", options={"HIDDEN"})
     part_name: bpy.props.StringProperty(name="Name")
-    obj: bpy.props.StringProperty(options={"HIDDEN"})
+    element: bpy.props.IntProperty(options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.part_name = "My " + self.part_class.lstrip("Ifc")
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) or context.active_object
         core.add_part_to_object(
             tool.Ifc,
             tool.Aggregate,
             tool.Collector,
             tool.Blender,
-            obj=obj,
+            obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.element)) if self.element else context.active_object,
             part_class=self.part_class,
             part_name=self.part_name,
         )
+        tool.Spatial.load_container_manager()
 
 
 class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):

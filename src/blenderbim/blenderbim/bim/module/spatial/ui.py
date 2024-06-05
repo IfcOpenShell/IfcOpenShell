@@ -112,15 +112,23 @@ class BIM_PT_project_tree(Panel):
         if self.props.active_container:
             row = self.layout.row(align=True)
             row.label(
-                text=f"Active {self.props.active_container.ifc_class}: {self.props.active_container.name}",
+                text=f"Active: {self.props.active_container.name}",
                 icon="OUTLINER_COLLECTION",
-            )
-            row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text="")
-            row.operator("bim.delete_container", icon="X", text="").container = (
-                self.props.active_container.ifc_definition_id
             )
             row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="")
 
+            if self.props.active_container.ifc_class != "IfcProject":
+                row = self.layout.row(align=True)
+                row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text=f"Isolate {self.props.active_container.ifc_class}")
+                row.operator("bim.delete_container", icon="X", text="").container = (
+                    self.props.active_container.ifc_definition_id
+                )
+
+            row = self.layout.row(align=True)
+            row.prop(self.props, "subelement_class", text="")
+            op = row.operator("bim.add_part_to_object", icon="ADD", text="")
+            op.element = self.props.active_container.ifc_definition_id
+            op.part_class = self.props.subelement_class
         else:
             row = self.layout.row(align=True)
             row.label(text="Warning: No Active Container", icon="ERROR")
@@ -138,10 +146,6 @@ class BIM_PT_project_tree(Panel):
 
         if not self.props.active_container:
             return
-
-        # spatial_data = ProjectTreeData.data["containers"].get(ifc_definition_id, None)
-        # if spatial_data and spatial_data["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
-        #     row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
 
         if not self.props.total_elements:
             row = self.layout.row()
@@ -168,7 +172,8 @@ class BIM_UL_containers_manager(UIList):
             row = layout.row(align=True)
             self.draw_hierarchy(row, item)
             row.prop(item, "name", emboss=False, text="")
-            row.prop(item, "long_name", emboss=False, text="")
+            if item.long_name:
+                row.prop(item, "long_name", emboss=False, text="")
             col = row.column()
             col.alignment = "RIGHT"
             col.prop(item, "elevation", emboss=False, text="")
@@ -187,7 +192,9 @@ class BIM_UL_containers_manager(UIList):
                 )
         else:
             row.label(text="", icon="BLANK1")
-        if item.ifc_class == "IfcSite":
+        if item.ifc_class == "IfcProject":
+            row.label(text="", icon="FILE")
+        elif item.ifc_class == "IfcSite":
             row.label(text="", icon="WORLD")
         elif item.ifc_class == "IfcBuilding":
             row.label(text="", icon="HOME")
@@ -195,6 +202,8 @@ class BIM_UL_containers_manager(UIList):
             row.label(text="", icon="LINENUMBERS_OFF")
         elif item.ifc_class == "IfcSpace":
             row.label(text="", icon="ANTIALIASED")
+        elif "Part" in item.ifc_class:
+            row.label(text="", icon="MOD_FLUID")
         else:
             row.label(text="", icon="META_PLANE")
 

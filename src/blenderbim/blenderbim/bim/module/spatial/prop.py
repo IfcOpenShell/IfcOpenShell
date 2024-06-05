@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.spatial.data import SpatialData
+from blenderbim.bim.module.spatial.data import ProjectTreeData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -31,8 +31,13 @@ from bpy.props import (
     CollectionProperty,
 )
 import blenderbim.tool as tool
-import blenderbim.core.geometry
 import ifcopenshell
+
+
+def get_subelement_class(self, context):
+    if not ProjectTreeData.is_loaded:
+        ProjectTreeData.load()
+    return ProjectTreeData.data["subelement_class"]
 
 
 def update_elevation(self, context):
@@ -50,6 +55,7 @@ def update_name(self, context):
 
 
 def update_active_container_index(self, context):
+    ProjectTreeData.data["subelement_class"] = ProjectTreeData.subelement_class()
     tool.Spatial.load_contained_elements()
 
 
@@ -124,6 +130,7 @@ class BIMProjectTreeProperties(PropertyGroup):
     elements: CollectionProperty(name="Elements", type=Element)
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")
+    subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")
 
     @property
     def active_container(self):
