@@ -36,6 +36,7 @@ import blenderbim.tool as tool
 import blenderbim.core.project as core
 import blenderbim.core.context
 import blenderbim.core.owner
+import blenderbim.core.spatial
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
@@ -122,6 +123,7 @@ class CreateProject(bpy.types.Operator):
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
+        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):

@@ -440,15 +440,15 @@ class BIM_PT_tab_project_info(Panel):
         pass
 
 
-class BIM_PT_tab_project_tree(Panel):
-    bl_label = "Project Tree"
+class BIM_PT_tab_spatial_decomposition(Panel):
+    bl_label = "Spatial Decomposition"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT")
+        return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
         pass

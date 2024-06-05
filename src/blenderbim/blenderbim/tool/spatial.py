@@ -208,7 +208,7 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def load_contained_elements(cls):
-        props = bpy.context.scene.BIMProjectTreeProperties
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         props.elements.clear()
         if not (container := props.active_container):
             return
@@ -241,17 +241,17 @@ class Spatial(blenderbim.core.tool.Spatial):
         props.total_elements = total_elements
 
     @classmethod
-    def load_container_manager(cls):
-        props = bpy.context.scene.BIMProjectTreeProperties
+    def import_spatial_decomposition(cls):
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
-        cls.import_spatial_structure(tool.Ifc.get().by_type("IfcProject")[0], 0)
+        cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
         props.active_container_index = min(previous_container_index, len(props.containers) - 1)
 
     @classmethod
-    def import_spatial_structure(cls, element, level_index):
-        props = bpy.context.scene.BIMProjectTreeProperties
+    def import_spatial_element(cls, element, level_index):
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         new = props.containers.add()
         new.ifc_class = element.is_a()
         new.name = element.Name or "Unnamed"
@@ -266,14 +266,14 @@ class Spatial(blenderbim.core.tool.Spatial):
         new.ifc_definition_id = element.id()
         if new.is_expanded:
             for child in children or []:
-                cls.import_spatial_structure(child, level_index + 1)
+                cls.import_spatial_element(child, level_index + 1)
 
     @classmethod
     def edit_container_attributes(cls, entity):
         # TODO
         obj = tool.Ifc.get_object(entity)
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        name = bpy.context.scene.BIMProjectTreeProperties.container_name
+        name = bpy.context.scene.BIMSpatialDecompositionProperties.container_name
         if name != entity.Name:
             cls.edit_container_name(entity, name)
 
@@ -283,21 +283,21 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_active_container(cls):
-        props = bpy.context.scene.BIMProjectTreeProperties
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         if props.active_container_index < len(props.containers):
             container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
             return container
 
     @classmethod
     def contract_container(cls, container):
-        props = bpy.context.scene.BIMProjectTreeProperties
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.append(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
     @classmethod
     def expand_container(cls, container):
-        props = bpy.context.scene.BIMProjectTreeProperties
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
@@ -321,6 +321,36 @@ class Spatial(blenderbim.core.tool.Spatial):
             if shapely.contains_xy(polygon, x, y):
                 space_polygon = shapely.force_3d(polygon)
         return space_polygon
+
+    @classmethod
+    def debug_shape(cls, foo):
+        coords = [(p[0], p[1], 0) for p in foo.exterior.coords]
+        mesh = bpy.data.meshes.new(name="NewMesh")
+        bm = bmesh.new()
+        for coord in coords:
+            bm.verts.new(coord)
+        bm.verts.ensure_lookup_table()
+        bm.faces.new(bm.verts)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new("NewObject", mesh)
+        bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.update()
+
+    @classmethod
+    def debug_line(cls, start, end):
+        coords = [start, end]
+        mesh = bpy.data.meshes.new(name="NewMesh")
+        bm = bmesh.new()
+        for coord in coords:
+            bm.verts.new(coord)
+        bm.verts.ensure_lookup_table()
+        bm.edges.new(bm.verts)
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new("NewLine", mesh)
+        bpy.context.collection.objects.link(obj)
+        bpy.context.view_layer.update()
 
     @classmethod
     def get_boundary_lines_from_context_visible_objects(cls):

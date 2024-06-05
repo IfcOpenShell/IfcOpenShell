@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.spatial.data import SpatialData, ProjectTreeData
+from blenderbim.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import blenderbim.tool as tool
 
 
@@ -91,13 +91,13 @@ class BIM_UL_containers(UIList):
             )
 
 
-class BIM_PT_project_tree(Panel):
-    bl_label = "Project Tree"
-    bl_idname = "BIM_PT_project_tree"
+class BIM_PT_spatial_decomposition(Panel):
+    bl_label = "Spatial Decomposition"
+    bl_idname = "BIM_PT_spatial_decomposition"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_project_tree"
+    bl_parent_id = "BIM_PT_tab_spatial_decomposition"
     bl_options = {"HIDE_HEADER"}
 
     @classmethod
@@ -105,9 +105,9 @@ class BIM_PT_project_tree(Panel):
         return tool.Ifc.get()
 
     def draw(self, context):
-        if not ProjectTreeData.is_loaded:
-            ProjectTreeData.load()
-        self.props = context.scene.BIMProjectTreeProperties
+        if not SpatialDecompositionData.is_loaded:
+            SpatialDecompositionData.load()
+        self.props = context.scene.BIMSpatialDecompositionProperties
 
         if self.props.active_container:
             row = self.layout.row(align=True)
@@ -115,7 +115,7 @@ class BIM_PT_project_tree(Panel):
                 text=f"Active: {self.props.active_container.name}",
                 icon="OUTLINER_COLLECTION",
             )
-            row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="")
+            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
 
             if self.props.active_container.ifc_class != "IfcProject":
                 row = self.layout.row(align=True)
@@ -132,7 +132,7 @@ class BIM_PT_project_tree(Panel):
         else:
             row = self.layout.row(align=True)
             row.label(text="Warning: No Active Container", icon="ERROR")
-            row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="")
+            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
 
         self.layout.template_list(
             "BIM_UL_containers_manager",

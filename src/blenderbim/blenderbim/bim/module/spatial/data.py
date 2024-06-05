@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 
 def refresh():
     SpatialData.is_loaded = False
-    ProjectTreeData.is_loaded = False
+    SpatialDecompositionData.is_loaded = False
 
 
 class SpatialData:
@@ -84,7 +84,7 @@ class SpatialData:
         return bool(getattr(tool.Ifc.get_entity(bpy.context.active_object), "ContainedInStructure", False))
 
 
-class ProjectTreeData:
+class SpatialDecompositionData:
     data = {}
     is_loaded = False
 
@@ -98,7 +98,7 @@ class ProjectTreeData:
     @classmethod
     def subelement_class(cls):
         results = []
-        props = bpy.context.scene.BIMProjectTreeProperties
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
         if not (container := props.active_container):
             return results
         container_class = tool.Ifc.get().by_id(container.ifc_definition_id).is_a()

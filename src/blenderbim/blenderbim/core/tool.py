@@ -848,7 +848,7 @@ class Spatial:
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
-    def load_container_manager(cls): pass
+    def import_spatial_decomposition(cls): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
     def select_object(cls, obj): pass
