@@ -37,6 +37,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import blenderbim.tool as tool
+import blenderbim.core.spatial
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
@@ -301,6 +302,7 @@ class IfcImporter:
             self.setup_viewport_camera()
         self.setup_arrays()
         self.profile_code("Setup arrays")
+        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 

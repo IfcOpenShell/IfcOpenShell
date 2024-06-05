@@ -30,7 +30,7 @@ classes = (
     operator.EditContainerAttributes,
     operator.EnableEditingContainer,
     operator.ExpandContainer,
-    operator.LoadContainerManager,
+    operator.ImportSpatialDecomposition,
     operator.ReferenceStructure,
     operator.RemoveContainer,
     operator.SelectContainer,
@@ -42,12 +42,12 @@ classes = (
     prop.BIMSpatialProperties,
     prop.BIMObjectSpatialProperties,
     prop.BIMContainer,
-    prop.BIMProjectTreeProperties,
+    prop.BIMSpatialDecompositionProperties,
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers,
     ui.BIM_UL_containers_manager,
     ui.BIM_UL_elements,
-    ui.BIM_PT_project_tree,
+    ui.BIM_PT_spatial_decomposition,
     workspace.Hotkey,
 )
 
@@ -57,7 +57,7 @@ def register():
         bpy.utils.register_tool(workspace.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMSpatialProperties = bpy.props.PointerProperty(type=prop.BIMSpatialProperties)
     bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
-    bpy.types.Scene.BIMProjectTreeProperties = bpy.props.PointerProperty(type=prop.BIMProjectTreeProperties)
+    bpy.types.Scene.BIMSpatialDecompositionProperties = bpy.props.PointerProperty(type=prop.BIMSpatialDecompositionProperties)
 
 
 def unregister():
@@ -65,4 +65,4 @@ def unregister():
         bpy.utils.unregister_tool(workspace.SpatialTool)
     del bpy.types.Scene.BIMSpatialProperties
     del bpy.types.Object.BIMObjectSpatialProperties
-    del bpy.types.Scene.BIMProjectTreeProperties
+    del bpy.types.Scene.BIMSpatialDecompositionProperties

@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.spatial.data import ProjectTreeData
+from blenderbim.bim.module.spatial.data import SpatialDecompositionData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -35,9 +35,9 @@ import ifcopenshell
 
 
 def get_subelement_class(self, context):
-    if not ProjectTreeData.is_loaded:
-        ProjectTreeData.load()
-    return ProjectTreeData.data["subelement_class"]
+    if not SpatialDecompositionData.is_loaded:
+        SpatialDecompositionData.load()
+    return SpatialDecompositionData.data["subelement_class"]
 
 
 def update_elevation(self, context):
@@ -55,7 +55,7 @@ def update_name(self, context):
 
 
 def update_active_container_index(self, context):
-    ProjectTreeData.data["subelement_class"] = ProjectTreeData.subelement_class()
+    SpatialDecompositionData.data["subelement_class"] = SpatialDecompositionData.subelement_class()
     tool.Spatial.load_contained_elements()
 
 
@@ -122,7 +122,7 @@ class Element(PropertyGroup):
     total: IntProperty(name="Total")
 
 
-class BIMProjectTreeProperties(PropertyGroup):
+class BIMSpatialDecompositionProperties(PropertyGroup):
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")

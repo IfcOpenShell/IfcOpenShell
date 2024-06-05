@@ -175,13 +175,13 @@ class SelectProduct(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadContainerManager(bpy.types.Operator):
-    bl_idname = "bim.load_container_manager"
+class ImportSpatialDecomposition(bpy.types.Operator):
+    bl_idname = "bim.import_spatial_decomposition"
     bl_label = "Load Container Manager"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.load_container_manager(tool.Spatial)
+        core.import_spatial_decomposition(tool.Spatial)
         return {"FINISHED"}
 
 
