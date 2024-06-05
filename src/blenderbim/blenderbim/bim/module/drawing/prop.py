@@ -370,6 +370,7 @@ class DocProperties(PropertyGroup):
     )
     shadingstyle_default: StringProperty(default="Blender Default", name="Default Shading Style")
     drawing_font: StringProperty(default="OpenGost Type B TT.ttf", name="Drawing Font")
+    magic_font_scale: bpy.props.FloatProperty(default=0.004118616, name="Font Scale Factor")
 
 
 class BIMCameraProperties(PropertyGroup):

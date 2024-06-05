@@ -341,6 +341,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "shadingstyle_default")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "drawing_font")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "magic_font_scale")
 
 
 # Scene panel groups
