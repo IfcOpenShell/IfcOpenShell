@@ -1172,6 +1172,27 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
     return []
 
 
+def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the contained elements of spatial element.
+
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance
+    :return: The parts of the element
+    :rtype: list[ifcopenshell.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcBuildingStorey")[0]
+        elements = ifcopenshell.util.element.get_contained(element)
+    """
+    if (rel := getattr(element, "ContainsElements", None)) is not None and rel:
+        return rel[0].RelatedElements
+    return []
+
+
 def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
     """
     Retrieves the components of an element that have an nest relationship.
