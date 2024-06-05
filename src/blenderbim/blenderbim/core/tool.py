@@ -831,7 +831,7 @@ class Spatial:
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
-    def create_new_storey_li(cls, element, level_index): pass
+    def import_spatial_structure(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass

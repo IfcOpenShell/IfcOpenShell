@@ -207,6 +207,40 @@ class Spatial(blenderbim.core.tool.Spatial):
         src_obj.location = (destination_obj.location[0], destination_obj.location[1], z)
 
     @classmethod
+    def load_contained_elements(cls):
+        props = bpy.context.scene.BIMProjectTreeProperties
+        props.elements.clear()
+        if not (container := props.active_container):
+            return
+
+        container = tool.Ifc.get().by_id(container.ifc_definition_id)
+
+        results = {}
+        for element in ifcopenshell.util.element.get_contained(container):
+            element_type = ifcopenshell.util.element.get_type(element)
+            ifc_class = element.is_a()
+            type_name = element_type.Name or "Unnamed" if element_type else "Untyped"
+            results.setdefault(ifc_class, {}).setdefault(type_name, 0)
+            results[ifc_class][type_name] += 1
+
+        total_elements = 0
+        for ifc_class in sorted(results.keys()):
+            new = props.elements.add()
+            new.name = ifc_class
+            new.is_class = True
+            total = 0
+            for type_name in sorted(results[ifc_class].keys()):
+                new2 = props.elements.add()
+                new2.name = type_name
+                new2.is_type = True
+                new2.total = results[ifc_class][type_name]
+                total += new2.total
+            new.total = total
+            total_elements += total
+
+        props.total_elements = total_elements
+
+    @classmethod
     def load_container_manager(cls):
         props = bpy.context.scene.BIMProjectTreeProperties
         previous_container_index = props.active_container_index

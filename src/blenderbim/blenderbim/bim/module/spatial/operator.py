@@ -227,26 +227,6 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
 
-class AddBuildingStorey(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_building_storey"
-    bl_label = "Add Storey"
-    bl_options = {"REGISTER", "UNDO"}
-    part_class: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        active_container = tool.Spatial.get_active_container()
-        obj = tool.Ifc.get_object(active_container)
-        blenderbim.core.aggregate.add_part_to_object(
-            tool.Ifc,
-            tool.Aggregate,
-            tool.Collector,
-            tool.Blender,
-            obj=obj,
-            part_class=self.part_class,
-            part_name="Unnamed",
-        )
-        core.load_container_manager(tool.Spatial)
-
 
 class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
