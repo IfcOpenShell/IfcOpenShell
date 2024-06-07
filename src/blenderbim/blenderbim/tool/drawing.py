@@ -644,7 +644,6 @@ class Drawing(blenderbim.core.tool.Drawing):
     @classmethod
     def import_drawing(cls, drawing: ifcopenshell.entity_instance) -> bpy.types.Object:
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.STRICT_TOLERANCE, True)
 
         camera_type = "ORTHO"
         body = ifcopenshell.util.representation.get_representation(drawing, "Model", "Body", "MODEL_VIEW")

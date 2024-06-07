@@ -476,7 +476,7 @@ class CreateDrawing(bpy.types.Operator):
                 if not context or not drawing_elements:
                     continue
                 geom_settings = ifcopenshell.geom.settings(
-                    DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+                    DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True
                 )
                 if ifc.by_id(context[0]).ContextType == "Plan" and "PLAN_VIEW" in target_view:
                     offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
@@ -561,7 +561,7 @@ class CreateDrawing(bpy.types.Operator):
             if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
                     # The camera must always be included, regardless of any include/exclude filters.
-                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
+                    geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True)
                     it = ifcopenshell.geom.iterator(geom_settings, ifc, include=[self.camera_element])
                     for elem in it:
                         self.serialiser.write(elem)
@@ -875,7 +875,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def setup_serialiser(self, target_view):
         self.svg_settings = ifcopenshell.geom.settings(
-            DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
+            DISABLE_TRIANGULATION=True, INCLUDE_CURVES=True
         )
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)

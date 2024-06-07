@@ -180,7 +180,6 @@ class Patcher:
             self.elements = self.file.by_type("IfcElement")
 
         self.settings = ifcopenshell.geom.settings()
-        self.settings.set(self.settings.STRICT_TOLERANCE, True)
 
         self.body_contexts = [
             c.id()
