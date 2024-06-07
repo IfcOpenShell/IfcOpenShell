@@ -109,7 +109,7 @@ class Usecase:
         self.set_true_north()
 
     def set_true_north(self):
-        if self.settings["true_north"] == None:
+        if not self.settings["true_north"]:
             return
         for context in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.TrueNorth:
