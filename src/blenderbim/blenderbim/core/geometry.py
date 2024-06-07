@@ -33,6 +33,7 @@ def edit_object_placement(
         return
     geometry.clear_cache(element)
     geometry.clear_scale(obj)
+    geometry.get_blender_offset_type(obj)
     ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
     geometry.record_object_position(obj)
 

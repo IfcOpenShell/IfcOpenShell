@@ -28,7 +28,7 @@ class Surveyor(blenderbim.core.tool.Surveyor):
     def get_absolute_matrix(cls, obj):
         matrix = np.array(obj.matrix_world)
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "OBJECT_PLACEMENT":
+        if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = np.array(
                 ifcopenshell.util.geolocation.local2global(
