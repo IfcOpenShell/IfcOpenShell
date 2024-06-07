@@ -20,6 +20,7 @@ import ifcopenshell
 import ifcopenshell.api
 
 
+# TODO: rename to assign_work_plan for consistency
 def assign_workplan(
     file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, work_plan: ifcopenshell.entity_instance
 ) -> ifcopenshell.entity_instance:
