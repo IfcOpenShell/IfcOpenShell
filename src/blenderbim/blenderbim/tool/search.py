@@ -2,10 +2,8 @@ import bpy
 import json
 import lark
 import blenderbim.core.tool
-import blenderbim.tool as tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
-from ifcopenshell.util.selector import Selector
 from blenderbim.bim.prop import BIMFacet
 from typing import Union, Literal
 
@@ -114,11 +112,6 @@ class Search(blenderbim.core.tool.Search):
         elif value in ("NULL", "TRUE", "FALSE"):
             return value
         return '"' + value.replace('"', '\\"') + '"'
-
-    @classmethod
-    def from_selector_query(cls, query: str) -> list[ifcopenshell.entity_instance]:
-        """Returns a list of products from a selector query"""
-        return Selector().parse(tool.Ifc.get(), query)
 
 
 class ImportFilterQueryTransformer(lark.Transformer):
