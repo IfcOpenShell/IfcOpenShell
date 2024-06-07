@@ -445,6 +445,7 @@ class BIMObjectProperties(PropertyGroup):
         name="Blender Offset",
         default="NONE",
     )
+    cartesian_point_offset: StringProperty(name="Cartesian Point Offset")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     is_renaming: BoolProperty(name="Is Renaming", default=False)
     location_checksum: StringProperty(name="Location Checksum")
