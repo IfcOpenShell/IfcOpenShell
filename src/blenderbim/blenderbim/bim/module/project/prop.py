@@ -172,8 +172,16 @@ class BIMProjectProperties(PropertyGroup):
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(name="Void Limit", default=30)
-    distance_limit: FloatProperty(name="Distance Limit", default=1000)
-    false_origin: StringProperty(name="False Origin", default="0,0,0")
+    distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
+    false_origin: StringProperty(
+        name="False Origin",
+        description=(
+            "False origin that will be used to offset the entire model.\n"
+            "(0,0,0) value is interpreted as an unset false origin - false origin will be guessed based on Distance Limit.\n"
+            "False origin is defined in project units"
+        ),
+        default="0,0,0",
+    )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
     should_disable_undo_on_save: BoolProperty(
