@@ -579,7 +579,7 @@ namespace {
 #endif
 }
 
-const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcProduct* product) {
+const IfcSchema::IfcMaterial* IfcGeom::Kernel::get_single_material_association(const IfcSchema::IfcObjectDefinition* product) {
 	IfcSchema::IfcMaterial* single_material = 0;
 	IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
 	if (associated_materials->size() == 1) {
@@ -675,7 +675,7 @@ IfcGeom::BRepElement* IfcGeom::Kernel::create_brep_for_representation_and_produc
 
 	bool material_style_applied = false;
 
-	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product);
+	const IfcSchema::IfcMaterial* single_material = get_single_material_association(product->as<IfcSchema::IfcObjectDefinition>());
 	if (single_material) {
 		auto s = get_style(single_material);
 		for (IfcGeom::IfcRepresentationShapeItems::iterator it = shapes.begin(); it != shapes.end(); ++it) {
@@ -1635,6 +1635,18 @@ IfcSchema::IfcRepresentation* IfcGeom::Kernel::find_representation(const IfcSche
 	IfcSchema::IfcRepresentation::list::ptr reps = prod_rep->Representations();
 	for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
 		if ((**it).RepresentationIdentifier() && (*(**it).RepresentationIdentifier()) == identifier) {
+			return *it;
+		}
+	}
+	return 0;
+}
+
+IfcSchema::IfcRepresentation* IfcGeom::Kernel::find_representation(const IfcSchema::IfcProduct* product, const IfcSchema::IfcRepresentationContext* context) {
+	if (!product->Representation()) return 0;
+	IfcSchema::IfcProductRepresentation* prod_rep = product->Representation();
+	IfcSchema::IfcRepresentation::list::ptr reps = prod_rep->Representations();
+	for (IfcSchema::IfcRepresentation::list::it it = reps->begin(); it != reps->end(); ++it) {
+        if ((**it).ContextOfItems() == context) {
 			return *it;
 		}
 	}
