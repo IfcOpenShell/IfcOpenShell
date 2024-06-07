@@ -60,5 +60,5 @@ class TestEditContext(test.bootstrap.IFC4):
         assert subcontext.UserDefinedTargetView == "UserDefinedTargetView"
 
 
-class TestEditContext(test.bootstrap.IFC2X3, TestEditContext):
+class TestEditContextIFC2X3(test.bootstrap.IFC2X3, TestEditContext):
     pass

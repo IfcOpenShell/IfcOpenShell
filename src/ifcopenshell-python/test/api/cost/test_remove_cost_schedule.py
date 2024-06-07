@@ -37,5 +37,5 @@ class TestRemoveCostSchedule(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelAssignsToControl")
 
 
-class TestRemoveCostSchedule(test.bootstrap.IFC2X3, TestRemoveCostSchedule):
+class TestRemoveCostScheduleIFC2X3(test.bootstrap.IFC2X3, TestRemoveCostSchedule):
     pass
