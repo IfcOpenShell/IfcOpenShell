@@ -6,7 +6,7 @@ on:
       - '.github/workflows/ci-ifcsverchok-build.yml'
       - 'src/ifcsverchok/*'
     branches:
-      - v0.7.0
+      - v0.8.0
 
 env:
   major: 0
