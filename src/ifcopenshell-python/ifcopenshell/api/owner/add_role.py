@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_role(file, assigned_object=None, role="ARCHITECT") -> None:
+def add_role(file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, role: str = "ARCHITECT") -> ifcopenshell.entity_instance:
     """Adds and assigns a new role
 
     People and organisations must play one or more roles on a project. Roles
@@ -32,7 +33,7 @@ def add_role(file, assigned_object=None, role="ARCHITECT") -> None:
         be assigned to.
     :type assigned_object: ifcopenshell.entity_instance
     :param role: The type of role, taken from the IFC documentation for
-        IfcActorRole, or a custom name.
+        IfcActorRole, or a custom name. Defaults to "ARCHITECT".
     :type role: str, optional
     :return: The newly created IfcActorRole
     :rtype: ifcopenshell.entity_instance

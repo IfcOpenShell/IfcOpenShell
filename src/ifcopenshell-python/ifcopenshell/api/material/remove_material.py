@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_material(file, material=None) -> None:
+def remove_material(file: ifcopenshell.file, material: ifcopenshell.entity_instance) -> None:
     """Removes a material
 
     If the material is used in a material set, the corresponding layer,
@@ -62,7 +62,13 @@ def remove_material(file, material=None) -> None:
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcMaterialProperties"):
-            for prop in inverse.Properties or []:
+            if file.schema != "IFC2X3":
+                props = inverse.Properties
+            else:
+                # only IfcExtendedMaterialProperties have properties in IFC2X3
+                props = getattr(inverse, "ExtendedProperties", None)
+            props = props or []
+            for prop in props:
                 file.remove(prop)
             file.remove(inverse)
         elif inverse.is_a("IfcMaterialDefinitionRepresentation"):

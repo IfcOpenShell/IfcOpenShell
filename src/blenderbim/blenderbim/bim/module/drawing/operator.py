@@ -29,6 +29,7 @@ import subprocess
 import numpy as np
 import multiprocessing
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
 import ifcopenshell.util.selector
@@ -529,28 +530,35 @@ class CreateDrawing(bpy.types.Operator):
 
         files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
 
+        for link in context.scene.BIMProjectProperties.links:
+            if link.name not in IfcStore.session_files:
+                IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
+            files[link.name] = IfcStore.session_files[link.name]
+
+        target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
+        self.setup_serialiser(target_view)
+
+        tree = ifcopenshell.geom.tree()
+        tree.enable_face_styles(True)
+
         for ifc_path, ifc in files.items():
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
             ifc_cache_path = os.path.join(context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
 
+            self.serialiser.setFile(ifc)
+            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
+
             # Get all representation contexts to see what we're dealing with.
             # Drawings only draw bodies and annotations (and facetation, due to a Revit bug).
             # A drawing prioritises a target view context first, followed by a model view context as a fallback.
             # Specifically for PLAN_VIEW and REFLECTED_PLAN_VIEW, any Plan context is also prioritised.
-            target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
             contexts = self.get_linework_contexts(ifc, target_view)
-            drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element)
-
-            self.setup_serialiser(ifc, target_view)
-            tree = ifcopenshell.geom.tree()
-            tree.enable_face_styles(True)
-
             self.serialize_contexts_elements(ifc, tree, contexts, "body", drawing_elements, target_view)
             self.serialize_contexts_elements(ifc, tree, contexts, "annotation", drawing_elements, target_view)
 
-            if self.camera_element not in drawing_elements:
+            if tool.Ifc.get() == ifc and self.camera_element not in drawing_elements:
                 with profile("Camera element"):
                     # The camera must always be included, regardless of any include/exclude filters.
                     geom_settings = ifcopenshell.geom.settings(DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True)
@@ -865,13 +873,12 @@ class CreateDrawing(bpy.types.Operator):
 
         return svg_path
 
-    def setup_serialiser(self, ifc, target_view):
+    def setup_serialiser(self, target_view):
         self.svg_settings = ifcopenshell.geom.settings(
             DISABLE_TRIANGULATION=True, STRICT_TOLERANCE=True, INCLUDE_CURVES=True
         )
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings)
-        self.serialiser.setFile(ifc)
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)
         self.serialiser.setUseHlrPoly(True)
@@ -935,6 +942,18 @@ class CreateDrawing(bpy.types.Operator):
         self.is_manifold_cache[obj.data.name] = True
         return True
 
+    def get_element_by_guid(self, guid):
+        try:
+            return tool.Ifc.get().by_guid(guid)
+        except:
+            for link in bpy.context.scene.BIMProjectProperties.links:
+                if link.name not in IfcStore.session_files:
+                    IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
+                try:
+                    return IfcStore.session_files[link.name].by_guid(guid)
+                except:
+                    continue
+
     def merge_linework_and_add_metadata(self, root):
         join_criteria = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "JoinCriteria")
         if join_criteria:
@@ -949,7 +968,7 @@ class CreateDrawing(bpy.types.Operator):
 
         ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
-            element = ifc.by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
 
             if "projection" in el.get("class", "").split():
                 classes = self.get_svg_classes(element)
@@ -962,6 +981,10 @@ class CreateDrawing(bpy.types.Operator):
                 el.set("class", " ".join(classes))
 
             obj = tool.Ifc.get_object(element)
+
+            if not obj: # This is a linked model object. For now, do nothing.
+                continue
+
             if not self.is_manifold(obj):
                 continue
 
@@ -1515,7 +1538,7 @@ class ActivateDrawing(bpy.types.Operator):
         if not self.camera_view_point:
             viewport_position = tool.Blender.get_viewport_position()
 
-        core.activate_drawing_view(tool.Ifc, tool.Drawing, drawing=drawing)
+        core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
         if not self.camera_view_point:
             tool.Blender.set_viewport_position(viewport_position)
@@ -1609,7 +1632,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-        camera_props = context.active_object.data.BIMCameraProperties
+        camera_props = context.scene.camera.data.BIMCameraProperties
 
         # added this part as a temporary fallback
         # TODO: should remove it a bit later when projects get more accommodated

@@ -32,3 +32,7 @@ class TestAddClassification(test.bootstrap.IFC4):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
         assert self.file.by_type("IfcClassification")[0].Name == "Name"
+
+
+class TestAddClassificationIFC2X3(test.bootstrap.IFC2X3, TestAddClassification):
+    pass

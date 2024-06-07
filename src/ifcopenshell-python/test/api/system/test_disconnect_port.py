@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.system
 
 
-class TestConnectPort(test.bootstrap.IFC4):
+class TestDisconnectPort(test.bootstrap.IFC4):
     def test_disconnecting_a_port(self):
         port = ifcopenshell.api.run("system.add_port", self.file)
         port2 = ifcopenshell.api.run("system.add_port", self.file)
@@ -30,3 +30,7 @@ class TestConnectPort(test.bootstrap.IFC4):
         assert port.FlowDirection == None
         assert port2.FlowDirection == None
         assert len(self.file.by_type("IfcRelConnectsPorts")) == 0
+
+
+class TestDisconnectPortIFC2X3(test.bootstrap.IFC2X3, TestDisconnectPort):
+    pass

@@ -36,7 +36,7 @@ Some of these add-ons are not shipped with Blender:
   import GIS data, grab elevation data from the web, and generate TINs from
   survey points and contours.
 - `Ladybug Tools for Blender
-  <https://github.com/Andrej730/ladybug-blender/releases/download/ladybug-blender-240419/ladybug-blender-240419.zip>`__ - Ladybug Tools
+  <https://github.com/ladybug-tools/ladybug-blender/releases/download/ladybug-blender-240529/ladybug-blender-240529.zip>`__ - Ladybug Tools
   is an extension of Sverchok for environmental analysis and building physics
   simulation. It allows analysis of solar, daylight, energy, and CFD.
 - `Topologic <https://topologic.app/>`__ - Perform spatial and topological

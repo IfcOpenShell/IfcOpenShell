@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.schema
 import ifcopenshell.util.date
 from typing import Union
@@ -109,7 +110,9 @@ class Usecase:
                 "IfcCalendarDate", **ifcopenshell.util.date.datetime2ifc(edition_date, "IfcCalendarDate")
             )
         else:
-            result.EditionDate = ifcopenshell.util.date.datetime2ifc(edition_date, "IfcDate")
+            if edition_date:
+                edition_date = ifcopenshell.util.date.datetime2ifc(edition_date, "IfcDate")
+            result.EditionDate = edition_date
 
         self.relate_to_project(result)
 

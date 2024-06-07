@@ -32,3 +32,7 @@ class TestAddActor(test.bootstrap.IFC4):
         actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcOccupant", actor=person)
         assert actor.is_a() == "IfcOccupant"
         assert actor.TheActor == person
+
+
+class TestAddActorIFC2X3(test.bootstrap.IFC2X3, TestAddActor):
+    pass

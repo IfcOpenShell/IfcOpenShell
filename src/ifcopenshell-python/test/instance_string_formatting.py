@@ -1,5 +1,6 @@
 import pytest
 import ifcopenshell
+import ifcopenshell.guid
 
 def test_file_gc():
     f = ifcopenshell.file()

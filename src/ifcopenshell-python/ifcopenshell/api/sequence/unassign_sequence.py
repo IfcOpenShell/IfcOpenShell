@@ -21,7 +21,11 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def unassign_sequence(file, relating_process=None, related_process=None) -> None:
+def unassign_sequence(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_process: ifcopenshell.entity_instance,
+) -> None:
     """Removes a sequence relationship between tasks
 
     :param relating_process: The previous / predecessor task.

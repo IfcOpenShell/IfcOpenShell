@@ -18,9 +18,13 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+import ifcopenshell.util.element
 
 
-def update_group_products(file, group=None, products=None) -> None:
+def update_group_products(
+    file: ifcopenshell.file, group: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+) -> ifcopenshell.entity_instance:
     """Sets a group products to be an explicit list of products
 
     Any previous products assigned to that group will have their assignment
@@ -37,7 +41,7 @@ def update_group_products(file, group=None, products=None) -> None:
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
+        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
         ifcopenshell.api.run("group.update_group_products", model,
             products=model.by_type("IfcFurniture"), group=group)
     """
@@ -57,11 +61,17 @@ def update_group_products(file, group=None, products=None) -> None:
             }
         )
     else:
-        # assumes 1:1 cardinality, will need to be updated to reflect IFC4 changes
-        # where the cardinality is 0:? - vulevukusej
-        rel = settings["group"].IsGroupedBy[0]
-        existing_sub_groups = [g for g in rel.RelatedObjects if g.is_a("IfcGroup")]
+        rels = settings["group"].IsGroupedBy
+        objects = set(settings["products"])
+        for rel in rels:
+            objects.update([g for g in rel.RelatedObjects if g.is_a("IfcGroup")])
+        to_purge = rels[1:]
 
-        rel.RelatedObjects = settings["products"]
-        for g in existing_sub_groups:
-            rel.RelatedObjects.add(g)
+        for rel in to_purge:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+
+        rels[0].RelatedObjects = list(objects)
+        return rels[0]

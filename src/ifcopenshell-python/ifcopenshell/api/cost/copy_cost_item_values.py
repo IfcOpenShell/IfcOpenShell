@@ -20,7 +20,9 @@ import ifcopenshell.util.element
 import ifcopenshell.api
 
 
-def copy_cost_item_values(file, source=None, destination=None) -> None:
+def copy_cost_item_values(
+    file: ifcopenshell.file, source: ifcopenshell.entity_instance, destination: ifcopenshell.entity_instance
+) -> None:
     """Copies all cost values from one cost item to another
 
     Any previously existing values will be removed. The entire value is

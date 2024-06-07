@@ -17,9 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.date
+from typing import Any
 
 
-def edit_work_schedule(file, work_schedule=None, attributes=None) -> None:
+def edit_work_schedule(
+    file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcWorkSchedule
 
     For more information about the attributes and data types of an
@@ -28,7 +31,7 @@ def edit_work_schedule(file, work_schedule=None, attributes=None) -> None:
     :param work_schedule: The IfcWorkSchedule entity you want to edit
     :type work_schedule: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -47,7 +50,7 @@ def edit_work_schedule(file, work_schedule=None, attributes=None) -> None:
         ifcopenshell.api.run("sequence.edit_work_schedule", model,
             work_schedule=work_schedule, attributes={"Description": "3 crane design option"})
     """
-    settings = {"work_schedule": work_schedule, "attributes": attributes or {}}
+    settings = {"work_schedule": work_schedule, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         if value:

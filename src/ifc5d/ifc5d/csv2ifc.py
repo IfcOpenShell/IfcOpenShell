@@ -23,22 +23,25 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
+from typing import Any, Optional
+
+CostItem = dict[str, Any]
 
 
 class Csv2Ifc:
     def __init__(self):
-        self.csv = None
-        self.file = None
-        self.cost_items = []
-        self.cost_schedule = None
-        self.is_schedule_of_rates = False
-        self.units = {}
+        self.csv: str = None
+        self.file: ifcopenshell.file = None
+        self.cost_items: list[CostItem] = []
+        self.cost_schedule: ifcopenshell.entity_instance = None
+        self.is_schedule_of_rates: bool = False
+        self.units: dict[str, ifcopenshell.entity_instance] = {}
 
-    def execute(self):
+    def execute(self) -> None:
         self.parse_csv()
         self.create_ifc()
 
-    def parse_csv(self):
+    def parse_csv(self) -> None:
         self.parents = {}
         self.headers = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
@@ -47,6 +50,7 @@ class Csv2Ifc:
             for row in reader:
                 if not row[0]:
                     continue
+                # parse header
                 if row[0] == "Hierarchy":
                     self.has_categories = True
                     for i, col in enumerate(row):
@@ -55,6 +59,17 @@ class Csv2Ifc:
                         if col == "Value":
                             self.has_categories = False
                         self.headers[col] = i
+
+                    # validate header
+                    mandatory_fields = {"Name", "Quantity", "Unit"}
+                    if not self.is_schedule_of_rates:
+                        mandatory_fields.update({"Property", "Query"})
+                    available_fields = set(self.headers.keys())
+                    if not mandatory_fields.issubset(available_fields):
+                        raise Exception(
+                            f"Missing mandatory fields in CSV header: {', '.join(mandatory_fields-available_fields)}"
+                        )
+
                     continue
                 cost_data = self.get_row_cost_data(row)
                 hierarchy_key = int(row[0])
@@ -64,7 +79,7 @@ class Csv2Ifc:
                     self.parents[hierarchy_key - 1]["children"].append(cost_data)
                 self.parents[hierarchy_key] = cost_data
 
-    def get_row_cost_data(self, row):
+    def get_row_cost_data(self, row: list[str]) -> CostItem:
         name = row[self.headers["Name"]]
         identification = row[self.headers["Identification"]] if "Identification" in self.headers else None
         quantity = row[self.headers["Quantity"]]
@@ -99,7 +114,7 @@ class Csv2Ifc:
             "children": [],
         }
 
-    def create_ifc(self):
+    def create_ifc(self) -> None:
         if not self.file:
             self.create_boilerplate_ifc()
         if not self.cost_schedule:
@@ -108,11 +123,13 @@ class Csv2Ifc:
                 self.cost_schedule.PredefinedType = "SCHEDULEOFRATES"
         self.create_cost_items(self.cost_items)
 
-    def create_cost_items(self, cost_items, parent=None):
+    def create_cost_items(
+        self, cost_items: list[CostItem], parent: Optional[ifcopenshell.entity_instance] = None
+    ) -> None:
         for cost_item in cost_items:
             self.create_cost_item(cost_item, parent)
 
-    def create_cost_item(self, cost_item, parent):
+    def create_cost_item(self, cost_item: CostItem, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
         if parent is None:
             cost_item["ifc"] = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=self.cost_schedule)
         else:
@@ -156,23 +173,30 @@ class Csv2Ifc:
 
                 cost_value.UnitBasis = self.file.createIfcMeasureWithUnit(value_component, unit_component)
 
-        if not self.is_schedule_of_rates and cost_item["Quantity"]:
-            quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
+        quantity = None
+        quantity_class = ifcopenshell.util.unit.get_symbol_quantity_class(cost_item["Unit"])
+        if not cost_item["assignments"]["PropertyName"] or cost_item["assignments"]["PropertyName"].upper() == "COUNT":
+            prop_name = ""
+        else:
+            prop_name = cost_item["assignments"]["PropertyName"]
+
+        if not self.is_schedule_of_rates and cost_item["Quantity"] is not None:
             quantity = ifcopenshell.api.run(
                 "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
             )
-            quantity[3] = cost_item["Quantity"]
+            # 3 IfcPhysicalSimpleQuantity Value
+            quantity[3] = int(cost_item["Quantity"]) if quantity_class == "IfcQuantityCount" else cost_item["Quantity"]
+            if prop_name:
+                quantity.Name = prop_name
 
         if cost_item["assignments"]["Query"]:
-            if (
-                not cost_item["assignments"]["PropertyName"]
-                or cost_item["assignments"]["PropertyName"].upper() == "COUNT"
-            ):
-                prop_name = ""
-            else:
-                prop_name = cost_item["assignments"]["PropertyName"]
             results = ifcopenshell.util.selector.filter_elements(self.file, cost_item["assignments"]["Query"])
             results = [r for r in results if has_property(self.file, r, prop_name)]
+            # NOTE: currently we do not support count quantities that have
+            # both defined quantity in .csv "Quantity" column
+            # and some query in "Query" column.
+            # If query is provided it will override the defined value
+            # due current behaviour in cost.assign_cost_item_quantity.
             if results:
                 ifcopenshell.api.run(
                     "cost.assign_cost_item_quantity",
@@ -181,10 +205,14 @@ class Csv2Ifc:
                     products=results,
                     prop_name=prop_name,
                 )
+            elif not quantity:
+                quantity = ifcopenshell.api.run(
+                    "cost.add_cost_item_quantity", self.file, cost_item=cost_item["ifc"], ifc_class=quantity_class
+                )
 
         self.create_cost_items(cost_item["children"], cost_item["ifc"])
 
-    def create_unit(self, symbol):
+    def create_unit(self, symbol: str) -> ifcopenshell.entity_instance:
         unit = self.units.get(symbol, None)
         if unit:
             return unit
@@ -194,12 +222,12 @@ class Csv2Ifc:
         self.units[symbol] = unit
         return unit
 
-    def create_boilerplate_ifc(self):
+    def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
 
 
-def has_property(self, product, property_name):
+def has_property(self, product: ifcopenshell.entity_instance, property_name: str) -> bool:
     if not property_name:
         return True
     qtos = ifcopenshell.util.element.get_psets(product, qtos_only=True)

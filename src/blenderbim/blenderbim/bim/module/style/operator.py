@@ -22,12 +22,15 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
+import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
 from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
 from mathutils import Vector
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
     bl_label = "Save Current Shading Style"
@@ -53,6 +56,7 @@ class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "Check the system console to see saved style properties")
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleTextures(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_textures"
     bl_label = "Update Style Textures"
@@ -93,9 +97,10 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty(default=0)
 
     def _execute(self, context):
-        core.unlink_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.unlink_style(tool.Ifc, style=tool.Ifc.get().by_id(self.style))
 
 
 class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -156,13 +161,6 @@ class UpdateCurrentStyle(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     update_all: bpy.props.BoolProperty(name="Update All", default=False, options={"SKIP_SAVE"})
     style_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
-
-    @classmethod
-    def poll(cls, context):
-        if not context.selected_objects:
-            cls.poll_message_set("No objects selected")
-            return False
-        return True
 
     def invoke(self, context, event):
         # updating all styles on shift+click
@@ -953,4 +951,50 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"INFO"}, f"UV saved to the style {style.Name}")
 
+        return {"FINISHED"}
+
+
+class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_style_to_selected"
+    bl_label = "Assign Style To Selected"
+    bl_description = "Assign style to the selected objects' active representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    style_id: bpy.props.IntProperty(name="Style ID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected")
+            return False
+        return True
+
+    def _execute(self, context):
+        if self.style_id == 0:
+            self.report({"ERROR"}, "No style provided")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+
+        representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
+        for obj in context.selected_objects:
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = tool.Geometry.resolve_mapped_representation(representation)
+            representations.setdefault(representation, obj)
+
+        if not representations:
+            self.report({"INFO"}, "No IFC objects with representations selected.")
+            return {"FINISHED"}
+
+        for representation in representations:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=representation,
+                styles=[style],
+                should_use_presentation_style_assignment=tool.Geometry.should_use_presentation_style_assignment(),
+            )
+
+        tool.Geometry.reload_representation(representations.values())
         return {"FINISHED"}

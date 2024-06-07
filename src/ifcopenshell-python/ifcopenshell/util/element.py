@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Any, Callable, Optional, Union, Literal, overload
 from collections import namedtuple
@@ -156,12 +157,13 @@ def get_psets(
                 continue
             if qtos_only and not definition.is_a("IfcElementQuantity"):
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
+    # NOTE: doesn't account for IFC2X3 missing HasProperties
     elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
         for definition in getattr(element, "HasProperties", None) or []:
             if qtos_only:
                 continue
-            psets[definition.Name] = get_property_definition(definition, verbose=verbose)
+            psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None:
         # other IfcObjectDefinition
         if should_inherit:
@@ -444,13 +446,13 @@ def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
     return predefined_type
 
 
-def get_type(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """Retrieves the construction type element of an element occurrence
 
     :param element: The element occurrence
     :type: ifcopenshell.entity_instance
     :return: The related type element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -646,6 +648,8 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return styles
 
 
+# TODO: ifc_file argument is unnecessary for some methods now
+# since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
     ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
 ) -> list[ifcopenshell.entity_instance]:
@@ -734,7 +738,7 @@ def get_elements_by_style(
 
 def get_elements_by_representation(
     ifc_file: ifcopenshell.file, representation: ifcopenshell.entity_instance
-) -> list[ifcopenshell.entity_instance]:
+) -> set[ifcopenshell.entity_instance]:
     """Gets all elements using a geometric representation
 
     :param ifc_file: The IFC file
@@ -742,7 +746,7 @@ def get_elements_by_representation(
     :param representation: The IfcShapeRepresentation representation
     :type representation: ifcopenshell.entity_instance
     :return: The elements using the geometric representation
-    :rtype: list[ifcopenshell.entity_instance]
+    :rtype: set[ifcopenshell.entity_instance]
 
     Example:
 
@@ -831,7 +835,7 @@ def get_layers(
 
 def get_container(
     element: ifcopenshell.entity_instance, should_get_direct: bool = False, ifc_class: Optional[str] = None
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the spatial structure container of an element.
 
@@ -847,7 +851,7 @@ def get_container(
         example, you may be after the storey, not a space.
     :type ifc_class: str, optional
     :return: The direct or indirect container of the element or None.
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -977,7 +981,7 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
 def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
-    :param element: The IFC element
+    :param element: IfcGroup entity
     :type element: ifcopenshell.entity_instance
     :return: All subelements of the group
     :rtype: list[ifcopenshell.entity_instance]
@@ -1022,14 +1026,93 @@ def get_groups(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
     return groups
 
 
-def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_parent(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """Get the parent in the spatial heirarchy
+
+    IFC features a spatial hierarchy tree of all objects. Each spatial element
+    or physical element must be located inside this hierarchy exactly once.
+
+    The top level parent of this tree is the IfcProject, which has no parent.
+
+    All children may have parent-child relationships of one of the following types:
+
+    - Spatial containment: a physical object is located in a space
+    - Aggregation: a physical object is broken up into parts, or a spatial location is split into sub locations
+    - Nesting: components are attached to a host parent
+    - Filling: the physical element fills an opening, such as a window filling a hole
+    - Voiding: the opening voids another physical element, such as a hole in a wall
+
+    :param element: Any physical or spatial element in the tree
+    :type element: ifcopenshell.entity_instance
+    :return: Its parent. This must exist for any valid file, or None if we've reached the IfcProject.
+    :rtype: Union[ifcopenshell.entity_instance, None]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcWall")[0]
+        parent = ifcopenshell.util.element.get_parent(element)
+    """
+    return (
+        get_container(element, should_get_direct=True)
+        or get_aggregate(element)
+        or get_nest(element)
+        or get_filled_void(element)
+        or get_voided_element(element)
+    )
+
+
+def get_filled_void(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """If the element is filling a void, get the void
+
+    Examples include windows and doors which fill a opening inside a wall.
+
+    :param element: The building element, typically a window or door
+    :type element: ifcopenshell.entity_instance
+    :return: The IfcOpeningElement that it is filling
+    :rtype: Union[ifcopenshell.entity_instance, None]
+
+    Example:
+
+    .. code:: python
+
+        window = file.by_type("IfcWindow")[0]
+        opening = ifcopenshell.util.element.get_filled_void(window)
+    """
+    if rel := getattr(element, "FillsVoids", None):
+        return rel[0].RelatingOpeningElement
+
+
+def get_voided_element(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+    """For an opening, get the building element that the opening is voiding
+
+    For all valid models, this should never return None.
+
+    :param element: The IfcOpeningElement
+    :type element: ifcopenshell.entity_instance
+    :return: The building element, such as a wall or slab
+    :rtype: Union[ifcopenshell.entity_instance, None]
+
+    Example:
+
+    .. code:: python
+
+        opening = file.by_type("IfcOpeningElement")[0]
+        element = ifcopenshell.util.element.get_voided_element(opening)
+    """
+    if rel := getattr(element, "VoidsElements", None):
+        return rel[0].RelatingBuildingElement
+
+
+def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the aggregate parent of an element.
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance
     :return: The aggregate of the element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1043,14 +1126,14 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_
             return decomposes[0].RelatingObject
 
 
-def get_nest(element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
     """
     Retrieves the nest parent of an element.
 
     :param element: The IFC element
     :type element: ifcopenshell.entity_instance
     :return: The nested whole of the element
-    :rtype: ifcopenshell.entity_instance
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -1086,6 +1169,28 @@ def get_parts(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity
     if (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
         if is_decomposed_by[0].is_a("IfcRelAggregates"):
             return is_decomposed_by[0].RelatedObjects
+    return []
+
+
+def get_contained(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    """
+    Retrieves the contained elements of spatial element.
+
+    :param element: The IFC element
+    :type element: ifcopenshell.entity_instance
+    :return: The parts of the element
+    :rtype: list[ifcopenshell.entity_instance]
+
+    Example:
+
+    .. code:: python
+
+        element = file.by_type("IfcBuildingStorey")[0]
+        elements = ifcopenshell.util.element.get_contained(element)
+    """
+    if (rel := getattr(element, "ContainsElements", None)) is not None and rel:
+        return rel[0].RelatedElements
+    return []
 
 
 def get_components(element: ifcopenshell.entity_instance, include_ports=False) -> list[ifcopenshell.entity_instance]:
@@ -1115,6 +1220,7 @@ def get_components(element: ifcopenshell.entity_instance, include_ports=False) -
     elif (is_decomposed_by := getattr(element, "IsDecomposedBy", None)) is not None and is_decomposed_by:
         if is_decomposed_by[0].is_a("IfcRelNests"):
             return is_decomposed_by[0].RelatedObjects
+    return []
 
 
 ReferenceData = namedtuple("ReferenceData", "inverse_attribute, rel_class, relating_element_attribute")
@@ -1313,6 +1419,19 @@ def remove_deep2(
     :type element: ifcopenshell.entity_instance
     """
     # ifc_file.batch()
+    also_considered_inverses = 0
+
+    def increment_considered_inverses(_):
+        nonlocal also_considered_inverses
+        also_considered_inverses += 1
+
+    for considered_element in also_consider:
+        for attribute in considered_element:
+            considered_element.walk(lambda x: x == element, increment_considered_inverses, attribute)
+
+    if ifc_file.get_total_inverses(element) > 0 + also_considered_inverses:
+        return
+
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
@@ -1323,7 +1442,12 @@ def remove_deep2(
         if (
             subelement.id()
             and subelement not in do_not_delete
-            and len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            and (
+                # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
+                ifc_file.get_total_inverses(subelement) < 2
+                # Alternatively, let's ensure all inverses are within the subgrpah
+                or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
+            )
         ):
             to_delete.add(subelement)
             subelement_queue.extend(ifc_file.traverse(subelement, max_levels=1)[1:])

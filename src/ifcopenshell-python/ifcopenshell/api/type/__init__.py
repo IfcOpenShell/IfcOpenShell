@@ -26,8 +26,13 @@ Using types is critical to the success of any project.
 
 from .. import wrap_usecases
 from .assign_type import assign_type
-from .get_related_objects import get_related_objects
 from .map_type_representations import map_type_representations
 from .unassign_type import unassign_type
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_type",
+    "map_type_representations",
+    "unassign_type",
+]

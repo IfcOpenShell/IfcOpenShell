@@ -19,7 +19,7 @@
 import ifcopenshell.util.element
 
 
-def remove_prop_template(file, prop_template=None) -> None:
+def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.entity_instance) -> None:
     """Removes a property template
 
     Note that a property set template should always have at least one

@@ -18,9 +18,15 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+from typing import Union
 
 
-def assign_flow_control(file, relating_flow_element=None, related_flow_control=None) -> None:
+def assign_flow_control(
+    file: ifcopenshell.file,
+    relating_flow_element: ifcopenshell.entity_instance,
+    related_flow_control: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
     """Assigns to the flow element control element that either sense or control
     some aspect of the flow element.
 

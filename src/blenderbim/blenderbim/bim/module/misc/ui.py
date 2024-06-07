@@ -22,10 +22,11 @@ import bpy
 class BIM_PT_misc_utilities(bpy.types.Panel):
     bl_idname = "BIM_PT_misc_utilities"
     bl_label = "Miscellaneous"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "output"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_parent_id = "BIM_PT_tab_sandbox"
 
     def draw(self, context):
         layout = self.layout

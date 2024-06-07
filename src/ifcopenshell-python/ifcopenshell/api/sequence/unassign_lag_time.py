@@ -19,7 +19,7 @@
 import ifcopenshell.api
 
 
-def unassign_lag_time(file, rel_sequence=None) -> None:
+def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity_instance) -> None:
     """Removes any lag time in a sequence
 
     The schedule is cascaded afterwards.

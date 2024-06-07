@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_group(file, group=None) -> None:
+def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -> None:
     """Removes a group
 
     All products assigned to the group will remain, but the relationship to
@@ -36,7 +36,7 @@ def remove_group(file, group=None) -> None:
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        group = ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
         ifcopenshell.api.run("group.remove_group", model, group=group)
     """
     settings = {"group": group}

@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
-from blenderbim.bim.helper import prop_with_search, close_operator_panel
+from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData
 from blenderbim.bim.module.drawing.data import DecoratorData
@@ -485,7 +485,7 @@ class BimToolUI:
 
         cls.layout.separator()
         add_layout_hotkey_operator(
-            cls.layout, "Calculate All Quantities", "S_Q", bpy.ops.bim.calculate_all_quantities.__doc__
+            cls.layout, "Perform Quantity Take-off", "S_Q", bpy.ops.bim.perform_quantity_take_off.__doc__
         )
 
     @classmethod
@@ -614,7 +614,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
 
-        bpy.ops.bim.calculate_all_quantities()
+        bpy.ops.bim.perform_quantity_take_off()
 
     def hotkey_C_P(self):
         if not bpy.context.selected_objects:

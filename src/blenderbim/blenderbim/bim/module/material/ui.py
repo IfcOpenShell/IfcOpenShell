@@ -45,7 +45,7 @@ class BIM_PT_materials(Panel):
         self.props = context.scene.BIMMaterialProperties
 
         row = self.layout.row(align=True)
-        row.label(text="{} Materials".format(MaterialsData.data["total_materials"]), icon="NODE_MATERIAL")
+        row.label(text=f"{MaterialsData.data['total_materials']} Materials", icon="NODE_MATERIAL")
         if self.props.is_editing:
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
@@ -68,6 +68,8 @@ class BIM_PT_materials(Panel):
                     op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
+                    op.material = material.ifc_definition_id
+                    op = row.operator("bim.unlink_material", icon="UNLINKED", text="")
                     op.material = material.ifc_definition_id
                     row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
 
@@ -108,33 +110,10 @@ class BIM_PT_materials(Panel):
         elif self.props.editing_material_type == "STYLE":
             row = self.layout.row(align=True)
             row.prop(self.props, "contexts", text="")
-            row.prop(self.props, "styles", text="")
+            prop_with_search(row, self.props, "styles", text="")
             row = self.layout.row(align=True)
             row.operator("bim.edit_material_style", text="Assign Style", icon="CHECKMARK")
             row.operator("bim.disable_editing_material", text="", icon="CANCEL")
-
-
-class BIM_PT_material(Panel):
-    bl_label = "Material"
-    bl_idname = "BIM_PT_material"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        return IfcStore.get_file() and context.active_object and context.active_object.active_material
-
-    def draw(self, context):
-        row = self.layout.row(align=True)
-        material_id = context.active_object.active_material.BIMObjectProperties.ifc_definition_id
-        if bool(material_id):
-            row.operator("bim.remove_material", icon="X", text="Remove IFC Material").material = material_id
-            row.operator("bim.copy_material", icon="DUPLICATE", text="")
-            row.operator("bim.unlink_material", icon="UNLINKED", text="")
-        else:
-            op = row.operator("bim.add_material", icon="ADD", text="Create IFC Material")
-            op.obj = context.active_object.active_material.name
 
 
 class BIM_PT_object_material(Panel):
@@ -143,7 +122,8 @@ class BIM_PT_object_material(Panel):
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_materials"
+    bl_parent_id = "BIM_PT_tab_object_materials"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
@@ -248,7 +228,7 @@ class BIM_PT_object_material(Panel):
 
         total_items = len(ObjectMaterialData.data["set_items"])
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
-            if len(self.props.material_set_item_profile_attributes):
+            if len(self.props.material_set_item_profile_attributes) and self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_profile_ui(set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(set_item)
@@ -363,7 +343,7 @@ class BIM_UL_materials(UIList):
                     row.operator(
                         "bim.expand_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                     ).category = item.name
-                row.label(text=item.name or "Uncategorised")
+                row.label(text=item.name)
             else:
                 row.label(text="", icon="BLANK1")
                 row.label(text=item.name, icon="MATERIAL")

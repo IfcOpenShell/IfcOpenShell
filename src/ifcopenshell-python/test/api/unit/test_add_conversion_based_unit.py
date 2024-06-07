@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestAddConversionBasedUnit(test.bootstrap.IFC4):
+class TestAddConversionBasedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):
         unit = ifcopenshell.api.run("unit.add_conversion_based_unit", self.file, name="foot")
         assert unit.is_a("IfcConversionBasedUnit")
@@ -40,6 +40,8 @@ class TestAddConversionBasedUnit(test.bootstrap.IFC4):
         assert si_unit.Prefix is None
         assert si_unit.Name == "METRE"
 
+
+class TestAddConversionBasedUnitIFC4(test.bootstrap.IFC4, TestAddConversionBasedUnitIFC2X3):
     def test_adding_a_unit_with_offset(self):
         unit = ifcopenshell.api.run("unit.add_conversion_based_unit", self.file, name="fahrenheit")
         assert unit.is_a("IfcConversionBasedUnitWithOffset")

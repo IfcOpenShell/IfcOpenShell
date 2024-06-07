@@ -18,6 +18,9 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
+import ifcopenshell.api.context
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
@@ -92,16 +95,24 @@ class TestCanAggregate(NewFile):
         subelement_obj = bpy.data.objects.new("Object", None)
         assert subject.can_aggregate(element_obj, subelement_obj) is False
 
-    def test_aggregates_with_meshes_are_invalid(self):
+
+class TestHasPhysicalBodyRepresentation(NewFile):
+    def test_run(self):
         ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
         element = ifc.createIfcElementAssembly()
-        element_obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        tool.Ifc.link(element, element_obj)
-        subelement = ifc.createIfcBeam()
-        subelement_obj = bpy.data.objects.new("Object", None)
-        tool.Ifc.link(subelement, subelement_obj)
-        assert subject.can_aggregate(element_obj, subelement_obj) is False
+        assert subject.has_physical_body_representation(element) is False
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc)
+        context = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            ifc, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=context
+        )
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
+        origin = builder.create_axis2_placement_3d()
+        block = ifc.createIfcCsgSolid(ifc.createIfcBlock(origin, 200, 200, 200))
+        rep = builder.get_representation(context=body, items=[block])
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=rep)
+        assert subject.has_physical_body_representation(element) is True
 
 
 class TestDisableEditing(NewFile):

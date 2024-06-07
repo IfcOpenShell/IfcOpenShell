@@ -223,6 +223,8 @@ class BIM_PT_array(bpy.types.Panel):
                     row = col.row(align=True)
                     row.prop(props, "z")
                     row.operator("bim.input_cursor_z_array", icon="CURSOR", text="")
+                    row = col.row(align=True)
+                    row.prop(props, "relating_array_object", icon="COPYDOWN")
                 else:
                     row = box.row(align=True)
                     name = f"{array['count']} Items ({array.get('method', 'OFFSET').capitalize()})"

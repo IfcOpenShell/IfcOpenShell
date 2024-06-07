@@ -15,9 +15,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-def add_structural_boundary_condition(file, name=None, connection=None, ifc_class="IfcBoundaryNodeCondition") -> None:
+def add_structural_boundary_condition(
+    file: ifcopenshell.file,
+    name: Optional[str] = None,
+    connection: Optional[ifcopenshell.entity_instance] = None,
+    ifc_class: str = "IfcBoundaryNodeCondition",
+) -> ifcopenshell.entity_instance:
     """Adds a new structural boundary condition to a structural connection
 
     The type of boundary condition depends on the connection. Point
@@ -60,7 +67,9 @@ def add_structural_boundary_condition(file, name=None, connection=None, ifc_clas
         elif related_connection.is_a("IfcStructuralSurfaceConnection"):
             boundary_class = "IfcBoundaryFaceCondition"
 
-        settings["connection"].AppliedCondition = file.create_entity(boundary_class, Name=settings["name"])
+        condition = file.create_entity(boundary_class, Name=settings["name"])
+        settings["connection"].AppliedCondition = condition
+        return condition
     else:
         # add an orphan boundary condition
         return file.create_entity(settings["ifc_class"], Name=settings["name"])

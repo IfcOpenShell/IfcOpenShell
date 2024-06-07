@@ -228,6 +228,7 @@ Here is a simple example in Python:
     if iterator.initialize():
         while True:
             shape = iterator.get()
+            element = ifc_file.by_id(shape.id)
             matrix = shape.transformation.matrix.data
             faces = shape.geometry.faces
             edges = shape.geometry.edges

@@ -15,26 +15,32 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def edit_structural_connection_cs(file, structural_item=None, axis=None, ref_direction=None) -> None:
+def edit_structural_connection_cs(
+    file: ifcopenshell.file,
+    structural_item: ifcopenshell.entity_instance,
+    axis: tuple[float, float, float] = (0.0, 0.0, 1.0),
+    ref_direction: tuple[float, float, float] = (1.0, 0.0, 0.0),
+) -> None:
     """Edits the coordinate system of a structural connection
 
     :param structural_item: The IfcStructuralItem you want to modify.
     :type structural_item: ifcopenshell.entity_instance
     :param axis: The unit Z axis vector defined as a list of 3 floats.
-        Defaults to [0., 0., 1.].
-    :type axis: list[float]
+        Defaults to (0., 0., 1.).
+    :type axis: tuple[float, float, float]
     :param ref_direction: The unit X axis vector defined as a list of 3
-        floats. Defaults to [1., 0., 0.].
-    :type ref_direction: list[float]
+        floats. Defaults to (1., 0., 0.).
+    :type ref_direction: tuple[float, float, float]
     :return: None
     :rtype: None
     """
     settings = {
         "structural_item": structural_item,
-        "axis": axis or [0.0, 0.0, 1.0],
-        "ref_direction": ref_direction or [1.0, 0.0, 0.0],
+        "axis": axis,
+        "ref_direction": ref_direction,
     }
 
     if settings["structural_item"].ConditionCoordinateSystem is None:

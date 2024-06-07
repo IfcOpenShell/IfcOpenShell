@@ -16,17 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 import bpy
 import json
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import close_operator_panel
-from blenderbim.bim.module.group import ui
 import blenderbim.core.search as core
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
@@ -120,14 +118,12 @@ class SelectFilterElements(bpy.types.Operator):
         filter_groups = tool.Search.get_filter_groups(self.module)
         global_ids = []
         for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                global_id = getattr(element, "GlobalId", None)
-                if global_id:
+            if element := tool.Ifc.get_entity(obj):
+                if global_id := getattr(element, "GlobalId", None):
                     global_ids.append(global_id)
         if len(global_ids) > 50:
             # Too much to store in a string property
-            name = "globalid-filter-" + ifcopenshell.guid.new()
+            name = f"globalid-filter-{ifcopenshell.guid.new()}"
             text_data = bpy.data.texts.new(name)
             text_data.from_string(",".join(global_ids))
             filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
@@ -180,8 +176,7 @@ class Search(Operator):
 
         total_selected = 0
         for element in results:
-            obj = tool.Ifc.get_object(element)
-            if obj:
+            if obj := tool.Ifc.get_object(element):
                 obj.select_set(True)
         self.report({"INFO"}, f"{len(results)} Results")
         return {"FINISHED"}
@@ -213,7 +208,7 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
             group.Description = description
         else:
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
         if results:
             ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
 
@@ -283,8 +278,7 @@ class ColourByProperty(Operator):
             else:
                 colourscheme[value] = {"colour": next(colours)[0:3], "total": 1}
             obj.color = (*colourscheme[value]["colour"], 1)
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
+        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             areas[0].spaces[0].shading.color_type = "OBJECT"
 
         props.colourscheme.clear()
@@ -297,8 +291,7 @@ class ColourByProperty(Operator):
         return {"FINISHED"}
 
     def store_state(self, context):
-        areas = [a for a in context.screen.areas if a.type == "VIEW_3D"]
-        if areas:
+        if areas := [a for a in context.screen.areas if a.type == "VIEW_3D"]:
             self.transaction_data = {"area": areas[0], "color_type": areas[0].spaces[0].shading.color_type}
 
     def rollback(self, data):
@@ -366,7 +359,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description = json.dumps(
                 {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
             )
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), Name=self.name, Description=description)
+            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -448,8 +441,7 @@ class SelectIfcClass(Operator):
         classes = set()
         predefined_types = set()
         for obj in objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
+            if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
         for cls in classes:
@@ -459,9 +451,8 @@ class SelectIfcClass(Operator):
                     and ifcopenshell.util.element.get_predefined_type(element) not in predefined_types
                 ):
                     continue
-                obj = tool.Ifc.get_object(element)
-                if obj:
-                    obj.select_set(True)
+                if obj := tool.Ifc.get_object(element):
+                    tool.Blender.select_object(obj)
         return {"FINISHED"}
 
 
@@ -487,10 +478,7 @@ class ToggleFilterSelection(Operator):
 
     def execute(self, context):
         props = bpy.context.scene.BIMSearchProperties
-        if self.action == "SELECT":
-            self.selecting_actionbool = True
-        else:
-            self.selecting_actionbool = False
+        self.selecting_actionbool = self.action == "SELECT"
         if props.filter_type == "CLASSES":
             for ifc_class in props.filter_classes:
                 ifc_class.is_selected = self.selecting_actionbool
@@ -544,11 +532,7 @@ class ActivateIfcClassFilter(Operator):
             "filter_classes",
             context.scene.BIMSearchProperties,
             "filter_classes_index",
-            rows=(
-                20
-                if len(bpy.context.scene.BIMSearchProperties.filter_classes) > 20
-                else len(bpy.context.scene.BIMSearchProperties.filter_classes)
-            ),
+            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_classes), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -603,11 +587,7 @@ class ActivateContainerFilter(Operator):
             "filter_container",
             context.scene.BIMSearchProperties,
             "filter_container_index",
-            rows=(
-                20
-                if len(bpy.context.scene.BIMSearchProperties.filter_container) > 20
-                else len(bpy.context.scene.BIMSearchProperties.filter_container)
-            ),
+            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_container), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -633,12 +613,14 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
 
+    key: bpy.props.StringProperty()
+
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        key = props.element_key
-        if props.element_key == "PredefinedType":
+        key = self.key
+        if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
         for obj in context.visible_objects:

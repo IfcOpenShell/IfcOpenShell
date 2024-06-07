@@ -21,6 +21,8 @@ import ifcopenshell.api
 import ifcopenshell.util.constraint
 
 
+# NOTE: resource module features relies on entities introduced in IFC4
+# therefore no IFC2X3 tests
 class TestCalculateResourceWork(test.bootstrap.IFC4):
     def test_calculating_resource_work_based_on_a_daily_productivity_rate(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")

@@ -120,6 +120,8 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty(name="Material Name")
     name: bpy.props.StringProperty(default="Default")
+    category: bpy.props.StringProperty(default="")
+    description: bpy.props.StringProperty(default="")
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -127,10 +129,14 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         row = self.layout
         row.prop(self, "name", text="Name")
+        row = self.layout
+        row.prop(self, "description", text="Description")
+        row = self.layout
+        row.prop(self, "category", text="Category")
 
     def _execute(self, context):
         obj = bpy.data.materials.get(self.obj) if self.obj else None
-        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj, name=self.name)
+        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj, name=self.name, category=self.category, description=self.description)
         material_prop_purge()
 
 
@@ -141,8 +147,19 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material: bpy.props.IntProperty(name="Material ID")
 
     def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        tool.Material.duplicate_material(ifc_file.by_id(self.material))
+        material = tool.Ifc.get().by_id(self.material)
+        new = tool.Ifc.run("material.copy_material", material=material)
+
+        blender_material = tool.Ifc.get_object(material)
+        new_blender = blender_material.copy()
+        new_blender.use_fake_user = True
+        tool.Ifc.link(new, new_blender)
+
+        if not new.is_a("IfcMaterialList"):
+            name = new[0] + " Copy"
+            new[0] = name
+            new_blender.name = name
+
         material_prop_purge()
         bpy.ops.bim.load_materials()
 
@@ -185,9 +202,10 @@ class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_material"
     bl_label = "Unlink Material"
     bl_options = {"REGISTER", "UNDO"}
+    material: bpy.props.IntProperty(name="Material ID")
 
     def _execute(self, context):
-        core.unlink_material(tool.Ifc, obj=context.active_object.active_material)
+        core.unlink_material(tool.Ifc, obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.material)))
 
 
 class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -544,6 +562,7 @@ class EnableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = self.material_set_item
         self.props.material_set_item_profile_attributes.clear()
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         blenderbim.bim.helper.import_attributes2(profile, self.props.material_set_item_profile_attributes)
@@ -559,6 +578,7 @@ class DisableEditingMaterialSetItemProfile(bpy.types.Operator):
     def execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.props = obj.BIMObjectMaterialProperties
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         return {"FINISHED"}
 
@@ -576,6 +596,7 @@ class EditMaterialSetItemProfile(bpy.types.Operator, tool.Ifc.Operator):
         attributes = blenderbim.bim.helper.export_attributes(self.props.material_set_item_profile_attributes)
         profile = tool.Ifc.get().by_id(self.material_set_item).Profile
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        self.props.active_material_set_item_id = 0
         self.props.material_set_item_profile_attributes.clear()
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
 
@@ -679,45 +700,31 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.disable_editing_material_set_item(obj=obj.name)
 
 
-class CopyMaterial(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.copy_material"
-    bl_label = "Copy Material"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        blender_material = context.active_object.active_material
-        material = tool.Ifc.get_entity(blender_material)
-
-        if tool.Ifc.has_changed_shading(blender_material):
-            blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=blender_material)
-
-        copied_material = ifcopenshell.api.run("material.copy_material", tool.Ifc.get(), material=material)
-        copied_blender_material = blender_material.copy()
-        copied_style = self.get_style(copied_material)
-        tool.Ifc.link(copied_material, copied_blender_material)
-        if copied_style:
-            tool.Ifc.link(copied_style, copied_blender_material)
-        context.active_object.active_material = copied_blender_material
-
-    def get_style(self, material):
-        for material_representation in material.HasRepresentation:
-            for representation in material_representation.Representations:
-                for item in representation.Items:
-                    for style in item.Styles:
-                        if style.is_a("IfcSurfaceStyle"):
-                            return style
-
-
 class ExpandMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.expand_material_category"
     bl_label = "Expand Material Category"
+    bl_description = "SHIFT+CLICK to expand all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Expanding all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.expand_all or c.name == self.category)
+        ]:
             category.is_expanded = True
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
@@ -725,13 +732,28 @@ class ExpandMaterialCategory(bpy.types.Operator):
 class ContractMaterialCategory(bpy.types.Operator):
     bl_idname = "bim.contract_material_category"
     bl_label = "Contract Material Category"
+    bl_description = "SHIFT+CLICK to contract all material categories"
     bl_options = {"REGISTER", "UNDO"}
     category: bpy.props.StringProperty()
+    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Contracting all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck.
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.contract_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for category in [c for c in props.materials if c.is_category and c.name == self.category]:
+        for index, category in [
+            (i, c)
+            for i, c in enumerate(props.materials)
+            if c.is_category and (self.contract_all or c.name == self.category)
+        ]:
             category.is_expanded = False
+            if category.name == self.category:
+                props.active_material_index = index
         core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 

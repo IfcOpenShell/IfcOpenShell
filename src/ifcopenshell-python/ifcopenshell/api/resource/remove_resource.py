@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_resource(file, resource=None) -> None:
+def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Removes a resource and all relationships
 
     Example:
@@ -74,8 +74,9 @@ def remove_resource(file, resource=None) -> None:
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
-    if settings["resource"].Usage:
-        file.remove(settings["resource"].Usage)
+    # Usage was added in IFC4.
+    if usage := getattr(settings["resource"], "Usage", None):
+        file.remove(usage)
     if settings["resource"].BaseQuantity:
         ifcopenshell.api.run(
             "resource.remove_resource_quantity",

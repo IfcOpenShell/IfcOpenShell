@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_profile(file, profile=None) -> None:
+def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance) -> None:
     """Removes a profile
 
     :param profile: The IfcProfileDef to remove.

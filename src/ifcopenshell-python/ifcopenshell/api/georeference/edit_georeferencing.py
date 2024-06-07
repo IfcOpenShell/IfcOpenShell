@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+from typing import Optional, Any
 
-def edit_georeferencing(file, map_conversion=None, projected_crs=None, true_north=None) -> None:
+
+def edit_georeferencing(
+    file: ifcopenshell.file,
+    map_conversion: Optional[dict[str, Any]] = None,
+    projected_crs: Optional[dict[str, Any]] = None,
+    true_north: Optional[tuple[float, float]] = None,
+) -> None:
     """Edits the attributes of a map conversion, projected CRS, and true north
 
     Setting the correct georeferencing parameters is a complex topic and
@@ -47,7 +55,7 @@ def edit_georeferencing(file, map_conversion=None, projected_crs=None, true_nort
         names and values you want to edit.
     :type projected_crs: dict, optional
     :param true_north: A unitised 2D vector, where each ordinate is a float
-    :type true_north: list[float]
+    :type true_north: tuple[float, float], optional
     :return: None
     :rtype: None
 
@@ -101,7 +109,7 @@ class Usecase:
         self.set_true_north()
 
     def set_true_north(self):
-        if self.settings["true_north"] == []:
+        if not self.settings["true_north"]:
             return
         for context in self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.TrueNorth:
@@ -111,6 +119,8 @@ class Usecase:
                 context.TrueNorth = self.file.create_entity("IfcDirection")
             direction = context.TrueNorth
             if self.settings["true_north"] is None:
+                # TODO: code will never be executed since None value
+                # is substituted by an empty list
                 context.TrueNorth = self.settings["true_north"]
             elif context.CoordinateSpaceDimension == 2:
                 direction.DirectionRatios = self.settings["true_north"][0:2]

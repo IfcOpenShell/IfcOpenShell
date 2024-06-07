@@ -18,12 +18,13 @@
 
 import math
 import ifcopenshell.api
+import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.resource
 
 
-def calculate_resource_usage(file, resource=None) -> None:
+def calculate_resource_usage(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Calculates the number of resources required to perform scheduled work on a task."""
     settings = {"resource": resource}
 

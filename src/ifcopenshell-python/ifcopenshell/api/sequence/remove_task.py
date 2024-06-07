@@ -21,7 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def remove_task(file, task=None) -> None:
+def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
     """Removes a task
 
     All subtasks are also removed recursively. Any relationships such as

@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_library(file, library=None) -> None:
+def remove_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance) -> None:
     """Removes a library
 
     All references along with their relationships will also be removed. Any
@@ -38,14 +38,23 @@ def remove_library(file, library=None) -> None:
         library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
         ifcopenshell.api.run("library.remove_library", model, library=library)
     """
-    settings = {"library": library}
 
-    for reference in set(settings["library"].HasLibraryReferences or []):
-        file.remove(reference)
-    file.remove(settings["library"])
-    for rel in file.by_type("IfcRelAssociatesLibrary"):
-        if not rel.RelatingLibrary:
-            history = rel.OwnerHistory
-            file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(file, history)
+    if file.schema != "IFC2X3":
+        rels = []
+        for reference in set(library.HasLibraryReferences):
+            rels.extend(reference.LibraryRefForObjects)
+            file.remove(reference)
+        rels.extend(library.LibraryInfoForObjects)
+        file.remove(library)
+    else:
+        for reference in set(library.LibraryReference or []):
+            file.remove(reference)
+        file.remove(library)
+        # RelatingLibrary could either be library itself or library reference we removed
+        rels = [rel for rel in file.by_type("IfcRelAssociatesLibrary") if rel.RelatingLibrary is None]
+
+    for rel in rels:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)

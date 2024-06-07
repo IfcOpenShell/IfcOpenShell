@@ -30,3 +30,10 @@ from .edit_attributes import edit_attributes
 from .remove_boundary import remove_boundary
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_connection_geometry",
+    "copy_boundary",
+    "edit_attributes",
+    "remove_boundary",
+]

@@ -21,7 +21,7 @@ import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
 
-def cascade_schedule(file, task=None) -> None:
+def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
     """Cascades start and end dates of tasks based on durations
 
     Given a start task with a start date and duration, the end date, and the

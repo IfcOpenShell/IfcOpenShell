@@ -17,10 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.element
 
 
-def add_filling(file, opening=None, element=None) -> None:
+def add_filling(
+    file: ifcopenshell.file, opening: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Fill an opening with an element
 
     Physical elements may have openings in them. For example, a wall might
@@ -105,13 +108,13 @@ def add_filling(file, opening=None, element=None) -> None:
 
     if fills_voids:
         if fills_voids[0].RelatingOpeningElement == settings["opening"]:
-            return
+            return fills_voids[0]
         history = fills_voids[0].OwnerHistory
         file.remove(fills_voids[0])
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
 
-    file.create_entity(
+    return file.create_entity(
         "IfcRelFillsElement",
         GlobalId=ifcopenshell.guid.new(),
         RelatingOpeningElement=settings["opening"],

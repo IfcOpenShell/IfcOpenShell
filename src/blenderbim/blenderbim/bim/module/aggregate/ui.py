@@ -53,12 +53,21 @@ class BIM_PT_aggregate(Panel):
         props = context.active_object.BIMObjectAggregateProperties
 
         if props.is_editing:
+            row = layout.row()
+            row.prop(props, "relating_object", text="Whole")
+            row = layout.row()
+            row.prop(props, "related_object", text="Or Part")
             row = layout.row(align=True)
-            row.prop(props, "relating_object", text="")
+            col = row.column(align=True)
+            if not props.relating_object and not props.related_object:
+                col.enabled = False
+            op = col.operator("bim.aggregate_assign_object", icon="CHECKMARK")
             if props.relating_object:
-                op = row.operator("bim.aggregate_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
+            elif props.related_object:
+                op.related_object = props.related_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
+            return
         else:
             row = layout.row(align=True)
             if AggregateData.data["has_relating_object"]:
@@ -73,7 +82,7 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
-                row.label(text="No Aggregate", icon="TRIA_UP")
+                row.label(text="No Whole Relationship Found", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
@@ -90,19 +99,6 @@ class BIM_PT_aggregate(Panel):
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name
 
-        ifc_class = AggregateData.data["ifc_class"]
-        part_class = ""
-        if ifc_class == "IfcBuilding":
-            part_class = "IfcBuildingStorey"
-        elif ifc_class == "IfcSite":
-            part_class = "IfcBuilding"
-        elif ifc_class == "IfcProject":
-            part_class = "IfcSite"
-        if part_class != "":
-            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
-            op.part_class = part_class
-            op.obj = context.active_object.name
-            
             
 class BIM_PT_linked_aggregate(Panel):
     bl_label = "Linked Aggregates"
@@ -144,7 +140,7 @@ class BIM_PT_linked_aggregate(Panel):
                 row.label(text="Not a Linked Aggregate")
             else:
                 row.label(text=f"{Number_Linked_Aggregates} Linked Aggregates")
-            op = row.operator("bim.object_duplicate_move_linked_aggregate", text="", icon="DUPLICATE")
+            op = row.operator("bim.duplicate_linked_aggregate_to_3d_cursor", text="", icon="DUPLICATE")
             if type(Number_Linked_Aggregates) is int:
                 if Number_Linked_Aggregates > 0:
                     op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")

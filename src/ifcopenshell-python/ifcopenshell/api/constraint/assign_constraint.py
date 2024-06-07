@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 from typing import Union
 
 

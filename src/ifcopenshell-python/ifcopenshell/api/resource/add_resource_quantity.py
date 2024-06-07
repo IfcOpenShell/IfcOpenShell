@@ -17,9 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.element
+import ifcopenshell.util.resource
 
 
-def add_resource_quantity(file, resource=None, ifc_class="IfcQuantityCount") -> None:
+def add_resource_quantity(
+    file: ifcopenshell.file, resource: ifcopenshell.entity_instance, ifc_class: str = "IfcQuantityCount"
+) -> ifcopenshell.entity_instance:
     """Adds a quantity to a resource
 
     The quantity of a resource represents the "unit quantity" of that
@@ -64,8 +67,20 @@ def add_resource_quantity(file, resource=None, ifc_class="IfcQuantityCount") -> 
     """
     settings = {"resource": resource, "ifc_class": ifc_class}
 
+    resource_type = resource.is_a()
+    supported_quantities = ifcopenshell.util.resource.RESOURCES_TO_QUANTITIES[resource_type]
+    if ifc_class not in supported_quantities:
+        raise ValueError(
+            f"Resource type '{resource_type}' does not support quantity type '{ifc_class}'. "
+            f"Supported quantities: {','.join(supported_quantities)}"
+        )
+
     quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
-    quantity[3] = 0.0
+    # 3 IfcPhysicalSimpleQuantity Value
+    if settings["ifc_class"] == "IfcQuantityCount":
+        quantity[3] = 0
+    else:
+        quantity[3] = 0.0
     old_quantity = settings["resource"].BaseQuantity
     settings["resource"].BaseQuantity = quantity
     if old_quantity:

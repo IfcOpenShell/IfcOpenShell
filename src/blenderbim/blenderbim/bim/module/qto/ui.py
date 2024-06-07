@@ -20,69 +20,122 @@ import bpy
 from blenderbim.bim.module.qto.data import QtoData
 
 
-class BIM_PT_qto_utilities(bpy.types.Panel):
-    bl_idname = "BIM_PT_qto_utilities"
+class BIM_PT_qto(bpy.types.Panel):
+    bl_idname = "BIM_PT_qto"
     bl_label = "Quantity Take-off"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_qto"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        if not QtoData.is_loaded:
-            QtoData.load()
+        layout = self.layout
+        props = context.scene.BIMQtoProperties
 
+        row = layout.row()
+        if context.selected_objects:
+            row.label(text=f"Quantifying {len(context.selected_objects)} Selected Objects", icon="MOD_EDGESPLIT")
+        else:
+            row.label(text="Quantifying All Objects", icon="MOD_EDGESPLIT")
+        row = layout.row()
+        row.prop(props, "qto_rule", text="")
+        row = layout.row()
+        row.operator("bim.perform_quantity_take_off")
+
+
+class BIM_PT_qto_manual(bpy.types.Panel):
+    bl_idname = "BIM_PT_qto_manual"
+    bl_label = "Manual Quantification"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_qto"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMQtoProperties
+
+        row = layout.row()
+        row.prop(props, "calculator")
+        row = layout.row()
+        row.prop(props, "calculator_function", text="Function")
+
+        row = layout.row(align=True)
+        row.prop(props, "qto_name", text="")
+        row.prop(props, "prop_name", text="")
+
+        row = layout.row()
+        row.operator("bim.calculate_single_quantity")
+
+
+class BIM_PT_qto_simple(bpy.types.Panel):
+    bl_idname = "BIM_PT_qto_simple"
+    bl_label = "Simple Quantity Calculator"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_qto"
+
+    def draw(self, context):
         layout = self.layout
         props = context.scene.BIMQtoProperties
 
         row = layout.row()
         row.prop(props, "qto_result", text="Results")
 
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_circle_radius")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_edge_lengths")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_face_areas")
-        row = layout.row(align=True)
+        row = layout.row()
         row.operator("bim.calculate_object_volumes")
+        row = layout.row()
+        row.operator("bim.calculate_formwork_area")
 
-        row = layout.row(align=True)
-        row.prop(props, "qto_methods", text="")
-        row.operator("bim.execute_qto_method", icon="PROPERTIES", text="")
 
-        row = layout.row(align=True)
-        row.prop(props, "qto_name", text="")
-        row.prop(props, "prop_name", text="")
-        row.operator("bim.quantify_objects", icon="COPYDOWN", text="")
+class BIM_PT_qto_cost(bpy.types.Panel):
+    bl_idname = "BIM_PT_qto_cost"
+    bl_label = "Parametric Cost Relationships"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_qto"
 
-        row = layout.row(align=True)
-        row.operator("bim.assign_objects_base_qto")
+    def draw(self, context):
+        if not QtoData.is_loaded:
+            QtoData.load()
 
-        row = layout.row(align=True)
-        row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT")
+        if not context.selected_objects:
+            row = self.layout.row()
+            row.label(text="No Selected Object")
+            return
 
-        if context.selected_objects:
-            row = layout.row(align=True)
-            row.label(text=f"Relating Cost Item:")
+        if not QtoData.data["has_cost_item"]:
+            row = self.layout.row()
+            row.label(text="No Related Cost Item")
+            return
 
-            if QtoData.data['has_cost_item']:
-                for relating_cost_item in QtoData.data['relating_cost_items']:
-                    row.label(text=f"\n")
-                    row = layout.row(align=True)
-                    row.label(text=f"Cost item name:")
-                    row.label(text=f"{relating_cost_item['cost_item_name']}")
-                    row = layout.row(align=True)
-                    row.label(text=f"Quantity name:")
-                    row.label(text=f"{relating_cost_item['quantity_name']}")
-                    row = layout.row(align=True)
-                    row.label(text=f"Quantity value:")
-                    row.label(text=f"{relating_cost_item['quantity_value']}")
-                    row = layout.row(align=True)
-                    row.label(text=f"Quantity type:")
-                    row.label(text=f"{relating_cost_item['quantity_type']}")
-                    row = layout.row(align=True)
-            else:
-                row = layout.row(align=True)
-                row.label(text = f"No cost item related")
-
+        row = self.layout.row(align=True)
+        row.label(text="Relating Cost Item:")
+        for relating_cost_item in QtoData.data["relating_cost_items"]:
+            row.label(text="\n")
+            row = self.layout.row(align=True)
+            row.label(text="Cost item name:")
+            row.label(text=f"{relating_cost_item['cost_item_name']}")
+            row = self.layout.row(align=True)
+            row.label(text="Quantity name:")
+            row.label(text=f"{relating_cost_item['quantity_name']}")
+            row = self.layout.row(align=True)
+            row.label(text="Quantity value:")
+            row.label(text=f"{relating_cost_item['quantity_value']}")
+            row = self.layout.row(align=True)
+            row.label(text="Quantity type:")
+            row.label(text=f"{relating_cost_item['quantity_type']}")
+            row = self.layout.row(align=True)

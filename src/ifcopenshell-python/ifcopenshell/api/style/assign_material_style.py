@@ -22,7 +22,11 @@ import ifcopenshell.util.element
 
 
 def assign_material_style(
-    file, material=None, style=None, context=None, should_use_presentation_style_assignment=False
+    file: ifcopenshell.file,
+    material: ifcopenshell.entity_instance,
+    style: ifcopenshell.entity_instance,
+    context: ifcopenshell.entity_instance,
+    should_use_presentation_style_assignment: bool = False,
 ) -> None:
     """Assigns a style to a material
 
@@ -173,11 +177,31 @@ class Usecase:
             representations.append(self.create_styled_representation())
             definition_representation.Representations = representations
 
-    def has_proposed_style(self, styled_item):
-        return any(s == self.settings["style"] for s in styled_item.Styles)
+    def has_proposed_style(self, styled_item: ifcopenshell.entity_instance) -> bool:
+        style = self.settings["style"]
+        styles = styled_item.Styles
+        if style in styles:
+            return True
+        if self.file.schema != "IFC4X3":
+            # IfcPresentationStyleAssignment is removed in IFC4X3
+            for s in styles:
+                if s.is_a("IfcPresentationStyleAssignment"):
+                    if style in s.Styles:
+                        return True
+        return False
 
-    def has_same_style_type(self, styled_item):
-        return any(s.is_a() == self.settings["style"].is_a() for s in styled_item.Styles)
+    def has_same_style_type(self, styled_item: ifcopenshell.entity_instance) -> bool:
+        style = self.settings["style"]
+        style_class = style.is_a()
+        for s in styled_item.Styles:
+            s_class = s.is_a()
+            if s_class == style_class:
+                return True
+            elif s_class == "IfcPresentationStyleAssignment":
+                for ss in s.Styles:
+                    if ss.is_a() == style_class:
+                        return True
+        return False
 
     def create_new_definition_representation(self):
         representation = self.create_styled_representation()
@@ -210,6 +234,14 @@ class Usecase:
             return self.file.create_entity(
                 "IfcStyledItem", **{"Styles": [self.style], "Name": self.settings["style"].Name}
             )
-        reuse_item.Styles = (self.style,)
+
+        # IfcPresentationStyleAssignment we created end up not being used
+        # TODO: do not create IfcPresentationStyleAssignment in the first place
+        # as it might get removed
+        if reuse_item.is_a("IfcPresentationStyleAssignment") and self.style.is_a("IfcPresentationStyleAssignment"):
+            self.file.remove(self.style)
+            self.style = reuse_item
+
+        reuse_item.Styles = (self.settings["style"],)
         reuse_item.Name = self.settings["style"].Name
         return reuse_item

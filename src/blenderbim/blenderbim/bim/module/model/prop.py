@@ -60,7 +60,7 @@ def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
-    if not tool.Blender.enum_property_has_valid_index(self, "relating_type_id", AuthoringData.data["relating_type_id"]):
+    if tool.Blender.get_enum_safe(self, "relating_type_id") is None:
         self["relating_type_id"] = 0
 
 
@@ -85,6 +85,21 @@ def update_relating_type_id(self, context):
 
 def update_type_page(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
+
+
+def update_relating_array_from_object(self, context):
+    bpy.ops.bim.enable_editing_array(item=self.is_editing)
+    return
+
+
+def is_object_array_applicable(self, obj):
+    element = tool.Ifc.get_entity(obj)
+    if not element:
+        return False
+    return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+
+
+
 
 
 class BIMModelProperties(PropertyGroup):
@@ -203,6 +218,14 @@ class BIMArrayProperties(PropertyGroup):
         description="Regenerate all children based on the parent object",
         default=False,
     )
+    relating_array_object: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Copy Array Properties",
+        update=update_relating_array_from_object,
+        poll=is_object_array_applicable,
+    )
+
+
 
 
 class BIMStairProperties(PropertyGroup):

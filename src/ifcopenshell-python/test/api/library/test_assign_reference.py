@@ -20,28 +20,6 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-def validate_ifc_file(ifc_file: ifcopenshell.file, use_json=True):
-    import ifcopenshell
-    import ifcopenshell.validate
-
-    if use_json:
-        logger = ifcopenshell.validate.json_logger()
-    else:
-        import logging
-
-        logger = logging.getLogger("validate")
-        logger.setLevel(logging.DEBUG)
-
-    ifcopenshell.validate.validate(ifc_file, logger, express_rules=True)
-    if use_json:
-        if logger.statements:
-            from pprint import pprint
-
-            pprint(logger.statements)
-        else:
-            print("IFC is completely valid.")
-
-
 class TestAssignReference(test.bootstrap.IFC4):
     def test_assigning_a_reference(self):
         reference = self.file.createIfcLibraryReference()

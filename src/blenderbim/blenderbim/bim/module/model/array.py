@@ -83,8 +83,17 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props = obj.BIMArrayProperties
+        
+        relating_obj = props.relating_array_object
+        
+        if relating_obj:
+            element = tool.Ifc.get_entity(relating_obj)
+            parent_globalid = ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Parent")
+            parent_element = tool.Ifc.get().by_guid(parent_globalid)
+            data = json.loads(ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array", "Data"))[self.item]
+        else:
+            data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Data"))[self.item]
         props.count = data["count"]
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.x = data["x"] * si_conversion
@@ -93,7 +102,9 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         props.use_local_space = data.get("use_local_space", False)
         props.sync_children = data.get("sync_children", False)
         props.method = data.get("method", "OFFSET")
+        
         props.is_editing = self.item
+        
         return {"FINISHED"}
 
 
@@ -137,6 +148,10 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
 
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+
+        #clears the relating_array_object so it doesn't show again next time
+        props.relating_array_object = None
+        
         return {"FINISHED"}
 
 
@@ -193,7 +208,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Ifc.get().by_id(pset["id"])
         if len(data) == 1:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
         else:
             del data[self.item]
             data = tool.Ifc.get().createIfcText(json.dumps(data))

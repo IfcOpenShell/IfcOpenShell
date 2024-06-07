@@ -18,10 +18,11 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
 
-def remove_work_schedule(file, work_schedule=None) -> None:
+def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance) -> None:
     """Removes a work schedule
 
     All tasks in the work schedule are also removed recursively.
@@ -54,6 +55,7 @@ def remove_work_schedule(file, work_schedule=None) -> None:
         definitions=[settings["work_schedule"]],
         relating_context=file.by_type("IfcContext")[0],
     )
+
     if settings["work_schedule"].Declares:
         for rel in settings["work_schedule"].Declares:
             for work_schedule in rel.RelatedObjects:
@@ -62,6 +64,11 @@ def remove_work_schedule(file, work_schedule=None) -> None:
                     file,
                     work_schedule=work_schedule,
                 )
+
+    # Unassign from work plans.
+    if settings["work_schedule"].Decomposes:
+        ifcopenshell.api.aggregate.unassign_object(file, [settings["work_schedule"]])
+
     for inverse in file.get_inverse(settings["work_schedule"]):
         if inverse.is_a("IfcRelDefinesByObject"):
             if inverse.RelatingObject == settings["work_schedule"] or len(inverse.RelatedObjects) == 1:

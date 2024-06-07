@@ -15,9 +15,12 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_constituent(file, constituent_set=None, material=None) -> None:
+def add_constituent(
+    file: ifcopenshell.file, constituent_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """Adds a new constituent to a constituent set
 
     A constituent describes how a portion of an object is made out of a

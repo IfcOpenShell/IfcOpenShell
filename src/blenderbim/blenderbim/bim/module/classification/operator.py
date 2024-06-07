@@ -77,26 +77,37 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_manual_classification_reference"
     bl_label = "Add Manual Classification Reference"
     bl_options = {"REGISTER", "UNDO"}
+    obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMClassificationReferenceProperties
+        if self.obj_type == "Object":
+            if context.selected_objects:
+                objects = [o.name for o in context.selected_objects]
+            else:
+                objects = [context.active_object.name]
+        else:
+            objects = [self.obj]
+        props = context.scene.BIMClassificationReferenceProperties
         attributes = blenderbim.bim.helper.export_attributes(props.reference_attributes)
-        product = tool.Ifc.get_entity(obj)
-        # TODO: refactor and support material and cost item classifications
-        classification = tool.Ifc.get().by_id(int(props.classifications))
-        reference = ifcopenshell.api.run(
-            "classification.add_reference",
-            tool.Ifc.get(),
-            products=[product],
-            classification=classification,
-            identification="X",
-            name="Unnamed",
-        )
-        ifcopenshell.api.run(
-            "classification.edit_reference", tool.Ifc.get(), reference=reference, attributes=attributes
-        )
+        products = [
+            tool.Ifc.get().by_id(ifc_definition_id)
+            for obj in objects
+            if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
+        ]
+        if products:
+            classification = tool.Ifc.get().by_id(int(props.classifications))
+            reference = ifcopenshell.api.run(
+                "classification.add_reference",
+                tool.Ifc.get(),
+                products=products,
+                classification=classification,
+                identification="X",
+                name="Unnamed",
+            )
+            ifcopenshell.api.run(
+                "classification.edit_reference", tool.Ifc.get(), reference=reference, attributes=attributes
+            )
         props.is_adding = False
 
 
@@ -150,8 +161,7 @@ class EnableAddingManualClassificationReference(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = context.active_object
-        props = obj.BIMClassificationReferenceProperties
+        props = context.scene.BIMClassificationReferenceProperties
         props.is_adding = True
         props.reference_attributes.clear()
         blenderbim.bim.helper.import_attributes2("IfcClassificationReference", props.reference_attributes)
@@ -164,8 +174,7 @@ class DisableAddingManualClassificationReference(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        obj = context.active_object
-        props = obj.BIMClassificationReferenceProperties
+        props = context.scene.BIMClassificationReferenceProperties
         props.is_adding = False
         return {"FINISHED"}
 
@@ -257,8 +266,7 @@ class EnableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        props = obj.BIMClassificationReferenceProperties
+        props = context.scene.BIMClassificationReferenceProperties
         props.reference_attributes.clear()
         blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.reference), props.reference_attributes)
         props.active_reference_id = self.reference
@@ -272,8 +280,7 @@ class DisableEditingClassificationReference(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        obj.BIMClassificationReferenceProperties.active_reference_id = 0
+        context.scene.BIMClassificationReferenceProperties.active_reference_id = 0
         return {"FINISHED"}
 
 
@@ -326,8 +333,7 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        props = obj.BIMClassificationReferenceProperties
+        props = context.scene.BIMClassificationReferenceProperties
         attributes = {}
         for attribute in props.reference_attributes:
             if attribute.is_null:
@@ -368,9 +374,8 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
                 classification = element
                 break
 
-        ifc_file = tool.Ifc.get()
         products = [
-            ifc_file.by_id(ifc_definition_id)
+            tool.Ifc.get().by_id(ifc_definition_id)
             for obj in objects
             if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
         ]

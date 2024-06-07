@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_material_set(file, material=None) -> None:
+def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_instance) -> None:
     """Removes a material set
 
     All set items, such as layers, profiles, or constituents will also be

@@ -18,9 +18,14 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
-def assign_structural_analysis_model(file, product=None, structural_analysis_model=None) -> None:
+def assign_structural_analysis_model(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    structural_analysis_model: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
     """Assigns a load or structural member to an analysis model
 
     :param product: The structural element that is part of the analysis.
@@ -51,3 +56,4 @@ def assign_structural_analysis_model(file, product=None, structural_analysis_mod
     related_objects.add(settings["product"])
     rel.RelatedObjects = list(related_objects)
     ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+    return rel

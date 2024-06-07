@@ -16,8 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+from typing import Any
 
-def edit_context(file, context, attributes) -> None:
+
+def edit_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcGeometricRepresentationContext
 
     For more information about the attributes and data types of an
@@ -26,7 +29,7 @@ def edit_context(file, context, attributes) -> None:
     :param context: The IfcGeometricRepresentationContext entity you want to edit
     :type context: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -44,7 +47,7 @@ def edit_context(file, context, attributes) -> None:
         ifcopenshell.api.run("context.edit_context", model,
             context=body, attributes={"ContextIdentifier": "Body"})
     """
-    settings = {"context": context, "attributes": attributes or {}}
+    settings = {"context": context, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["context"], name, value)

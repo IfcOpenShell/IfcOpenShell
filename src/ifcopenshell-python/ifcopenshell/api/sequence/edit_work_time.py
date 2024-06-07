@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.date
-from typing import Any, Optional
+from typing import Any
 
 
 def edit_work_time(
     file: ifcopenshell.file,
     work_time: ifcopenshell.entity_instance,
-    attributes: Optional[dict[str, Any]] = None,
+    attributes: dict[str, Any],
 ) -> None:
     """Edits the attributes of an IfcWorkTime
 
@@ -33,7 +33,7 @@ def edit_work_time(
     :param work_time: The IfcWorkTime entity you want to edit
     :type work_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -54,7 +54,7 @@ def edit_work_time(
         ifcopenshell.api.run("sequence.edit_work_time", model,
             work_time=work_time, attributes={"StartDate": "2000-01-01", "FinishDate": "2000-01-02"})
     """
-    settings = {"work_time": work_time, "attributes": attributes or {}}
+    settings = {"work_time": work_time, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         if name in ("Start", "StartDate"):

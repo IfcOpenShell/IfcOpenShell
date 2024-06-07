@@ -34,6 +34,8 @@ from blenderbim.bim.module.layer.data import LayersData
 
 def mode_menu(self, context):
     row = self.layout.row(align=True)
+    if context.scene.BIMGeometryProperties.mode == "EDIT":
+        row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
     row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=blenderbim.bim.icons["IFC"].icon_id)
 
 

@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def add_parameterized_profile(file, ifc_class=None) -> None:
+def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcopenshell.entity_instance:
     """Adds a new parameterised profile
 
     IFC offers parameterised profiles for common standardised hot roll

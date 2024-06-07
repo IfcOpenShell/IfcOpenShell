@@ -15,9 +15,11 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-def edit_resource(file, resource=None, attributes=None) -> None:
+def edit_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
     """Edits the attributes of an IfcResource
 
     For more information about the attributes and data types of an
@@ -26,7 +28,7 @@ def edit_resource(file, resource=None, attributes=None) -> None:
     :param resource: The IfcResource entity you want to edit
     :type resource: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -40,7 +42,7 @@ def edit_resource(file, resource=None, attributes=None) -> None:
         # Change the name of the resource to "Zone A Crew"
         ifcopenshell.api.run("resource.edit_resource", model, resource=resource, attributes={"Name": "Foo"})
     """
-    settings = {"resource": resource, "attributes": attributes or {}}
+    settings = {"resource": resource, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["resource"], name, value)

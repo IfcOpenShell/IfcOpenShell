@@ -18,9 +18,13 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+from typing import Optional
 
 
-def add_group(file, Name="Unnamed", Description=None) -> None:
+def add_group(
+    file: ifcopenshell.file, name: str = "Unnamed", description: Optional[str] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new group
 
     An IFC group is an arbitrary collection of products, which are typically
@@ -33,8 +37,8 @@ def add_group(file, Name="Unnamed", Description=None) -> None:
 
     :param Name: The name of the group. Defaults to "Unnamed"
     :type Name: str, optional
-    :param Description: The description of the purpose of the group.
-    :type Description: str, optional
+    :param description: The description of the purpose of the group.
+    :type description: str, optional
     :return: The newly created IfcGroup
     :rtype: ifcopenshell.entity_instance
 
@@ -42,11 +46,11 @@ def add_group(file, Name="Unnamed", Description=None) -> None:
 
     .. code:: python
 
-        ifcopenshell.api.run("group.add_group", model, Name="Unit 1A")
+        ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
     """
     settings = {
-        "Name": Name or "Unnamed",
-        "Description": Description,
+        "name": name or "Unnamed",
+        "description": description,
     }
 
     return file.create_entity(
@@ -54,7 +58,7 @@ def add_group(file, Name="Unnamed", Description=None) -> None:
         **{
             "GlobalId": ifcopenshell.guid.new(),
             "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
-            "Name": settings["Name"],
-            "Description": settings["Description"],
+            "Name": settings["name"],
+            "Description": settings["description"],
         }
     )

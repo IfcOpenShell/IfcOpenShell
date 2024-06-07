@@ -169,7 +169,7 @@ class entity_instance:
 
         return file.from_pointer(self.wrapped_data.file_pointer())
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
@@ -281,11 +281,11 @@ class entity_instance:
 
         return entity_instance.walk(is_instance, unwrap, v)
 
-    def attribute_type(self, attr: int) -> str:
+    def attribute_type(self, attr: Union[int, str]) -> str:
         """Return the data type of a positional attribute of the element
 
-        :param attr: The index of the attribute
-        :type attr: int
+        :param attr: The index or name of the attribute
+        :type attr: Union[int, str]
         :rtype: string
         """
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
@@ -332,13 +332,24 @@ class entity_instance:
                     self.wrapped_data.setArgumentAsNull(idx)
                 except RuntimeError as e:
                     if e.args == ("Attribute not set",):
-                        raise ValueError(
+                        raise TypeError(
                             "attribute '%s' is not optional for entity instance of type '%s'"
                             % (self.wrapped_data.get_argument_name(idx), self.wrapped_data.is_a(True))
                         )
                     raise e
         else:
-            self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            try:
+                self.method_list[idx](self.wrapped_data, idx, entity_instance.unwrap_value(value))
+            except TypeError:
+                raise TypeError(
+                    "attribute '%s' for entity '%s' is expecting value of type '%s', got '%s'."
+                    % (
+                        self.wrapped_data.get_argument_name(idx),
+                        self.wrapped_data.is_a(True),
+                        self.wrapped_data.get_argument_type(idx),
+                        type(value).__name__,
+                    )
+                )
 
         return value
 

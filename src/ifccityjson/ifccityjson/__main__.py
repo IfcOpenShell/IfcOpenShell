@@ -18,7 +18,7 @@
 
 import argparse
 from cjio import cityjson
-from cityjson2ifc.cityjson2ifc import Cityjson2ifc
+from .cityjson2ifc import Cityjson2ifc
 
 def cmdline():
     # Example:

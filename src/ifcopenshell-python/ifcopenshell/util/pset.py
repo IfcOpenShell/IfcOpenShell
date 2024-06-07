@@ -103,7 +103,8 @@ class PsetQto:
             matched_type = match.group(3)
             if matched_type and not predefined_type:
                 continue
-            elif matched_type and predefined_type != match.group(3):
+            # Case insensitive to handle things like material categories
+            elif matched_type and predefined_type.lower() != match.group(3).lower():
                 continue
 
             applicable_class = match.group(1)

@@ -17,9 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
+from typing import Optional
 
 
-def add_information(file, parent=None) -> None:
+def add_information(
+    file: ifcopenshell.file, parent: Optional[ifcopenshell.entity_instance] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new document information to the project
 
     An IFC document information is a document associated with the project.
@@ -52,11 +56,8 @@ def add_information(file, parent=None) -> None:
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
     """
-    settings = {"parent": parent}
-
     id_attribute = "DocumentId" if file.schema == "IFC2X3" else "Identification"
     information = file.create_entity("IfcDocumentInformation", **{id_attribute: "X", "Name": "Unnamed"})
-    parent = settings["parent"]
     if not parent and file.by_type("IfcProject"):
         parent = file.by_type("IfcProject")[0]
     if parent.is_a("IfcProject") or parent.is_a("IfcContext"):

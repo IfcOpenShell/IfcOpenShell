@@ -27,3 +27,7 @@ class TestUnassignActor(test.bootstrap.IFC4):
         ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall)
         ifcopenshell.api.run("owner.unassign_actor", self.file, relating_actor=actor, related_object=wall)
         assert len(self.file.by_type("IfcRelAssignsToActor")) == 0
+
+
+class TestUnassignActorIFC2X3(test.bootstrap.IFC2X3, TestUnassignActor):
+    pass

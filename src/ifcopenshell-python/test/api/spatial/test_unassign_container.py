@@ -57,3 +57,7 @@ class TestUnassignContainer(test.bootstrap.IFC4):
         ifcopenshell.api.run("spatial.assign_container", self.file, products=[subelement], relating_structure=element)
         ifcopenshell.api.run("spatial.unassign_container", self.file, products=[subelement])
         assert len(self.file.by_type("IfcRelContainedInSpatialStructure")) == 0
+
+
+class TestUnassignContainerIFC2X3(test.bootstrap.IFC2X3, TestUnassignContainer):
+    pass

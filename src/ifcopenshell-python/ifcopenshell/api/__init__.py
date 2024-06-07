@@ -23,6 +23,19 @@ the rules of the IFC schema. This API module provides simple to use authoring
 functions that hide this complexity from you. Things like managing differences
 between IFC versions, tracking owernship changes, or cleaning up after orphaned
 relationships are all handled automatically.
+
+If you're new to IFC authoring, start by looking at the following APIs:
+
+- See :func:`ifcopenshell.api.project.create_file` to create a new IFC.
+- See :func:`ifcopenshell.api.root.create_entity` to create new entities, like
+  the mandatory IfcProject, and then an IfcSite, IfcWall, etc.
+- See :func:`ifcopenshell.api.aggregate.assign_object` to create a spatial
+  hierarchy.
+- See :func:`ifcopenshell.api.spatial.assign_container` to place physical
+  elements (e.g. walls) inside spatial elements (e.g. building storeys).
+
+Also see how to `create a simple model from scratch
+<https://docs.ifcopenshell.org/ifcopenshell-python/code_examples.html#create-a-simple-model-from-scratch>`_.
 """
 
 import json
@@ -52,6 +65,20 @@ def batching_argument_deprecation(
         settings = settings | {new_argument: [settings[prev_argument]]}
         settings.pop(prev_argument)
     return (replace_usecase or usecase_path, settings)
+
+
+def renamed_arguments_deprecation(
+    usecase_path: str, settings: dict, arguments_remapped: dict[str, str]
+) -> tuple[str, dict]:
+    for prev_argument, new_argument in arguments_remapped.items():
+        if prev_argument in settings:
+            print(
+                f"WARNING. `{prev_argument}` argument is deprecated for API method "
+                f'"{usecase_path}" and should be replaced with `{new_argument}`.'
+            )
+            settings = settings | {new_argument: settings[prev_argument]}
+            settings.pop(prev_argument)
+    return (usecase_path, settings)
 
 
 ARGUMENTS_DEPRECATION = {
@@ -130,6 +157,10 @@ ARGUMENTS_DEPRECATION = {
     "project.unassign_declaration": partial(
         batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
     ),
+    "group.add_group": partial(
+        renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
+    ),
+    "layer.add_layer": partial(renamed_arguments_deprecation, arguments_remapped={"Name": "name"}),
 }
 
 
@@ -156,31 +187,6 @@ def run(
     if should_run_listeners:
         for listener in pre_listeners.get(usecase_path, {}).values():
             listener(usecase_path, ifc_file, settings)
-
-
-    # TODO: settings serialization for client-server systems
-    # def serialise_entity_instance(entity):
-    #     return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
-    # vcs_settings = settings.copy()
-    # for key, value in settings.items():
-    #     if isinstance(value, ifcopenshell.entity_instance):
-    #         vcs_settings[key] = serialise_entity_instance(value)
-    #     elif isinstance(value, numpy.ndarray):
-    #         vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
-    #     elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
-    #         vcs_settings[key] = [serialise_entity_instance(i) for i in value]
-    if "add_representation" in usecase_path:
-        pass
-        # print(usecase_path, "{ ... settings too complex right now ... }")
-    elif "owner." in usecase_path:
-        pass
-    else:
-        pass
-        # print(vcs_settings)
-        # try:
-        #    print(usecase_path, json.dumps(vcs_settings))
-        # except:
-        #    print(usecase_path, vcs_settings)
 
     usecase_class = CACHED_USECASE_CLASSES.get(usecase_path)
     if usecase_class is None:
@@ -295,6 +301,29 @@ def extract_docs(module, usecase):
     return node_data
 
 
+def serialise_settings(settings):
+    def serialise_entity_instance(entity):
+        return {"cast_type": "entity_instance", "value": entity.id(), "Name": getattr(entity, "Name", None)}
+
+    vcs_settings = settings.copy()
+    for key, value in settings.items():
+        if isinstance(value, ifcopenshell.entity_instance):
+            vcs_settings[key] = serialise_entity_instance(value)
+        elif isinstance(value, numpy.ndarray):
+            vcs_settings[key] = {"cast_type": "ndarray", "value": value.tolist()}
+        elif isinstance(value, list) and value and isinstance(value[0], ifcopenshell.entity_instance):
+            vcs_settings[key] = [serialise_entity_instance(i) for i in value]
+        else:
+            try:
+                vcs_settings[key] = str(value)
+            except:
+                vcs_settings[key] = "n/a"
+    try:
+        return json.dumps(vcs_settings)
+    except:
+        return str(vcs_settings)
+
+
 def wrap_usecase(usecase_path, usecase):
     """Wraps an API function in pre/post listeners."""
 
@@ -302,7 +331,9 @@ def wrap_usecase(usecase_path, usecase):
         ifc_file = args[0] if args else None
         nonlocal usecase_path
         if should_run_listeners:
-            for listener in pre_listeners.get(usecase_path, {}).values():
+            listeners = list(pre_listeners.get(usecase_path, {}).values())
+            listeners += pre_listeners.get("*", {}).values()
+            for listener in listeners:
                 listener(usecase_path, ifc_file, settings)
 
         # see #4531
@@ -312,11 +343,23 @@ def wrap_usecase(usecase_path, usecase):
         try:
             result = usecase(*args, **settings)
         except TypeError as e:
-            msg = f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. You specified args {args} and settings {settings}\n\nCorrect signature is {inspect.signature(usecase)}\nSee help(ifcopenshell.api.{usecase_path}) for documentation."
+            if not e.args[0].startswith(f"{usecase.__name__}()"):
+                # signature errors typically start with function name
+                # e.g. "TypeError: edit_library() got an unexpected keyword argument 'test'"
+                # otherwise it's an error inside api call and we shouldn't get in the way
+                raise e
+            msg = (
+                f"Incorrect function arguments provided for {usecase_path}\n{str(e)}. "
+                f"You specified args {args} and settings {settings}\n\n"
+                f"Correct signature is {inspect.signature(usecase)}\n"
+                f"See help(ifcopenshell.api.{usecase_path}) for documentation."
+            )
             raise TypeError(msg) from e
 
         if should_run_listeners:
-            for listener in post_listeners.get(usecase_path, {}).values():
+            listeners = list(post_listeners.get(usecase_path, {}).values())
+            listeners += post_listeners.get("*", {}).values()
+            for listener in listeners:
                 listener(usecase_path, ifc_file, settings)
 
         return result
@@ -335,7 +378,8 @@ def wrap_usecases(path, name):
     module_name = name.split(".")[-1]
     module = sys.modules[name]
     for loader, usecase_name, is_pkg in pkgutil.iter_modules(path):
-        usecase = getattr(module, usecase_name)
+        # We may not be able to get the usecase if we are missing a dependency.
+        usecase = getattr(module, usecase_name, None)
         if callable(usecase):
             usecase_path = f"{module_name}.{usecase_name}"
             setattr(module, usecase_name, wrap_usecase(usecase_path, usecase))

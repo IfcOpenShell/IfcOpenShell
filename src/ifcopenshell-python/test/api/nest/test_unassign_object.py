@@ -50,5 +50,21 @@ class TestUnassignObject(test.bootstrap.IFC4):
         ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=[subelement])
         assert len(self.file.by_type("IfcRelNests")) == 0
 
+    def test_maintain_assignment_order_in_related_objects(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        subelements = [ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask") for _ in range(5)]
+        rel = self.file.create_entity("IfcRelNests", RelatingObject=element, RelatedObjects=subelements)
+
+        original_order = subelements.copy()
+        # unassign elements in some random order
+        # skip 1 element to make sure rel won't get removed
+        removed_elements = set()
+        for i in (0, 3, 2, 4):
+            subelement = subelements[i]
+            ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=[subelement])
+            removed_elements.add(subelement)
+            assert rel.RelatedObjects == tuple([o for o in original_order if o not in removed_elements])
+
+
 class TestUnassignObjectIFC2X3(test.bootstrap.IFC2X3, TestUnassignObject):
     pass

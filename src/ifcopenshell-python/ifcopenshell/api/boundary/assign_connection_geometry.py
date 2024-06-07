@@ -17,17 +17,18 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+from typing import Optional
 
 
 def assign_connection_geometry(
-    file,
-    rel_space_boundary=None,
-    outer_boundary=None,
-    inner_boundaries=None,
-    location=None,
-    axis=None,
-    ref_direction=None,
-    unit_scale=None,
+    file: ifcopenshell.file,
+    rel_space_boundary: ifcopenshell.entity_instance,
+    outer_boundary: list[tuple[float, float]],
+    location: tuple[float, float, float],
+    axis: tuple[float, float, float],
+    ref_direction: tuple[float, float, float],
+    inner_boundaries: Optional[list[list[tuple[float, float]]]] = None,
+    unit_scale: Optional[float] = None,
 ) -> None:
     """Create and assign a connection geometry to a space boundary relationship
 
@@ -44,24 +45,24 @@ def assign_connection_geometry(
         polyline.  The last point will connect to the first point. Each
         point is represented by an interable of 2 floats. The coordinates of
         the points are relative to the positional matrix arguments.
-    :type outer_boundary: list[list[float]]
+    :type outer_boundary: list[tuple[float, float]]
     :param inner_boundaries: A list of zero or more inner boundaries to use
         for the plane. Each boundary is represented by an open polyline, as
         defined by the outer_boundary argument.
-    :type inner_boundaries: list[list[list[float]]], optional
+    :type inner_boundaries: list[list[tuple[float, float]]], optional
     :param location: The local origin of the connection geometry, defined as
         an XYZ coordinate relative to the placement of the space that is
         being bounded.
-    :type location: list[float]
+    :type location: tuple[float, float, float]
     :param axis: The local X axis of the connection geometry, defined as an
         XYZ vector relative to the placement of the space that is being
         bounded.
-    :type axis: list[float]
+    :type axis: tuple[float, float, float]
     :param ref_direction: The local Z axis of the connection geometry,
         defined as an XYZ vector relative to the placement of the space that
         is being bounded. The Y vector is automatically derived using the
         right hand rule.
-    :type ref_direction: list[float]
+    :type ref_direction: tuple[float, float, float]
     :param unit_scale: The unit scale as calculated by
         ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
         will be automatically calculated for you.
@@ -88,7 +89,6 @@ def assign_connection_geometry(
     usecase.axis = axis
     usecase.ref_direction = ref_direction
     usecase.unit_scale = unit_scale
-    usecase.ifc_vertices = []
     return usecase.execute()
 
 

@@ -61,3 +61,28 @@ from .remove_representation import remove_representation
 from .unassign_representation import unassign_representation
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "add_axis_representation",
+    "add_boolean",
+    "add_door_representation",
+    "add_footprint_representation",
+    "add_mesh_representation",
+    "add_profile_representation",
+    "add_railing_representation",
+    "add_representation",
+    "add_slab_representation",
+    "add_wall_representation",
+    "add_window_representation",
+    "assign_representation",
+    "connect_element",
+    "connect_path",
+    "create_2pt_wall",
+    "disconnect_element",
+    "disconnect_path",
+    "edit_object_placement",
+    "map_representation",
+    "remove_boolean",
+    "remove_representation",
+    "unassign_representation",
+]

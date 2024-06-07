@@ -17,15 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Optional
 
 
 def add_resource(
-    file,
-    parent_resource=None,
-    ifc_class="IfcCrewResource",
-    name=None,
-    predefined_type="NOTDEFINED",
-) -> None:
+    file: ifcopenshell.file,
+    parent_resource: Optional[ifcopenshell.entity_instance] = None,
+    ifc_class: str = "IfcCrewResource",
+    name: Optional[str] = None,
+    predefined_type: str = "NOTDEFINED",
+) -> ifcopenshell.entity_instance:
     """Add a new construction resource
 
     Construction resources may be managed and connected to cost schedules
@@ -48,7 +49,7 @@ def add_resource(
 
     :param parent_resource: If this is a child resource (typically to a crew
         resource), then nominate the parent IfcConstructionResource here.
-    :type parent_resource: ifcopenshell.entity_instance
+    :type parent_resource: ifcopenshell.entity_instance, optional
     :param ifc_class: The class of resource chosen from
         IfcConstructionEquipmentResource, IfcConstructionMaterialResource,
         IfcConstructionProductResource, IfcCrewResource, IfcLaborResource,
@@ -96,7 +97,7 @@ def add_resource(
             related_objects=[resource],
             relating_object=settings["parent_resource"],
         )
-    else:
+    elif file.schema != "IFC2X3":
         context = file.by_type("IfcContext")[0]
         ifcopenshell.api.run(
             "project.assign_declaration",

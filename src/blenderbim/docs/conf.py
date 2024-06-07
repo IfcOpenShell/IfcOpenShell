@@ -99,6 +99,7 @@ html_theme_options = {
         "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
+        "color-admonition-text": "#651fff",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
     "dark_css_variables": {
@@ -113,6 +114,7 @@ html_theme_options = {
         "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
+        "color-admonition-text": "#EEEEEC",
         "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
     },
 

@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_application(file, application=None) -> None:
+def remove_application(file: ifcopenshell.file, application: ifcopenshell.entity_instance) -> None:
     """Removes an application
 
     Warning: removing an application may invalidate ownership histories.

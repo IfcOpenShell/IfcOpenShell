@@ -17,10 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
 
-def remove_work_plan(file, work_plan=None) -> None:
+def remove_work_plan(file: ifcopenshell.file, work_plan: ifcopenshell.entity_instance) -> None:
     """Removes a work plan
 
     Note that schedules that are grouped under the work plan are not
@@ -43,13 +45,17 @@ def remove_work_plan(file, work_plan=None) -> None:
     """
     settings = {"work_plan": work_plan}
 
-    # TODO: do a deep purge
     ifcopenshell.api.run(
         "project.unassign_declaration",
         file,
         definitions=[settings["work_plan"]],
         relating_context=file.by_type("IfcContext")[0],
     )
+
+    related_objects = [obj for rel in work_plan.IsDecomposedBy for obj in rel.RelatedObjects]
+    if related_objects:
+        ifcopenshell.api.aggregate.unassign_object(file, related_objects)
+
     history = settings["work_plan"].OwnerHistory
     file.remove(settings["work_plan"])
     if history:

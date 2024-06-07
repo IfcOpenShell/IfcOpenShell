@@ -19,23 +19,35 @@
 import ifcopenshell.geom
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
+from typing import Any, Union, Optional, Literal
+
+VECTOR_3D = tuple[float, float, float]
 
 
-def add_profile_representation(file, **usecase_settings) -> None:
+def add_profile_representation(
+    file: ifcopenshell.file,
+    # IfcGeometricRepresentationContext
+    context: ifcopenshell.entity_instance,
+    profile: ifcopenshell.entity_instance,
+    # in meters
+    depth: float = 1.0,
+    cardinal_point: Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9] = 5,
+    # A list of planes that define clipping half space solids
+    # Planes are defined either by Clipping objects
+    # or by dictionaries of arguments for `Clipping.parse`
+    clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+    placement_zx_axes: tuple[Union[VECTOR_3D, None], Union[VECTOR_3D, None]] = (None, None),
+) -> None:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "context": None,  # IfcGeometricRepresentationContext
-        "profile": None,
-        "depth": 1.0,
-        "cardinal_point": 5,
-        # Planes are defined either by Clipping objects
-        # or by dictionaries of arguments for `Clipping.parse`
-        "clippings": [],  # A list of planes that define clipping half space solids
-        "placement_zx_axes": (None, None),
+        "context": context,
+        "profile": profile,
+        "depth": depth,
+        "cardinal_point": cardinal_point,
+        "clippings": clippings if clippings is not None else [],
+        "placement_zx_axes": placement_zx_axes,
     }
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
     return usecase.execute()
 
 

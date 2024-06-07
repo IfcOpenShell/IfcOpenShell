@@ -21,7 +21,7 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.style.data import StylesData, StyleAttributesData
+from blenderbim.bim.module.style.data import StylesData
 from bl_ui.properties_material import MaterialButtonsPanel
 
 
@@ -62,11 +62,13 @@ class BIM_PT_styles(Panel):
             row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
         if active_style:
             style = self.props.styles[self.props.active_style_index]
-            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
-            material = bpy.data.materials[material_name]
 
             row.operator("bim.duplicate_style", text="", icon="DUPLICATE").style = style.ifc_definition_id
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
+            op = row.operator("bim.assign_style_to_selected", text="", icon="BRUSH_DATA")
+            op.style_id = style.ifc_definition_id
+            op = row.operator("bim.unlink_style", text="", icon="UNLINKED")
+            op.style = style.ifc_definition_id
             op = row.operator("bim.enable_editing_style", text="", icon="GREASEPENCIL")
             op.style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
@@ -93,9 +95,12 @@ class BIM_PT_styles(Panel):
         # style ui tools
         if active_style:
             row = self.layout.row(align=True)
-            row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
-            op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
-            op.style_id = style.ifc_definition_id
+            material_name = StylesData.data["styles_to_blender_material_names"][self.props.active_style_index]
+            if material_name:  # The user may have unlinked the style, so the material may not exist
+                material = bpy.data.materials[material_name]
+                row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
+                op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
+                op.style_id = style.ifc_definition_id
 
             if self.props.style_type == "IfcSurfaceStyle":
                 self.layout.label(text="Surface Style Element:")
@@ -257,80 +262,6 @@ class BIM_PT_styles(Panel):
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save Lighting Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
-
-
-class BIM_PT_style(MaterialButtonsPanel, Panel):
-    bl_label = "Style"
-    bl_idname = "BIM_PT_style"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-
-    @classmethod
-    def poll(cls, context):
-        return (
-            IfcStore.get_file()
-            and context.active_object is not None
-            and context.active_object.active_material is not None
-        )
-
-    def draw(self, context):
-        mat = context.material
-        props = mat.BIMMaterialProperties
-        row = self.layout.row(align=True)
-        if not props.ifc_style_id:
-            row.operator("bim.add_style", icon="ADD")
-            return
-        row = self.layout.row(align=True)
-        row.operator("bim.update_style_colours", icon="GREASEPENCIL")
-        row.operator("bim.update_style_textures", icon="TEXTURE", text="")
-        row.operator("bim.unlink_style", icon="UNLINKED", text="")
-        row.operator("bim.remove_style", icon="X", text="").style = props.ifc_style_id
-
-
-class BIM_PT_style_attributes(Panel):
-    bl_label = "Style Attributes"
-    bl_idname = "BIM_PT_style_attributes"
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "material"
-    bl_parent_id = "BIM_PT_style"
-
-    @classmethod
-    def poll(cls, context):
-        if not IfcStore.get_file():
-            return False
-        try:
-            return bool(context.active_object.active_material.BIMMaterialProperties.ifc_style_id)
-        except:
-            return False
-
-    def draw(self, context):
-        if not StyleAttributesData.is_loaded:
-            StyleAttributesData.load()
-        elif (
-            context.active_object.active_material.BIMMaterialProperties.ifc_style_id
-            != StyleAttributesData.data["ifc_style_id"]
-        ):
-            StyleAttributesData.load()
-
-        obj = context.active_object.active_material
-        mprops = obj.BIMMaterialProperties
-        props = obj.BIMStyleProperties
-        if props.is_editing:
-            row = self.layout.row(align=True)
-            row.operator("bim.edit_style", icon="CHECKMARK")
-            row.operator("bim.disable_editing_style", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(props.attributes, self.layout)
-        else:
-            row = self.layout.row(align=True)
-            row.label(text="STEP ID")
-            row.label(text=str(mprops.ifc_style_id))
-
-            for attribute in StyleAttributesData.data["attributes"]:
-                row = self.layout.row(align=True)
-                row.label(text=attribute["name"])
-                row.label(text=attribute["value"])
 
 
 class BIM_UL_styles(UIList):

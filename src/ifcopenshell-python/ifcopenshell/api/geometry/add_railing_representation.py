@@ -22,46 +22,100 @@ from itertools import chain
 from mathutils import Vector, Matrix
 import collections
 import mathutils
-from pprint import pprint
 from math import pi, cos, sin, tan, radians
+from typing import Literal, Optional, Any
 
 
-def mm(x):
+def mm(x: float) -> float:
     """mm to meters shortcut for readability"""
     return x / 1000
 
 
-def add_railing_representation(file, **usecase_settings) -> None:
+def add_railing_representation(
+    file: ifcopenshell.file,
+    *,  # keywords only as this API implementation is probably not final
+    # IfcGeometricRepresentationContext
+    context: ifcopenshell.entity_instance,
+    railing_type: Literal["WALL_MOUNTED_HANDRAIL"] = "WALL_MOUNTED_HANDRAIL",
+    railing_path: list[Vector],
+    use_manual_supports: bool = False,
+    support_spacing: Optional[float] = None,
+    railing_diameter: Optional[float] = None,
+    clear_width: Optional[float] = None,
+    terminal_type: Literal[
+        "180",
+        "TO_END_POST",
+        "TO_WALL",
+        "TO_FLOOR",
+        "TO_END_POST_AND_FLOOR",
+    ] = "180",
+    height: Optional[float] = None,
+    looped_path: bool = False,
+    unit_scale: Optional[float] = None,
+) -> ifcopenshell.entity_instance:
     """
-    units in usecase_settings expected to be in ifc project units
+    Units are expected to be in IFC project units.
 
-    `railing_path` is a list of point coordinates for the railing path,
-    coordinates are expected to be at the top of the railing, not at the center
+    :param context: IfcGeometricRepresentationContext for the representation.
+    :type context: ifcopenshell.entity_instance
+    :param railing_type: Type of the railing. Defaults to "WALL_MOUNTED_HANDRAIL".
+    :type railing_type: Literal["WALL_MOUNTED_HANDRAIL"], optional
+    :param railing_path: A list of points coordinates for the railing path,
+        coordinates are expected to be at the top of the railing, not at the center.
+        If not provided, default path [(0, 0, 1), (1, 0, 1), (2, 0, 1)] (in meters) will be used
+    :type railing_path: list[Vector], optional.
+    :param use_manual_supports: If enabled, supports are added on every vertex on the edges of the railing path.
+        If disabled, supports are added automatically based on the support spacing. Default to False.
+    :type use_manual_supports: bool, optional
+    :param support_spacing: Distance between supports if automatic supports are used. Defaults to 1m.
+    :type support_spacing: float, optional
+    :param railing_diameter: Railing diameter. Defaults to 50mm.
+    :type railing_diameter: float, optional
+    :param clear_width: Clear width between the railing and the wall. Defaults to 40mm.
+    :type clear_width: float, optional
+    :param terminal_type: type of the cap. Defaults to "180".
+    :type terminal_type: Literal["180","TO_END_POST","TO_WALL","TO_FLOOR","TO_END_POST_AND_FLOOR"], optional
+    :param height: defaults to 1m
+    :type height: float, optional
+    :param looped_path: Whether to end the railing on the first point of `railing_path`. Defaults to False.
+    :type looped_path: bool, optional
+    :param unit_scale: The unit scale as calculated by
+        ifcopenshell.util.unit.calculate_unit_scale. If not provided, it
+        will be automatically calculated for you.
+    :type unit_scale: float, optional
+    :return: IfcShapeRepresentation for a railing.
+    :rtype: ifcopenshell.entity_instance
 
-    `railing_path` is expected to be a list of Vector objects
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"unit_scale": ifcopenshell.util.unit.calculate_unit_scale(usecase.file)}
-    usecase.settings.update(
+    # define unit_scale first as it's going to be used setting default arguments
+    settings: dict[str, Any] = {
+        "unit_scale": ifcopenshell.util.unit.calculate_unit_scale(file) if unit_scale is None else unit_scale,
+    }
+    settings.update(
         {
-            "context": None,  # IfcGeometricRepresentationContext
-            "railing_type": "WALL_MOUNTED_HANDRAIL",
-            "railing_path": usecase.path_si_to_units([V(0, 0, 1), V(1, 0, 1), V(2, 0, 1)]),
-            "use_manual_supports": False,
-            "support_spacing": usecase.convert_si_to_unit(mm(1000)),
-            "railing_diameter": usecase.convert_si_to_unit(mm(50)),
-            "clear_width": usecase.convert_si_to_unit(mm(40)),
-            "terminal_type": "180",
-            "height": usecase.convert_si_to_unit(mm(1000)),
-            "looped_path": False,
+            "context": context,
+            "railing_type": railing_path,
+            "railing_path": (
+                railing_path
+                if railing_path is not None
+                else usecase.path_si_to_units([V(0, 0, 1), V(1, 0, 1), V(2, 0, 1)])
+            ),
+            "use_manual_supports": use_manual_supports,
+            "support_spacing": support_spacing if support_spacing is not None else usecase.convert_si_to_unit(mm(1000)),
+            "railing_diameter": (
+                railing_diameter if railing_diameter is not None else usecase.convert_si_to_unit(mm(50))
+            ),
+            "clear_width": clear_width if clear_width is not None else usecase.convert_si_to_unit(mm(40)),
+            "terminal_type": terminal_type,
+            "height": height if height is not None else usecase.convert_si_to_unit(mm(1000)),
+            "looped_path": looped_path,
         }
     )
+    usecase.settings = settings
 
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
-
-    if usecase.settings["railing_type"] != "WALL_MOUNTED_HANDRAIL":
+    if railing_type != "WALL_MOUNTED_HANDRAIL":
         raise Exception('Only "WALL_MOUNTED_HANDRAIL" railing_type is supported at the moment.')
     return usecase.execute()
 

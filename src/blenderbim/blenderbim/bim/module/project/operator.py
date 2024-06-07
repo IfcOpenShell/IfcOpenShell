@@ -21,6 +21,7 @@ import bpy
 import time
 import logging
 import tempfile
+import traceback
 import subprocess
 import numpy as np
 import ifcopenshell
@@ -35,6 +36,7 @@ import blenderbim.tool as tool
 import blenderbim.core.project as core
 import blenderbim.core.context
 import blenderbim.core.owner
+import blenderbim.core.spatial
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
@@ -121,6 +123,7 @@ class CreateProject(bpy.types.Operator):
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
         core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
+        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -674,19 +677,23 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             return self.finish_loading_project(context)
 
     def finish_loading_project(self, context):
-        if not self.is_existing_ifc_file():
-            return {"FINISHED"}
+        try:
+            if not self.is_existing_ifc_file():
+                return {"FINISHED"}
 
-        if tool.Blender.is_default_scene():
-            for obj in bpy.data.objects:
-                bpy.data.objects.remove(obj)
+            if tool.Blender.is_default_scene():
+                for obj in bpy.data.objects:
+                    bpy.data.objects.remove(obj)
 
-        context.scene.BIMProperties.ifc_file = self.get_filepath()
-        context.scene.BIMProjectProperties.is_loading = True
-        context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
-        tool.Blender.register_toolbar()
-        if not self.is_advanced:
-            bpy.ops.bim.load_project_elements()
+            context.scene.BIMProperties.ifc_file = self.get_filepath()
+            context.scene.BIMProjectProperties.is_loading = True
+            context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
+            tool.Blender.register_toolbar()
+            if not self.is_advanced:
+                bpy.ops.bim.load_project_elements()
+        except:
+            blenderbim.last_error = traceback.format_exc()
+            raise
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -1101,8 +1108,8 @@ class ToggleLinkVisibility(bpy.types.Operator):
         ]
 
 
-class ExportIFC(bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
+class ExportIFCBase:
+    bl_idname = "bim.save_project"
     bl_label = "Save IFC"
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
@@ -1219,14 +1226,20 @@ class ExportIFC(bpy.types.Operator):
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
-class ImportIFC(bpy.types.Operator):
-    bl_idname = "import_ifc.bim"
-    bl_label = "Import IFC"
-    bl_options = {"REGISTER", "UNDO"}
+class ExportIFC(ExportIFCBase, bpy.types.Operator):
+    pass
+
+
+# TODO: remove as deprecated, better wait couple releases since
+# this operator is used for saving IFC files in user scripts.
+class ExportIFCDeprecated(ExportIFCBase, bpy.types.Operator):
+    bl_idname = "export_ifc.bim"
 
     def execute(self, context):
-        bpy.ops.bim.load_project("INVOKE_DEFAULT")
-        return {"FINISHED"}
+        msg = f"'{ExportIFCDeprecated.bl_idname}' operator name is deprecated, use '{ExportIFC.bl_idname}'."
+        self.report({"WARNING"}, msg)
+        print(msg)
+        return super().execute(context)
 
 
 class LoadLinkedProject(bpy.types.Operator):
@@ -2074,3 +2087,46 @@ class BIM_OT_load_clipping_planes(bpy.types.Operator):
             obj.location = values["location"]
             obj.rotation_euler = values["rotation"]
         return {"FINISHED"}
+
+
+if bpy.app.version >= (4, 1, 0):
+
+    class IFCFileHandlerOperator(bpy.types.Operator):
+        bl_idname = "bim.load_project_file_handler"
+        bl_label = "Import .ifc file"
+        bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+        directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+        files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
+
+        def invoke(self, context, event):
+            # Keeping code in .invoke() as we'll probably add some
+            # popup windows later.
+
+            # `files` contain only .ifc files.
+            filepath = Path(self.directory)
+            # If user is just drag'n'dropping a single file -> load it as a new project,
+            # if they're holding ALT -> link the file/files to the current project.
+            if event.alt:
+                # Passing self.files directly results in TypeError.
+                serialized_files = [{"name": f.name} for f in self.files]
+                return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
+            else:
+                if len(self.files) == 1:
+                    return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
+                else:
+                    self.report(
+                        {"INFO"},
+                        "To link multiple IFC files hold ALT while drag'n'dropping them.",
+                    )
+                    return {"FINISHED"}
+
+    class BIM_FH_import_ifc(bpy.types.FileHandler):
+        bl_label = "IFC File Handler"
+        bl_import_operator = IFCFileHandlerOperator.bl_idname
+        bl_file_extensions = ".ifc"
+
+        # FileHandler won't work without poll_drop defined.
+        @classmethod
+        def poll_drop(cls, context):
+            return True

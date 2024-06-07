@@ -16,9 +16,29 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
+import numpy as np
+import numpy.typing as npt
+import ifcopenshell
+from typing import Literal, Optional, Union
+
 
 class Patcher:
-    def __init__(self, src, file, logger, mode="geometry", a=None, b=None, c=None, d=None):
+    def __init__(
+        self,
+        src: str,
+        file: ifcopenshell.file,
+        logger: logging.Logger,
+        mode: Literal[
+            "geometry",
+            "placement",
+            "both",
+        ] = "geometry",
+        a: Optional[float] = None,
+        b: Optional[float] = None,
+        c: Optional[float] = None,
+        d: Optional[float] = None,
+    ):
         """Reset any large coordinates to smaller coordinates based on a threshold
 
         If you find large coordinates in your model, the large coordinates may
@@ -151,7 +171,7 @@ class Patcher:
                 point.Coordinates[2] + offset_point[2],
             )
 
-    def is_point_far_away(self, point):
+    def is_point_far_away(self, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]]) -> bool:
         if hasattr(point, "Coordinates"):
             return (
                 abs(point.Coordinates[0]) > self.threshold

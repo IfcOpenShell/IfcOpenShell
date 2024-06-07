@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
-from typing import Any, Optional
+from typing import Any
 
 
 def edit_reference(
     file: ifcopenshell.file,
     reference: ifcopenshell.entity_instance,
-    attributes: Optional[dict[str, Any]] = None,
+    attributes: dict[str, Any],
 ) -> None:
     """Edits the attributes of an IfcDocumentReference
 
@@ -32,7 +32,7 @@ def edit_reference(
     :param reference: The IfcDocumentReference entity you want to edit
     :type reference: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 
@@ -49,7 +49,7 @@ def edit_reference(
         ifcopenshell.api.run("document.edit_reference", model,
             reference=reference, attributes={"Identification": "2.1.15"})
     """
-    settings = {"reference": reference, "attributes": attributes or {}}
+    settings = {"reference": reference, "attributes": attributes}
 
     for name, value in settings["attributes"].items():
         setattr(settings["reference"], name, value)

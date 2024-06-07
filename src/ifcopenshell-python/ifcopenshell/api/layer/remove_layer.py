@@ -15,9 +15,10 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-def remove_layer(file, layer=None) -> None:
+def remove_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance) -> None:
     """Removes a layer
 
     All representation items assigned to the layer will remain, but the
@@ -32,9 +33,7 @@ def remove_layer(file, layer=None) -> None:
 
     .. code:: python
 
-        layer = ifcopenshell.api.run("layer.add_layer", model, Name="AI-WALL")
+        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
         ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
     """
-    settings = {"layer": layer}
-
-    file.remove(settings["layer"])
+    file.remove(layer)

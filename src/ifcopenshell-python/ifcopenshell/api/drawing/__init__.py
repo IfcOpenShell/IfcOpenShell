@@ -28,3 +28,9 @@ from .edit_text_literal import edit_text_literal
 from .unassign_product import unassign_product
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_product",
+    "edit_text_literal",
+    "unassign_product",
+]

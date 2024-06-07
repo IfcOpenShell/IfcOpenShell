@@ -28,3 +28,8 @@ from .assign_object import assign_object
 from .unassign_object import unassign_object
 
 wrap_usecases(__path__, __name__)
+
+__all__ = [
+    "assign_object",
+    "unassign_object",
+]

@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.system
+import blenderbim.bim.helper
+import blenderbim.core.geometry
+import blenderbim.core.root
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from blenderbim.bim import import_ifc

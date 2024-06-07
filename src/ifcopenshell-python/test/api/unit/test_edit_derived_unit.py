@@ -31,3 +31,7 @@ class TestEditDerivedUnit(test.bootstrap.IFC4):
         )
         assert unit.UnitType == "USERDEFINED"
         assert unit.UserDefinedType == "UserDefinedType"
+
+
+class TestEditDerivedUnitIFC2X3(test.bootstrap.IFC2X3, TestEditDerivedUnit):
+    pass

@@ -20,12 +20,12 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-def assign_representation(file, **usecase_settings) -> None:
+def assign_representation(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+) -> None:
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"product": None, "representation": None}
-    for key, value in usecase_settings.items():
-        usecase.settings[key] = value
+    usecase.settings = {"product": product, "representation": representation}
     return usecase.execute()
 
 

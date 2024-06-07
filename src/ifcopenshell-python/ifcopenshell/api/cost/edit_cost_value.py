@@ -19,9 +19,12 @@
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+from typing import Any
 
 
-def edit_cost_value(file, cost_value=None, attributes=None) -> None:
+def edit_cost_value(
+    file: ifcopenshell.file, cost_value: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcCostValue
 
     For more information about the attributes and data types of an
@@ -30,7 +33,7 @@ def edit_cost_value(file, cost_value=None, attributes=None) -> None:
     :param cost_value: The IfcCostValue entity you want to edit
     :type cost_value: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
+    :type attributes: dict
     :return: None
     :rtype: None
 

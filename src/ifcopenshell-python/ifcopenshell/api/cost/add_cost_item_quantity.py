@@ -17,9 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+import ifcopenshell.util.unit
 
 
-def add_cost_item_quantity(file, cost_item=None, ifc_class="IfcQuantityCount") -> None:
+def add_cost_item_quantity(
+    file: ifcopenshell.file,
+    cost_item: ifcopenshell.entity_instance,
+    ifc_class: ifcopenshell.util.unit.QUANTITY_CLASS = "IfcQuantityCount",
+) -> ifcopenshell.entity_instance:
     """Adds a new quantity associated with a cost item
 
     Cost items calculate their subtotal by multiplying the sum of the cost
@@ -64,7 +69,7 @@ def add_cost_item_quantity(file, cost_item=None, ifc_class="IfcQuantityCount") -
         schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
         item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
         ifcopenshell.api.run("control.assign_control", model,
-            relating_control=cost_item, related_object=chair)
+            relating_control=item, related_object=chair)
 
         # Let's assume we want to count the amount of chairs to calculate our cost item
         # Because this is an IfcQuantityCount the count will be automatically set to "1" chair
@@ -74,14 +79,16 @@ def add_cost_item_quantity(file, cost_item=None, ifc_class="IfcQuantityCount") -
     settings = {"cost_item": cost_item, "ifc_class": ifc_class}
 
     quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
-    quantity[3] = 0.0
+    # 3 IfcPhysicalSimpleQuantity Value
     # This is a bold assumption
     # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-    if settings["ifc_class"] == "IfcQuantityCount" and settings["cost_item"].Controls:
+    if settings["ifc_class"] == "IfcQuantityCount":
         count = 0
         for rel in settings["cost_item"].Controls:
             count += len(rel.RelatedObjects)
         quantity[3] = count
+    else:
+        quantity[3] = 0.0
     quantities = list(settings["cost_item"].CostQuantities or [])
     quantities.append(quantity)
     settings["cost_item"].CostQuantities = quantities

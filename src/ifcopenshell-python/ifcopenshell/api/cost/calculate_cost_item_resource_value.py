@@ -21,7 +21,7 @@ import ifcopenshell.util.date
 import ifcopenshell.util.resource
 
 
-def calculate_cost_item_resource_value(file, cost_item=None) -> None:
+def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> None:
     """Calculates the total cost of all resources associated with a cost item
 
     A cost item may have construction resources (e.g. equipment, material,

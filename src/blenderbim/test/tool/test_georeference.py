@@ -19,6 +19,7 @@
 import bpy
 import math
 import ifcopenshell
+import ifcopenshell.api
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from mathutils import Vector

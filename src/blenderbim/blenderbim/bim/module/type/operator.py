@@ -22,6 +22,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import ifcopenshell.util.representation
 import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.geometry
@@ -454,7 +455,6 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
                 predefined_type=predefined_type,
                 ifc_class="IfcStairFlightType",
                 should_add_representation=False,
-                context=body,
             )
             tool.Blender.select_and_activate_single_object(context, obj)
             bpy.ops.bim.add_stair()
@@ -512,10 +512,7 @@ class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         element = tool.Ifc.get().by_id(self.element)
         obj = tool.Ifc.get_object(element)
-        ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
-        if obj:
-            tool.Ifc.unlink(obj=obj)
-            bpy.data.objects.remove(obj)
+        tool.Geometry.delete_ifc_object(obj)
 
 
 class RenameType(bpy.types.Operator, tool.Ifc.Operator):

@@ -19,7 +19,7 @@
 import ifcopenshell.api
 
 
-def remove_organisation(file, organisation=None) -> None:
+def remove_organisation(file: ifcopenshell.file, organisation: ifcopenshell.entity_instance) -> None:
     """Remove an organisation
 
     All roles and addresses assigned to the organisation will also be

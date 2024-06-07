@@ -79,13 +79,7 @@ def draw_enumerated_property(prop, layout, copy_operator=None):
 
 
 def get_active_pset_obj_name(context, obj_type):
-    if obj_type == "Object":
-        return context.active_object.name
-    elif obj_type == "Material":
-        return context.active_object.active_material.name
-    elif obj_type == "MaterialSet":
-        return context.active_object.name
-    elif obj_type == "MaterialSetItem":
+    if obj_type in ("Object", "Material", "MaterialSet", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
@@ -101,6 +95,7 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
     if props.active_pset_id == pset_id:
         row.prop(props, "active_pset_name", icon="COPY_ID", text="")
         op = row.operator("bim.edit_pset", icon="CHECKMARK", text="")
+        op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
         op = row.operator("bim.disable_pset_editing", icon="CANCEL", text="")
@@ -108,8 +103,6 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
         op.obj_type = obj_type
     elif not props.active_pset_id:
         row.label(text=pset["Name"], icon="COPY_ID")
-        if "Qto" in pset["Name"] and "Base" in pset["Name"]:
-            op = row.operator("bim.calculate_all_quantities", icon="MOD_EDGESPLIT", text="")
         op = row.operator("bim.enable_pset_editing", icon="GREASEPENCIL", text="")
         op.pset_id = pset_id
         op.obj = obj_name
@@ -132,6 +125,16 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
         if props.active_pset_id == pset_id:
             for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
+
+            if not props.active_pset_has_template:
+                row = box.row(align=True)
+                row.prop(props, "prop_name", text="")
+                row.prop(props, "prop_value", text="")
+                op = row.operator("bim.add_proposed_prop", text="", icon="ADD")
+                op.obj = obj_name
+                op.obj_type = obj_type
+                op.prop_name = props.prop_name
+                op.prop_value = props.prop_value
         else:
             has_props_displayed = False
             for prop in pset["Properties"]:
@@ -143,7 +146,9 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                row.label(text=str(prop["NominalValue"]))
+                op = row.operator("bim.select_similar", text=str(prop["NominalValue"]), icon="NONE", emboss=False)
+                op.key = pset['Name']
+
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
@@ -153,25 +158,6 @@ def draw_psetqto_ui(context, pset_id, pset, props, layout, obj_type, allow_remov
 def draw_psetqto_editable_ui(box, props, prop):
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
-    if prop.metadata.has_calculator:
-        op = row.operator("bim.calculate_quantity", icon="MOD_EDGESPLIT", text="")
-        op.prop = prop.name
-    # Old "guess quantity" feature to be removed once new calculator is comprehensive
-    if (
-        "length" in prop.name.lower()
-        or "width" in prop.name.lower()
-        or "height" in prop.name.lower()
-        or "depth" in prop.name.lower()
-        or "perimeter" in prop.name.lower()
-    ):
-        op = row.operator("bim.guess_quantity", icon="IPO_EASE_IN_OUT", text="")
-        op.prop = prop.name
-    elif "area" in prop.name.lower():
-        op = row.operator("bim.guess_quantity", icon="MESH_CIRCLE", text="")
-        op.prop = prop.name
-    elif "volume" in prop.name.lower():
-        op = row.operator("bim.guess_quantity", icon="SPHERE", text="")
-        op.prop = prop.name
 
 
 class BIM_PT_object_psets(Panel):
@@ -273,36 +259,36 @@ class BIM_PT_material_psets(Panel):
     bl_idname = "BIM_PT_material_psets"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
-    bl_context = "material"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_materials"
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not context.active_object.active_material:
-            return False
-        props = context.active_object.active_material.BIMObjectProperties
-        if not props.ifc_definition_id:
-            return False
-        file = IfcStore.get_file()
-        if not file or file.schema == "IFC2X3":
+        ifc_file = tool.Ifc.get()
+        if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
-        return True
+        props = context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index]
+            if material.ifc_definition_id:
+                return True
+        return False
 
     def draw(self, context):
+        props = context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
+
         if not MaterialPsetsData.is_loaded:
             MaterialPsetsData.load()
-        elif (
-            context.active_object.active_material.BIMObjectProperties.ifc_definition_id
-            != MaterialPsetsData.data["ifc_definition_id"]
-        ):
+        elif ifc_definition_id != MaterialPsetsData.data["ifc_definition_id"]:
             MaterialPsetsData.load()
 
-        props = context.active_object.active_material.PsetProperties
+        props = context.scene.MaterialPsetProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.active_material.name
+        op.obj = ""
         op.obj_type = "Material"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":

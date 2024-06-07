@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from typing import Union

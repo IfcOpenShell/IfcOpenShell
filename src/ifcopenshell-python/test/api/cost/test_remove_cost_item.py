@@ -45,3 +45,7 @@ class TestRemoveCostItem(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcCostItem")
         assert not self.file.by_type("IfcRelAssignsToControl")
         assert not self.file.by_type("IfcRelNests")
+
+
+class TestRemoveCostItemIFC2X3(test.bootstrap.IFC2X3, TestRemoveCostItem):
+    pass
