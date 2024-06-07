@@ -40,7 +40,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import Union, Iterable
+from typing import Union, Iterable, Optional
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -982,3 +982,11 @@ class Geometry(blenderbim.core.tool.Geometry):
     def delete_opening_object_placement(cls, placement):
         model = tool.Ifc.get()
         ifcopenshell.util.element.remove_deep2(model, placement)
+
+    @classmethod
+    def get_blender_offset_type(cls, obj: bpy.types.Object) -> Optional[str]:
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            if (result := obj.BIMObjectProperties.blender_offset_type) == "NONE":
+                result = obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            return result

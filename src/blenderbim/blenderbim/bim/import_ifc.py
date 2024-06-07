@@ -748,6 +748,7 @@ class IfcImporter:
                 # positionally significant and is left alone. This handles
                 # scenarios where often spatial elements are left at 0,0,0 and
                 # everything else is at map coordinates.
+                obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
                 return mathutils.Matrix(matrix.tolist())
             elif obj.data and obj.data.get("has_cartesian_point_offset", None):
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
