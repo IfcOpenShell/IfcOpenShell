@@ -787,9 +787,7 @@ class Usecase:
                     [uv + 1 for uv in polygon.loop_indices]
                 )
 
-        coordinates = self.file.createIfcCartesianPointList3D(
-            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
-        )
+        coordinates = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices)
 
         if self.settings["should_generate_uvs"]:
             # Blender supports multiple UV layers. We don't. Too bad.
@@ -824,9 +822,7 @@ class Usecase:
             ifc_raw_items[polygon.material_index % self.settings["total_items"]].append(
                 self.file.createIfcIndexedPolygonalFace([v + 1 for v in polygon.vertices])
             )
-        coordinates = self.file.createIfcCartesianPointList3D(
-            [self.convert_si_to_unit(v.co) for v in self.settings["geometry"].vertices]
-        )
+        coordinates = self.create_cartesian_point_list_from_vertices(self.settings["geometry"].vertices)
         items = [self.file.createIfcPolygonalFaceSet(coordinates, self.is_manifold, i) for i in ifc_raw_items if i]
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
@@ -848,7 +844,12 @@ class Usecase:
             ]
         )
 
-    def create_cartesian_point(self, x, y, z=None):
+    def create_cartesian_point(self, x, y, z=None, is_model_coords=True):
+        if is_model_coords and self.settings["coordinate_offset"]:
+            x += self.settings["coordinate_offset"][0]
+            y += self.settings["coordinate_offset"][1]
+            if z:
+                z += self.settings["coordinate_offset"][2]
         x = self.convert_si_to_unit(x)
         y = self.convert_si_to_unit(y)
         if z is None:
@@ -856,14 +857,18 @@ class Usecase:
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
 
-    def create_cartesian_point_list_from_vertices(self, vertices: list[bpy.types.MeshVertex], is_2d=False):
+    def create_cartesian_point_list_from_vertices(self, vertices: list[bpy.types.MeshVertex], is_2d=False, is_model_coords=True):
+        if is_model_coords and self.settings["coordinate_offset"]:
+            if is_2d:
+                xy_offset = Vector((self.settings["coordinate_offset"][0:2]))
+                return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy + xy_offset) for v in vertices])
+            xyz_offset = Vector((self.settings["coordinate_offset"][0:3]))
+            return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co.xyz + xyz_offset) for v in vertices])
         if is_2d:
             return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
         return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
 
     def convert_si_to_unit(self, co):
-        if self.settings["coordinate_offset"]:
-            return (co / self.settings["unit_scale"]) + self.settings["coordinate_offset"]
         return co / self.settings["unit_scale"]
 
     def create_annotation2d_representation(self):
