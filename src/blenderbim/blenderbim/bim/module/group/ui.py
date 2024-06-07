@@ -131,7 +131,7 @@ class BIM_UL_groups(UIList):
             else:
                 row.label(text="", icon="BLANK1")
 
-            row.label(text=f"*{item.name}") if item.selection_query != "" else row.label(text=item.name)
+            row.label(text=item.name)
             group_id = item.ifc_definition_id
             if context.scene.BIMGroupProperties.active_group_id == group_id:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
@@ -145,10 +145,6 @@ class BIM_UL_groups(UIList):
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
-                if item.selection_query != "":
-                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
-                    op.group_id = item.ifc_definition_id
-                    op.query = item.selection_query
             else:
                 op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
                 op.group = group_id
@@ -158,10 +154,6 @@ class BIM_UL_groups(UIList):
                 op.group = group_id
                 op = row.operator("bim.remove_group", text="", icon="X")
                 op.group = group_id
-                if item.selection_query != "":
-                    op = row.operator("bim.update_group", text="", icon="FILE_REFRESH")
-                    op.group_id = item.ifc_definition_id
-                    op.query = item.selection_query
 
 
 class BIM_UL_object_groups(UIList):

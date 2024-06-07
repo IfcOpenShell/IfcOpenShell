@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 import bpy
 import json
 import ifcopenshell
@@ -24,10 +23,8 @@ import ifcopenshell.api
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
-from ifcopenshell.util.selector import Selector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.group import ui
 import blenderbim.core.search as core
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator

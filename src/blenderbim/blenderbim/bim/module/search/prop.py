@@ -19,12 +19,9 @@
 import bpy
 import blenderbim.tool as tool
 from ifcopenshell import util
-from ifcopenshell.util.selector import Selector
-from blenderbim.bim.prop import ObjProperty, StrProperty, BIMFilterGroup
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.prop import ObjProperty, BIMFilterGroup
 from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
-from blenderbim.tool.ifc import Ifc
 from . import ui, prop, operator
 from bpy.props import (
     PointerProperty,
