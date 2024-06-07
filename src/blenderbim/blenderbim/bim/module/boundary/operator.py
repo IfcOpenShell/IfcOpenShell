@@ -692,7 +692,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         tree = ifcopenshell.geom.tree()
         shapes = {}
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.STRICT_TOLERANCE, True)
         settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
         iterator = ifcopenshell.geom.iterator(settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=include)
         if iterator.initialize():
@@ -831,7 +830,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
                         # Create shape of opening as a dissolved BMesh
                         settings = ifcopenshell.geom.settings()
-                        settings.set(settings.STRICT_TOLERANCE, True)
                         shape = ifcopenshell.geom.create_shape(settings, opening)
                         m = shape.transformation.matrix
                         mat = Matrix(
@@ -1033,7 +1031,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         settings = ifcopenshell.geom.settings()
         if not element.is_a("IfcOpeningElement"):
             settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
-        settings.set(settings.STRICT_TOLERANCE, True)
         # geometry = ifcopenshell.geom.create_shape(settings, body)
         shape = ifcopenshell.geom.create_shape(settings, element)
         m = shape.transformation.matrix

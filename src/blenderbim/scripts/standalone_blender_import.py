@@ -18,10 +18,8 @@ class BlenderImporter:
         self.settings = ifcopenshell.geom.settings()
         self.settings.set_deflection_tolerance(self.deflection_tolerance)
         self.settings.set_angular_tolerance(self.angular_tolerance)
-        self.settings.set(self.settings.STRICT_TOLERANCE, True)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
-        self.settings_2d.set(self.settings.STRICT_TOLERANCE, True)
 
         self.process_element_filter()
         self.process_context_filter()
@@ -116,7 +114,6 @@ class BlenderImporter:
 
     def get_cache(self):
         cache_settings = ifcopenshell.geom.settings()
-        cache_settings.set(cache_settings.STRICT_TOLERANCE, True)
         try:
             return ifcopenshell.geom.serializers.hdf5(self.cache_path, cache_settings)
         except:

@@ -214,7 +214,6 @@ class IfcDiff:
 
     def get_settings(self, ifc):
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.STRICT_TOLERANCE, True)
         # Are you feeling lucky?
         settings.set(settings.DISABLE_BOOLEAN_RESULT, True)
         # Are you feeling very lucky?

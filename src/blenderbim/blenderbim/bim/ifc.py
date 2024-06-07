@@ -100,7 +100,6 @@ class IfcStore:
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
             IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache", f"{ifc_hash}.h5")
             cache_settings = ifcopenshell.geom.settings()
-            cache_settings.set(cache_settings.STRICT_TOLERANCE, True)
             try:
                 IfcStore.cache = ifcopenshell.geom.serializers.hdf5(IfcStore.cache_path, cache_settings)
             except:
