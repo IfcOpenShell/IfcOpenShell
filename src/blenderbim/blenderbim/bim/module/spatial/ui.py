@@ -109,30 +109,34 @@ class BIM_PT_spatial_decomposition(Panel):
             SpatialDecompositionData.load()
         self.props = context.scene.BIMSpatialDecompositionProperties
 
-        if self.props.active_container:
+        if SpatialDecompositionData.data['default_container']:
             row = self.layout.row(align=True)
             row.label(
-                text=f"Active: {self.props.active_container.name}",
+                text=f"Default: {SpatialDecompositionData.data['default_container']}",
                 icon="OUTLINER_COLLECTION",
             )
             row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="Warning: No Default Container", icon="ERROR")
+            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
 
-            if self.props.active_container.ifc_class != "IfcProject":
-                row = self.layout.row(align=True)
-                row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text=f"Isolate {self.props.active_container.ifc_class}")
-                row.operator("bim.delete_container", icon="X", text="").container = (
-                    self.props.active_container.ifc_definition_id
-                )
-
+        if self.props.active_container:
+            ifc_definition_id = self.props.active_container.ifc_definition_id if self.props.active_container else 0
             row = self.layout.row(align=True)
             row.prop(self.props, "subelement_class", text="")
             op = row.operator("bim.add_part_to_object", icon="ADD", text="")
-            op.element = self.props.active_container.ifc_definition_id
+            op.element = ifc_definition_id
             op.part_class = self.props.subelement_class
-        else:
+
             row = self.layout.row(align=True)
-            row.label(text="Warning: No Active Container", icon="ERROR")
-            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
+            if self.props.active_container.ifc_class == "IfcProject":
+                row.enabled = False
+            op = row.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
+            op.container = ifc_definition_id
+            row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text=f"Isolate {self.props.active_container.ifc_class}")
+            op = row.operator("bim.delete_container", icon="X", text="")
+            op.container = ifc_definition_id
 
         self.layout.template_list(
             "BIM_UL_containers_manager",

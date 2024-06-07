@@ -238,3 +238,7 @@ def toggle_hide_spaces(ifc, spatial):
     if not spaces:
         return
     spatial.toggle_hide_spaces(spaces)
+
+
+def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance):
+    spatial.set_default_container(container)

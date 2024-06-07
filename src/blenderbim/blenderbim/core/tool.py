@@ -855,6 +855,7 @@ class Spatial:
     def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
+    def set_default_container(cls, container): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
     def is_bounding_class(cls, visible_element): pass
