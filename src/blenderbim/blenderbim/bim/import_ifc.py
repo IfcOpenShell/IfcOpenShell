@@ -302,7 +302,9 @@ class IfcImporter:
             self.setup_viewport_camera()
         self.setup_arrays()
         self.profile_code("Setup arrays")
-        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+        tool.Spatial.run_spatial_import_spatial_decomposition()
+        if default_container := tool.Spatial.guess_default_container():
+            tool.Spatial.set_default_container(default_container)
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 

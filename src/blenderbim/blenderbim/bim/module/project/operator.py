@@ -122,8 +122,7 @@ class CreateProject(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
-        core.create_project(tool.Ifc, tool.Project, schema=props.export_schema, template=template)
-        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+        core.create_project(tool.Ifc, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):

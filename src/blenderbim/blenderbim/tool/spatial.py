@@ -30,8 +30,8 @@ import blenderbim.tool as tool
 import json
 from math import pi
 from mathutils import Vector, Matrix
-from shapely import Polygon, MultiPolygon
-from typing import Generator
+from shapely import Polygon
+from typing import Generator, Optional
 
 
 class Spatial(blenderbim.core.tool.Spatial):
@@ -133,6 +133,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         return blenderbim.core.spatial.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
         )
+
+    @classmethod
+    def run_spatial_import_spatial_decomposition(cls):
+        return blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
 
     @classmethod
     def select_object(cls, obj):
@@ -445,7 +449,6 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_active_obj(cls, active_obj):
-        element = tool.Ifc.get_entity(active_obj)
         mat = active_obj.matrix_world
         local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
@@ -518,14 +521,13 @@ class Spatial(blenderbim.core.tool.Spatial):
         project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
         prefix = getattr(project_unit, "Prefix", None)
 
-        converted_tolerance = ifcopenshell.util.unit.convert(
+        return ifcopenshell.util.unit.convert(
             value=tolerance,
             from_prefix=None,
             from_unit="METRE",
             to_prefix=prefix,
             to_unit=project_unit.Name,
         )
-        return tolerance
 
     @classmethod
     def get_purged_inner_holes_poly(cls, union_geom, min_area):
@@ -830,3 +832,19 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_default_container(cls, container):
         bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
+
+    @classmethod
+    def guess_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
+        project = tool.Ifc.get().by_type("IfcProject")[0]
+        subelement = None
+        # We try to priorise the first Site > Building > Storey as a convention for vertical projects
+        for subelement in ifcopenshell.util.element.get_parts(project):
+            if subelement.is_a("IfcSite"):
+                for subelement2 in ifcopenshell.util.element.get_parts(subelement):
+                    if subelement2.is_a("IfcBuilding"):
+                        for subelement3 in ifcopenshell.util.element.get_parts(subelement2):
+                            if subelement3.is_a("IfcBuildingStorey"):
+                                return subelement3
+        if subelement:
+            return subelement
+        return None
