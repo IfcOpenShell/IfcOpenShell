@@ -374,14 +374,12 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
 
         gprop = context.scene.BIMGeoreferenceProperties
         coordinate_offset = None
-        if gprop.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
-            coordinate_offset = Vector(
-                (
-                    float(gprop.blender_eastings),
-                    float(gprop.blender_northings),
-                    float(gprop.blender_orthogonal_height),
-                )
-            )
+        if (
+            gprop.has_blender_offset
+            and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
+            and obj.BIMObjectProperties.cartesian_point_offset
+        ):
+            coordinate_offset = Vector(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(",")))
 
         representation_data = {
             "context": context_of_items,
@@ -948,7 +946,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
                 pset = tool.Ifc.get().by_id(pset["id"])
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0],pset=pset)
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0], pset=pset)
 
             if new[0].is_a("IfcElementAssembly"):
                 linked_aggregate_group = [
@@ -1176,7 +1174,10 @@ class DuplicateLinkedAggregateTo3dCursor(bpy.types.Operator):
         return OverrideDuplicateMove.execute_duplicate_operator(self, context, linked=False)
 
     def _execute(self, context):
-        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(self, context, location_from_3d_cursor=True)
+        return DuplicateMoveLinkedAggregate.execute_ifc_duplicate_linked_aggregate_operator(
+            self, context, location_from_3d_cursor=True
+        )
+
 
 class RefreshLinkedAggregate(bpy.types.Operator):
     bl_idname = "bim.refresh_linked_aggregate"
