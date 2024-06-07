@@ -108,6 +108,11 @@ if(HAS_MAX)
 			set_target_properties( IfcMax_${max_year} PROPERTIES VS_PLATFORM_TOOLSET v90)
 		endif()
 		
+		# fix 3ds Max 2020 SDK's "/permissive-" flag incompatibility / disables C++ language conformance mode
+		if( ${max_year} EQUAL 2020 )
+			set_source_files_properties( "IfcMax.cpp" PROPERTIES COMPILE_FLAGS "/permissive")
+		endif()
+		
 		# C++17 required for 3ds Max SDK 2025 and higher
 		if( ${max_year} GREATER_EQUAL 2025 )
 			set_target_properties(IfcMax_${max_year} PROPERTIES CXX_STANDARD 17)
@@ -115,9 +120,9 @@ if(HAS_MAX)
 		
         set_target_properties(IfcMax_${max_year} PROPERTIES SUFFIX ".dli")
 		
-		# clear VS2022 17.4 optimization related compiler flag that fails on pre v143 toolchain 
-		# set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Zc:nrvo-") 
+		
         install(TARGETS IfcMax_${max_year} RUNTIME DESTINATION ${BINDIR})
+		
     endforeach()
 	message(STATUS)
 else()
