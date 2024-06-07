@@ -20,32 +20,33 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, reference: ifcopenshell.entity_instance):
-        """Remove a document reference
+def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_instance) -> None:
+    """Remove a document reference
 
-        All associations with objects are removed.
+    All associations with objects are removed.
 
-        :param reference: The IfcDocumentReference to remove
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param reference: The IfcDocumentReference to remove
+    :type reference: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            document = ifcopenshell.api.run("document.add_information", model)
-            reference = ifcopenshell.api.run("document.add_reference", model, information=document)
-            ifcopenshell.api.run("document.remove_reference", model, reference=reference)
-        """
-        self.file = file
-        self.settings = {"reference": reference}
+        document = ifcopenshell.api.run("document.add_information", model)
+        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+        ifcopenshell.api.run("document.remove_reference", model, reference=reference)
+    """
 
-    def execute(self) -> None:
-        for rel in self.settings["reference"].DocumentRefForObjects or []:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        self.file.remove(self.settings["reference"])
+    if file.schema == "IFC2X3":
+        rels = [r for r in file.get_inverse(reference) if r.is_a("IfcRelAssociatesDocument")]
+    else:
+        rels = reference.DocumentRefForObjects
+
+    for rel in rels:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    file.remove(reference)

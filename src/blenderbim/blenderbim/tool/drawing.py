@@ -51,11 +51,14 @@ from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any
+from typing import Optional, Union, Iterable, Any, Literal
 from pathlib import Path
 
 
 class Drawing(blenderbim.core.tool.Drawing):
+    ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
+    DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
+
     @classmethod
     def canonicalise_class_name(cls, name):
         return re.sub("[^0-9a-zA-Z]+", "", name)
@@ -68,11 +71,11 @@ class Drawing(blenderbim.core.tool.Drawing):
             )
 
     @classmethod
-    def get_annotation_data_type(cls, object_type):
+    def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
         return ANNOTATION_TYPES_DATA[object_type][3]
 
     @classmethod
-    def create_annotation_object(cls, drawing, object_type):
+    def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
         data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
@@ -240,7 +243,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         )
 
     @classmethod
-    def create_svg_sheet(cls, document, titleblock):
+    def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")
@@ -251,16 +254,16 @@ class Drawing(blenderbim.core.tool.Drawing):
     def add_drawings(cls, sheet):
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
-        sheet_reference = None
+        drawing_references = {}
         drawing_names = []
         for reference in cls.get_document_references(sheet):
-            if reference.Description == "LAYOUT":
-                sheet_reference = reference
-            elif reference.Description == "DRAWING":
+            reference_description = cls.get_reference_description(reference)
+            if reference_description == "DRAWING":
+                drawing_references[Path(reference.Location).stem] = reference
                 drawing_names.append(Path(reference.Location).stem)
-        for annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
-            if annotation.Name in drawing_names:
-                sheet_builder.add_drawing(sheet_reference, annotation, sheet)
+        for drawing_annotation in [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]:
+            if drawing_annotation.Name in drawing_names:
+                sheet_builder.add_drawing(drawing_references[drawing_annotation.Name], drawing_annotation, sheet)
 
     @classmethod
     def delete_collection(cls, collection):
@@ -298,15 +301,15 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_sheets = False
 
     @classmethod
-    def disable_editing_text(cls, obj):
+    def disable_editing_text(cls, obj: bpy.types.Object) -> None:
         obj.BIMTextProperties.is_editing = False
 
     @classmethod
-    def disable_editing_assigned_product(cls, obj):
+    def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
         obj.BIMAssignedProductProperties.is_editing_product = False
 
     @classmethod
-    def enable_editing(cls, obj):
+    def enable_editing(cls, obj: bpy.types.Object) -> None:
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
@@ -330,11 +333,11 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.is_editing_sheets = True
 
     @classmethod
-    def enable_editing_text(cls, obj):
+    def enable_editing_text(cls, obj: bpy.types.Object) -> None:
         obj.BIMTextProperties.is_editing = True
 
     @classmethod
-    def enable_editing_assigned_product(cls, obj):
+    def enable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
         obj.BIMAssignedProductProperties.is_editing_product = True
 
     @classmethod
@@ -421,14 +424,14 @@ class Drawing(blenderbim.core.tool.Drawing):
             else:
                 references = document.HasDocumentReferences
             for reference in references:
-                if description and reference.Description != description:
+                if description and cls.get_reference_description(reference) != description:
                     continue
                 location = cls.get_document_uri(reference)
                 if location:
                     return location
 
     @classmethod
-    def get_path_filename(cls, path):
+    def get_path_filename(cls, path: str) -> str:
         return os.path.splitext(os.path.basename(path))[0]
 
     @classmethod
@@ -483,7 +486,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ""
 
     @classmethod
-    def get_name(cls, element):
+    def get_name(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
         return element.Name
 
     @classmethod
@@ -563,7 +566,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         ifcopenshell.util.element.remove_deep2(ifc_file, literal)
 
     @classmethod
-    def synchronise_ifc_and_text_attributes(cls, obj):
+    def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
         literals = cls.get_text_literal(obj, return_list=True)
         literals_attributes = cls.export_text_literal_attributes(obj)
         defined_ifc_ids = [l.ifc_definition_id for l in obj.BIMTextProperties.literals]
@@ -784,7 +787,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                 new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
     @classmethod
-    def import_documents(cls, document_type):
+    def import_documents(cls, document_type: DOCUMENT_TYPE) -> None:
         dprops = bpy.context.scene.DocProperties
         if document_type == "SCHEDULE":
             documents_collection = dprops.schedules
@@ -823,7 +826,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                 continue
 
             for reference in cls.get_document_references(sheet):
-                if reference.Description in ("SHEET", "LAYOUT", "RASTER"):
+                reference_description = cls.get_reference_description(reference)
+                if reference_description in ("SHEET", "LAYOUT", "RASTER"):
                     # These references are an internal detail and should not be visible to users
                     continue
                 new = props.sheets.add()
@@ -836,7 +840,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     new.identification = reference.Identification or ""
 
                 new.name = os.path.basename(reference.Location)
-                new.reference_type = reference.Description
+                new.reference_type = reference_description
 
     @classmethod
     def get_active_sheet(cls, context):
@@ -844,7 +848,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
 
     @classmethod
-    def import_text_attributes(cls, obj):
+    def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         props = obj.BIMTextProperties
         props.literals.clear()
 
@@ -862,7 +866,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         props.font_size = str(text_data["FontSize"])
 
     @classmethod
-    def import_assigned_product(cls, obj):
+    def import_assigned_product(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         product = cls.get_assigned_product(element)
         if product:
@@ -933,38 +937,16 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.context.scene.DocProperties.should_draw_decorations = True
 
     @classmethod
-    def update_text_value(cls, obj):
-        element = tool.Ifc.get_entity(obj)
-        if element.is_a("IfcTypeProduct"):
-            objs = [obj]
-            for occurrence in ifcopenshell.util.element.get_types(element):
-                obj = tool.Ifc.get_object(occurrence)
-                if obj:
-                    objs.append(obj)
-        else:
-            objs = []
-            element_type = ifcopenshell.util.element.get_type(element)
-            if element_type and element_type.RepresentationMaps:
-                obj = tool.Ifc.get_object(element_type)
-                if obj:
-                    objs.append(obj)
-                for occurrence in ifcopenshell.util.element.get_types(element_type):
-                    obj = tool.Ifc.get_object(occurrence)
-                    if obj:
-                        objs.append(obj)
-            else:
-                objs = [obj]
-
-        for obj in objs:
-            props = obj.BIMTextProperties
-            literals = cls.get_text_literal(obj, return_list=True)
-            cls.import_text_attributes(obj)
-            for i, literal in enumerate(literals):
-                product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
-                props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
+    def update_text_value(cls, obj: bpy.types.Object) -> None:
+        props = obj.BIMTextProperties
+        literals = cls.get_text_literal(obj, return_list=True)
+        cls.import_text_attributes(obj)
+        for i, literal in enumerate(literals):
+            product = cls.get_assigned_product(tool.Ifc.get_entity(obj)) or tool.Ifc.get_entity(obj)
+            props.literals[i].value = cls.replace_text_literal_variables(literal.Literal, product)
 
     @classmethod
-    def update_text_size_pset(cls, obj):
+    def update_text_size_pset(cls, obj: bpy.types.Object) -> None:
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
@@ -1543,7 +1525,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         tool.Geometry.record_object_position(obj)
 
     @classmethod
-    def get_document_references(cls, document):
+    def get_document_references(cls, document: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         if tool.Ifc.get_schema() == "IFC2X3":
             return document.DocumentReferences or []
         return document.HasDocumentReferences or []
@@ -1568,8 +1550,29 @@ class Drawing(blenderbim.core.tool.Drawing):
         tree.write(uri, pretty_print=True, xml_declaration=True, encoding="utf-8")
 
     @classmethod
-    def get_reference_description(cls, reference):
+    def get_reference_description(cls, reference: ifcopenshell.entity_instance) -> Union[str, None]:
+        if reference.file.schema == "IFC2X3":
+            return reference.Name
         return reference.Description
+
+    @classmethod
+    def generate_reference_attributes(
+        cls, reference: ifcopenshell.entity_instance, **attributes: Any
+    ) -> dict[str, Any]:
+        """will automatically convert attributes below for IFC2X3 compatibility:
+
+        - Identification -> ItemReference
+
+        - Description -> Name
+        """
+        if reference.file.schema == "IFC2X3":
+            if "Description" in attributes:
+                attributes["Name"] = attributes["Description"]
+                del attributes["Description"]
+            if "Identification" in attributes:
+                attributes["ItemReference"] = attributes["Identification"]
+                del attributes["Identification"]
+        return attributes
 
     @classmethod
     def get_reference_location(cls, reference):
@@ -1622,11 +1625,17 @@ class Drawing(blenderbim.core.tool.Drawing):
         return ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {}).get("HasAnnotation", False)
 
     @classmethod
-    def get_drawing_elements(cls, drawing: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    def get_drawing_elements(
+        cls, drawing: ifcopenshell.entity_instance, ifc_file: Optional[ifcopenshell.file] = None
+    ) -> set[ifcopenshell.entity_instance]:
         """returns a set of elements that are included in the drawing"""
-        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            ifc_file = tool.Ifc.get()
+            elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
+        else:
+            # This can probably be smarter
+            elements = set(ifc_file.by_type("IfcElement"))
         pset = ifcopenshell.util.element.get_psets(drawing).get("EPset_Drawing", {})
-        elements = cls.get_elements_in_camera_view(tool.Ifc.get_object(drawing), bpy.data.objects)
         include = pset.get("Include", None)
         if include:
             elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
@@ -1637,8 +1646,22 @@ class Drawing(blenderbim.core.tool.Drawing):
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
             elements = {e for e in (elements & base_elements) if e.is_a() != "IfcSpace"}
 
-        # exclude annotations to avoid including annotations from other drawings
-        elements = {i for i in elements if not i.is_a("IfcAnnotation")}
+        updated_set = set()
+
+        for i in elements:
+            # exclude annotations to avoid including annotations from other drawings
+            if not i.is_a("IfcAnnotation"):
+                updated_set.add(i)
+                # add aggregate too, if element is host by one
+                if i.Decomposes:
+                    aggregate = i.Decomposes[0].RelatingObject
+                    # remove IfcProject for class iterator. See https://github.com/IfcOpenShell/IfcOpenShell/issues/4361#issuecomment-2081223615
+                    if not aggregate.is_a("IfcProject"):
+                        updated_set.add(aggregate)
+
+        # After the iteration is complete, update elements with updated set
+        elements.update(updated_set)
+
         # add annotations from the current drawing
         annotations = tool.Drawing.get_group_elements(tool.Drawing.get_drawing_group(drawing))
         elements.update(annotations)
@@ -1681,7 +1704,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return reference.ReferencedDocument
 
     @classmethod
-    def select_assigned_product(cls, context):
+    def select_assigned_product(cls, context: bpy.types.Context) -> None:
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         product = cls.get_assigned_product(element)
@@ -1700,7 +1723,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         return True if (camera and camera.data.type == "ORTHO") else False
 
     @classmethod
-    def is_active_drawing(cls, drawing):
+    def is_active_drawing(cls, drawing: ifcopenshell.entity_instance) -> bool:
         return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
 
     @classmethod
@@ -1708,21 +1731,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         bpy.ops.bim.activate_model()
 
     @classmethod
-    def activate_drawing(cls, camera: bpy.types.Object) -> None:
-        area = tool.Blender.get_view3d_area()
-        is_local_view = area.spaces[0].local_view is not None
-        if is_local_view:
-            # turn off local view before activating drawing, and then turn it on again.
-            for a in bpy.context.screen.areas:
-                if a.type == "VIEW_3D":
-                    override = bpy.context.copy()
-                    override["area"] = a
-                    bpy.ops.view3d.localview(override)
-            bpy.context.scene.camera = camera
-            bpy.ops.view3d.localview(override)
-        else:
-            bpy.context.scene.camera = camera
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+    def isolate_camera_collection(cls, camera: bpy.types.Object) -> None:
         views_collection = bpy.data.collections.get("Views")
         for collection in views_collection.children:
             # We assume the project collection is at the top level
@@ -1740,8 +1749,11 @@ class Drawing(blenderbim.core.tool.Drawing):
                         camera.BIMObjectProperties.collection.name
                     ].hide_viewport = False
         camera.BIMObjectProperties.collection.hide_render = False
-        tool.Spatial.set_active_object(camera)
 
+    @classmethod
+    def activate_drawing(cls, camera: bpy.types.Object) -> None:
+        selected_objects_before = bpy.context.selected_objects
+        
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
@@ -1816,8 +1828,8 @@ class Drawing(blenderbim.core.tool.Drawing):
                     has_context = True
                     break
 
-            # Don't hide IfcAnnotations as some of them might exist without representations
-            if has_context or element.is_a("IfcAnnotation"):
+            # Don't hide IfcAnnotations or Aggregates as some of them might exist without representations
+            if has_context or element.is_a("IfcAnnotation") or element.IsDecomposedBy:
                 element_obj_names.add(obj.name)
 
         # Note that render visibility is only set on drawing generation time for speed.
@@ -1828,6 +1840,10 @@ class Drawing(blenderbim.core.tool.Drawing):
         ]
 
         cls.import_camera_props(drawing, camera)
+
+        for obj in selected_objects_before:
+            obj.hide_set(False) 
+            obj.select_set(True)
 
     @classmethod
     def get_elements_in_camera_view(

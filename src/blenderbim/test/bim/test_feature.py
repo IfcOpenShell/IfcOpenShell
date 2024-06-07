@@ -960,7 +960,7 @@ def run_test_code():
 def saving_sample_test_files(and_open_in_blender=None):
     filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
     blend_filepath = f"{filepath}.blend"
-    bpy.ops.export_ifc.bim(filepath=f"{filepath}.ifc", should_save_as=True)
+    bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 
 

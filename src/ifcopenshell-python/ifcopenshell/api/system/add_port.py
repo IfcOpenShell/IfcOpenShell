@@ -18,46 +18,44 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, element=None):
-        """Adds a new distribution port to an element
+def add_port(file: ifcopenshell.file, element: Optional[ifcopenshell.entity_instance] = None) -> None:
+    """Adds a new distribution port to an element
 
-        A distribution port represents a connection point on an element, where
-        a distribution element may be connected to another distribution element.
-        For example, a duct segment will typically have two ports, one at either
-        end, because you can attach another segment or fitting to either end of
-        the duct segment.
+    A distribution port represents a connection point on an element, where
+    a distribution element may be connected to another distribution element.
+    For example, a duct segment will typically have two ports, one at either
+    end, because you can attach another segment or fitting to either end of
+    the duct segment.
 
-        This will both add a distribution port and automatically assign it to a
-        distribution element.
+    This will both add a distribution port and automatically assign it to a
+    distribution element.
 
-        :param element: The IfcDistributionElement you want to add a
-            distribution port to.
-        :type element: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcDistributionPort
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param element: The IfcDistributionElement you want to add a
+        distribution port to.
+    :type element: ifcopenshell.entity_instance, optional
+    :return: The newly created IfcDistributionPort
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a duct
-            duct = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+        # Create a duct
+        duct = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
-            # Create 2 ports, one for either end.
-            port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-        """
-        self.file = file
-        self.settings = {
-            "element": element,
-        }
+        # Create 2 ports, one for either end.
+        port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+    """
+    settings = {
+        "element": element,
+    }
 
-    def execute(self):
-        port = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDistributionPort")
-        if self.settings["element"]:
-            ifcopenshell.api.run("system.assign_port", self.file, element=self.settings["element"], port=port)
-        return port
+    port = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcDistributionPort")
+    if settings["element"]:
+        ifcopenshell.api.run("system.assign_port", file, element=settings["element"], port=port)
+    return port

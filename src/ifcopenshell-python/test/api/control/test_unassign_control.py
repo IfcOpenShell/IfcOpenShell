@@ -41,3 +41,7 @@ class TestUnassignControl(test.bootstrap.IFC4):
         ifcopenshell.api.run("control.unassign_control", self.file, relating_control=control, related_object=wall1)
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatedObjects == (wall,)
+
+
+class TestUnassignControlIFC2X3(test.bootstrap.IFC2X3, TestUnassignControl):
+    pass

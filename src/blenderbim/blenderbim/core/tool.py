@@ -18,6 +18,7 @@
 
 import abc
 import inspect
+from typing import Optional
 
 # fmt: off
 # pylint: skip-file
@@ -72,20 +73,21 @@ class Aggregate:
 
 @interface
 class Blender:
-    def set_active_object(cls, obj): pass
-    def get_name(cls, ifc_class, name): pass
-    def get_selected_objects(cls): pass
-    def create_ifc_object(cls, ifc_class: str, name: str = None, data=None): pass
-    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
-    def is_ifc_object(cls, obj): pass
-    def is_ifc_class_active(cls, ifc_class): pass
-    def get_viewport_context(cls): pass
-    def update_viewport(cls): pass
-    def get_default_selection_keypmap(cls): pass
-    def get_object_bounding_box(cls, obj): pass
+    def activate_camera(cls, obj): pass
     def apply_bmesh(cls, mesh, bm, obj=None): pass
-    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
     def bmesh_join(cls, bm_a, bm_b, callback=None): pass
+    def create_ifc_object(cls, ifc_class: str, name: Optional[str] = None, data=None): pass
+    def get_bmesh_for_mesh(cls, mesh, clean=False): pass
+    def get_default_selection_keypmap(cls): pass
+    def get_name(cls, ifc_class, name): pass
+    def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
+    def get_object_bounding_box(cls, obj): pass
+    def get_selected_objects(cls): pass
+    def get_viewport_context(cls): pass
+    def is_ifc_class_active(cls, ifc_class): pass
+    def is_ifc_object(cls, obj): pass
+    def set_active_object(cls, obj): pass
+    def update_viewport(cls): pass
 
 
 @interface
@@ -329,6 +331,7 @@ class Drawing:
     def get_name(cls, element): pass
     def get_path_filename(cls, uri): pass
     def get_reference_description(cls, reference): pass
+    def generate_reference_attributes(cls, reference, **attributes): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
     def get_references_with_location(cls, location): pass
@@ -484,12 +487,12 @@ class Material:
     def disable_editing_materials(cls): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
-    def get_active_material_type(cls): pass
     def get_active_material(cls): pass
+    def get_active_material_type(cls): pass
     def get_active_object_material(cls, obj): pass
     def get_elements_by_material(cls, material): pass
-    def get_material_attributes(cls): pass
     def get_material(cls, element, should_inherit): pass
+    def get_material_attributes(cls): pass
     def get_name(cls, obj): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
@@ -500,6 +503,7 @@ class Material:
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
+    def sync_blender_material_name(cls, material): pass
 
 
 @interface
@@ -614,24 +618,28 @@ class Profile:
 
 @interface
 class Pset:
+    def add_proposed_property(cls, name, value, props): pass
+    def cast_string_to_primitive(cls, value: str): pass
+    def clear_blender_pset_properties(cls, props): pass
+    def enable_proposed_pset(cls, props, pset_name, pset_type, has_template): pass
     def get_element_pset(cls, element, pset_name): pass
-    def get_pset_name(cls, obj, obj_type): pass
+    def get_prop_template_primitive_type(cls, prop_template): pass
+    def get_pset_name(cls, obj, obj_type, pset_type): pass
+    def get_pset_template(cls, name): pass
+    def import_enumerated_value_from_template(cls, prop_template, data, props): pass
+    def import_pset_from_existing(cls, pset, props): pass
+    def import_pset_from_template(cls, pset_template, pset, props): pass
+    def import_single_value_from_template(cls, pset_template, prop_template, data, props): pass
     def is_pset_applicable(cls,element, pset_name): pass
+    def set_active_pset(cls, props, pset, has_template): pass
 
 
 @interface
 class Qto:
     def get_radius_of_selected_vertices(cls, obj): pass
-    def set_qto_result(cls, result): pass
-    def get_applicable_quantity_names(cls, qto_name): pass
-    def get_applicable_base_quantity_name(cls, product): pass
-    def get_rounded_value(cls, new_quantity): pass
-    def get_calculated_object_quantities(cls, calculator, baste_qto, object): pass
-    def add_object_base_qto(cls, object): pass
-    def add_product_base_qto(cls, product): pass
-    def get_new_calculated_quantity(cls, qto_name, quantity_name, object): pass
-    def get_new_guessed_quantity(cls, object, qto_name, quantity_name, ): pass
     def get_related_cost_item_quantities(cls, product): pass
+    def get_rounded_value(cls, new_quantity): pass
+    def set_qto_result(cls, result): pass
 
 
 @interface
@@ -681,12 +689,15 @@ class Root:
     def copy_representation(cls, source, dest): pass
     def does_type_have_representations(cls, element): pass
     def get_decomposition_relationships(cls, objs): pass
+    def get_default_container(cls): pass
     def get_element_representation(cls, element, context): pass
     def get_element_type(cls, element): pass
     def get_object_name(cls, obj): pass
     def get_object_representation(cls, obj): pass
     def get_representation_context(cls, representation): pass
+    def is_containable(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
+    def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
@@ -699,7 +710,7 @@ class Selector:
 
 @interface
 class Search:
-    def from_selector_query(cls, query): pass
+    pass
 
 @interface
 class Sequence:
@@ -823,7 +834,7 @@ class Spatial:
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
-    def create_new_storey_li(cls, element, level_index): pass
+    def import_spatial_element(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
@@ -840,13 +851,15 @@ class Spatial:
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
     def import_containers(cls, parent=None): pass
-    def load_container_manager(cls): pass
+    def import_spatial_decomposition(cls): pass
     def run_root_copy_class(cls, obj=None): pass
     def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
+    def set_default_container(cls, container): pass
     def show_scene_objects(cls): pass
     #HERE STARTS SPATIAL TOOL
     def is_bounding_class(cls, visible_element): pass
@@ -871,7 +884,8 @@ class Spatial:
     def get_transformed_mesh_from_local_to_global(cls, mesh): pass
     def edit_active_space_obj_from_mesh(cls, mesh): pass
     def set_obj_origin_to_bboxcenter(cls, obj): pass
-    def set_obj_origin_to_cursor_position(cls, obj): pass
+    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj): pass
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj): pass
     def get_selected_objects(cls): pass
     def get_active_obj(cls): pass
     def get_active_obj_z(cls): pass

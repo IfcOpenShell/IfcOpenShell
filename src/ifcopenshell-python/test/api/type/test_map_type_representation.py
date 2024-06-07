@@ -49,3 +49,7 @@ class TestMapTypeRepresentations(test.bootstrap.IFC4):
         assert rep.RepresentationType == "MappedRepresentation"
         assert rep.Items[0].MappingSource == type.RepresentationMaps[0]
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
+
+
+class TestMapTypeRepresentationsIFC2X3(test.bootstrap.IFC2X3, TestMapTypeRepresentations):
+    pass

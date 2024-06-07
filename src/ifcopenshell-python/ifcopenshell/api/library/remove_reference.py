@@ -20,34 +20,34 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, reference: ifcopenshell.entity_instance):
-        """Removes a library reference
+def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_instance) -> None:
+    """Removes a library reference
 
-        Any products which have relationships to this reference will not be
-        removed.
+    Any products which have relationships to this reference will not be
+    removed.
 
-        :param reference: The IfcLibraryReference entity you want to remove
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param reference: The IfcLibraryReference entity you want to remove
+    :type reference: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-            # Let's change our mind and remove it.
-            ifcopenshell.api.run("library.remove_reference", model, reference=reference)
-        """
-        self.file = file
-        self.settings = {"reference": reference}
+        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+        # Let's change our mind and remove it.
+        ifcopenshell.api.run("library.remove_reference", model, reference=reference)
+    """
+    if file.schema != "IFC2X3":
+        rels = reference.LibraryRefForObjects
+    else:
+        rels = [rel for rel in file.by_type("IfcRelAssociatesLibrary") if rel.RelatingLibrary == reference]
 
-    def execute(self) -> None:
-        for rel in self.settings["reference"].LibraryRefForObjects:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        self.file.remove(self.settings["reference"])
+    for rel in rels:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    file.remove(reference)

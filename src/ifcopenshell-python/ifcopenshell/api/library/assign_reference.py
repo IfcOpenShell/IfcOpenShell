@@ -18,86 +18,80 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union
 
 
-class Usecase:
-    def __init__(
-        self, file: ifcopenshell.file, products: ifcopenshell.entity_instance, reference: ifcopenshell.entity_instance
-    ):
-        """Associates a list products with a library reference
+def assign_reference(
+    file: ifcopenshell.file, products: ifcopenshell.entity_instance, reference: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Associates a list products with a library reference
 
-        A product may be associated with zero, one, or many references across
-        multiple libraries. See ifcopenshell.api.library.add_reference for more
-        detail about how references work.
+    A product may be associated with zero, one, or many references across
+    multiple libraries. See ifcopenshell.api.library.add_reference for more
+    detail about how references work.
 
-        :param products: The list of IfcProducts you want to associate with the reference
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :param reference: The IfcLibraryReference you want the product to be
-            associated with.
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :return: The IfcRelAssociatesLibrary relationship entity
-            or `None` if `products` was an empty list or all products were
-            already assigned to the `reference`.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+    :param products: The list of IfcProducts you want to associate with the reference
+    :type products: list[ifcopenshell.entity_instance]
+    :param reference: The IfcLibraryReference you want the product to be
+        associated with.
+    :type reference: ifcopenshell.entity_instance
+    :return: The IfcRelAssociatesLibrary relationship entity
+        or `None` if `products` was an empty list or all products were
+        already assigned to the `reference`.
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
 
-            # Let's create a reference to a single AHU in our Brickschema dataset
-            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-            ifcopenshell.api.run("library.edit_reference", model,
-                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+        # Let's create a reference to a single AHU in our Brickschema dataset
+        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+        ifcopenshell.api.run("library.edit_reference", model,
+            reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
 
-            # Let's assume we have an AHU in our model.
-            ahu = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
+        # Let's assume we have an AHU in our model.
+        ahu = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
-            # And now assign the IFC model's AHU with its Brickschema counterpart
-            ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "reference": reference,
-        }
+        # And now assign the IFC model's AHU with its Brickschema counterpart
+        ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
+    """
+    settings = {
+        "products": products,
+        "reference": reference,
+    }
 
-    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
-        # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
+    # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
 
-        referenced_elements = ifcopenshell.util.element.get_referenced_elements(self.settings["reference"])
-        products: set[ifcopenshell.entity_instance] = set(self.settings["products"])
-        products = products - referenced_elements
+    referenced_elements = ifcopenshell.util.element.get_referenced_elements(settings["reference"])
+    products: set[ifcopenshell.entity_instance] = set(settings["products"])
+    products = products - referenced_elements
 
-        if not products:
-            return
+    if not products:
+        return
 
-        if self.file.schema == "IFC2X3":
-            rel = next(
-                (
-                    r
-                    for r in self.file.by_type("IfcRelAssociatesLibrary")
-                    if r.RelatingLibrary == self.settings["reference"]
-                ),
-                None,
-            )
-        else:
-            rel = next(iter(self.settings["reference"].LibraryRefForObjects), None)
+    if file.schema == "IFC2X3":
+        rel = next(
+            (r for r in file.by_type("IfcRelAssociatesLibrary") if r.RelatingLibrary == settings["reference"]),
+            None,
+        )
+    else:
+        rel = next(iter(settings["reference"].LibraryRefForObjects), None)
 
-        if not rel:
-            return self.file.create_entity(
-                "IfcRelAssociatesLibrary",
-                GlobalId=ifcopenshell.guid.new(),
-                OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
-                RelatedObjects=list(products),
-                RelatingLibrary=self.settings["reference"],
-            )
+    if not rel:
+        return file.create_entity(
+            "IfcRelAssociatesLibrary",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", file),
+            RelatedObjects=list(products),
+            RelatingLibrary=settings["reference"],
+        )
 
-        related_objects = set(rel.RelatedObjects) | products
-        rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
-        return rel
+    related_objects = set(rel.RelatedObjects) | products
+    rel.RelatedObjects = list(related_objects)
+    ifcopenshell.api.run("owner.update_owner_history", file, element=rel)
+    return rel

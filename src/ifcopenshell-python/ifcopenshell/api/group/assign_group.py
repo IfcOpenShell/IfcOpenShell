@@ -18,59 +18,57 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 from typing import Union
 
 
-class Usecase:
-    def __init__(
-        self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance], group: ifcopenshell.entity_instance
-    ):
-        """Assigns products to a group
+def assign_group(
+    file: ifcopenshell.file, products: list[ifcopenshell.entity_instance], group: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns products to a group
 
-        If a product is already assigned to the group, it will not be assigned
-        twice.
+    If a product is already assigned to the group, it will not be assigned
+    twice.
 
-        :param products: A list of IfcProduct elements to assign to the group
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :param group: The IfcGroup to assign the products to
-        :type group: ifcopenshell.entity_instance.entity_instance
-        :return: The IfcRelAssignsToGroup relationship
-            or `None` if `products` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
+    :param products: A list of IfcProduct elements to assign to the group
+    :type products: list[ifcopenshell.entity_instance]
+    :param group: The IfcGroup to assign the products to
+    :type group: ifcopenshell.entity_instance
+    :return: The IfcRelAssignsToGroup relationship
+        or `None` if `products` was empty list.
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            group = ifcopenshell.api.run("group.add_group", model, Name="Furniture")
-            ifcopenshell.api.run("group.assign_group", model,
-                products=model.by_type("IfcFurniture"), group=group)
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "group": group,
-        }
+        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
+        ifcopenshell.api.run("group.assign_group", model,
+            products=model.by_type("IfcFurniture"), group=group)
+    """
+    settings = {
+        "products": products,
+        "group": group,
+    }
 
-    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
-        if not self.settings["products"]:
-            return
+    if not settings["products"]:
+        return
 
-        if not self.settings["group"].IsGroupedBy:
-            return self.file.create_entity(
-                "IfcRelAssignsToGroup",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": self.settings["products"],
-                    "RelatingGroup": self.settings["group"],
-                }
-            )
-        rel = self.settings["group"].IsGroupedBy[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        products = set(self.settings["products"])
-        if products.issubset(related_objects):
-            return rel
-        rel.RelatedObjects = list(related_objects | products)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+    if not settings["group"].IsGroupedBy:
+        return file.create_entity(
+            "IfcRelAssignsToGroup",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "RelatedObjects": settings["products"],
+                "RelatingGroup": settings["group"],
+            }
+        )
+    rel = settings["group"].IsGroupedBy[0]
+    related_objects = set(rel.RelatedObjects) or set()
+    products = set(settings["products"])
+    if products.issubset(related_objects):
         return rel
+    rel.RelatedObjects = list(related_objects | products)
+    ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+    return rel

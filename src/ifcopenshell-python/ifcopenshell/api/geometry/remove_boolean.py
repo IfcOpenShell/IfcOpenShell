@@ -19,13 +19,14 @@
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"item": None}
-        for key, value in settings.items():
-            self.settings[key] = value
+def remove_boolean(file: ifcopenshell.file, item: ifcopenshell.entity_instance) -> None:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"item": item}
+    return usecase.execute()
 
+
+class Usecase:
     def execute(self):
         item = None
         for inverse in self.file.get_inverse(self.settings["item"]):

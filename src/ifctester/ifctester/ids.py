@@ -75,8 +75,8 @@ class Ids:
         milestone=None,
     ):
         # Not part of the IDS spec, but very useful in practice
-        self.filepath = None
-        self.filename = None
+        self.filepath: Optional[str] = None
+        self.filename: Optional[str] = None
 
         self.specifications: List[Specification] = []
         self.info = {}
@@ -174,6 +174,7 @@ class Specification:
         self.instructions = instructions
 
         self.applicable_entities: list[ifcopenshell.entity_instance] = []
+        self.failed_entities: set[ifcopenshell.entity_instance] = set()
         self.status = None
 
     def asdict(self):
@@ -299,6 +300,7 @@ class Specification:
             return "optional"
         elif self.maxOccurs == 0:
             return "prohibited"
+        return "required"  # Fallback
 
     def set_usage(self, usage: Cardinality) -> None:
         if usage == "optional":

@@ -20,6 +20,7 @@ from bpy.types import Panel
 from blenderbim.bim.module.aggregate.data import AggregateData
 from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
 from blenderbim.bim.ifc import IfcStore
+import blenderbim.tool as tool
 
 
 class BIM_PT_aggregate(Panel):
@@ -52,12 +53,21 @@ class BIM_PT_aggregate(Panel):
         props = context.active_object.BIMObjectAggregateProperties
 
         if props.is_editing:
+            row = layout.row()
+            row.prop(props, "relating_object", text="Whole")
+            row = layout.row()
+            row.prop(props, "related_object", text="Or Part")
             row = layout.row(align=True)
-            row.prop(props, "relating_object", text="")
+            col = row.column(align=True)
+            if not props.relating_object and not props.related_object:
+                col.enabled = False
+            op = col.operator("bim.aggregate_assign_object", icon="CHECKMARK")
             if props.relating_object:
-                op = row.operator("bim.aggregate_assign_object", icon="CHECKMARK", text="")
                 op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
+            elif props.related_object:
+                op.related_object = props.related_object.BIMObjectProperties.ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
+            return
         else:
             row = layout.row(align=True)
             if AggregateData.data["has_relating_object"]:
@@ -72,7 +82,7 @@ class BIM_PT_aggregate(Panel):
                 row.operator("bim.add_aggregate", icon="ADD", text="")
                 op = row.operator("bim.aggregate_unassign_object", icon="X", text="")
             else:
-                row.label(text="No Aggregate", icon="TRIA_UP")
+                row.label(text="No Whole Relationship Found", icon="TRIA_UP")
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")
 
@@ -89,19 +99,6 @@ class BIM_PT_aggregate(Panel):
             op = row.operator("bim.select_parts", icon="RESTRICT_SELECT_OFF", text="")
             op.obj = context.active_object.name
 
-        ifc_class = AggregateData.data["ifc_class"]
-        part_class = ""
-        if ifc_class == "IfcBuilding":
-            part_class = "IfcBuildingStorey"
-        elif ifc_class == "IfcSite":
-            part_class = "IfcBuilding"
-        elif ifc_class == "IfcProject":
-            part_class = "IfcSite"
-        if part_class != "":
-            op = layout.operator("bim.add_part_to_object", text="Add " + part_class.lstrip("Ifc"))
-            op.part_class = part_class
-            op.obj = context.active_object.name
-            
             
 class BIM_PT_linked_aggregate(Panel):
     bl_label = "Linked Aggregates"
@@ -131,22 +128,29 @@ class BIM_PT_linked_aggregate(Panel):
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        props = context.active_object.BIMObjectAggregateProperties
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        props = obj.BIMObjectAggregateProperties
         row = layout.row(align=True)
-        row.label(text="Advanced Users Only", icon="ERROR")
-        row = layout.row(align=True)
-        
-        if type(AggregateData.data['total_linked_aggregate']) is int:
-            if AggregateData.data['total_linked_aggregate'] > 0:
-                row.label(text=f"{AggregateData.data['total_linked_aggregate']} Linked Aggregates")
-                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
-                op.select_parts = False
-                op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_OB_POINTCLOUD")
-                op.select_parts = True
-                row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
-                op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
+
+
+        if element.Decomposes:
+            Number_Linked_Aggregates = AggregateData.data['total_linked_aggregate']
+            if not Number_Linked_Aggregates:
+                row.label(text="Not a Linked Aggregate")
+            else:
+                row.label(text=f"{Number_Linked_Aggregates} Linked Aggregates")
+            op = row.operator("bim.duplicate_linked_aggregate_to_3d_cursor", text="", icon="DUPLICATE")
+            if type(Number_Linked_Aggregates) is int:
+                if Number_Linked_Aggregates > 0:
+                    op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_DATA_POINTCLOUD")
+                    op.select_parts = False
+                    op = row.operator("bim.select_linked_aggregates", text="", icon="OUTLINER_OB_POINTCLOUD")
+                    op.select_parts = True
+                    row.operator("bim.refresh_linked_aggregate", text="", icon="FILE_REFRESH")
+                    op = row.operator("bim.break_link_to_other_aggregates", text="", icon="X")
         else:
-            row.label(text="No Linked Aggregates")
+            row.label(text="Not an Aggregate")
             
         
 

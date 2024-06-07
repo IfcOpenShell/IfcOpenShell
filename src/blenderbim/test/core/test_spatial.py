@@ -80,7 +80,6 @@ class TestRemoveContainer:
 class TestCopyToContainer:
     def test_run(self, ifc, collector, spatial):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        collector.sync("obj").should_be_called()
         spatial.get_container("element").should_be_called().will_return("container")
         ifc.get_object("container").should_be_called().will_return("container_obj")
         spatial.get_relative_object_matrix("obj", "container_obj").should_be_called().will_return("matrix")
@@ -97,7 +96,6 @@ class TestCopyToContainer:
 
     def test_using_an_absolute_matrix_if_there_is_no_from_container(self, ifc, collector, spatial):
         ifc.get_entity("obj").should_be_called().will_return("element")
-        collector.sync("obj").should_be_called()
         spatial.get_container("element").should_be_called().will_return(None)
         spatial.get_object_matrix("obj").should_be_called().will_return("matrix")
 

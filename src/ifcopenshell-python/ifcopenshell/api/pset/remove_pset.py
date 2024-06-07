@@ -20,68 +20,67 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, product=None, pset=None):
-        """Removes a property set from a product
+def remove_pset(
+    file: ifcopenshell.file, product: ifcopenshell.entity_instance, pset: ifcopenshell.entity_instance
+) -> None:
+    """Removes a property set from a product
 
-        All properties that are part of this property set are also removed.
+    All properties that are part of this property set are also removed.
 
-        :param product: The IfcObject to remove the property set from.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param pset: The IfcPropertySet or IfcElementQuantity to remove.
-        :type pset: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param product: The IfcObject to remove the property set from.
+    :type product: ifcopenshell.entity_instance
+    :param pset: The IfcPropertySet or IfcElementQuantity to remove.
+    :type pset: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we have a new wall type with a property set.
-            wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
-            pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        # Let's imagine we have a new wall type with a property set.
+        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
 
-            # Remove it!
-            ifcopenshell.api.run("pset.remove_pset", model, product=wall_type, pset=pset)
-        """
-        self.file = file
-        self.settings = {"product": product, "pset": pset}
+        # Remove it!
+        ifcopenshell.api.run("pset.remove_pset", model, product=wall_type, pset=pset)
+    """
+    settings = {"product": product, "pset": pset}
 
-    def execute(self):
-        to_purge = []
-        should_remove_pset = True
-        for inverse in self.file.get_inverse(self.settings["pset"]):
-            if inverse.is_a("IfcRelDefinesByProperties"):
-                if not inverse.RelatedObjects or len(inverse.RelatedObjects) == 1:
-                    to_purge.append(inverse)
-                else:
-                    related_objects = list(inverse.RelatedObjects)
-                    related_objects.remove(self.settings["product"])
-                    inverse.RelatedObjects = related_objects
-                    should_remove_pset = False
-        if should_remove_pset:
-            properties = []  # Predefined psets have no properties
-            if self.settings["pset"].is_a("IfcPropertySet"):
-                properties = self.settings["pset"].HasProperties or []
-            elif self.settings["pset"].is_a("IfcQuantitySet"):
-                properties = self.settings["pset"].Quantities or []
-            elif self.settings["pset"].is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
-                properties = self.settings["pset"].Properties or []
-            for prop in properties:
-                if self.file.get_total_inverses(prop) != 1:
-                    continue
-                if prop.is_a("IfcPropertyEnumeratedValue"):
-                    enumeration = prop.EnumerationReference
-                    if enumeration and self.file.get_total_inverses(enumeration) == 1:
-                        self.file.remove(enumeration)
-                self.file.remove(prop)
-            # IfcMaterialProperties and IfcProfileProperties don't have OwnerHistory
-            history = getattr(self.settings["pset"], "OwnerHistory", None)
-            self.file.remove(self.settings["pset"])
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        for element in to_purge:
-            history = getattr(element, "OwnerHistory", None)
-            self.file.remove(element)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
+    to_purge = []
+    should_remove_pset = True
+    for inverse in file.get_inverse(settings["pset"]):
+        if inverse.is_a("IfcRelDefinesByProperties"):
+            if not inverse.RelatedObjects or len(inverse.RelatedObjects) == 1:
+                to_purge.append(inverse)
+            else:
+                related_objects = list(inverse.RelatedObjects)
+                related_objects.remove(settings["product"])
+                inverse.RelatedObjects = related_objects
+                should_remove_pset = False
+    if should_remove_pset:
+        properties = []  # Predefined psets have no properties
+        if settings["pset"].is_a("IfcPropertySet"):
+            properties = settings["pset"].HasProperties or []
+        elif settings["pset"].is_a("IfcQuantitySet"):
+            properties = settings["pset"].Quantities or []
+        elif settings["pset"].is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
+            properties = settings["pset"].Properties or []
+        for prop in properties:
+            if file.get_total_inverses(prop) != 1:
+                continue
+            if prop.is_a("IfcPropertyEnumeratedValue"):
+                enumeration = prop.EnumerationReference
+                if enumeration and file.get_total_inverses(enumeration) == 1:
+                    file.remove(enumeration)
+            file.remove(prop)
+        # IfcMaterialProperties and IfcProfileProperties don't have OwnerHistory
+        history = getattr(settings["pset"], "OwnerHistory", None)
+        file.remove(settings["pset"])
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    for element in to_purge:
+        history = getattr(element, "OwnerHistory", None)
+        file.remove(element)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)

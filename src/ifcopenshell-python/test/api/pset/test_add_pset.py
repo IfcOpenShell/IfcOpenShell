@@ -38,13 +38,16 @@ class TestAddPset(test.bootstrap.IFC4):
         material = ifcopenshell.api.run("material.add_material", self.file)
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=material, name="Pset_MaterialCommon")
         assert pset.is_a("IfcMaterialProperties")
-        assert "Pset_MaterialCommon" in ifcopenshell.util.element.get_psets(material)
+        assert pset.Name == "Pset_MaterialCommon"
+        assert pset.Material == material
 
     def test_adding_a_pset_to_a_profile(self):
         profile = ifcopenshell.api.run("profile.add_parameterized_profile", self.file, ifc_class="IfcCircleProfileDef")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=profile, name="Pset_ProfileMechanical")
         assert pset.is_a("IfcProfileProperties")
-        assert "Pset_ProfileMechanical" in ifcopenshell.util.element.get_psets(profile)
+        if self.file.schema != "IFC2X3":
+            assert pset.Name == "Pset_ProfileMechanical"
+        assert pset.ProfileDefinition == profile
 
     def test_adding_a_pset_to_a_context(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
@@ -53,7 +56,7 @@ class TestAddPset(test.bootstrap.IFC4):
         assert "Custom_Pset" in ifcopenshell.util.element.get_psets(element)
 
 
-class TestAddPsetIFC2X3(test.bootstrap.IFC2X3):
+class TestAddPsetIFC2X3(test.bootstrap.IFC2X3, TestAddPset):
     def test_adding_a_pset_to_a_project(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Custom_Pset")

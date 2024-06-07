@@ -76,7 +76,9 @@ class TestCreateProject:
         project.create_empty("My Site").should_be_called().will_return("site")
         project.create_empty("My Building").should_be_called().will_return("building")
         project.create_empty("My Storey").should_be_called().will_return("storey")
-        project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
+        project.run_root_assign_class(
+            obj="project", ifc_class="IfcProject", should_add_representation=False
+        ).should_be_called()
         project.run_unit_assign_scene_units().should_be_called()
 
         self.check_contexts(project)
@@ -108,7 +110,9 @@ class TestCreateProject:
         project.create_empty("My Site").should_be_called().will_return("site")
         project.create_empty("My Building").should_be_called().will_return("building")
         project.create_empty("My Storey").should_be_called().will_return("storey")
-        project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
+        project.run_root_assign_class(
+            obj="project", ifc_class="IfcProject", should_add_representation=False
+        ).should_be_called()
         project.run_unit_assign_scene_units().should_be_called()
 
         self.check_contexts(project)
@@ -149,7 +153,9 @@ class TestCreateProject:
         project.create_empty("My Site").should_be_called().will_return("site")
         project.create_empty("My Building").should_be_called().will_return("building")
         project.create_empty("My Storey").should_be_called().will_return("storey")
-        project.run_root_assign_class(obj="project", ifc_class="IfcProject").should_be_called()
+        project.run_root_assign_class(
+            obj="project", ifc_class="IfcProject", should_add_representation=False
+        ).should_be_called()
         project.run_unit_assign_scene_units().should_be_called()
 
         self.check_contexts(project)

@@ -22,7 +22,6 @@ import ifcopenshell.api
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from ifcopenshell.util.selector import Selector
 import json
 
 
@@ -48,7 +47,6 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         new = self.props.groups.add()
         new.ifc_definition_id = group.id()
         new.name = group.Name or "Unnamed"
-        new.selection_query = ""
         new.tree_depth = tree_depth
         new.has_children = False
         new.is_expanded = group.id() in self.expanded_groups
@@ -113,7 +111,6 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_group"
     bl_label = "Edit Group"
     bl_options = {"REGISTER", "UNDO"}
-    copy_from_selector: bpy.props.BoolProperty(name="Copy from Selector", default=False)
 
     def _execute(self, context):
         props = context.scene.BIMGroupProperties
@@ -123,9 +120,6 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
                 attributes[attribute.name] = None
             else:
                 attributes[attribute.name] = attribute.string_value
-
-        if self.copy_from_selector:
-            attributes["Description"] = context.scene.IFCSelector.selection_query
 
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
@@ -239,31 +233,6 @@ class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
             ]
             if self.group in product_groups:
                 obj.select_set(True)
-        return {"FINISHED"}
-
-
-class UpdateGroup(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.update_group"
-    bl_label = "Update Group"
-    bl_options = {"REGISTER", "UNDO"}
-    query: bpy.props.StringProperty()
-    group_id: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        group = self.file.by_id(self.group_id)
-        query = self.query
-
-        new_products = Selector.parse(self.file, query)
-        ifcopenshell.api.run(
-            "group.update_group_products",
-            self.file,
-            **{
-                "group": group,
-                "products": new_products,
-            }
-        )
-        bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
 

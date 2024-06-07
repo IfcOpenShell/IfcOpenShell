@@ -48,3 +48,7 @@ class TestAssignControl(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatingControl == control
         assert set(relation.RelatedObjects) == set((wall, wall1))
+
+
+class TestAssignControlIFC2X3(test.bootstrap.IFC2X3, TestAssignControl):
+    pass

@@ -21,54 +21,54 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relating_product=None, related_object=None):
-        """Unassigns a product and an object (typically an annotation)
+def unassign_product(
+    file: ifcopenshell.file,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
+    """Unassigns a product and an object (typically an annotation)
 
-        Smart annotation objects can be associated with products so that they
-        can annotate attributes and properties. This function lets you remove
-        the association, so that you may change the assocation with another
-        object later or leave the annotation as a "dumb" annotation.
+    Smart annotation objects can be associated with products so that they
+    can annotate attributes and properties. This function lets you remove
+    the association, so that you may change the assocation with another
+    object later or leave the annotation as a "dumb" annotation.
 
-        :param relating_product: The IfcProduct the object is related to
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
-        :param related_object: The object (typically IfcAnnotation) that the
-            product is related to
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: The created IfcRelAssignsToProduct relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param relating_product: The IfcProduct the object is related to
+    :type relating_product: ifcopenshell.entity_instance
+    :param related_object: The object (typically IfcAnnotation) that the
+        product is related to
+    :type related_object: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-            annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
-            ifcopenshell.api.run("drawing.assign_product", model,
-                relating_product=furniture, related_object=annotation)
+        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
+        ifcopenshell.api.run("drawing.assign_product", model,
+            relating_product=furniture, related_object=annotation)
 
-            # Let's change our mind and remove the relationship
-            ifcopenshell.api.run("drawing.unassign_product", model,
-                relating_product=furniture, related_object=annotation)
-        """
-        self.file = file
-        self.settings = {
-            "relating_product": relating_product,
-            "related_object": related_object,
-        }
+        # Let's change our mind and remove the relationship
+        ifcopenshell.api.run("drawing.unassign_product", model,
+            relating_product=furniture, related_object=annotation)
+    """
+    settings = {
+        "relating_product": relating_product,
+        "related_object": related_object,
+    }
 
-    def execute(self):
-        for rel in self.settings["related_object"].HasAssignments or []:
-            if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != self.settings["relating_product"]:
-                continue
-            if len(rel.RelatedObjects) == 1:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-                return
-            related_objects = list(rel.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            rel.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-            return rel
+    for rel in settings["related_object"].HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != settings["relating_product"]:
+            continue
+        if len(rel.RelatedObjects) == 1:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+            return
+        related_objects = list(rel.RelatedObjects)
+        related_objects.remove(settings["related_object"])
+        rel.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})

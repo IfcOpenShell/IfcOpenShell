@@ -17,38 +17,42 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.sequence
 
 
+def duplicate_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Duplicates a task in the project
+
+    The following relationships are also duplicated:
+
+    * The copy will have the same attributes and property sets as the original task
+    * The copy will be assigned to the parent task or work schedule
+    * The copy will have duplicated nested tasks
+
+    :param task: The task to be duplicated
+    :type task: ifcopenshell.entity_instance
+    :return: The duplicated task or the list of duplicated tasks if the latter has children
+    :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
+
+    Example:
+    .. code:: python
+
+        # We have a task
+        original_task = Task(name="Design new feature", deadline="2023-03-01")
+
+        # And now we have two
+        duplicated_task = project.duplicate_task(original_task)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"task": task}
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(self, file, task=None):
-        """Duplicates a task in the project
-
-        The following relationships are also duplicated:
-
-        * The copy will have the same attributes and property sets as the original task
-        * The copy will be assigned to the parent task or work schedule
-        * The copy will have duplicated nested tasks
-
-        :param task: The task to be duplicated
-        :type task: ifcopenshell.entity_instance.entity_instance
-        :return: The duplicated task or the list of duplicated tasks if the latter has children
-        :rtype: ifcopenshell.entity_instance.entity_instance or list of ifcopenshell.entity_instance.entity_instance
-
-        Example:
-        .. code:: python
-
-            # We have a task
-            original_task = Task(name="Design new feature", deadline="2023-03-01")
-
-            # And now we have two
-            duplicated_task = project.duplicate_task(original_task)
-        """
-        self.file = file
-        self.settings = {"task": task}
-
     def execute(self):
         self.tracker = {"current": [], "duplicate": []}
         self.duplicate_task(self.settings["task"])

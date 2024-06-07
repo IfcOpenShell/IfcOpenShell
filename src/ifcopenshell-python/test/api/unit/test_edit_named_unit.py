@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestEditNamedUnit(test.bootstrap.IFC4):
+class TestEditNamedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_edit_context_dependent_unit(self):
         unit = self.file.createIfcContextDependentUnit()
         unit.Dimensions = self.file.createIfcDimensionalExponents()
@@ -59,6 +59,8 @@ class TestEditNamedUnit(test.bootstrap.IFC4):
         assert unit.UnitType == "LENGTHUNIT"
         assert unit.Name == "Name"
 
+
+class TestEditNamedUnitIFC4(test.bootstrap.IFC4, TestEditNamedUnitIFC2X3):
     def test_edit_conversion_based_unit_with_offset(self):
         unit = self.file.createIfcConversionBasedUnitWithOffset()
         unit.Dimensions = self.file.createIfcDimensionalExponents()

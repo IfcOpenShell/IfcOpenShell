@@ -19,34 +19,31 @@
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file):
-        """Add a new objective constraint
+def add_objective(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+    """Add a new objective constraint
 
-        Parametric constraints may be defined by the user. The constraint is defined
-        by first creating an objective describing the purpose of the constraint and
-        whether it is a hard or soft constraint. Later on, metrics may be added to
-        check whether the constraint has been met by connecting it to properties and
-        quantities. See ifcopenshell.api.constraint.add_metric for more information.
+    Parametric constraints may be defined by the user. The constraint is defined
+    by first creating an objective describing the purpose of the constraint and
+    whether it is a hard or soft constraint. Later on, metrics may be added to
+    check whether the constraint has been met by connecting it to properties and
+    quantities. See ifcopenshell.api.constraint.add_metric for more information.
 
-        :return: The newly created IfcObjective entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :return: The newly created IfcObjective entity
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a new objective for code compliance requirements
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            objective.ConstraintGrade = "ADVISORY"
-            objective.ObjectiveQualifier = "CODECOMPLIANCE"
-            # Note: the objective right now is purely qualitative and for
-            # information purposes. You may wish to add quantiative metrics.
-        """
-        self.file = file
-        self.settings = {}
+        # Create a new objective for code compliance requirements
+        objective = ifcopenshell.api.run("constraint.add_objective", model)
+        objective.ConstraintGrade = "ADVISORY"
+        objective.ObjectiveQualifier = "CODECOMPLIANCE"
+        # Note: the objective right now is purely qualitative and for
+        # information purposes. You may wish to add quantiative metrics.
+    """
+    settings = {}
 
-    def execute(self):
-        return self.file.create_entity(
-            "IfcObjective", **{"Name": "Unnamed", "ConstraintGrade": "NOTDEFINED", "ObjectiveQualifier": "NOTDEFINED"}
-        )
+    return file.create_entity(
+        "IfcObjective", **{"Name": "Unnamed", "ConstraintGrade": "NOTDEFINED", "ObjectiveQualifier": "NOTDEFINED"}
+    )

@@ -18,99 +18,109 @@
 
 import ifcopenshell
 import ifcopenshell.util.pset
+from typing import Optional, Any
+
+
+def edit_qto(
+    file: ifcopenshell.file,
+    qto: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
+    properties: Optional[dict[str, Any]] = None,
+    pset_template: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
+    """Edits a quantity set and its quantities
+
+    At its simplest usage, this may be used to edit the name of a quantity
+    set. It may also be used to add, edit, or remove quantities.
+
+    See ifcopenshell.api.pset.edit_pset for documentation on how this is
+    intended to be used.
+
+    One major difference is that quantities set to None are always purged.
+    It is not allowed to have None quantities in IFC.
+
+    :param qto: The IfcElementQuantity to edit.
+    :type qto: ifcopenshell.entity_instance
+    :param name: A new name for the quantity set. If no name is specified,
+        the quantity set name is not changed.
+    :type name: str, optional
+    :param properties: A dictionary of properties. The keys must be a string
+        of the name of the quantity. The data type of the value will be
+        determined by the quantity set template. If no quantity set
+        template is found, the data types of the Python values will
+        influence the IFC data type of the quantity. String values will
+        become IfcLabel, float values will become IfcReal, booleans will
+        become IfcBoolean, and integers will become IfcInteger. If more
+        control is desired, you may explicitly specify IFC data objects
+        directly.
+    :type properties: dict
+    :param pset_template: If a quantity set template is provided, this will
+        be used to determine data types. If no user-defined template is
+        provided, the built-in buildingSMART templates will be loaded.
+    :type pset_template: ifcopenshell.entity_instance, optional
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # Let's imagine we have a new wall type.
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+        # This is a standard buildingSMART property set.
+        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Qto_WallBaseQuantities")
+
+        # In this scenario, we don't specify any pset_template because it is
+        # part of the built-in buildingSMART templates, and so the Length
+        # will automatically be an IfcLengthMeasure, and the NetVolume will
+        # automatically be an IfcVolumeMeasure. Neither of these properties
+        # exist yet, so they will be created.
+        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
+
+        # Setting to None will delete the quantity.
+        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": None})
+
+        # What if we wanted to manage our own properties? Let's create our
+        # own "Company Standard" property set templates. Notice how we
+        # prefix our property set with "Foo_", if our company name was "Foo"
+        # this would make sense. In this example, we say that our template
+        # only applies to walls and is for quantities.
+        template = ifcopenshell.api.run("pset_template.add_pset_template", model,
+            name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
+
+        # Let's imagine we want all model authors to specify a length
+        # measurement for the portion of a wall that is overhanging.
+        prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+            name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
+
+        # Now we can use our property set template to add our properties,
+        # and the data types will always match our template.
+        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Foo_Wall")
+        ifcopenshell.api.run("pset.edit_qto", model,
+            qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
+
+        # Here's a third scenario where we want to add arbitrary quantities
+        # that are not standardised by anything, not even our own custom
+        # templates.
+        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Custom_Qto")
+        ifcopenshell.api.run("pset.edit_qto", model,
+            qto=qto, properties={
+                "SomeLength": model.createIfcLengthMeasure(42.3),
+                "SomeArea": model.createIfcAreaMeasure(21.0)
+            })
+
+        # Editing existing quantities will retain their current data types
+        # if possible. So this will still be a length measure.
+        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"SomeLength": 12.3})
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"qto": qto, "name": name, "properties": properties or {}, "pset_template": pset_template}
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, qto=None, name=None, properties=None, pset_template=None):
-        """Edits a quantity set and its quantities
-
-        At its simplest usage, this may be used to edit the name of a quantity
-        set. It may also be used to add, edit, or remove quantities.
-
-        See ifcopenshell.api.pset.edit_pset for documentation on how this is
-        intended to be used.
-
-        One major difference is that quantities set to None are always purged.
-        It is not allowed to have None quantities in IFC.
-
-        :param qto: The IfcElementQuantity to edit.
-        :type qto: ifcopenshell.entity_instance.entity_instance
-        :param name: A new name for the quantity set. If no name is specified,
-            the quantity set name is not changed.
-        :type name: str, optional
-        :param properties: A dictionary of properties. The keys must be a string
-            of the name of the quantity. The data type of the value will be
-            determined by the quantity set template. If no quantity set
-            template is found, the data types of the Python values will
-            influence the IFC data type of the quantity. String values will
-            become IfcLabel, float values will become IfcReal, booleans will
-            become IfcBoolean, and integers will become IfcInteger. If more
-            control is desired, you may explicitly specify IFC data objects
-            directly.
-        :type properties: dict
-        :param pset_template: If a quantity set template is provided, this will
-            be used to determine data types. If no user-defined template is
-            provided, the built-in buildingSMART templates will be loaded.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Let's imagine we have a new wall type.
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-
-            # This is a standard buildingSMART property set.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Qto_WallBaseQuantities")
-
-            # In this scenario, we don't specify any pset_template because it is
-            # part of the built-in buildingSMART templates, and so the Length
-            # will automatically be an IfcLengthMeasure, and the NetVolume will
-            # automatically be an IfcVolumeMeasure. Neither of these properties
-            # exist yet, so they will be created.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
-
-            # Setting to None will delete the quantity.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": None})
-
-            # What if we wanted to manage our own properties? Let's create our
-            # own "Company Standard" property set templates. Notice how we
-            # prefix our property set with "Foo_", if our company name was "Foo"
-            # this would make sense. In this example, we say that our template
-            # only applies to walls and is for quantities.
-            template = ifcopenshell.api.run("pset_template.add_pset_template", model,
-                name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
-
-            # Let's imagine we want all model authors to specify a length
-            # measurement for the portion of a wall that is overhanging.
-            prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
-                name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
-
-            # Now we can use our property set template to add our properties,
-            # and the data types will always match our template.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Foo_Wall")
-            ifcopenshell.api.run("pset.edit_qto", model,
-                qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
-
-            # Here's a third scenario where we want to add arbitrary quantities
-            # that are not standardised by anything, not even our own custom
-            # templates.
-            qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Custom_Qto")
-            ifcopenshell.api.run("pset.edit_qto", model,
-                qto=qto, properties={
-                    "SomeLength": model.createIfcLengthMeasure(42.3),
-                    "SomeArea": model.createIfcAreaMeasure(21.0)
-                })
-
-            # Editing existing quantities will retain their current data types
-            # if possible. So this will still be a length measure.
-            ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"SomeLength": 12.3})
-        """
-        self.file = file
-        self.settings = {"qto": qto, "name": name, "properties": properties or {}, "pset_template": pset_template}
-
     def execute(self):
         self.qto_idx = 5
         if self.settings["qto"].is_a("IfcPhysicalComplexQuantity"):

@@ -15,40 +15,38 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, representation=None):
-        """Removes a styled representation
+def remove_styled_representation(file: ifcopenshell.file, representation: ifcopenshell.entity_instance) -> None:
+    """Removes a styled representation
 
-        Styled representations are typically associated with materials. This
-        removes the representation but not the underlying styles.
+    Styled representations are typically associated with materials. This
+    removes the representation but not the underlying styles.
 
-        :param representation: The IfcStyledRepresentation to remove.
-        :type representation: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param representation: The IfcStyledRepresentation to remove.
+    :type representation: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Remove a styled representation
-            ifcopenshell.api.run("style.remove_styled_representation", model, representation=representation)
-        """
-        self.file = file
-        self.settings = {"representation": representation}
+        # Remove a styled representation
+        ifcopenshell.api.run("style.remove_styled_representation", model, representation=representation)
+    """
+    settings = {"representation": representation}
 
-    def execute(self):
-        for inverse in self.file.get_inverse(self.settings["representation"]):
-            if inverse.is_a("IfcMaterialDefinitionRepresentation") and len(inverse.Representations) == 1:
-                self.file.remove(inverse)
+    for inverse in file.get_inverse(settings["representation"]):
+        if inverse.is_a("IfcMaterialDefinitionRepresentation") and len(inverse.Representations) == 1:
+            file.remove(inverse)
 
-        for item in self.settings["representation"].Items:
-            if item.is_a("IfcStyledItem") and self.file.get_total_inverses(item) == 1:
-                for style in item.Styles:
-                    if style.is_a("IfcPresentationStyleAssignment"):
-                        self.file.remove(style)
-                self.file.remove(item)
+    for item in settings["representation"].Items:
+        if item.is_a("IfcStyledItem") and file.get_total_inverses(item) == 1:
+            for style in item.Styles:
+                if style.is_a("IfcPresentationStyleAssignment"):
+                    file.remove(style)
+            file.remove(item)
 
-        self.file.remove(self.settings["representation"])
+    file.remove(settings["representation"])

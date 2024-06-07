@@ -18,42 +18,45 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 from typing import Union
 
 
+def assign_constraint(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    constraint: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns a constraint to a list of products
+
+    This assigns a relationship between a product and a constraint, so that
+    when a product's properties and quantities do not match the requirements
+    of the constraint's metrics, results can be flagged.
+
+    It is assumed (but not explicit in the IFC documentation) that
+    constraints are inherited from the type. This way, it is not necessary
+    to create lots of constraint assignments.
+
+    :param products: The list of products the constraint applies to. This is anything
+        which can have properties or quantities.
+    :type products: list[ifcopenshell.entity_instance]
+    :param constraint: The IfcObjective constraint
+    :type constraint: ifcopenshell.entity_instance
+    :return: The new or updated IfcRelAssociatesConstraint relationship
+        or `None` if `products` was an empty list.
+    :rtype: ifcopenshell.entity_instance
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "products": products,
+        "constraint": constraint,
+    }
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        products: list[ifcopenshell.entity_instance],
-        constraint: ifcopenshell.entity_instance,
-    ):
-        """Assigns a constraint to a list of products
-
-        This assigns a relationship between a product and a constraint, so that
-        when a product's properties and quantities do not match the requirements
-        of the constraint's metrics, results can be flagged.
-
-        It is assumed (but not explicit in the IFC documentation) that
-        constraints are inherited from the type. This way, it is not necessary
-        to create lots of constraint assignments.
-
-        :param products: The list of products the constraint applies to. This is anything
-            which can have properties or quantities.
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :param constraint: The IfcObjective constraint
-        :type constraint: ifcopenshell.entity_instance.entity_instance
-        :return: The new or updated IfcRelAssociatesConstraint relationship
-            or `None` if `products` was an empty list.
-        :rtype: ifcopenshell.entity_instance.entity_instance
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "constraint": constraint,
-        }
-
-    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+    def execute(self):
         products = set(self.settings["products"])
         if not products:
             return

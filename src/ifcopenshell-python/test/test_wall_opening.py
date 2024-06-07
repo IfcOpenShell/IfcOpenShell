@@ -28,6 +28,7 @@ from dataclasses import dataclass, field
 
 import pytest
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.template
 
 PERF = False

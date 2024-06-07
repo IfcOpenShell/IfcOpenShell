@@ -19,30 +19,27 @@
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, pset_template=None):
-        """Removes a property set template
+def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.entity_instance) -> None:
+    """Removes a property set template
 
-        All property templates within the property set template are also removed
-        along with it.
+    All property templates within the property set template are also removed
+    along with it.
 
-        :param pset_template: The IfcPropertySetTemplate to remove.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param pset_template: The IfcPropertySetTemplate to remove.
+    :type pset_template: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a template.
-            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        # Create a template.
+        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
 
-            # Let's remove the template.
-            ifcopenshell.api.run("pset_template.remove_pset_template", model, pset_template=template)
-        """
-        self.file = file
-        self.settings = {"pset_template": pset_template}
+        # Let's remove the template.
+        ifcopenshell.api.run("pset_template.remove_pset_template", model, pset_template=template)
+    """
+    settings = {"pset_template": pset_template}
 
-    def execute(self):
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["pset_template"])
+    ifcopenshell.util.element.remove_deep(file, settings["pset_template"])

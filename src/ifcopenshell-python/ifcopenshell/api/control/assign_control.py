@@ -18,89 +18,89 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+from typing import Union
 
 
-class Usecase:
-    def __init__(self, file, relating_control=None, related_object=None):
-        """Assigns a planning control or constraint to an object
+def assign_control(
+    file: ifcopenshell.file,
+    relating_control: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns a planning control or constraint to an object
 
-        IFC can describe concepts that control other objects. For example, a
-        planning calendar controls the availability of working days for
-        construction planning. As another example, a cost item might constrain
-        or limit the ability to procure and build a product.
+    IFC can describe concepts that control other objects. For example, a
+    planning calendar controls the availability of working days for
+    construction planning. As another example, a cost item might constrain
+    or limit the ability to procure and build a product.
 
-        This usecase lets you assign controls following the rules of the IFC
-        specification. This is an advanced topic and assumes knowledge of the
-        IFC concepts to determine what is allowed to control what. In the
-        future, this API will likely be deprecated in favour of multiple usecase
-        specific APIs.
+    This usecase lets you assign controls following the rules of the IFC
+    specification. This is an advanced topic and assumes knowledge of the
+    IFC concepts to determine what is allowed to control what. In the
+    future, this API will likely be deprecated in favour of multiple usecase
+    specific APIs.
 
-        :param relating_control: The IfcControl entity that is creating the
-            control or constraint
-        :type relating_control: ifcopenshell.entity_instance.entity_instance
-        :param related_object: The IfcObjectDefinition that is being controlled
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcRelAssignsToControl. If relationship already
-            existed before and wasn't changed then returns None.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+    :param relating_control: The IfcControl entity that is creating the
+        control or constraint
+    :type relating_control: ifcopenshell.entity_instance
+    :param related_object: The IfcObjectDefinition that is being controlled
+    :type related_object: ifcopenshell.entity_instance
+    :return: The newly created IfcRelAssignsToControl. If relationship already
+        existed before and wasn't changed then returns None.
+    :rtype: ifcopenshell.entity_instance, None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # One common usecase is to assign a calendar to a task
-            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model)
-            task = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule)
+        # One common usecase is to assign a calendar to a task
+        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model)
+        task = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule)
 
-            # All subtasks will inherit this calendar, so assigning a single
-            # calendar to the root task effectively defines a "default" calendar
-            ifcopenshell.api.run("control.assign_control", model,
-                relating_control=calendar, related_object=task)
+        # All subtasks will inherit this calendar, so assigning a single
+        # calendar to the root task effectively defines a "default" calendar
+        ifcopenshell.api.run("control.assign_control", model,
+            relating_control=calendar, related_object=task)
 
-            # Another common example might be relating a cost item and a product
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            cost_item = ifcopenshell.api.run("cost.add_cost_item", model,
-                cost_schedule=schedule)
-            ifcopenshell.api.run("control.assign_control", model,
-                relating_control=cost_item, related_object=wall)
-        """
-        self.file = file
-        self.settings = {
-            "relating_control": relating_control,
-            "related_object": related_object,
-        }
+        # Another common example might be relating a cost item and a product
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        cost_item = ifcopenshell.api.run("cost.add_cost_item", model,
+            cost_schedule=schedule)
+        ifcopenshell.api.run("control.assign_control", model,
+            relating_control=cost_item, related_object=wall)
+    """
+    settings = {
+        "relating_control": relating_control,
+        "related_object": related_object,
+    }
 
-    def execute(self):
-        if self.settings["related_object"].HasAssignments:
-            for assignment in self.settings["related_object"].HasAssignments:
-                if (
-                    assignment.is_a("IfcRelAssignsToControl")
-                    and assignment.RelatingControl == self.settings["relating_control"]
-                ):
-                    return
-
-        controls = None
-        if self.settings["relating_control"].Controls:
-            controls = self.settings["relating_control"].Controls[0]
-
-        if controls:
-            if self.settings["related_object"] in controls.RelatedObjects:
+    if settings["related_object"].HasAssignments:
+        for assignment in settings["related_object"].HasAssignments:
+            if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == settings["relating_control"]:
                 return
-            related_objects = set(controls.RelatedObjects)
-            related_objects.add(self.settings["related_object"])
-            controls.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": controls})
-        else:
-            controls = self.file.create_entity(
-                "IfcRelAssignsToControl",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["related_object"]],
-                    "RelatingControl": self.settings["relating_control"],
-                },
-            )
-        return controls
+
+    controls = None
+    if settings["relating_control"].Controls:
+        controls = settings["relating_control"].Controls[0]
+
+    if controls:
+        if settings["related_object"] in controls.RelatedObjects:
+            return
+        related_objects = set(controls.RelatedObjects)
+        related_objects.add(settings["related_object"])
+        controls.RelatedObjects = list(related_objects)
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": controls})
+    else:
+        controls = file.create_entity(
+            "IfcRelAssignsToControl",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "RelatedObjects": [settings["related_object"]],
+                "RelatingControl": settings["relating_control"],
+            },
+        )
+    return controls

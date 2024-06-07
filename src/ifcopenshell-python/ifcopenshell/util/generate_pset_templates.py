@@ -18,7 +18,9 @@
 
 RUN_FROM_DEV_REPO = False
 
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.attribute
 import glob
 import sys
@@ -32,9 +34,9 @@ if not RUN_FROM_DEV_REPO:
     import shutil
 
 BASE_MODULE_PATH = Path(__file__).parent
-IFC4x3_HTML_LOCATION = BASE_MODULE_PATH / "IFC4.3-html-iso-release"
 
 if not RUN_FROM_DEV_REPO:
+    IFC4x3_HTML_ZIP_LOCATION = BASE_MODULE_PATH / "annex-a-psd.zip"
     IFC4x3_OUTPUT_PATH = BASE_MODULE_PATH / "schema/Pset_IFC4X3.ifc"
 else:
     IFC4x3_PSD_LOCATION = BASE_MODULE_PATH / "../output/psd"
@@ -66,20 +68,18 @@ class PsetTemplatesGenerator:
         print("Starting parsing data for IFC4X3...")
 
         if not RUN_FROM_DEV_REPO:
-            if not IFC4x3_HTML_LOCATION.is_dir():
+            if not IFC4x3_HTML_ZIP_LOCATION.is_file():
                 raise Exception(
-                    f'ISO release for Ifc4.3.0.1 expected to be in folder "{IFC4x3_HTML_LOCATION.resolve()}\\"\n'
+                    f'ISO release for Ifc4.3.2.0 expected to be located in "{IFC4x3_HTML_ZIP_LOCATION.resolve()}"\n'
                     "For generating ifc pset library please either setup docs as described above \n"
-                    "or change IFC4x3_HTML_LOCATION in the script accordingly.\n"
+                    "or change IFC4x3_HTML_ZIP_LOCATION in the script accordingly.\n"
                     "You can download docs from the repository: \n"
-                    "https://github.com/buildingSMART/IFC4.3-html/releases/tag/sep-13-release"
+                    "https://standards.buildingsmart.org/IFC/RELEASE/IFC4_3/HTML/annex-a-psd.zip"
                 )
             # unzip the data
-            if not RUN_FROM_DEV_REPO:
-                pset_data_zip = IFC4x3_HTML_LOCATION / "IFC/RELEASE/IFC4x3/HTML/annex-a-psd.zip"
-                pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
-                with zipfile.ZipFile(pset_data_zip, "r") as fi_zip:
-                    fi_zip.extractall(pset_data_location)
+            pset_data_location = BASE_MODULE_PATH / "temp/annex-a-psd"
+            with zipfile.ZipFile(IFC4x3_HTML_ZIP_LOCATION, "r") as fi_zip:
+                fi_zip.extractall(pset_data_location)
         else:
             if not IFC4x3_PSD_LOCATION.is_dir():
                 raise Exception(
@@ -99,7 +99,7 @@ class PsetTemplatesGenerator:
         print("Starting parsing data for IFC2X3...")
         if not IFC2x3_HTML_ZIP_LOCATION.is_file():
             raise Exception(
-                f'ISO release for IFC2x3 TC1 expected to be in folder "{IFC2x3_HTML_ZIP_LOCATION.resolve()}\\"\n'
+                f'ISO release for IFC2x3 TC1 expected to be located in "{IFC2x3_HTML_ZIP_LOCATION.resolve()}"\n'
                 "For doc extraction please either setup docs as described above \n"
                 "or change IFC2x3_HTML_LOCATION in the script accordingly.\n"
                 "You can download docs from the url: \n"
@@ -175,8 +175,12 @@ class PsetTemplatesGenerator:
                 TemplateType=root_xml.get("templatetype"),
                 Name=pset_name,
                 Description=root_xml.find("Definition").text,
-                ApplicableEntity=",".join(applicable_entities),
+                ApplicableEntity=",".join(applicable_entities).strip(),
             )
+            if project_name.startswith("IFC2X3"):
+                pset.TemplateType = self.get_pset_template_type_ifc2x3(pset)
+            else:
+                pset.TemplateType = root_xml.get("templatetype")
 
             # NOTE: there is also Applicability tag
             # but it's seems always empty in ifc4 and ifc4x3
@@ -367,6 +371,43 @@ class PsetTemplatesGenerator:
                     )
 
                 pset_property.PrimaryMeasureType = primary_measure_type
+
+    def get_pset_template_type_ifc2x3(self, pset_template: ifcopenshell.entity_instance) -> str:
+        def declaration_is_a(declaration: ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
+            if declaration.name() == ifc_class:
+                return True
+            super_type = declaration.supertype()
+            if not super_type:
+                return False
+            return declaration_is_a(super_type, ifc_class)
+
+        name = pset_template.Name
+        applicability = pset_template.ApplicableEntity
+        schema = ifcopenshell.schema_by_name("IFC2X3")
+
+        if "PHistory" in name:
+            return "PSET_PERFORMANCEDRIVEN"
+        applicable_types = applicability.replace(", ", ",").split(",")
+        for applicable_type in applicable_types:
+            if not applicable_type:
+                continue
+            parts = applicable_type.split("/")
+            assert 3 > len(parts) > 0
+            if parts[0].isupper():  # IFC2X3 thing
+                applicable_type = parts[1]
+            else:
+                applicable_type = parts[0]
+            applicable_type = applicable_type.strip()
+
+            declaration = schema.declaration_by_name(applicable_type)
+            if declaration_is_a(declaration, "IfcTypeObject"):
+                return "PSET_TYPEDRIVENOVERRIDE"
+            # ifc4x3+
+            elif declaration_is_a(declaration, "IfcProfileDef"):
+                return "PSET_PROFILEDRIVEN"
+            elif declaration_is_a(declaration, "IfcMaterialDefinition"):
+                return "PSET_MATERIALDRIVEN"
+        return "PSET_OCCURRENCEDRIVEN"
 
 
 if __name__ == "__main__":

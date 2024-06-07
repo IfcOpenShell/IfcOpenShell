@@ -18,122 +18,125 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from typing import Optional, Union
 
 
+def add_reference(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    reference: Optional[ifcopenshell.entity_instance] = None,
+    identification: Optional[str] = None,
+    name: Optional[str] = None,
+    classification: Optional[ifcopenshell.entity_instance] = None,
+    is_lightweight=True,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Adds a new classification reference and assigns it to the list of products
+
+    A classification reference is a single entry such as "Pr_12_23_34" that
+    is part of an external classification system (such as Uniclass or
+    Omniclass).
+
+    References can be added to almost any object in IFC, including physical
+    objects, object types, properties, tasks, costs, resources, or even
+    resources such as profiles, documents, libraries, and so on.
+
+    Classification references can be added in two ways. Option 1) specify  a
+    custom arbitrary reference, where you have to manually specify the
+    identification (e.g. "Pr_12_23_45") and name (e.g. "Door Products").
+    Option 2) add a reference from an IFC classification library. The latter
+    is preferred if you are using a common classification system such as
+    Uniclass, as the library will be prepopulated with all the valid
+    classifications already.
+
+    Objects are allowed to have multiple classification references from
+    multiple classification systems. This means that adding a new reference
+    will not remove existing references.
+
+    References can be inherited from types. This means that if an
+    IfcWallType has a classification reference of Pr_12_23_34, then all
+    IfcWall occurrences of that type automatically get the same
+    classification of Pr_12_23_34. This means that it is more efficient to
+    assign to types where possible. If a classification reference is
+    assigned to both the type and an occurrence, then the assignment at the
+    occurrence will override the type classification.
+
+    :param product: The list of IFC objects, properties, or resources you want to
+        associate the classification reference to.
+    :type product: list[ifcopenshell.entity_instance]
+    :param reference: The classification reference entity taken from an
+        IFC classification library. If you supply this parameter, you will
+        use option 2.
+    :type reference: ifcopenshell.entity_instance, optional
+    :param identification: If you choose option 1 and do not specify a
+        reference, you may manually specify an identification code. The code
+        is typically a short identifier and may have punctuation to separate
+        the levels of hierarchy in the classificaion (e.g. Pr_12_23_34).
+    :type identification: str, optional
+    :param name: If you choose option 1 and do not specify a reference, you
+        may manually specify a name. The name is typically human readable.
+    :type name: str, optional
+    :param classification: The IfcClassification entity in your IFC model
+        (not the library, if you are doing option 2) that the reference is
+        part of.
+    :type classification: ifcopenshell.entity_instance
+    :param is_lightweight: If you are doing option 2, choose whether or not
+        to only add that particular reference (lighweight) or also add all
+        of its parent references in the classification hierarchy (not
+        lighweight). For example, adding a lightweight reference to
+        Pr_12_23_34 will only add Pr_12_23_34, but adding a heavy reference
+        to Pr_12_23_34 will also add Pr_12_23 and Pr_12. These parent
+        references merely help describe the "tree" of classifications, but
+        is generally unnecessary. Using lightweight classifications are
+        recommended and is the default.
+    :type is_lightweight: bool, optional
+
+    :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
+
+    :return: The newly added IfcClassificationReference
+        or `None` if `products` was empty list.
+    :rtype: Union[ifcopenshell.entity_instance, None]
+
+    Example:
+
+    .. code:: python
+
+        # Option 1: adding and assigning a new reference from scratch
+        wall_type = model.by_type("IfcWallType")[0]
+        classification = ifcopenshell.api.run("classification.add_classification",
+            model, classification="MyCustomClassification")
+        ifcopenshell.api.run("classification.add_reference", model,
+            products=[wall_type], classification=classification,
+            identification="W_01", name="Interior Walls")
+
+        # Option 2: adding a popular classification from a library
+        library = ifcopenshell.open("/path/to/Uniclass.ifc")
+        lib_classification = library.by_type("IfcClassification")[0]
+        classification = ifcopenshell.api.run("classification.add_classification",
+            model, classification=lib_classification)
+        reference = [r for r in library.by_type("IfcClassificationReference")
+            if r.Identification == "XYZ"][0]
+        ifcopenshell.api.run("classification.add_reference", model,
+            products=[wall_type], classification=classification,
+            reference=reference)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "products": products,
+        "reference": reference,
+        "identification": identification,
+        "name": name,
+        "classification": classification,
+        "is_lightweight": is_lightweight,
+    }
+    return usecase.execute()
+
+
 class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        products: list[ifcopenshell.entity_instance],
-        reference: Optional[ifcopenshell.entity_instance] = None,
-        identification: Optional[str] = None,
-        name: Optional[str] = None,
-        classification: Optional[ifcopenshell.entity_instance] = None,
-        is_lightweight=True,
-    ):
-        """Adds a new classification reference and assigns it to the list of products
-
-        A classification reference is a single entry such as "Pr_12_23_34" that
-        is part of an external classification system (such as Uniclass or
-        Omniclass).
-
-        References can be added to almost any object in IFC, including physical
-        objects, object types, properties, tasks, costs, resources, or even
-        resources such as profiles, documents, libraries, and so on.
-
-        Classification references can be added in two ways. Option 1) specify  a
-        custom arbitrary reference, where you have to manually specify the
-        identification (e.g. "Pr_12_23_45") and name (e.g. "Door Products").
-        Option 2) add a reference from an IFC classification library. The latter
-        is preferred if you are using a common classification system such as
-        Uniclass, as the library will be prepopulated with all the valid
-        classifications already.
-
-        Objects are allowed to have multiple classification references from
-        multiple classification systems. This means that adding a new reference
-        will not remove existing references.
-
-        References can be inherited from types. This means that if an
-        IfcWallType has a classification reference of Pr_12_23_34, then all
-        IfcWall occurrences of that type automatically get the same
-        classification of Pr_12_23_34. This means that it is more efficient to
-        assign to types where possible. If a classification reference is
-        assigned to both the type and an occurrence, then the assignment at the
-        occurrence will override the type classification.
-
-        :param product: The list of IFC objects, properties, or resources you want to
-            associate the classification reference to.
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
-        :param reference: The classification reference entity taken from an
-            IFC classification library. If you supply this parameter, you will
-            use option 2.
-        :type reference: ifcopenshell.entity_instance.entity_instance, optional
-        :param identification: If you choose option 1 and do not specify a
-            reference, you may manually specify an identification code. The code
-            is typically a short identifier and may have punctuation to separate
-            the levels of hierarchy in the classificaion (e.g. Pr_12_23_34).
-        :type identification: str, optional
-        :param name: If you choose option 1 and do not specify a reference, you
-            may manually specify a name. The name is typically human readable.
-        :type name: str, optional
-        :param classification: The IfcClassification entity in your IFC model
-            (not the library, if you are doing option 2) that the reference is
-            part of.
-        :type classification: ifcopenshell.entity_instance.entity_instance
-        :param is_lightweight: If you are doing option 2, choose whether or not
-            to only add that particular reference (lighweight) or also add all
-            of its parent references in the classification hierarchy (not
-            lighweight). For example, adding a lightweight reference to
-            Pr_12_23_34 will only add Pr_12_23_34, but adding a heavy reference
-            to Pr_12_23_34 will also add Pr_12_23 and Pr_12. These parent
-            references merely help describe the "tree" of classifications, but
-            is generally unnecessary. Using lightweight classifications are
-            recommended and is the default.
-        :type is_lightweight: bool, optional
-
-        :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
-
-        :return: The newly added IfcClassificationReference
-            or `None` if `products` was empty list.
-        :rtype: Union[ifcopenshell.entity_instance.entity_instance, None]
-
-        Example:
-
-        .. code:: python
-
-            # Option 1: adding and assigning a new reference from scratch
-            wall_type = model.by_type("IfcWallType")[0]
-            classification = ifcopenshell.api.run("classification.add_classification",
-                model, classification="MyCustomClassification")
-            ifcopenshell.api.run("classification.add_reference", model,
-                products=[wall_type], classification=classification,
-                identification="W_01", name="Interior Walls")
-
-            # Option 2: adding a popular classification from a library
-            library = ifcopenshell.open("/path/to/Uniclass.ifc")
-            lib_classification = library.by_type("IfcClassification")[0]
-            classification = ifcopenshell.api.run("classification.add_classification",
-                model, classification=lib_classification)
-            reference = [r for r in library.by_type("IfcClassificationReference")
-                if r.Identification == "XYZ"][0]
-            ifcopenshell.api.run("classification.add_reference", model,
-                products=[wall_type], classification=classification,
-                reference=reference)
-        """
-        self.file = file
-        self.settings = {
-            "products": products,
-            "reference": reference,
-            "identification": identification,
-            "name": name,
-            "classification": classification,
-            "is_lightweight": is_lightweight,
-        }
-
-    def execute(self) -> Union[ifcopenshell.entity_instance, None]:
+    def execute(self):
         if not self.settings["products"]:
             return
 

@@ -19,57 +19,54 @@
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, rel_sequence=None):
-        """Removes any lag time in a sequence
+def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity_instance) -> None:
+    """Removes any lag time in a sequence
 
-        The schedule is cascaded afterwards.
+    The schedule is cascaded afterwards.
 
-        :param rel_sequence: The sequence to remove the lag time from.
-        :type rel_sequence: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param rel_sequence: The sequence to remove the lag time from.
+    :type rel_sequence: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we are creating a construction schedule. All tasks
-            # need to be part of a work schedule.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
 
-            # Let's imagine a root construction task
-            construction = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule, name="Construction", identification="C")
+        # Let's imagine a root construction task
+        construction = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule, name="Construction", identification="C")
 
-            # Let's imagine we're building 2 zones, one after another.
-            zone1 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 1", identification="C.1")
-            zone2 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 2", identification="C.2")
+        # Let's imagine we're building 2 zones, one after another.
+        zone1 = ifcopenshell.api.run("sequence.add_task", model,
+            parent_task=construction, name="Zone 1", identification="C.1")
+        zone2 = ifcopenshell.api.run("sequence.add_task", model,
+            parent_task=construction, name="Zone 2", identification="C.2")
 
-            # Zone 1 finishes, then zone 2 starts.
-            sequence = ifcopenshell.api.run("sequence.assign_sequence", model,
-                relating_process=zone1, related_process=zone2)
+        # Zone 1 finishes, then zone 2 starts.
+        sequence = ifcopenshell.api.run("sequence.assign_sequence", model,
+            relating_process=zone1, related_process=zone2)
 
-            # What if you had to wait 1 week before you could start zone 2?
-            ifcopenshell.api.run("sequence.assign_lag_time", model, rel_sequence=sequence, lag_value="P1W")
+        # What if you had to wait 1 week before you could start zone 2?
+        ifcopenshell.api.run("sequence.assign_lag_time", model, rel_sequence=sequence, lag_value="P1W")
 
-            # What if you didn't?
-            ifcopenshell.api.run("sequence.unassign_lag_time", model, rel_sequence=sequence)
-        """
-        self.file = file
-        self.settings = {
-            "rel_sequence": rel_sequence,
-        }
+        # What if you didn't?
+        ifcopenshell.api.run("sequence.unassign_lag_time", model, rel_sequence=sequence)
+    """
+    settings = {
+        "rel_sequence": rel_sequence,
+    }
 
-    def execute(self):
-        if len(self.file.get_inverse(self.settings["rel_sequence"].TimeLag)) == 1:
-            self.file.remove(self.settings["rel_sequence"].TimeLag)
-        else:
-            self.settings["rel_sequence"].TimeLag = None
-        ifcopenshell.api.run(
-            "sequence.cascade_schedule",
-            self.file,
-            task=self.settings["rel_sequence"].RelatedProcess,
-        )
+    if len(file.get_inverse(settings["rel_sequence"].TimeLag)) == 1:
+        file.remove(settings["rel_sequence"].TimeLag)
+    else:
+        settings["rel_sequence"].TimeLag = None
+    ifcopenshell.api.run(
+        "sequence.cascade_schedule",
+        file,
+        task=settings["rel_sequence"].RelatedProcess,
+    )

@@ -21,6 +21,9 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# NOTE: IfcTaskTime was introduced in IFC4
+
+
 class TestEditTaskTime(test.bootstrap.IFC4):
     def test_editing_all_attributes(self):
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.file.createIfcTask())

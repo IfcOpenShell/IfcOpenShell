@@ -159,9 +159,7 @@ class BaseDecorator:
     objecttype = "NOTDEFINED"
 
     def __init__(self):
-        self.font_id = blf.load(
-            os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
-        )
+        self.font_id = 0 # 0 is the default font
 
         # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -404,7 +402,6 @@ class BaseDecorator:
                 line_no += 1 if multiline_to_bottom else -1
             return
 
-        # 0 is the default font, but we're fancier than that
         font_id = self.font_id
 
         color = context.preferences.addons["blenderbim"].preferences.decorations_colour
@@ -418,12 +415,14 @@ class BaseDecorator:
         factor = self.camera_zoom_to_factor(context.space_data.region_3d.view_camera_zoom)
         camera_width_px = factor * context.region.width
         mm_to_px = camera_width_px / self.get_camera_width_mm()
-        # 0.004118616 is a magic constant number I visually discovered to get the right number.
+        # magic_font_scale's default of (0.004118616) is a magic constant number I visually discovered to get the right number.
         # In particular it works only for the OpenGOST font and produces a 2.5mm font size.
         # It probably should be dynamically calculated using system.dpi or something.
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
-        font_size_px = int(0.004118616 * mm_to_px) * font_size_mm / 2.5
+
+        magic_font_scale = bpy.context.scene.DocProperties.magic_font_scale
+        font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
         blf.size(font_id, font_size_px)
@@ -2014,6 +2013,13 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
+        if drawing_font := bpy.context.scene.DocProperties.drawing_font:
+            drawing_font_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", drawing_font)
+            if os.path.exists(drawing_font_path):
+                font_id = blf.load(drawing_font_path)
+                for decorator in self.decorators.values():
+                    decorator.font_id = font_id
+
 
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?

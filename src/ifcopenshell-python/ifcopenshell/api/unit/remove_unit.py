@@ -20,38 +20,35 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, unit=None):
-        """Remove a unit
+def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> None:
+    """Remove a unit
 
-        Be very careful when a unit is removed, as it may mean that previously
-        defined quantities in the model completely lose their meaning.
+    Be very careful when a unit is removed, as it may mean that previously
+    defined quantities in the model completely lose their meaning.
 
-        :param unit: The unit element to remove
-        :type unit: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param unit: The unit element to remove
+    :type unit: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # What?
-            unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="HANDFULS")
+        # What?
+        unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="HANDFULS")
 
-            # Yeah maybe not.
-            ifcopenshell.api.run("unit.remove_unit", model, unit=unit)
-        """
-        self.file = file
-        self.settings = {"unit": unit}
+        # Yeah maybe not.
+        ifcopenshell.api.run("unit.remove_unit", model, unit=unit)
+    """
+    settings = {"unit": unit}
 
-    def execute(self):
-        unit_assignment = ifcopenshell.util.unit.get_unit_assignment(self.file)
-        if unit_assignment and self.settings["unit"] in unit_assignment.Units:
-            units = list(unit_assignment.Units)
-            units.remove(self.settings["unit"])
-            if units:
-                unit_assignment.Units = units
-            else:
-                self.file.remove(unit_assignment)
-        ifcopenshell.util.element.remove_deep(self.file, self.settings["unit"])
+    unit_assignment = ifcopenshell.util.unit.get_unit_assignment(file)
+    if unit_assignment and settings["unit"] in unit_assignment.Units:
+        units = list(unit_assignment.Units)
+        units.remove(settings["unit"])
+        if units:
+            unit_assignment.Units = units
+        else:
+            file.remove(unit_assignment)
+    ifcopenshell.util.element.remove_deep(file, settings["unit"])

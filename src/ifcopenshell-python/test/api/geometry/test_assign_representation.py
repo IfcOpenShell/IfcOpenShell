@@ -89,3 +89,7 @@ class TestAssignRepresentation(test.bootstrap.IFC4):
         assert wall.Representation.Representations[0].RepresentationType != "MappedRepresentation"
         assert wall.Representation.Representations[0] == rep
         assert not walltype.RepresentationMaps
+
+
+class TestAssignRepresentationIFC2X3(test.bootstrap.IFC2X3, TestAssignRepresentation):
+    pass

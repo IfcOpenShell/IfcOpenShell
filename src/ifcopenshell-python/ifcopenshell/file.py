@@ -16,31 +16,18 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 from __future__ import annotations
-
 import os
 import re
 import numbers
 import zipfile
 import functools
+import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any
+from typing import Optional, Any, Union, Callable, Generator
 
-import ifcopenshell.util.element
-import ifcopenshell.util.file
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-
-try:
-    # Python 2
-    basestring
-except NameError:
-    # Python 3 or newer
-    basestring = (str, bytes)
 
 
 class Transaction:
@@ -72,13 +59,13 @@ class Transaction:
             value,
         )
 
-    def batch(self):
+    def batch(self) -> None:
         self.is_batched = True
         self.batch_delete_index = len(self.operations)
         self.batch_delete_ids = set()
         self.batch_inverses = []
 
-    def unbatch(self):
+    def unbatch(self) -> None:
         for inverses in self.batch_inverses:
             if inverses:
                 self.operations.insert(self.batch_delete_index, {"action": "batch_delete", "inverses": inverses})
@@ -87,11 +74,11 @@ class Transaction:
         self.batch_delete_ids = set()
         self.batch_inverses = []
 
-    def store_create(self, element):
+    def store_create(self, element: ifcopenshell.entity_instance) -> None:
         if element.id():
             self.operations.append({"action": "create", "value": self.serialise_entity_instance(element)})
 
-    def store_edit(self, element, index, value):
+    def store_edit(self, element: ifcopenshell.entity_instance, index: int, value: Any) -> None:
         if element.id():
             self.operations.append(
                 {
@@ -120,12 +107,20 @@ class Transaction:
         for inverse in self.file.get_inverse(element):
             inverse_references = []
             for i, attribute in enumerate(inverse):
-                if ifcopenshell.util.element.has_element_reference(attribute, element):
+                if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
             inverses[inverse.id()] = inverse_references
         return inverses
 
-    def rollback(self):
+    def has_element_reference(self, value: Any, element: ifcopenshell.entity_instance) -> bool:
+        if isinstance(value, (tuple, list)):
+            for v in value:
+                if self.has_element_reference(v, element):
+                    return True
+            return False
+        return value == element
+
+    def rollback(self) -> None:
         for operation in self.operations[::-1]:
             if operation["action"] == "create":
                 element = self.file.by_id(operation["value"]["id"])
@@ -158,7 +153,7 @@ class Transaction:
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
 
-    def commit(self):
+    def commit(self) -> None:
         for operation in self.operations:
             if operation["action"] == "create":
                 e = self.file.create_entity(operation["value"]["type"], id=operation["value"]["id"])
@@ -181,7 +176,7 @@ class Transaction:
 file_dict = {}
 
 
-class file(object):
+class file:
     """Base class for containing IFC files.
 
     Class has instance methods for filtering by element Id, Type, etc.
@@ -259,25 +254,25 @@ class file(object):
         self.history_size = 64
         self.history = []
         self.future = []
-        self.transaction = None
+        self.transaction: Optional[Transaction] = None
 
         import weakref
 
         file_dict[self.file_pointer()] = weakref.ref(self)
 
-    def __del__(self):
+    def __del__(self) -> None:
         del file_dict[self.file_pointer()]
 
-    def set_history_size(self, size):
+    def set_history_size(self, size: int) -> None:
         self.history_size = size
         while len(self.history) > self.history_size:
             self.history.pop(0)
 
-    def begin_transaction(self):
+    def begin_transaction(self) -> None:
         if self.history_size:
             self.transaction = Transaction(self)
 
-    def end_transaction(self):
+    def end_transaction(self) -> None:
         if self.transaction:
             self.history.append(self.transaction)
             if len(self.history) > self.history_size:
@@ -285,19 +280,19 @@ class file(object):
             self.future = []
             self.transaction = None
 
-    def discard_transaction(self):
+    def discard_transaction(self) -> None:
         if self.transaction:
             self.transaction.rollback()
         self.transaction = None
 
-    def undo(self):
+    def undo(self) -> None:
         if not self.history:
             return
         transaction = self.history.pop()
         transaction.rollback()
         self.future.append(transaction)
 
-    def redo(self):
+    def redo(self) -> None:
         if not self.future:
             return
         transaction = self.future.pop()
@@ -312,7 +307,7 @@ class file(object):
         :param args: The positional arguments of the IFC class
         :param kwargs: The keyword arguments of the IFC class
         :returns: An entity instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         Example:
 
@@ -337,7 +332,14 @@ class file(object):
         # @todo we should probably check that values for
         # attributes are not passed as duplicates using
         # both regular arguments and keyword arguments.
-        attrs = list(enumerate(args)) + [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        kwargs_attrs = [(e.wrapped_data.get_argument_index(name), arg) for name, arg in kwargs.items()]
+        attrs = list(enumerate(args)) + kwargs_attrs
+
+        if len(attrs) > len(e):
+            raise ValueError(
+                "entity instance of type '%s' has only %s attributes but %s attributes were provided."
+                % (e.is_a(True), len(e), len(attrs))
+            )
 
         # Don't store these attributes as transactions
         # as the creation it self is already stored with
@@ -346,8 +348,18 @@ class file(object):
             transaction = self.transaction
             self.transaction = None
 
-        for idx, arg in attrs:
-            e[idx] = arg
+        try:
+            for idx, arg in attrs:
+                e[idx] = arg
+        except IndexError:
+            invalid_attrs = []
+            for (attr_index, _), attr_name in zip(kwargs_attrs, kwargs):
+                if attr_index == 0xFFFFFFFF:
+                    invalid_attrs.append(attr_name)
+                raise ValueError(
+                    "entity instance of type '%s' doesn't have the following attributes: %s."
+                    % (e.is_a(True), ", ".join(invalid_attrs))
+                )
 
         # Restore transaction status
         if attrs:
@@ -367,7 +379,7 @@ class file(object):
 
         return e
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
         elif attr == "schema":
@@ -376,14 +388,11 @@ class file(object):
             match = re.match(reg, self.wrapped_data.schema)
             version_tuple = tuple(
                 map(
-                    lambda pp: int(pp[1][len(pp[0]):]) if pp[1] else None,
+                    lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
                     ((p, match.group(p)) for p in prefixes),
                 )
             )
-            return "".join(
-                "".join(map(str, t)) if t[1] else ""
-                for t in zip(prefixes, version_tuple[0:2])
-            )
+            return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
         elif attr == "schema_identifier":
             return self.wrapped_data.schema
         elif attr == "schema_version":
@@ -396,10 +405,10 @@ class file(object):
         else:
             return getattr(self.wrapped_data, attr)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[numbers.Integral, str, bytes]) -> entity_instance:
         if isinstance(key, numbers.Integral):
             return entity_instance(self.wrapped_data.by_id(key), self)
-        elif isinstance(key, basestring):
+        elif isinstance(key, (str, bytes)):
             return entity_instance(self.wrapped_data.by_guid(str(key)), self)
 
     def by_id(self, id: int) -> ifcopenshell.entity_instance:
@@ -410,8 +419,8 @@ class file(object):
 
         :raises RuntimeError: If `id` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
         return self[id]
 
@@ -423,8 +432,8 @@ class file(object):
 
         :raises RuntimeError: If `guid` is not found.
 
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
 
         """
         return self[guid]
@@ -434,9 +443,9 @@ class file(object):
         If the entity already exists, it is not re-added. Existence of entity is checked by it's `.identity()`.
 
         :param inst: The entity instance to add
-        :type inst: ifcopenshell.entity_instance.entity_instance
-        :returns: An ifcopenshell.entity_instance.entity_instance
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
+        :returns: An ifcopenshell.entity_instance
+        :rtype: ifcopenshell.entity_instance
         """
 
         if self.transaction:
@@ -457,8 +466,11 @@ class file(object):
         :type type: string
         :param include_subtypes: Whether or not to return subtypes of the IFC class
         :type include_subtypes: bool
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+
+        :raises RuntimeError: If `type` is not found in IFC schema.
+
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
@@ -470,13 +482,13 @@ class file(object):
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
         :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
         :type max_levels: bool
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -489,17 +501,22 @@ class file(object):
         return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
     def get_inverse(
-        self, inst: ifcopenshell.entity_instance, allow_duplicate=False, with_attribute_indices=False
+        self, inst: ifcopenshell.entity_instance, allow_duplicate: bool = False, with_attribute_indices: bool = False
     ) -> list[ifcopenshell.entity_instance]:
         """Return a list of entities that reference this entity
 
+        Warning: this is a slow function, especially when there is a large
+        number of inverses (such as for a shared owner history). If you are
+        only interested in the total number of inverses (typically 0, 1, or N),
+        consider using :func:`get_total_inverses`.
+
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
         :param with_attribute_indices: Returns pairs of <i, idx>
            where i[idx] is inst or contains inst. Requires allow_duplicate=True
-        :returns: A list of ifcopenshell.entity_instance.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance.entity_instance]
+        :returns: A list of ifcopenshell.entity_instance objects
+        :rtype: list[ifcopenshell.entity_instance]
         """
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
@@ -518,8 +535,11 @@ class file(object):
     def get_total_inverses(self, inst: ifcopenshell.entity_instance) -> int:
         """Returns the number of entities that reference this entity
 
+        This is equivalent to `len(model.get_inverse(element))`, but
+        significantly faster.
+
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :returns: The total number of references
         :rtype: int
         """
@@ -533,7 +553,7 @@ class file(object):
         the reference to the deleted will be removed from the aggregate.
 
         :param inst: The entity instance to delete
-        :type inst: ifcopenshell.entity_instance.entity_instance
+        :type inst: ifcopenshell.entity_instance
         :rtype: None
         """
         if self.transaction:
@@ -552,28 +572,34 @@ class file(object):
             self.transaction.unbatch()
         return self.wrapped_data.unbatch()
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def write(self, path: "os.PathLike | str", format=None, zipped=False) -> None:
+    def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
-        :param format: Force use of a specific format. Guessed from file name if None.
-        Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to format=".ifc" with zipped=True)
-        For zipped .ifcXML use format=".ifcXML" with zipped=True
+        :param format: Force use of a specific format. Guessed from file name
+            if None.  Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to
+            format=".ifc" with zipped=True) For zipped .ifcXML use
+            format=".ifcXML" with zipped=True
+        :type format: str
         :param zipped: zip the file after it is written
+        :type zipped: bool
 
-        Examples:
-        >>> model.write("path/to/model.ifc")
-        >>> model.write("path/to/model.ifcXML")
-        >>> model.write("path/to/model.ifcZIP")
-        >>> model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
-        >>> model.write("path/to/model.anyextension", format=".ifcXML")
+        Example:
+
+        .. code:: python
+
+            model.write("path/to/model.ifc")
+            model.write("path/to/model.ifcXML")
+            model.write("path/to/model.ifcZIP")
+            model.write("path/to/model.ifcZIP", format=".ifcXML", zipped=True)
+            model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         if format == None:
-            format = ifcopenshell.util.file.guess_format(path)
+            format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
             serializer = ifcopenshell_wrapper.XmlSerializer(self, str(path))
             serializer.finalize()
@@ -600,7 +626,7 @@ class file(object):
         return
 
     @staticmethod
-    def from_string(s: str) -> file:
+    def from_string(s: str) -> "file":
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod

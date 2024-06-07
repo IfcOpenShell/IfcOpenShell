@@ -60,10 +60,11 @@
 #include <GeomAPI_ProjectPointOnSurf.hxx>
 #include <Geom_Plane.hxx>
 #include <IntTools_FaceFace.hxx>
-#include <STEPConstruct_PointHasher.hxx>
 #include "clash_utils.h"
 
+#ifdef WITH_HDF5
 #include "H5Cpp.h"
+#endif
 
 
 namespace IfcGeom {
@@ -1513,6 +1514,7 @@ namespace IfcGeom {
 			}
 		}
 
+#ifdef WITH_HDF5
         void write_h5() {
             H5::H5File file("filename.h5", H5F_ACC_TRUNC);
             H5::Group shapes = file.createGroup("/shapes");
@@ -1729,6 +1731,7 @@ namespace IfcGeom {
                 colours_dataset.write(flat_colours.data(), H5::PredType::NATIVE_FLOAT);
             }
         }
+#endif
 
         template <typename T>
         void apply_matrix_to_flat_verts(const std::vector<T>& flat_list, const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix, std::vector<T>& result) {

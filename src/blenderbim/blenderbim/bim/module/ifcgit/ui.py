@@ -247,9 +247,11 @@ class IFCGIT_PT_revision_inspector(bpy.types.Panel):
     bl_idname = "IFCGIT_PT_revision_inspector"
     bl_label = "Git History"
     bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "VIEW_3D"
-    bl_region_type = "UI"
-    bl_category = "BlenderBIM"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "IFCGIT_PT_panel"
 
     def draw(self, context):
 

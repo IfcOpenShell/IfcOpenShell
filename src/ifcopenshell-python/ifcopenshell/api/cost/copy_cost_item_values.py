@@ -20,45 +20,44 @@ import ifcopenshell.util.element
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, source=None, destination=None):
-        """Copies all cost values from one cost item to another
+def copy_cost_item_values(
+    file: ifcopenshell.file, source: ifcopenshell.entity_instance, destination: ifcopenshell.entity_instance
+) -> None:
+    """Copies all cost values from one cost item to another
 
-        Any previously existing values will be removed. The entire value is
-        copied, including all components and formulas. However they are not
-        parametrically linked, so if one value changes, the other will not.
+    Any previously existing values will be removed. The entire value is
+    copied, including all components and formulas. However they are not
+    parametrically linked, so if one value changes, the other will not.
 
-        :param source: The IfcCostItem to copy cost values from
-        :type source: ifcopenshell.entity_instance.entity_instance
-        :param destination: The IfcCostItem to copy cost values from
-        :type destination: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param source: The IfcCostItem to copy cost values from
+    :type source: ifcopenshell.entity_instance
+    :param destination: The IfcCostItem to copy cost values from
+    :type destination: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Assume we have a schedule with multiple items in it
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            item1 = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-            item2 = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        # Assume we have a schedule with multiple items in it
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        item1 = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        item2 = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
 
-            # One of the items has a value
-            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-            ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
-                attributes={"AppliedValue": 5000.0})
+        # One of the items has a value
+        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
+        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+            attributes={"AppliedValue": 5000.0})
 
-            # Let's copy the value from one item to another
-            ifcopenshell.api.run("cost.copy_cost_item_values", model, source=item1, destination=item2)
-        """
-        self.file = file
-        self.settings = {"source": source, "destination": destination}
+        # Let's copy the value from one item to another
+        ifcopenshell.api.run("cost.copy_cost_item_values", model, source=item1, destination=item2)
+    """
+    settings = {"source": source, "destination": destination}
 
-    def execute(self):
-        for cost_value in self.settings["destination"].CostValues or []:
-            ifcopenshell.api.run("cost.remove_cost_item_value", self.file, cost_value=cost_value)
-        copied_cost_values = []
-        for cost_value in self.settings["source"].CostValues or []:
-            copied_cost_values.append(ifcopenshell.util.element.copy_deep(self.file, cost_value))
-        self.settings["destination"].CostValues = copied_cost_values
+    for cost_value in settings["destination"].CostValues or []:
+        ifcopenshell.api.run("cost.remove_cost_item_value", file, cost_value=cost_value)
+    copied_cost_values = []
+    for cost_value in settings["source"].CostValues or []:
+        copied_cost_values.append(ifcopenshell.util.element.copy_deep(file, cost_value))
+    settings["destination"].CostValues = copied_cost_values

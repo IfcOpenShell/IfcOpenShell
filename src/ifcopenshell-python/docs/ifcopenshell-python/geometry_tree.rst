@@ -335,8 +335,8 @@ multiple times.
     results = tree.select_ray(origin, direction, length=5.)
 
     for result in results:
-        print(ifc_file.by_id(r.instance.id())) # The element the ray intersects with
-        print(list(r.position)) # The XYZ intersection point
-        print(r.distance) # The distance between the ray origin and the intersection
-        print(list(r.normal)) # The normal of the face being intersected
-        print(r.dot_product) # The dot product of the face being intersected with the ray
+        print(ifc_file.by_id(result.instance.id())) # The element the ray intersects with
+        print(list(result.position)) # The XYZ intersection point
+        print(result.distance) # The distance between the ray origin and the intersection
+        print(list(result.normal)) # The normal of the face being intersected
+        print(result.dot_product) # The dot product of the face being intersected with the ray

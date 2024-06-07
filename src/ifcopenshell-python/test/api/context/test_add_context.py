@@ -75,3 +75,7 @@ class TestAddContext(test.bootstrap.IFC4):
         self.test_adding_a_2d_context()
         project = self.file.by_type("IfcProject")[0]
         assert len(project.RepresentationContexts) == 2
+
+
+class TestAddContextIFC2X3(test.bootstrap.IFC2X3, TestAddContext):
+    pass

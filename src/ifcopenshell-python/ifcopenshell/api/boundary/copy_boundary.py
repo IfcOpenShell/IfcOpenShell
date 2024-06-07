@@ -19,29 +19,26 @@
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, boundary=None):
-        """Copies a space boundary
+def copy_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Copies a space boundary
 
-        :param boundary: The IfcRelSpaceBoundary you want to copy.
-        :type boundary: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param boundary: The IfcRelSpaceBoundary you want to copy.
+    :type boundary: ifcopenshell.entity_instance
+    :return: Duplicate of the IfcRelSpaceBoundary
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-            # A boring boundary with no geometry. Note that this boundary is
-            # invalid and does not relate to any space or building element.
-            boundary = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcRelSpaceBoundary")
+        # A boring boundary with no geometry. Note that this boundary is
+        # invalid and does not relate to any space or building element.
+        boundary = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcRelSpaceBoundary")
 
-            # And now we have two
-            boundary_copy = ifcopenshell.api.run("boundary.copy_boundary", model, boundary=boundary)
-        """
-        self.file = file
-        self.settings = {"boundary": boundary}
+        # And now we have two
+        boundary_copy = ifcopenshell.api.run("boundary.copy_boundary", model, boundary=boundary)
+    """
+    settings = {"boundary": boundary}
 
-    def execute(self):
-        result = ifcopenshell.util.element.copy(self.file, self.settings["boundary"])
-        if result.ConnectionGeometry:
-            result.ConnectionGeometry = ifcopenshell.util.element.copy_deep(self.file, result.ConnectionGeometry)
-        return result
+    result = ifcopenshell.util.element.copy(file, settings["boundary"])
+    if result.ConnectionGeometry:
+        result.ConnectionGeometry = ifcopenshell.util.element.copy_deep(file, result.ConnectionGeometry)
+    return result

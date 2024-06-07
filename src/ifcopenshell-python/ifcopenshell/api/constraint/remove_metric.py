@@ -15,33 +15,37 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+
+
+def remove_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance) -> None:
+    """Remove a metric benchmark
+
+    Removes a metric benchmark and all of its associations to any products
+    and objectives.
+
+    :param metric: The IfcMetric you want to remove.
+    :type metric: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        objective = ifcopenshell.api.run("constraint.add_objective", model)
+        metric = ifcopenshell.api.run("constraint.add_metric", model,
+            objective=objective)
+        ifcopenshell.api.run("constraint.remove_metric", model,
+            metric=metric)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"metric": metric}
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, metric=None):
-        """Remove a metric benchmark
-
-        Removes a metric benchmark and all of its associations to any products
-        and objectives.
-
-        :param metric: The IfcMetric you want to remove.
-        :type metric: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            metric = ifcopenshell.api.run("constraint.add_metric", model,
-                objective=objective)
-            ifcopenshell.api.run("constraint.remove_metric", model,
-                metric=metric)
-        """
-        self.file = file
-        self.settings = {"metric": metric}
-
     def execute(self):
         if self.settings["metric"].ReferencePath:
             reference = self.settings["metric"].ReferencePath

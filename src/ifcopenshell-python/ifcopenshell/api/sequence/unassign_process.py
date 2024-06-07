@@ -21,59 +21,60 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relating_process=None, related_object=None):
-        """Unassigns a process and object relationship
+def unassign_process(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> None:
+    """Unassigns a process and object relationship
 
-        See ifcopenshell.api.sequence.assign_process for details.
+    See ifcopenshell.api.sequence.assign_process for details.
 
-        :param relating_process: The IfcTask in the relationship.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
-        :param related_object: The related object.
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param relating_process: The IfcTask in the relationship.
+    :type relating_process: ifcopenshell.entity_instance
+    :param related_object: The related object.
+    :type related_object: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we are creating a construction schedule. All tasks
-            # need to be part of a work schedule.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
 
-            # Let's create a construction task. Note that the predefined type is
-            # important to distinguish types of tasks.
-            task = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule, name="Demolish existing", identification="A", predefined_type="DEMOLITION")
+        # Let's create a construction task. Note that the predefined type is
+        # important to distinguish types of tasks.
+        task = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule, name="Demolish existing", identification="A", predefined_type="DEMOLITION")
 
-            # Let's say we have a wall somewhere.
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        # Let's say we have a wall somewhere.
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
 
-            # Let's demolish that wall!
-            ifcopenshell.api.run("sequence.assign_process", model, relating_process=task, related_object=wall)
+        # Let's demolish that wall!
+        ifcopenshell.api.run("sequence.assign_process", model, relating_process=task, related_object=wall)
 
-            # Change our mind.
-            ifcopenshell.api.run("sequence.unassign_process", model, relating_process=task, related_object=wall)
-        """
-        self.file = file
-        self.settings = {
-            "relating_process": relating_process,
-            "related_object": related_object,
-        }
+        # Change our mind.
+        ifcopenshell.api.run("sequence.unassign_process", model, relating_process=task, related_object=wall)
+    """
+    settings = {
+        "relating_process": relating_process,
+        "related_object": related_object,
+    }
 
-    def execute(self):
-        for rel in self.settings["related_object"].HasAssignments or []:
-            if not rel.is_a("IfcRelAssignsToProcess") or rel.RelatingProcess != self.settings["relating_process"]:
-                continue
-            if len(rel.RelatedObjects) == 1:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-                return
-            related_objects = list(rel.RelatedObjects)
-            related_objects.remove(self.settings["related_object"])
-            rel.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, element=rel)
-            return rel
+    for rel in settings["related_object"].HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToProcess") or rel.RelatingProcess != settings["relating_process"]:
+            continue
+        if len(rel.RelatedObjects) == 1:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+            return
+        related_objects = list(rel.RelatedObjects)
+        related_objects.remove(settings["related_object"])
+        rel.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", file, element=rel)
+        return rel

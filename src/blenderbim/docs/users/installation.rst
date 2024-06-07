@@ -42,7 +42,7 @@ Installation
    
       You do not need to unzip the add-on file. You should install it as a zipped file.
 
-   You should now see **Import-Export: BlenderBIM** available in your add-ons list. Enable the add-on by pressing the checkbox.
+   You should now see **System: BlenderBIM** available in your add-ons list. Enable the add-on by pressing the checkbox.
 
    .. image:: images/install-blenderbim-3.png
 
@@ -58,6 +58,32 @@ You can enable add-ons permanently by using ``Save User Settings`` from the Addo
 
 .. _where is the add-on installed:
 
+Updating
+--------
+
+First follow the `Uninstalling`_ section below, then install the latest version.
+
+Uninstalling
+------------
+
+Navigate to ``Edit > Preferences > Add-ons``. Due to a limitation in Blender,
+you have to **first disable the BlenderBIM Add-on in your Blender preferences**
+by pressing the checkbox next to the add-on, then **restart Blender**. It is
+critical to follow this sequence of disabling first, and then restarting.
+
+After restarting, you can uninstall the BlenderBIM Add-on by pressing the
+``Remove`` button in the Blender preferences window.
+
+Alternatively, you may uninstall manually by deleting the ``blenderbim``
+directory in :ref:`your Blender add-ons directory<where is the add-on
+installed>`.
+
+.. warning::
+
+    It is important to follow the sequence of disabling, restarting, then removing.
+    If you do not restart Blender, the add-on will fail to remove correctly, and you
+    will need to uninstall manually.
+
 Where is the add-on installed?
 ------------------------------
 
@@ -66,118 +92,44 @@ Upon installation, the BlenderBIM Add-on is stored in the
 folder. However, the location of your Blender configuration folder depends on
 how you have installed Blender.
 
-If you downloaded Blender as a ``.zip`` file without running an installer, you
-will find the Blender configuration folder in the following directory, where
-``X.XX`` is the Blender version:
+If you downloaded Blender as a ``.zip`` file without running an installer, the
+BlenderBIM Add-on will be installed in the following directory, where ``X.XX``
+is the Blender version:
+
 ::
 
-    /path/to/blender/X.XX/
+    /path/to/blender/X.XX/scripts/addons/blenderbim/
 
 Otherwise, if you installed Blender using an installation package, the Blender
 configuration folder depends on which operating system you use.
 
 On Linux, if you are installing the add-on as a user:
+
 ::
 
-    ~/.config/blender/X.XX/
+    ~/.config/blender/X.XX/scripts/addons/blenderbim/
 
 On Linux, if you are deploying the add-on system-wide (this may also depend on
 your Linux distribution):
+
 ::
 
-    /usr/share/blender/X.XX/
+    /usr/share/blender/X.XX/scripts/addons/blenderbim/
 
 On Mac, if you are installing the add-on as a user:
+
 ::
 
-    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/
+    /Users/{YOUR_USER}/Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
 
 On Mac, if you are deploying the add-on system-wide:
 
 ::
 
-    /Library/Application Support/Blender/X.XX/
+    /Library/Application Support/Blender/X.XX/scripts/addons/blenderbim/
 
 On Windows:
+
 ::
 
-    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\
-
-Updating
---------
-
-First uninstall the current BlenderBIM add-on, then install the latest version.
-
-Uninstalling
-------------
-
-Navigate to ``Edit > Preferences > Add-ons``. Due to a limitation in Blender,
-you have to first disable the BlenderBIM Add-on in your Blender preferences by
-pressing the checkbox next to the add-on, then restart Blender. After
-restarting, you can uninstall the BlenderBIM Add-on by pressing the ``Remove``
-button in the Blender preferences window.
-
-Alternatively, you may uninstall manually by deleting the ``blenderbim/``
-directory in your Blender add-ons directory.
-
-.. warning::
-
-    It is important to follow the sequence of disabling, restarting, then removing.
-    If you do not restart Blender, the add-on will fail to remove correctly, and you
-    will need to uninstall manually.
-
-
-FAQ
----
-
-1. **Some other error prevents me from installing or doing basic functions with
-   the add-on. Is it specific to my environment?**
-
-   Sometimes it is helpful to try installing and using the BlenderBIM Add-on on
-   a "clean environment". A clean environment is defined as a fresh Blender
-   installation with no other add-ons enabled with factory settings.
-
-   To quickly test in a clean environment, find your Blender configuration
-   folder based on the `where is the add-on installed`_ section. Rename the
-   folder from ``X.XX`` to something else like ``X.XX_backup``, then restart
-   Blender and try follow the installation instructions again.
-
-   If this fixes your issue, consider disabling other add-ons one by one until
-   you find a conflict as a next step to isolating the issue.
-
-2. **I get an error similar to "ImportError: IfcOpenShell not built for 'linux/64bit/python3.10'"**
-
-   If you are using a Mac, be sure to use the Mac Silicon version if you have a
-   newer Mac. The only exception is if you have installed Blender using Steam
-   on a Mac, in which case you need to use the Mac Intel download.
-
-   For all other scenarios, check the BlenderBIM Add-on zip file which you
-   downloaded. The zip will have either ``py39``, ``py310``, or ``py311`` in
-   the name. See the instructions in the :ref:`devs/installation:unstable
-   installation` section to check that you have installed the correct version.
-
-3. **I am on Ubuntu and get an error similar to "ImportError:
-   /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
-
-   Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
-   If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
-   or you'll need to compile IfcOpenShell yourself.
-
-4. **I get an error saying "ModuleNotFoundError: No module named 'numpy'"**"
-
-   If you have installed Blender from another source instead of from
-   `Blender.org <https://www.blender.org/download/>`__, such as from your
-   distro's package repositories, then you may be missing some modules like
-   ``numpy``. Try installing it manually like ``apt install python-numpy``.
-
-5. **I get an error similar to RuntimeError: Instance #1234 not found**
-
-   Blender saves and loads projects to a ``.blend`` file. However. the
-   BlenderBIM Add-on works with native IFC, and this means instead of saving
-   and loading ``.blend`` files, you should instead save and load the ``.ifc``
-   project.
-
-   If you have opened a ``.blend`` file, there is a risk that the contents of
-   the ``.blend`` session do not correlate to the contents of the ``.ifc``,
-   which can cause this error. Unless you are an advanced user, only save and
-   load ``.ifc`` files.
+    C:\Users\{YOUR_USER}\AppData\Roaming\Blender Foundation\X.XX\scripts\addons\blenderbim\

@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+# Copyright (C) 2024 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,12 +16,4 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from . import ifcopenshell_wrapper
-
-version = ifcopenshell_wrapper.version()
-get_log = ifcopenshell_wrapper.get_log
+# remove_resource tests is partially covered by test_add_resource_quantity.

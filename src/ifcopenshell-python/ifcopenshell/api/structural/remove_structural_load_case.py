@@ -21,25 +21,22 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, load_case=None):
-        """Removes a structural load case
+def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell.entity_instance) -> None:
+    """Removes a structural load case
 
-        :param load_case: The IfcStructuralLoadCase to remove.
-        :type load_case: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"load_case": load_case}
+    :param load_case: The IfcStructuralLoadCase to remove.
+    :type load_case: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {"load_case": load_case}
 
-    def execute(self):
-        # TODO: do a deep purge
-        for rel in self.settings["load_case"].IsGroupedBy or []:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        history = self.settings["load_case"].OwnerHistory
-        self.file.remove(self.settings["load_case"])
-        ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: do a deep purge
+    for rel in settings["load_case"].IsGroupedBy or []:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    history = settings["load_case"].OwnerHistory
+    file.remove(settings["load_case"])
+    ifcopenshell.util.element.remove_deep2(file, history)

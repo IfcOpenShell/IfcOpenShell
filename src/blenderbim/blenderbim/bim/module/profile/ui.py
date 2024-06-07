@@ -70,6 +70,7 @@ class BIM_PT_profiles(Panel):
         row = self.layout.row(align=True)
         row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
+        row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
 
         self.layout.template_list(
             "BIM_UL_profiles",

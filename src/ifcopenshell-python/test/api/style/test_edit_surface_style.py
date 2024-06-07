@@ -25,15 +25,19 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
     def test_editing_a_shading_style(self):
         colour = self.file.createIfcColourRgb(None, 0, 0, 0)
         style = self.file.createIfcSurfaceStyleShading(colour)
+        attrs = {"SurfaceColour": {"Red": 1, "Green": 1, "Blue": 1}}
+        if self.file.schema != "IFC2X3":
+            attrs["Transparency"] = 0.5
         ifcopenshell.api.run(
             "style.edit_surface_style",
             self.file,
             style=style,
-            attributes={"SurfaceColour": {"Red": 1, "Green": 1, "Blue": 1}, "Transparency": 0.5},
+            attributes=attrs,
         )
         assert style.SurfaceColour == colour
         assert list(colour) == [None, 1, 1, 1]
-        assert style.Transparency == 0.5
+        if self.file.schema != "IFC2X3":
+            assert style.Transparency == 0.5
 
     def test_editing_an_empty_colour_or_factor(self):
         for attribute in [
@@ -170,3 +174,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         )
         for attribute in attributes:
             assert tuple(getattr(style, attribute)) == (None, 1, 1, 1)
+
+
+class TestEditSurfaceStyleIFC2X3(test.bootstrap.IFC2X3, TestEditSurfaceStyle):
+    pass

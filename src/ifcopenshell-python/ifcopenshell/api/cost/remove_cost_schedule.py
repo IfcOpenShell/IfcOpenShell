@@ -21,41 +21,36 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, cost_schedule=None):
-        """Removes a cost schedule
+def remove_cost_schedule(file: ifcopenshell.file, cost_schedule: ifcopenshell.entity_instance) -> None:
+    """Removes a cost schedule
 
-        All associated relationships with the cost schedule are also removed,
-        including all cost items.
+    All associated relationships with the cost schedule are also removed,
+    including all cost items.
 
-        :param cost_schedule: The IfcCostSchedule entity you want to remove
-        :type cost_schedule: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param cost_schedule: The IfcCostSchedule entity you want to remove
+    :type cost_schedule: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-            ifcopenshell.api.run("cost.remove_cost_schedule", model, cost_schedule=schedule)
-        """
-        self.file = file
-        self.settings = {"cost_schedule": cost_schedule}
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        ifcopenshell.api.run("cost.remove_cost_schedule", model, cost_schedule=schedule)
+    """
+    settings = {"cost_schedule": cost_schedule}
 
-    def execute(self):
-        # TODO: do a deep purge
-        for inverse in self.file.get_inverse(self.settings["cost_schedule"]):
-            if inverse.is_a("IfcRelAssignsToControl"):
-                [
-                    ifcopenshell.api.run(
-                        "cost.remove_cost_item", self.file, cost_item=related_object
-                    )
-                    for related_object in inverse.RelatedObjects
-                    if related_object.is_a("IfcCostItem")
-                ]
-        history = self.settings["cost_schedule"].OwnerHistory
-        self.file.remove(self.settings["cost_schedule"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: do a deep purge
+    for inverse in file.get_inverse(settings["cost_schedule"]):
+        if inverse.is_a("IfcRelAssignsToControl"):
+            [
+                ifcopenshell.api.run("cost.remove_cost_item", file, cost_item=related_object)
+                for related_object in inverse.RelatedObjects
+                if related_object.is_a("IfcCostItem")
+            ]
+    history = settings["cost_schedule"].OwnerHistory
+    file.remove(settings["cost_schedule"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

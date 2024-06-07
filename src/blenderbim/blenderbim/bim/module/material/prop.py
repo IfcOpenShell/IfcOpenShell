@@ -97,6 +97,10 @@ def get_material_types(self, context):
     return MaterialsData.data["material_types"]
 
 
+def update_material_type(self, context):
+    MaterialsData.data["total_materials"] = MaterialsData.total_materials()
+
+
 def get_profiles(self, context):
     if not MaterialsData.is_loaded:
         MaterialsData.load()
@@ -119,14 +123,14 @@ class Material(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_category: BoolProperty(name="Is Category", default=False)
-    is_expanded: BoolProperty(name="Is Expanded", default=True)
+    is_expanded: BoolProperty(name="Is Expanded", default=False)
     has_style: BoolProperty(name="Has Style", default=True)
     total_elements: IntProperty(name="Total Elements")
 
 
 class BIMMaterialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    material_type: EnumProperty(items=get_material_types, name="Material Type")
+    material_type: EnumProperty(items=get_material_types, update=update_material_type, name="Material Type")
     materials: CollectionProperty(name="Materials", type=Material)
     active_material_index: IntProperty(name="Active Material Index")
     profiles: EnumProperty(items=get_profiles, name="Profiles")

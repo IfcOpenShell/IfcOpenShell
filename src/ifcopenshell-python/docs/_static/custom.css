@@ -8,6 +8,9 @@ h1, h2, h3, h4 {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
+h1 code.literal {
+    background: none;
+}
 a {
     text-decoration: none;
 }
@@ -16,6 +19,7 @@ a {
 }
 .sidebar-brand-text {
     font-size: 1rem;
+    text-align: center;
 }
 .blockbutton {
     max-width: 500px;
@@ -47,14 +51,32 @@ section img {
     box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
     border-radius: 5px;
 }
+
+/* Make it clearer which signatures are part of a class */
 .py.class {
-    /* Make it clearer which signatures are part of a class */
     border-left: 3px solid var(--color-brand-primary);
 }
-.py.function, .py.method {
-    /* Make it clearer which signatures are part of a method or function */
-    border-left: 3px solid var(--color-background-item);
+.py.class > .sig {
+    background: var(--color-brand-primary) !important;
+    margin: 0;
+    border-radius: 0;
 }
+.py.class > .sig * {
+    color: #2e3436 !important;
+}
+.py.class > .sig a {
+    color: #fff;
+}
+
+/* Make it easier to spot functions and methods */
+.py.function, .py.method {
+    border-top: 1px solid var(--color-background-item);
+}
+dl.py.property, dl.py.attribute, dl.py.method, dl.py.function {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
 .field-list > dt {
     /* Clearly distinguish parameters otherwise it looks like a wall of text */
     color: var(--color-brand-content);

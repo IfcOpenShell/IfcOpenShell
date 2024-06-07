@@ -15,53 +15,53 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, parent=None, cost_value=None):
-        """Removes a cost value
+def remove_cost_value(
+    file: ifcopenshell.file, parent: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance
+) -> None:
+    """Removes a cost value
 
-        The cost value may be assigned either to a cost item, a construction
-        resource, or another cost value (i.e. it is a subcomponent of a cost)
+    The cost value may be assigned either to a cost item, a construction
+    resource, or another cost value (i.e. it is a subcomponent of a cost)
 
-        :param parent: The IfcCostItem, IfcConstructionResource, or IfcCostValue
-            that the IfcCostValue is assigned to.
-        :type parent: ifcopenshell.entity_instance.entity_instance
-        :param cost_value: The IfcCostValue that you want to remove
-        :type parent: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param parent: The IfcCostItem, IfcConstructionResource, or IfcCostValue
+        that the IfcCostValue is assigned to.
+    :type parent: ifcopenshell.entity_instance
+    :param cost_value: The IfcCostValue that you want to remove
+    :type parent: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-            item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
 
-            # This cost item will have a unit cost of 5 and a volume of 3
-            value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-            ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
-                attributes={"AppliedValue": 5.0})
+        # This cost item will have a unit cost of 5 and a volume of 3
+        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
+        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+            attributes={"AppliedValue": 5.0})
 
-            ifcopenshell.api.run("cost.remove_cost_value", model, parent=item, cost_value=value)
-        """
-        self.file = file
-        self.settings = {"parent": parent, "cost_value": cost_value}
+        ifcopenshell.api.run("cost.remove_cost_value", model, parent=item, cost_value=value)
+    """
+    settings = {"parent": parent, "cost_value": cost_value}
 
-    def execute(self):
-        if len(self.file.get_inverse(self.settings["cost_value"])) == 1:
-            self.file.remove(self.settings["cost_value"])
-            # TODO deep purge
-        elif self.settings["parent"].is_a("IfcCostItem"):
-            values = list(self.settings["parent"].CostValues)
-            values.remove(self.settings["cost_value"])
-            self.settings["parent"].CostValues = values if values else None
-        elif self.settings["parent"].is_a("IfcConstructionResource"):
-            values = list(self.settings["parent"].BaseCosts)
-            values.remove(self.settings["cost_value"])
-            self.settings["parent"].BaseCosts = values if values else None
-        elif self.settings["parent"].is_a("IfcCostValue"):
-            components = list(self.settings["parent"].Components)
-            components.remove(self.settings["cost_value"])
-            self.settings["parent"].Components = components if components else None
+    if len(file.get_inverse(settings["cost_value"])) == 1:
+        file.remove(settings["cost_value"])
+        # TODO deep purge
+    elif settings["parent"].is_a("IfcCostItem"):
+        values = list(settings["parent"].CostValues)
+        values.remove(settings["cost_value"])
+        settings["parent"].CostValues = values if values else None
+    elif settings["parent"].is_a("IfcConstructionResource"):
+        values = list(settings["parent"].BaseCosts)
+        values.remove(settings["cost_value"])
+        settings["parent"].BaseCosts = values if values else None
+    elif settings["parent"].is_a("IfcCostValue"):
+        components = list(settings["parent"].Components)
+        components.remove(settings["cost_value"])
+        settings["parent"].Components = components if components else None

@@ -18,49 +18,55 @@
 
 import datetime
 import ifcopenshell
+from typing import Any
+
+
+def edit_resource_time(
+    file: ifcopenshell.file, resource_time: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
+    """Edits the attributes of an IfcResourceTime
+
+    For more information about the attributes and data types of an
+    IfcResourceTime, consult the IFC documentation.
+
+    :param resource_time: The IfcResourceTime entity you want to edit
+    :type resource_time: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # Add our own crew
+        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+
+        # Add some labour to our crew.
+        labour = ifcopenshell.api.run("resource.add_resource", model,
+            parent_resource=crew, ifc_class="IfcLaborResource")
+
+        # Labour resource is quantified in terms of time.
+        ifcopenshell.api.run("resource.add_resource_quantity", model,
+            resource=labour, ifc_class="IfcQuantityTime")
+
+        # Store the unit time used in hours
+        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+            physical_quantity=time, attributes={"TimeValue": 8.0})
+
+        # Let's imagine we've used the resource for 2 days.
+        time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
+        ifcopenshell.api.run("resource.edit_resource_time", model,
+            resource_time=time, attributes={"ScheduleWork": "P16H"})
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"resource_time": resource_time, "attributes": attributes}
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, resource_time=None, attributes=None):
-        """Edits the attributes of an IfcResourceTime
-
-        For more information about the attributes and data types of an
-        IfcResourceTime, consult the IFC documentation.
-
-        :param resource_time: The IfcResourceTime entity you want to edit
-        :type resource_time: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Add our own crew
-            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
-
-            # Add some labour to our crew.
-            labour = ifcopenshell.api.run("resource.add_resource", model,
-                parent_resource=crew, ifc_class="IfcLaborResource")
-
-            # Labour resource is quantified in terms of time.
-            ifcopenshell.api.run("resource.add_resource_quantity", model,
-                resource=labour, ifc_class="IfcQuantityTime")
-
-            # Store the unit time used in hours
-            ifcopenshell.api.run("resource.edit_resource_quantity", model,
-                physical_quantity=time, attributes={"TimeValue": 8.0})
-
-            # Let's imagine we've used the resource for 2 days.
-            time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
-            ifcopenshell.api.run("resource.edit_resource_time", model,
-                resource_time=time, attributes={"ScheduleWork": "P16H"})
-        """
-        self.file = file
-        self.settings = {"resource_time": resource_time, "attributes": attributes or {}}
-
     def execute(self):
         self.resource = self.get_resource()
 
@@ -70,43 +76,25 @@ class Usecase:
             and "ScheduleFinish" in self.settings["attributes"].keys()
         ):
             del self.settings["attributes"]["ScheduleFinish"]
-        if (
-            self.settings["attributes"].get("ActualWork", None)
-            and "ActualFinish" in self.settings["attributes"].keys()
-        ):
+        if self.settings["attributes"].get("ActualWork", None) and "ActualFinish" in self.settings["attributes"].keys():
             del self.settings["attributes"]["ActualFinish"]
 
         for name, value in self.settings["attributes"].items():
-            metrics = ifcopenshell.util.constraint.get_metric_constraints(
-                self.resource, "Usage." + name
-            )
+            metrics = ifcopenshell.util.constraint.get_metric_constraints(self.resource, "Usage." + name)
             if metrics and ifcopenshell.util.constraint.is_hard_constraint(metrics[0]):
                 continue
             if value:
                 if "Start" in name or "Finish" in name or name == "StatusTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
-                elif (
-                    name == "ScheduleWork"
-                    or name == "ActualWork"
-                    or name == "RemainingTime"
-                ):
+                elif name == "ScheduleWork" or name == "ActualWork" or name == "RemainingTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
             setattr(self.settings["resource_time"], name, value)
-            if (
-                name == "ScheduleUsage"
-                and ifcopenshell.util.constraint.get_metric_constraints(
-                    self.resource, "Usage.ScheduleWork"
-                )
+            if name == "ScheduleUsage" and ifcopenshell.util.constraint.get_metric_constraints(
+                self.resource, "Usage.ScheduleWork"
             ):
                 task = ifcopenshell.util.resource.get_task_assignments(self.resource)
                 if task:
-                    ifcopenshell.api.run(
-                        "sequence.calculate_task_duration", self.file, task=task
-                    )
+                    ifcopenshell.api.run("sequence.calculate_task_duration", self.file, task=task)
 
     def get_resource(self):
-        return [
-            e
-            for e in self.file.get_inverse(self.settings["resource_time"])
-            if e.is_a("IfcResource")
-        ][0]
+        return [e for e in self.file.get_inverse(self.settings["resource_time"]) if e.is_a("IfcResource")][0]

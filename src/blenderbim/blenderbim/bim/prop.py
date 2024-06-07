@@ -263,7 +263,6 @@ class Attribute(PropertyGroup):
     is_optional: BoolProperty(name="Is Optional")
     is_uri: BoolProperty(name="Is Uri", default=False)
     is_selected: BoolProperty(name="Is Selected", default=False)
-    has_calculator: BoolProperty(name="Has Calculator", default=False)
     value_min: FloatProperty(description="This is used to validate int_value and float_value")
     value_min_constraint: BoolProperty(default=False, description="True if the numerical value has a lower bound")
     value_max: FloatProperty(description="This is used to validate int_value and float_value")
@@ -329,6 +328,7 @@ def get_tab(self, context):
         ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
         ("FM", "Facility Management", "", "PACKAGE", 7),
         ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+        None,
         ("BLENDER", "Blender Properties", "", "BLENDER", 9),
     ]
 
@@ -441,10 +441,11 @@ class BIMObjectProperties(PropertyGroup):
     collection: PointerProperty(type=bpy.types.Collection)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     blender_offset_type: EnumProperty(
-        items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT"]],
+        items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT", "NOT_APPLICABLE"]],
         name="Blender Offset",
         default="NONE",
     )
+    cartesian_point_offset: StringProperty(name="Cartesian Point Offset")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
     is_renaming: BoolProperty(name="Is Renaming", default=False)
     location_checksum: StringProperty(name="Location Checksum")

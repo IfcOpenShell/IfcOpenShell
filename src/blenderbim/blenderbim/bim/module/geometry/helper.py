@@ -538,7 +538,7 @@ class Helper:
         )
         position = None
         if self.file.schema == "IFC2X3":
-            position = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint([0.0, 0.0, 0.0]))
+            position = self.file.createIfcAxis2Placement2D(self.file.createIfcCartesianPoint([0.0, 0.0]))
         curve = self.file.createIfcRectangleProfileDef("AREA", None, position, xdim, ydim)
         return {"curve_ucs": curve_ucs, "curve": curve}
 

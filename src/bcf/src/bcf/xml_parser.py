@@ -10,14 +10,14 @@ from xsdata.formats.dataclass.serializers.config import SerializerConfig
 def build_xml_parser(context: Optional[XmlContext] = None) -> XmlParser:
     """Return a parser for an XML file."""
     parser = XmlParser(context=context or XmlContext())
-    parser.register_namespace("xs", "http://www.w3.org/2001/XMLSchema")
+    parser.register_namespace(ns_map=parser.ns_map, prefix="xs", uri="http://www.w3.org/2001/XMLSchema")
     return parser
 
 
 def build_serializer(context: Optional[XmlContext] = None) -> XmlSerializer:
     """Return a serializer for an XML file."""
     return XmlSerializer(
-        config=SerializerConfig(pretty_print=True),
+        config=SerializerConfig(indent="  "),
         context=context or XmlContext(),
     )
 
@@ -36,8 +36,9 @@ class AbstractXmlParserSerializer(Protocol):
             xml: The XML file as bytes.
             clazz: The class to parse to.
         """
+        ...
 
-    def serialize(self, obj: T, ns_map: Optional[dict[str, str]] = None) -> str:
+    def serialize(self, obj: object, ns_map: Optional[dict[str, str]] = None) -> str:
         """
         Serialize an object to XML.
 
@@ -48,6 +49,7 @@ class AbstractXmlParserSerializer(Protocol):
         Returns:
             The XML as string.
         """
+        ...
 
 
 class XmlParserSerializer:
@@ -68,7 +70,7 @@ class XmlParserSerializer:
         """
         return self.parser.from_bytes(xml, clazz)
 
-    def serialize(self, obj: T, ns_map: Optional[dict[str, str]] = None) -> str:
+    def serialize(self, obj: object, ns_map: Optional[dict[Optional[str], str]] = None) -> str:
         """
         Serialize an object to XML.
 
@@ -79,5 +81,5 @@ class XmlParserSerializer:
         Returns:
             The XML as string.
         """
-        ns_map = ns_map or {"xs": "http://www.w3.org/2001/XMLSchema"}
+        ns_map = ns_map or self.parser.ns_map or {"xs": "http://www.w3.org/2001/XMLSchema"}
         return self.serializer.render(obj, ns_map)

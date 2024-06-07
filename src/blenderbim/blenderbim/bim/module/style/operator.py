@@ -22,11 +22,15 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.style as core
+import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
+from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
 from mathutils import Vector
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_colours"
     bl_label = "Save Current Shading Style"
@@ -52,6 +56,7 @@ class UpdateStyleColours(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "Check the system console to see saved style properties")
 
 
+# TODO: is this still relevant or can it be deleted?
 class UpdateStyleTextures(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.update_style_textures"
     bl_label = "Update Style Textures"
@@ -92,9 +97,10 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
     bl_options = {"REGISTER", "UNDO"}
+    style: bpy.props.IntProperty(default=0)
 
     def _execute(self, context):
-        core.unlink_style(tool.Ifc, tool.Style, obj=context.active_object.active_material)
+        core.unlink_style(tool.Ifc, style=tool.Ifc.get().by_id(self.style))
 
 
 class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -126,6 +132,10 @@ class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
         tool.Style.reload_material_from_ifc(material)
         props.is_editing_style = 0
 
+        # restore selected style type
+        material = tool.Ifc.get_object(style)
+        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
+
 
 class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_style"
@@ -151,13 +161,6 @@ class UpdateCurrentStyle(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     update_all: bpy.props.BoolProperty(name="Update All", default=False, options={"SKIP_SAVE"})
     style_id: bpy.props.IntProperty(default=0, options={"SKIP_SAVE"})
-
-    @classmethod
-    def poll(cls, context):
-        if not context.selected_objects:
-            cls.poll_message_set("No objects selected")
-            return False
-        return True
 
     def invoke(self, context, event):
         # updating all styles on shift+click
@@ -246,14 +249,15 @@ class BrowseExternalStyle(bpy.types.Operator):
     )
 
     def invoke(self, context, event):
-        external_style = None
+        style_elements = None
         if self.active_surface_style_id:
             style = tool.Ifc.get().by_id(self.active_surface_style_id)
-            external_style = tool.Style.get_style_elements(style).get("IfcExternallyDefinedSurfaceStyle", None)
+            style_elements = tool.Style.get_style_elements(style)
 
         # automatically select previously selected external style in file browser
         # if it exists in the file
-        if external_style and self.filepath == "":
+        if style_elements and self.filepath == "" and tool.Style.has_blender_external_style(style_elements):
+            external_style = style_elements["IfcExternallyDefinedSurfaceStyle"]
             style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
             self.directory = str(style_path.parent)
             self.filepath = str(style_path)
@@ -310,6 +314,9 @@ class BrowseExternalStyle(bpy.types.Operator):
         attributes["Location"].string_value = filepath
         attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
         attributes["Name"].string_value = self.data_block
+
+        style = tool.Ifc.get().by_id(self.active_surface_style_id)
+        bpy.ops.bim.activate_external_style(material_name=tool.Ifc.get_object(style).name)
         return {"FINISHED"}
 
 
@@ -325,14 +332,23 @@ class ActivateExternalStyle(bpy.types.Operator, tool.Ifc.Operator):
             material = context.active_object.active_material
         else:
             material = bpy.data.materials[self.material_name]
-        external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
-        data_block_type, data_block = external_style.Identification.split("/")
-        style_path = Path(tool.Ifc.resolve_uri(external_style.Location))
+
+        props = context.scene.BIMStylesProperties
+        if props.is_editing:
+            location = props.external_style_attributes["Location"].string_value
+            identification = props.external_style_attributes["Identification"].string_value
+        else:
+            external_style = tool.Style.get_style_elements(material)["IfcExternallyDefinedSurfaceStyle"]
+            location = external_style.Location
+            identification = external_style.Identification
+
+        data_block_type, data_block = identification.split("/")
+        style_path = Path(tool.Ifc.resolve_uri(location))
 
         if style_path.suffix != ".blend":
             self.report(
                 {"ERROR"},
-                f"Error loading external style for \"{material.name}\" - only Blender external styles are supported",
+                f'Error loading external style for "{material.name}" - only Blender external styles are supported',
             )
             return {"CANCELLED"}
 
@@ -493,6 +509,22 @@ class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_adding = True
 
 
+class DuplicateStyle(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_style"
+    bl_label = "Duplicate Style"
+    bl_options = {"REGISTER", "UNDO"}
+
+    style: bpy.props.IntProperty(name="Style ID")
+
+    def _execute(self, context):
+        style_type = context.scene.BIMStylesProperties.style_type
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style)
+        tool.Style.duplicate_style(style)
+        bpy.ops.bim.disable_editing_styles()
+        bpy.ops.bim.load_styles(style_type=style_type)
+
+
 class DisableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_adding_presentation_style"
     bl_label = "Disable Add Presentation Style"
@@ -571,7 +603,8 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_class = self.ifc_class
         tool.Style.set_surface_style_props()
 
-        surface_style = tool.Style.get_style_elements(style).get(self.ifc_class, None)
+        style_elements = tool.Style.get_style_elements(style)
+        surface_style = style_elements.get(self.ifc_class, None)
         attributes = tool.Style.get_style_ui_props_attributes(self.ifc_class)
 
         # lighting style require special handling since Attribute doesn't support colors
@@ -590,6 +623,17 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         if attributes is not None:
             attributes.clear()
             blenderbim.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
+
+        material = tool.Ifc.get_object(style)
+        active_style_type = material.BIMStyleProperties.active_style_type
+        if self.ifc_class == "IfcExternallyDefinedSurfaceStyle" and active_style_type != "External":
+            if tool.Style.has_blender_external_style(style_elements):
+                switch_shading(material, "External")
+        elif (
+            self.ifc_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering", "IfcSurfaceStyleWithTextures")
+            and active_style_type != "Shading"
+        ):
+            switch_shading(material, "Shading")
 
 
 class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -614,6 +658,10 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         self.props.is_editing_style = 0
         core.load_styles(tool.Style, style_type=self.props.style_type)
+
+        # restore selected style type
+        material = tool.Ifc.get_object(self.style)
+        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
 
     def edit_existing_style(self):
         material = tool.Ifc.get_object(self.style)
@@ -903,4 +951,50 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         self.report({"INFO"}, f"UV saved to the style {style.Name}")
 
+        return {"FINISHED"}
+
+
+class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_style_to_selected"
+    bl_label = "Assign Style To Selected"
+    bl_description = "Assign style to the selected objects' active representations"
+    bl_options = {"REGISTER", "UNDO"}
+
+    style_id: bpy.props.IntProperty(name="Style ID")
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected")
+            return False
+        return True
+
+    def _execute(self, context):
+        if self.style_id == 0:
+            self.report({"ERROR"}, "No style provided")
+            return {"CANCELLED"}
+        ifc_file = tool.Ifc.get()
+        style = ifc_file.by_id(self.style_id)
+
+        representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
+        for obj in context.selected_objects:
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = tool.Geometry.resolve_mapped_representation(representation)
+            representations.setdefault(representation, obj)
+
+        if not representations:
+            self.report({"INFO"}, "No IFC objects with representations selected.")
+            return {"FINISHED"}
+
+        for representation in representations:
+            ifcopenshell.api.style.assign_representation_styles(
+                ifc_file,
+                shape_representation=representation,
+                styles=[style],
+                should_use_presentation_style_assignment=tool.Geometry.should_use_presentation_style_assignment(),
+            )
+
+        tool.Geometry.reload_representation(representations.values())
         return {"FINISHED"}

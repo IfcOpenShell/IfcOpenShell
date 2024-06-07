@@ -23,9 +23,11 @@ import collections
 import collections.abc
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import blenderbim.core.geometry
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.core.geometry as geometry
@@ -36,8 +38,9 @@ from functools import partial
 from blenderbim.bim import import_ifc
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
+from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
-from typing import Optional, Union, TypeVar, Any
+from typing import Optional, Union, TypeVar, Any, Iterable
 
 T = TypeVar("T")
 
@@ -468,7 +471,7 @@ class Model(blenderbim.core.tool.Model):
                     has_deleted_opening = True
 
     @classmethod
-    def get_material_layer_parameters(cls, element):
+    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_set_direction = "AXIS2"
         offset = 0.0
@@ -551,7 +554,7 @@ class Model(blenderbim.core.tool.Model):
             data = tool.Ifc.get().createIfcText(json.dumps(data))
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj):
@@ -902,7 +905,7 @@ class Model(blenderbim.core.tool.Model):
         return Matrix(placement)
 
     @classmethod
-    def reload_body_representation(cls, obj_or_objects):
+    def reload_body_representation(cls, obj_or_objects: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
         """Update body representation including all decomposed objects"""
         if isinstance(obj_or_objects, collections.abc.Iterable):
             objects = set(obj_or_objects)
@@ -1203,3 +1206,49 @@ class Model(blenderbim.core.tool.Model):
 
         vertices = (v.to_3d().xzy for v in vertices)
         return (vertices, edges, faces)
+
+    @classmethod
+    def update_simple_openings(cls, element: ifcopenshell.entity_instance) -> None:
+        ifc_file = tool.Ifc.get()
+        fillings = {e: tool.Ifc.get_object(e) for e in tool.Ifc.get_all_element_occurrences(element)}
+
+        voided_objs = set()
+        has_replaced_opening_representation = False
+        for filling in fillings:
+            if not filling.FillsVoids:
+                continue
+
+            opening = filling.FillsVoids[0].RelatingOpeningElement
+            voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
+            voided_objs.add(voided_obj)
+
+            # We assume all occurrences of the same element type (e.g. a window)
+            # will use openings of the same thickness.
+            # Generator we use by default will create a really thick opening representation
+            # to make sure it will fit for walls with different thickness.
+            if has_replaced_opening_representation:
+                continue
+
+            old_representation = ifcopenshell.util.representation.get_representation(
+                opening, "Model", "Body", "MODEL_VIEW"
+            )
+            old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
+            ifcopenshell.api.run(
+                "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
+            )
+
+            new_representation = FilledOpeningGenerator().generate_opening_from_filling(
+                filling, fillings[filling], voided_obj.dimensions[1]
+            )
+
+            for inverse in ifc_file.get_inverse(old_representation):
+                ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
+
+            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+
+            has_replaced_opening_representation = True
+
+        tool.Model.reload_body_representation(voided_objs)
+        if fillings:
+            with bpy.context.temp_override(selected_objects=list(fillings.values())):
+                bpy.ops.bim.recalculate_fill()

@@ -15,33 +15,34 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, objective=None, attributes=None):
-        """Edit the attributes of a objective
+def edit_objective(
+    file: ifcopenshell.file, objective: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
+    """Edit the attributes of a objective
 
-        For more information about the attributes and data types of an
-        IfcObjective, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcObjective, consult the IFC documentation.
 
-        :param objective: The IfcObjective you want to edit.
-        :type objective: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param objective: The IfcObjective you want to edit.
+    :type objective: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            ifcopenshell.api.run("constraint.edit_objective", model,
-                objective=objective, attributes={"ConstraintGrade": "HARD"})
-        """
-        self.file = file
-        self.settings = {"objective": objective, "attributes": attributes or {}}
+        objective = ifcopenshell.api.run("constraint.add_objective", model)
+        ifcopenshell.api.run("constraint.edit_objective", model,
+            objective=objective, attributes={"ConstraintGrade": "HARD"})
+    """
+    settings = {"objective": objective, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["objective"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["objective"], name, value)

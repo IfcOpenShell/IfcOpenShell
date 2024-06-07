@@ -21,53 +21,54 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, relating_process=None, related_process=None):
-        """Removes a sequence relationship between tasks
+def unassign_sequence(
+    file: ifcopenshell.file,
+    relating_process: ifcopenshell.entity_instance,
+    related_process: ifcopenshell.entity_instance,
+) -> None:
+    """Removes a sequence relationship between tasks
 
-        :param relating_process: The previous / predecessor task.
-        :type relating_process: ifcopenshell.entity_instance.entity_instance
-        :param related_process: The next / successor task.
-        :type related_process: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param relating_process: The previous / predecessor task.
+    :type relating_process: ifcopenshell.entity_instance
+    :param related_process: The next / successor task.
+    :type related_process: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we are creating a construction schedule. All tasks
-            # need to be part of a work schedule.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
 
-            # Let's imagine a root construction task
-            construction = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule, name="Construction", identification="C")
+        # Let's imagine a root construction task
+        construction = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule, name="Construction", identification="C")
 
-            # Let's imagine we're building 2 zones, one after another.
-            zone1 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 1", identification="C.1")
-            zone2 = ifcopenshell.api.run("sequence.add_task", model,
-                parent_task=construction, name="Zone 2", identification="C.2")
+        # Let's imagine we're building 2 zones, one after another.
+        zone1 = ifcopenshell.api.run("sequence.add_task", model,
+            parent_task=construction, name="Zone 1", identification="C.1")
+        zone2 = ifcopenshell.api.run("sequence.add_task", model,
+            parent_task=construction, name="Zone 2", identification="C.2")
 
-            # Zone 1 finishes, then zone 2 starts.
-            ifcopenshell.api.run("sequence.assign_sequence", model, relating_process=zone1, related_process=zone2)
+        # Zone 1 finishes, then zone 2 starts.
+        ifcopenshell.api.run("sequence.assign_sequence", model, relating_process=zone1, related_process=zone2)
 
-            # Let's make them unrelated
-            ifcopenshell.api.run("sequence.unassign_sequence", model,
-                relating_process=zone1, related_process=zone2)
-        """
-        self.file = file
-        self.settings = {
-            "relating_process": relating_process,
-            "related_process": related_process,
-        }
+        # Let's make them unrelated
+        ifcopenshell.api.run("sequence.unassign_sequence", model,
+            relating_process=zone1, related_process=zone2)
+    """
+    settings = {
+        "relating_process": relating_process,
+        "related_process": related_process,
+    }
 
-    def execute(self):
-        for rel in self.settings["related_process"].IsSuccessorFrom or []:
-            if rel.RelatingProcess == self.settings["relating_process"]:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.settings["related_process"])
+    for rel in settings["related_process"].IsSuccessorFrom or []:
+        if rel.RelatingProcess == settings["relating_process"]:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+    ifcopenshell.api.run("sequence.cascade_schedule", file, task=settings["related_process"])

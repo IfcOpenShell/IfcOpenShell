@@ -15,66 +15,74 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, name=None, category=None):
-        """Adds a new material
+def add_material(
+    file: ifcopenshell.file, name: Optional[str] = None, category: Optional[str] = None, description: Optional[str] = None
+) -> ifcopenshell.entity_instance:
+    """Adds a new material
 
-        A material in IFC represents a physical material, such as timber, steel,
-        concrete, aluminium, etc. It may also contain physical properties used
-        for structural or lighting simulation. Note that unlike the computer
-        graphics industry, a material by itself does not define any colour or
-        lighting information. Colours in IFC are known as "styles", and an IFC
-        material may or may not have any style information associated with it.
-        See ifcopenshell.api.style for more information.
+    A material in IFC represents a physical material, such as timber, steel,
+    concrete, aluminium, etc. It may also contain physical properties used
+    for structural or lighting simulation. Note that unlike the computer
+    graphics industry, a material by itself does not define any colour or
+    lighting information. Colours in IFC are known as "styles", and an IFC
+    material may or may not have any style information associated with it.
+    See ifcopenshell.api.style for more information.
 
-        A material is typically given a code name which is used by architects in
-        elevations and details when tagging finishes. Materials are also useful
-        to structural engineers in specifying the exact types of concrete and
-        steel to be used in structural simulations.
+    A material is typically given a code name which is used by architects in
+    elevations and details when tagging finishes. Materials are also useful
+    to structural engineers in specifying the exact types of concrete and
+    steel to be used in structural simulations.
 
-        In addition, materials can belong to a category. Specifying this
-        category is critical to allow model recipients to make simple queries
-        like "show me all concrete / steel" elements in the model. Without
-        standardised category naming of all materials, this type of query
-        becomes a bespoke and inefficient task. A list of categories are:
-        'concrete', 'steel', 'aluminium', 'block', 'brick', 'stone', 'wood',
-        'glass', 'gypsum', 'plastic', and 'earth'. The user is allowed to
-        specify their own category instead if none of these categories are
-        appropriate.
+    In addition, materials can belong to a category. Specifying this
+    category is critical to allow model recipients to make simple queries
+    like "show me all concrete / steel" elements in the model. Without
+    standardised category naming of all materials, this type of query
+    becomes a bespoke and inefficient task. A list of categories are:
+    'concrete', 'steel', 'aluminium', 'block', 'brick', 'stone', 'wood',
+    'glass', 'gypsum', 'plastic', and 'earth'. The user is allowed to
+    specify their own category instead if none of these categories are
+    appropriate.
 
-        Note that categories are not available in IFC2X3. This shortcoming is
-        one of the big reasons projects should upgrade to IFC4.
+    Note that categories are not available in IFC2X3. This shortcoming is
+    one of the big reasons projects should upgrade to IFC4.
 
-        :param name: The name of the material, typically tagged in a finishes
-            drawing or schedule.
-        :type name: str
-        :param category: The category of the material.
-        :type category: str, optional
-        :return: The newly created IfcMaterial
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    Additionally, a material's description provides more information beyond 
+    its name or category. 
 
-        Example:
+    :param name: The name of the material, typically tagged in a finishes
+        drawing or schedule.
+    :type name: str, optional
+    :param category: The category of the material.
+    :type category: str, optional
+    :param description: A description of the material.
+    :type description: str, optional
+    :return: The newly created IfcMaterial
+    :rtype: ifcopenshell.entity_instance
 
-        .. code:: python
+    Example:
 
-            # Let's create two materials with their respective categories
-            concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
-            steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+    .. code:: python
 
-            # Let's imagine an urban concrete bench which is purely made out of concrete
-            concrete_bench = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
+        # Let's create two materials with their respective categories
+        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete", description="Garage Slab")
+        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel", description="Corten Steel")
 
-            # Assign the concrete material to that bench. Note that no colour
-            # "Style" has been specified.
-            ifcopenshell.api.run("material.assign_material", model, products=[concrete_bench], material=concrete)
-        """
-        self.file = file
-        self.settings = {"name": name or "Unnamed", "category": category}
+        # Let's imagine an urban concrete bench which is purely made out of concrete
+        concrete_bench = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
 
-    def execute(self):
-        material = self.file.create_entity("IfcMaterial", **{"Name": self.settings["name"] or "Unnamed"})
-        if self.settings["category"]:
-            material.Category = self.settings["category"]
-        return material
+        # Assign the concrete material to that bench. Note that no colour
+        # "Style" has been specified.
+        ifcopenshell.api.run("material.assign_material", model, products=[concrete_bench], material=concrete)
+    """
+    settings = {"name": name or "Unnamed", "category": category, "description": description }
+
+    material = file.create_entity("IfcMaterial", **{"Name": settings["name"] or "Unnamed"})
+    if settings["category"]:
+        material.Category = settings["category"]
+    if settings["description"]:
+        material.Description = settings["description"]
+    return material

@@ -36,3 +36,7 @@ class TestAssignProduct(test.bootstrap.IFC4):
         ifcopenshell.api.run("sequence.assign_product", self.file, relating_product=wall, related_object=task)
         ifcopenshell.api.run("sequence.assign_product", self.file, relating_product=wall, related_object=task)
         assert wall.ReferencedBy[0].RelatedObjects == (task,)
+
+
+class TestAssignProductIFC2X3(test.bootstrap.IFC2X3, TestAssignProduct):
+    pass

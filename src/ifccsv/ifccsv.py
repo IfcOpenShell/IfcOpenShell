@@ -29,7 +29,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union
+from typing import Optional, Union, Literal
 
 try:
     from odf.namespaces import OFFICENS
@@ -53,6 +53,14 @@ except:
     pass  # No Pandas support
 
 
+FILE_FORMAT = Literal[
+    "csv",
+    "ods",
+    "xlsx",
+    "pd",
+]
+
+
 class IfcCsv:
     def __init__(self):
         self.headers = []
@@ -61,20 +69,20 @@ class IfcCsv:
 
     def export(
         self,
-        ifc_file,
-        elements,
+        ifc_file: ifcopenshell.file,
+        elements: ifcopenshell.entity_instance,
         attributes,
         headers=None,
         output=None,
-        format=None,
-        should_preserve_existing=False,
-        include_global_id=True,
-        delimiter=",",
-        null="-",
-        empty="",
-        bool_true="YES",
-        bool_false="NO",
-        concat=", ",
+        format: FILE_FORMAT = None,
+        should_preserve_existing: bool = False,
+        include_global_id: bool = True,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
         sort=None,
         groups=None,
         summaries=None,
@@ -382,9 +390,21 @@ class IfcCsv:
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
     def Import(
-        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
-    ):
-        ext = table.split(".")[-1].lower()
+        self,
+        ifc_file: ifcopenshell.file,
+        table: str,
+        attributes: Optional[list[Union[str, None]]] = None,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+    ) -> None:
+        """
+        Args:
+            table: filepath to the table.
+        """
+        ext: FILE_FORMAT = table.split(".")[-1].lower()
 
         if ext == "csv":
             self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false)

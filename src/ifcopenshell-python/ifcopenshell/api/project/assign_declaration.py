@@ -18,109 +18,130 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+import ifcopenshell.util.element
+from typing import Union
 
 
-class Usecase:
-    def __init__(self, file, definition=None, relating_context=None):
-        """Declares an element to the project
+def assign_declaration(
+    file: ifcopenshell.file,
+    definitions: list[ifcopenshell.entity_instance],
+    relating_context: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Declares the list of elements to the project
 
-        All data in a model must be directly or indirectly related to the
-        project. Most data is indirectly related, existing instead within the
-        spatial decomposition tree. Other data, such as types, may be declared
-        at the top level.
+    All data in a model must be directly or indirectly related to the
+    project. Most data is indirectly related, existing instead within the
+    spatial decomposition tree. Other data, such as types, may be declared
+    at the top level.
 
-        Most of the time, the API handles declaration automatically for you.
-        There is one scenario where you might want to explicitly declare objects
-        to the project, and that's when you want to organise objects into
-        project libraries for future use (such as an assets library). Assigning
-        a declaration lets you say that an object belongs to a library.
+    Most of the time, the API handles declaration automatically for you.
+    There is one scenario where you might want to explicitly declare objects
+    to the project, and that's when you want to organise objects into
+    project libraries for future use (such as an assets library). Assigning
+    a declaration lets you say that an object belongs to a library.
 
-        :param definition: The object you want to declare. Typically an asset.
-        :type definition: ifcopenshell.entity_instance.entity_instance
-        :param relating_context: The IfcProject, or more commonly the
-            IfcProjectLibrary that you want the object to be part of.
-        :type relating_context: ifcopenshell.entity_instance.entity_instance
-        :return: The new IfcRelDeclares relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param definitions: The list of objects you want to declare. Typically a list of assets.
+    :type definitions: list[ifcopenshell.entity_instance]
+    :param relating_context: The IfcProject, or more commonly the
+        IfcProjectLibrary that you want the object to be part of.
+    :type relating_context: ifcopenshell.entity_instance
+    :return: The new IfcRelDeclares relationship or None if all definitions
+        were already declared / do not support declaration.
+    :rtype: Union[ifcopenshell.entity_instance, None]
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Programmatically generate a library. You could do this visually too.
-            library = ifcopenshell.api.run("project.create_file")
-            root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
-            context = ifcopenshell.api.run("root.create_entity", library,
-                ifc_class="IfcProjectLibrary", name="Demo Library")
+        # Programmatically generate a library. You could do this visually too.
+        library = ifcopenshell.api.run("project.create_file")
+        root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
+        context = ifcopenshell.api.run("root.create_entity", library,
+            ifc_class="IfcProjectLibrary", name="Demo Library")
 
-            # It's necessary to say our library is part of our project.
-            ifcopenshell.api.run("project.assign_declaration", library, definition=context, relating_context=root)
+        # It's necessary to say our library is part of our project.
+        ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
 
-            # Assign units for our example library
-            unit = ifcopenshell.api.run("unit.add_si_unit", library,
-                unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-            ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
+        # Assign units for our example library
+        unit = ifcopenshell.api.run("unit.add_si_unit", library,
+            unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+        ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
 
-            # Let's create a single asset of a 200mm thick concrete wall
-            wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
-            concrete = ifcopenshell.api.run("material.add_material", self.file, name="CON", category="concrete")
-            rel = ifcopenshell.api.run("material.assign_material", library,
-                products=[wall_type], type="IfcMaterialLayerSet")
-            layer = ifcopenshell.api.run("material.add_layer", library,
-                layer_set=rel.RelatingMaterial, material=concrete)
-            layer.Name = "Structure"
-            layer.LayerThickness = 200
+        # Let's create a single asset of a 200mm thick concrete wall
+        wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
+        concrete = ifcopenshell.api.run("material.add_material", file, name="CON", category="concrete")
+        rel = ifcopenshell.api.run("material.assign_material", library,
+            products=[wall_type], type="IfcMaterialLayerSet")
+        layer = ifcopenshell.api.run("material.add_layer", library,
+            layer_set=rel.RelatingMaterial, material=concrete)
+        layer.Name = "Structure"
+        layer.LayerThickness = 200
 
-            # Mark our wall type as a reusable asset in our library.
-            ifcopenshell.api.run("project.assign_declaration", library,
-                definition=wall_type, relating_context=context)
+        # Mark our wall type as a reusable asset in our library.
+        ifcopenshell.api.run("project.assign_declaration", library,
+            definitions=[wall_type], relating_context=context)
 
-            # All done, just for fun let's save our asset library to disk for later use.
-            library.write("/path/to/my-library.ifc")
-        """
-        self.file = file
-        self.settings = {
-            "definition": definition,
-            "relating_context": relating_context,
-        }
+        # All done, just for fun let's save our asset library to disk for later use.
+        library.write("/path/to/my-library.ifc")
+    """
+    settings = {
+        "definitions": definitions,
+        "relating_context": relating_context,
+    }
 
-    def execute(self):
-        declares = None
-        if self.settings["relating_context"].Declares:
-            declares = self.settings["relating_context"].Declares[0]
+    relating_context = settings["relating_context"]
+    all_declares = relating_context.Declares
+    definitions = set(settings["definitions"])
 
-        if not hasattr(self.settings["definition"], "HasContext"):
-            return
+    previous_declares_rels: set[ifcopenshell.entity_instance] = set()
+    objects_without_contexts: list[ifcopenshell.entity_instance] = []
+    objects_with_contexts: list[ifcopenshell.entity_instance] = []
 
-        has_context = None
-        if self.settings["definition"].HasContext:
-            has_context = self.settings["definition"].HasContext[0]
+    # check if there is anything to change
+    for definition in definitions:
+        has_context = getattr(definition, "HasContext", None)
+        if has_context is None:
+            continue
 
-        if has_context and has_context == declares:
-            return
+        object_rel = next(iter(has_context), None)
+        if object_rel is None:
+            objects_without_contexts.append(definition)
+            continue
 
-        if has_context:
-            related_definitions = list(has_context.RelatedDefinitions)
-            related_definitions.remove(self.settings["definition"])
-            if related_definitions:
-                has_context.RelatedDefinitions = related_definitions
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": has_context})
-            else:
-                self.file.remove(has_context)
+        # either rel doesn't exist or product is part of different rel
+        if object_rel not in all_declares:
+            previous_declares_rels.add(object_rel)
+            objects_with_contexts.append(definition)
 
-        if declares:
-            related_definitions = set(declares.RelatedDefinitions)
-            related_definitions.add(self.settings["definition"])
-            declares.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": declares})
+    objects_to_change = objects_without_contexts + objects_with_contexts
+    # nothing to change
+    if not objects_to_change:
+        return None
+
+    for has_context in previous_declares_rels:
+        related_definitions = set(has_context.RelatedDefinitions) - set(objects_with_contexts)
+        if related_definitions:
+            has_context.RelatedDefinitions = list(related_definitions)
+            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": has_context})
         else:
-            declares = self.file.create_entity(
-                "IfcRelDeclares",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedDefinitions": [self.settings["definition"]],
-                    "RelatingContext": self.settings["relating_context"],
-                }
-            )
-        return declares
+            history = has_context.OwnerHistory
+            file.remove(has_context)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+
+    declares = next(iter(all_declares), None)
+    if declares:
+        declares.RelatedDefinitions = list(set(declares.RelatedDefinitions) | set(objects_to_change))
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": declares})
+    else:
+        declares = file.create_entity(
+            "IfcRelDeclares",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "RelatedDefinitions": list(objects_to_change),
+                "RelatingContext": relating_context,
+            },
+        )
+    return declares

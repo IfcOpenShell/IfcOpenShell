@@ -21,6 +21,7 @@ import bpy
 import pathlib
 import ifcopenshell
 import ifcopenshell.util.attribute
+import ifcopenshell.util.doc
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 
@@ -36,10 +37,14 @@ class PsetTemplatesData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
+        cls.data["pset_template_files"] = cls.pset_template_files()
+
+        # after pset_template_files
+        cls.data["pset_templates"] = cls.pset_templates()
+
+        # after pset_template_files because it loads IfcStore.pset_template_file
         cls.data["primary_measure_type"] = cls.primary_measure_type()
         cls.data["property_template_type"] = cls.property_template_type()
-        cls.data["pset_template_files"] = cls.pset_template_files()
-        cls.data["pset_templates"] = cls.pset_templates()
         cls.data["pset_template"] = cls.pset_template()
         cls.data["prop_templates"] = cls.prop_templates()
 

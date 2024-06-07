@@ -15,36 +15,35 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, unit=None, attributes=None):
-        """Edits the attributes of an IfcMonetaryUnit
+def edit_monetary_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcMonetaryUnit
 
-        For more information about the attributes and data types of an
-        IfcMonetaryUnit, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcMonetaryUnit, consult the IFC documentation.
 
-        :param unit: The IfcMonetaryUnit entity you want to edit
-        :type unit: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param unit: The IfcMonetaryUnit entity you want to edit
+    :type unit: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # If you do all your cost plans in Zimbabwean dollars then nobody
-            # knows how accurate the numbers are.
-            zwl = ifcopenshell.api.run("unit.add_monetary_unit", model, currency="ZWL")
+        # If you do all your cost plans in Zimbabwean dollars then nobody
+        # knows how accurate the numbers are.
+        zwl = ifcopenshell.api.run("unit.add_monetary_unit", model, currency="ZWL")
 
-            # Ah who are we kidding
-            ifcopenshell.api.run("unit.edit_monetary_unit", model, unit=zwl, attributes={"Currency": "USD"})
-        """
-        self.file = file
-        self.settings = {"unit": unit, "attributes": attributes or {}}
+        # Ah who are we kidding
+        ifcopenshell.api.run("unit.edit_monetary_unit", model, unit=zwl, attributes={"Currency": "USD"})
+    """
+    settings = {"unit": unit, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["unit"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["unit"], name, value)

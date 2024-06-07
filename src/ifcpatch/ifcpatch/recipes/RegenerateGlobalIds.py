@@ -17,10 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
+from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src, file, logger, only_duplicates=False):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, only_duplicates=False):
         """Regenerate GlobalIds in an IFC model
 
         All root elements in an IFC model must be identified by a unique Global
@@ -53,18 +55,27 @@ class Patcher:
 
     def patch(self):
         if self.only_duplicates:
+            duplicates = 0
+            invalid_ids = 0
+
             guids = set()
             for element in self.file.by_type("IfcRoot"):
                 if element.GlobalId in guids:
                     element.GlobalId = ifcopenshell.guid.new()
+                    duplicates += 1
                 elif len(element.GlobalId) != 22 or element.GlobalId[0] not in "0123":
                     element.GlobalId = ifcopenshell.guid.new()
+                    invalid_ids += 1
                 else:
                     try:
                         ifcopenshell.guid.expand(element.GlobalId)
                     except:
                         element.GlobalId = ifcopenshell.guid.new()
+                    invalid_ids += 1
                 guids.add(element.GlobalId)
+
+            print("Replaced %s duplicate GlobalIds" % duplicates)
+            print("Replaced %s invalid GlobalIds" % invalid_ids)
         else:
             for element in self.file.by_type("IfcRoot"):
                 element.GlobalId = ifcopenshell.guid.new()

@@ -18,47 +18,45 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
-class Usecase:
-    def __init__(self, file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"):
-        """Add a new distribution system
+def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem") -> ifcopenshell.entity_instance:
+    """Add a new distribution system
 
-        A distribution system is a group of distribution elements, like ducts,
-        pipes, pumps, filters, fans, and so on that distribute a medium (air,
-        liquid, or electricity) throughout a facility. Systems may be
-        hierarchical, with larger systems composed of smaller subsystems.
+    A distribution system is a group of distribution elements, like ducts,
+    pipes, pumps, filters, fans, and so on that distribute a medium (air,
+    liquid, or electricity) throughout a facility. Systems may be
+    hierarchical, with larger systems composed of smaller subsystems.
 
-        :param ifc_class: The type of system, chosen from IfcDistributionSystem
-            for mechanical, electrical, communications, plumbing, fire, or
-            security systems. Alternatively you may choose IfcBuildingSystem for
-            specialised building facade systems or similar. For IFC2X3, choose
-            IfcSystem.
-        :type ifc_class: str
-        :return: The newly created IfcSystem.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param ifc_class: The type of system, chosen from IfcDistributionSystem
+        for mechanical, electrical, communications, plumbing, fire, or
+        security systems. Alternatively you may choose IfcBuildingSystem for
+        specialised building facade systems or similar. For IFC2X3, choose
+        IfcSystem.
+    :type ifc_class: str
+    :return: The newly created IfcSystem.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # A completely empty distribution system
-            system = ifcopenshell.api.run("system.add_system", model)
-        """
-        self.file = file
-        self.settings = {"ifc_class": ifc_class}
+        # A completely empty distribution system
+        system = ifcopenshell.api.run("system.add_system", model)
+    """
+    settings = {"ifc_class": ifc_class}
 
-    def execute(self) -> ifcopenshell.entity_instance:
-        ifc_class = self.settings["ifc_class"]
-        # workaround for failing default argument in ifc2x3
-        if self.file.schema == "IFC2X3" and ifc_class == "IfcDistributionSystem":
-            ifc_class = "IfcSystem"
+    ifc_class = settings["ifc_class"]
+    # workaround for failing default argument in ifc2x3
+    if file.schema == "IFC2X3" and ifc_class == "IfcDistributionSystem":
+        ifc_class = "IfcSystem"
 
-        return self.file.create_entity(
-            ifc_class,
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "Name": "Unnamed",
-            }
-        )
+    return file.create_entity(
+        ifc_class,
+        **{
+            "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "Name": "Unnamed",
+        }
+    )

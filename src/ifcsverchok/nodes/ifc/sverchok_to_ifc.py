@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcsverchok.helper
 import ifcopenshell.api
+import ifcopenshell.util.representation
 from ifcsverchok.ifcstore import SvIfcStore
 import blenderbim.tool as tool
 import blenderbim.core.geometry as core

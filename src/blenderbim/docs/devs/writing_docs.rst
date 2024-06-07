@@ -16,9 +16,12 @@ You can press the edit button on the top right on any documentation page to
 quickly edit their content.
 
 You can link to `external websites
-<https://docs.readthedocs.io/en/stable/guides/cross-referencing-with-sphinx.html>`_.
-You can also link to sections on the same page, like `Writing technical
-documentation`_. You can link to other pages, like :doc:`Hello
+<https://docs.readthedocs.io/en/stable/guides/cross-referencing-with-sphinx.html>`_
+(note the space between the url and the link text).  You can also link to
+sections on the same page, like :ref:`devs/writing_docs:Writing technical
+documentation` or with :ref:`custom text<devs/writing_docs:writing technical
+documentation>`. Traditional references like `Writing technical documentation`_
+work too but are discouraged. You can link to other pages, like :doc:`Hello
 World<hello_world>` or sections within other pages, like
 :ref:`devs/installation:unstable installation`. We have ``autosectionlabel``
 enabled so it is not necessary to manually create labels.

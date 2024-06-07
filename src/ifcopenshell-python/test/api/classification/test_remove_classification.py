@@ -47,7 +47,7 @@ class TestRemoveClassification(test.bootstrap.IFC4):
     def test_removing_a_classification_and_all_of_its_references_when_associated_with_a_resource(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
         result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
-        element = self.file.createIfcMaterial(Name="Material")
+        element = self.file.create_entity("IfcWall", Name="Wall")
         ifcopenshell.api.run(
             "classification.add_reference",
             self.file,
@@ -59,4 +59,9 @@ class TestRemoveClassification(test.bootstrap.IFC4):
         ifcopenshell.api.run("classification.remove_classification", self.file, classification=result)
         assert not self.file.by_type("IfcClassification")
         assert not self.file.by_type("IfcClassificationReference")
-        assert not self.file.by_type("IfcExternalReferenceRelationship")
+        if self.file.schema != "IFC2X3":
+            assert not self.file.by_type("IfcExternalReferenceRelationship")
+
+
+class TestRemoveClassificationIFC2X3(test.bootstrap.IFC2X3, TestRemoveClassification):
+    pass

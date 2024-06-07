@@ -16,15 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
 
-def unlink_material(ifc, obj=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def unlink_material(ifc: tool.Ifc, obj: bpy.types.Material) -> None:
     ifc.unlink(obj=obj)
 
 
-def add_material(ifc, material, style, obj=None, name=None):
+def add_material(
+    ifc: tool.Ifc,
+    material: tool.Material,
+    style: tool.Style,
+    obj: Optional[bpy.types.Material] = None,
+    name: Optional[str] = None,
+    category: Optional[str] = None,
+    description: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
     if not obj:
         obj = material.add_default_material_object(name)
-    ifc_material = ifc.run("material.add_material", name=material.get_name(obj))
+    ifc_material = ifc.run(
+        "material.add_material", name=material.get_name(obj), category=category, description=description
+    )
     ifc.link(ifc_material, obj)
     ifc_style = style.get_style(obj)
     if ifc_style:
@@ -36,14 +54,16 @@ def add_material(ifc, material, style, obj=None, name=None):
     return ifc_material
 
 
-def add_material_set(ifc, material, set_type=None):
+def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> ifcopenshell.entity_instance:
     ifc_material = ifc.run("material.add_material_set", name="Unnamed", set_type=set_type)
     if material.is_editing_materials():
         material.import_material_definitions(material.get_active_material_type())
     return ifc_material
 
 
-def remove_material(ifc, material_tool, style, material=None) -> bool:
+def remove_material(
+    ifc: tool.Ifc, material_tool: tool.Material, style: tool.Style, material: ifcopenshell.entity_instance
+) -> bool:
     """returns True after deleting False,\n
     returns False if material used in material sets and cannot be removed"""
     if material_tool.is_material_used_in_sets(material):
@@ -58,44 +78,49 @@ def remove_material(ifc, material_tool, style, material=None) -> bool:
     return True
 
 
-def remove_material_set(ifc, material_tool, material=None):
+def remove_material_set(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
     ifc.run("material.remove_material_set", material=material)
     if material_tool.is_editing_materials():
         material_tool.import_material_definitions(material_tool.get_active_material_type())
 
 
-def load_materials(material, material_type=None):
+def load_materials(material: tool.Material, material_type: str) -> None:
     material.import_material_definitions(material_type)
     material.enable_editing_materials()
 
 
-def disable_editing_materials(material):
+def disable_editing_materials(material: tool.Material) -> None:
     material.disable_editing_materials()
 
 
-def select_by_material(material_tool, spatial, material=None):
+def select_by_material(
+    material_tool: tool.Material, spatial: tool.Spatial, material: ifcopenshell.entity_instance
+) -> None:
     spatial.select_products(material_tool.get_elements_by_material(material))
 
 
-def enable_editing_material(material_tool, material):
+def enable_editing_material(material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
     material_tool.load_material_attributes(material)
     material_tool.enable_editing_material(material)
 
 
-def edit_material(ifc, material_tool, material):
+def edit_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
     attributes = material_tool.get_material_attributes()
     ifc.run("material.edit_material", material=material, attributes=attributes)
+    material_tool.sync_blender_material_name(material)
     material_tool.disable_editing_material()
     material_type = material_tool.get_active_material_type()
     material_tool.import_material_definitions(material_type)
     material_tool.enable_editing_materials()
 
 
-def disable_editing_material(material_tool):
+def disable_editing_material(material_tool: tool.Material) -> None:
     material_tool.disable_editing_material()
 
 
-def assign_material(ifc, material_tool, material_type, objects):
+def assign_material(
+    ifc: tool.Ifc, material_tool: tool.Material, material_type: Union[str, None], objects: list[bpy.types.Object]
+) -> None:
     material_type = material_type or material_tool.get_active_object_material()
     material = material_tool.get_active_material()
     for obj in objects:
@@ -108,7 +133,7 @@ def assign_material(ifc, material_tool, material_type, objects):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)
 
 
-def unassign_material(ifc, material_tool, objects):
+def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list[bpy.types.Object]) -> None:
     for obj in objects:
         element = ifc.get_entity(obj)
         if element:
@@ -124,7 +149,9 @@ def unassign_material(ifc, material_tool, objects):
                 ifc.run("material.unassign_material", products=[element])
 
 
-def patch_non_parametric_mep_segment(ifc, material_tool, profile_tool, obj):
+def patch_non_parametric_mep_segment(
+    ifc: tool.Ifc, material_tool: tool.Material, profile_tool: tool.Profile, obj: bpy.types.Object
+) -> None:
     element = ifc.get_entity(obj)
     if not element:
         return

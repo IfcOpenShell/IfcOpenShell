@@ -18,50 +18,50 @@
 
 import ifcopenshell
 import ifcopenshell.util.sequence
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, recurrence_pattern=None, attributes=None):
-        """Edits the attributes of an IfcRecurrencePattern
+def edit_recurrence_pattern(
+    file: ifcopenshell.file, recurrence_pattern: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
+    """Edits the attributes of an IfcRecurrencePattern
 
-        For more information about the attributes and data types of an
-        IfcRecurrencePattern, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcRecurrencePattern, consult the IFC documentation.
 
-        :param recurrence_pattern: The IfcRecurrencePattern entity you want to edit
-        :type recurrence_pattern: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param recurrence_pattern: The IfcRecurrencePattern entity you want to edit
+    :type recurrence_pattern: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's create a new calendar.
-            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        # Let's create a new calendar.
+        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
 
-            # Let's start defining the times that we work during the week.
-            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
-                work_calendar=calendar, time_type="WorkingTimes")
+        # Let's start defining the times that we work during the week.
+        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+            work_calendar=calendar, time_type="WorkingTimes")
 
-            # We create a weekly recurrence
-            pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
-                parent=work_time, recurrence_type="WEEKLY")
+        # We create a weekly recurrence
+        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+            parent=work_time, recurrence_type="WEEKLY")
 
-            # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
-            ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
-                recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
-        """
-        self.file = file
-        self.settings = {
-            "recurrence_pattern": recurrence_pattern,
-            "attributes": attributes or {},
-        }
+        # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
+        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+            recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
+    """
+    settings = {
+        "recurrence_pattern": recurrence_pattern,
+        "attributes": attributes,
+    }
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["recurrence_pattern"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["recurrence_pattern"], name, value)
 
-        ifcopenshell.util.sequence.is_working_day.cache_clear()
-        ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()
+    ifcopenshell.util.sequence.is_working_day.cache_clear()
+    ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

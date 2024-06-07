@@ -2,9 +2,8 @@ import bpy
 import json
 import lark
 import blenderbim.core.tool
-import blenderbim.tool as tool
+import ifcopenshell.guid
 import ifcopenshell.util.selector
-from ifcopenshell.util.selector import Selector
 from blenderbim.bim.prop import BIMFacet
 from typing import Union, Literal
 
@@ -85,6 +84,9 @@ class Search(blenderbim.core.tool.Search):
                 elif ifc_filter.type == "group":
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"group{comparison}{value}")
+                elif ifc_filter.type == "parent":
+                    comparison, value = cls.get_comparison_and_value(ifc_filter)
+                    filter_group_query.append(f"parent{comparison}{value}")
                 elif ifc_filter.type == "query":
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
@@ -110,11 +112,6 @@ class Search(blenderbim.core.tool.Search):
         elif value in ("NULL", "TRUE", "FALSE"):
             return value
         return '"' + value.replace('"', '\\"') + '"'
-
-    @classmethod
-    def from_selector_query(cls, query: str) -> list[ifcopenshell.entity_instance]:
-        """Returns a list of products from a selector query"""
-        return Selector().parse(tool.Ifc.get(), query)
 
 
 class ImportFilterQueryTransformer(lark.Transformer):
@@ -160,10 +157,16 @@ class ImportFilterQueryTransformer(lark.Transformer):
         return args[0]
 
     def instance(self, args):
-        return {"type": "instance", "value": " ".join([a.children[0].value for a in args])}
+        if args[0].data == "not":
+            return {"type": "instance", "value": "!" + args[1].children[0].value}
+        else:
+            return {"type": "instance", "value": args[0].children[0].value}
 
     def entity(self, args):
-        return {"type": "entity", "value": " ".join([a.children[0].value for a in args])}
+        if args[0].data == "not":
+            return {"type": "entity", "value": "!" + args[1].children[0].value}
+        else:
+            return {"type": "entity", "value": args[0].children[0].value}
 
     def attribute(self, args):
         name, comparison, value = args
@@ -193,6 +196,10 @@ class ImportFilterQueryTransformer(lark.Transformer):
     def group(self, args):
         comparison, value = args
         return {"type": "group", "value": f"{comparison}{value}"}
+
+    def parent(self, args):
+        comparison, value = args
+        return {"type": "parent", "value": f"{comparison}{value}"}
 
     def query(self, args):
         keys, comparison, value = args

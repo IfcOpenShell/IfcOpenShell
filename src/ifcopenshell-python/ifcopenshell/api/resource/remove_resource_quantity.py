@@ -19,34 +19,31 @@
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, resource=None):
-        """Removes the base quantity of a resource
+def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
+    """Removes the base quantity of a resource
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Add our own crew
-            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        # Add our own crew
+        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
 
-            # Add some labour to our crew.
-            labour = ifcopenshell.api.run("resource.add_resource", model,
-                parent_resource=crew, ifc_class="IfcLaborResource")
+        # Add some labour to our crew.
+        labour = ifcopenshell.api.run("resource.add_resource", model,
+            parent_resource=crew, ifc_class="IfcLaborResource")
 
-            # Labour resource is quantified in terms of time.
-            ifcopenshell.api.run("resource.add_resource_quantity", model,
-                resource=labour, ifc_class="IfcQuantityTime")
+        # Labour resource is quantified in terms of time.
+        ifcopenshell.api.run("resource.add_resource_quantity", model,
+            resource=labour, ifc_class="IfcQuantityTime")
 
-            # Let's say we only want to store the resource but no quantities,
-            # let's clean up our mess and remove the quantity.
-            ifcopenshell.api.run("resource.remove_resource_quantity", model, resource=labour)
-        """
-        self.file = file
-        self.settings = {"resource": resource}
+        # Let's say we only want to store the resource but no quantities,
+        # let's clean up our mess and remove the quantity.
+        ifcopenshell.api.run("resource.remove_resource_quantity", model, resource=labour)
+    """
+    settings = {"resource": resource}
 
-    def execute(self):
-        old_quantity = self.settings["resource"].BaseQuantity
-        self.settings["resource"].BaseQuantity = None
-        if old_quantity:
-            ifcopenshell.util.element.remove_deep(self.file, old_quantity)
+    old_quantity = settings["resource"].BaseQuantity
+    settings["resource"].BaseQuantity = None
+    if old_quantity:
+        ifcopenshell.util.element.remove_deep(file, old_quantity)

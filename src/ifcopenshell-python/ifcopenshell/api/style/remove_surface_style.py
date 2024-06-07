@@ -20,50 +20,50 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, style=None):
-        """Removes a presentation item from a presentation style
+def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -> None:
+    """Removes a presentation item from a presentation style
 
-        :param style: The IfcPresentationItem to remove.
-        :type style: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param style: The IfcPresentationItem to remove.
+    :type style: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a new surface style
-            style = ifcopenshell.api.run("style.add_style", model)
+        # Create a new surface style
+        style = ifcopenshell.api.run("style.add_style", model)
 
-            # Create a simple shading colour and transparency.
-            shading = ifcopenshell.api.run("style.add_surface_style", model,
-                style=style, ifc_class="IfcSurfaceStyleShading", attributes={
-                    "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
-                    "Transparency": 0., # 0 is opaque, 1 is transparent
-                })
+        # Create a simple shading colour and transparency.
+        shading = ifcopenshell.api.run("style.add_surface_style", model,
+            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                "Transparency": 0., # 0 is opaque, 1 is transparent
+            })
 
-            # Remove the shading item
-            ifcopenshell.api.run("style.remove_surface_style", model, style=shading)
-        """
-        self.file = file
-        self.settings = {"style": style}
+        # Remove the shading item
+        ifcopenshell.api.run("style.remove_surface_style", model, style=shading)
+    """
 
-    def execute(self):
-        to_delete = set()
-        if self.settings["style"].is_a("IfcSurfaceStyleWithTextures"):
-            for texture in self.settings["style"].Textures or []:
-                if texture.IsMappedBy:
-                    for coordinate in texture.IsMappedBy:
+    to_delete = set()
+    if style.is_a("IfcSurfaceStyleWithTextures"):
+        textures = style.Textures
+        if file.schema == "IFC2X3":
+            to_delete.update(textures)
+        else:
+            for texture in textures:
+                if coords := texture.IsMappedBy:
+                    for coordinate in coords:
                         to_delete.add(coordinate)
                 else:
                     to_delete.add(texture)
 
-        for attribute in self.settings["style"]:
-            if isinstance(attribute, ifcopenshell.entity_instance) and attribute.id():
-                to_delete.add(attribute)
+    for attribute in style:
+        if isinstance(attribute, ifcopenshell.entity_instance) and attribute.id():
+            to_delete.add(attribute)
 
-        self.file.remove(self.settings["style"])
+    file.remove(style)
 
-        for element in to_delete:
-            ifcopenshell.util.element.remove_deep2(self.file, element)
+    for element in to_delete:
+        ifcopenshell.util.element.remove_deep2(file, element)
