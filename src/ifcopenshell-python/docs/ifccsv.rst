@@ -115,7 +115,7 @@ Here is a minimal example of how to use IfcCSV as a library:
     model = ifcopenshell.open("/path/to/model.ifc")
     # Using the selector is optional. You may specify elements as a list manually if you prefer.
     # e.g. elements = model.by_type("IfcElement")
-    elements = ifcopenshell.util.selector.Selector.parse(model, ".IfcElement")
+    elements = ifcopenshell.util.selector.filter_elements(model, "IfcElement")
     attributes = ["Name", "Description"]
 
     # Export our model's elements and their attributes to a CSV.
