@@ -328,12 +328,17 @@ class PlacementData:
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "has_placement": cls.has_placement(),
-            "original_x": cls.original_x(),
-            "original_y": cls.original_y(),
-            "original_z": cls.original_z(),
-        }
+        cls.data = {"has_placement": cls.has_placement()}
+
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        obj = bpy.context.active_object
+        if obj and props.has_blender_offset:
+            xyz = cls.original_xyz(obj)
+            cls.data.update({
+                "original_x": str(xyz[0]),
+                "original_y": str(xyz[1]),
+                "original_z": str(xyz[2]),
+            })
         cls.is_loaded = True
 
     @classmethod
@@ -344,40 +349,18 @@ class PlacementData:
         return False
 
     @classmethod
-    def original_x(cls):
+    def original_xyz(cls, obj):
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props = bpy.context.scene.BIMGeoreferenceProperties
-        obj = bpy.context.active_object
-        if not obj or not props.has_blender_offset:
-            return
-        return str(round(cls.original_xyz(obj.location)[0], 3))
-
-    @classmethod
-    def original_y(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        obj = bpy.context.active_object
-        if not obj or not props.has_blender_offset:
-            return
-        return str(round(cls.original_xyz(obj.location)[1], 3))
-
-    @classmethod
-    def original_z(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        obj = bpy.context.active_object
-        if not obj or not props.has_blender_offset:
-            return
-        return str(round(cls.original_xyz(obj.location)[2], 3))
-
-    @classmethod
-    def original_xyz(cls, location):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        return ifcopenshell.util.geolocation.xyz2enh(
-            location[0],
-            location[1],
-            location[2],
-            float(props.blender_eastings),
-            float(props.blender_northings),
-            float(props.blender_orthogonal_height),
+        xyz = ifcopenshell.util.geolocation.xyz2enh(
+            obj.matrix_world[0][3],
+            obj.matrix_world[1][3],
+            obj.matrix_world[2][3],
+            float(props.blender_eastings) * unit_scale,
+            float(props.blender_northings) * unit_scale,
+            float(props.blender_orthogonal_height) / unit_scale,
             float(props.blender_x_axis_abscissa),
             float(props.blender_x_axis_ordinate),
             1.0,
         )
+        return [round(o, 3) / unit_scale for o in xyz]  # To nearest mm of precision

@@ -752,6 +752,7 @@ class IfcImporter:
             elif obj.data and obj.data.get("has_cartesian_point_offset", None):
                 obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
                 if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
+                    obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
                     offset_x, offset_y, offset_z = map(float, cartesian_point_offset.split(","))
                     matrix[0][3] += offset_x
                     matrix[1][3] += offset_y
