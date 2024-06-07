@@ -92,8 +92,18 @@ class SpatialDecompositionData:
     def load(cls):
         cls.is_loaded = True
         cls.data = {
+            "default_container": cls.default_container(),
             "subelement_class": cls.subelement_class(),
         }
+
+    @classmethod
+    def default_container(cls) -> str:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if props.default_container:
+            try:
+                return tool.Ifc.get().by_id(props.default_container).Name
+            except:
+                pass
 
     @classmethod
     def subelement_class(cls):

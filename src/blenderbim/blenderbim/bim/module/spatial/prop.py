@@ -131,6 +131,7 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     active_element_index: IntProperty(name="Active Element Index")
     total_elements: IntProperty(name="Total Elements")
     subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")
+    default_container: IntProperty(name="Default Container", default=0)
 
     @property
     def active_container(self):

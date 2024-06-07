@@ -826,3 +826,7 @@ class Spatial(blenderbim.core.tool.Spatial):
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
                 obj.hide_set(False)
+
+    @classmethod
+    def set_default_container(cls, container):
+        bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
