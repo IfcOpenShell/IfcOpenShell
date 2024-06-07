@@ -306,3 +306,11 @@ class SelectCsvIfcFile(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class OpenWebUi(bpy.types.Operator):
+    bl_idname = "bim.open_web_ui"
+    bl_label = "Open Web UI"
+
+    def execute(self, context):
+        return {"FINISHED"}
