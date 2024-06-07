@@ -27,3 +27,7 @@ class TestAddPersonAndOrganisation(test.bootstrap.IFC4):
         person_and_organisation = ifcopenshell.api.run(
             "owner.add_person_and_organisation", self.file, person=person, organisation=organisation
         )
+
+
+class TestAddPersonAndOrganisationIFC2X3(test.bootstrap.IFC2X3, TestAddPersonAndOrganisation):
+    pass

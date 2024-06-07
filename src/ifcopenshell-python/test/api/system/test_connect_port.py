@@ -108,8 +108,12 @@ class TestConnectPort(test.bootstrap.IFC4):
     def test_connecting_ports_with_a_realising_element(self):
         port = ifcopenshell.api.run("system.add_port", self.file)
         port2 = ifcopenshell.api.run("system.add_port", self.file)
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDuctFitting")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowFitting")
         ifcopenshell.api.run("system.connect_port", self.file, port1=port, port2=port2, element=element)
         assert self.file.by_type("IfcRelConnectsPorts")[0].RealizingElement == element
         ifcopenshell.api.run("system.connect_port", self.file, port1=port, port2=port2)
         assert self.file.by_type("IfcRelConnectsPorts")[0].RealizingElement is None
+
+
+class TestConnectPortIFC2X3(test.bootstrap.IFC2X3, TestConnectPort):
+    pass

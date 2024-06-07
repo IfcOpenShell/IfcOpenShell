@@ -13,17 +13,20 @@ Unstable installation
 
 **Unstable installation** is almost the same as **Stable installation**, except
 that they are typically updated every day. Simply download a daily build from
-the `Github releases page
-<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the same
-instructions as the **Stable installation**.
+the `GitHub releases page
+<https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the
+usual :doc:`installation instructions</users/installation>`.
 
 You will need to choose which build to download.
 
 - If you are on Blender >=4.1, choose py311
-- If you are on Blender >=3.1 and <=4.0, choose py10
+- If you are on Blender >=3.1 and <=4.0, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
 - Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
   ``win`` depending on your operating system
+
+For users who don't follow the `VFX Platform <https://vfxplatform.com/>`_
+standard, we also provide py312 builds.
 
 Sometimes, a build may be delayed, or contain broken code. We try to avoid this,
 but it happens.
@@ -92,17 +95,20 @@ For Linux or Mac:
     $ ln -s $PWD/src/blenderbim/blenderbim/tool $BLENDER_ADDON_PATH/tool
     $ ln -s $PWD/src/blenderbim/blenderbim/bim $BLENDER_ADDON_PATH/bim
 
-    # Remove the IfcOpenShell dependency Python code
-    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
-    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
+    # Copy over compiled IfcOpenShell files
+    $ cp $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/*_wrapper* $PWD/src/ifcopenshell-python/ifcopenshell/
+    
+    # Remove the IfcOpenShell dependency
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
 
     # Replace them with links to the Git repository
-    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/api $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/api
-    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell/util $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/util
+    $ ln -s $PWD/src/ifcopenshell-python/ifcopenshell $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
 
     # Remove and link other IfcOpenShell utilities
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
+    $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/bcf
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -110,9 +116,12 @@ For Linux or Mac:
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifctester
     $ rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
+    $ rm -r $BLENDER_ADDON_PATH/libs/Desktop
 
     $ ln -s $PWD/src/ifccsv/ifccsv.py $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
     $ ln -s $PWD/src/ifcdiff/ifcdiff.py $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
+    $ ln -s $PWD/src/bsdd/bsdd.py $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
+    $ ln -s $PWD/src/bcf/src/bcf $BLENDER_ADDON_PATH/libs/site/packages/bcf
     $ ln -s $PWD/src/ifc4d/ifc4d $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
     $ ln -s $PWD/src/ifc5d/ifc5d $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
     $ ln -s $PWD/src/ifccityjson/ifccityjson $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
@@ -120,6 +129,7 @@ For Linux or Mac:
     $ ln -s $PWD/src/ifcpatch/ifcpatch $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
     $ ln -s $PWD/src/ifctester/ifctester $BLENDER_ADDON_PATH/libs/site/packages/ifctester
     $ ln -s $PWD/src/ifcfm/ifcfm $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
+    $ ln -s $PWD/src/blenderbim/blenderbim/libs/desktop $BLENDER_ADDON_PATH/libs/Desktop
 
     # Manually download some third party dependencies
     $ cd $BLENDER_ADDON_PATH/bim/data/gantt
@@ -149,25 +159,25 @@ Before running it follow the instructions descibed after `rem` tags.
     rd /S /Q "%blenderbim%\tool\"
     rd /S /Q "%blenderbim%\bim\"
 
-
     echo Replacing them with links to the Git repository...
     mklink /D "%blenderbim%\core" "%cd%\src\blenderbim\blenderbim\core"
     mklink /D "%blenderbim%\tool" "%cd%\src\blenderbim\blenderbim\tool"
     mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
 
+    echo Copy over compiled IfcOpenShell files...
+    copy "%blenderbim%\libs\site\packages\ifcopenshell\*_wrapper*" "%cd%\src\ifcopenshell-python\ifcopenshell\"
 
-    echo Remove the IfcOpenShell dependency Python code...
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\api"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell\util"
+    echo Remove the IfcOpenShell dependency...
+    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell"
 
-
-    echo Replacing them with links to the Git repository...
-    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\api" "%cd%\src\ifcopenshell-python\ifcopenshell\api"
-    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell\util" "%cd%\src\ifcopenshell-python\ifcopenshell\util"
+    echo Replace them with links to the Git repository...
+    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell" "%cd%\src\ifcopenshell-python\ifcopenshell"
 
     echo Remove and link other IfcOpenShell utilities...
     del "%blenderbim%\libs\site\packages\ifccsv.py"
     del "%blenderbim%\libs\site\packages\ifcdiff.py"
+    del "%blenderbim%\libs\site\packages\bsdd.py"
+    rd /S /Q "%blenderbim%\libs\site\packages\bcf"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc4d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifc5d"
     rd /S /Q "%blenderbim%\libs\site\packages\ifccityjson"
@@ -175,9 +185,12 @@ Before running it follow the instructions descibed after `rem` tags.
     rd /S /Q "%blenderbim%\libs\site\packages\ifcpatch"
     rd /S /Q "%blenderbim%\libs\site\packages\ifctester"
     rd /S /Q "%blenderbim%\libs\site\packages\ifcfm"
+    rd /S /Q "%blenderbim%\libs\desktop"
 
     mklink "%blenderbim%\libs\site\packages\ifccsv.py" "%cd%\src\ifccsv\ifccsv.py"
     mklink "%blenderbim%\libs\site\packages\ifcdiff.py" "%cd%\src\ifcdiff\ifcdiff.py"
+    mklink "%blenderbim%\libs\site\packages\bsdd.py" "%cd%\src\bsdd\bsdd.py"
+    mklink /D "%blenderbim%\libs\site\packages\bcf" "%cd%\src\bcf\src\bcf"
     mklink /D "%blenderbim%\libs\site\packages\ifc4d" "%cd%\src\ifc4d\ifc4d"
     mklink /D "%blenderbim%\libs\site\packages\ifc5d" "%cd%\src\ifc5d\ifc5d"
     mklink /D "%blenderbim%\libs\site\packages\ifccityjson" "%cd%\src\ifccityjson\ifccityjson"
@@ -185,6 +198,7 @@ Before running it follow the instructions descibed after `rem` tags.
     mklink /D "%blenderbim%\libs\site\packages\ifcpatch" "%cd%\src\ifcpatch\ifcpatch"
     mklink /D "%blenderbim%\libs\site\packages\ifctester" "%cd%\src\ifctester\ifctester"
     mklink /D "%blenderbim%\libs\site\packages\ifcfm" "%cd%\src\ifcfm\ifcfm"
+    mklink /D "%blenderbim%\libs\desktop" "%cd%\src\blenderbim\blenderbim\libs\desktop"
 
     echo Manually downloading some third party dependencies...
     curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%blenderbim%\bim\data\gantt\jsgantt.js"

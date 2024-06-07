@@ -21,6 +21,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# NOTE: IfcWorkTime was introduced in IFC4
 class TestEditWorkTime(test.bootstrap.IFC4):
     def test_run(self):
         work_time = self.file.createIfcWorkTime()

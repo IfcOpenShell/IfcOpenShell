@@ -21,27 +21,24 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, load_group=None):
-        """Removes a structural load group
+def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshell.entity_instance) -> None:
+    """Removes a structural load group
 
-        :param load_group: The IfcStructuralLoadGroup to remove.
-        :type load_group: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"load_group": load_group}
+    :param load_group: The IfcStructuralLoadGroup to remove.
+    :type load_group: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {"load_group": load_group}
 
-    def execute(self):
-        # TODO: do a deep purge
-        for inverse in self.file.get_inverse(self.settings["load_group"]):
-            if inverse.is_a("IfcRelAssignsToGroup") and len(inverse.RelatedObjects) == 1:
-                history = inverse.OwnerHistory
-                self.file.remove(inverse)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-        history = self.settings["load_group"].OwnerHistory
-        self.file.remove(self.settings["load_group"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: do a deep purge
+    for inverse in file.get_inverse(settings["load_group"]):
+        if inverse.is_a("IfcRelAssignsToGroup") and len(inverse.RelatedObjects) == 1:
+            history = inverse.OwnerHistory
+            file.remove(inverse)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
+    history = settings["load_group"].OwnerHistory
+    file.remove(settings["load_group"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

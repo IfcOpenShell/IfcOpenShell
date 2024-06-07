@@ -4,6 +4,7 @@
 
 import xml.etree.ElementTree as ET
 import ifcopenshell
+import ifcopenshell.guid
 import os
 
 class IFC4Extractor:

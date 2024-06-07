@@ -22,13 +22,20 @@ from . import ui, prop, operator
 classes = (
     operator.AddRepresentation,
     operator.CopyRepresentation,
+    operator.DisableEditingRepresentationItemShapeAspect,
+    operator.DisableEditingRepresentationItemStyle,
     operator.DisableEditingRepresentationItems,
+    operator.DuplicateLinkedAggregateTo3dCursor,
+    operator.DuplicateMoveLinkedAggregate,
+    operator.DuplicateMoveLinkedAggregateMacro,
     operator.EditObjectPlacement,
+    operator.EditRepresentationItemShapeAspect,
+    operator.EditRepresentationItemStyle,
+    operator.EnableEditingRepresentationItemShapeAspect,
+    operator.EnableEditingRepresentationItemStyle,
     operator.EnableEditingRepresentationItems,
     operator.FlipObject,
     operator.GetRepresentationIfcParameters,
-    operator.DuplicateMoveLinkedAggregate,
-    operator.DuplicateMoveLinkedAggregateMacro,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
@@ -45,19 +52,13 @@ classes = (
     operator.RefreshLinkedAggregate,
     operator.RemoveConnection,
     operator.RemoveRepresentation,
+    operator.RemoveRepresentationItem,
+    operator.RemoveRepresentationItemFromShapeAspect,
     operator.SelectConnection,
     operator.SwitchRepresentation,
+    operator.UnassignRepresentationItemStyle,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
-    operator.RemoveRepresentationItem,
-    operator.EnableEditingRepresentationItemStyle,
-    operator.EditRepresentationItemStyle,
-    operator.DisableEditingRepresentationItemStyle,
-    operator.UnassignRepresentationItemStyle,
-    operator.EnableEditingRepresentationItemShapeAspect,
-    operator.EditRepresentationItemShapeAspect,
-    operator.DisableEditingRepresentationItemShapeAspect,
-    operator.RemoveRepresentationItemFromShapeAspect,
     prop.RepresentationItem,
     prop.ShapeAspect,
     prop.BIMObjectGeometryProperties,
@@ -119,6 +120,7 @@ def register():
 
         km = wm.keyconfigs.addon.keymaps.new(name="Mesh", space_type="EMPTY")
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
+        kmi.properties.should_save = True
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("wm.call_menu", "P", "PRESS")
         kmi.properties.name = ui.BIM_MT_hotkey_separate.bl_idname

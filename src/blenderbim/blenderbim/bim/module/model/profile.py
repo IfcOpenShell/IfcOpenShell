@@ -94,7 +94,6 @@ class DumbProfileGenerator:
             obj=obj,
             ifc_class=ifc_class,
             should_add_representation=False,
-            context=self.body_context,
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
 
@@ -931,13 +930,11 @@ class PatchNonParametricMepSegment(bpy.types.Operator, tool.Ifc.Operator):
         return context.active_object
 
     def _execute(self, context):
-        styles = tool.Geometry.get_styles(context.active_object)
         blenderbim.core.material.patch_non_parametric_mep_segment(
             tool.Ifc, tool.Material, tool.Profile, obj=context.active_object
         )
         bpy.ops.bim.enable_editing_extrusion_axis()
         bpy.ops.bim.edit_extrusion_axis()
-        styles = tool.Geometry.get_styles(context.active_object)
 
 
 class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):

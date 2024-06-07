@@ -18,68 +18,71 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
+from typing import Union
 
 
-class Usecase:
-    def __init__(self, file, relating_flow_element=None, related_flow_control=None):
-        """Assigns to the flow element control element that either sense or control
-        some aspect of the flow element.
+def assign_flow_control(
+    file: ifcopenshell.file,
+    relating_flow_element: ifcopenshell.entity_instance,
+    related_flow_control: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns to the flow element control element that either sense or control
+    some aspect of the flow element.
 
-        Note that control can be assigned only to the one flow element.
+    Note that control can be assigned only to the one flow element.
 
-        :param related_flow_control: IfcDistributionControlElement
-            which may be used to impart control on the flow element
-        :type related_flow_control: ifcopenshell.entity_instance.entity_instance
-        :param relating_flow_element: The IfcDistributionFlowElement that is being controlled / sensed
-        :type relating_flow_element: ifcopenshell.entity_instance.entity_instance
-        :return: Matching or newly created IfcRelFlowControlElements. If control
-            is already assigned to some other element method will return None.
-        :rtype: ifcopenshell.entity_instance.entity_instance, None
+    :param related_flow_control: IfcDistributionControlElement
+        which may be used to impart control on the flow element
+    :type related_flow_control: ifcopenshell.entity_instance
+    :param relating_flow_element: The IfcDistributionFlowElement that is being controlled / sensed
+    :type relating_flow_element: ifcopenshell.entity_instance
+    :return: Matching or newly created IfcRelFlowControlElements. If control
+        is already assigned to some other element method will return None.
+    :rtype: ifcopenshell.entity_instance, None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            flow_element = model.createIfcFlowSegment()
-            flow_control = model.createIfcController()
-            relation = ifcopenshell.api.run(
-                "system.assign_flow_control", model,
-                related_flow_control=flow_control, relating_flow_element=flow_element
-            )
-        """
-        self.file = file
-        self.settings = {
-            "relating_flow_element": relating_flow_element,
-            "related_flow_control": related_flow_control,
-        }
+        flow_element = model.createIfcFlowSegment()
+        flow_control = model.createIfcController()
+        relation = ifcopenshell.api.run(
+            "system.assign_flow_control", model,
+            related_flow_control=flow_control, relating_flow_element=flow_element
+        )
+    """
+    settings = {
+        "relating_flow_element": relating_flow_element,
+        "related_flow_control": related_flow_control,
+    }
 
-    def execute(self):
-        if self.settings["related_flow_control"].AssignedToFlowElement:
-            # only 1 control per 1 flow element is possible
-            assignment = self.settings["related_flow_control"].AssignedToFlowElement[0]
-            if assignment.RelatingFlowElement == self.settings["relating_flow_element"]:
-                return assignment
-            # return None if this control is already assigned to another flow element
-            return
+    if settings["related_flow_control"].AssignedToFlowElement:
+        # only 1 control per 1 flow element is possible
+        assignment = settings["related_flow_control"].AssignedToFlowElement[0]
+        if assignment.RelatingFlowElement == settings["relating_flow_element"]:
+            return assignment
+        # return None if this control is already assigned to another flow element
+        return
 
-        if self.settings["relating_flow_element"].HasControlElements:
-            assignment = self.settings["relating_flow_element"].HasControlElements[0]
-            if self.settings["related_flow_control"] in assignment.RelatedControlElements:
-                return assignment
-
-            related_flow_controls = set(assignment.RelatedControlElements)
-            related_flow_controls.add(self.settings["related_flow_control"])
-            assignment.RelatedControlElements = list(related_flow_controls)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": assignment})
+    if settings["relating_flow_element"].HasControlElements:
+        assignment = settings["relating_flow_element"].HasControlElements[0]
+        if settings["related_flow_control"] in assignment.RelatedControlElements:
             return assignment
 
-        assignment = self.file.create_entity(
-            "IfcRelFlowControlElements",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                "RelatedControlElements": [self.settings["related_flow_control"]],
-                "RelatingFlowElement": self.settings["relating_flow_element"],
-            },
-        )
+        related_flow_controls = set(assignment.RelatedControlElements)
+        related_flow_controls.add(settings["related_flow_control"])
+        assignment.RelatedControlElements = list(related_flow_controls)
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": assignment})
         return assignment
+
+    assignment = file.create_entity(
+        "IfcRelFlowControlElements",
+        **{
+            "GlobalId": ifcopenshell.guid.new(),
+            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "RelatedControlElements": [settings["related_flow_control"]],
+            "RelatingFlowElement": settings["relating_flow_element"],
+        },
+    )
+    return assignment

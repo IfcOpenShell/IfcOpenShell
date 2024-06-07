@@ -23,16 +23,24 @@ import hashlib
 import logging
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.geom
+import ifcopenshell.guid
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.system
 import blenderbim.core.tool
+import blenderbim.core.drawing
 import blenderbim.core.style
 import blenderbim.core.spatial
+import blenderbim.core.system
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import Union
+from typing import Union, Iterable, Optional
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -82,7 +90,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.meshes.remove(data)
 
     @classmethod
-    def delete_ifc_object(cls, obj):
+    def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
@@ -313,7 +321,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return new_mesh
 
     @classmethod
-    def get_active_representation(cls, obj):
+    def get_active_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         """< IfcShapeRepresentation or None"""
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -453,7 +461,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
-    def get_styles(cls, obj, only_assigned_to_faces=False):
+    def get_styles(
+        cls, obj: bpy.types.Object, only_assigned_to_faces: bool = False
+    ) -> list[Union[ifcopenshell.entity_instance, None]]:
         styles = [tool.Style.get_style(s.material) for s in obj.material_slots if s.material]
         if not only_assigned_to_faces:
             return styles
@@ -461,8 +471,15 @@ class Geometry(blenderbim.core.tool.Geometry):
         usage_count = [0] * len(obj.material_slots)
         if not usage_count:  # if there are no materials, polygons will still use index 0
             return []
+
         for poly in obj.data.polygons:
             usage_count[poly.material_index] += 1
+
+        # remove usages for empty material slots
+        for i, slot in reversed(list(enumerate(obj.material_slots))):
+            if not slot.material:
+                del usage_count[i]
+
         styles = [style for style, usage in zip(styles, usage_count, strict=True) if usage > 0]
         return styles
 
@@ -554,11 +571,11 @@ class Geometry(blenderbim.core.tool.Geometry):
                             new.value = element[i]
 
     @classmethod
-    def is_body_representation(cls, representation):
+    def is_body_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Body"
 
     @classmethod
-    def is_box_representation(cls, representation):
+    def is_box_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod
@@ -566,11 +583,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
 
     @classmethod
-    def is_mapped_representation(cls, representation):
+    def is_mapped_representation(cls, representation: ifcopenshell.entity_instance) -> bool:
         return representation.RepresentationType == "MappedRepresentation"
 
     @classmethod
-    def is_meshlike(cls, representation):
+    def is_meshlike(cls, representation: ifcopenshell.entity_instance) -> bool:
         if ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "AdvancedBrep",
             "Annotation2D",
@@ -650,7 +667,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.data.objects.remove(obj)
 
     @classmethod
-    def resolve_mapped_representation(cls, representation):
+    def resolve_mapped_representation(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         if representation.RepresentationType == "MappedRepresentation":
             return cls.resolve_mapped_representation(representation.Items[0].MappingSource.MappedRepresentation)
         return representation
@@ -706,11 +725,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
-    def should_use_presentation_style_assignment(cls):
+    def should_use_presentation_style_assignment(cls) -> bool:
         return bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
 
     @classmethod
-    def get_model_representations(cls):
+    def get_model_representations(cls) -> list[ifcopenshell.entity_instance]:
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
 
     @classmethod
@@ -736,21 +755,44 @@ class Geometry(blenderbim.core.tool.Geometry):
         bpy.context.view_layer.update()
 
     @classmethod
-    def reload_representation(cls, obj):
-        """reload `obj` active representation"""
-        if not obj.data:
-            return
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        blenderbim.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-            apply_openings=True,
-        )
+    def reload_representation(cls, obj_or_objs: Union[bpy.types.Object, Iterable[bpy.types.Object]]) -> None:
+        """Reload object/objects active representation.
+
+        Ensures that same representations won't be reloaded multiple times.
+        """
+        objs = obj_or_objs if isinstance(obj_or_objs, Iterable) else [obj_or_objs]
+        ifc_file = tool.Ifc.get()
+
+        # Find all objects that use the same representation
+        # as there are possibility that some of them have openings
+        # (each representation with opening has a unique Mesh)
+        # and therefore reloading Mesh of it's type or occurrence
+        # might not be enough.
+        elements = set()
+        for obj in objs:
+            representation = tool.Geometry.get_active_representation(obj)
+            if not representation:
+                continue
+            representation = tool.Geometry.resolve_mapped_representation(representation)
+            elements.update(ifcopenshell.util.element.get_elements_by_representation(ifc_file, representation))
+
+        # Filter out unique meshes to avoid
+        # reloading the same representation multiple times.
+        meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
+        meshes_to_objects = {(obj:=tool.Ifc.get_object(element)).data: obj for element in elements}
+
+        for obj in meshes_to_objects.values():
+            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            blenderbim.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
 
     @classmethod
     def remove_representation_item(cls, representation_item):
@@ -940,3 +982,11 @@ class Geometry(blenderbim.core.tool.Geometry):
     def delete_opening_object_placement(cls, placement):
         model = tool.Ifc.get()
         ifcopenshell.util.element.remove_deep2(model, placement)
+
+    @classmethod
+    def get_blender_offset_type(cls, obj: bpy.types.Object) -> Optional[str]:
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            if (result := obj.BIMObjectProperties.blender_offset_type) == "NONE":
+                result = obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            return result

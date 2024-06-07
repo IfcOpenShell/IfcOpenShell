@@ -27,7 +27,7 @@ class TestRemoveSystem(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcSystem")) == 0
 
     def test_removing_orphaned_group_relationships(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcPump")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowTerminal")
         system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
         ifcopenshell.api.run("system.assign_system", self.file, product=element, system=system)
         ifcopenshell.api.run("system.remove_system", self.file, system=system)
@@ -41,3 +41,7 @@ class TestRemoveSystem(test.bootstrap.IFC4):
         assert not self.file.by_type("IfcRelDefinesByProperties")
         assert not self.file.by_type("IfcPropertySet")
         assert not self.file.by_type("IfcPropertySingleValue")
+
+
+class TestRemoveSystemIFC2X3(test.bootstrap.IFC2X3, TestRemoveSystem):
+    pass

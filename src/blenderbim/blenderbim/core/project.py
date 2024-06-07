@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def create_project(ifc, project, schema=None, template=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def create_project(ifc: tool.Ifc, project: tool.Project, spatial: tool.Spatial, schema: str, template: Optional[str] = None) -> None:
     if ifc.get():
         return
 
@@ -34,7 +42,7 @@ def create_project(ifc, project, schema=None, template=None):
     building = project.create_empty("My Building")
     storey = project.create_empty("My Storey")
 
-    project.run_root_assign_class(obj=project_obj, ifc_class="IfcProject")
+    project.run_root_assign_class(obj=project_obj, ifc_class="IfcProject", should_add_representation=False)
     project.run_unit_assign_scene_units()
 
     model = project.run_context_add_context(context_type="Model", context_identifier="", target_view="", parent=0)
@@ -82,7 +90,10 @@ def create_project(ifc, project, schema=None, template=None):
     project.run_aggregate_assign_object(relating_obj=building, related_obj=storey)
 
     project.set_context(body)
-    project.set_active_spatial_element(storey)
+    spatial.run_spatial_import_spatial_decomposition()
+    if default_container := spatial.guess_default_container():
+        spatial.set_default_container(default_container)
+
     project.create_project_collections()
 
     if template:

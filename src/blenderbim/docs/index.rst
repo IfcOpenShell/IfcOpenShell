@@ -32,6 +32,7 @@ Learn how to model a small building and create simple architectural plans, secti
    users/git_support
    users/other_addons
    users/general_usage
+   users/troubleshooting
 
 .. toctree::
    :hidden:

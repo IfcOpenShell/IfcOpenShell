@@ -26,3 +26,7 @@ class TestRemoveActor(test.bootstrap.IFC4):
         actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcActor", actor=person)
         ifcopenshell.api.run("owner.remove_actor", self.file, actor=actor)
         assert len(self.file.by_type("IfcActor")) == 0
+
+
+class TestRemoveActorIFC2X3(test.bootstrap.IFC2X3, TestRemoveActor):
+    pass

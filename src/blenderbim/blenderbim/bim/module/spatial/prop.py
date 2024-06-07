@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.spatial.data import SpatialData
+from blenderbim.bim.module.spatial.data import SpatialDecompositionData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -31,30 +31,32 @@ from bpy.props import (
     CollectionProperty,
 )
 import blenderbim.tool as tool
-import blenderbim.core.geometry
 import ifcopenshell
 
 
+def get_subelement_class(self, context):
+    if not SpatialDecompositionData.is_loaded:
+        SpatialDecompositionData.load()
+    return SpatialDecompositionData.data["subelement_class"]
+
+
 def update_elevation(self, context):
-    entity = tool.Ifc.get().by_id(self.active_container_id)
-    obj = tool.Ifc.get_object(entity)
-    if not obj:
-        return
-    obj.location.z = self.elevation
+    if ifc_definition_id := self.ifc_definition_id:
+        entity = tool.Ifc.get().by_id(ifc_definition_id)
+        obj = tool.Ifc.get_object(entity)
+        if not obj:
+            return
+        obj.location.z = self.elevation
+
+
+def update_name(self, context):
+    if ifc_definition_id := self.ifc_definition_id:
+        tool.Spatial.edit_container_name(tool.Ifc.get().by_id(ifc_definition_id), self.name)
 
 
 def update_active_container_index(self, context):
-    self.active_container_id = self.containers[self.active_container_index].ifc_definition_id
-    self.container_name = self.containers[self.active_container_index].name
-    self.elevation = self.containers[self.active_container_index].elevation
-
-
-def updateContainerName(self, context):
-    props = context.scene.BIMSpatialManagerProperties
-    if not props.is_container_update_enabled or self.name == "Unnamed":
-        return
-    tool.Spatial.edit_container_name(tool.Ifc.get().by_id(props.active_container_id), self.name)
-    props.container_name = self.name
+    SpatialDecompositionData.data["subelement_class"] = SpatialDecompositionData.subelement_class()
+    tool.Spatial.load_contained_elements()
 
 
 def update_relating_container_from_object(self, context):
@@ -102,20 +104,36 @@ class BIMObjectSpatialProperties(PropertyGroup):
 
 
 class BIMContainer(PropertyGroup):
-    name: StringProperty(name="Name", update=updateContainerName)
-    elevation: FloatProperty(name="Elevation", subtype="DISTANCE")
+    name: StringProperty(name="Name", update=update_name)
+    ifc_class: StringProperty(name="IFC Class")
+    description: StringProperty(name="Description")
+    long_name: StringProperty(name="Long Name")
+    elevation: FloatProperty(name="Elevation", subtype="DISTANCE", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
-class BIMSpatialManagerProperties(PropertyGroup):
+class Element(PropertyGroup):
+    name: StringProperty(name="Name")
+    is_class: BoolProperty(name="Is Class", default=False)
+    is_type: BoolProperty(name="Is Type", default=False)
+    total: IntProperty(name="Total")
+
+
+class BIMSpatialDecompositionProperties(PropertyGroup):
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
     expanded_containers: StringProperty(name="Expanded containers", default="[]")
     active_container_index: IntProperty(name="Active Container Index", update=update_active_container_index)
-    active_container_id: IntProperty(name="Active Container Id")
-    container_name: StringProperty(name="Container Name")
-    elevation: FloatProperty(name="Elevation", update=update_elevation, subtype="DISTANCE")
-    is_container_update_enabled: BoolProperty(name="Is Container Update Enabled", default=True)  # TODO:review
+    elements: CollectionProperty(name="Elements", type=Element)
+    active_element_index: IntProperty(name="Active Element Index")
+    total_elements: IntProperty(name="Total Elements")
+    subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")
+    default_container: IntProperty(name="Default Container", default=0)
+
+    @property
+    def active_container(self):
+        if self.containers and self.active_container_index < len(self.containers):
+            return self.containers[self.active_container_index]

@@ -58,3 +58,7 @@ class TestEditContext(test.bootstrap.IFC4):
         assert subcontext.TargetScale == 0.5
         assert subcontext.TargetView == "MODEL_VIEW"
         assert subcontext.UserDefinedTargetView == "UserDefinedTargetView"
+
+
+class TestEditContextIFC2X3(test.bootstrap.IFC2X3, TestEditContext):
+    pass

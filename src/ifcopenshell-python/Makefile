@@ -89,7 +89,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-f7c03db-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-c7830e9-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)

@@ -21,6 +21,7 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
+import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 
@@ -75,6 +76,10 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
             if element1.is_a("IfcOpeningElement"):
                 self.report({"INFO"}, "You can't add an opening to another opening.")
+                continue
+
+            if not hasattr(element1, "HasOpenings"):
+                self.report({"INFO"}, f"An {element1.is_a()} is not allowed to have an opening.")
                 continue
 
             if tool.Ifc.is_moved(obj1):

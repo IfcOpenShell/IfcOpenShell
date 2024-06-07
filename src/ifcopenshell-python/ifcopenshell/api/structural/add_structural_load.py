@@ -17,37 +17,32 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, name=None, ifc_class="IfcStructuralLoadLinearForce"):
-        """Adds a new structural load
+def add_structural_load(
+    file: ifcopenshell.file, name: Optional[str] = None, ifc_class: str = "IfcStructuralLoadLinearForce"
+) -> ifcopenshell.entity_instance:
+    """Adds a new structural load
 
-        Structural loads may be actions or reactions. A simple load might be a
-        static and be linear, planar, or a single point. Alternatively, loads
-        may be defined as a configuration of multiple loads.
+    Structural loads may be actions or reactions. A simple load might be a
+    static and be linear, planar, or a single point. Alternatively, loads
+    may be defined as a configuration of multiple loads.
 
-        :param name: The name of the load
-        :type name: str,optional
-        :param ifc_class: The subtype of IfcStructuralLoad to create. Consult
-            the IFC documentation to see all the types of loads.
-        :type ifc_class: str
-        :return: The newly created load entity, depending on the ifc_class
-            specified.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param name: The name of the load
+    :type name: str,optional
+    :param ifc_class: The subtype of IfcStructuralLoad to create. Consult
+        the IFC documentation to see all the types of loads.
+    :type ifc_class: str
+    :return: The newly created load entity, depending on the ifc_class
+        specified.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a simple linear load
-            ifcopenshell.api.run("structural.add_structural_load", model)
-        """
-        self.file = file
-        self.settings = {
-            "name": name,
-            "ifc_class": ifc_class,
-        }
-
-    def execute(self):
-        return self.file.create_entity(self.settings["ifc_class"], Name=self.settings["name"])
+        # Create a simple linear load
+        ifcopenshell.api.run("structural.add_structural_load", model)
+    """
+    return file.create_entity(ifc_class, Name=name)

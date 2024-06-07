@@ -26,6 +26,10 @@ class TestAddPort(test.bootstrap.IFC4):
         assert ifcopenshell.api.run("system.add_port", self.file).is_a("IfcDistributionPort")
 
     def test_assigning_a_port_as_well_if_an_element_is_specified(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcChiller")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowTerminal")
         port = ifcopenshell.api.run("system.add_port", self.file, element=element)
         assert ifcopenshell.util.system.get_ports(element) == [port]
+
+
+class TestAddPortIFC2X3(test.bootstrap.IFC2X3, TestAddPort):
+    pass

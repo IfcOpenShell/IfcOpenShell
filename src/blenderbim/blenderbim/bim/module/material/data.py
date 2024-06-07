@@ -19,6 +19,7 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
@@ -35,31 +36,17 @@ class MaterialsData:
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "total_materials": cls.total_materials(),
-            "material_types": cls.material_types(),
-            "profiles": cls.profiles(),
-            "styles": cls.styles(),
-            "contexts": cls.contexts(),
-            "active_styles": cls.active_styles(),
-        }
         cls.is_loaded = True
+        cls.data["material_types"] = cls.material_types()
+        cls.data["total_materials"] = cls.total_materials()
+        cls.data["profiles"] = cls.profiles()
+        cls.data["styles"] = cls.styles()
+        cls.data["contexts"] = cls.contexts()
+        cls.data["active_styles"] = cls.active_styles()
 
     @classmethod
     def total_materials(cls):
-        if tool.Ifc.get_schema() == "IFC2X3":
-            return (
-                len(tool.Ifc.get().by_type("IfcMaterial"))
-                + len(tool.Ifc.get().by_type("IfcMaterialLayerSet"))
-                + len(tool.Ifc.get().by_type("IfcMaterialList"))
-            )
-        return (
-            len(tool.Ifc.get().by_type("IfcMaterial"))
-            + len(tool.Ifc.get().by_type("IfcMaterialConstituentSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialLayerSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialProfileSet"))
-            + len(tool.Ifc.get().by_type("IfcMaterialList"))
-        )
+        return len(tool.Ifc.get().by_type(bpy.context.scene.BIMMaterialProperties.material_type))
 
     @classmethod
     def material_types(cls):
@@ -166,6 +153,9 @@ class ObjectMaterialData:
         cls.data["type_material"] = cls.type_material()
         cls.data["material_type"] = cls.material_type()
         cls.data["active_material_constituents"] = cls.active_material_constituents()
+        # after material_name and type_material
+        cls.data["is_type_material_overridden"] = cls.is_type_material_overridden()
+
         cls.is_loaded = True
 
     @classmethod
@@ -294,8 +284,7 @@ class ObjectMaterialData:
 
     @classmethod
     def material_name(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        material = ifcopenshell.util.element.get_material(element)
+        material = cls.material
         if material:
             return getattr(material, "Name", None) or "Unnamed"
 
@@ -339,3 +328,18 @@ class ObjectMaterialData:
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []
         return [m.Name for m in material.MaterialConstituents if m.Name]
+
+    @classmethod
+    def is_type_material_overridden(cls) -> bool:
+        if not cls.data["type_material"]:
+            return False
+
+        # try to avoid accessing ifc
+        if cls.data["material_name"] != cls.data["type_material"]:
+            return True
+
+        # in theory material can be overridden by the same material
+        # so we check occurrence material explicitly
+        element = tool.Ifc.get_entity(bpy.context.active_object)
+        occurrence_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        return bool(occurrence_material)

@@ -17,13 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import lark
+import ifcopenshell
+from typing import Optional, Union, Literal, Generator, Any
 
 
 arithmetic_operator_symbols = {"ADD": "+", "DIVIDE": "/", "MULTIPLY": "*", "SUBTRACT": "-"}
 symbol_arithmetic_operators = {"+": "ADD", "/": "DIVIDE", "*": "MULTIPLY", "-": "SUBTRACT"}
+FILTER_BY_TYPE = Literal["PRODUCT", "RESOURCE", "PROCESS"]
 
 
-def get_primitive_applied_value(applied_value):
+def get_primitive_applied_value(applied_value: Union[ifcopenshell.entity_instance, float, None]) -> float:
     if not applied_value:
         return 0.0
     elif isinstance(applied_value, float):
@@ -32,17 +35,26 @@ def get_primitive_applied_value(applied_value):
         return applied_value.wrappedValue
     elif applied_value.is_a("IfcMeasureWithUnit"):
         return applied_value.ValueComponent
-    assert False, "Applied value {applied_value} not implemented"
+    assert False, f"Applied value {applied_value} not implemented"
 
 
-def get_total_quantity(root_element):
+def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[float, None]:
+    # 3 IfcPhysicalQuantity Value
     if root_element.is_a("IfcCostItem"):
-        return sum([q[3] for q in root_element.CostQuantities or []]) or None
+        # Different output for no quantities and zero quantites
+        # as they have different meaning in IFC.
+        quantities = root_element.CostQuantities
+        if not quantities:
+            return None
+        return sum([q[3] for q in quantities])
     elif root_element.is_a("IfcConstructionResource"):
-        return root_element.BaseQuantity[3] if root_element.BaseQuantity else 1.0
+        quantity = root_element.BaseQuantity
+        return quantity[3] if quantity else 1.0
 
 
-def calculate_applied_value(root_element, cost_value, category_filter=None):
+def calculate_applied_value(
+    root_element: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance, category_filter=None
+) -> float:
     if cost_value.ArithmeticOperator and cost_value.Components:
         component_values = []
         for component in cost_value.Components:
@@ -75,11 +87,11 @@ def calculate_applied_value(root_element, cost_value, category_filter=None):
             return sum_child_root_elements(root_element, category_filter=cost_value.Category)
         else:
             return get_primitive_applied_value(cost_value.AppliedValue)
-    return 0
+    return 0.0
 
 
-def sum_child_root_elements(root_element, category_filter=None):
-    result = 0
+def sum_child_root_elements(root_element: ifcopenshell.entity_instance, category_filter: Optional[str] = None) -> float:
+    result = 0.0
     for rel in root_element.IsNestedBy:
         for child_root_element in rel.RelatedObjects:
             if root_element.is_a("IfcCostItem"):
@@ -90,7 +102,8 @@ def sum_child_root_elements(root_element, category_filter=None):
                 if category_filter and child_cost_value.Category != category_filter:
                     continue
                 child_applied_value = calculate_applied_value(child_root_element, child_cost_value)
-                child_quantity = get_total_quantity(child_root_element) or 1.0
+                child_quantity = get_total_quantity(child_root_element)
+                child_quantity = 1.0 if child_quantity is None else child_quantity
                 if child_cost_value.UnitBasis:
                     value_component = child_cost_value.UnitBasis.ValueComponent.wrappedValue
                     result += child_quantity / value_component * child_applied_value
@@ -99,14 +112,14 @@ def sum_child_root_elements(root_element, category_filter=None):
     return result
 
 
-def serialise_cost_value(cost_value):
+def serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
     result = _serialise_cost_value(cost_value)
     if result and result[0] == "(" and result[-1] == ")":
         return result[1:-1]
     return result
 
 
-def _serialise_cost_value(cost_value):
+def _serialise_cost_value(cost_value: ifcopenshell.entity_instance) -> str:
     value = ""
     if cost_value.ArithmeticOperator and cost_value.Components:
         operator = arithmetic_operator_symbols[cost_value.ArithmeticOperator]
@@ -133,17 +146,17 @@ def _serialise_cost_value(cost_value):
     return value
 
 
-def serialise_applied_value(applied_value):
+def serialise_applied_value(applied_value: ifcopenshell.entity_instance) -> str:
     if applied_value.is_a("IfcMonetaryMeasure"):
         return str(applied_value.wrappedValue)
     return "?"
 
 
-def unserialise_cost_value(formula, cost_value):
+def unserialise_cost_value(formula: str, cost_value: ifcopenshell.entity_instance) -> dict[str, Any]:
     unserialiser = CostValueUnserialiser()
     result = unserialiser.parse(formula)
 
-    def map_element_to_result(element, result):
+    def map_element_to_result(element: ifcopenshell.entity_instance, result: dict):
         result["ifc"] = element
         for i, component in enumerate(result.get("Components", [])):
             if element.Components and i < len(element.Components):
@@ -152,7 +165,8 @@ def unserialise_cost_value(formula, cost_value):
     map_element_to_result(cost_value, result)
     return result
 
-def get_cost_items_for_product(product):
+
+def get_cost_items_for_product(product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     """
     Returns a list of cost items related to the given product.
 
@@ -168,7 +182,8 @@ def get_cost_items_for_product(product):
             cost_items.append(assignment.RelatingControl)
     return cost_items
 
-def get_root_cost_items(cost_schedule):
+
+def get_root_cost_items(cost_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     return [
         related_object
         for rel in cost_schedule.Controls or []
@@ -176,23 +191,33 @@ def get_root_cost_items(cost_schedule):
         if related_object.is_a("IfcCostItem")
     ]
 
-def get_all_nested_cost_items(cost_item):
+
+def get_all_nested_cost_items(
+    cost_item: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
     for cost_item in get_nested_cost_items(cost_item):
         yield cost_item
         yield from get_all_nested_cost_items(cost_item)
 
-def get_nested_cost_items(cost_item, is_deep=False):
+
+def get_nested_cost_items(cost_item: ifcopenshell.entity_instance, is_deep=False) -> list[ifcopenshell.entity_instance]:
     if is_deep:
         return list(get_all_nested_cost_items(cost_item))
     else:
         return [obj for rel in cost_item.IsNestedBy for obj in rel.RelatedObjects]
 
-def get_schedule_cost_items(cost_schedule):
+
+def get_schedule_cost_items(
+    cost_schedule: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
     for cost_item in get_root_cost_items(cost_schedule):
         yield cost_item
         yield from get_all_nested_cost_items(cost_item)
 
-def get_cost_assignments_by_type(cost_item, filter_by_type=None):
+
+def get_cost_assignments_by_type(
+    cost_item: ifcopenshell.entity_instance, filter_by_type: Optional[FILTER_BY_TYPE] = None
+) -> list[ifcopenshell.entity_instance]:
     if filter_by_type is not None:
         if filter_by_type == "PRODUCT":
             filter_by_type = "IfcElement"
@@ -207,17 +232,22 @@ def get_cost_assignments_by_type(cost_item, filter_by_type=None):
         if not filter_by_type or related_object.is_a(filter_by_type)
     ]
 
-def get_cost_item_assignments(cost_item, filter_by_type=None, is_deep=False):
+
+def get_cost_item_assignments(
+    cost_item: ifcopenshell.entity_instance, filter_by_type: Optional[FILTER_BY_TYPE] = None, is_deep: bool = False
+) -> list[ifcopenshell.entity_instance]:
     if not is_deep:
         return get_cost_assignments_by_type(cost_item, filter_by_type)
     else:
         return [
-            product for nested_cost_item in get_all_nested_cost_items(cost_item)
+            product
+            for nested_cost_item in get_all_nested_cost_items(cost_item)
             for product in get_cost_assignments_by_type(nested_cost_item, filter_by_type)
         ]
 
+
 class CostValueUnserialiser:
-    def parse(self, formula):
+    def parse(self, formula: str):
         l = lark.Lark(
             """start: formula
                     formula: operand (operator operand)*

@@ -28,7 +28,8 @@ class TestAddApplication(test.bootstrap.IFC4):
         assert application.ApplicationFullName == "IfcOpenShell"
         assert application.ApplicationIdentifier == "IfcOpenShell"
         assert developer.is_a("IfcOrganization")
-        assert developer.Identification == "IfcOpenShell"
+        # 0 IfcOrganization Identification(>IFC2X3) / Id (IFC2X3)
+        assert developer[0] == "IfcOpenShell"
         assert developer.Name == "IfcOpenShell"
         assert (
             developer.Description
@@ -40,3 +41,7 @@ class TestAddApplication(test.bootstrap.IFC4):
         assert developer.Addresses[0].Purpose == "USERDEFINED"
         assert developer.Addresses[0].UserDefinedPurpose == "WEBPAGE"
         assert developer.Addresses[0].WWWHomePageURL == "https://ifcopenshell.org"
+
+
+class TestAddApplicationIFC2X3(test.bootstrap.IFC2X3, TestAddApplication):
+    pass

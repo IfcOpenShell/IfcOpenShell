@@ -18,97 +18,99 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 
 
-class Usecase:
-    def __init__(self, file, relating_product=None, related_object=None):
-        """Associates a product and an object, typically for annotation
+def assign_product(
+    file: ifcopenshell.file,
+    relating_product: ifcopenshell.entity_instance,
+    related_object: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
+    """Associates a product and an object, typically for annotation
 
-        Warning: this is an experimental API.
+    Warning: this is an experimental API.
 
-        When you want to draw attention to a feature or characteristic (such as
-        a dimension, material, or name) or of a product (e.g. wall, slab,
-        furniture, etc), an annotation object is created. This annotation is
-        then associated with the product so that it can reference attributes,
-        properties, and relationships.
+    When you want to draw attention to a feature or characteristic (such as
+    a dimension, material, or name) or of a product (e.g. wall, slab,
+    furniture, etc), an annotation object is created. This annotation is
+    then associated with the product so that it can reference attributes,
+    properties, and relationships.
 
-        For example, an annotation of a line will be associated with a grid
-        axis, such that when that grid axis moves, the annotation of that grid
-        axis (which is typically truncated to the extents of a drawing) will
-        also move.
+    For example, an annotation of a line will be associated with a grid
+    axis, such that when that grid axis moves, the annotation of that grid
+    axis (which is typically truncated to the extents of a drawing) will
+    also move.
 
-        Another example might be a label of a furniture product, which might
-        have some text of the name of the furniture to be shown on drawings or
-        in 3D.
+    Another example might be a label of a furniture product, which might
+    have some text of the name of the furniture to be shown on drawings or
+    in 3D.
 
-        :param relating_product: The IfcProduct the object is related to
-        :type relating_product: ifcopenshell.entity_instance.entity_instance
-        :param related_object: The object (typically IfcAnnotation) that the
-            product is related to
-        :type related_object: ifcopenshell.entity_instance.entity_instance
-        :return: The created IfcRelAssignsToProduct relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param relating_product: The IfcProduct the object is related to
+    :type relating_product: ifcopenshell.entity_instance
+    :param related_object: The object (typically IfcAnnotation) that the
+        product is related to
+    :type related_object: ifcopenshell.entity_instance
+    :return: The created IfcRelAssignsToProduct relationship
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-            annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
-            ifcopenshell.api.run("drawing.assign_product", model,
-                relating_product=furniture, related_object=annotation)
-        """
-        self.file = file
-        self.settings = {
-            "relating_product": relating_product,
-            "related_object": related_object,
-        }
+        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
+        ifcopenshell.api.run("drawing.assign_product", model,
+            relating_product=furniture, related_object=annotation)
+    """
+    settings = {
+        "relating_product": relating_product,
+        "related_object": related_object,
+    }
 
-    def execute(self):
-        is_grid_axis = self.settings["relating_product"].is_a("IfcGridAxis")
+    is_grid_axis = settings["relating_product"].is_a("IfcGridAxis")
 
-        if is_grid_axis:
-            if self.settings["related_object"].HasAssignments:
-                for rel in self.settings["related_object"].HasAssignments:
-                    if rel.is_a("IfcRelAssignsToProduct") and rel.Name == self.settings["relating_product"].AxisTag:
-                        return
-        elif self.settings["related_object"].HasAssignments:
-            for rel in self.settings["related_object"].HasAssignments:
-                if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == self.settings["relating_product"]:
+    if is_grid_axis:
+        if settings["related_object"].HasAssignments:
+            for rel in settings["related_object"].HasAssignments:
+                if rel.is_a("IfcRelAssignsToProduct") and rel.Name == settings["relating_product"].AxisTag:
                     return
+    elif settings["related_object"].HasAssignments:
+        for rel in settings["related_object"].HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == settings["relating_product"]:
+                return
 
-        referenced_by = None
+    referenced_by = None
 
-        if is_grid_axis:
-            axis = self.settings["relating_product"]
-            grid = None
-            for attribute in ("PartOfW", "PartOfV", "PartOfU"):
-                if getattr(axis, attribute, None):
-                    grid = getattr(axis, attribute)[0]
-            self.settings["relating_product"] = grid
-            for rel in grid.ReferencedBy:
-                if rel.Name == axis.AxisTag:
-                    referenced_by = rel
-                    break
-        elif self.settings["relating_product"].ReferencedBy:
-            referenced_by = self.settings["relating_product"].ReferencedBy[0]
+    if is_grid_axis:
+        axis = settings["relating_product"]
+        grid = None
+        for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+            if getattr(axis, attribute, None):
+                grid = getattr(axis, attribute)[0]
+        settings["relating_product"] = grid
+        for rel in grid.ReferencedBy:
+            if rel.Name == axis.AxisTag:
+                referenced_by = rel
+                break
+    elif settings["relating_product"].ReferencedBy:
+        referenced_by = settings["relating_product"].ReferencedBy[0]
 
-        if referenced_by:
-            related_objects = list(referenced_by.RelatedObjects)
-            related_objects.append(self.settings["related_object"])
-            referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
-        else:
-            referenced_by = self.file.create_entity(
-                "IfcRelAssignsToProduct",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["related_object"]],
-                    "RelatingProduct": self.settings["relating_product"],
-                }
-            )
+    if referenced_by:
+        related_objects = list(referenced_by.RelatedObjects)
+        related_objects.append(settings["related_object"])
+        referenced_by.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": referenced_by})
+    else:
+        referenced_by = file.create_entity(
+            "IfcRelAssignsToProduct",
+            **{
+                "GlobalId": ifcopenshell.guid.new(),
+                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "RelatedObjects": [settings["related_object"]],
+                "RelatingProduct": settings["relating_product"],
+            },
+        )
 
-        if is_grid_axis:
-            referenced_by.Name = axis.AxisTag
-        return referenced_by
+    if is_grid_axis:
+        referenced_by.Name = axis.AxisTag
+    return referenced_by

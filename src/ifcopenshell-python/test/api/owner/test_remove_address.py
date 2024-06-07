@@ -41,3 +41,7 @@ class TestRemoveAddress(test.bootstrap.IFC4):
         person.Addresses = [address]
         ifcopenshell.api.run("owner.remove_address", self.file, address=address)
         assert person.Addresses is None
+
+
+class TestRemoveAddressIFC2X3(test.bootstrap.IFC2X3, TestRemoveAddress):
+    pass

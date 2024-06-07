@@ -17,52 +17,50 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, work_calendar=None):
-        """Removes a work calendar
+def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.entity_instance) -> None:
+    """Removes a work calendar
 
-        All relationships are also removed, such as if a task is set to use that
-        calendar.
+    All relationships are also removed, such as if a task is set to use that
+    calendar.
 
-        :param work_calendar: The IfcWorkCalendar to remove
-        :type work_calendar: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param work_calendar: The IfcWorkCalendar to remove
+    :type work_calendar: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's create a new calendar.
-            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+        # Let's create a new calendar.
+        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
 
-            # And remove it immediately
-            ifcopenshell.api.run("sequence.remove_work_calendar", model, work_calendar=calendar)
-        """
-        self.file = file
-        self.settings = {"work_calendar": work_calendar}
+        # And remove it immediately
+        ifcopenshell.api.run("sequence.remove_work_calendar", model, work_calendar=calendar)
+    """
+    settings = {"work_calendar": work_calendar}
 
-    def execute(self):
-        # TODO: do a deep purge
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
-            self.file,
-            definition=self.settings["work_calendar"],
-            relating_context=self.file.by_type("IfcContext")[0],
-        )
-        if self.settings["work_calendar"].Controls:
-            for rel in self.settings["work_calendar"].Controls:
-                for related_object in rel.RelatedObjects:
-                    ifcopenshell.api.run(
-                        "control.unassign_control",
-                        self.file,
-                        relating_control=self.settings["work_calendar"],
-                        related_object=related_object,
-                    )
-        history = self.settings["work_calendar"].OwnerHistory
-        self.file.remove(self.settings["work_calendar"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # TODO: do a deep purge
+    ifcopenshell.api.run(
+        "project.unassign_declaration",
+        file,
+        definitions=[settings["work_calendar"]],
+        relating_context=file.by_type("IfcContext")[0],
+    )
+    if settings["work_calendar"].Controls:
+        for rel in settings["work_calendar"].Controls:
+            for related_object in rel.RelatedObjects:
+                ifcopenshell.api.run(
+                    "control.unassign_control",
+                    file,
+                    relating_control=settings["work_calendar"],
+                    related_object=related_object,
+                )
+    history = settings["work_calendar"].OwnerHistory
+    file.remove(settings["work_calendar"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

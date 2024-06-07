@@ -48,6 +48,16 @@ def cast_to_value(from_value, to_value):
         pass
 
 
+# See bug 4716.
+def is_x(value, cast_value):
+    if cast_value >= 0:
+        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+            return False
+    elif value > cast_value * (1.0 - 1e-6) or value < cast_value * (1.0 + 1e-6):
+        return False
+    return True
+
+
 @lru_cache
 def get_pset(element, pset):
     return ifcopenshell.util.element.get_pset(element, pset)
@@ -101,8 +111,10 @@ class Facet:
         return self
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
+        if not elements:
+            return []
         return [e for e in elements if self(e)]
 
     def to_string(
@@ -133,6 +145,7 @@ class Facet:
                     total_replacements += 1
                 if total_replacements == total_variables:
                     return template
+        return "This facet cannot be interpreted"
 
     def to_ids_value(self, parameter: Union[str, Restriction, list]) -> dict[str, Any]:
         if isinstance(parameter, str):
@@ -329,7 +342,7 @@ class Attribute(Facet):
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
                     if isinstance(value, float) and isinstance(cast_value, float):
-                        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                        if not is_x(value, cast_value):
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break
@@ -855,7 +868,7 @@ class Property(Facet):
                             # "42" = 42
                             cast_value = cast_to_value(self.value, value)
                             if isinstance(value, float) and isinstance(cast_value, float):
-                                if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                                if not is_x(value, cast_value):
                                     is_pass = False
                                     reason = {"type": "VALUE", "actual": value}
                                     break

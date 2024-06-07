@@ -18,119 +18,120 @@
 
 import ifcopenshell
 import ifcopenshell.api
+from typing import Any, Optional
 
 
-class Usecase:
-    def __init__(self, file, style=None, ifc_class="IfcSurfaceStyleShading", attributes=None):
-        """Adds a new presentation item to a surface style
+def add_surface_style(
+    file: ifcopenshell.file,
+    style: ifcopenshell.entity_instance,
+    ifc_class: str = "IfcSurfaceStyleShading",
+    attributes: Optional[dict[str, Any]] = None,
+) -> None:
+    """Adds a new presentation item to a surface style
 
-        A surface style can have multiple different types of presentation items
-        assigned to it:
+    A surface style can have multiple different types of presentation items
+    assigned to it:
 
-        - Shading, this is the simplest item, which defines a single basic
-          colour and transparency that can be used to display the object on a
-          screen. It is an indicative colour of what the object would be in real
-          life. It is commonly incorrectly abused to colour code systems for MEP
-          equipment or object types for structural steel. If you just want to
-          give something a colour, this is what you need.
-        - Rendering, this is an advanced extension of shading, which includes
-          the definition of a shader for a rendering engine. You may select the
-          reflectance / lighting model such as PHYSICAL, for PBR style
-          rendering, or FLAT, for flat shading, or PHONG for older biased
-          rendering workflows. Based on the chosen lighting model, you may then
-          specify the appropriate colour maps, such as diffuse colours,
-          specularity, emissive component, etc. These lighting models are fully
-          compatible with glTF and X3D. This should be used if your model is
-          prepared to be rendered by a rendering engine which is compatible with
-          glTF / X3D shader descriptions. If you are doing archviz or 3D
-          rendering, this is what you need.
-        - Textures, this is a special type of Rendering presentation item that
-          uses image textures instead of single colours. Textures may be either
-          mapped using a bounding box stretch mapping, or with UV coordinates
-          for mesh-like geometry.
-        - Lighting, this is used to define photometrically accurate colour
-          parameters used in lighting simulation. If you are a simulationist,
-          this is what you need.
-        - Reflectance, this is a special type of Lighting presentation item
-          which includes some lesser used photometric properties, typically
-          required for advanced materials like glazing.
-        - External, this is for any other surface style defined using an
-          external URI. This is relevant if you are using a third-party non-glTF
-          compatible shader definition such as for Cycles, Renderman, V-Ray,
-          etc, or a complex lighting simulation definition, such as for
-          Radiance.
+    - Shading, this is the simplest item, which defines a single basic
+      colour and transparency that can be used to display the object on a
+      screen. It is an indicative colour of what the object would be in real
+      life. It is commonly incorrectly abused to colour code systems for MEP
+      equipment or object types for structural steel. If you just want to
+      give something a colour, this is what you need.
+    - Rendering, this is an advanced extension of shading, which includes
+      the definition of a shader for a rendering engine. You may select the
+      reflectance / lighting model such as PHYSICAL, for PBR style
+      rendering, or FLAT, for flat shading, or PHONG for older biased
+      rendering workflows. Based on the chosen lighting model, you may then
+      specify the appropriate colour maps, such as diffuse colours,
+      specularity, emissive component, etc. These lighting models are fully
+      compatible with glTF and X3D. This should be used if your model is
+      prepared to be rendered by a rendering engine which is compatible with
+      glTF / X3D shader descriptions. If you are doing archviz or 3D
+      rendering, this is what you need.
+    - Textures, this is a special type of Rendering presentation item that
+      uses image textures instead of single colours. Textures may be either
+      mapped using a bounding box stretch mapping, or with UV coordinates
+      for mesh-like geometry.
+    - Lighting, this is used to define photometrically accurate colour
+      parameters used in lighting simulation. If you are a simulationist,
+      this is what you need.
+    - Reflectance, this is a special type of Lighting presentation item
+      which includes some lesser used photometric properties, typically
+      required for advanced materials like glazing.
+    - External, this is for any other surface style defined using an
+      external URI. This is relevant if you are using a third-party non-glTF
+      compatible shader definition such as for Cycles, Renderman, V-Ray,
+      etc, or a complex lighting simulation definition, such as for
+      Radiance.
 
-        Shading is sufficient for the majority of basic models.
+    Shading is sufficient for the majority of basic models.
 
-        The attributes you specify will depend on the type of presentation item
-        you are adding. An example is shown below, but for full details please
-        refer to the IFC documentation.
+    The attributes you specify will depend on the type of presentation item
+    you are adding. An example is shown below, but for full details please
+    refer to the IFC documentation.
 
-        :param style: The IfcSurfaceStyle you want to add to presentation item
-            to. See ifcopenshell.api.style.add_style.
-        :type style: ifcopenshell.entity_instance.entity_instance
-        :param ifc_class: Choose from IfcSurfaceStyleShading,
-            IfcSurfaceStyleRendering, IfcSurfaceStyleWithTextures,
-            IfcSurfaceStyleLighting, IfcSurfaceStyleReflectance, or
-            IfcExternallyDefinedSurfaceStyle.
-        :type ifc_class: str
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: The newly created presentation item based on the provided
-            ifc_class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param style: The IfcSurfaceStyle you want to add to presentation item
+        to. See ifcopenshell.api.style.add_style.
+    :type style: ifcopenshell.entity_instance
+    :param ifc_class: Choose from IfcSurfaceStyleShading,
+        IfcSurfaceStyleRendering, IfcSurfaceStyleWithTextures,
+        IfcSurfaceStyleLighting, IfcSurfaceStyleReflectance, or
+        IfcExternallyDefinedSurfaceStyle.
+    :type ifc_class: str
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict, optional
+    :return: The newly created presentation item based on the provided
+        ifc_class.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a new surface style
-            style = ifcopenshell.api.run("style.add_style", model)
+        # Create a new surface style
+        style = ifcopenshell.api.run("style.add_style", model)
 
-            # Create a simple shading colour and transparency.
-            ifcopenshell.api.run("style.add_surface_style", model,
-                style=style, ifc_class="IfcSurfaceStyleShading", attributes={
-                    "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
-                    "Transparency": 0., # 0 is opaque, 1 is transparent
-                })
+        # Create a simple shading colour and transparency.
+        ifcopenshell.api.run("style.add_surface_style", model,
+            style=style, ifc_class="IfcSurfaceStyleShading", attributes={
+                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                "Transparency": 0., # 0 is opaque, 1 is transparent
+            })
 
-            # Alternatively, create a rendering style.
-            ifcopenshell.api.run("style.add_surface_style", model,
-                style=style, ifc_class="IfcSurfaceStyleRendering", attributes={
-                    # A surface colour and transparency is still supplied for
-                    # viewport display only. This will supersede the shading
-                    # presentation item.
-                    "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
-                    "Transparency": 0., # 0 is opaque, 1 is transparent
+        # Alternatively, create a rendering style.
+        ifcopenshell.api.run("style.add_surface_style", model,
+            style=style, ifc_class="IfcSurfaceStyleRendering", attributes={
+                # A surface colour and transparency is still supplied for
+                # viewport display only. This will supersede the shading
+                # presentation item.
+                "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
+                "Transparency": 0., # 0 is opaque, 1 is transparent
 
-                    # NOTDEFINED is assumed to be a PHYSICAL (PBR) lighting
-                    # model. In IFC4X3, you may choose PHYSICAL directly.
-                    "ReflectanceMethod": "NOTDEFINED",
+                # NOTDEFINED is assumed to be a PHYSICAL (PBR) lighting
+                # model. In IFC4X3, you may choose PHYSICAL directly.
+                "ReflectanceMethod": "NOTDEFINED",
 
-                    # For PBR shading, you may specify these parameters:
-                    "DiffuseColour": { "Name": None, "Red": 0.9, "Green": 0.8, "Blue": 0.8 },
-                    "SpecularColour": 0.1, # Metallic factor
-                    "SpecularHighlight": {"SpecularRoughness": 0.5}, # Roughness factor
-                })
-        """
-        self.file = file
-        self.settings = {"style": style, "ifc_class": ifc_class, "attributes": attributes or {}}
+                # For PBR shading, you may specify these parameters:
+                "DiffuseColour": { "Name": None, "Red": 0.9, "Green": 0.8, "Blue": 0.8 },
+                "SpecularColour": 0.1, # Metallic factor
+                "SpecularHighlight": {"SpecularRoughness": 0.5}, # Roughness factor
+            })
+    """
+    settings = {"style": style, "ifc_class": ifc_class, "attributes": attributes or {}}
 
-    def execute(self):
-        style_item = self.file.create_entity(self.settings["ifc_class"])
-        ifcopenshell.api.run(
-            "style.edit_surface_style", self.file, style=style_item, attributes=self.settings["attributes"]
-        )
-        styles = list(self.settings["style"].Styles or [])
+    style_item = file.create_entity(settings["ifc_class"])
+    ifcopenshell.api.run("style.edit_surface_style", file, style=style_item, attributes=settings["attributes"])
+    styles = list(settings["style"].Styles or [])
 
-        select_class = self.settings["ifc_class"]
-        if select_class == "IfcSurfaceStyleRendering":
-            select_class = "IfcSurfaceStyleShading"
-        duplicate_items = [s for s in styles if s.is_a(select_class)]
-        for duplicate_item in duplicate_items:
-            ifcopenshell.api.run("style.remove_surface_style", self.file, style=duplicate_item)
+    select_class = settings["ifc_class"]
+    if select_class == "IfcSurfaceStyleRendering":
+        select_class = "IfcSurfaceStyleShading"
+    duplicate_items = [s for s in styles if s.is_a(select_class)]
+    for duplicate_item in duplicate_items:
+        ifcopenshell.api.run("style.remove_surface_style", file, style=duplicate_item)
 
-        styles = list(self.settings["style"].Styles or [])
-        styles.append(style_item)
-        self.settings["style"].Styles = styles
-        return style_item
+    styles = list(settings["style"].Styles or [])
+    styles.append(style_item)
+    settings["style"].Styles = styles
+    return style_item

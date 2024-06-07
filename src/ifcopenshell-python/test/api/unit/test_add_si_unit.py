@@ -26,3 +26,7 @@ class TestAddSIUnit(test.bootstrap.IFC4):
         assert unit.UnitType == "LENGTHUNIT"
         assert unit.Name == "METRE"
         assert unit.Prefix == "MILLI"
+
+
+class TestAddSIUnitIFC2X3(test.bootstrap.IFC2X3, TestAddSIUnit):
+    pass

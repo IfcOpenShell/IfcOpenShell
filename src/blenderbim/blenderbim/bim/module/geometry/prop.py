@@ -138,3 +138,4 @@ class BIMGeometryProperties(PropertyGroup):
         name="IFC Interaction Mode",
         update=update_mode,
     )
+    representation_from_object: PointerProperty(type=bpy.types.Object)

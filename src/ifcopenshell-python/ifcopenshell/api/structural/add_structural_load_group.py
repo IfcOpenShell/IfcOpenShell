@@ -19,39 +19,31 @@
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(
-        self, file, name="Unnamed", action_type="NOTDEFINED", action_source="NOTDEFINED"
-    ):
-        """Adds a new load group, which is a collection of related loads
+def add_structural_load_group(
+    file: ifcopenshell.file, name: str = "Unnamed", action_type: str = "NOTDEFINED", action_source: str = "NOTDEFINED"
+) -> ifcopenshell.entity_instance:
+    """Adds a new load group, which is a collection of related loads
 
-        :param name: The name of the load group
-        :type name: str
-        :param action_type: Choose from EXTRAORDINARY_A, PERMANENT_G,
-            or VARIABLE_Q, taken from the Eurocode standard.
-        :type action_type: str
-        :param action_source: The source of the load case, such as DEAD_LOAD_G,
-            LIVE_LOAD_Q, TRANSPORT, ICE, etc. For the full list consult
-            IfcActionSourceTypeEnum in the IFC documentation.
-        :type action_source: str
-        :return: The new IfcStructuralLoadCase
-        :rtype: ifcopenshell.entity_instance.entity_instance
-        """
-        self.file = file
-        self.settings = {
-            "name": name,
-            "action_type": action_type,
-            "action_source": action_source,
-        }
+    :param name: The name of the load group
+    :type name: str
+    :param action_type: Choose from EXTRAORDINARY_A, PERMANENT_G,
+        or VARIABLE_Q, taken from the Eurocode standard.
+    :type action_type: str
+    :param action_source: The source of the load case, such as DEAD_LOAD_G,
+        LIVE_LOAD_Q, TRANSPORT, ICE, etc. For the full list consult
+        IfcActionSourceTypeEnum in the IFC documentation.
+    :type action_source: str
+    :return: The new IfcStructuralLoadCase
+    :rtype: ifcopenshell.entity_instance
+    """
 
-    def execute(self):
-        load_group = ifcopenshell.api.run(
-            "root.create_entity",
-            self.file,
-            ifc_class="IfcStructuralLoadGroup",
-            predefined_type="LOAD_GROUP",
-            name=self.settings["name"],
-        )
-        load_group.ActionType = self.settings["action_type"]
-        load_group.ActionSource = self.settings["action_source"]
-        return load_group
+    load_group = ifcopenshell.api.run(
+        "root.create_entity",
+        file,
+        ifc_class="IfcStructuralLoadGroup",
+        predefined_type="LOAD_GROUP",
+        name=name,
+    )
+    load_group.ActionType = action_type
+    load_group.ActionSource = action_source
+    return load_group

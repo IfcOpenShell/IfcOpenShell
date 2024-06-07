@@ -36,8 +36,8 @@ classes = (
     operator.EnableCulling,
     operator.EnableEditingHeader,
     operator.ExportIFC,
+    operator.ExportIFCDeprecated,
     operator.FlipClippingPlane,
-    operator.ImportIFC,
     operator.LinkIfc,
     operator.LoadLink,
     operator.LoadLinkedProject,
@@ -76,6 +76,11 @@ classes = (
     gizmo.ClippingPlane,
 )
 
+if bpy.app.version >= (4, 1, 0):
+    classes += (
+        operator.IFCFileHandlerOperator,
+        operator.BIM_FH_import_ifc,
+    )
 
 addon_keymaps = []
 
@@ -97,7 +102,7 @@ def register():
         addon_keymaps.append((km, kmi))
 
         km = wm.keyconfigs.addon.keymaps.new(name="Window", space_type="EMPTY")
-        kmi = km.keymap_items.new("export_ifc.bim", "S", "PRESS", ctrl=True)
+        kmi = km.keymap_items.new("bim.save_project", "S", "PRESS", ctrl=True)
         kmi.properties.should_save_as = False
         addon_keymaps.append((km, kmi))
 

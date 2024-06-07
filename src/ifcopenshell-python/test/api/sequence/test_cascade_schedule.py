@@ -22,6 +22,8 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# NOTE: sequence module features relies on entities introduced in IFC4
+# therefore no IFC2X3 tests
 class TestCascadeSchedule(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_task_has_no_successors(self):
         task = ifcopenshell.api.run("sequence.add_task", self.file)

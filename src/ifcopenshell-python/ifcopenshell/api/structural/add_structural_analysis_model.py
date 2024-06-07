@@ -20,30 +20,25 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file):
-        """Add a new structural analysis model
+def add_structural_analysis_model(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+    """Add a new structural analysis model
 
-        A structural analysis model is a group of all the loads, reactions,
-        structural members, and structural connections required to describe a
-        structural analysis model.
+    A structural analysis model is a group of all the loads, reactions,
+    structural members, and structural connections required to describe a
+    structural analysis model.
 
-        A 3D analytical model is assumed.
+    A 3D analytical model is assumed.
 
-        :return: The newly created IfcStructuralAnalysisModel
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :return: The newly created IfcStructuralAnalysisModel
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a fresh blank structural analysis
-            analysis = ifcopenshell.api.run("structural.add_structural_analysis_model", model)
-        """
-        self.file = file
-        self.settings = {}
-
-    def execute(self):
-        return ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
-        )
+        # Create a fresh blank structural analysis
+        analysis = ifcopenshell.api.run("structural.add_structural_analysis_model", model)
+    """
+    return ifcopenshell.api.run(
+        "root.create_entity", file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
+    )

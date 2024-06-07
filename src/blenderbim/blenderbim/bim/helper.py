@@ -29,7 +29,7 @@ from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Union
 
 
 def draw_attributes(props, layout, copy_operator=None, popup_active_attribute=None):
@@ -91,7 +91,11 @@ def import_attributes(ifc_class, props, data, callback=None):
 
 
 # A more elegant attribute importer signature, intended to supersede import_attributes
-def import_attributes2(element, props, callback=None):
+def import_attributes2(
+    element: Union[str, ifcopenshell.entity_instance],
+    props: bpy.types.PropertyGroup,
+    callback: Optional[Callable] = None,
+) -> None:
     if isinstance(element, str):
         attributes = tool.Ifc.schema().declaration_by_name(element).as_entity().all_attributes()
         info = {a.name(): None for a in attributes}
@@ -221,15 +225,6 @@ def get_enum_items(data, prop_name, context=None):
     return items
 
 
-# hack to close popup
-# https://blender.stackexchange.com/a/202576/130742
-def close_operator_panel(event):
-    x, y = event.mouse_x, event.mouse_y
-    bpy.context.window.cursor_warp(10, 10)
-    move_back = lambda: bpy.context.window.cursor_warp(x, y)
-    bpy.app.timers.register(move_back, first_interval=0.01)
-
-
 def convert_property_group_from_si(property_group, skip_props=()):
     """Method converts property group values from si to current ifc project units
 
@@ -309,6 +304,9 @@ def draw_filter(layout, filter_groups, data, module):
             elif ifc_filter.type == "group":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "value", text="", icon="OUTLINER_COLLECTION")
+            elif ifc_filter.type == "parent":
+                row = box.row(align=True)
+                row.prop(ifc_filter, "value", text="", icon="FILE_PARENT")
             elif ifc_filter.type == "query":
                 row = box.row(align=True)
                 row.prop(ifc_filter, "name", text="", icon="POINTCLOUD_DATA")

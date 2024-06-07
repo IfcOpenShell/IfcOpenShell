@@ -43,3 +43,7 @@ class TestAddFilling(test.bootstrap.IFC4):
         ifcopenshell.api.run("void.add_filling", self.file, opening=opening2, element=door)
         assert not opening1.HasFillings
         assert opening2.HasFillings[0].RelatedBuildingElement == door
+
+
+class TestAddFillingIFC2X3(test.bootstrap.IFC2X3, TestAddFilling):
+    pass

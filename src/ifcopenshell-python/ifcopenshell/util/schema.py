@@ -22,9 +22,9 @@ import time
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
+from typing import Union, Any
 
 # This is highly experimental and incomplete, however, it may work for simple datasets.
-# In this simple implementation, we only support 2X3<->4 right now
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -223,7 +223,9 @@ class Migrator:
             "User": None,
         }
 
-    def migrate(self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+    def migrate(
+        self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
+    ) -> ifcopenshell.entity_instance:
         if element.id() == 0:
             return new_file.create_entity(element.is_a(), element.wrappedValue)
         try:
@@ -241,7 +243,9 @@ class Migrator:
         self.migrated_ids[element.id()] = new_element.id()
         return new_element
 
-    def migrate_class(self, element, new_file):
+    def migrate_class(
+        self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
+    ) -> ifcopenshell.entity_instance:
         try:
             new_element = new_file.create_entity(element.is_a())
         except:
@@ -260,7 +264,14 @@ class Migrator:
             self.migrate_attribute(attribute, element, new_file, new_element, new_element_schema)
         return new_element
 
-    def find_equivalent_attribute(self, new_element, attribute, element, attributes_mapping, reverse_mapping=False):
+    def find_equivalent_attribute(
+        self,
+        new_element: ifcopenshell.entity_instance,
+        attribute: ifcopenshell_wrapper.attribute,
+        element: ifcopenshell.entity_instance,
+        attributes_mapping: dict[str, dict[str, str]],
+        reverse_mapping: bool = False,
+    ) -> Union[Any, None]:
         # print("Searching for an equivalent", element, new_element, attribute.name())
         try:
             if reverse_mapping:
@@ -281,7 +292,14 @@ class Migrator:
             )
             raise e
 
-    def migrate_attribute(self, attribute, element, new_file: ifcopenshell.file, new_element, new_element_schema):
+    def migrate_attribute(
+        self,
+        attribute: ifcopenshell_wrapper.attribute,
+        element: ifcopenshell.entity_instance,
+        new_file: ifcopenshell.file,
+        new_element: ifcopenshell.entity_instance,
+        new_element_schema: ifcopenshell_wrapper.declaration,
+    ) -> None:
         # NOTE: `attribute` is an attribute in new file schema
         # print("Migrating attribute", element, new_element, attribute.name())
         old_file = element.wrapped_data.file
@@ -349,7 +367,7 @@ class Migrator:
         if value is not None:
             setattr(new_element, attribute.name(), value)
 
-    def generate_default_value(self, attribute, new_file):
+    def generate_default_value(self, attribute: ifcopenshell_wrapper.attribute, new_file: ifcopenshell.file) -> Any:
         if attribute.name() in self.default_values:
             return self.default_values[attribute.name()]
         elif attribute.name() == "OwnerHistory":

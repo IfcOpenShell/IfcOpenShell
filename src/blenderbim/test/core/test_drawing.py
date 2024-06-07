@@ -95,15 +95,21 @@ class TestAddSheet:
             information="sheet",
             attributes={"Identification": "u_identification", "Name": "UNTITLED", "Scope": "SHEET"},
         ).should_be_called()
+        drawing.generate_reference_attributes(
+            "reference", Location="layout_path", Description="LAYOUT"
+        ).should_be_called().will_return("attributes")
         ifc.run(
             "document.edit_reference",
             reference="reference",
-            attributes={"Location": "layout_path", "Description": "LAYOUT"},
+            attributes="attributes",
         ).should_be_called()
+        drawing.generate_reference_attributes(
+            "reference", Location="titleblock_path", Description="TITLEBLOCK"
+        ).should_be_called().will_return("attributes2")
         ifc.run(
             "document.edit_reference",
             reference="reference",
-            attributes={"Location": "titleblock_path", "Description": "TITLEBLOCK"},
+            attributes="attributes2",
         ).should_be_called()
         drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
         drawing.import_sheets().should_be_called()
@@ -122,15 +128,21 @@ class TestAddSheet:
             information="sheet",
             attributes={"DocumentId": "u_identification", "Name": "UNTITLED", "Scope": "SHEET"},
         ).should_be_called()
+        drawing.generate_reference_attributes(
+            "reference", Location="layout_path", Description="LAYOUT"
+        ).should_be_called().will_return("attributes")
         ifc.run(
             "document.edit_reference",
             reference="reference",
-            attributes={"Location": "layout_path", "Description": "LAYOUT"},
+            attributes="attributes",
         ).should_be_called()
+        drawing.generate_reference_attributes(
+            "reference", Location="titleblock_path", Description="TITLEBLOCK"
+        ).should_be_called().will_return("attributes2")
         ifc.run(
             "document.edit_reference",
             reference="reference",
-            attributes={"Location": "titleblock_path", "Description": "TITLEBLOCK"},
+            attributes="attributes2",
         ).should_be_called()
         drawing.create_svg_sheet("sheet", "titleblock").should_be_called()
         drawing.import_sheets().should_be_called()
@@ -490,7 +502,9 @@ class TestUpdateDrawingName:
         )
         ifc.resolve_uri("relative_layout_uri").should_be_called().will_return("absolute_layout_uri")
         drawing.does_file_exist("absolute_layout_uri").should_be_called().will_return(True)
-        drawing.update_embedded_svg_location("absolute_layout_uri", "reference_with_old_location", "new_uri").should_be_called()
+        drawing.update_embedded_svg_location(
+            "absolute_layout_uri", "reference_with_old_location", "new_uri"
+        ).should_be_called()
 
         drawing.is_editing_sheets().should_be_called().will_return(True)
         drawing.import_sheets().should_be_called()

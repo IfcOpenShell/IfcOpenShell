@@ -23,6 +23,7 @@ import ifccsv
 import logging
 import tempfile
 import ifcopenshell
+import ifcopenshell.util.selector
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.scheduler as scheduler
 from blenderbim.bim.ifc import IfcStore
@@ -72,7 +73,7 @@ class ReorderCsvAttribute(bpy.types.Operator):
     def execute(self, context):
         old = context.scene.CsvProperties.csv_attributes[self.old_index]
         new = context.scene.CsvProperties.csv_attributes[self.new_index]
-        props = ["name", "header", "sort", "group", "varies_value", "summary"]
+        props = ["name", "header", "sort", "group", "varies_value", "summary", "formatting"]
         for prop in props:
             value = getattr(new, prop)
             setattr(new, prop, getattr(old, prop))
@@ -246,6 +247,7 @@ class ExportIfcCsv(bpy.types.Operator):
         if props.format != "csv" and props.should_generate_svg:
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
+        self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
 
@@ -285,6 +287,7 @@ class ImportIfcCsv(bpy.types.Operator):
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
         refresh_ui_data()
+        self.report({"INFO"}, "Data is imported to IFC.")
         return {"FINISHED"}
 
 

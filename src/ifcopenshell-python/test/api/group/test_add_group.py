@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,14 +16,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
+import test.bootstrap
+import ifcopenshell.api
+import ifcopenshell.util.element
 
 
-def guess_format(path: Path) -> "str | None":
-    """Try to guess format using file extension"""
-    if path.suffix.lower() in (".ifczip", ".zip"):
-        return ".ifcZIP"
-    elif path.suffix.lower() in (".ifcxml", ".xml"):
-        return ".ifcXML"
-    elif path.suffix.lower() in (".ifcsqlite", ".sqlite", ".db"):
-        return ".ifcSQLite"
+class TestAddGroup(test.bootstrap.IFC4):
+    def test_add_group_no_arguments(self):
+        group = ifcopenshell.api.run("group.add_group", self.file)
+        assert group.Name == "Unnamed"
+        assert group.Description == None
+
+    def test_add_group(self):
+        group = ifcopenshell.api.run("group.add_group", self.file, name="Name", description="Description")
+        assert group.Name == "Name"
+        assert group.Description == "Description"
+
+
+class TestAddGroupIFC2X3(test.bootstrap.IFC2X3, TestAddGroup):
+    pass

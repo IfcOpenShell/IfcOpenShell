@@ -18,155 +18,167 @@
 
 import ifcopenshell
 import ifcopenshell.util.pset
+from typing import Optional, Any, Union
+
+
+def edit_pset(
+    file: ifcopenshell.file,
+    pset: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
+    properties: Optional[dict[str, Any]] = None,
+    pset_template: Optional[ifcopenshell.entity_instance] = None,
+    should_purge: bool = True,
+) -> None:
+    """Edits a property set and its properties
+
+    At its simplest usage, this may be used to edit the name of a property
+    set. It may also be used to add, edit, or remove properties, either
+    arbitrarily or using a property set template.
+
+    A list of properties are provided as a dictionary, where the keys are
+    property names, and values are property values. Keys that don't already
+    exist are interpreted as properties to be added. Keys that already exist
+    are interpreted as properties to be edited. A "None" value may specify a
+    property to be deleted.
+
+    Properties must have a data type. There are lots of data types in IFCs,
+    not just simple unitless data types like integers, booleans, text, but
+    also distinguishing between types of text, like labels versus
+    descriptive text. There are also lots of unit-based data types like
+    areas, volumes, lengths, power, density, flow rates, pressure, etc.
+
+    To ensure the appropriate data type is used for properties, a property
+    set template may be used. These can be seen as "property
+    specifications". A default selection is provided by buildingSMART, so
+    that all buildingSMART defined standard properties have exactly the same
+    data types and exactly the right property names without fear of invalid
+    data or typos. The built-in buildingSMART templates are always loaded.
+    However, you may also specify your own templates. If you try to add a
+    non-standard property that does not exist in either your own template or
+    in the built-in buildingSMART template, then you have the responsibility
+    to ensure that data types are always consistent and correct.
+
+    :param pset: The IfcPropertySet to edit.
+    :type pset: ifcopenshell.entity_instance
+    :param name: A new name for the property set. If no name is specified,
+        the property set name is not changed.
+    :type name: str, optional
+    :param properties: A dictionary of properties. The keys must be a string
+        of the name of the property. The data type of the value will be
+        determined by the property set template. If no property set
+        template is found, the data types of the Python values will
+        influence the IFC data type of the property. String values will
+        become IfcLabel, float values will become IfcReal, booleans will
+        become IfcBoolean, and integers will become IfcInteger. If more
+        control is desired, you may explicitly specify IFC data objects
+        directly. Note that provided `properties` might be mutated in the process.
+    :type properties: dict
+    :param pset_template: If a property set template is provided, this will
+        be used to determine data types. If no user-defined template is
+        provided, the built-in buildingSMART templates will be loaded.
+    :type pset_template: ifcopenshell.entity_instance, optional
+    :param should_purge: If set as False, properties set to None will be
+        left as None but not removed. If set to true, properties set to None
+        will actually be removed. The default of true is the same behaviour as
+        :func:`ifcopenshell.api.pset.edit_qto`.
+    :type should_purge: bool, optional
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # Let's imagine we have a new wall type.
+        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+
+        # This is a standard buildingSMART property set.
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+
+        # In this scenario, we don't specify any pset_template because it is
+        # part of the built-in buildingSMART templates, and so the
+        # FireRating will automatically be an IfcLabel, and the thermal
+        # transmittance value will automatically be an
+        # IfcThermalTransmittanceMeasure. Neither of these properties exist
+        # yet, so they will be created.
+        ifcopenshell.api.run("pset.edit_pset", model,
+            pset=pset, properties={"FireRating": "2HR", "ThermalTransmittance": 42.3})
+
+        # We can edit existing properties. In this case, "FireRating" is
+        # edited from "2HR" to "1HR". Combustible is new, and will be added.
+        # The existing "ThermalTransmittance" property will be left
+        # unchanged.
+        ifcopenshell.api.run("pset.edit_pset", model,
+            pset=pset, properties={"FireRating": "1HR", "Combustible": False})
+
+        # Setting to None will change the value but not delete the property.
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"Combustible": None})
+
+        # If you actually want to delete the property, enable purging.
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset,
+            properties={"Combustible": None}, should_purge=True)
+
+        # What if we wanted to manage our own properties? Let's create our
+        # own "Company Standard" property set templates. Notice how we
+        # prefix our property set with "Foo_", if our company name was "Foo"
+        # this would make sense.
+        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Foo_bar")
+
+        # Let's imagine we want all model authors to specify two properties,
+        # one being a length measurement and another being a boolean.
+        prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+            pset_template=template, name="DemoA", primary_measure_type="IfcLengthMeasure")
+        prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+            pset_template=template, name="DemoB", primary_measure_type="IfcBoolean")
+
+        # Now we can use our property set template to add our properties,
+        # and the data types will always match our template.
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.run("pset.edit_pset", model,
+            pset=pset, properties={"DemoA": 42.3, "DemoB": True}, pset_template=template)
+
+        # Here's a third scenario where we want to add arbitrary properties
+        # that are not standardised by anything, not even our own custom
+        # templates.
+        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Custom_Pset")
+        ifcopenshell.api.run("pset.edit_pset", model,
+            pset=pset, properties={
+                # Basic Python data types are mapped to a sensible default
+                "SomeLabel": "Foo",
+                "SomeNumber": 12.3,
+                # But we can always specify exactly what we're after too
+                "ExplicitLength": model.createIfcLengthMeasure(42.3)
+            })
+
+        # Editing existing properties will retain their current data types
+        # if possible. So this will still be a length measure.
+        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"ExplicitLength": 12.3})
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "pset": pset,
+        "name": name,
+        "properties": properties or {},
+        "pset_template": pset_template,
+        "should_purge": should_purge,
+    }
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, pset=None, name=None, properties=None, pset_template=None, should_purge=False):
-        """Edits a property set and its properties
-
-        At its simplest usage, this may be used to edit the name of a property
-        set. It may also be used to add, edit, or remove properties, either
-        arbitrarily or using a property set template.
-
-        A list of properties are provided as a dictionary, where the keys are
-        property names, and values are property values. Keys that don't already
-        exist are interpreted as properties to be added. Keys that already exist
-        are interpreted as properties to be edited. A "None" value may specify a
-        property to be deleted.
-
-        Properties must have a data type. There are lots of data types in IFCs,
-        not just simple unitless data types like integers, booleans, text, but
-        also distinguishing between types of text, like labels versus
-        descriptive text. There are also lots of unit-based data types like
-        areas, volumes, lengths, power, density, flow rates, pressure, etc.
-
-        To ensure the appropriate data type is used for properties, a property
-        set template may be used. These can be seen as "property
-        specifications". A default selection is provided by buildingSMART, so
-        that all buildingSMART defined standard properties have exactly the same
-        data types and exactly the right property names without fear of invalid
-        data or typos. The built-in buildingSMART templates are always loaded.
-        However, you may also specify your own templates. If you try to add a
-        non-standard property that does not exist in either your own template or
-        in the built-in buildingSMART template, then you have the responsibility
-        to ensure that data types are always consistent and correct.
-
-        :param pset: The IfcPropertySet to edit.
-        :type pset: ifcopenshell.entity_instance.entity_instance
-        :param name: A new name for the property set. If no name is specified,
-            the property set name is not changed.
-        :type name: str, optional
-        :param properties: A dictionary of properties. The keys must be a string
-            of the name of the property. The data type of the value will be
-            determined by the property set template. If no property set
-            template is found, the data types of the Python values will
-            influence the IFC data type of the property. String values will
-            become IfcLabel, float values will become IfcReal, booleans will
-            become IfcBoolean, and integers will become IfcInteger. If more
-            control is desired, you may explicitly specify IFC data objects
-            directly. Note that provided `properties` might be mutated in the process.
-        :type properties: dict
-        :param pset_template: If a property set template is provided, this will
-            be used to determine data types. If no user-defined template is
-            provided, the built-in buildingSMART templates will be loaded.
-        :type pset_template: ifcopenshell.entity_instance.entity_instance
-        :param should_purge: If left as False, properties set to None will be
-            left as None but not removed. If set to true, properties set to None
-            will actually be removed.
-        :type should_purge: bool, optional
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Let's imagine we have a new wall type.
-            wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
-
-            # This is a standard buildingSMART property set.
-            pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-
-            # In this scenario, we don't specify any pset_template because it is
-            # part of the built-in buildingSMART templates, and so the
-            # FireRating will automatically be an IfcLabel, and the thermal
-            # transmittance value will automatically be an
-            # IfcThermalTransmittanceMeasure. Neither of these properties exist
-            # yet, so they will be created.
-            ifcopenshell.api.run("pset.edit_pset", model,
-                pset=pset, properties={"FireRating": "2HR", "ThermalTransmittance": 42.3})
-
-            # We can edit existing properties. In this case, "FireRating" is
-            # edited from "2HR" to "1HR". Combustible is new, and will be added.
-            # The existing "ThermalTransmittance" property will be left
-            # unchanged.
-            ifcopenshell.api.run("pset.edit_pset", model,
-                pset=pset, properties={"FireRating": "1HR", "Combustible": False})
-
-            # Setting to None will change the value but not delete the property.
-            ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"Combustible": None})
-
-            # If you actually want to delete the property, enable purging.
-            ifcopenshell.api.run("pset.edit_pset", model, pset=pset,
-                properties={"Combustible": None}, should_purge=True)
-
-            # What if we wanted to manage our own properties? Let's create our
-            # own "Company Standard" property set templates. Notice how we
-            # prefix our property set with "Foo_", if our company name was "Foo"
-            # this would make sense.
-            template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Foo_bar")
-
-            # Let's imagine we want all model authors to specify two properties,
-            # one being a length measurement and another being a boolean.
-            prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model,
-                pset_template=template, name="DemoA", primary_measure_type="IfcLengthMeasure")
-            prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model,
-                pset_template=template, name="DemoB", primary_measure_type="IfcBoolean")
-
-            # Now we can use our property set template to add our properties,
-            # and the data types will always match our template.
-            pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Foo_Bar")
-            ifcopenshell.api.run("pset.edit_pset", model,
-                pset=pset, properties={"DemoA": 42.3, "DemoB": True}, pset_template=template)
-
-            # Here's a third scenario where we want to add arbitrary properties
-            # that are not standardised by anything, not even our own custom
-            # templates.
-            pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Custom_Pset")
-            ifcopenshell.api.run("pset.edit_pset", model,
-                pset=pset, properties={
-                    # Basic Python data types are mapped to a sensible default
-                    "SomeLabel": "Foo",
-                    "SomeNumber": 12.3,
-                    # But we can always specify exactly what we're after too
-                    "ExplicitLength": model.createIfcLengthMeasure(42.3)
-                })
-
-            # Editing existing properties will retain their current data types
-            # if possible. So this will still be a length measure.
-            ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"ExplicitLength": 12.3})
-        """
-        self.file = file
-        self.settings = {
-            "pset": pset,
-            "name": name,
-            "properties": properties or {},
-            "pset_template": pset_template,
-            "should_purge": should_purge,
-        }
-
-    def execute(self):
+    def execute(self) -> None:
         self.update_pset_name()
         self.load_pset_template()
         existing_props = self.update_existing_properties()
         new_props = self.add_new_properties()
         self.assign_new_properties(existing_props + new_props)
 
-    def update_pset_name(self):
+    def update_pset_name(self) -> None:
         if self.settings["name"]:
             self.settings["pset"].Name = self.settings["name"]
 
-    def load_pset_template(self):
+    def load_pset_template(self) -> None:
         if self.settings["pset_template"]:
             self.pset_template = self.settings["pset_template"]
         else:
@@ -174,13 +186,13 @@ class Usecase:
             self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
-    def _should_update_prop(self, prop) -> bool:
+    def _should_update_prop(self, prop: ifcopenshell.entity_instance) -> bool:
         """
         Checks if the given property should be changed
         """
         return prop.Name in self.settings["properties"]
 
-    def _try_purge(self, prop) -> bool:
+    def _try_purge(self, prop: ifcopenshell.entity_instance) -> bool:
         """
         Tries to remove the property
         if successful, returns True, otherwise False
@@ -197,7 +209,7 @@ class Usecase:
     #   For example - IfcPropertyEnumeratedValue to
     # IfcPropertySingleValue.  Or maybe the user should
     # just delete the property first? - vulevukusej
-    def update_existing_properties(self):
+    def update_existing_properties(self) -> list[ifcopenshell.entity_instance]:
         existing_props = []
         for prop in self.get_properties():
             if not self._should_update_prop(prop):
@@ -219,7 +231,9 @@ class Usecase:
                 raise NotImplementedError(f"Updating '{prop.is_a()}' properties is not supported yet")
         return existing_props
 
-    def update_existing_prop_enum(self, prop):
+    def update_existing_prop_enum(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         NOTE: Assumes the prop exists
         """
@@ -228,6 +242,9 @@ class Usecase:
 
         if isinstance(value, (tuple, list)):
             sel_vals = []
+            if not value:
+                if self._try_purge(prop):
+                    return
             for val in value:
                 primary_measure_type = prop.EnumerationReference.EnumerationValues[
                     0
@@ -247,12 +264,19 @@ class Usecase:
                 prop.EnumerationReference.EnumerationValues = value.EnumerationReference.EnumerationValues
                 prop.EnumerationValues = value.EnumerationValues
 
+        else:
+            raise ValueError(
+                f'Value "{self.settings["properties"][prop.Name]}" is not a valid value for enum property {prop.Name}.'
+            )
+
         if unit:
             prop.Unit = unit
         del self.settings["properties"][prop.Name]
         return prop
 
-    def update_existing_prop_single_value(self, prop):
+    def update_existing_prop_single_value(
+        self, prop: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """
         NOTE: Assumes the prop exists
         """
@@ -275,7 +299,7 @@ class Usecase:
         del self.settings["properties"][prop.Name]
         return prop
 
-    def add_new_properties(self):
+    def add_new_properties(self) -> list[ifcopenshell.entity_instance]:
         properties = []
         for name, value in self.settings["properties"].items():
             if value is None and self.settings["should_purge"]:
@@ -355,21 +379,32 @@ class Usecase:
                 properties.append(self.file.create_entity("IfcPropertySingleValue", **args))
         return properties
 
-    def assign_new_properties(self, props):
+    def assign_new_properties(self, props: ifcopenshell.entity_instance) -> None:
         if hasattr(self.settings["pset"], "HasProperties"):
             self.settings["pset"].HasProperties = props
+
+        # Material / Profile properties
         elif hasattr(self.settings["pset"], "Properties"):
             self.settings["pset"].Properties = props
 
-    def get_properties(self):
+        # IFC2X3 IfcMaterialProperties
+        elif self.settings["pset"].is_a("IfcMaterialProperties"):
+            self.settings["pset"].ExtendedProperties = props
+
+    def get_properties(self) -> list[ifcopenshell.entity_instance]:
         """
         Returns list of existing properties
         """
-        if hasattr(self.settings["pset"], "HasProperties"):
-            return self.settings["pset"].HasProperties or []
+        if (props := getattr(self.settings["pset"], "HasProperties", ...)) is not ...:
+            return props or []
 
-        elif hasattr(self.settings["pset"], "Properties"):  # For IfcMaterialProperties
-            return self.settings["pset"].Properties or []
+        # Material / Profile properties
+        elif (props := getattr(self.settings["pset"], "Properties", ...)) is not ...:
+            return props or []
+
+        # IFC2X3 IfcMaterialProperties
+        elif (props := getattr(self.settings["pset"], "ExtendedProperties", ...)) is not ...:
+            return props or []
 
         raise TypeError(f"'{self.settings['pset']}' is not a valid pset")
 

@@ -15,46 +15,45 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, unit=None, attributes=None):
-        """Edits the attributes of an IfcNamedUnit
+def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcNamedUnit
 
-        Named units include SI units, conversion based units (imperial units),
-        and context dependent units.
+    Named units include SI units, conversion based units (imperial units),
+    and context dependent units.
 
-        For more information about the attributes and data types of an
-        IfcNamedUnit, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcNamedUnit, consult the IFC documentation.
 
-        :param unit: The IfcNamedUnit entity you want to edit
-        :type unit: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param unit: The IfcNamedUnit entity you want to edit
+    :type unit: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Boxes of things
-            unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
+        # Boxes of things
+        unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
 
-            # Uh, crates? Boxes? Whatever.
-            ifcopenshell.api.run("unit.edit_named_unit", model, unit=unit, attibutes={"Name": "CRATES"})
-        """
-        self.file = file
-        self.settings = {"unit": unit, "attributes": attributes or {}}
+        # Uh, crates? Boxes? Whatever.
+        ifcopenshell.api.run("unit.edit_named_unit", model, unit=unit, attibutes={"Name": "CRATES"})
+    """
+    settings = {"unit": unit, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            if name == "Dimensions":
-                dimensions = self.settings["unit"].Dimensions
-                if len(self.file.get_inverse(dimensions)) > 1:
-                    self.settings["unit"].Dimensions = self.file.createIfcDimensionalExponents(*value)
-                else:
-                    for i, exponent in enumerate(value):
-                        dimensions[i] = exponent
-                continue
-            setattr(self.settings["unit"], name, value)
+    for name, value in settings["attributes"].items():
+        if name == "Dimensions":
+            dimensions = settings["unit"].Dimensions
+            if len(file.get_inverse(dimensions)) > 1:
+                settings["unit"].Dimensions = file.createIfcDimensionalExponents(*value)
+            else:
+                for i, exponent in enumerate(value):
+                    dimensions[i] = exponent
+            continue
+        setattr(settings["unit"], name, value)

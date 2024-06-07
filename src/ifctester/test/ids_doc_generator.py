@@ -23,6 +23,7 @@ import pytest
 import functools
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifctester
 import test_facet
 import test_ids

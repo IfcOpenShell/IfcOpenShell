@@ -1,5 +1,7 @@
 import pytest
 import ifcopenshell
+import ifcopenshell.guid
+
 
 def test_global_id_updates():
     g1, g2, g3 = (ifcopenshell.guid.new() for i in range(3))

@@ -15,19 +15,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, structural_load=None):
-        """Removes a structural load
+def remove_structural_load(file: ifcopenshell.file, structural_load: ifcopenshell.entity_instance) -> None:
+    """Removes a structural load
 
-        :param structural_load: The IfcStructuralLoad to remove.
-        :type structural_load: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"structural_load": structural_load}
+    :param structural_load: The IfcStructuralLoad to remove.
+    :type structural_load: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {"structural_load": structural_load}
 
-    def execute(self):
-        self.file.remove(self.settings["structural_load"])
+    file.remove(settings["structural_load"])

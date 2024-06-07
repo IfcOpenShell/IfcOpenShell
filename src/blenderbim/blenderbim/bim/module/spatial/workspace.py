@@ -64,16 +64,10 @@ def add_layout_hotkey(layout, text, hotkey, description):
     tool.Blender.add_layout_hotkey_operator(*args)
 
 
-# NOTES before adding new operators:
-# - add scene.BIMSpatialProperties
-# - add SpatialData
-
-
 class SpatialToolUI:
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
-        # cls.props = context.scene.BIMSpatialProperties
         cls.model_props = context.scene.BIMModelProperties
 
         row = cls.layout.row(align=True)
@@ -151,12 +145,10 @@ class Hotkey(bpy.types.Operator, Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        # self.props = context.scene.BIMSpatialProperties
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        # self.props = context.scene.BIMSpatialProperties
         return self.execute(context)
 
     def draw(self, context):

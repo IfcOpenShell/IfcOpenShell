@@ -20,7 +20,11 @@ import bpy
 import json
 import bmesh
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim
+import blenderbim.core.root
 import blenderbim.tool as tool
 from mathutils import Vector
 from bmesh.types import BMVert
@@ -217,7 +221,6 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
         collection = context.view_layer.active_layer_collection.collection
         collection.objects.link(obj)
 
-        body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -225,7 +228,6 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
             obj=obj,
             ifc_class="IfcStairFlight",
             should_add_representation=False,
-            context=body_context,
         )
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "STRAIGHT"
@@ -337,6 +339,6 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMStairProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Geometry processing and analysis"""
+"""Geometry processing and analysis
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+IFC may define geometry explicitly (such as meshes) or implicitly (such as
+parametric extrusions). This module provides methods to extract geometric
+definitions in IFC into explicitly tessellated triangles or OpenCASCADE Breps
+for further processing.
+
+This is typically needed when writing software to visualise or analyse
+geometry. See also :mod:`ifcopenshell.util.shape` for deriving quantities.
+"""
 
 
 def _has_occ():

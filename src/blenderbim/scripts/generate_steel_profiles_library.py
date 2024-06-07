@@ -43,7 +43,7 @@ class LibraryGenerator:
             "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=f"{parse_profiles_type} Steel Profiles Library"
         )
         ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definition=self.library, relating_context=self.project
+            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
         )
         dim_exponents = self.file.createIfcDimensionalExponents(0, 0, 0, 0, 0, 0, 0)
         length_unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
@@ -182,7 +182,7 @@ class LibraryGenerator:
             # material=self.materials["TBD"]["ifc"]
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definition=element, relating_context=self.library)
+        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
 
     def create_double_l_profile(self, profile, resulting_profile_name=None, profiles_gap=0, mode = "LLBB"):
         def create_derived_profile(profile, mirrored=False):

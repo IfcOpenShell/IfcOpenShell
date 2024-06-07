@@ -21,62 +21,73 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
+from typing import Union
 
 
-class Usecase:
-    def __init__(self, file, element=None):
-        """Updates the owner that is assigned to an object
+def update_owner_history(
+    file: ifcopenshell.file, element: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Updates the owner that is assigned to an object
 
-        This ensures that the owner is tracked to have modified the object last,
-        including the time when the change occured. See
-        ifcopenshell.api.owner.create_owner_history for details.
+    This ensures that the owner is tracked to have modified the object last,
+    including the time when the change occured. See
+    ifcopenshell.api.owner.create_owner_history for details.
 
-        :param element: The IfcRoot element to update the ownership details on
-            when a change is made.
-        :type element: ifcopenshell.entity_instance.entity_instance
-        :return: The updated IfcOwnerHistory element.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param element: The IfcRoot element to update the ownership details on
+        when a change is made.
+    :type element: ifcopenshell.entity_instance
+    :return: The updated IfcOwnerHistory element.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # See ifcopenshell.api.owner.create_owner_history for setup
-            # [ ... example setup code ... ]
+        # See ifcopenshell.api.owner.create_owner_history for setup
+        # [ ... example setup code ... ]
 
-            # We've finished our ownership setup. Now let's start our script and
-            # create a space. Notice we don't actually call
-            # create_owner_history at all. This is already automatically handled
-            # by the API when necessary. Under the hood, the API is actually
-            # running this code on the IfcSpace element:
-            # element.OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", model)
-            space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
+        # We've finished our ownership setup. Now let's start our script and
+        # create a space. Notice we don't actually call
+        # create_owner_history at all. This is already automatically handled
+        # by the API when necessary. Under the hood, the API is actually
+        # running this code on the IfcSpace element:
+        # element.OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", model)
+        space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
 
-            # Any edits we make will have ownership tracking automatically
-            # applied. There is no need to run any owner.update_owner_history
-            # API calls either.
-            ifcopenshell.api.run("attribute.edit_attributes", model, product=space, attributes={"Name": "Lobby"})
-        """
-        self.file = file
-        self.settings = {"element": element}
+        # Any edits we make will have ownership tracking automatically
+        # applied. There is no need to run any owner.update_owner_history
+        # API calls either.
+        ifcopenshell.api.run("attribute.edit_attributes", model, product=space, attributes={"Name": "Lobby"})
+    """
+    settings = {"element": element}
 
-    def execute(self):
-        if not hasattr(self.settings["element"], "OwnerHistory"):
-            return
-        user = ifcopenshell.api.owner.settings.get_user(self.file)
-        if not user:
-            return
-        application = ifcopenshell.api.owner.settings.get_application(self.file)
-        if not application:
-            return
-        if not self.settings["element"].OwnerHistory:
-            self.settings["element"].OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", self.file)
-            return self.settings["element"].OwnerHistory
-        if self.file.get_total_inverses(self.settings["element"].OwnerHistory) > 1:
-            new = ifcopenshell.util.element.copy(self.file, self.settings["element"].OwnerHistory)
-            self.settings["element"].OwnerHistory = new
-        self.settings["element"].OwnerHistory.ChangeAction = "MODIFIED"
-        self.settings["element"].OwnerHistory.LastModifiedDate = int(time.time())
-        self.settings["element"].OwnerHistory.LastModifyingUser = user
-        self.settings["element"].OwnerHistory.LastModifyingApplication = application
-        return self.settings["element"].OwnerHistory
+    element = settings["element"]
+    if not element.is_a("IfcRoot"):
+        return
+    user = ifcopenshell.api.owner.settings.get_user(file)
+    if not user:
+        return
+    application = ifcopenshell.api.owner.settings.get_application(file)
+    if not application:
+        return
+
+    # 1 IfcRoot IfcOwnerHistory
+    owner_history = element[1]
+    if not owner_history:
+        owner_history = ifcopenshell.api.run("owner.create_owner_history", file)
+        element[1] = owner_history
+        return owner_history
+
+    if file.get_total_inverses(owner_history) > 1:
+        owner_history = ifcopenshell.util.element.copy(file, owner_history)
+        element[1] = owner_history
+
+    # 3 IfcOwnerHistory ChangeAction
+    owner_history[3] = "MODIFIED"
+    # 4 IfcOwnerHistory LastModifiedDate
+    owner_history[4] = int(time.time())
+    # 5 IfcOwnerHistory LastModifyingUser
+    owner_history[5] = user
+    # 6 IfcOwnerHistory LastModifyingApplication
+    owner_history[6] = application
+    return owner_history

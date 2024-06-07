@@ -16,16 +16,24 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+from typing import Any
+
+
+def map_representation(
+    file: ifcopenshell.file, representation: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"representation": representation}
+    return usecase.execute()
+
 
 class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"representation": None}
-        self.ifc_vertices = []
-        for key, value in settings.items():
-            self.settings[key] = value
+    file: ifcopenshell.file
+    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(self) -> ifcopenshell.entity_instance:
         mapping_source = self.get_mapping_source()
 
         zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
@@ -45,7 +53,7 @@ class Usecase:
             }
         )
 
-    def get_mapping_source(self):
+    def get_mapping_source(self) -> ifcopenshell.entity_instance:
         for inverse in self.file.get_inverse(self.settings["representation"]):
             if inverse.is_a("IfcRepresentationMap"):
                 return inverse

@@ -2,7 +2,6 @@ try:
     import re
     import json
 
-    import ifcopenshell.util.schema
     from .file import file
     from . import ifcopenshell_wrapper
     from .entity_instance import entity_instance
@@ -56,6 +55,8 @@ class sqlite(file):
         self.preprocess_schema()
 
     def preprocess_schema(self):
+        import ifcopenshell.util.schema
+
         self.ifc_class_subtypes = {}
         self.ifc_class_attributes = {}
         self.ifc_class_inverse_attributes = {}
@@ -122,6 +123,9 @@ class sqlite(file):
             return entity
 
     def by_type(self, type, include_subtypes=True):
+        # TODO use cached subtypes
+        import ifcopenshell.util.schema
+
         if self.class_map:
             results = []
             subtypes = self.ifc_class_subtypes[type] if include_subtypes else self.ifc_class_subtypes[type][0:1]
@@ -167,7 +171,9 @@ class sqlite(file):
         return results
 
     def get_inverse(self, inst, allow_duplicate=False, with_attribute_indices=False):
-        query = f"SELECT inverses FROM {inst.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {inst.sqlite_wrapper.id} LIMIT 1"
+        query = (
+            f"SELECT inverses FROM {inst.sqlite_wrapper.ifc_class} WHERE `ifc_id` = {inst.sqlite_wrapper.id} LIMIT 1"
+        )
         self.cursor.execute(query)
         row = self.cursor.fetchone()
         if not row or not row[0]:
@@ -198,9 +204,9 @@ class sqlite(file):
                     "verts": np.frombuffer(row["verts"]).tolist() if row["verts"] else [],
                     "edges": np.frombuffer(row["edges"], dtype=np.int64).tolist() if row["edges"] else [],
                     "faces": np.frombuffer(row["faces"], dtype=np.int64).tolist() if row["faces"] else [],
-                    "material_ids": np.frombuffer(row["material_ids"], dtype=np.int64).tolist()
-                    if row["material_ids"]
-                    else [],
+                    "material_ids": (
+                        np.frombuffer(row["material_ids"], dtype=np.int64).tolist() if row["material_ids"] else []
+                    ),
                     "materials": json.loads(row["materials"]) if row["materials"] else [],
                 }
             shapes[row["ifc_id"]] = {
@@ -353,7 +359,7 @@ class sqlite_entity(entity_instance):
     def get_info(self, include_identifier=True, recursive=False, return_type=dict, ignore=(), scalar_only=False):
         info = {"id": self.sqlite_wrapper.id, "type": self.sqlite_wrapper.ifc_class}
         if not self.sqlite_wrapper.attribute_cache:
-            self.__getitem__(0) # This will get all attributes
+            self.__getitem__(0)  # This will get all attributes
         info.update(self.sqlite_wrapper.attribute_cache)
         return info
 

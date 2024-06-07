@@ -23,22 +23,22 @@ import ifcopenshell.api
 class TestCreateEntity(test.bootstrap.IFC4):
     def test_creating_a_simple_entity_with_automatic_global_id(self):
         wall = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcWall", predefined_type="SOLIDWALL", name="Foo"
+            "root.create_entity", self.file, ifc_class="IfcRailing", predefined_type="HANDRAIL", name="Foo"
         )
-        assert wall.is_a() == "IfcWall"
+        assert wall.is_a() == "IfcRailing"
         assert len(wall.GlobalId) == 22
         assert wall.Name == "Foo"
-        assert wall.PredefinedType == "SOLIDWALL"
+        assert wall.PredefinedType == "HANDRAIL"
 
     def test_handling_predefined_types(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall", name="Foo")
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRailing", name="Foo")
         assert element.PredefinedType is None
         element = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcWall", predefined_type="SHEAR", name="Foo"
+            "root.create_entity", self.file, ifc_class="IfcRailing", predefined_type="HANDRAIL", name="Foo"
         )
-        assert element.PredefinedType == "SHEAR"
+        assert element.PredefinedType == "HANDRAIL"
         element = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcWall", predefined_type="Foobar", name="Foo"
+            "root.create_entity", self.file, ifc_class="IfcRailing", predefined_type="Foobar", name="Foo"
         )
         assert element.PredefinedType == "USERDEFINED"
         assert element.ObjectType == "Foobar"
@@ -47,11 +47,12 @@ class TestCreateEntity(test.bootstrap.IFC4):
         )
         assert element.PredefinedType == "USERDEFINED"
         assert element.ElementType == "Foobar"
-        element = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcTaskType", predefined_type="Foobar", name="Foo"
-        )
-        assert element.PredefinedType == "USERDEFINED"
-        assert element.ProcessType == "Foobar"
+        if self.file.schema != "IFC2X3":
+            element = ifcopenshell.api.run(
+                "root.create_entity", self.file, ifc_class="IfcTaskType", predefined_type="Foobar", name="Foo"
+            )
+            assert element.PredefinedType == "USERDEFINED"
+            assert element.ProcessType == "Foobar"
 
     def test_setting_default_values_for_validity(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType", name="Foo")
@@ -66,9 +67,14 @@ class TestCreateEntity(test.bootstrap.IFC4):
         assert element.ConstructionType == "NOTDEFINED"
         assert element.ParameterTakesPrecedence == False
         assert element.Sizeable == False
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoorType", name="Foo")
-        assert element.OperationType == "NOTDEFINED"
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindowType", name="Foo")
-        assert element.PartitioningType == "NOTDEFINED"
+        if self.file.schema != "IFC2X3":
+            element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcDoorType", name="Foo")
+            assert element.OperationType == "NOTDEFINED"
+            element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWindowType", name="Foo")
+            assert element.PartitioningType == "NOTDEFINED"
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFurnitureType", name="Foo")
         assert element.AssemblyPlace == "NOTDEFINED"
+
+
+class TestCreateEntityIFC2X3(test.bootstrap.IFC2X3, TestCreateEntity):
+    pass

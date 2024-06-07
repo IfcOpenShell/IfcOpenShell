@@ -22,20 +22,24 @@ import bmesh
 from bmesh.types import BMVert, BMFace
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import V
 import blenderbim
 import blenderbim.tool as tool
+import blenderbim.core.geometry
 import blenderbim.core.geometry as core
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box, update_simple_openings
+import blenderbim.core.root
+from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
-from pprint import pprint
 
 import json
 import collections
 
 
-def update_door_modifier_representation(context, obj):
+def update_door_modifier_representation(context: bpy.types.Context, obj: bpy.types.Object) -> None:
     props = obj.BIMDoorProperties
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
@@ -159,7 +163,7 @@ def update_door_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
+    tool.Model.update_simple_openings(element)
 
 
 # TODO: move it out to tools
@@ -644,6 +648,6 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMDoorProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

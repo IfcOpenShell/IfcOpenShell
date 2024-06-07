@@ -66,6 +66,23 @@ class TestAssignObject(test.bootstrap.IFC4):
         with pytest.raises(RuntimeError):
             self.file.by_id(rel_id)
 
+    def test_maintain_assignment_order_in_related_objects(self):
+        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        subelements = [ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask") for _ in range(5)]
+        for i in range(5):
+            ifcopenshell.api.run(
+                "nest.assign_object", self.file, related_objects=subelements[: i + 1], relating_object=element
+            )
+            rel = self.file.by_type("IfcRelNests")[0]
+            assert rel.RelatedObjects == tuple(subelements[: i + 1])
+
+        # maintain the order in the affected relationships too
+        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTask")
+        ifcopenshell.api.run(
+            "nest.assign_object", self.file, related_objects=subelements[2:3], relating_object=element2
+        )
+        assert rel.RelatedObjects == tuple(subelements[:2] + subelements[3:])
+
 
 class TestAssignObjectIFC2X3(test.bootstrap.IFC2X3, TestAssignObject):
     pass

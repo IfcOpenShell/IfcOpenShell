@@ -47,3 +47,7 @@ class TestRemoveOpening(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelFillsElement")) == 0
         assert wall
         assert door
+
+
+class TestRemoveOpeningIFC2X3(test.bootstrap.IFC2X3, TestRemoveOpening):
+    pass

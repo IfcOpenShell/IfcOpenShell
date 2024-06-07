@@ -15,34 +15,44 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+import ifcopenshell.util.date
+import datetime
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, library=None, attributes=None):
-        """Edits the attributes of an IfcLibraryInformation
+def edit_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcLibraryInformation
 
-        For more information about the attributes and data types of an
-        IfcLibraryInformation, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcLibraryInformation, consult the IFC documentation.
 
-        :param library: The IfcLibraryInformation entity you want to edit
-        :type library: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param library: The IfcLibraryInformation entity you want to edit
+    :type library: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-            ifcopenshell.api.run("library.edit_library", model, library=library,
-                attributes={"Description": "A Brickschema TTL including only mechanical distribution systems."})
-        """
+        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        ifcopenshell.api.run("library.edit_library", model, library=library,
+            attributes={"Description": "A Brickschema TTL including only mechanical distribution systems."})
+    """
 
-        self.file = file
-        self.settings = {"library": library, "attributes": attributes or {}}
+    if "VersionDate" in attributes:
+        dt = attributes["VersionDate"]
+        if isinstance(dt, datetime.datetime):
+            if file.schema != "IFC2X3":
+                dt = ifcopenshell.util.date.datetime2ifc(dt, "IfcDateTime")
+            else:
+                calendar_date = ifcopenshell.util.date.datetime2ifc(dt, "IfcCalendarDate")
+                dt = file.create_entity("IfcCalendarDate", **calendar_date)
+            attributes = attributes.copy()
+            attributes["VersionDate"] = dt
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["library"], name, value)
+    for name, value in attributes.items():
+        setattr(library, name, value)

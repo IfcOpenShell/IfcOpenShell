@@ -88,7 +88,7 @@ class ClassificationReferencesData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "OBJECT"
+        cls.data["object_type"] = "Object"
 
     @classmethod
     def references(cls):
@@ -112,17 +112,21 @@ class MaterialClassificationsData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "MATERIAL"
+        cls.data["object_type"] = "Material"
 
     @classmethod
     def references(cls):
         results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object.active_material)
-        if element:
-            for reference in ifcopenshell.util.classification.get_references(element):
-                data = reference.get_info()
-                del data["ReferencedSource"]
-                results.append(data)
+
+        props = bpy.context.scene.BIMMaterialProperties
+        if props.materials and props.active_material_index < len(props.materials):
+            material = props.materials[props.active_material_index]
+            if material.ifc_definition_id:
+                element = tool.Ifc.get().by_id(material.ifc_definition_id)
+                for reference in ifcopenshell.util.classification.get_references(element):
+                    data = reference.get_info()
+                    del data["ReferencedSource"]
+                    results.append(data)
         return results
 
 
@@ -136,7 +140,7 @@ class CostClassificationsData(ReferencesData):
         cls.data["references"] = cls.references()
         cls.data["active_classification_library"] = cls.active_classification_library()
         cls.data["classifications"] = cls.classifications()
-        cls.data["object_type"] = "COST"
+        cls.data["object_type"] = "Cost"
 
     @classmethod
     def references(cls):

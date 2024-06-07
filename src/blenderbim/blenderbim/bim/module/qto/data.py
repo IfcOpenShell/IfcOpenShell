@@ -19,8 +19,10 @@
 import bpy
 import blenderbim.tool as tool
 
+
 def refresh():
     QtoData.is_loaded = False
+
 
 class QtoData:
     data = {}
@@ -29,9 +31,9 @@ class QtoData:
     @classmethod
     def load(cls):
         cls.data = {
-                "has_cost_item" : cls.has_cost_item(),
-                "relating_cost_items" : cls.relating_cost_items(),
-            }
+            "has_cost_item": cls.has_cost_item(),
+            "relating_cost_items": cls.relating_cost_items(),
+        }
 
         cls.is_loaded = True
 
@@ -53,23 +55,13 @@ class QtoData:
         for relating_cost_item in relating_cost_items:
             results.append(
                 {
-                    'cost_item_id' : relating_cost_item['cost_item_id'],
-                    'cost_item_name' : relating_cost_item['cost_item_name'],
-                    'quantity_id' : relating_cost_item['quantity_id'],
-                    'quantity_name' : relating_cost_item['quantity_name'],
-                    'quantity_value' : relating_cost_item['quantity_value'],
-                    'quantity_type' : relating_cost_item['quantity_type'],
+                    "cost_item_id": relating_cost_item["cost_item_id"],
+                    "cost_item_name": relating_cost_item["cost_item_name"],
+                    "quantity_id": relating_cost_item["quantity_id"],
+                    "quantity_name": relating_cost_item["quantity_name"],
+                    "quantity_value": relating_cost_item["quantity_value"],
+                    "quantity_type": relating_cost_item["quantity_type"],
                 }
             )
 
         return results
-
-
-
-
-
-
-
-
-
-

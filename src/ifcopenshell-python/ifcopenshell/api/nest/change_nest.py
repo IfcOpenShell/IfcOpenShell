@@ -21,29 +21,26 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, item=None, new_parent=None):
-        """Assigns a cost item to a new parent cost item"""
-        self.file = file
-        self.settings = {"item": item, "new_parent": new_parent}
-
-    def execute(self):
-        if not self.settings["item"].Nests:
-            return
-        nests = self.settings["item"].Nests[0]
-        related_objects = list(nests.RelatedObjects)
-        related_objects.remove(self.settings["item"])
-        if related_objects:
-            nests.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": nests})
-        else:
-            history = nests.OwnerHistory
-            self.file.remove(nests)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        ifcopenshell.api.run(
-            "nest.assign_object",
-            self.file,
-            related_objects=[self.settings["item"]],
-            relating_object=self.settings["new_parent"],
-        )
+def change_nest(
+    file: ifcopenshell.file, item: ifcopenshell.entity_instance, new_parent: ifcopenshell.entity_instance
+) -> None:
+    """Assigns a cost item to a new parent cost item"""
+    if not item.Nests:
+        return
+    nests = item.Nests[0]
+    related_objects = list(nests.RelatedObjects)
+    related_objects.remove(item)
+    if related_objects:
+        nests.RelatedObjects = related_objects
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": nests})
+    else:
+        history = nests.OwnerHistory
+        file.remove(nests)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    ifcopenshell.api.run(
+        "nest.assign_object",
+        file,
+        related_objects=[item],
+        relating_object=new_parent,
+    )

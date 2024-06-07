@@ -185,6 +185,8 @@ class IfcClassData:
         if element:
             if element.is_a("IfcOpeningElement") or element.is_a("IfcOpeningStandardCase"):
                 return False
+            if element.is_a() in ("IfcWindowStyle", "IfcDoorStyle"): #see https://github.com/IfcOpenShell/IfcOpenShell/issues/4622#issuecomment-2095676368
+                return True
             for product in cls.ifc_products():
                 if element.is_a(product[0]):
                     return True

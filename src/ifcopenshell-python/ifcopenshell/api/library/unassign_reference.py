@@ -21,70 +21,66 @@ import ifcopenshell.util.element
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(
-        self,
-        file: ifcopenshell.file,
-        reference: ifcopenshell.entity_instance,
-        products: list[ifcopenshell.entity_instance],
-    ):
-        """Unassigns a product of products from a reference
+def unassign_reference(
+    file: ifcopenshell.file,
+    reference: ifcopenshell.entity_instance,
+    products: list[ifcopenshell.entity_instance],
+) -> None:
+    """Unassigns a product of products from a reference
 
-        If the product isn't assigned to the reference, nothing will happen.
+    If the product isn't assigned to the reference, nothing will happen.
 
-        :param reference: The IfcLibraryReference to unassign from
-        :type reference: ifcopenshell.entity_instance.entity_instance
-        :param products: A list of IfcProduct elements to unassign from the reference
-        :type products: list[ifcopenshell.entity_instance.entity_instance]
-        :return: None
-        :rtype: None
+    :param reference: The IfcLibraryReference to unassign from
+    :type reference: ifcopenshell.entity_instance
+    :param products: A list of IfcProduct elements to unassign from the reference
+    :type products: list[ifcopenshell.entity_instance]
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
 
-            # Let's create a reference to a single AHU in our Brickschema dataset
-            reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-            ifcopenshell.api.run("library.edit_reference", model,
-                reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
+        # Let's create a reference to a single AHU in our Brickschema dataset
+        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+        ifcopenshell.api.run("library.edit_reference", model,
+            reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
 
-            # Let's assume we have an AHU in our model.
-            ahu = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
+        # Let's assume we have an AHU in our model.
+        ahu = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
-            # And now assign the IFC model's AHU with its Brickschema counterpart
-            ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
+        # And now assign the IFC model's AHU with its Brickschema counterpart
+        ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
 
-            # Let's change our mind and unassign it.
-            ifcopenshell.api.run("library.unassign_reference", model, reference=reference, products=[ahu])
-        """
+        # Let's change our mind and unassign it.
+        ifcopenshell.api.run("library.unassign_reference", model, reference=reference, products=[ahu])
+    """
 
-        self.file = file
-        self.settings = {"reference": reference, "products": products}
+    settings = {"reference": reference, "products": products}
 
-    def execute(self):
-        # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
+    # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
 
-        reference_rels: set[ifcopenshell.entity_instance] = set()
-        products = set(self.settings["products"])
-        for product in products:
-            reference_rels.update(product.HasAssociations)
+    reference_rels: set[ifcopenshell.entity_instance] = set()
+    products = set(settings["products"])
+    for product in products:
+        reference_rels.update(product.HasAssociations)
 
-        reference_rels = {
-            rel
-            for rel in reference_rels
-            if rel.is_a("IfcRelAssociatesLibrary") and rel.RelatingLibrary == self.settings["reference"]
-        }
+    reference_rels = {
+        rel
+        for rel in reference_rels
+        if rel.is_a("IfcRelAssociatesLibrary") and rel.RelatingLibrary == settings["reference"]
+    }
 
-        for rel in reference_rels:
-            related_objects = set(rel.RelatedObjects) - products
-            if related_objects:
-                rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-            else:
-                history = rel.OwnerHistory
-                self.file.remove(rel)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
+    for rel in reference_rels:
+        related_objects = set(rel.RelatedObjects) - products
+        if related_objects:
+            rel.RelatedObjects = list(related_objects)
+            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        else:
+            history = rel.OwnerHistory
+            file.remove(rel)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)

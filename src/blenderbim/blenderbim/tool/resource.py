@@ -33,10 +33,12 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import blenderbim.bim.schema
 import ifcopenshell.util.constraint
+from typing import Any, Union
+
 
 class Resource(blenderbim.core.tool.Resource):
     @classmethod
-    def load_resources(cls):
+    def load_resources(cls) -> None:
         def create_new_resource_li(resource, level_index):
             new = bpy.context.scene.BIMResourceTreeProperties.resources.add()
             new.ifc_definition_id = resource.id()
@@ -66,42 +68,44 @@ class Resource(blenderbim.core.tool.Resource):
         props.is_editing = True
 
     @classmethod
-    def load_resource_properties(cls):
+    def load_resource_properties(cls) -> None:
         props = bpy.context.scene.BIMResourceProperties
         tprops = bpy.context.scene.BIMResourceTreeProperties
         props.is_resource_update_enabled = False
         for item in tprops.resources:
             resource = tool.Ifc.get().by_id(item.ifc_definition_id)
             item.name = resource.Name if resource.Name else "Unnamed"
-            item.schedule_usage = resource.Usage.ScheduleUsage if (resource.Usage and resource.Usage.ScheduleUsage) else 0
+            item.schedule_usage = (
+                resource.Usage.ScheduleUsage if (resource.Usage and resource.Usage.ScheduleUsage) else 0
+            )
         props.is_resource_update_enabled = True
 
     @classmethod
-    def disable_editing_resource(cls):
+    def disable_editing_resource(cls) -> None:
         bpy.context.scene.BIMResourceProperties.active_resource_id = 0
         bpy.context.scene.BIMResourceProperties.active_resource_time_id = 0
 
     @classmethod
-    def disable_resource_editing_ui(cls):
+    def disable_resource_editing_ui(cls) -> None:
         bpy.context.scene.BIMResourceProperties.is_editing = False
 
     @classmethod
-    def load_resource_attributes(cls, resource):
+    def load_resource_attributes(cls, resource: ifcopenshell.entity_instance) -> None:
         blenderbim.bim.helper.import_attributes2(resource, bpy.context.scene.BIMResourceProperties.resource_attributes)
 
     @classmethod
-    def enable_editing_resource(cls, resource):
+    def enable_editing_resource(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.active_resource_id = resource.id()
         props.resource_attributes.clear()
         props.editing_resource_type = "ATTRIBUTES"
 
     @classmethod
-    def get_resource_attributes(cls):
+    def get_resource_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMResourceProperties.resource_attributes)
 
     @classmethod
-    def enable_editing_resource_time(cls, resource):
+    def enable_editing_resource_time(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.resource_time_attributes.clear()
         props.active_resource_time_id = resource.Usage.id()
@@ -109,11 +113,11 @@ class Resource(blenderbim.core.tool.Resource):
         props.editing_resource_type = "USAGE"
 
     @classmethod
-    def get_resource_time(cls, resource):
-        return resource.Usage if resource.Usage else None
+    def get_resource_time(cls, resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        return resource.Usage or None
 
     @classmethod
-    def load_resource_time_attributes(cls, resource_time):
+    def load_resource_time_attributes(cls, resource_time: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if prop.data_type == "string":
                 if isinstance(data[name], datetime):
@@ -128,7 +132,7 @@ class Resource(blenderbim.core.tool.Resource):
         )
 
     @classmethod
-    def get_resource_time_attributes(cls):
+    def get_resource_time_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
@@ -147,20 +151,19 @@ class Resource(blenderbim.core.tool.Resource):
         return blenderbim.bim.helper.export_attributes(props.resource_time_attributes, callback)
 
     @classmethod
-    def enable_editing_resource_costs(cls, resource):
+    def enable_editing_resource_costs(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.active_resource_id = resource.id()
         props.editing_resource_type = "COSTS"
-        resource
 
     @classmethod
-    def disable_editing_resource_cost_value(cls):
+    def disable_editing_resource_cost_value(cls) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.active_cost_value_id = 0
         props.cost_value_editing_type = ""
 
     @classmethod
-    def enable_editing_resource_cost_value_formula(cls, cost_value):
+    def enable_editing_resource_cost_value_formula(cls, cost_value: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.cost_value_attributes.clear()
         props.active_cost_value_id = cost_value.id()
@@ -168,7 +171,7 @@ class Resource(blenderbim.core.tool.Resource):
         props.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value) if cost_value else ""
 
     @classmethod
-    def load_cost_value_attributes(cls, cost_value):
+    def load_cost_value_attributes(cls, cost_value: ifcopenshell.entity_instance):
         def callback(name, prop, data):
             if name == "AppliedValue":
                 # TODO: for now, only support simple IfcValues (which are effectively IfcMonetaryMeasure)
@@ -221,7 +224,7 @@ class Resource(blenderbim.core.tool.Resource):
         blenderbim.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback)
 
     @classmethod
-    def enable_editing_cost_value_attributes(cls, cost_value):
+    def enable_editing_cost_value_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.cost_value_attributes.clear()
         props.active_cost_value_id = cost_value.id()
@@ -232,7 +235,7 @@ class Resource(blenderbim.core.tool.Resource):
         return bpy.context.scene.BIMResourceProperties.cost_value_formula
 
     @classmethod
-    def get_resource_cost_value_attributes(cls):
+    def get_resource_cost_value_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if prop.name == "UnitBasisValue":
                 if prop.is_null:
@@ -257,28 +260,29 @@ class Resource(blenderbim.core.tool.Resource):
         )
 
     @classmethod
-    def enable_editing_resource_base_quantity(cls, resource):
+    def enable_editing_resource_base_quantity(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.active_resource_id = resource.id()
         props.editing_resource_type = "QUANTITY"
+        props.active_resource_class = resource.is_a()
 
     @classmethod
-    def enable_editing_resource_quantity(cls, resource_quantity):
+    def enable_editing_resource_quantity(cls, resource_quantity: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         props.quantity_attributes.clear()
         props.is_editing_quantity = True
         blenderbim.bim.helper.import_attributes2(resource_quantity, props.quantity_attributes)
 
     @classmethod
-    def disable_editing_resource_quantity(cls):
+    def disable_editing_resource_quantity(cls) -> None:
         bpy.context.scene.BIMResourceProperties.is_editing_quantity = False
 
     @classmethod
-    def get_resource_quantity_attributes(cls):
+    def get_resource_quantity_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMResourceProperties.quantity_attributes)
 
     @classmethod
-    def expand_resource(cls, resource):
+    def expand_resource(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         contracted_resources = json.loads(props.contracted_resources)
         if not resource.id() in contracted_resources:
@@ -287,14 +291,14 @@ class Resource(blenderbim.core.tool.Resource):
         props.contracted_resources = json.dumps(contracted_resources)
 
     @classmethod
-    def contract_resource(cls, resource):
+    def contract_resource(cls, resource: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMResourceProperties
         contracted_resources = json.loads(props.contracted_resources)
         contracted_resources.append(resource.id())
         props.contracted_resources = json.dumps(contracted_resources)
 
     @classmethod
-    def import_resources(cls, file_path):
+    def import_resources(cls, file_path: str) -> None:
         from ifc4d.csv2ifc import Csv2Ifc
 
         start = time.time()
@@ -305,7 +309,7 @@ class Resource(blenderbim.core.tool.Resource):
         print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
 
     @classmethod
-    def get_highlighted_resource(cls):
+    def get_highlighted_resource(cls) -> Union[ifcopenshell.entity_instance, None]:
         resources = len(bpy.context.scene.BIMResourceTreeProperties.resources)
         if resources and resources > bpy.context.scene.BIMResourceProperties.active_resource_index:
             return tool.Ifc.get().by_id(
@@ -315,7 +319,7 @@ class Resource(blenderbim.core.tool.Resource):
             )
 
     @classmethod
-    def clear_productivity_data(cls, props):
+    def clear_productivity_data(cls, props: bpy.types.PropertyGroup) -> None:
         for duration_prop in props.quantity_consumed or []:
             if duration_prop.name == "BaseQuantityConsumed":
                 duration_prop.years = 0
@@ -328,7 +332,7 @@ class Resource(blenderbim.core.tool.Resource):
         props.quantity_produced_name = ""
 
     @classmethod
-    def load_productivity_data(cls):
+    def load_productivity_data(cls) -> None:
         duration_props = None
         for collection_prop in bpy.context.scene.BIMResourceProductivity.quantity_consumed:
             duration_props = collection_prop if collection_prop.name == "BaseQuantityConsumed" else None
@@ -358,7 +362,7 @@ class Resource(blenderbim.core.tool.Resource):
                     duration_props.seconds = durations_attributes["seconds"]
 
     @classmethod
-    def get_productivity_attributes(cls):
+    def get_productivity_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMResourceProductivity
         productivity = {}
         if props.quantity_consumed:
@@ -370,7 +374,9 @@ class Resource(blenderbim.core.tool.Resource):
         return productivity
 
     @classmethod
-    def get_productivity(cls, resource, should_inherit=False):
+    def get_productivity(
+        cls, resource: ifcopenshell.entity_instance, should_inherit: bool = False
+    ) -> ifcopenshell.util.resource.PRODUCTIVITY_PSET_DATA:
         return ifcopenshell.util.resource.get_productivity(resource, should_inherit=should_inherit)
 
     @classmethod
@@ -380,29 +386,29 @@ class Resource(blenderbim.core.tool.Resource):
             return
         return tool.Ifc.run(
             "pset.edit_pset",
-            pset= tool.Ifc.get().by_id(productivity["id"]),
+            pset=tool.Ifc.get().by_id(productivity["id"]),
             properties=attributes,
         )
 
     @classmethod
-    def get_constraints(cls, resource):
+    def get_constraints(cls, resource: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.constraint.get_constraints(product=resource)
 
     @classmethod
-    def get_metrics(cls, constraint):
+    def get_metrics(cls, constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.constraint.get_metrics(constraint)
 
     @classmethod
-    def get_metric_reference(cls, metric, is_deep=True):
+    def get_metric_reference(cls, metric: ifcopenshell.entity_instance, is_deep: bool = True):
         return ifcopenshell.util.constraint.get_metric_reference(metric, is_deep=is_deep)
 
     @classmethod
-    def has_metric_constraint(cls, resource, attribute):
+    def has_metric_constraint(cls, resource: ifcopenshell.entity_instance, attribute):
         metrics = ifcopenshell.util.constraint.get_metric_constraints(resource, attribute)
         return True if metrics else False
 
     @classmethod
-    def run_edit_resource_time(cls, resource, attributes):
+    def run_edit_resource_time(cls, resource: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
         if not resource.Usage:
             tool.Ifc.run(
                 "resource.add_resource_time",
@@ -411,7 +417,7 @@ class Resource(blenderbim.core.tool.Resource):
         tool.Ifc.run("resource.edit_resource_time", resource_time=resource.Usage, attributes=attributes)
 
     @classmethod
-    def go_to_resource(cls, resource):
+    def go_to_resource(cls, resource: ifcopenshell.entity_instance) -> None:
         def get_ancestors_ids(resource):
             ids = []
             for rel in resource.Nests or []:
@@ -427,24 +433,22 @@ class Resource(blenderbim.core.tool.Resource):
         bpy.context.scene.BIMResourceProperties.contracted_resources = json.dumps(contracted_resources)
         cls.load_resources()
 
-
         resource_props = bpy.context.scene.BIMResourceTreeProperties
         expanded_resources = [item.ifc_definition_id for item in resource_props.resources]
         bpy.context.scene.BIMResourceProperties.active_resource_index = expanded_resources.index(resource.id())
 
-
     @classmethod
-    def run_calculate_resource_usage(cls, resource):
+    def run_calculate_resource_usage(cls, resource: ifcopenshell.entity_instance) -> None:
         tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
 
     @classmethod
-    def get_task_assignments(cls, resource):
+    def get_task_assignments(cls, resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.resource.get_task_assignments(resource)
 
     @classmethod
-    def get_nested_resources(cls, resource):
+    def get_nested_resources(cls, resource: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.resource.get_nested_resources(resource)
 
     @classmethod
-    def is_attribute_locked(cls, resource, attribute):
+    def is_attribute_locked(cls, resource: ifcopenshell.entity_instance, attribute) -> bool:
         return ifcopenshell.util.constraint.is_attribute_locked(resource, attribute)

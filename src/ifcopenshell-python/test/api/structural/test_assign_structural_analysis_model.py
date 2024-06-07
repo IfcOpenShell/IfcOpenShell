@@ -37,3 +37,7 @@ class TestAssignStructuralAnalysisModel(test.bootstrap.IFC4):
         assert rel.is_a("IfcRelAssignsToGroup")
         assert rel.RelatingGroup == subject
         assert product in rel.RelatedObjects
+
+
+class TestAssignStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestAssignStructuralAnalysisModel):
+    pass

@@ -19,6 +19,8 @@
 import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import ifcopenshell
+from typing import Union
 
 
 class Owner(blenderbim.core.tool.Owner):
@@ -27,7 +29,7 @@ class Owner(blenderbim.core.tool.Owner):
         bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()
 
     @classmethod
-    def get_user(cls):
+    def get_user(cls) -> Union[ifcopenshell.entity_instance, None]:
         if bpy.context.scene.BIMOwnerProperties.active_user_id:
             return tool.Ifc.get().by_id(bpy.context.scene.BIMOwnerProperties.active_user_id)
         elif tool.Ifc.get_schema() == "IFC2X3":

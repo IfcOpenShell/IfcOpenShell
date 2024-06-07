@@ -54,11 +54,11 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMClassificationProperties = bpy.props.PointerProperty(type=prop.BIMClassificationProperties)
-    bpy.types.Object.BIMClassificationReferenceProperties = bpy.props.PointerProperty(
+    bpy.types.Scene.BIMClassificationReferenceProperties = bpy.props.PointerProperty(
         type=prop.BIMClassificationReferenceProperties
     )
 
 
 def unregister():
     del bpy.types.Scene.BIMClassificationProperties
-    del bpy.types.Object.BIMClassificationReferenceProperties
+    del bpy.types.Scene.BIMClassificationReferenceProperties

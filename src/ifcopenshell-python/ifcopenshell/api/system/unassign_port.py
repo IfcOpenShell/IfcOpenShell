@@ -18,44 +18,50 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.element
+
+
+def unassign_port(
+    file: ifcopenshell.file, element: ifcopenshell.entity_instance, port: ifcopenshell.entity_instance
+) -> None:
+    """Unassigns a port to an element
+
+    Ports are typically always assigned to a distribution element, but in
+    some edge cases you may want to unassign the port to create an orphaned
+    port for cleaning or patchin purposes.
+
+    :param element: The IfcDistributionElement to unassign the port from.
+    :type element: ifcopenshell.entity_instance
+    :param port: The IfcDistributionPort you want to unassign.
+    :type port: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        # Create a duct
+        duct = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+
+        # Create 2 ports, one for either end.
+        port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+
+        # Unassign one port for some weird reason.
+        ifcopenshell.api.run("system.unassign_port", model, element=duct, port=port1)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "element": element,
+        "port": port,
+    }
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, element=None, port=None):
-        """Unassigns a port to an element
-
-        Ports are typically always assigned to a distribution element, but in
-        some edge cases you may want to unassign the port to create an orphaned
-        port for cleaning or patchin purposes.
-
-        :param element: The IfcDistributionElement to unassign the port from.
-        :type element: ifcopenshell.entity_instance.entity_instance
-        :param port: The IfcDistributionPort you want to unassign.
-        :type port: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            # Create a duct
-            duct = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
-
-            # Create 2 ports, one for either end.
-            port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-
-            # Unassign one port for some weird reason.
-            ifcopenshell.api.run("system.unassign_port", model, element=duct, port=port1)
-        """
-        self.file = file
-        self.settings = {
-            "element": element,
-            "port": port,
-        }
-
     def execute(self):
         if self.file.schema == "IFC2X3":
             return self.execute_ifc2x3()

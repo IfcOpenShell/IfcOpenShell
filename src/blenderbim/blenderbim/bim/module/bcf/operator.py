@@ -59,6 +59,20 @@ class LoadBcfProject(bpy.types.Operator):
         if self.filepath:
             bcfstore.BcfStore.set_by_filepath(self.filepath)
         bcfxml = bcfstore.BcfStore.get_bcfxml()
+        # a  BCFv2.1 does not need to have a project, but BBIM likes to have one
+        # https://github.com/buildingSMART/BCF-XML/tree/release_2_1/Documentation#bcf-file-structure
+        nameless = "Unknown"
+        if bcfxml.project is None:
+            if bcfxml.version.version_id.startswith("2"):
+                print("No project, we will create one for BBIM.")
+                bcfxml.project_info = bcf.v2.model.ProjectExtension(
+                    project=bcf.v2.model.Project(
+                        name=nameless,
+                        project_id=str(uuid.uuid4())
+                    ), extension_schema=""
+                )
+        if bcfxml.project.name is None:
+            bcfxml.project.name = nameless
         context.scene.BCFProperties.name = bcfxml.project.name
         bpy.ops.bim.load_bcf_topics()
         return {"FINISHED"}
@@ -86,7 +100,19 @@ class LoadBcfTopics(bpy.types.Operator):
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         context.scene.BCFProperties.topics.clear()
-        for index, topic_guid in enumerate(bcfxml.topics.keys()):
+        # workaround, one non standard topic would break reading entire bcf
+        # ignored these topics ATM
+        # happens on non standard nodes or on missing nodes in markup
+        topics2use = []
+        for topic_guid in bcfxml.topics.keys():
+            # print("topic guid: {}".format(topic_guid))
+            try:
+                topic_titel = bcfxml.topics[topic_guid].topic.title
+                topics2use.append(topic_guid)
+            except:
+                print("Problems on reading topic, thus ignored: {}".format(topic_guid))
+                continue
+        for index, topic_guid in enumerate(topics2use):
             new = context.scene.BCFProperties.topics.add()
             bpy.ops.bim.load_bcf_topic(topic_guid=topic_guid, topic_index=index)
         return {"FINISHED"}
@@ -938,33 +964,56 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # Operators with context overrides are used because they are
         # significantly faster than looping through all objects
 
-        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions or []}
+        self.set_exceptions(viewpoint, context)
+        self.set_view_setup_hints(viewpoint, context)
+        # set selection at the end not to conflict with .hide_spaces
+        self.set_selection(viewpoint)
+        self.set_colours(viewpoint)
 
+    def set_exceptions(self, viewpoint, context):
+        if (
+            not hasattr(viewpoint.visualization_info.components, "visibility")
+            or not hasattr(viewpoint.visualization_info.components.visibility.exceptions, "component")
+        ):
+            return
+
+        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []}
+
+        # print("default_visibility: {}".format(viewpoint.visualization_info.components.visibility.default_visibility))
         if viewpoint.visualization_info.components.visibility.default_visibility:
+            # default_visibility is True: show all objs, hide the exceptions
             old = context.area.type
             context.area.type = "VIEW_3D"
             bpy.ops.object.hide_view_clear()
             context.area.type = old
             for global_id in exception_global_ids:
+                # print("{}: hide".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj and bpy.context.view_layer.objects.get(obj.name):
+                    # print("  obj found")
                     obj.hide_set(True)
         else:
+            # default_visibility is False: hide all objs, show the exceptions
             objs = []
             for global_id in exception_global_ids:
+                # print("{}: show".format(global_id))
                 obj = IfcStore.get_element(global_id)
                 if obj:
+                    # print("  obj found")
                     objs.append(obj)
             if objs:
                 old = context.area.type
                 context.area.type = "VIEW_3D"
+                bpy.ops.object.hide_view_clear()
                 context_override = {}
                 context_override["object"] = context_override["active_object"] = objs[0]
                 context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
                 with context.temp_override(**context_override):
                     bpy.ops.object.hide_view_set(unselected=True)
+                    bpy.data.objects["Viewpoint"].hide_set(False)
                 context.area.type = old
 
+    def set_view_setup_hints(self, viewpoint, context):
         if viewpoint.visualization_info.components.view_setup_hints:
             if not viewpoint.visualization_info.components.view_setup_hints.spaces_visible:
                 self.hide_spaces(context)
@@ -975,10 +1024,6 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         else:
             self.hide_spaces(context)
             self.set_openings_visibility(False, context)
-
-        # set selection at the end not to conflict with .hide_spaces
-        self.set_selection(viewpoint)
-        self.set_colours(viewpoint)
 
     def hide_spaces(self, context):
         old = context.area.type
@@ -997,18 +1042,25 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         selected_global_ids = [s.ifc_guid for s in viewpoint.visualization_info.components.selection.component or []]
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
+            # print("{}: selected".format(global_id))
             obj = IfcStore.get_element(global_id)
             if obj:
+                # print("  obj found")
                 obj.select_set(True)
+                obj.hide_set(False)
 
     def set_colours(self, viewpoint):
+        if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.coloring:
+            return
         global_id_colours = {}
-        for coloring in viewpoint.visualization_info.components.coloring or []:
-            for component in coloring.components:
-                global_id_colours.setdefault(component.ifc_guid, coloring.color)
+        for acoloring in viewpoint.visualization_info.components.coloring.color:
+            for acomponent in acoloring.component:
+                global_id_colours.setdefault(acomponent.ifc_guid, acoloring.color)
         for global_id, color in global_id_colours.items():
+            # print("{}: color: {}: {}".format(global_id, color, self.hex_to_rgb(color)))
             obj = IfcStore.get_element(global_id)
             if obj:
+                # print("  obj found   ")
                 obj.color = self.hex_to_rgb(color)
 
     def draw_lines(self, viewpoint, context):
@@ -1092,8 +1144,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
     def hex_to_rgb(self, value):
         value = value.lstrip("#")
         lv = len(value)
-        t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
-        return [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
+        # https://github.com/buildingSMART/BCF-XML/tree/release_3_0/Documentation#coloring
+        if lv == 8:
+            t = tuple(int(value[i : i + lv // 4], 16) for i in range(0, lv, lv // 4))
+            col = [t[1] / 255.0, t[2] / 255.0, t[3] / 255.0,  t[0] / 255.0]
+        else:
+            t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
+            col = [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]
+        return col
 
 
 class OpenBcfReferenceLink(bpy.types.Operator):

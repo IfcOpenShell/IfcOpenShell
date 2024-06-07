@@ -22,14 +22,14 @@ import ifcopenshell.api
 
 class TestRemoveInformation(test.bootstrap.IFC4):
     def test_remove_information(self):
-        project = self.file.createIfcProject()
+        self.file.createIfcProject()
         element = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         ifcopenshell.api.run("document.remove_information", self.file, information=element)
         assert len(self.file.by_type("IfcDocumentInformation")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0
 
     def test_removing_all_references_of_an_information(self):
-        project = self.file.createIfcProject()
+        self.file.createIfcProject()
         information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         ifcopenshell.api.run("document.add_reference", self.file, information=information)
         ifcopenshell.api.run("document.remove_information", self.file, information=information)
@@ -51,7 +51,7 @@ class TestRemoveInformation(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 0
 
     def test_removing_all_subdocuments_and_their_references_too(self):
-        project = self.file.createIfcProject()
+        self.file.createIfcProject()
         information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
         information2 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
         ifcopenshell.api.run("document.add_reference", self.file, information=information2)
@@ -60,3 +60,7 @@ class TestRemoveInformation(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0
         assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 0
+
+
+class TestRemoveInformationIFC2X3(TestRemoveInformation, test.bootstrap.IFC2X3):
+    pass

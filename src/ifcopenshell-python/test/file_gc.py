@@ -3,6 +3,7 @@ import pytest
 import weakref
 import itertools
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.api
 import ifcopenshell.template
 

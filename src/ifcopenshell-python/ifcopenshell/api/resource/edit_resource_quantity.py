@@ -15,47 +15,48 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, physical_quantity=None, attributes=None):
-        """Edits the attributes of an IFC quantity
+def edit_resource_quantity(
+    file: ifcopenshell.file, physical_quantity: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
+    """Edits the attributes of an IFC quantity
 
-        For more information about the attributes and data types of an
-        IfC quantity, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfC quantity, consult the IFC documentation.
 
-        :param physical_quantity: The IfC quantity entity you want to edit
-        :type physical_quantity: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param physical_quantity: The IfC quantity entity you want to edit
+    :type physical_quantity: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Add our own crew
-            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        # Add our own crew
+        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
 
-            # Add some labour to our crew.
-            labour = ifcopenshell.api.run("resource.add_resource", model,
-                parent_resource=crew, ifc_class="IfcLaborResource")
+        # Add some labour to our crew.
+        labour = ifcopenshell.api.run("resource.add_resource", model,
+            parent_resource=crew, ifc_class="IfcLaborResource")
 
-            # Labour resource is quantified in terms of time.
-            ifcopenshell.api.run("resource.add_resource_quantity", model,
-                resource=labour, ifc_class="IfcQuantityTime")
+        # Labour resource is quantified in terms of time.
+        ifcopenshell.api.run("resource.add_resource_quantity", model,
+            resource=labour, ifc_class="IfcQuantityTime")
 
-            # Store the time used in hours
-            ifcopenshell.api.run("resource.edit_resource_quantity", model,
-                physical_quantity=time, attributes={"TimeValue": 8.0})
-        """
-        self.file = file
-        self.settings = {
-            "physical_quantity": physical_quantity,
-            "attributes": attributes or {},
-        }
+        # Store the time used in hours
+        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+            physical_quantity=time, attributes={"TimeValue": 8.0})
+    """
+    settings = {
+        "physical_quantity": physical_quantity,
+        "attributes": attributes,
+    }
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["physical_quantity"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["physical_quantity"], name, value)

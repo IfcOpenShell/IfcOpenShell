@@ -24,12 +24,14 @@ classes = (
     operator.AddPresentationStyle,
     operator.AddStyle,
     operator.AddSurfaceTexture,
+    operator.AssignStyleToSelected,
     operator.BrowseExternalStyle,
     operator.RemoveTextureMap,
     operator.ChooseTextureMapPath,
     operator.DisableAddingPresentationStyle,
     operator.DisableEditingStyle,
     operator.DisableEditingStyles,
+    operator.DuplicateStyle,
     operator.EditStyle,
     operator.EditSurfaceStyle,
     operator.EnableAddingPresentationStyle,
@@ -49,8 +51,6 @@ classes = (
     prop.BIMStylesProperties,
     prop.BIMStyleProperties,
     ui.BIM_PT_styles,
-    ui.BIM_PT_style,
-    ui.BIM_PT_style_attributes,
     ui.BIM_UL_styles,
 )
 

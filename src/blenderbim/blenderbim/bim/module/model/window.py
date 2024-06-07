@@ -26,64 +26,14 @@ import blenderbim.tool as tool
 import blenderbim.core.root
 import blenderbim.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
+import ifcopenshell.api
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
 from bmesh.types import BMVert
 from mathutils import Vector
-
-
-# TODO: move to some utils helpers/tool module
-def update_simple_openings(element, opening_width, opening_height):
-    ifc_file = tool.Ifc.get()
-    fillings = tool.Ifc.get_all_element_occurrences(element)
-
-    voided_objs = set()
-    has_replaced_opening_representation = False
-    for filling in fillings:
-        if not filling.FillsVoids:
-            continue
-
-        opening = filling.FillsVoids[0].RelatingOpeningElement
-        voided_obj = tool.Ifc.get_object(opening.VoidsElements[0].RelatingBuildingElement)
-        voided_objs.add(voided_obj)
-
-        # we assume that the same element type (e.g. window)
-        # will be used only for voiding objects of the same thickness (by y-dimension)
-        # (e.g. all walls window's attached to will share the same thickness)
-        # If that's not the case it will some linings will be too thick or too thin
-        if has_replaced_opening_representation:
-            continue
-
-        old_representation = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
-        )
-
-        thickness = voided_obj.dimensions[1] + 0.1 + 0.1
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        shape_builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc_file)
-        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-
-        extrusion = shape_builder.extrude(
-            shape_builder.rectangle(size=Vector([opening_width, 0.0, opening_height]).xz),
-            magnitude=thickness / unit_scale,
-            position=Vector([0.0, -0.1 / unit_scale, 0.0]),
-            **shape_builder.extrude_kwargs("Y")
-        )
-
-        new_representation = shape_builder.get_representation(context, extrusion)
-
-        for inverse in ifc_file.get_inverse(old_representation):
-            ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-
-        ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
-
-        has_replaced_opening_representation = True
-
-    tool.Model.reload_body_representation(voided_objs)
-    if fillings:
-        with bpy.context.temp_override(selected_objects=[tool.Ifc.get_object(f) for f in fillings]):
-            bpy.ops.bim.recalculate_fill()
 
 
 def update_window_modifier_representation(context, obj):
@@ -175,7 +125,7 @@ def update_window_modifier_representation(context, obj):
         occurrence.OverallWidth = props.overall_width / si_conversion
         occurrence.OverallHeight = props.overall_height / si_conversion
 
-    update_simple_openings(element, props.overall_width / si_conversion, props.overall_height / si_conversion)
+    tool.Model.update_simple_openings(element)
 
 
 def create_bm_window_frame(bm, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()):
@@ -590,6 +540,6 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMWindowProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

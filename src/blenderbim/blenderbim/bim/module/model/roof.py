@@ -20,7 +20,11 @@ import bpy
 import bmesh
 
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim
+import blenderbim.core.root
 import blenderbim.tool as tool
 from blenderbim.bim.helper import convert_property_group_from_si
 from blenderbim.bim.module.model.door import bm_sort_out_geom
@@ -757,7 +761,7 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
         obj.BIMRoofProperties.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
         return {"FINISHED"}
 
 

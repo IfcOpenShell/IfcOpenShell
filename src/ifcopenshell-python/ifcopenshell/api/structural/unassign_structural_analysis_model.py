@@ -21,35 +21,36 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, product=None, structural_analysis_model=None):
-        """Removes a relationship between a structural element and the analysis model
+def unassign_structural_analysis_model(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    structural_analysis_model: ifcopenshell.entity_instance,
+) -> None:
+    """Removes a relationship between a structural element and the analysis model
 
-        :param product: The structural element that is part of the analysis.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param structural_analysis_model: The IfcStructuralAnalysisModel that
-            the structural element is related to.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {
-            "product": product,
-            "structural_analysis_model": structural_analysis_model,
-        }
+    :param product: The structural element that is part of the analysis.
+    :type product: ifcopenshell.entity_instance
+    :param structural_analysis_model: The IfcStructuralAnalysisModel that
+        the structural element is related to.
+    :type structural_analysis_model: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {
+        "product": product,
+        "structural_analysis_model": structural_analysis_model,
+    }
 
-    def execute(self):
-        if not self.settings["structural_analysis_model"].IsGroupedBy:
-            return
-        rel = self.settings["structural_analysis_model"].IsGroupedBy[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        related_objects.remove(self.settings["product"])
-        if len(related_objects):
-            rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
-        else:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
+    if not settings["structural_analysis_model"].IsGroupedBy:
+        return
+    rel = settings["structural_analysis_model"].IsGroupedBy[0]
+    related_objects = set(rel.RelatedObjects) or set()
+    related_objects.remove(settings["product"])
+    if len(related_objects):
+        rel.RelatedObjects = list(related_objects)
+        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+    else:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)

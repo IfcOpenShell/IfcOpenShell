@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api
 
 
-class TestConnectPath(test.bootstrap.IFC4):
+class TestConnectElement(test.bootstrap.IFC4):
     def test_connecting_an_element(self):
         wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
@@ -85,3 +85,7 @@ class TestConnectPath(test.bootstrap.IFC4):
         )
         assert rel.RelatingElement == wall2
         assert rel.RelatedElement == wall1
+
+
+class TestConnectElementIFC2X3(test.bootstrap.IFC2X3, TestConnectElement):
+    pass

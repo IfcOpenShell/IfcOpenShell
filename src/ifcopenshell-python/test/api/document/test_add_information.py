@@ -30,9 +30,10 @@ class TestAddInformation(test.bootstrap.IFC4):
     def test_adding_information_to_the_project(self):
         project = self.file.createIfcProject()
         element = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        rel = element.DocumentInfoForObjects[0]
+        rel = self.file.by_type("IfcRelAssociatesDocument")[0]
         assert rel.is_a("IfcRelAssociatesDocument")
-        assert rel.RelatedObjects[0] == project
+        assert rel.RelatingDocument == element
+        assert rel.RelatedObjects == (project,)
 
     def test_adding_a_subdocument(self):
         project = self.file.createIfcProject()
@@ -45,3 +46,7 @@ class TestAddInformation(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.run("document.add_information", self.file, parent=parent)
         assert element in parent.IsPointer[0].RelatedDocuments
         assert element2 in parent.IsPointer[0].RelatedDocuments
+
+
+class TestAddInformationIFC2X3(test.bootstrap.IFC2X3, TestAddInformation):
+    pass

@@ -17,16 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.api
-import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
 import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.root
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.spatial.data import SpatialData
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -175,13 +171,13 @@ class SelectProduct(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadContainerManager(bpy.types.Operator):
-    bl_idname = "bim.load_container_manager"
+class ImportSpatialDecomposition(bpy.types.Operator):
+    bl_idname = "bim.import_spatial_decomposition"
     bl_label = "Load Container Manager"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.load_container_manager(tool.Spatial)
+        core.import_spatial_decomposition(tool.Spatial)
         return {"FINISHED"}
 
 
@@ -227,26 +223,6 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
 
-class AddBuildingStorey(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_building_storey"
-    bl_label = "Add Storey"
-    bl_options = {"REGISTER", "UNDO"}
-    part_class: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        active_container = tool.Spatial.get_active_container()
-        obj = tool.Ifc.get_object(active_container)
-        blenderbim.core.aggregate.add_part_to_object(
-            tool.Ifc,
-            tool.Aggregate,
-            tool.Collector,
-            tool.Blender,
-            obj=obj,
-            part_class=self.part_class,
-            part_name="Unnamed",
-        )
-        core.load_container_manager(tool.Spatial)
-
 
 class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
@@ -255,4 +231,13 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.select_decomposed_elements(tool.Spatial)
-        return {"FINISHED"}
+
+
+class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_default_container"
+    bl_label = "Set Default Container"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))

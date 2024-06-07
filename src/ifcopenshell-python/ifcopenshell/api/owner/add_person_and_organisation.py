@@ -15,37 +15,39 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, person=None, organisation=None):
-        """Adds a paired person and organisation
+def add_person_and_organisation(
+    file: ifcopenshell.file,
+    person: ifcopenshell.entity_instance,
+    organisation: ifcopenshell.entity_instance,
+) -> ifcopenshell.entity_instance:
+    """Adds a paired person and organisation
 
-        A person and an organisation may be paired to create a representative
-        belonging to a company.
+    A person and an organisation may be paired to create a representative
+    belonging to a company.
 
-        :param person: The IfcPerson being the representative of the
-            organisation.
-        :type person: ifcopenshell.entity_instance.entity_instance
-        :param organisation: The IfcOrganization itself.
-        :type organisation: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcPersonAndOrganization
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param person: The IfcPerson being the representative of the
+        organisation.
+    :type person: ifcopenshell.entity_instance
+    :param organisation: The IfcOrganization it
+    :type organisation: ifcopenshell.entity_instance
+    :return: The newly created IfcPersonAndOrganization
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            person = ifcopenshell.api.run("owner.add_person", model,
-                identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")
-            organisation = ifcopenshell.api.run("owner.add_organisation", model,
-                identification="AWB", name="Architects Without Ballpens")
+        person = ifcopenshell.api.run("owner.add_person", model,
+            identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")
+        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+            identification="AWB", name="Architects Without Ballpens")
 
-            ifcopenshell.api.run("owner.add_person_and_organisation", model,
-                person=person, organisation=organisation)
-        """
-        self.file = file
-        self.settings = {"person": person, "organisation": organisation}
+        ifcopenshell.api.run("owner.add_person_and_organisation", model,
+            person=person, organisation=organisation)
+    """
+    settings = {"person": person, "organisation": organisation}
 
-    def execute(self):
-        return self.file.createIfcPersonAndOrganization(self.settings["person"], self.settings["organisation"])
+    return file.createIfcPersonAndOrganization(settings["person"], settings["organisation"])

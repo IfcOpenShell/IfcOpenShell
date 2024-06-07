@@ -33,3 +33,7 @@ class TestCreateGridAxis(test.bootstrap.IFC4):
             "grid.create_grid_axis", self.file, axis_tag="axis_tag", same_sense=True, uvw_axes="UAxes", grid=grid
         )
         assert grid.UAxes == (axis, axis2)
+
+
+class TestCreateGridAxisIFC2X3(test.bootstrap.IFC2X3, TestCreateGridAxis):
+    pass

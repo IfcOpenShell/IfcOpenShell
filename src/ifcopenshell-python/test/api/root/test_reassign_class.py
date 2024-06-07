@@ -18,14 +18,17 @@
 
 import test.bootstrap
 import ifcopenshell.api
+import ifcopenshell.util.element
 
 
 class TestReassignClass(test.bootstrap.IFC4):
     def test_reassigning_a_simple_class(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        n_elements = len([e for e in self.file])
+        original_id = element.id()
         new = ifcopenshell.api.run("root.reassign_class", self.file, product=element, ifc_class="IfcSlab")
-        assert len([e for e in self.file]) == 1
-        assert new.id() == 1
+        assert len([e for e in self.file]) == n_elements
+        assert new.id() == original_id
         assert new.is_a("IfcSlab")
 
     def test_reassigning_a_predefined_type(self):
@@ -92,3 +95,7 @@ class TestReassignClass(test.bootstrap.IFC4):
         # original clases are gone
         assert len(self.file.by_type("IfcWall")) == 0
         assert len(self.file.by_type("IfcWallType")) == 0
+
+
+class TestReassignClassIFC2X3(test.bootstrap.IFC2X3, TestReassignClass):
+    pass

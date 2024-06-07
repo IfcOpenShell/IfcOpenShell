@@ -18,87 +18,98 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifcopenshell.util.element
+from typing import Optional
+
+
+def connect_port(
+    file: ifcopenshell.file,
+    port1: ifcopenshell.entity_instance,
+    port2: ifcopenshell.entity_instance,
+    direction: str = "NOTDEFINED",
+    element: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
+    """Connects two ports together
+
+    A distribution element (e.g. a duct) may be connected to another
+    distribution element (e.g. a fitting) by connecting a port at one of the
+    duct to a port at the same end of the fitting.
+
+    Ports may only have one connection, so you cannot have multiple things
+    connected to the same port. Nor can you have incompatible port
+    connections, such as an electrical port connected to an airflow port.
+
+    Port connectivity may be explicit or implicit. Explicit connections are
+    where the port connectivity is described for every single distribution
+    element in detail. For example, a duct segment would have port
+    connections to a duct fitting, which would have port connections to
+    another duct segment, all the way from a fan to an air terminal exactly
+    as constructed on site. Implicit connections only consider the key
+    distribution control elements (e.g. the fan and the terminal) and ignore
+    all of the details of the duct segments and fittings in between.
+    Generally, explicit connectivity is preferred for later detailed design,
+    and implicit connectivity is preferred for early phase design.
+
+    :param port1: The port of the first distribution element to connect.
+    :type port1: ifcopenshell.entity_instance
+    :param port2: The port of the second distribution element to connect.
+    :type port2: ifcopenshell.entity_instance
+    :param direction: The directionality of distribution flow through the
+        port connection. NOTDEFINED means that the direction has not yet
+        been determined. This is useful during preliminary system design.
+        SOURCE means that the flow is from the first element to the second
+        element. SINK means that the flow is from the second element to the
+        first element. SOURCEANDSINK means that flow is bi-directional
+        between the first and second element.  SOURCEANDSINK is a relatively
+        rare scenario.
+    :type direction: str
+    :param element: Optionally set an element through which the port
+        connectivity is made, such as a segment or fitting. This is only to
+        be used for implicit port connectivity where the segments and
+        fittings are less important.
+    :type element: ifcopenshell.entity_instance, optional
+
+    Example:
+
+    .. code:: python
+
+        # A completely empty distribution system
+        system = ifcopenshell.api.run("system.add_system", model)
+
+        # Create a duct and a 90 degree bend fitting
+        duct = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
+        fitting = ifcopenshell.api.run("root.create_entity", model,
+            ifc_class="IfcDuctFitting", predefined_type="BEND")
+
+        # The duct and fitting is part of the system
+        ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
+        ifcopenshell.api.run("system.assign_system", model, products=[fitting], system=system)
+
+        # Create 2 ports, one for either end of both the duct and fitting.
+        duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        duct_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=fitting)
+        fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=fitting)
+
+        # Connect the duct and fitting together. At this point, we have not
+        # yet determined the direction of the flow, so we leave direction as
+        # NOTDEFINED.
+        ifcopenshell.api.run("system.connect_port", model, port1=duct_port2, port2=fitting_port1)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {
+        "port1": port1,
+        "port2": port2,
+        "direction": direction,
+        "element": element,
+    }
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, port1=None, port2=None, direction="NOTDEFINED", element=None):
-        """Connects two ports together
-
-        A distribution element (e.g. a duct) may be connected to another
-        distribution element (e.g. a fitting) by connecting a port at one of the
-        duct to a port at the same end of the fitting.
-
-        Ports may only have one connection, so you cannot have multiple things
-        connected to the same port. Nor can you have incompatible port
-        connections, such as an electrical port connected to an airflow port.
-
-        Port connectivity may be explicit or implicit. Explicit connections are
-        where the port connectivity is described for every single distribution
-        element in detail. For example, a duct segment would have port
-        connections to a duct fitting, which would have port connections to
-        another duct segment, all the way from a fan to an air terminal exactly
-        as constructed on site. Implicit connections only consider the key
-        distribution control elements (e.g. the fan and the terminal) and ignore
-        all of the details of the duct segments and fittings in between.
-        Generally, explicit connectivity is preferred for later detailed design,
-        and implicit connectivity is preferred for early phase design.
-
-        :param port1: The port of the first distribution element to connect.
-        :type port1: ifcopenshell.entity_instance.entity_instance
-        :param port2: The port of the second distribution element to connect.
-        :type port2: ifcopenshell.entity_instance.entity_instance
-        :param direction: The directionality of distribution flow through the
-            port connection. NOTDEFINED means that the direction has not yet
-            been determined. This is useful during preliminary system design.
-            SOURCE means that the flow is from the first element to the second
-            element. SINK means that the flow is from the second element to the
-            first element. SOURCEANDSINK means that flow is bi-directional
-            between the first and second element.  SOURCEANDSINK is a relatively
-            rare scenario.
-        :type direction: str
-        :param element: Optionally set an element through which the port
-            connectivity is made, such as a segment or fitting. This is only to
-            be used for implicit port connectivity where the segments and
-            fittings are less important.
-        :type element: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # A completely empty distribution system
-            system = ifcopenshell.api.run("system.add_system", model)
-
-            # Create a duct and a 90 degree bend fitting
-            duct = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
-            fitting = ifcopenshell.api.run("root.create_entity", model,
-                ifc_class="IfcDuctFitting", predefined_type="BEND")
-
-            # The duct and fitting is part of the system
-            ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
-            ifcopenshell.api.run("system.assign_system", model, products=[fitting], system=system)
-
-            # Create 2 ports, one for either end of both the duct and fitting.
-            duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            duct_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-            fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=fitting)
-            fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=fitting)
-
-            # Connect the duct and fitting together. At this point, we have not
-            # yet determined the direction of the flow, so we leave direction as
-            # NOTDEFINED.
-            ifcopenshell.api.run("system.connect_port", model, port1=duct_port2, port2=fitting_port1)
-        """
-        self.file = file
-        self.settings = {
-            "port1": port1,
-            "port2": port2,
-            "direction": direction,
-            "element": element,
-        }
-
     def execute(self):
         # Note: there are a number of ambiguities with port connectivity. We
         # assume system topology is represented by a directed graph. In other

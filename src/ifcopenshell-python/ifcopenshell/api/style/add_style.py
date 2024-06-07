@@ -15,50 +15,53 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, name=None, ifc_class="IfcSurfaceStyle"):
-        """Add a new presentation style
+def add_style(
+    file: ifcopenshell.file, name: Optional[str] = None, ifc_class="IfcSurfaceStyle"
+) -> ifcopenshell.entity_instance:
+    """Add a new presentation style
 
-        A presentation style is a container of visual settings (called
-        presentation items) that affect the appearance of objects. There are
-        four types of style:
+    A presentation style is a container of visual settings (called
+    presentation items) that affect the appearance of objects. There are
+    four types of style:
 
-        - Surface styles, which give 3D objects (which have surfaces / faces)
-          their colours and textures. This is the most common type of style.
-        - Curve styles, which give 2D and 3D curves, lines, polylines, their
-          stroke thickness and colour.
-        - Fill area styles, which gives 2D polygons and flat 3D planes their
-          colours, hatch patterns, tiled patterns, and pattern scales.
-        - Text styles, which gives text their font family, weight, variant,
-          size, indentation, alignment, decoration, spacing, and transformation.
+    - Surface styles, which give 3D objects (which have surfaces / faces)
+      their colours and textures. This is the most common type of style.
+    - Curve styles, which give 2D and 3D curves, lines, polylines, their
+      stroke thickness and colour.
+    - Fill area styles, which gives 2D polygons and flat 3D planes their
+      colours, hatch patterns, tiled patterns, and pattern scales.
+    - Text styles, which gives text their font family, weight, variant,
+      size, indentation, alignment, decoration, spacing, and transformation.
 
-        Once you have created a presentation style object, you can further
-        define the properties of your style using other API functions by adding
-        presentation items, such as ifcopenshell.api.style.add_surface_style.
+    Once you have created a presentation style object, you can further
+    define the properties of your style using other API functions by adding
+    presentation items, such as ifcopenshell.api.style.add_surface_style.
 
-        :param name: The name of the style. Used to easily identify it using a
-            style library.
-        :type name: str,optional
-        :param ifc_class: Choose from IfcSurfaceStyle, IfcCurveStyle,
-            IfcFillAreaStyle, or IfcTextStyle.
-        :type ifc_class: str
-        :return: The newly created style element, based on the provided
-            ifc_class.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param name: The name of the style. Used to easily identify it using a
+        style library.
+    :type name: str,optional
+    :param ifc_class: Choose from IfcSurfaceStyle, IfcCurveStyle,
+        IfcFillAreaStyle, or IfcTextStyle.
+    :type ifc_class: str
+    :return: The newly created style element, based on the provided
+        ifc_class.
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Create a new surface style
-            style = ifcopenshell.api.run("style.add_style", model)
-        """
-        self.file = file
-        self.settings = {"name": name, "ifc_class": ifc_class}
+        # Create a new surface style
+        style = ifcopenshell.api.run("style.add_style", model)
+    """
 
-    def execute(self):
-        if self.settings["ifc_class"] == "IfcSurfaceStyle":
-            # Name is filled out because Revit treats this incorrectly as the material name
-            return self.file.createIfcSurfaceStyle(self.settings["name"], "BOTH")
+    kwargs = {"Name": name}
+    if ifc_class == "IfcSurfaceStyle":
+        # Name is filled out because Revit treats this incorrectly as the material name
+        kwargs["Side"] = "BOTH"
+
+    return file.create_entity(ifc_class, **kwargs)

@@ -63,3 +63,21 @@ with this data structure that IfcFM supports:
   installation. As expected, the majority of these are already referenced in
   named standards. "Vanilla" IFC offers a "specification agnostic" approach
   towards facility management data collection.
+
+COBie 2.4 vs COBie 2.4 Legacy
+-----------------------------
+
+In collaboration with leading UK consultancy BuildData Group (formerly Bond
+Bryan Digital), and inventor of COBie 2.4 Bill East (Prarie Sky Consulting), an
+effort was made to preserve the original IFC mapping, as well as modernise the
+mapping with the following goals:
+
+1. For anyone delivering **COBie 2.4** data using best practices from graphical
+   BIM software, there must be *no difference* between **COBie 2.4** and
+   **COBie 2.4 Legacy**. It must not contradict any specifications in the
+   official NBIMS-US and BS standards.
+2. Update compatibility to IFC4X3.
+3. Prioritise organisational data instead of personal data with discourage PII.
+4. Prioritise bSI standardised property sets over custom ones.
+5. Prevent needless repetition of data / fallback defaults that may result in
+   invalid or unexpected data in obscure edge cases.

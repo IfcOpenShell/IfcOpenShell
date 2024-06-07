@@ -17,11 +17,6 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import annotations
-
 import os
 import sys
 import operator
@@ -32,9 +27,13 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional
+from typing import TypeVar, Union, Optional, Generator
 
 T = TypeVar("T")
+ShapeElementType = Union[
+    ifcopenshell_wrapper.BRepElement, ifcopenshell_wrapper.TriangulationElement, ifcopenshell_wrapper.SerializedElement
+]
+ShapeType = Union[ifcopenshell_wrapper.BRep, ifcopenshell_wrapper.Triangulation, ifcopenshell_wrapper.Serialization]
 
 
 def wrap_shape_creation(settings, shape):
@@ -165,7 +164,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         def get(self):
             return wrap_shape_creation(self.settings, ifcopenshell_wrapper.Iterator.get(self))
 
-    def __iter__(self):
+    def __iter__(self) -> Generator[ShapeElementType, None, None]:
         if self.initialize():
             while True:
                 yield self.get()
@@ -191,7 +190,7 @@ class tree(ifcopenshell_wrapper.tree):
     def select(
         self,
         value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], "TopoDS.TopoDS_Shape"
         ],
         **kwargs,
     ) -> list[entity_instance]:

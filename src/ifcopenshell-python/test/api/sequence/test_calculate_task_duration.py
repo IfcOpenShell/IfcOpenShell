@@ -20,6 +20,8 @@ import test.bootstrap
 import ifcopenshell.api
 
 
+# NOTE: sequence module features relies on entities introduced in IFC4
+# therefore no IFC2X3 tests
 class TestCalculateTaskDuration(test.bootstrap.IFC4):
     def test_calculating_the_duration_based_on_a_labour_resource_with_work_hours(self):
         ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")

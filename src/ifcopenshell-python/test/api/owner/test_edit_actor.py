@@ -52,3 +52,7 @@ class TestEditActor(test.bootstrap.IFC4):
         assert actor.Description == "Description"
         assert actor.ObjectType == "ObjectType"
         assert actor.PredefinedType == "TENANT"
+
+
+class TestEditActorIFC2X3(test.bootstrap.IFC2X3, TestEditActor):
+    pass

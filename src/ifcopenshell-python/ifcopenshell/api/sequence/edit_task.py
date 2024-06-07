@@ -15,41 +15,40 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, task=None, attributes=None):
-        """Edits the attributes of an IfcTask
+def edit_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcTask
 
-        For more information about the attributes and data types of an
-        IfcTask, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcTask, consult the IFC documentation.
 
-        :param task: The IfcTask entity you want to edit
-        :type task: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param task: The IfcTask entity you want to edit
+    :type task: ifcopenshell.entity_instance
+    :param attributes: a dictionary of attribute names and values.
+    :type attributes: dict
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's imagine we are creating a construction schedule. All tasks
-            # need to be part of a work schedule.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        # Let's imagine we are creating a construction schedule. All tasks
+        # need to be part of a work schedule.
+        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
 
-            # Add a root task to represent the design milestones, and major
-            # project phases.
-            task = ifcopenshell.api.run("sequence.add_task", model,
-                work_schedule=schedule, name="Milestones", identification="A")
+        # Add a root task to represent the design milestones, and major
+        # project phases.
+        task = ifcopenshell.api.run("sequence.add_task", model,
+            work_schedule=schedule, name="Milestones", identification="A")
 
-            # Change the identification
-            ifcopenshell.api.run("sequence.edit_task", model, task=task, attributes={"Identification": "M"})
-        """
-        self.file = file
-        self.settings = {"task": task, "attributes": attributes or {}}
+        # Change the identification
+        ifcopenshell.api.run("sequence.edit_task", model, task=task, attributes={"Identification": "M"})
+    """
+    settings = {"task": task, "attributes": attributes or {}}
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["task"], name, value)
+    for name, value in settings["attributes"].items():
+        setattr(settings["task"], name, value)

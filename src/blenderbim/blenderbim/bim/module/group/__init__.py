@@ -31,7 +31,6 @@ classes = (
     operator.SelectGroupProducts,
     operator.ToggleGroup,
     operator.UnassignGroup,
-    operator.UpdateGroup,
     operator.SelectGroupElements,
     prop.ExpandedGroups,
     prop.Group,

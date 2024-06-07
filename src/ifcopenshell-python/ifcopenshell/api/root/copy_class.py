@@ -17,56 +17,61 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.system
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+
+
+def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Copies a product
+
+    The following relationships are also duplicated:
+
+    * The copy will have the same object placement coordinates as the
+      original.
+    * The copy will have duplicated property sets, properties, and quantities
+    * The copy will have all nested distribution ports copied too
+    * The copy will be part of the same aggregate
+    * The copy will be contained in the same spatial structure
+    * The copy, if it is an occurrence, will have the same type
+    * Voids are duplicated too
+    * The copy will have the same material as the original. Parametric
+      material set usages will be copied.
+    * The copy will be part of the same groups as the original.
+
+    Be warned that:
+
+    * Representations are _not_ copied. Copying representations is an
+      expensive operation so for now the user is responsible for handling
+      representations.
+    * Filled voids are not copied, as there is no guarantee that the filling
+      will also be copied.
+    * Path connectivity is not copied, as there is no guarantee that the
+      connections are still valid.
+
+    :param product: The IfcProduct to copy.
+    :type param: ifcopenshell.entity_instance
+    :return: The copied product
+    :rtype: ifcopenshell.entity_instance
+
+    Example:
+
+    .. code:: python
+
+        # We have a wall
+        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+
+        # And now we have two
+        wall_copy = ifcopenshell.api.run("root.copy_class", model, product=wall)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    usecase.settings = {"product": product}
+    return usecase.execute()
 
 
 class Usecase:
-    def __init__(self, file, product=None):
-        """Copies a product
-
-        The following relationships are also duplicated:
-
-        * The copy will have the same object placement coordinates as the
-          original.
-        * The copy will have duplicated property sets, properties, and quantities
-        * The copy will have all nested distribution ports copied too
-        * The copy will be part of the same aggregate
-        * The copy will be contained in the same spatial structure
-        * The copy, if it is an occurrence, will have the same type
-        * Voids are duplicated too
-        * The copy will have the same material as the original. Parametric
-          material set usages will be copied.
-        * The copy will be part of the same groups as the original.
-
-        Be warned that:
-
-        * Representations are _not_ copied. Copying representations is an
-          expensive operation so for now the user is responsible for handling
-          representations.
-        * Filled voids are not copied, as there is no guarantee that the filling
-          will also be copied.
-        * Path connectivity is not copied, as there is no guarantee that the
-          connections are still valid.
-
-        :param product: The IfcProduct to copy.
-        :type param: ifcopenshell.entity_instance.entity_instance
-        :return: The copied product
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # We have a wall
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-
-            # And now we have two
-            wall_copy = ifcopenshell.api.run("root.copy_class", model, product=wall)
-        """
-        self.file = file
-        self.settings = {"product": product}
-
     def execute(self):
         result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
         self.copy_direct_attributes(result)

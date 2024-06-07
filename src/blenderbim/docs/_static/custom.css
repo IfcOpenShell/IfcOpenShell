@@ -16,6 +16,7 @@ a {
 }
 .sidebar-brand-text {
     font-size: 1rem;
+    text-align: center;
 }
 .blockbutton {
     max-width: 500px;
@@ -62,7 +63,7 @@ section img {
     background-color: var(--color-admonition-title-background);
     border-radius: 5px;
     font-style: italic;
-    color: var(--color-admonition-title);
+    color: var(--color-admonition-text);
 }
 img.icon {
     width: auto;

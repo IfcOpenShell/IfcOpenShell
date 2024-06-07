@@ -19,45 +19,42 @@
 import ifcopenshell.api
 
 
-class Usecase:
-    def __init__(self, file, time_period=None):
-        """Removes a time period
+def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity_instance) -> None:
+    """Removes a time period
 
-        :param time_period: The IfcTimePeriod to remove.
-        :type time_period: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param time_period: The IfcTimePeriod to remove.
+    :type time_period: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's create a new calendar.
-            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        # Let's create a new calendar.
+        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
 
-            # Let's start defining the times that we work during the week.
-            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
-                work_calendar=calendar, time_type="WorkingTimes")
+        # Let's start defining the times that we work during the week.
+        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+            work_calendar=calendar, time_type="WorkingTimes")
 
-            # We create a weekly recurrence
-            pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
-                parent=work_time, recurrence_type="WEEKLY")
+        # We create a weekly recurrence
+        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+            parent=work_time, recurrence_type="WEEKLY")
 
-            # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
-            ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
-                recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
+        # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
+        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+            recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
 
-            # The morning work session, lunch, then the afternoon work session.
-            morning = ifcopenshell.api.run("sequence.add_time_period", model,
-                recurrence_pattern=pattern, start_time="09:00", end_time="12:00")
-            afternoon = ifcopenshell.api.run("sequence.add_time_period", model,
-                recurrence_pattern=pattern, start_time="13:00", end_time="17:00")
+        # The morning work session, lunch, then the afternoon work session.
+        morning = ifcopenshell.api.run("sequence.add_time_period", model,
+            recurrence_pattern=pattern, start_time="09:00", end_time="12:00")
+        afternoon = ifcopenshell.api.run("sequence.add_time_period", model,
+            recurrence_pattern=pattern, start_time="13:00", end_time="17:00")
 
-            # Let's take the afternoon off!
-            ifcopenshell.api.run("sequence.remove_time_period", model, time_period=afternoon)
-        """
-        self.file = file
-        self.settings = {"time_period": time_period}
+        # Let's take the afternoon off!
+        ifcopenshell.api.run("sequence.remove_time_period", model, time_period=afternoon)
+    """
+    settings = {"time_period": time_period}
 
-    def execute(self):
-        self.file.remove(self.settings["time_period"])
+    file.remove(settings["time_period"])

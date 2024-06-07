@@ -16,20 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-from types import ClassMethodDescriptorType
 import bpy
 import blenderbim.core.tool
+import blenderbim.bim.schema
 import blenderbim.tool as tool
 import ifcopenshell
-from mathutils import Vector
-from ifcopenshell import util
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
-from blenderbim.bim.module.pset.qto_calculator import QtoCalculator, QuanityTypes
-from blenderbim.bim.module.pset.calc_quantity_function_mapper import mapper
-import blenderbim.bim.schema
+from mathutils import Vector
 from typing import Optional, Union, Literal
 
+QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
 class Qto(blenderbim.core.tool.Qto):
     @classmethod
@@ -46,68 +43,8 @@ class Qto(blenderbim.core.tool.Qto):
         bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
 
     @classmethod
-    def add_object_base_qto(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        product = tool.Ifc.get_entity(obj)
-        return cls.add_product_base_qto(product)
-
-    @classmethod
-    def add_product_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-        base_quantity_name = cls.get_applicable_base_quantity_name(product)
-        if base_quantity_name:
-            return tool.Ifc.run(
-                "pset.add_qto",
-                product=product,
-                name=base_quantity_name,
-            )
-
-    @classmethod
-    def get_applicable_quantity_names(cls, qto_name: str) -> list[str]:
-        pset_template = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
-        return (
-            [property.Name for property in pset_template.HasPropertyTemplates]
-            if hasattr(pset_template, "HasPropertyTemplates")
-            else []
-        )
-
-    @classmethod
-    def get_applicable_base_quantity_name(
-        cls, product: Optional[ifcopenshell.entity_instance] = None
-    ) -> Union[str, None]:
-        if not product:
-            return
-        applicable_qto_names = blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
-            product.is_a(), ifcopenshell.util.element.get_predefined_type(product), qto_only=True
-        )
-        return next((qto_name for qto_name in applicable_qto_names if "Qto_" in qto_name and "Base" in qto_name), None)
-
-    @classmethod
-    def get_new_calculated_quantity(cls, qto_name: str, quantity_name: str, obj: bpy.types.Object) -> float:
-        return QtoCalculator().calculate_quantity(qto_name, quantity_name, obj)
-
-    @classmethod
-    def get_new_guessed_quantity(
-        cls, obj: bpy.types.Object, quantity_name: str, alternative_prop_names: list[str]
-    ) -> Union[float, None]:
-        return QtoCalculator().guess_quantity(quantity_name, alternative_prop_names, obj)
-
-    @classmethod
     def get_rounded_value(cls, new_quantity: float) -> float:
         return round(new_quantity, 3)
-
-    @classmethod
-    def get_calculated_object_quantities(
-        cls, calculator: QtoCalculator, qto_name: str, obj: bpy.types.Object
-    ) -> dict[str, float]:
-        return {
-            quantity_name: cls.get_rounded_value(value)
-            for quantity_name in cls.get_applicable_quantity_names(qto_name) or []
-            if cls.has_calculator(qto_name, quantity_name)
-            and (value := calculator.calculate_quantity(qto_name, quantity_name, obj)) is not None
-        }
-
-    @classmethod
-    def has_calculator(cls, qto_name: str, quantity_name: str) -> bool:
-        return bool(mapper.get(qto_name, {}).get(quantity_name, None))
 
     @classmethod
     def convert_to_project_units(
@@ -115,7 +52,7 @@ class Qto(blenderbim.core.tool.Qto):
         value: float,
         qto_name: Optional[str] = None,
         quantity_name: Optional[str] = None,
-        quantity_type: Optional[QuanityTypes] = None,
+        quantity_type: Optional[QuantityTypes] = None,
     ) -> Union[float, None]:
         """You can either specify `quantity_type` or provide `qto_name/quantity_name`
         to let method figure the `quantity_type` from the templates
@@ -148,37 +85,26 @@ class Qto(blenderbim.core.tool.Qto):
         return value
 
     @classmethod
-    def get_guessed_quantities(
-        cls, obj: bpy.types.Object, pset_qto_properties: list[ifcopenshell.entity_instance]
-    ) -> dict[str, float]:
-        calculated_quantities = {}
-        for pset_qto_property in pset_qto_properties:
-            quantity_name = pset_qto_property.get_info()["Name"]
-            alternative_prop_names = [p.get_info()["Name"] for p in pset_qto_properties]
-
-            new_quantity = cls.get_new_guessed_quantity(obj, quantity_name, alternative_prop_names)
-
-            if not new_quantity:
-                new_quantity = 0
-            else:
-                new_quantity = cls.get_rounded_value(new_quantity)
-
-            calculated_quantities[quantity_name] = new_quantity
-
-        return calculated_quantities
-
-    @classmethod
     def get_base_qto(cls, product: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if not hasattr(product, "IsDefinedBy"):
             return
+        base_qto_definition = None
+        base_qto_definition_name: Union[str, None] = None
         for rel in product.IsDefinedBy or []:
-            if not (
-                rel.is_a("IfcRelDefinesByProperties")
-                and "Base" in rel.RelatingPropertyDefinition.Name
-                and "Qto_" in rel.RelatingPropertyDefinition.Name
-            ):
+            definition = rel.RelatingPropertyDefinition
+            if not rel.is_a("IfcRelDefinesByProperties"):
                 continue
-            return rel.RelatingPropertyDefinition
+            definition = rel.RelatingPropertyDefinition
+            definition_name = definition.Name
+            if "Qto_" not in definition_name:
+                continue
+            if "Base" in definition_name:
+                return definition
+            if base_qto_definition and "BodyGeometryValidation" not in base_qto_definition_name:
+                continue
+            base_qto_definition = definition
+            base_qto_definition_name = definition_name
+        return base_qto_definition
 
     @classmethod
     def get_related_cost_item_quantities(cls, product: ifcopenshell.entity_instance) -> list[dict]:

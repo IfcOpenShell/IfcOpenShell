@@ -25,3 +25,7 @@ class TestAddLibrary(test.bootstrap.IFC4):
         library = ifcopenshell.api.run("library.add_library", self.file, name="Name")
         assert library.is_a("IfcLibraryInformation")
         assert library.Name == "Name"
+
+
+class TestAddLibraryIFC2X3(test.bootstrap.IFC2X3, TestAddLibrary):
+    pass

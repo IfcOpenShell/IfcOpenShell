@@ -16,11 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Reads and writes encoded GlobalIds"""
+"""Reads and writes encoded GlobalIds
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+IFC entities may be identified using a unique ID (called a UUID or GUID). This
+128-bit label is often represented in the form
+xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx. However, in IFC, it is also usually
+stored as a 22 character base 64 encoded string. This module lets you convert
+between these representations and generate new UUIDs.
+"""
 
 import uuid
 import string

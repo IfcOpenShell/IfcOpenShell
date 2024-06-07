@@ -17,8 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.spatial.data import SpatialData
+from blenderbim.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import blenderbim.tool as tool
 
 
@@ -32,14 +31,9 @@ class BIM_PT_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        oprops = context.active_object.BIMObjectProperties
-        if not oprops.ifc_definition_id:
-            return False
-        if not IfcStore.get_element(oprops.ifc_definition_id):
-            return False
-        return True
+        if not SpatialData.is_loaded:
+            SpatialData.load()
+        return SpatialData.data["poll"]
 
     def draw(self, context):
         if not SpatialData.is_loaded:
@@ -97,34 +91,53 @@ class BIM_UL_containers(UIList):
             )
 
 
-class BIM_PT_SpatialManager(Panel):
-    bl_label = "Spatial Manager"
-    bl_idname = "BIM_PT_SpatialManager"
+class BIM_PT_spatial_decomposition(Panel):
+    bl_label = "Spatial Decomposition"
+    bl_idname = "BIM_PT_spatial_decomposition"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_parent_id = "BIM_PT_tab_project_setup"
+    bl_parent_id = "BIM_PT_tab_spatial_decomposition"
+    bl_options = {"HIDE_HEADER"}
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get() and tool.Ifc.schema().name() != "IFC2X3"
+        return tool.Ifc.get()
 
     def draw(self, context):
-        if not SpatialData.is_loaded:
-            SpatialData.load()
-        self.props = context.scene.BIMSpatialManagerProperties
-        row = self.layout.row()
-        row.operator("bim.load_container_manager", icon="FILE_REFRESH", text="Load Spatial Structure")
-        if self.props.active_container_index < len(self.props.containers):
-            ifc_definition_id = self.props.containers[self.props.active_container_index].ifc_definition_id
-            row = self.layout.row()
-            row.alignment = "RIGHT"
-            row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="Select Children")
-            spatial_data = SpatialData.data["containers"].get(ifc_definition_id, None)
-            if spatial_data and spatial_data["type"] in ["IfcBuildingStorey", "IfcBuilding"]:
-                row.operator("bim.add_building_storey", icon="ADD", text="Add storey").part_class = "IfcBuildingStorey"
-            row.operator("bim.delete_container", icon="X", text="Delete").container = ifc_definition_id
+        if not SpatialDecompositionData.is_loaded:
+            SpatialDecompositionData.load()
+        self.props = context.scene.BIMSpatialDecompositionProperties
+
+        if SpatialDecompositionData.data['default_container']:
+            row = self.layout.row(align=True)
+            row.label(
+                text=f"Default: {SpatialDecompositionData.data['default_container']}",
+                icon="OUTLINER_COLLECTION",
+            )
+            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="Warning: No Default Container", icon="ERROR")
+            row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
+
+        if self.props.active_container:
+            ifc_definition_id = self.props.active_container.ifc_definition_id if self.props.active_container else 0
+            row = self.layout.row(align=True)
+            row.prop(self.props, "subelement_class", text="")
+            op = row.operator("bim.add_part_to_object", icon="ADD", text="")
+            op.element = ifc_definition_id
+            op.part_class = self.props.subelement_class
+
+            row = self.layout.row(align=True)
+            if self.props.active_container.ifc_class == "IfcProject":
+                row.enabled = False
+            op = row.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
+            op.container = ifc_definition_id
+            row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text=f"Isolate {self.props.active_container.ifc_class}")
+            op = row.operator("bim.delete_container", icon="X", text="")
+            op.container = ifc_definition_id
+
         self.layout.template_list(
             "BIM_UL_containers_manager",
             "",
@@ -132,13 +145,29 @@ class BIM_PT_SpatialManager(Panel):
             "containers",
             self.props,
             "active_container_index",
+            rows=10,
         )
-        row = self.layout.row()
-        if self.props.active_container_index < len(self.props.containers):
-            row.prop(self.props, "container_name", text="")
-            row.prop(self.props, "elevation", text="")
-            op = row.operator("bim.edit_container_attributes", icon="CHECKMARK", text="Apply")
-            op.container = self.props.containers[self.props.active_container_index].ifc_definition_id
+
+        if not self.props.active_container:
+            return
+
+        if not self.props.total_elements:
+            row = self.layout.row()
+            row.label(text="No Contained Elements", icon="FILE_3D")
+            return
+
+        row = self.layout.row(align=True)
+        row.label(text=f"{self.props.total_elements} Contained Elements", icon="FILE_3D")
+        row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+
+        self.layout.template_list(
+            "BIM_UL_elements",
+            "",
+            self.props,
+            "elements",
+            self.props,
+            "active_element_index",
+        )
 
 
 class BIM_UL_containers_manager(UIList):
@@ -146,22 +175,57 @@ class BIM_UL_containers_manager(UIList):
         if item:
             row = layout.row(align=True)
             self.draw_hierarchy(row, item)
-            split1 = row.split(factor=0.7)
-            split1.prop(item, "name", emboss=False, text="")
-            split2 = row.split(factor=1)
-            split2.label(icon="BLANK1", text=tool.Unit.blender_format_unit(item.elevation))
+            row.prop(item, "name", emboss=False, text="")
+            if item.long_name:
+                row.prop(item, "long_name", emboss=False, text="")
+            col = row.column()
+            col.alignment = "RIGHT"
+            col.prop(item, "elevation", emboss=False, text="")
 
     def draw_hierarchy(self, row, item):
         for i in range(0, item.level_index):
             row.label(text="", icon="BLANK1")
         if item.has_children:
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).container = item.ifc_definition_id
+                row.operator("bim.contract_container", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").container = (
+                    item.ifc_definition_id
+                )
             else:
-                row.operator(
-                    "bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).container = item.ifc_definition_id
+                row.operator("bim.expand_container", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").container = (
+                    item.ifc_definition_id
+                )
         else:
-            row.label(text="", icon="DOT")
+            row.label(text="", icon="BLANK1")
+        if item.ifc_class == "IfcProject":
+            row.label(text="", icon="FILE")
+        elif item.ifc_class == "IfcSite":
+            row.label(text="", icon="WORLD")
+        elif item.ifc_class == "IfcBuilding":
+            row.label(text="", icon="HOME")
+        elif item.ifc_class == "IfcBuildingStorey":
+            row.label(text="", icon="LINENUMBERS_OFF")
+        elif item.ifc_class == "IfcSpace":
+            row.label(text="", icon="ANTIALIASED")
+        elif "Part" in item.ifc_class:
+            row.label(text="", icon="MOD_FLUID")
+        else:
+            row.label(text="", icon="META_PLANE")
+
+
+class BIM_UL_elements(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            if item.is_class:
+                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
+                row.label(text=item.name)
+                col = row.column()
+                col.alignment = "RIGHT"
+                col.label(text=str(item.total))
+            elif item.is_type:
+                row.label(text="", icon="BLANK1")
+                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
+                row.label(text=item.name)
+                col = row.column()
+                col.alignment = "RIGHT"
+                col.label(text=str(item.total))

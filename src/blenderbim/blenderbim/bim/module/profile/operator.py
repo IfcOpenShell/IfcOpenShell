@@ -66,8 +66,14 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        current_index = props.active_profile_index
         ifcopenshell.api.run("profile.remove_profile", tool.Ifc.get(), profile=tool.Ifc.get().by_id(self.profile))
         bpy.ops.bim.load_profiles()
+
+        # preserve selected index if possible
+        if props.profiles:
+            props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
 class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -126,6 +132,27 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
 
+class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.duplicate_profile_def"
+    bl_label = "Duplicate Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMProfileProperties
+        if len(props.profiles) > props.active_profile_index:
+            return True
+        cls.poll_message_set("No profile selected to duplicate.")
+        return False
+
+    def _execute(self, context):
+        props = context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(props.profiles[props.active_profile_index].ifc_definition_id)
+        tool.Profile.duplicate_profile(profile)
+        bpy.ops.bim.load_profiles()
+
+
 class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_arbitrary_profile"
     bl_label = "Enable Editing Arbitrary Profile"
@@ -148,7 +175,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
 
 def disable_editing_arbitrary_profile(context):
     obj = context.active_object
-    if obj and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+    if obj and obj.type == "MESH" and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
         ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
         profile_mesh = obj.data

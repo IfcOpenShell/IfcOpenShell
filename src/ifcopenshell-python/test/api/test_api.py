@@ -23,11 +23,12 @@ import ifcopenshell.util.constraint
 import ifcopenshell.util.element
 import ifcopenshell.util.system
 from datetime import datetime
+from typing import Union
 
 
 def deprecation_check(test):
     def new_test(self):
-        assert datetime.now().date() < datetime(2024, 6, 1).date(), "API arguments are completely deprecated"
+        assert datetime.now().date() < datetime(2024, 8, 1).date(), "API arguments are completely deprecated"
         test(self)
 
     return new_test
@@ -283,7 +284,7 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
         assert rel.is_a("IfcRelReferencedInSpatialStructure")
 
     @deprecation_check
-    def test_removing_a_container(self):
+    def test_removing_a_structure(self):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
         subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
         ifcopenshell.api.run(
@@ -303,11 +304,58 @@ class TestTemporarySupportForDeprecatedAPIArguments(test.bootstrap.IFC4):
     def test_unassigning_a_constraint(self):
         constraint = ifcopenshell.api.run("constraint.add_objective", self.file)
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "constraint.assign_constraint", self.file, product=element, constraint=constraint
-        )
-        ifcopenshell.api.run(
-            "constraint.unassign_constraint", self.file, product=element, constraint=constraint
-        )
+        ifcopenshell.api.run("constraint.assign_constraint", self.file, product=element, constraint=constraint)
+        ifcopenshell.api.run("constraint.unassign_constraint", self.file, product=element, constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(element) == set()
         assert len(self.file.by_type("IfcRelAssociatesConstraint")) == 0
+
+    @deprecation_check
+    def test_assign_a_declaration(self):
+        def get_declared_definitions(project: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+            definitions = set()
+            for declares in project.Declares:
+                definitions.update(declares.RelatedDefinitions)
+            return definitions
+
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
+        ifcopenshell.api.run(
+            "project.assign_declaration",
+            self.file,
+            definition=element_type,
+            relating_context=library,
+        )
+        assert get_declared_definitions(library) == {element_type}
+        assert len(self.file.by_type("IfcRelDeclares")) == 1
+
+    @deprecation_check
+    def test_unassigning_a_definition(self):
+        def get_context(definition: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+            rel = next(iter(definition.HasContext), None)
+            if rel is not None:
+                return rel.RelatingContext
+
+        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
+        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element_type], relating_context=library
+        )
+        ifcopenshell.api.run(
+            "project.unassign_declaration",
+            self.file,
+            definition=element_type,
+            relating_context=library,
+        )
+        assert get_context(element_type) == None
+        assert len(self.file.by_type("IfcRelDeclares")) == 0
+
+    @deprecation_check
+    def test_add_group(self):
+        group = ifcopenshell.api.run("group.add_group", self.file, Name="Name", Description="Description")
+        assert group.Name == "Name"
+        assert group.Description == "Description"
+
+    @deprecation_check
+    def test_add_layer(self):
+        layer = ifcopenshell.api.run("layer.add_layer", self.file, Name="Name")
+        assert layer.Name == "Name"

@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 from typing import Union
 from logging import Logger
 
@@ -29,6 +30,9 @@ class Patcher:
         Note that other than combining the two IfcProject elements into one, no
         further processing will be done. This means that you may end up with
         duplicate spatial hierarchies (i.e. 2 sites, 2 buildings, etc).
+
+        Will automatically convert length units in the second model to the main
+        model's unit before merging.
 
         :param filepath: The filepath of the second IFC model to merge into the
             first. The first model is already specified as the input to
@@ -48,6 +52,10 @@ class Patcher:
 
     def patch(self):
         source = ifcopenshell.open(self.filepath)
+        # make sure models units will match
+        if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(source):
+            source = ifcopenshell.util.unit.convert_file_length_units(source, main_unit)
+
         self.existing_contexts: list[ifcopenshell.entity_instance] = self.file.by_type(
             "IfcGeometricRepresentationContext"
         )
@@ -68,6 +76,10 @@ class Patcher:
         self.file.remove(merged_project)
 
         self.reuse_existing_contexts()
+
+    def get_unit_name(self, ifc_file: ifcopenshell.file) -> str:
+        length_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
+        return ifcopenshell.util.unit.get_full_unit_name(length_unit)
 
     def reuse_existing_contexts(self):
         to_delete = set()

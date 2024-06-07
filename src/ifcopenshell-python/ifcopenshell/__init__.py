@@ -16,32 +16,51 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-"""The entry module for IfcOpenShell
+"""Welcome to IfcOpenShell! IfcOpenShell provides a way to read and write IFCs.
 
-Typically used for opening an IFC via a filepath, or accessing one of the
-submodules.
+IfcOpenShell can open IFC files, read entities (such as walls, buildings,
+properties, systems, etc), edit attributes, write out ``.ifc`` files and more.
+
+This module provides primitive functions to interact with IFC, including:
+
+- For most users, you can open and read IFC models, see docs for :func:`open`.
+  This returns an :class:`file` object representing the IFC model. You can then
+  query the model to filter elements.
+- For developers, you can query the schema itself, see docs for
+  :func:`schema_by_name`. This returns a schema object which you can use to
+  analyse the definitions of IFC classes and data types.
+
+You may also be interested in:
+
+- For model authoring and editing operations, see :mod:`ifcopenshell.api`.
+- For extracting information from models, see :mod:`ifcopenshell.util`.
+- For processing geometry, see :mod:`ifcopenshell.geom`.
+
+
+For more details, consult https://docs.ifcopenshell.org/
 
 Example:
 
 .. code:: python
 
     import ifcopenshell
-    print(ifcopenshell.version) # v0.7.0-1b1fd1e6
-    model = ifcopenshell.open("/path/to/model.ifc")
-"""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+    print(ifcopenshell.version) # v0.7.0-1b1fd1e6
+
+    model = ifcopenshell.open("/path/to/model.ifc")
+    walls = model.by_type("IfcWall")
+
+    for wall in walls:
+        print(wall.Name)
+"""
 
 import os
 import sys
-import tempfile
 import zipfile
+import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
-import ifcopenshell.util.file
 
 if hasattr(os, "uname"):
     platform_system = os.uname()[0].lower()
@@ -60,22 +79,29 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", p
 
 try:
     from . import ifcopenshell_wrapper
-except Exception as e:
-    if int(python_version_tuple[0]) == 2:
-        # Only for py2, as py3 has exception chaining
-        import traceback
-
-        traceback.print_exc()
-        print("-" * 64)
+except Exception:
     raise ImportError("IfcOpenShell not built for '%s'" % python_distribution)
 
-from . import guid
 from .file import file
 from .entity_instance import entity_instance, register_schema_attributes
 from .sql import sqlite, sqlite_entity
+
+# explicitly specify available imported symbols
+# (it's a requirement for a typed library)
+__all__ = [
+    "ifcopenshell_wrapper",
+    "file",
+    "entity_instance",
+    "sqlite",
+    "sqlite_entity",
+    "stream",
+    "stream_entity",
+]
+
 try:
     from .stream import stream, stream_entity
-except: pass
+except:
+    pass
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -84,19 +110,22 @@ UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 
 class Error(Exception):
     """Error used when a generic problem occurs"""
+
     pass
 
 
 class SchemaError(Error):
     """Error used when an IFC schema related problem occurs"""
+
     pass
 
 
-def open(path: "os.PathLike | str", format: str = None, should_stream: bool = False) -> file:
+def open(path: Union[os.PathLike, str], format: Optional[str] = None, should_stream: bool = False) -> file:
     """Loads an IFC dataset from a filepath
 
-    You can specify a file format. If no format is given, it is guessed from its extension.
-    Currently supported specified format : .ifc | .ifcZIP | .ifcXML
+    You can specify a file format. If no format is given, it is guessed from
+    its extension. Currently supported specified format: .ifc | .ifcZIP |
+    .ifcXML.
 
     You can then filter by element ID, class, etc, and subscript by id or guid.
 
@@ -114,7 +143,7 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
     """
     path = Path(path)
     if format is None:
-        format = ifcopenshell.util.file.guess_format(path)
+        format = guess_format(path)
     if format == ".ifcXML":
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:
@@ -141,8 +170,7 @@ def open(path: "os.PathLike | str", format: str = None, should_stream: bool = Fa
             NO_HEADER: (Error, "Unable to parse IFC SPF header"),
             UNSUPPORTED_SCHEMA: (
                 SchemaError,
-                "Unsupported schema: %s"
-                % ",".join(f.header.file_schema.schema_identifiers),
+                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
             ),
         }[f.good().value()]
         raise exc(msg)
@@ -152,7 +180,7 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     """Creates a new IFC entity that does not belong to an IFC file object
 
     Note that it is more common to create entities within a existing file
-    object. See :meth:`ifcopenshell.file.file.create_entity`.
+    object. See :meth:`ifcopenshell.file.create_entity`.
 
     :param type: Case insensitive name of the IFC class
     :type type: string
@@ -161,7 +189,7 @@ def create_entity(type, schema="IFC4", *args, **kwargs):
     :param args: The positional arguments of the IFC class
     :param kwargs: The keyword arguments of the IFC class
     :returns: An entity instance
-    :rtype: ifcopenshell.entity_instance.entity_instance
+    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -226,4 +254,35 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-from .main import *
+def guess_format(path: Path) -> Union[str, None]:
+    """Guesses the IFC format using file extension
+
+    IFCs may be serialised as different formats. The most common is a ``.ifc``
+    file, which is plaintext and stores data using the STEP Physical File
+    format. IFC can also be stored as a Zipfile, XML, JSON, or SQL.
+
+    This will return the canonical form of the format. For example, if a path
+    has the extension of .xml or .ifcxml (case insensitive), it will return
+    .ifcXML.
+
+    Users generally won't call this function. The :func:`open` function uses
+    this internally to guess the file format.
+
+    :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
+    """
+    suffix = path.suffix.lower()
+    if suffix == ".ifc":
+        return ".ifc"
+    elif suffix in (".ifczip", ".zip"):
+        return ".ifcZIP"
+    elif suffix in (".ifcxml", ".xml"):
+        return ".ifcXML"
+    elif suffix in (".ifcjson", ".json"):
+        return ".ifcJSON"
+    elif suffix in (".ifcsqlite", ".sqlite", ".db"):
+        return ".ifcSQLite"
+    return None
+
+
+version = ifcopenshell_wrapper.version()
+get_log = ifcopenshell_wrapper.get_log

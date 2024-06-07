@@ -36,11 +36,12 @@ import blenderbim.bim.helper
 import blenderbim.bim.module.sequence.helper as helper
 from dateutil import parser
 from datetime import datetime
+from typing import Optional, Any, Union
 
 
 class Sequence(blenderbim.core.tool.Sequence):
     @classmethod
-    def get_work_plan_attributes(cls):
+    def get_work_plan_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
@@ -59,7 +60,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(props.work_plan_attributes, callback)
 
     @classmethod
-    def load_work_plan_attributes(cls, work_plan):
+    def load_work_plan_attributes(cls, work_plan: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if name in ["CreationDate", "StartTime", "FinishTime"]:
                 prop.string_value = "" if prop.is_null else data[name]
@@ -70,23 +71,23 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
 
     @classmethod
-    def enable_editing_work_plan(cls, work_plan):
+    def enable_editing_work_plan(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_plan:
             bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan.id()
             bpy.context.scene.BIMWorkPlanProperties.editing_type = "ATTRIBUTES"
 
     @classmethod
-    def disable_editing_work_plan(cls):
+    def disable_editing_work_plan(cls) -> None:
         bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = 0
 
     @classmethod
-    def enable_editing_work_plan_schedules(cls, work_plan):
+    def enable_editing_work_plan_schedules(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_plan:
             bpy.context.scene.BIMWorkPlanProperties.active_work_plan_id = work_plan.id()
             bpy.context.scene.BIMWorkPlanProperties.editing_type = "SCHEDULES"
 
     @classmethod
-    def get_work_schedule_attributes(cls):
+    def get_work_schedule_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if "Date" in prop.name or "Time" in prop.name:
                 if prop.is_null:
@@ -105,7 +106,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(props.work_schedule_attributes, callback)
 
     @classmethod
-    def load_work_schedule_attributes(cls, work_schedule):
+    def load_work_schedule_attributes(cls, work_schedule: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if name in ["CreationDate", "StartTime", "FinishTime"]:
                 prop.string_value = "" if prop.is_null else data[name]
@@ -116,23 +117,23 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(work_schedule, props.work_schedule_attributes, callback)
 
     @classmethod
-    def enable_editing_work_schedule(cls, work_schedule):
+    def enable_editing_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = work_schedule.id()
         bpy.context.scene.BIMWorkScheduleProperties.editing_type = "WORK_SCHEDULE"
 
     @classmethod
-    def disable_editing_work_schedule(cls):
+    def disable_editing_work_schedule(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
 
     @classmethod
-    def enable_editing_work_schedule_tasks(cls, work_schedule):
+    def enable_editing_work_schedule_tasks(cls, work_schedule: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_schedule:
             props = bpy.context.scene.BIMWorkScheduleProperties
             props.active_work_schedule_id = work_schedule.id()
             props.editing_type = "TASKS"
 
     @classmethod
-    def load_task_tree(cls, work_schedule):
+    def load_task_tree(cls, work_schedule: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMTaskTreeProperties.tasks.clear()
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
@@ -142,7 +143,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             cls.create_new_task_li(related_object_id, 0)
 
     @classmethod
-    def get_sorted_tasks_ids(cls, tasks):
+    def get_sorted_tasks_ids(cls, tasks: list[ifcopenshell.entity_instance]) -> list[int]:
         def get_sort_key(task):
             # Sorting only applies to actual tasks, not the WBS
             # for rel in task.IsNestedBy:
@@ -170,7 +171,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return related_object_ids
 
     @classmethod
-    def create_new_task_li(cls, related_object_id, level_index):
+    def create_new_task_li(cls, related_object_id: int, level_index: int) -> None:
         task = tool.Ifc.get().by_id(related_object_id)
         new = bpy.context.scene.BIMTaskTreeProperties.tasks.add()
         new.ifc_definition_id = related_object_id
@@ -182,8 +183,9 @@ class Sequence(blenderbim.core.tool.Sequence):
                 for related_object_id in cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_nested_tasks(task)):
                     cls.create_new_task_li(related_object_id, level_index + 1)
 
+    # TODO: task argument is never used?
     @classmethod
-    def load_task_properties(cls, task=None):
+    def load_task_properties(cls, task: Optional[ifcopenshell.entity_instance] = None) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         task_props = bpy.context.scene.BIMTaskTreeProperties
         tasks_with_visual_bar = cls.get_task_bar_list()
@@ -248,24 +250,24 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.is_task_update_enabled = True
 
     @classmethod
-    def get_active_work_schedule(cls):
+    def get_active_work_schedule(cls) -> Union[ifcopenshell.entity_instance, None]:
         if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
             return None
         return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id)
 
     @classmethod
-    def expand_task(cls, task):
+    def expand_task(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         contracted_tasks = json.loads(props.contracted_tasks)
         contracted_tasks.remove(task.id())
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
-    def expand_all_tasks(cls):
+    def expand_all_tasks(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps([])
 
     @classmethod
-    def contract_all_tasks(cls):
+    def contract_all_tasks(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         contracted_tasks = json.loads(props.contracted_tasks)
         for task_item in bpy.context.scene.BIMTaskTreeProperties.tasks:
@@ -274,18 +276,18 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
-    def contract_task(cls, task):
+    def contract_task(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         contracted_tasks = json.loads(props.contracted_tasks)
         contracted_tasks.append(task.id())
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
-    def disable_work_schedule(cls):
+    def disable_work_schedule(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
 
     @classmethod
-    def disable_selecting_deleted_task(cls):
+    def disable_selecting_deleted_task(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         if props.active_task_id not in [
             task.ifc_definition_id for task in bpy.context.scene.BIMTaskTreeProperties.tasks
@@ -294,7 +296,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
 
     @classmethod
-    def get_checked_tasks(cls):
+    def get_checked_tasks(cls) -> list[ifcopenshell.entity_instance]:
         return [
             tool.Ifc.get().by_id(task.ifc_definition_id)
             for task in bpy.context.scene.BIMTaskTreeProperties.tasks
@@ -302,39 +304,39 @@ class Sequence(blenderbim.core.tool.Sequence):
         ] or []
 
     @classmethod
-    def get_task_attribute_value(cls, attribute_name):
+    def get_task_attribute_value(cls, attribute_name: str) -> Any:
         return bpy.context.scene.BIMWorkScheduleProperties.task_attributes.get(attribute_name).get_value()
 
     @classmethod
-    def get_active_task(cls):
+    def get_active_task(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_task_id)
 
     @classmethod
-    def get_active_work_time(cls):
+    def get_active_work_time(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkCalendarProperties.active_work_time_id)
 
     @classmethod
-    def get_task_time(cls, task):
-        return task.TaskTime if task.TaskTime else None
+    def get_task_time(cls, task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        return task.TaskTime or None
 
     @classmethod
-    def load_task_attributes(cls, task):
+    def load_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_attributes.clear()
         blenderbim.bim.helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
-    def enable_editing_task_attributes(cls, task):
+    def enable_editing_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()
         props.editing_task_type = "ATTRIBUTES"
 
     @classmethod
-    def get_task_attributes(cls):
+    def get_task_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.task_attributes)
 
     @classmethod
-    def load_task_time_attributes(cls, task_time):
+    def load_task_time_attributes(cls, task_time: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if prop and prop.data_type == "string":
                 duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
@@ -358,20 +360,20 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(task_time, props.task_time_attributes, callback)
 
     @classmethod
-    def enable_editing_task_time(cls, task):
+    def enable_editing_task_time(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()
         props.active_task_time_id = task.TaskTime.id()
         props.editing_task_type = "TASKTIME"
 
     @classmethod
-    def disable_editing_task(cls):
+    def disable_editing_task(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
         bpy.context.scene.BIMWorkScheduleProperties.editing_task_type = ""
 
     @classmethod
-    def get_task_time_attributes(cls):
+    def get_task_time_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
                 if prop.is_null:
@@ -400,7 +402,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return blenderbim.bim.helper.export_attributes(props.task_time_attributes, callback)
 
     @classmethod
-    def load_task_resources(cls, task):
+    def load_task_resources(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         rprops = bpy.context.scene.BIMResourceProperties
         props.task_resources.clear()
@@ -413,36 +415,38 @@ class Sequence(blenderbim.core.tool.Sequence):
         rprops.is_resource_update_enabled = True
 
     @classmethod
-    def get_task_inputs(cls, task):
+    def get_task_inputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_inputs
         return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
 
     @classmethod
-    def get_task_outputs(cls, task):
+    def get_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
         return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
 
     @classmethod
-    def are_entities_same_class(cls, entities):
+    def are_entities_same_class(cls, entities: list[ifcopenshell.entity_instance]) -> bool:
         if not entities:
             return False
         if len(entities) == 1:
             return True
-        first = entities[0]
+        first_class = entities[0].is_a()
         for entity in entities:
-            if entity.is_a() != first.is_a():
+            if entity.is_a() != first_class:
                 return False
         return True
 
     @classmethod
-    def get_task_resources(cls, task):
+    def get_task_resources(
+        cls, task: Union[ifcopenshell.entity_instance, None]
+    ) -> Union[list[ifcopenshell.entity_instance], None]:
         if not task:
             return
         is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
         return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
 
     @classmethod
-    def load_task_inputs(cls, inputs):
+    def load_task_inputs(cls, inputs: list[ifcopenshell.entity_instance]) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_inputs.clear()
         for input in inputs:
@@ -451,7 +455,7 @@ class Sequence(blenderbim.core.tool.Sequence):
             new.name = input.Name or "Unnamed"
 
     @classmethod
-    def load_task_outputs(cls, outputs):
+    def load_task_outputs(cls, outputs: list[ifcopenshell.entity_instance]) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_outputs.clear()
         if outputs:
@@ -461,7 +465,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 new.name = output.Name or "Unnamed"
 
     @classmethod
-    def get_highlighted_task(cls):
+    def get_highlighted_task(cls) -> Union[ifcopenshell.entity_instance, None]:
         tasks = bpy.context.scene.BIMTaskTreeProperties.tasks
         if len(tasks) and len(tasks) > bpy.context.scene.BIMWorkScheduleProperties.active_task_index:
             return tool.Ifc.get().by_id(
@@ -469,47 +473,42 @@ class Sequence(blenderbim.core.tool.Sequence):
             )
 
     @classmethod
-    def get_direct_nested_tasks(cls, task):
+    def get_direct_nested_tasks(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.sequence.get_nested_tasks(task)
 
     @classmethod
-    def get_direct_task_outputs(cls, task):
+    def get_direct_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.sequence.get_direct_task_outputs(task)
 
     @classmethod
-    def get_task_outputs(cls, task):
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
-        return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
-
-    @classmethod
-    def enable_editing_work_calendar_times(cls, work_calendar):
+    def enable_editing_work_calendar_times(cls, work_calendar: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.active_work_calendar_id = work_calendar.id()
         props.editing_type = "WORKTIMES"
 
     @classmethod
-    def load_work_calendar_attributes(cls, work_calendar):
+    def load_work_calendar_attributes(cls, work_calendar: ifcopenshell.entity_instance) -> dict[str, Any]:
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_calendar_attributes.clear()
         return blenderbim.bim.helper.import_attributes2(work_calendar, props.work_calendar_attributes)
 
     @classmethod
-    def enable_editing_work_calendar(cls, work_calendar):
+    def enable_editing_work_calendar(cls, work_calendar: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMWorkCalendarProperties.active_work_calendar_id = work_calendar.id()
         bpy.context.scene.BIMWorkCalendarProperties.editing_type = "ATTRIBUTES"
 
     @classmethod
-    def disable_editing_work_calendar(cls):
+    def disable_editing_work_calendar(cls) -> None:
         bpy.context.scene.BIMWorkCalendarProperties.active_work_calendar_id = 0
 
     @classmethod
-    def get_work_calendar_attributes(cls):
+    def get_work_calendar_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(
             bpy.context.scene.BIMWorkCalendarProperties.work_calendar_attributes
         )
 
     @classmethod
-    def load_work_time_attributes(cls, work_time):
+    def load_work_time_attributes(cls, work_time: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if name in ["Start", "Finish"]:
                 prop.string_value = "" if prop.is_null else data[name]
@@ -521,7 +520,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(work_time, props.work_time_attributes, callback)
 
     @classmethod
-    def enable_editing_work_time(cls, work_time):
+    def enable_editing_work_time(cls, work_time: ifcopenshell.entity_instance) -> None:
         def initialise_recurrence_components(props):
             if len(props.day_components) == 0:
                 for i in range(0, 31):
@@ -568,7 +567,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.editing_type = "WORKTIMES"
 
     @classmethod
-    def get_work_time_attributes(cls):
+    def get_work_time_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name:
                 if prop.is_null:
@@ -608,11 +607,11 @@ class Sequence(blenderbim.core.tool.Sequence):
         return attributes
 
     @classmethod
-    def disable_editing_work_time(cls):
+    def disable_editing_work_time(cls) -> None:
         bpy.context.scene.BIMWorkCalendarProperties.active_work_time_id = 0
 
     @classmethod
-    def get_recurrence_pattern_times(cls):
+    def get_recurrence_pattern_times(cls) -> Union[tuple[datetime, datetime], None]:
         props = bpy.context.scene.BIMWorkCalendarProperties
         try:
             start_time = parser.parse(props.start_time)
@@ -622,40 +621,40 @@ class Sequence(blenderbim.core.tool.Sequence):
             return  # improve UI / refactor to add user hints
 
     @classmethod
-    def reset_time_period(cls):
+    def reset_time_period(cls) -> None:
         bpy.context.scene.BIMWorkCalendarProperties.start_time = ""
         bpy.context.scene.BIMWorkCalendarProperties.end_time = ""
 
     @classmethod
-    def enable_editing_task_calendar(cls, task):
+    def enable_editing_task_calendar(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_task_id = task.id()
         props.editing_task_type = "CALENDAR"
 
     @classmethod
-    def enable_editing_task_sequence(cls):
+    def enable_editing_task_sequence(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.editing_task_type = "SEQUENCE"
 
     @classmethod
-    def disable_editing_task_time(cls):
+    def disable_editing_task_time(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
         bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
 
     @classmethod
-    def load_rel_sequence_attributes(cls, rel_sequence):
+    def load_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.sequence_attributes.clear()
         blenderbim.bim.helper.import_attributes2(rel_sequence, props.sequence_attributes)
 
     @classmethod
-    def enable_editing_rel_sequence_attributes(cls, rel_sequence):
+    def enable_editing_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_sequence_id = rel_sequence.id()
         props.editing_sequence_type = "ATTRIBUTES"
 
     @classmethod
-    def load_lag_time_attributes(cls, lag_time):
+    def load_lag_time_attributes(cls, lag_time: ifcopenshell.entity_instance) -> None:
         def callback(name, prop, data):
             if name == "LagValue":
                 prop = bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes.add()
@@ -673,21 +672,21 @@ class Sequence(blenderbim.core.tool.Sequence):
         blenderbim.bim.helper.import_attributes2(lag_time, props.lag_time_attributes, callback)
 
     @classmethod
-    def enable_editing_sequence_lag_time(cls, rel_sequence):
+    def enable_editing_sequence_lag_time(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.active_sequence_id = rel_sequence.id()
         props.editing_sequence_type = "LAG_TIME"
 
     @classmethod
-    def get_rel_sequence_attributes(cls):
+    def get_rel_sequence_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.sequence_attributes)
 
     @classmethod
-    def disable_editing_rel_sequence(cls):
+    def disable_editing_rel_sequence(cls) -> None:
         bpy.context.scene.BIMWorkScheduleProperties.active_sequence_id = 0
 
     @classmethod
-    def get_lag_time_attributes(cls):
+    def get_lag_time_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
 
     @classmethod
@@ -698,14 +697,14 @@ class Sequence(blenderbim.core.tool.Sequence):
             obj.select_set(True) if obj else None
 
     @classmethod
-    def add_task_column(cls, column_type, name, data_type):
+    def add_task_column(cls, column_type: str, name: str, data_type: str):
         props = bpy.context.scene.BIMWorkScheduleProperties
         new = props.columns.add()
         new.name = f"{column_type}.{name}"
         new.data_type = data_type
 
     @classmethod
-    def setup_default_task_columns(cls):
+    def setup_default_task_columns(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.clear()
         default_columns = ["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]
@@ -715,14 +714,14 @@ class Sequence(blenderbim.core.tool.Sequence):
             new.data_type = "string"
 
     @classmethod
-    def remove_task_column(cls, name):
+    def remove_task_column(cls, name: str) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.columns.remove(props.columns.find(name))
         if props.sort_column == name:
             props.sort_column = ""
 
     @classmethod
-    def set_task_sort_column(cls, column):
+    def set_task_sort_column(cls, column: str) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.sort_column = column
 
@@ -743,7 +742,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         return related_tasks
 
     @classmethod
-    def get_work_schedule(cls, task):
+    def get_work_schedule(cls, task: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for rel in task.HasAssignments or []:
             if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
                 return rel.RelatingControl
@@ -779,8 +778,9 @@ class Sequence(blenderbim.core.tool.Sequence):
         expanded_tasks = [item.ifc_definition_id for item in task_props.tasks]
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = expanded_tasks.index(task.id()) or 0
 
+    # TODO: proper typing
     @classmethod
-    def guess_date_range(cls, work_schedule):
+    def guess_date_range(cls, work_schedule: ifcopenshell.entity_instance) -> tuple[Any, Any]:
         return ifcopenshell.util.sequence.guess_date_range(work_schedule)
 
     @classmethod
@@ -792,7 +792,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         props.visualisation_finish = ifcopenshell.util.date.canonicalise_time(finish_date)
 
     @classmethod
-    def get_animation_bar_tasks(cls):
+    def get_animation_bar_tasks(cls) -> list[ifcopenshell.entity_instance]:
         return [tool.Ifc.get().by_id(task_id) for task_id in cls.get_task_bar_list()]
 
     @classmethod
@@ -830,12 +830,16 @@ class Sequence(blenderbim.core.tool.Sequence):
         def create_task_bar_data(tasks, vertical_increment, collection):
             props = bpy.context.scene.BIMWorkScheduleProperties
             settings = {
-                "viz_start": parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
-                if props.visualisation_start
-                else None,
-                "viz_finish": parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
-                if props.visualisation_finish
-                else None,
+                "viz_start": (
+                    parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
+                    if props.visualisation_start
+                    else None
+                ),
+                "viz_finish": (
+                    parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
+                    if props.visualisation_finish
+                    else None
+                ),
                 "start_frame": bpy.context.scene.frame_start,
                 "end_frame": bpy.context.scene.frame_end,
             }
@@ -1076,19 +1080,19 @@ class Sequence(blenderbim.core.tool.Sequence):
                 predefined_type_item.color = data["Color"]
 
     @classmethod
-    def get_start_date(cls):
+    def get_start_date(cls) -> Union[datetime, None]:
         start = parser.parse(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, dayfirst=True, fuzzy=True)
-        return start if start else None
+        return start or None
 
     @classmethod
-    def get_finish_date(cls):
+    def get_finish_date(cls) -> Union[datetime, None]:
         finish = parser.parse(
             bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish, dayfirst=True, fuzzy=True
         )
-        return finish if finish else None
+        return finish or None
 
     @classmethod
-    def process_construction_state(cls, work_schedule, date):
+    def process_construction_state(cls, work_schedule: ifcopenshell.entity_instance, date: datetime) -> dict[str, Any]:
         cls.to_build = set()
         cls.in_construction = set()
         cls.completed = set()
@@ -1109,7 +1113,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         }
 
     @classmethod
-    def process_task_status(cls, task, date):
+    def process_task_status(cls, task: ifcopenshell.entity_instance, date: datetime) -> None:
         for rel in task.IsNestedBy or []:
             [cls.process_task_status(related_object, date) for related_object in rel.RelatedObjects]
         start = ifcopenshell.util.sequence.derive_date(task, "ScheduleStart", is_earliest=True)
@@ -1234,7 +1238,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         }
 
     @classmethod
-    def get_animation_product_frames(cls, work_schedule, settings):
+    def get_animation_product_frames(cls, work_schedule: ifcopenshell.entity_instance, settings: dict[str, Any]):
         def preprocess_task(task):
             for subtask in ifcopenshell.util.sequence.get_nested_tasks(task):
                 preprocess_task(subtask)
@@ -1445,7 +1449,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         append_handler(animate_text_handler)
 
     @classmethod
-    def create_tasks_json(cls, work_schedule=None):
+    def create_tasks_json(cls, work_schedule: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
         sequence_type_map = {
             None: "FS",
             "START_START": "SS",
@@ -1513,9 +1517,11 @@ class Sequence(blenderbim.core.tool.Sequence):
             "pParent": task.Nests[0].RelatingObject.id() if task.Nests else 0,
             "pOpen": 1,
             "pCost": 1,
-            "ifcduration": str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
-            if (task_time and task_time.ScheduleDuration)
-            else "",
+            "ifcduration": (
+                str(ifcopenshell.util.date.ifc2datetime(task_time.ScheduleDuration))
+                if (task_time and task_time.ScheduleDuration)
+                else ""
+            ),
             "resourceUsage": resources_usage,
         }
         if task_time and task_time.IsCritical:
@@ -1535,7 +1541,9 @@ class Sequence(blenderbim.core.tool.Sequence):
             cls.create_new_task_json(nested_task, json, type_map, baseline_schedule)
 
     @classmethod
-    def generate_gantt_browser_chart(cls, task_json, work_schedule):
+    def generate_gantt_browser_chart(
+        cls, task_json: list[dict[str, Any]], work_schedule: ifcopenshell.entity_instance
+    ) -> None:
         with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"), "w") as f:
             with open(os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.mustache"), "r") as t:
                 task_b64 = base64.b64encode(bytes(json.dumps(task_json), "utf-8")).decode("utf-8")
@@ -1545,15 +1553,19 @@ class Sequence(blenderbim.core.tool.Sequence):
         webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "gantt", "index.html"))
 
     @classmethod
-    def is_filter_by_active_schedule(cls):
+    def is_filter_by_active_schedule(cls) -> bool:
         return bpy.context.scene.BIMWorkScheduleProperties.filter_by_active_schedule
 
     @classmethod
-    def get_tasks_for_product(cls, product, work_schedule=None):
+    def get_tasks_for_product(
+        cls, product: ifcopenshell.entity_instance, work_schedule: Optional[ifcopenshell.entity_instance] = None
+    ) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
         return ifcopenshell.util.sequence.get_tasks_for_product(product, work_schedule)
 
     @classmethod
-    def load_product_related_tasks(cls, task_inputs, task_ouputs):
+    def load_product_related_tasks(
+        cls, task_inputs: list[ifcopenshell.entity_instance], task_ouputs: list[ifcopenshell.entity_instance]
+    ) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.product_input_tasks.clear()
         props.product_output_tasks.clear()
@@ -1567,7 +1579,9 @@ class Sequence(blenderbim.core.tool.Sequence):
             new.ifc_definition_id = task.id()
 
     @classmethod
-    def get_work_schedule_products(cls, work_schedule):
+    def get_work_schedule_products(
+        cls, work_schedule: ifcopenshell.entity_instance
+    ) -> list[ifcopenshell.entity_instance]:
         products = []
         for task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
             products.extend(ifcopenshell.util.sequence.get_task_inputs(task, is_deep=True))
@@ -1615,7 +1629,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         bpy.ops.view3d.camera_to_view_selected()
 
     @classmethod
-    def save_animation_color_scheme(cls, name):
+    def save_animation_color_scheme(cls, name: str) -> ifcopenshell.entity_instance:
         props = bpy.context.scene.BIMAnimationProperties
         colour_scheme = {
             "Inputs": {cs.name: cs.color[0:3] for cs in props.task_input_colors},
@@ -1630,11 +1644,11 @@ class Sequence(blenderbim.core.tool.Sequence):
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_AnimationColorScheme", "colourscheme": colour_scheme})
-            group = tool.Ifc.run("group.add_group", Name=name, Description=description)
+            group = tool.Ifc.run("group.add_group", name=name, description=description)
         return group[0]
 
     @classmethod
-    def load_animation_color_scheme(cls, scheme):
+    def load_animation_color_scheme(cls, scheme: Optional[ifcopenshell.entity_instance]) -> None:
         if not scheme:
             return
         data = json.loads(scheme.Description)

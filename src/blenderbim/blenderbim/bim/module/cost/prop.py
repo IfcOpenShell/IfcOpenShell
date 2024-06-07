@@ -175,6 +175,10 @@ def update_active_cost_item_resources(self, context):
     bpy.ops.bim.load_cost_item_resource_quantities()
 
 
+class ScheduleColumn(PropertyGroup):
+    schedule_id: IntProperty()
+
+
 class BIMCostProperties(PropertyGroup):
     cost_schedule_predefined_types: EnumProperty(
         items=get_schedule_predefined_types, name="Predefined Type", default=None
@@ -210,9 +214,14 @@ class BIMCostProperties(PropertyGroup):
     cost_value_attributes: CollectionProperty(name="Cost Value Attributes", type=Attribute)
     cost_value_formula: StringProperty(name="Cost Value Formula")
     cost_column: StringProperty(name="Cost Column")
-    should_show_column_ui: BoolProperty(name="Should Show Column UI", default=False)
+    should_show_column_ui: BoolProperty(
+        name="Should Show Column UI",
+        description="Display UI for adding cost schedule columns, column names represent a category for cost item values",
+        default=False,
+    )
     should_show_currency_ui: BoolProperty(name="Should Show Currency UI", default=False)
-    columns: CollectionProperty(name="Columns", type=StrProperty)
+    columns: CollectionProperty(name="Active Schedule Columns", type=StrProperty)
+    columns_storage: CollectionProperty(name="Columns", type=ScheduleColumn)
     active_column_index: IntProperty(name="Active Column Index")
     cost_item_products: CollectionProperty(name="Cost Item Products", type=CostItemQuantity)
     active_cost_item_product_index: IntProperty(name="Active Cost Item Product Index")

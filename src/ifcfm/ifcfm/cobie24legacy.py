@@ -17,6 +17,7 @@
 # along with IfcFM.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.guid
 import ifcopenshell.util.fm
 import ifcopenshell.util.date
 import ifcopenshell.util.system

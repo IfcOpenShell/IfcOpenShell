@@ -20,28 +20,27 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, structural_analysis_model=None):
-        """Removes an analysis model
+def remove_structural_analysis_model(
+    file: ifcopenshell.file, structural_analysis_model: ifcopenshell.entity_instance
+) -> None:
+    """Removes an analysis model
 
-        Note that the contents of an analysis model are currently preserved.
+    Note that the contents of an analysis model are currently preserved.
 
-        :param structural_analysis_model: The IfcStructuralAnalysisModel to
-            remove.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.settings = {"structural_analysis_model": structural_analysis_model}
+    :param structural_analysis_model: The IfcStructuralAnalysisModel to
+        remove.
+    :type structural_analysis_model: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+    """
+    settings = {"structural_analysis_model": structural_analysis_model}
 
-    def execute(self):
-        for rel in self.settings["structural_analysis_model"].IsGroupedBy or []:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        history = self.settings["structural_analysis_model"].OwnerHistory
-        self.file.remove(self.settings["structural_analysis_model"])
+    for rel in settings["structural_analysis_model"].IsGroupedBy or []:
+        history = rel.OwnerHistory
+        file.remove(rel)
         if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+            ifcopenshell.util.element.remove_deep2(file, history)
+    history = settings["structural_analysis_model"].OwnerHistory
+    file.remove(settings["structural_analysis_model"])
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

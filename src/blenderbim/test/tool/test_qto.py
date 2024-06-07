@@ -18,11 +18,14 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.pset
 import test.bim.bootstrap
 import blenderbim.core.tool
+import blenderbim.core.root
 import blenderbim.tool as tool
+import blenderbim.bim.module.qto.calculator as calculator
 from blenderbim.tool.qto import Qto as subject
-from blenderbim.bim.module.pset.qto_calculator import QtoCalculator
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
@@ -42,35 +45,6 @@ class TestSetQtoResult(test.bim.bootstrap.NewFile):
         assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"
 
 
-class TestGetApplicableQuantityNames(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        schema = ifc.schema
-        properties_templates = (
-            ifcopenshell.util.pset.PsetQto(schema)
-            .get_by_name("Qto_WallBaseQuantities")
-            .get_info()["HasPropertyTemplates"]
-        )
-        applicable_quantity_names = [a.Name for a in properties_templates]
-        assert subject.get_applicable_quantity_names("Qto_WallBaseQuantities") == applicable_quantity_names
-
-
-class TestGetApplicableBaseQuantityName(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        wall = ifc.createIfcWall()
-        assert subject.get_applicable_base_quantity_name(wall) == "Qto_WallBaseQuantities"
-
-    def test_no_base_quantity(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        product = ifc.by_type("IfcProject")[0]
-        assert subject.get_applicable_base_quantity_name(product) == None
-
-
 class TestGetRoundedValue(test.bim.bootstrap.NewFile):
     def test_run(self):
         quantity = 1.2345
@@ -81,12 +55,14 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
     def setup_file(self):
         self.ifc = ifcopenshell.file()
         tool.Ifc.set(self.ifc)
-        project = ifcopenshell.api.run("root.create_entity", self.ifc, ifc_class="IfcProject", name="My Project")
+        ifcopenshell.api.run("root.create_entity", self.ifc, ifc_class="IfcProject", name="My Project")
 
     def setup_units(self, units):
         ifcopenshell.api.run("unit.assign_unit", self.ifc, **units)
 
     def calculate_quantities(self, obj):
+        import ifc5d.qto
+
         context = ifcopenshell.api.run("context.add_context", self.ifc, context_type="Model")
         bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
         obj = bpy.context.active_object
@@ -99,12 +75,32 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
             predefined_type="ELEMENTEDWALL",
             context=context,
         )
-        calculator = QtoCalculator()
-        base_qto = ifcopenshell.api.run("pset.add_qto", self.ifc, product=element, name="Qto_WallBaseQuantities")
-        quantities = subject.get_calculated_object_quantities(
-            calculator=calculator, qto_name="Qto_WallBaseQuantities", obj=obj
-        )
-        return quantities
+
+        rules = {
+            "calculators": {
+                "Blender": {
+                    "IfcWall": {
+                        "Qto_WallBaseQuantities": {
+                            "GrossFootprintArea": "get_gross_footprint_area",
+                            "GrossSideArea": "get_gross_side_area",
+                            "GrossVolume": "get_gross_volume",
+                            "GrossWeight": "get_gross_weight",
+                            "Height": "get_height",
+                            "Length": "get_length",
+                            "NetFootprintArea": "get_net_footprint_area",
+                            "NetSideArea": "get_net_side_area",
+                            "NetVolume": "get_net_volume",
+                            "NetWeight": "get_net_weight",
+                            "Width": "get_width",
+                        }
+                    },
+                }
+            }
+        }
+
+        ifc_file = tool.Ifc.get()
+        results = ifc5d.qto.quantify(ifc_file, {element}, rules)
+        return {k: round(v, 3) for k, v in results[element]["Qto_WallBaseQuantities"].items() if v is not None}
 
     def test_meters_project_unit(self):
         self.setup_file()
@@ -170,35 +166,6 @@ class TestGetCalculatedObjectQuantities(test.bim.bootstrap.NewFile):
         assert quantities["NetVolume"] == 282.517
 
 
-class TestAddObjectBaseQto(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject", name="My Project")
-        context = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        bpy.ops.mesh.primitive_cube_add(location=(0.0, 0.0, 0.0), size=2)
-        obj = bpy.context.active_object
-        element = blenderbim.core.root.assign_class(
-            tool.Ifc,
-            tool.Collector,
-            tool.Root,
-            obj=obj,
-            ifc_class="IfcWall",
-            predefined_type="ELEMENTEDWALL",
-            context=context,
-        )
-        assert subject.add_object_base_qto(obj).Name == "Qto_WallBaseQuantities"
-
-
-class TestAddProductBaseQto(test.bim.bootstrap.NewFile):
-    def test_run(self):
-        ifc = ifcopenshell.file()
-        tool.Ifc.set(ifc)
-        wall = ifc.createIfcWall()
-        base_qto = subject.add_product_base_qto(wall)
-        assert base_qto.Name == "Qto_WallBaseQuantities"
-
-
 class TestGetBaseQto(test.bim.bootstrap.NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -211,7 +178,7 @@ class TestGetBaseQto(test.bim.bootstrap.NewFile):
         assert subject.get_base_qto(product).id() == pset_qto.get_info()["id"]
         assert subject.get_base_qto(product).Name == pset_qto.Name
 
-    def test_isempty(self):
+    def test_no_quantities(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()

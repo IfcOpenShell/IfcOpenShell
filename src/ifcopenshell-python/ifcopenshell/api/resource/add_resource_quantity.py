@@ -17,60 +17,72 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.element
+import ifcopenshell.util.resource
 
 
-class Usecase:
-    def __init__(self, file, resource=None, ifc_class="IfcQuantityCount"):
-        """Adds a quantity to a resource
+def add_resource_quantity(
+    file: ifcopenshell.file, resource: ifcopenshell.entity_instance, ifc_class: str = "IfcQuantityCount"
+) -> ifcopenshell.entity_instance:
+    """Adds a quantity to a resource
 
-        The quantity of a resource represents the "unit quantity" of that
-        resource. For example, labour might be hired on a daily basis (8 hours).
-        There are different types of quantities (e.g. volume, count, or time).
-        Which quantity is used depends on the type of resource.  Material
-        resources may be quantified in terms of length, area, volume, or weight.
-        Equipment and labour resources are quantified in terms of time. Products
-        resources are quantified in terms of counts.
+    The quantity of a resource represents the "unit quantity" of that
+    resource. For example, labour might be hired on a daily basis (8 hours).
+    There are different types of quantities (e.g. volume, count, or time).
+    Which quantity is used depends on the type of resource.  Material
+    resources may be quantified in terms of length, area, volume, or weight.
+    Equipment and labour resources are quantified in terms of time. Products
+    resources are quantified in terms of counts.
 
-        This base quantity is then used in other calculations.
+    This base quantity is then used in other calculations.
 
-        :param resource: The IfcConstructionResource to add a quantity to.
-        :type resource: ifcopenshell.entity_instance.entity_instance
-        :param ifc_class: The type of quantity to add, chosen from
-            IfcQuantityArea (for material), IfcQuantityCount (for products),
-            IfcQuantityLength (for material), IfcQuantityTime (for equipment or
-            labour), IfcQuantityVolume (for material), and IfcQuantityWeight
-            (for material).
-        :type ifc_class: str,optional
-        :return: The newly created quantity depending on the IFC class
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param resource: The IfcConstructionResource to add a quantity to.
+    :type resource: ifcopenshell.entity_instance
+    :param ifc_class: The type of quantity to add, chosen from
+        IfcQuantityArea (for material), IfcQuantityCount (for products),
+        IfcQuantityLength (for material), IfcQuantityTime (for equipment or
+        labour), IfcQuantityVolume (for material), and IfcQuantityWeight
+        (for material).
+    :type ifc_class: str,optional
+    :return: The newly created quantity depending on the IFC class
+    :rtype: ifcopenshell.entity_instance
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Add our own crew
-            crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        # Add our own crew
+        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
 
-            # Add some labour to our crew.
-            labour = ifcopenshell.api.run("resource.add_resource", model,
-                parent_resource=crew, ifc_class="IfcLaborResource")
+        # Add some labour to our crew.
+        labour = ifcopenshell.api.run("resource.add_resource", model,
+            parent_resource=crew, ifc_class="IfcLaborResource")
 
-            # Labour resource is quantified in terms of time.
-            quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
-                resource=labour, ifc_class="IfcQuantityTime")
+        # Labour resource is quantified in terms of time.
+        quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
+            resource=labour, ifc_class="IfcQuantityTime")
 
-            # Store the time used in hours
-            ifcopenshell.api.run("resource.edit_resource_quantity", model,
-                physical_quantity=quantity, attributes={"TimeValue": 8.0})
-        """
-        self.file = file
-        self.settings = {"resource": resource, "ifc_class": ifc_class}
+        # Store the time used in hours
+        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+            physical_quantity=quantity, attributes={"TimeValue": 8.0})
+    """
+    settings = {"resource": resource, "ifc_class": ifc_class}
 
-    def execute(self):
-        quantity = self.file.create_entity(self.settings["ifc_class"], Name="Unnamed")
+    resource_type = resource.is_a()
+    supported_quantities = ifcopenshell.util.resource.RESOURCES_TO_QUANTITIES[resource_type]
+    if ifc_class not in supported_quantities:
+        raise ValueError(
+            f"Resource type '{resource_type}' does not support quantity type '{ifc_class}'. "
+            f"Supported quantities: {','.join(supported_quantities)}"
+        )
+
+    quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
+    # 3 IfcPhysicalSimpleQuantity Value
+    if settings["ifc_class"] == "IfcQuantityCount":
+        quantity[3] = 0
+    else:
         quantity[3] = 0.0
-        old_quantity = self.settings["resource"].BaseQuantity
-        self.settings["resource"].BaseQuantity = quantity
-        if old_quantity:
-            ifcopenshell.util.element.remove_deep(self.file, old_quantity)
-        return quantity
+    old_quantity = settings["resource"].BaseQuantity
+    settings["resource"].BaseQuantity = quantity
+    if old_quantity:
+        ifcopenshell.util.element.remove_deep(file, old_quantity)
+    return quantity

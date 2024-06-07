@@ -19,10 +19,13 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.cost
+import ifcopenshell.util.date
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import blenderbim.tool as tool
 import blenderbim.bim.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
+from typing import Any
 
 
 def refresh():
@@ -34,6 +37,7 @@ def refresh():
 class CostSchedulesData:
     data = {}
     is_loaded = False
+    _cost_values: dict[int, dict[str, Any]]
 
     @classmethod
     def load(cls):
@@ -136,7 +140,7 @@ class CostSchedulesData:
                 data["UnitBasisUnitSymbol"] = "U"
             if cost_value.Category == "*":
                 is_sum = True
-        cost_quantity = data["TotalCostQuantity"] or 1
+        cost_quantity = 1 if data["TotalCostQuantity"] is None else data["TotalCostQuantity"]
         if has_unit_basis:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity / data["UnitBasisValueComponent"]
         else:
@@ -155,6 +159,7 @@ class CostSchedulesData:
         data["UnitSymbol"] = "-"
         if cost_item.CostQuantities:
             quantity = cost_item.CostQuantities[0]
+            data["QuantityType"] = quantity.is_a()
             unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
             if unit:
                 data["UnitSymbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
@@ -193,9 +198,15 @@ class CostSchedulesData:
         #             data["DerivedUnitSymbol"] = "?"
         #         print("Total Cost", data["DerivedTotalCostQuantity"], cost_item.Name)
 
+    # TODO: dead code?
     @classmethod
-    def _get_object_quantities(cls, cost_item, element):
+    def _get_object_quantities(
+        cls, cost_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ) -> list[int]:
         if not element.is_a("IfcObject"):
+            return []
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
             return []
         results = []
         for relationship in element.IsDefinedBy:
@@ -205,7 +216,7 @@ class CostSchedulesData:
             if not qto.is_a("IfcElementQuantity"):
                 continue
             for prop in qto.Quantities:
-                if prop in cost_item.CostQuantities or []:
+                if prop in cost_quantities:
                     results.append(prop.id())
         return results
 

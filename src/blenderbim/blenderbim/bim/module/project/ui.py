@@ -68,9 +68,9 @@ def file_menu(self, context):
     op = self.layout.operator("bim.load_project", text="Open IFC Project", icon="FILEBROWSER")
     op.should_start_fresh_session = True
     self.layout.separator()
-    op = self.layout.operator("export_ifc.bim", icon="FILE_TICK", text="Save IFC Project")
+    op = self.layout.operator("bim.save_project", icon="FILE_TICK", text="Save IFC Project")
     op.should_save_as = False
-    op = self.layout.operator("export_ifc.bim", text="Save IFC Project As...")
+    op = self.layout.operator("bim.save_project", text="Save IFC Project As...")
     op.should_save_as = True
     self.layout.separator()
     self.layout.operator("bim.revert_project")

@@ -22,45 +22,51 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, information=None):
-        """Removes a document information
+def remove_information(file: ifcopenshell.file, information: ifcopenshell.entity_instance) -> None:
+    """Removes a document information
 
-        All references and associations are also removed.
+    All references and associations are also removed.
 
-        :param information: The IfcDocumentInformation to remove
-        :type information: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param information: The IfcDocumentInformation to remove
+    :type information: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Add a document
-            document = ifcopenshell.api.run("document.add_information", model)
-            # ... and remove it!
-            ifcopenshell.api.run("document.remove_information", model, information=document)
-        """
-        self.file = file
-        self.settings = {"information": information}
+        # Add a document
+        document = ifcopenshell.api.run("document.add_information", model)
+        # ... and remove it!
+        ifcopenshell.api.run("document.remove_information", model, information=document)
+    """
 
-    def execute(self):
-        for reference in self.settings["information"].HasDocumentReferences or []:
-            ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
+    if file.schema == "IFC2X3":
+        references = information.DocumentReferences or []
+    else:
+        references = information.HasDocumentReferences
 
-        for rel in self.settings["information"].IsPointer or []:
-            for information in rel.RelatedDocuments:
-                ifcopenshell.api.run("document.remove_information", self.file, information=information)
+    for reference in references:
+        ifcopenshell.api.run("document.remove_reference", file, reference=reference)
 
-        for rel in self.settings["information"].IsPointedTo or []:
-            if rel.RelatedDocuments == (self.settings["information"],):
-                # This relationship is non-rooted
-                self.file.remove(rel)
+    for rel in information.IsPointer or []:
+        for info in rel.RelatedDocuments:
+            ifcopenshell.api.run("document.remove_information", file, information=info)
 
-        for rel in self.settings["information"].DocumentInfoForObjects or []:
-            history = rel.OwnerHistory
-            self.file.remove(rel)
-            if history:
-                ifcopenshell.util.element.remove_deep2(self.file, history)
-        self.file.remove(self.settings["information"])
+    for rel in information.IsPointedTo or []:
+        if rel.RelatedDocuments == (information,):
+            # This relationship is non-rooted
+            file.remove(rel)
+
+    if file.schema == "IFC2X3":
+        rels = [r for r in file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == information]
+    else:
+        rels = information.DocumentInfoForObjects
+
+    for rel in rels:
+        history = rel.OwnerHistory
+        file.remove(rel)
+        if history:
+            ifcopenshell.util.element.remove_deep2(file, history)
+    file.remove(information)
