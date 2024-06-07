@@ -99,6 +99,16 @@ class Root(blenderbim.core.tool.Root):
         return relationships
 
     @classmethod
+    def get_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        if container := props.default_container:
+            try:
+                return tool.Ifc.get().by_id(container)
+            except:
+                props.default_container = 0
+        return None
+
+    @classmethod
     def get_connection_relationships(
         cls, objs: list[bpy.types.Object]
     ) -> dict[ifcopenshell.entity_instance, dict[str, Any]]:
@@ -163,8 +173,18 @@ class Root(blenderbim.core.tool.Root):
         return representation.ContextOfItems
 
     @classmethod
+    def is_containable(cls, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcElement") or element.is_a("IfcGrid")
+
+    @classmethod
     def is_element_a(cls, element: ifcopenshell.entity_instance, ifc_class: str) -> bool:
         return element.is_a(ifc_class)
+
+    @classmethod
+    def is_spatial_element(cls, element: ifcopenshell.entity_instance) -> bool:
+        if tool.Ifc.get().schema == "IFC2X3":
+            return element.is_a("IfcSpatialStructureElement")
+        return element.is_a("IfcSpatialElement")
 
     @classmethod
     def link_object_data(cls, source_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:

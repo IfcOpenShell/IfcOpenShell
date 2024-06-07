@@ -159,7 +159,6 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
 
-            tool.Collector.sync(obj)
             current_aggregate = ifcopenshell.util.element.get_aggregate(element)
             current_container = ifcopenshell.util.element.get_container(element)
             if current_aggregate:
