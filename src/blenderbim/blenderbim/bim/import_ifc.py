@@ -1602,107 +1602,12 @@ class IfcImporter:
         obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_collections(self) -> None:
-        self.create_spatial_decomposition_collections()
-        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.create_aggregate_and_nest_collections()
-        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
-            pass
-
-    def create_spatial_decomposition_collections(self) -> None:
-        for rel_aggregate in self.project["ifc"].IsDecomposedBy or []:
-            self.create_spatial_decomposition_collection(self.project["blender"], rel_aggregate.RelatedObjects)
-
-        # Invalid IFCs may have orphaned spatial structure elements.
-        orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
-        while orphaned_spaces:
-            self.create_spatial_decomposition_collection(self.project["blender"], orphaned_spaces)
-            orphaned_spaces = [e for e in self.spatial_elements if e.GlobalId not in self.collections]
-
+        for element in self.spatial_elements:
+            collection = bpy.data.collections.new(tool.Loader.get_name(element))
+            self.collections[element.GlobalId] = collection
+            self.project["blender"].children.link(collection)
         tool.Loader.create_project_collection("Views")
         self.type_collection = tool.Loader.create_project_collection("Types")
-
-    def create_spatial_decomposition_collection(
-        self, parent: Union[bpy.types.Collection, bpy.types.Object], related_objects: list[ifcopenshell.entity_instance]
-    ) -> None:
-        for element in related_objects:
-            if element not in self.spatial_elements:
-                continue
-            is_existing = False
-            if self.has_existing_project:
-                obj = tool.Ifc.get_object(element)
-                if obj:
-                    is_existing = True
-                    collection = obj.BIMObjectProperties.collection
-                    self.collections[element.GlobalId] = collection
-            if not is_existing:
-                collection = bpy.data.collections.new(tool.Loader.get_name(element))
-                self.collections[element.GlobalId] = collection
-                parent.children.link(collection)
-            if element.IsDecomposedBy:
-                for rel_aggregate in element.IsDecomposedBy:
-                    self.create_spatial_decomposition_collection(collection, rel_aggregate.RelatedObjects)
-
-    def create_aggregate_and_nest_collections(self):
-        if self.ifc_import_settings.has_filter:
-            rel_aggregates = set()
-            for element in self.elements:
-                if decomposed_by := element.IsDecomposedBy:
-                    rel_aggregates.add(decomposed_by[0])
-                elif decomposes := element.Decomposes:
-                    rel_aggregates.add(decomposes[0])
-                elif nested_by := getattr(element, "IsNestedBy", []):  # IFC2X3 does not have IsNestedBy
-                    if next((e for e in nested_by[0].RelatedObjects if not e.is_a("IfcPort")), None):
-                        rel_aggregates.add(nested_by[0])
-                elif nests := getattr(element, "Nests", []):
-                    rel_aggregates.add(nests[0])
-                elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
-                    rel_aggregates.add(element.AdheresToElement[0])
-        else:
-            rel_aggregates = [
-                r
-                for r in self.file.by_type("IfcRelAggregates")
-                if (relating_obj := r.RelatingObject).is_a("IfcElement") or relating_obj.is_a("IfcElementType")
-            ] + [
-                r
-                for r in self.file.by_type("IfcRelNests")
-                if (
-                    (relating_obj := r.RelatingObject).is_a("IfcElement")
-                    or relating_obj.is_a("IfcElementType")
-                    or (relating_obj.is_a("IfcPositioningElement") and not relating_obj.is_a("IfcGrid"))
-                )
-                and [e for e in r.RelatedObjects if not e.is_a("IfcPort")]
-            ]
-            if self.file.schema == "IFC4X3":
-                rel_aggregates += [r for r in self.file.by_type("IfcRelAdheresToElement")]
-
-        if len(rel_aggregates) > 10000:
-            # More than 10,000 collections makes Blender unhappy
-            print("Skipping aggregate collections for performance.")
-            self.ifc_import_settings.collection_mode = "SPATIAL_DECOMPOSITION"
-            return
-
-        aggregates: dict[str, dict] = {}
-        for rel_aggregate in rel_aggregates:
-            element: ifcopenshell.entity_instance = getattr(rel_aggregate, "RelatingObject", None) or getattr(
-                rel_aggregate, "RelatingElement"
-            )
-            collection = bpy.data.collections.new(tool.Loader.get_name(element))
-            aggregates[element.GlobalId] = {"element": element, "collection": collection}
-            self.collections[element.GlobalId] = collection
-
-        for global_id, aggregate in aggregates.items():
-            parent = ifcopenshell.util.element.get_aggregate(aggregate["element"])
-            if parent:
-                self.collections[parent.GlobalId].children.link(aggregate["collection"])
-                continue
-            parent = ifcopenshell.util.element.get_container(aggregate["element"])
-            if parent:
-                self.collections[parent.GlobalId].children.link(aggregate["collection"])
-                continue
-            if aggregate["element"].is_a("IfcElementType"):
-                self.type_collection.children.link(aggregate["collection"])
-                continue
-            self.project["blender"].children.link(aggregate["collection"])
 
     def create_materials(self) -> None:
         for material in self.file.by_type("IfcMaterial"):
@@ -1763,14 +1668,6 @@ class IfcImporter:
                 self.place_object_in_collection(self.file.by_id(ifc_definition_id), obj)
 
     def place_object_in_collection(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        if self.ifc_import_settings.collection_mode == "DECOMPOSITION":
-            self.place_object_in_decomposition_collection(element, obj)
-        elif self.ifc_import_settings.collection_mode == "SPATIAL_DECOMPOSITION":
-            self.place_object_in_spatial_decomposition_collection(element, obj)
-
-    def place_object_in_decomposition_collection(
-        self, element: ifcopenshell.entity_instance, obj: bpy.types.Object
-    ) -> None:
         if element.is_a("IfcProject"):
             return
         elif element.is_a("IfcGridAxis"):
@@ -1781,51 +1678,18 @@ class IfcImporter:
             obj.BIMObjectProperties.collection = collection
             collection.name = obj.name
             return collection.objects.link(obj)
-        elif getattr(element, "Decomposes", None):
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
-            return self.collections[aggregate.GlobalId].objects.link(obj)
-        elif getattr(element, "Nests", None) and not element.is_a("IfcPort"):
-            nest = ifcopenshell.util.element.get_nest(element)
-            return self.collections[nest.GlobalId].objects.link(obj)
-        elif element.is_a("IfcSurfaceFeature") and self.file.schema == "IFC4X3":
-            adherend = element.AdheresToElement[0].RelatingElement
-            return self.collections[adherend.GlobalId].objects.link(obj)
-
-        return self.place_object_in_spatial_decomposition_collection(element, obj)
-
-    def place_object_in_spatial_decomposition_collection(
-        self, element: ifcopenshell.entity_instance, obj: bpy.types.Object
-    ) -> None:
-        if element.is_a("IfcProject"):
-            return
-        elif element.is_a("IfcGridAxis"):
-            return
-        elif element.GlobalId in self.collections:
-            collection = self.collections[element.GlobalId]
-            collection.BIMCollectionProperties.obj = obj
-            obj.BIMObjectProperties.collection = collection
-            return collection.objects.link(obj)
         elif element.is_a("IfcTypeObject"):
             return self.type_collection.objects.link(obj)
         elif element.is_a("IfcStructuralMember"):
             return self.structural_member_collection.objects.link(obj)
         elif element.is_a("IfcStructuralConnection"):
             return self.structural_connection_collection.objects.link(obj)
+        elif container := ifcopenshell.util.element.get_container(element):
+            self.collections[container.GlobalId].objects.link(obj)
         elif element.is_a("IfcAnnotation"):
             group = self.get_drawing_group(element)
             if group:
                 return self.collections[group.GlobalId].objects.link(obj)
-
-        container = ifcopenshell.util.element.get_container(element)
-        if container:
-            if element.is_a("IfcGrid"):  # TODO: refactor into a more holistic collection mode feature
-                grid_collection = bpy.data.collections.get(obj.name)
-                if grid_collection:  # Just in case we run into invalid grids from Revit
-                    self.collections[container.GlobalId].children.link(grid_collection)
-                    grid_collection.objects.link(obj)
-            else:
-                self.collections[container.GlobalId].objects.link(obj)
-
         else:
             self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
             bpy.context.scene.collection.objects.link(obj)
@@ -2068,7 +1932,6 @@ class IfcImportSettings:
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
         self.elements: set[ifcopenshell.entity_instance] = set()
-        self.collection_mode = "DECOMPOSITION"
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
@@ -2080,7 +1943,6 @@ class IfcImportSettings:
             logger = logging.getLogger("ImportIFC")
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
-        settings.collection_mode = props.collection_mode
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.merge_mode = props.merge_mode
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour

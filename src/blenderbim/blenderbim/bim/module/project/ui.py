@@ -104,7 +104,6 @@ class BIM_PT_project(Panel):
 
     def draw_load_ui(self, context):
         pprops = context.scene.BIMProjectProperties
-        prop_with_search(self.layout, pprops, "collection_mode")
         prop_with_search(self.layout, pprops, "filter_mode")
         if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
             row = self.layout.row(align=True)
