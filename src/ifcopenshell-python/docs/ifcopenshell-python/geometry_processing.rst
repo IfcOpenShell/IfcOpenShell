@@ -62,7 +62,7 @@ related information in ``shape.geometry``:
     # The third column is a normalised vector of the local Z axis: (z_x, z_y, z_z)
     # The axes follow a right-handed coordinate system.
     # Objects are never scaled, so the scale factor of the matrix is always 1.
-    matrix = shape.transformation.matrix.data
+    matrix = shape.transformation.matrix
 
     # For convenience, you might want the matrix as a nested numpy array, so you can do matrix math.
     matrix = ifcopenshell.util.shape.get_shape_matrix(shape)
@@ -229,7 +229,7 @@ Here is a simple example in Python:
         while True:
             shape = iterator.get()
             element = ifc_file.by_id(shape.id)
-            matrix = shape.transformation.matrix.data
+            matrix = shape.transformation.matrix
             faces = shape.geometry.faces
             edges = shape.geometry.edges
             verts = shape.geometry.verts
