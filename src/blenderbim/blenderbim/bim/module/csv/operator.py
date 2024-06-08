@@ -283,6 +283,7 @@ class ImportIfcCsv(bpy.types.Operator):
             empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
+            concat=props.concat_value
         )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
