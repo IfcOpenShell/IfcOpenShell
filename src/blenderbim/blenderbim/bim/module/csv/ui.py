@@ -127,5 +127,4 @@ class BIM_PT_ifccsv(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")
-        # TODO: Look for a better "globe" icon for the web ui
-        row.operator("bim.open_web_ui", text="", icon="MATERIAL")
+        row.operator("bim.open_web_ui", text="", icon="URL")
