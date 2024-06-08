@@ -125,15 +125,6 @@ class BIMProjectProperties(PropertyGroup):
     library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)
     active_library_element_index: IntProperty(name="Active Library Element Index")
-    collection_mode: bpy.props.EnumProperty(
-        items=[
-            ("DECOMPOSITION", "Decomposition", "Collections represent aggregates and spatial containers"),
-            ("SPATIAL_DECOMPOSITION", "Spatial Decomposition", "Collections represent spatial containers"),
-            ("IFC_CLASS", "IFC Class", "Collections represent IFC class"),
-            ("NONE", "None", "No collections are created"),
-        ],
-        name="Collection Mode",
-    )
     filter_mode: bpy.props.EnumProperty(
         items=[
             ("NONE", "None", "No filtering is performed"),
