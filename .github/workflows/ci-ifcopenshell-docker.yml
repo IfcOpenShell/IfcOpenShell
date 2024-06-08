@@ -1,7 +1,10 @@
-name: CD
+name: ci-ifcopenshell-docker
 
 on: 
+  workflow_dispatch:
   push:
+      tags:
+        - v0.**
 
 
 jobs:
