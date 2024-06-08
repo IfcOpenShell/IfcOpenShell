@@ -158,8 +158,7 @@ def get_shape_matrix(shape) -> MatrixType:
     :return: A 4x4 numpy array representing the transformation matrix
     :rtype: MatrixType
     """
-    m = shape.transformation.matrix.data
-    return np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+    return np.array(shape.transformation.matrix).reshape((4, 4), order="F")
 
 
 def get_bbox_centroid(geometry) -> tuple[float, float, float]:
