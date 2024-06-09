@@ -218,7 +218,6 @@ class IfcImporter:
         self.gross_elements: set[ifcopenshell.entity_instance] = set()
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
-        self.type_collection: bpy.types.Collection = None
         self.type_products = {}
         self.meshes = {}
         self.mesh_shapes = {}
@@ -263,8 +262,6 @@ class IfcImporter:
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        self.create_collections()
-        self.profile_code("Create collections")
         self.create_materials()
         self.profile_code("Create materials")
         self.create_styles()
@@ -805,16 +802,9 @@ class IfcImporter:
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
                 grid_obj.lock_rotation = (True, True, True)
-            collection = bpy.data.collections.new(tool.Loader.get_name(grid))
-            u_axes = bpy.data.collections.new("UAxes")
-            collection.children.link(u_axes)
-            v_axes = bpy.data.collections.new("VAxes")
-            collection.children.link(v_axes)
             self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
             self.create_grid_axes(grid.VAxes, grid_obj, grid_placement)
             if grid.WAxes:
-                w_axes = bpy.data.collections.new("WAxes")
-                collection.children.link(w_axes)
                 self.create_grid_axes(grid.WAxes, grid_obj)
 
     def create_grid_axes(self, axes, grid_obj, grid_placement):
@@ -1048,14 +1038,6 @@ class IfcImporter:
             self.profile_code("Merging by material")
 
     def create_structural_items(self):
-        # Create structural collections
-        self.structural_member_collection = bpy.data.collections.new("Members")
-        self.structural_connection_collection = bpy.data.collections.new("Connections")
-        self.structural_collection = bpy.data.collections.new("StructuralItems")
-        self.structural_collection.children.link(self.structural_member_collection)
-        self.structural_collection.children.link(self.structural_connection_collection)
-        self.project["blender"].children.link(self.structural_collection)
-
         self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveMember")))
         self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveConnection")))
         self.create_generic_elements(set(self.file.by_type("IfcStructuralSurfaceMember")))
@@ -1513,10 +1495,10 @@ class IfcImporter:
             # Occurs when reloading a project
             pass
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        types_collection = project_collection.children[self.type_collection.name]
-        types_collection.hide_viewport = False
-        for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
-            obj.hide_set(True)
+        if types_collection := project_collection.children.get("IfcTypeProduct"):
+            types_collection.hide_viewport = False
+            for obj in types_collection.collection.objects:  # turn off all objects inside Types collection.
+                obj.hide_set(True)
 
     def clean_mesh(self):
         obj = None
@@ -1530,18 +1512,19 @@ class IfcImporter:
         if not last_obj:
             return
 
-        # temporarily unhide types collection to make sure all objects will be cleaned
+        # Temporarily unhide types collection to make sure all objects will be cleaned
         project_collection = bpy.context.view_layer.layer_collection.children[self.project["blender"].name]
-        types_collection = project_collection.children[self.type_collection.name]
-        types_collection.hide_viewport = False
-        bpy.context.view_layer.objects.active = last_obj
+        if types_collection := project_collection.children.get("IfcTypeProduct"):
+            types_collection.hide_viewport = False
+            bpy.context.view_layer.objects.active = last_obj
 
         bpy.ops.object.editmode_toggle()
         bpy.ops.mesh.tris_convert_to_quads()
         bpy.ops.mesh.normals_make_consistent()
         bpy.ops.object.editmode_toggle()
 
-        types_collection.hide_viewport = True
+        if types_collection:
+            types_collection.hide_viewport = True
         bpy.context.view_layer.objects.active = last_obj
         IfcStore.edited_objs.clear()
 
@@ -1606,14 +1589,6 @@ class IfcImporter:
         self.project["blender"].BIMCollectionProperties.obj = obj
         obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
-    def create_collections(self) -> None:
-        for element in self.spatial_elements:
-            collection = bpy.data.collections.new(tool.Loader.get_name(element))
-            self.collections[element.GlobalId] = collection
-            self.project["blender"].children.link(collection)
-        tool.Loader.create_project_collection("Views")
-        self.type_collection = tool.Loader.create_project_collection("Types")
-
     def create_materials(self) -> None:
         for material in self.file.by_type("IfcMaterial"):
             self.create_material(material)
@@ -1670,34 +1645,7 @@ class IfcImporter:
     def place_objects_in_collections(self) -> None:
         for ifc_definition_id, obj in self.added_data.items():
             if isinstance(obj, bpy.types.Object):
-                self.place_object_in_collection(self.file.by_id(ifc_definition_id), obj)
-
-    def place_object_in_collection(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        if element.is_a("IfcProject"):
-            return
-        elif element.is_a("IfcGridAxis"):
-            return
-        elif element.GlobalId in self.collections:
-            collection = self.collections[element.GlobalId]
-            collection.BIMCollectionProperties.obj = obj
-            obj.BIMObjectProperties.collection = collection
-            collection.name = obj.name
-            return collection.objects.link(obj)
-        elif element.is_a("IfcTypeObject"):
-            return self.type_collection.objects.link(obj)
-        elif element.is_a("IfcStructuralMember"):
-            return self.structural_member_collection.objects.link(obj)
-        elif element.is_a("IfcStructuralConnection"):
-            return self.structural_connection_collection.objects.link(obj)
-        elif container := ifcopenshell.util.element.get_container(element):
-            self.collections[container.GlobalId].objects.link(obj)
-        elif element.is_a("IfcAnnotation"):
-            group = self.get_drawing_group(element)
-            if group:
-                return self.collections[group.GlobalId].objects.link(obj)
-        else:
-            self.ifc_import_settings.logger.warning("Warning: this object is outside the spatial hierarchy %s", element)
-            bpy.context.scene.collection.objects.link(obj)
+                tool.Collector.assign(obj)
 
     def is_curve_annotation(self, element):
         object_type = element.ObjectType
