@@ -743,7 +743,12 @@ class IfcImporter:
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
-            if not obj.data and tool.Cad.is_x(matrix[0][3], 0) and tool.Cad.is_x(matrix[1][3], 0) and tool.Cad.is_x(matrix[2][3], 0):
+            if (
+                not obj.data
+                and tool.Cad.is_x(matrix[0][3], 0)
+                and tool.Cad.is_x(matrix[1][3], 0)
+                and tool.Cad.is_x(matrix[2][3], 0)
+            ):
                 # We assume any non-geometric matrix at 0,0,0 is not
                 # positionally significant and is left alone. This handles
                 # scenarios where often spatial elements are left at 0,0,0 and
@@ -796,6 +801,7 @@ class IfcImporter:
             if grid.Representation:
                 shape = self.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
+            grid_placement = self.get_element_matrix(grid)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
                 grid_obj.lock_rotation = (True, True, True)
@@ -804,14 +810,14 @@ class IfcImporter:
             collection.children.link(u_axes)
             v_axes = bpy.data.collections.new("VAxes")
             collection.children.link(v_axes)
-            self.create_grid_axes(grid.UAxes, u_axes, grid_obj)
-            self.create_grid_axes(grid.VAxes, v_axes, grid_obj)
+            self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
+            self.create_grid_axes(grid.VAxes, grid_obj, grid_placement)
             if grid.WAxes:
                 w_axes = bpy.data.collections.new("WAxes")
                 collection.children.link(w_axes)
-                self.create_grid_axes(grid.WAxes, w_axes, grid_obj)
+                self.create_grid_axes(grid.WAxes, grid_obj)
 
-    def create_grid_axes(self, axes, grid_collection, grid_obj):
+    def create_grid_axes(self, axes, grid_obj, grid_placement):
         for axis in axes:
             shape = self.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
@@ -820,8 +826,7 @@ class IfcImporter:
                 obj.lock_location = (True, True, True)
                 obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, grid_obj.matrix_world)
-            grid_collection.objects.link(obj)
+            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
     def create_element_types(self):
         for element_type in self.element_types:
