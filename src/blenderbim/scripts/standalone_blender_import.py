@@ -16,8 +16,8 @@ class BlenderImporter:
         self.created_guids = set()
 
         self.settings = ifcopenshell.geom.settings()
-        self.settings.set_deflection_tolerance(self.deflection_tolerance)
-        self.settings.set_angular_tolerance(self.angular_tolerance)
+        self.settings.set("mesher-linear-deflection", self.deflection_tolerance)
+        self.settings.set("mesher-angular-deflection", self.angular_tolerance)
         self.settings_2d = ifcopenshell.geom.settings()
         self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
 
@@ -47,7 +47,7 @@ class BlenderImporter:
             ]
         )
         if self.body_contexts:
-            self.settings.set_context_ids(self.body_contexts)
+            self.settings.set("context-ids", self.body_contexts)
         # Annotation is to accommodate broken Revit files
         # See https://github.com/Autodesk/revit-ifc/issues/187
         self.plan_contexts = [

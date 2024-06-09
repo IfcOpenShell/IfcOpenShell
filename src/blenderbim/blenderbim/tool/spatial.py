@@ -419,7 +419,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_gross_mesh_from_element(cls, visible_element):
         gross_settings = ifcopenshell.geom.settings()
-        gross_settings.set(gross_settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        gross_settings.set("disable-opening-subtractions", True)
         new_mesh = cls.create_mesh_from_shape(ifcopenshell.geom.create_shape(gross_settings, visible_element))
         return new_mesh
 

@@ -514,7 +514,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.WELD_VERTICES, True)
+        settings.set("weld-vertices", True)
         context = representation.ContextOfItems
 
         if element.is_a("IfcTypeProduct"):
@@ -522,20 +522,20 @@ class Geometry(blenderbim.core.tool.Geometry):
             try:
                 shape = ifcopenshell.geom.create_shape(settings, representation)
             except:
-                settings.set(settings.INCLUDE_CURVES, True)
+                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 shape = ifcopenshell.geom.create_shape(settings, representation)
         else:
             if not apply_openings:
-                settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+                settings.set("disable-opening-subtractions", True)
 
             if context.ContextIdentifier == "Body" and context.TargetView == "MODEL_VIEW":
                 try:
                     shape = ifcopenshell.geom.create_shape(settings, element, representation)
                 except:
-                    settings.set(settings.INCLUDE_CURVES, True)
+                    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                     shape = ifcopenshell.geom.create_shape(settings, element, representation)
             else:
-                settings.set(settings.INCLUDE_CURVES, True)
+                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 shape = ifcopenshell.geom.create_shape(settings, element, representation)
 
         ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
@@ -779,7 +779,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         # Filter out unique meshes to avoid
         # reloading the same representation multiple times.
         meshes_to_objects: dict[bpy.types.Mesh, bpy.types.Object]
-        meshes_to_objects = {(obj:=tool.Ifc.get_object(element)).data: obj for element in elements}
+        meshes_to_objects = {(obj := tool.Ifc.get_object(element)).data: obj for element in elements}
 
         for obj in meshes_to_objects.values():
             representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)

@@ -133,14 +133,11 @@ class Loader:
         return mesh
 
     def load_settings(self):
-        settings = ifcopenshell.geom.settings()
-        settings.set(settings.EXCLUDE_SOLIDS_AND_SURFACES, False)
-        settings.set(settings.USE_BREP_DATA, False)
-        return settings
+        return ifcopenshell.geom.settings()
 
     def load_fallback_settings(self):
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         return settings
 
     def load_importer(self):
@@ -692,7 +689,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         tree = ifcopenshell.geom.tree()
         shapes = {}
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        settings.set("disable-opening-subtractions", True)
         iterator = ifcopenshell.geom.iterator(settings, tool.Ifc.get(), multiprocessing.cpu_count(), include=include)
         if iterator.initialize():
             while True:
@@ -1030,7 +1027,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         settings = ifcopenshell.geom.settings()
         if not element.is_a("IfcOpeningElement"):
-            settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+            settings.set("disable-opening-subtractions", True)
         # geometry = ifcopenshell.geom.create_shape(settings, body)
         shape = ifcopenshell.geom.create_shape(settings, element)
         m = shape.transformation.matrix

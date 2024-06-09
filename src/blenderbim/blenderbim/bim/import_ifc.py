@@ -398,18 +398,18 @@ class IfcImporter:
 
         for context in self.contexts:
             settings = ifcopenshell.geom.settings()
-            settings.set('mesher-linear-deflection', self.ifc_import_settings.deflection_tolerance)
-            settings.set('mesher-angular-deflection', self.ifc_import_settings.angular_tolerance)
-            settings.set('dimensionality', ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            settings.set('context-ids', [context.id()])
+            settings.set("mesher-linear-deflection", self.ifc_import_settings.deflection_tolerance)
+            settings.set("mesher-angular-deflection", self.ifc_import_settings.angular_tolerance)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            settings.set("context-ids", [context.id()])
             self.context_settings.append(settings)
 
             settings = ifcopenshell.geom.settings()
-            settings.set('mesher-linear-deflection', self.ifc_import_settings.deflection_tolerance)
-            settings.set('mesher-angular-deflection', self.ifc_import_settings.angular_tolerance)
-            settings.set('dimensionality', ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            settings.set('disable-opening-subtractions', True)
-            settings.set('context-ids', [context.id()])
+            settings.set("mesher-linear-deflection", self.ifc_import_settings.deflection_tolerance)
+            settings.set("mesher-angular-deflection", self.ifc_import_settings.angular_tolerance)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            settings.set("disable-opening-subtractions", True)
+            settings.set("context-ids", [context.id()])
             self.gross_context_settings.append(settings)
 
     def process_element_filter(self) -> None:

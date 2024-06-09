@@ -291,7 +291,7 @@ class FilledOpeningGenerator:
                     return tool.Ifc.get().createIfcIndexedPolyCurve(Points=ifc_points, Segments=ifc_segments)
 
                 settings = ifcopenshell.geom.settings()
-                settings.set(settings.INCLUDE_CURVES, True)
+                settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
                 geometry = ifcopenshell.geom.create_shape(settings, profile)
                 verts = ifcopenshell.util.shape.get_vertices(geometry)
                 # [0, 2] represents X and Z ordinates

@@ -172,7 +172,7 @@ class CreateAllShapes(bpy.types.Operator):
         total = len(elements)
         settings = ifcopenshell.geom.settings()
         settings_2d = ifcopenshell.geom.settings()
-        settings_2d.set(settings_2d.INCLUDE_CURVES, True)
+        settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         failures = []
         excludes = ()  # For the developer to debug with
         for i, element in enumerate(elements, 1):
@@ -225,7 +225,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
         settings = ifcopenshell.geom.settings()
         if self.should_include_curves:
-            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, element)
         if shape:
             ifc_importer = import_ifc.IfcImporter(self.ifc_import_settings)
