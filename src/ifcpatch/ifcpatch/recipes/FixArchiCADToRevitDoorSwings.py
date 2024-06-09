@@ -186,7 +186,7 @@ class Patcher:
         # This fixes symptom C.
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for curve in self.file.by_type("IfcIndexedPolyCurve"):
             if True in [s.is_a("IfcArcIndex") for s in curve.Segments]:

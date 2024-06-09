@@ -36,7 +36,7 @@ class Profile(blenderbim.core.tool.Profile):
     ) -> None:
         """generates image based on `profile` using `PIL.ImageDraw`"""
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.INCLUDE_CURVES, True)
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
         verts = shape.verts
         edges = shape.edges

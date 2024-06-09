@@ -148,7 +148,7 @@ class IfcOpenShell:
         formula_functions = {}
 
         gross_settings = ifcopenshell.geom.settings()
-        gross_settings.set(gross_settings.DISABLE_OPENING_SUBTRACTIONS, True)
+        gross_settings.set("disable-opening-subtractions", True)
         net_settings = ifcopenshell.geom.settings()
 
         gross_qtos = {}

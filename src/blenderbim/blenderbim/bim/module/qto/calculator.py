@@ -1162,7 +1162,7 @@ def create_shapely_polygon(obj: bpy.types.Object, polygon: bpy.types.MeshPolygon
 
 def get_gross_element_mesh(element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
     settings = ifcopenshell.geom.settings()
-    settings.set(settings.DISABLE_OPENING_SUBTRACTIONS, True)
+    settings.set("disable-opening-subtractions", True)
     return create_mesh_from_shape(element, settings)
 
 

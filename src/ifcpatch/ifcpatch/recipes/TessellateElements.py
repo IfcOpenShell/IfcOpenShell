@@ -71,7 +71,7 @@ class Patcher:
             return
 
         settings = ifcopenshell.geom.settings()
-        settings.set_context_ids([context.id()])
+        settings.set("context-ids", [context.id()])
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=elements)
         replacements = {}
         if iterator.initialize():

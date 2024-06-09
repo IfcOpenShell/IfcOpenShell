@@ -144,7 +144,7 @@ class Usecase:
             }
         )
         self.settings_2d = ifcopenshell.geom.settings()
-        self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
+        self.settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(self.settings_2d, dummy_solid)
 
         if self.cardinal_point == 1:

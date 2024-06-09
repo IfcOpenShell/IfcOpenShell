@@ -194,7 +194,7 @@ class Patcher:
                 if c.ContextType == "Model"
             ]
         )
-        self.settings.set_context_ids(self.body_contexts)
+        self.settings.set("context-ids", self.body_contexts)
 
         products = self.elements
         iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count(), include=products)

@@ -140,7 +140,7 @@ class Usecase:
             return (self.settings["profile"].FlangeWidth * 2) - self.settings["profile"].WebThickness
         else:
             settings = ifcopenshell.geom.settings()
-            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
             x = [shape.verts[i] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(x) - min(x))
@@ -169,7 +169,7 @@ class Usecase:
             return self.settings["profile"].Depth
         else:
             settings = ifcopenshell.geom.settings()
-            settings.set(settings.INCLUDE_CURVES, True)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
             y = [shape.verts[i + 1] for i in range(0, len(shape.verts), 3)]
             return self.convert_si_to_unit(max(y) - min(y))
