@@ -13,6 +13,7 @@ import threading
 import websockets
 import json
 
+CONNECTION_CHECK_DELAY = 10
 connected_sockets = set()
 websocket_server: websockets.WebSocketServer
 ws_thread_loop = asyncio.new_event_loop()
@@ -149,13 +150,14 @@ class Search(blenderbim.core.tool.Search):
     @classmethod
     async def run_ws_server(cls):
         websocket_server = await websockets.serve(cls.ws_server_handler, "localhost", 8765)
-        # WebSocket server started.
+        print("Web-UI WebSocket server started.")
 
         # Check if a client is connected every 10 seconds
         async def check_connections():
             while True:
-                await asyncio.sleep(10)
+                await asyncio.sleep(CONNECTION_CHECK_DELAY)
                 if not connected_sockets:
+                    print("No Web-UI connected, shutting down the WebSocket server")
                     websocket_server.close()
                     break
 
@@ -173,9 +175,7 @@ class Search(blenderbim.core.tool.Search):
         wserver_thread.start()
 
         def open_browser():
-            # TODO: add web ui HTML/JS files to open
-            # webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "index.html")
-            pass
+            webbrowser.open("file://" + os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "index.html"))
 
         # Delay for 2 seconds before openning browser
         timer = threading.Timer(2.0, open_browser)
