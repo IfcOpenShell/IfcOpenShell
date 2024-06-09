@@ -1884,10 +1884,10 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
             except:
                 continue
             if self.drawing_style.include_query:
-                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.include_query)
+                results = ifcopenshell.util.selector.filter_elements(ifc, self.drawing_style.include_query)
                 self.include_global_ids.extend([e.GlobalId for e in results])
             if self.drawing_style.exclude_query:
-                results = ifcopenshell.util.selector.Selector.parse(ifc, self.drawing_style.exclude_query)
+                results = ifcopenshell.util.selector.filter_elements(ifc, self.drawing_style.exclude_query)
                 self.exclude_global_ids.extend([e.GlobalId for e in results])
         if self.drawing_style.include_query:
             self.parse_filter_query("INCLUDE", context)
