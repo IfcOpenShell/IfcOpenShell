@@ -18,8 +18,6 @@
 
 import bpy
 import blenderbim.core.tool
-import blenderbim.core.spatial
-import blenderbim.core.aggregate
 import blenderbim.tool as tool
 import ifcopenshell.util.element
 
@@ -27,8 +25,7 @@ import ifcopenshell.util.element
 class Collector(blenderbim.core.tool.Collector):
     @classmethod
     def assign(cls, obj: bpy.types.Object) -> None:
-        """link object and it's owned collection to the proper collection
-        and unlink them from any other"""
+        """Links an object to an appropriate Blender collection."""
         element = tool.Ifc.get_entity(obj)
 
         if element.is_a("IfcGridAxis"):
@@ -59,7 +56,10 @@ class Collector(blenderbim.core.tool.Collector):
                 project_obj.BIMObjectProperties.collection.children.link(collection)
         elif container := ifcopenshell.util.element.get_container(element):
             container_obj = tool.Ifc.get_object(container)
-            container_obj.BIMObjectProperties.collection.objects.link(obj)
+            if not (collection := container_obj.BIMObjectProperties.collection):
+                cls.assign(container_obj)
+                collection = container_obj.BIMObjectProperties.collection
+            collection.objects.link(obj)
         elif element.is_a("IfcAnnotation"):
             if element.ObjectType == "DRAWING":
                 if collection := cls._create_own_collection(obj):
