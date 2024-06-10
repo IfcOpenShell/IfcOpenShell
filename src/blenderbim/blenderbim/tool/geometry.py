@@ -150,7 +150,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 tool.Blender.remove_data_block(obj.data)
 
             if is_spatial:
-                blenderbim.core.spatial.load_container_manager(tool.Spatial)
+                blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
         try:
             obj.name
             bpy.data.objects.remove(obj)

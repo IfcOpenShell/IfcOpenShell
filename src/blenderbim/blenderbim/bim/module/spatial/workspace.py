@@ -20,11 +20,11 @@
 import os
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.handler
+import blenderbim.core.spatial
 
 
 # declaring it here to avoid circular import problems
@@ -160,7 +160,10 @@ class Hotkey(bpy.types.Operator, Operator):
         if element and bpy.context.selected_objects and element.is_a("IfcWall"):
             bpy.ops.bim.generate_spaces_from_walls()
         else:
-            bpy.ops.bim.generate_space()
+            try:
+                blenderbim.core.spatial.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
+            except blenderbim.core.spatial.NoDefaultContainer:
+                return self.report({"ERROR"}, "Please set a default container to create the space in.")
 
     def hotkey_S_B(self):
         bpy.ops.bim.add_boundary()

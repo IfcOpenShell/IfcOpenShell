@@ -94,8 +94,6 @@ def create_project(ifc: tool.Ifc, project: tool.Project, spatial: tool.Spatial, 
     if default_container := spatial.guess_default_container():
         spatial.set_default_container(default_container)
 
-    project.create_project_collections()
-
     if template:
         project.append_all_types_from_template(template)
 

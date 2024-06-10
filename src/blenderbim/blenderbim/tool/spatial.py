@@ -359,9 +359,9 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_boundary_lines_from_context_visible_objects(cls):
         calculation_rl = bpy.context.scene.BIMModelProperties.rl3
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        cut_point = collection_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
+        container = tool.Root.get_default_container()
+        container_obj = tool.Ifc.get_object(container)
+        cut_point = container_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
         cut_normal = Vector((0, 0, 1))
         boundary_lines = []
 
@@ -461,10 +461,10 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_x_y_z_h_mat_from_cursor(cls):
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        x, y = bpy.context.scene.cursor.location.xy
-        z = collection_obj.matrix_world.translation.z
+        x, y, z = bpy.context.scene.cursor.location.xyz
+        if container := tool.Root.get_default_container():
+            if container_obj := tool.Ifc.get_object(container):
+                z = container_obj.matrix_world.translation.z
         mat = Matrix()
         h = 3
         return x, y, z, h, mat
@@ -614,7 +614,6 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_transformed_mesh_from_local_to_global(cls, mesh):
         active_obj = cls.get_active_obj()
-        element = tool.Ifc.get_entity(active_obj)
         mat = active_obj.matrix_world
         mesh.transform(mat.inverted())
         mesh.update()
@@ -667,8 +666,6 @@ class Spatial(blenderbim.core.tool.Spatial):
         mat = obj.matrix_world
         inverted = mat.inverted()
 
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
         x, y = bpy.context.scene.cursor.location.xy
         z = 0
 
@@ -706,7 +703,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return relating_type_id
 
     @classmethod
-    def traslate_obj_to_z_location(cls, obj, z):
+    def translate_obj_to_z_location(cls, obj, z):
         if z != 0:
             obj.location = obj.location + Vector((0, 0, z))
 
@@ -754,9 +751,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_body_representation(cls, obj):
         element = tool.Ifc.get_entity(obj)
-        model = tool.Ifc.get()
-        body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        return body
+        return ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
     @classmethod
     def assign_ifcspace_class_to_obj(cls, obj):
