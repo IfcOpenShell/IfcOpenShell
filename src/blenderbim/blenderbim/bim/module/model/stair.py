@@ -218,8 +218,6 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
         mesh = bpy.data.meshes.new("IfcStairFlight")
         obj = bpy.data.objects.new("StairFlight", mesh)
         obj.location = spawn_location
-        collection = context.view_layer.active_layer_collection.collection
-        collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,

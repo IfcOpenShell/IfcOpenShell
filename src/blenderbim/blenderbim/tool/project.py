@@ -121,22 +121,6 @@ class Project(blenderbim.core.tool.Project):
         return blenderbim.core.unit.assign_scene_units(tool.Ifc, tool.Unit)
 
     @classmethod
-    def set_active_spatial_element(cls, obj):
-        collection = obj.BIMObjectProperties.collection
-        queue = [bpy.context.view_layer.layer_collection]
-        layer_collection = None
-
-        while queue:
-            layer = queue.pop()
-            if layer.collection == collection:
-                layer_collection = layer
-                break
-            queue.extend(list(layer.children))
-
-        if layer_collection:
-            bpy.context.view_layer.active_layer_collection = layer_collection
-
-    @classmethod
     def set_context(cls, context):
         blenderbim.bim.handler.refresh_ui_data()
         bpy.context.scene.BIMRootProperties.contexts = str(context.id())

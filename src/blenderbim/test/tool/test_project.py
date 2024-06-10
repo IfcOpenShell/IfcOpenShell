@@ -87,21 +87,6 @@ class TestRunUnitAssignSceneUnits(NewFile):
         pass
 
 
-class TestSetActiveSpatialElement(NewFile):
-    def test_run(self):
-        obj = bpy.data.objects.new("Foo", None)
-        collection = bpy.data.collections.new("Foo")
-        bpy.context.scene.collection.children.link(collection)
-        collection.objects.link(obj)
-        obj.BIMObjectProperties.collection = collection
-        collection.BIMCollectionProperties.obj = obj
-
-        layer = bpy.context.view_layer.layer_collection.children["Foo"]
-        assert bpy.context.view_layer.active_layer_collection != layer
-        subject.set_active_spatial_element(obj)
-        assert bpy.context.view_layer.active_layer_collection == layer
-
-
 class TestSetContext(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
