@@ -1471,7 +1471,6 @@ class LoadLinkedProject(bpy.types.Operator):
         material_ids = shape.geometry.material_ids
 
         mat = ifcopenshell.util.shape.get_shape_matrix(shape)
-        mat[:3, 3] = (0, 0, 0)
 
         mesh = self.meshes.get(shape.geometry.id, None)
         if not mesh:

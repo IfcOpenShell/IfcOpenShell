@@ -696,7 +696,6 @@ class Drawing(blenderbim.core.tool.Drawing):
         tool.Ifc.link(drawing, obj)
 
         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        mat.translation = (0, 0, 0)
         obj.matrix_world = mat
 
         if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
