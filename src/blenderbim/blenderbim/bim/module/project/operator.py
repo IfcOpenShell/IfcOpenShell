@@ -30,6 +30,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.shape
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 import blenderbim.tool as tool
@@ -1464,14 +1465,13 @@ class LoadLinkedProject(bpy.types.Operator):
 
     def process_occurrence(self, shape: ShapeElementType) -> None:
         element = self.file.by_id(shape.id)
-        matrix = shape.transformation.matrix
         faces = shape.geometry.faces
         verts = shape.geometry.verts
         materials = shape.geometry.materials
         material_ids = shape.geometry.material_ids
 
-        m = shape.transformation.matrix
-        mat = np.array(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+        mat = ifcopenshell.util.shape.get_shape_matrix(shape)
+        mat[:3, 3] = (0, 0, 0)
 
         mesh = self.meshes.get(shape.geometry.id, None)
         if not mesh:

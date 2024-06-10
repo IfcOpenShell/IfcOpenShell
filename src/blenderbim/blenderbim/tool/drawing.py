@@ -39,6 +39,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
+import ifcopenshell.util.shape
 import blenderbim.bim.import_ifc
 import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
@@ -694,10 +695,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         cls.import_camera_props(drawing, obj)
         tool.Ifc.link(drawing, obj)
 
-        m = shape.transformation.matrix
-        mat = mathutils.Matrix(
-            ([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1])
-        )
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        mat.translation = (0, 0, 0)
         obj.matrix_world = mat
 
         if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":

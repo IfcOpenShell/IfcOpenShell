@@ -823,14 +823,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         settings = ifcopenshell.geom.settings()
                         shape = ifcopenshell.geom.create_shape(settings, opening)
                         m = shape.transformation.matrix
-                        mat = Matrix(
-                            (
-                                [m[0], m[3], m[6], m[9]],
-                                [m[1], m[4], m[7], m[10]],
-                                [m[2], m[5], m[8], m[11]],
-                                [0, 0, 0, 1],
-                            )
-                        )
+                        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+                        mat.translation = (0, 0, 0)
                         opening_bm = bmesh.new()
                         verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
                         for vert in verts:
@@ -1024,8 +1018,8 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             settings.set("disable-opening-subtractions", True)
         # geometry = ifcopenshell.geom.create_shape(settings, body)
         shape = ifcopenshell.geom.create_shape(settings, element)
-        m = shape.transformation.matrix
-        mat = Matrix(([m[0], m[3], m[6], m[9]], [m[1], m[4], m[7], m[10]], [m[2], m[5], m[8], m[11]], [0, 0, 0, 1]))
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+        mat.translation = (0, 0, 0)
         verts = [space_matrix_i @ mat @ Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
         faces = ifcopenshell.util.shape.get_faces(shape.geometry)
         polygons = []
