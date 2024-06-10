@@ -243,7 +243,6 @@ class MEPGenerator:
 
     def setup_ports(self, obj):
         self.file = tool.Ifc.get()
-        self.collection = bpy.context.view_layer.active_layer_collection.collection
 
         segment = tool.Ifc.get_entity(obj)
         representation = ifcopenshell.util.representation.get_representation(segment, "Model", "Body", "MODEL_VIEW")

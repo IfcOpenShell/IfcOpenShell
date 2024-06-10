@@ -192,9 +192,9 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         obj.location = context.scene.cursor.location
 
-        collection = context.view_layer.active_layer_collection.collection
-        collection.objects.link(obj)
-        collection_obj = collection.BIMCollectionProperties.obj
+        self.container_obj = None
+        if container := tool.Root.get_default_container():
+            self.container_obj = tool.Ifc.get_object(container)
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
@@ -248,11 +248,11 @@ class AddConstrTypeInstance(bpy.types.Operator):
                 # TODO For now we are hardcoding windows and doors as a prototype
                 bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
         else:
-            if collection_obj and tool.Ifc.get_entity(collection_obj):
+            if self.container_obj:
                 if props.rl_mode == "BOTTOM":
-                    obj.location.z = collection_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
+                    obj.location.z = self.container_obj.location.z - tool.Blender.get_object_bounding_box(obj)["min_z"]
                 elif props.rl_mode == "CONTAINER":
-                    obj.location.z = collection_obj.location.z
+                    obj.location.z = self.container_obj.location.z
                 elif props.rl_mode == "CURSOR":
                     pass
 
@@ -274,11 +274,8 @@ class AddConstrTypeInstance(bpy.types.Operator):
         return {"FINISHED"}
 
     def set_flow_segment_rl(self, obj):
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-
-        if collection_obj and tool.Ifc.get_entity(collection_obj):
-            obj.location[2] = collection_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
+        if self.container_obj:
+            obj.location[2] = self.container_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
 
     @staticmethod
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:

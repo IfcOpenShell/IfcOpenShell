@@ -31,7 +31,6 @@ import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.tool as tool
-from math import radians
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.decorator import ProfileDecorator
@@ -137,8 +136,10 @@ class DumbSlabGenerator:
         )
 
         props = bpy.context.scene.BIMModelProperties
-        self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = self.collection.BIMCollectionProperties.obj
+        self.container = None
+        if container := tool.Root.get_default_container():
+            self.container = container
+            self.container_obj = tool.Ifc.get_object(container)
         self.depth = sum(thicknesses) * unit_scale
         self.width = 3
         self.length = 3
@@ -161,13 +162,12 @@ class DumbSlabGenerator:
 
         matrix_world = Matrix()
         matrix_world.translation = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world.translation.z = self.collection_obj.location.z - self.depth
+        if self.container_obj:
+            matrix_world.translation.z = self.container_obj.location.z - self.depth
         else:
             matrix_world.translation.z -= self.depth
         obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
         bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
