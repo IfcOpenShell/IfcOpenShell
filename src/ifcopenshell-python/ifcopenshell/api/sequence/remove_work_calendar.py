@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 
 
@@ -60,6 +61,15 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
                     relating_control=settings["work_calendar"],
                     related_object=related_object,
                 )
+
+    # Currently in API work times are created already attached
+    # to the work calendar, so they are never reused.
+    for working_time in settings["work_calendar"].WorkingTimes or []:
+        ifcopenshell.api.sequence.remove_work_time(file, work_time=working_time)
+
+    for exception_time in settings["work_calendar"].ExceptionTimes or []:
+        ifcopenshell.api.sequence.remove_work_time(file, work_time=exception_time)
+
     history = settings["work_calendar"].OwnerHistory
     file.remove(settings["work_calendar"])
     if history:
