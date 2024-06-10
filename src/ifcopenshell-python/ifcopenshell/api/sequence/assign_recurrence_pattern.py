@@ -117,7 +117,7 @@ def assign_recurrence_pattern(
             file.remove(settings["parent"].RecurrencePattern)
         settings["parent"].RecurrencePattern = recurrence
     elif settings["parent"].is_a("IfcTaskTimeRecurring"):
-        if len(file.get_inverse(settings["parent"].Recurrence)) == 1:
-            file.remove(settings["parent"].Recurrence)
+        if recurrence_old := settings["parent"].Recurrence and len(file.get_inverse(recurrence_old)) == 1:
+            file.remove(recurrence_old)
         settings["parent"].Recurrence = recurrence
     return recurrence
