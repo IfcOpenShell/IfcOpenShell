@@ -23,13 +23,12 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import blenderbim.core.tool
+import blenderbim.core.root
 import blenderbim.core.aggregate
 import blenderbim.core.geometry
 import blenderbim.core.material
 import blenderbim.core.style
 import blenderbim.tool as tool
-from mathutils import Vector
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from typing import Union, Optional, Any
 
 

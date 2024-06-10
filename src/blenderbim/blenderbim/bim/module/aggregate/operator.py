@@ -290,7 +290,7 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
             part_class=self.part_class,
             part_name=self.part_name,
         )
-        tool.Spatial.load_container_manager()
+        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
 
 
 class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):

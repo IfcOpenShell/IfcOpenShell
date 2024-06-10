@@ -18,11 +18,8 @@
 
 
 import bpy
-import ifcopenshell
-import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
-import blenderbim.core.type
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
@@ -35,37 +32,15 @@ class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):
         "select the right space collection and run the operator"
     )
 
-#    @classmethod
-#    def poll(cls, context):
-#        print(context)
-#        collection = context.view_layer.active_layer_collection.collection
-#        collection_obj = collection.BIMCollectionProperties.obj
-#        active_obj = context.active_object
-#        element = tool.Ifc.get_entity(active_obj)
-#        return tool.Ifc.get_entity(collection_obj) and not element.is_a("IfcWall")
-
     def _execute(self, context):
         # This works as a 2.5 extruded polygon based on a cutting plane. Note
         # that rooms exclude walls (i.e. not to wall midpoint or exterior /
         # exterior edge.
 
-        def msg_no_collection(self, context):
-            self.layout.label(text="NO ACTIVE COLLECTION. PLEASE SELECT A SPATIAL COLLECTION OBJECT OR A WALL")
-
-        def msg_no_active_storey(self, context):
-            self.layout.label(text="NO ACTIVE STOREY. PLEASE SELECT A SPATIAL COLLECTION OBJECT")
-
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        if not collection_obj:
-            context.window_manager.popup_menu(msg_no_collection, title="Error", icon="ERROR")
-            return
-        spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element or not spatial_element.is_a("IfcBuildingStorey"):
-            context.window_manager.popup_menu(msg_no_active_storey, title="Error", icon="ERROR")
-            return
-
-        core.generate_space(tool.Ifc, tool.Spatial, tool.Model, tool.Type)
+        try:
+            core.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the space in.")
 
 
 class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -73,13 +48,6 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Generate Spaces From Walls"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Generate spaces from selected walls. The active object must be a wall"
-
-#    @classmethod
-#    def poll(cls, context):
-#        active_obj = context.active_object
-#        element = tool.Ifc.get_entity(active_obj)
-#        if element:
-#            return context.selected_objects and element.is_a("IfcWall")
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard

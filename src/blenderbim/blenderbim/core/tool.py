@@ -593,7 +593,6 @@ class Owner:
 class Project:
     def append_all_types_from_template(cls, template): pass
     def create_empty(cls, name): pass
-    def create_project_collections(cls): pass
     def load_default_thumbnails(cls): pass
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None): pass
     def run_context_add_context(cls, context_type=None, context_identifier=None, target_view=None, parent=None): pass
@@ -891,7 +890,7 @@ class Spatial:
     def get_active_obj_z(cls): pass
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
-    def traslate_obj_to_z_location(cls, obj): pass
+    def translate_obj_to_z_location(cls, obj): pass
     def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def get_scaled_2d_vertices(cls, points): pass

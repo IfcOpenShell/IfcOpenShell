@@ -149,8 +149,10 @@ def select_decomposed_elements(spatial):
         spatial.select_products(spatial.get_decomposed_elements(container))
 
 
-# HERE STARTS SPATIAL TOOL
-def generate_space(ifc, spatial, model, Type):
+def generate_space(ifc, model, root, spatial, type):
+    if not root.get_default_container():
+        raise NoDefaultContainer()
+
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
     element = None
@@ -163,18 +165,17 @@ def generate_space(ifc, spatial, model, Type):
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)  ##mat
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
         element = ifc.get_entity(active_obj)
-
     else:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()  ##mat
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
     if not space_polygon:
         return
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h)  ##mat
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h)
 
     mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
 
@@ -189,14 +190,15 @@ def generate_space(ifc, spatial, model, Type):
 
         obj = spatial.get_named_obj_from_mesh(name, mesh)
         spatial.set_obj_origin_to_cursor_position_and_zero_elevation(obj)
-        spatial.traslate_obj_to_z_location(obj, z)
-        spatial.link_obj_to_active_collection(obj)
+        spatial.translate_obj_to_z_location(obj, z)
         spatial.assign_ifcspace_class_to_obj(obj)
 
         element = ifc.get_entity(obj)
 
         if relating_type:
-            spatial.assign_relating_type_to_element(ifc, Type, element, relating_type)
+            spatial.assign_relating_type_to_element(ifc, type, element, relating_type)
+
+    spatial.import_spatial_decomposition()
 
 
 def generate_spaces_from_walls(ifc, spatial, collector):
@@ -215,7 +217,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         obj = spatial.get_named_obj_from_bmesh(name, bmesh=bm)
 
         spatial.set_obj_origin_to_bboxcenter_and_zero_elevation(obj)
-        spatial.traslate_obj_to_z_location(obj, z)
+        spatial.translate_obj_to_z_location(obj, z)
 
         spatial.link_obj_to_active_collection(obj)
         spatial.assign_ifcspace_class_to_obj(obj)
@@ -241,3 +243,7 @@ def toggle_hide_spaces(ifc, spatial):
 
 def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance):
     spatial.set_default_container(container)
+
+
+class NoDefaultContainer(Exception):
+    pass
