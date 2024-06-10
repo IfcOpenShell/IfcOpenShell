@@ -1019,7 +1019,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         # geometry = ifcopenshell.geom.create_shape(settings, body)
         shape = ifcopenshell.geom.create_shape(settings, element)
         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        mat.translation = (0, 0, 0)
         verts = [space_matrix_i @ mat @ Vector(v) for v in ifcopenshell.util.shape.get_vertices(shape.geometry)]
         faces = ifcopenshell.util.shape.get_faces(shape.geometry)
         polygons = []
