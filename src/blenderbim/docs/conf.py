@@ -28,7 +28,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
+import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -40,7 +40,9 @@ copyright = "2020-2024 IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "0.0.240402"
+cwd = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
+    release = f.read().strip()
 
 
 # -- General configuration ---------------------------------------------------

@@ -36,11 +36,13 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = "IfcOpenShell"
-copyright = "2011-2024, IfcOpenShell Contributors"
+copyright = "2011-2024 IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "0.7.0"
+cwd = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
+    release = f.read().strip()
 
 
 # -- General configuration ---------------------------------------------------
