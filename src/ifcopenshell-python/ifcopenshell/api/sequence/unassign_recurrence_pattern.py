@@ -22,7 +22,10 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
     """Unassigns a recurrence pattern
 
     Note that a recurring task time must have a recurrence pattern, so if
-    you remove it, be sure to clean up after your
+    you remove it, be sure to clean up after this API call
+    (e.g. remove IfcTaskTimeRecurring entity
+    or assign a different recurrence patern to it
+    or replace IfcTaskTimeRecurring with IfcTaskTime).
 
     :param recurrence_pattern: The IfcRecurrencePattern to remove.
     :type recurrence_pattern: ifcopenshell.entity_instance

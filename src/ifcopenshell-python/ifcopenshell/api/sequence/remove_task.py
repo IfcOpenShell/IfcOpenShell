@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.nest
+import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 
 
@@ -63,8 +64,10 @@ def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> 
         definitions=[settings["task"]],
         relating_context=file.by_type("IfcContext")[0],
     )
-    if settings["task"].TaskTime:
-        file.remove(settings["task"].TaskTime)
+    if task_time := settings["task"].TaskTime:
+        if task_time.is_a("IfcTaskTimeRecurring"):
+            ifcopenshell.api.sequence.unassign_recurrence_pattern(file, task_time.Recurrence)
+        file.remove(task_time)
 
     # Handle IfcRelNests.
     if rels := settings["task"].IsNestedBy:
