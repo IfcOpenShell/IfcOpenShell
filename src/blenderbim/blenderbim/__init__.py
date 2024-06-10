@@ -29,7 +29,6 @@ if IN_BLENDER:
     import bpy
 import platform
 import traceback
-import subprocess
 import webbrowser
 import addon_utils
 from collections import deque
@@ -39,7 +38,7 @@ bl_info = {
     "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
     "author": "IfcOpenShell Contributors",
     "blender": (3, 1, 0),
-    "version": (0, 0, 999999),
+    "version": (9, 9, 9),
     "location": "File Menu, Scene Properties Tab. See documentation for more.",
     "doc_url": "https://docs.blenderbim.org/",
     "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
