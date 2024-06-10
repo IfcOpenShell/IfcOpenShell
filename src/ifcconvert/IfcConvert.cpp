@@ -700,7 +700,7 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
-#ifdef IFOPSH_WITH_CGAL
+#ifdef IFOPSH_WITH_CITYJSON
 	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
 
 		// none, convex-decomposition, minkowski-triangles or halfspace-snapping
