@@ -17,6 +17,9 @@
  *                                                                              *
  ********************************************************************************/
 
+// TODO: Multiple schemas
+#define IfcSchema Ifc2x3
+
 #include "../ifcparse/IfcFile.h"
 #include "../ifcparse/IfcLogger.h"
 
