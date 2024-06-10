@@ -233,7 +233,8 @@ namespace {
 	}
 }
 
-void HdfSerializer::read_surface_style(surface_style_serialization& s, ifcopenshell::geometry::taxonomy::style& gss) {
+void HdfSerializer::read_surface_style(surface_style_serialization& s, const ifcopenshell::geometry::taxonomy::style::ptr& gss_) {
+	auto& gss = *gss_;
 	if (strlen(s.name) || s.id) {
 		if (s.diffuse[0] == s.diffuse[0]) {
 			gss.diffuse = ifcopenshell::geometry::taxonomy::colour(s.diffuse[0], s.diffuse[1], s.diffuse[2]);
@@ -355,7 +356,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			matrix->components() << Eigen::Map<Eigen::Matrix4d>(&part.matrix[0][0]);
 
 			auto style_ptr = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::style>();
-			read_surface_style(part.surface_style, *style_ptr);
+			read_surface_style(part.surface_style, style_ptr);
 			
 			shapes.push_back(IfcGeom::ConversionResult(part.id, matrix, new ifcopenshell::geometry::OpenCascadeShape(shp), style_ptr));
 		}
@@ -416,7 +417,7 @@ IfcGeom::Element* HdfSerializer::read(IfcParse::IfcFile& f, const std::string& g
 			ds.read(surface_styles.data(), style_compound);
 		}
 
-		std::vector<ifcopenshell::geometry::taxonomy::style> surface_style_ptrs(surface_styles.size());
+		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> surface_style_ptrs(surface_styles.size());
 
 		for (size_t i = 0; i < surface_styles.size(); ++i) {
 			read_surface_style(surface_styles[i], surface_style_ptrs[i]);
@@ -536,7 +537,8 @@ H5::Group HdfSerializer::createRepresentationGroup(const H5::Group& element_grou
 	return representation_group;
 }
 
-void HdfSerializer::write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style& s) {
+void HdfSerializer::write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& sptr) {
+	auto& s = *sptr;
 	data.name = s.name.c_str();
 	// @todo
 	data.original_name = s.name.c_str();
@@ -609,7 +611,7 @@ void HdfSerializer::write(const IfcGeom::BRepElement* o) {
 		
 		parts[i].surface_style = { "", "", 0, {nan,nan,nan}, {nan,nan,nan}, nan, nan };
 		if (it->hasStyle()) {
-			auto& s = it->Style();
+			auto s = it->StylePtr();
 			write_style(parts[i].surface_style, s);
 		}
 

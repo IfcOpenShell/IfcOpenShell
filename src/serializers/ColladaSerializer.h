@@ -75,7 +75,7 @@ private:
                 const std::string &mesh_id, const std::string &default_material_name,
                 const std::vector<double>& positions, const std::vector<double>& normals,
                 const std::vector<int>& faces, const std::vector<int>& edges,
-                const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style>& materials,
+                const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
                 const std::vector<double>& uvs, const std::vector<std::string>& material_references);
 			void close();
             ColladaSerializer *serializer;
@@ -118,11 +118,11 @@ private:
 				explicit ColladaEffects(COLLADASW::StreamWriter& stream)
 					: COLLADASW::LibraryEffects(&stream)
 				{}
-				void write(const ifcopenshell::geometry::taxonomy::style &material, const std::string &material_uri);
+				void write(const ifcopenshell::geometry::taxonomy::style::ptr& material, const std::string &material_uri);
 				void close();
                 ColladaSerializer *serializer;
 			};
-			std::vector<ifcopenshell::geometry::taxonomy::style> materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_uris;
 		public:
 			explicit ColladaMaterials(COLLADASW::StreamWriter& stream, ColladaSerializer *_serializer)
@@ -130,9 +130,9 @@ private:
 				, serializer(_serializer)
 		                , effects(stream)
 			{}
-			void add(const ifcopenshell::geometry::taxonomy::style& material);
-			std::string getMaterialUri(const ifcopenshell::geometry::taxonomy::style& material);
-			bool contains(const ifcopenshell::geometry::taxonomy::style& material);
+			void add(const ifcopenshell::geometry::taxonomy::style::ptr& material);
+			std::string getMaterialUri(const ifcopenshell::geometry::taxonomy::style::ptr& material);
+			bool contains(const ifcopenshell::geometry::taxonomy::style::ptr& material);
 			void write();
             ColladaSerializer *serializer;
             ColladaEffects effects;
@@ -165,14 +165,14 @@ private:
 			std::vector<int> faces;
 			std::vector<int> edges;
 			std::vector<int> material_ids;
-			std::vector<ifcopenshell::geometry::taxonomy::style> materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> materials;
 			std::vector<std::string> material_references;
             std::vector<double> uvs;
 			std::vector<const IfcGeom::Element*> parents_;
 
 			DeferredObject(const std::string& unique_id, const std::string& representation_id, const std::string& type, const IfcGeom::Transformation& transformation,
 				const std::vector<double>& vertices, const std::vector<double>& normals, const std::vector<int>& faces,
-				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style>& materials,
+				const std::vector<int>& edges, const std::vector<int>& material_ids, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
 				const std::vector<std::string>& material_references, const std::vector<double>& uvs)
 				: unique_id(unique_id)
 				, representation_id(representation_id)

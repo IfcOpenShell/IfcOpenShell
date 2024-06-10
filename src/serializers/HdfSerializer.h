@@ -89,8 +89,8 @@ private:
 	std::map<std::string, std::string> group_cache_;
 
 	H5::Group createRepresentationGroup(const H5::Group& element_group, const std::string& gid);
-	void read_surface_style(surface_style_serialization& sss, ifcopenshell::geometry::taxonomy::style& style_ptr);
-	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style& s);
+	void read_surface_style(surface_style_serialization& sss, const ifcopenshell::geometry::taxonomy::style::ptr& style_ptr);
+	void write_style(surface_style_serialization& data, const ifcopenshell::geometry::taxonomy::style::ptr& s);
 
 public:
 	HdfSerializer(const std::string& hdf_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings, bool read_only=false);

@@ -334,10 +334,10 @@ IfcGeom::Representation::Triangulation::Triangulation(const BRep& shape_model)
 
 		int surface_style_id = -1;
 		if (iit->hasStyle()) {
-			auto jt = std::find(_materials.begin(), _materials.end(), iit->Style());
+			auto jt = std::find(_materials.begin(), _materials.end(), iit->StylePtr());
 			if (jt == _materials.end()) {
 				surface_style_id = (int)_materials.size();
-				_materials.push_back(iit->Style());
+				_materials.push_back(iit->StylePtr());
 			} else {
 				surface_style_id = (int)(jt - _materials.begin());
 			}
