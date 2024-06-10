@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 
 
@@ -64,28 +65,23 @@ def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> 
     )
     if settings["task"].TaskTime:
         file.remove(settings["task"].TaskTime)
+
+    # Handle IfcRelNests.
+    if rels := settings["task"].IsNestedBy:
+        subtasks = rels[0].RelatedObjects
+        # Use batching for optimization.
+        ifcopenshell.api.nest.unassign_object(file, subtasks)
+        for task_ in subtasks:
+            ifcopenshell.api.run("sequence.remove_task", file, task=task_)
+    if settings["task"].Nests:
+        ifcopenshell.api.nest.unassign_object(file, [settings["task"]])
+
     for inverse in file.get_inverse(settings["task"]):
         if inverse.is_a("IfcRelSequence"):
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-        elif inverse.is_a("IfcRelNests"):
-            if inverse.RelatingObject == settings["task"]:
-                for related_object in inverse.RelatedObjects:
-                    ifcopenshell.api.run("sequence.remove_task", file, task=related_object)
-            elif not inverse.RelatedObjects:
-                history = inverse.OwnerHistory
-                file.remove(inverse)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(file, history)
-            elif settings["task"] in inverse.RelatedObjects:
-                related_objects = list(inverse.RelatedObjects)
-                related_objects.remove(settings["task"])
-                if not related_objects:
-                    file.remove(inverse)
-                else:
-                    inverse.RelatedObjects = related_objects
         elif inverse.is_a("IfcRelAssignsToControl"):
             if inverse.RelatingControl == settings["task"] or len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
