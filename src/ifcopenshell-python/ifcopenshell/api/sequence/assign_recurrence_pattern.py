@@ -16,10 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.util.sequence
 
 
 def assign_recurrence_pattern(
-    file: ifcopenshell.file, parent: ifcopenshell.entity_instance, recurrence_type: str = "WEEKLY"
+    file: ifcopenshell.file,
+    parent: ifcopenshell.entity_instance,
+    recurrence_type: ifcopenshell.util.sequence.RECURRENCE_TYPE = "WEEKLY",
 ) -> ifcopenshell.entity_instance:
     """Define a time to recur at a particular interval
 

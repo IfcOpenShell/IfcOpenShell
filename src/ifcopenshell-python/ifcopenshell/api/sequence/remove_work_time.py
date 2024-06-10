@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.api.sequence
 
 
 def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_instance) -> None:
@@ -40,6 +41,10 @@ def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_ins
         # And remove it immediately
         ifcopenshell.api.run("sequence.remove_work_time", model, work_time=work_time)
     """
-    settings = {"work_time": work_time}
 
-    file.remove(settings["work_time"])
+    # Currently in API recurrence patterns are created during assignment
+    # and removed during unassignment, so they are never reused.
+    if recurrence_pattern := work_time.RecurrencePattern:
+        ifcopenshell.api.sequence.unassign_recurrence_pattern(file, recurrence_pattern)
+
+    file.remove(work_time)
