@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
     // we need to cast them to IfcWindows. Since these properties
     // are optional we need to make sure the properties are
     // defined for the window in question before accessing them.
-	Ifc2x3::IfcBuildingElement::list::ptr elements = file.instances_by_type<Ifc2x3::IfcBuildingElement>();
+	IfcSchema::IfcBuildingElement::list::ptr elements = file.instances_by_type<IfcSchema::IfcBuildingElement>();
 
     std::cout << "Found " << elements->size() << " elements in " << argv[1] << ":" << std::endl;
 
@@ -263,8 +263,8 @@ int main(int argc, char** argv) {
         const auto* element = *it;
         std::cout << element->data().toString() << std::endl;
 
-        const Ifc2x3::IfcWindow* window;
-        if ((window = element->as<Ifc2x3::IfcWindow>()) != 0) {
+        const IfcSchema::IfcWindow* window;
+        if ((window = element->as<IfcSchema::IfcWindow>()) != 0) {
             if (window->OverallWidth() && window->OverallHeight()) {
                 const double area = *window->OverallWidth() * *window->OverallHeight();
                 std::cout << "The area of this window is " << area << std::endl;
