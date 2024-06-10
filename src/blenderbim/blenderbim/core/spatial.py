@@ -218,11 +218,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
 
         spatial.set_obj_origin_to_bboxcenter_and_zero_elevation(obj)
         spatial.translate_obj_to_z_location(obj, z)
-
-        spatial.link_obj_to_active_collection(obj)
         spatial.assign_ifcspace_class_to_obj(obj)
-
-        spatial.assign_container_to_obj(obj)
 
 
 def toggle_space_visibility(ifc, spatial):

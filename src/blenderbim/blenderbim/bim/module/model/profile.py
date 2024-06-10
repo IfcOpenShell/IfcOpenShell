@@ -57,8 +57,10 @@ class DumbProfileGenerator:
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         props = bpy.context.scene.BIMModelProperties
-        self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = self.collection.BIMCollectionProperties.obj
+        self.container = None
+        if container := tool.Root.get_default_container():
+            self.container = container
+            self.container_obj = tool.Ifc.get_object(container)
         self.depth = props.extrusion_depth
         self.rotation = 0
         self.location = Vector((0, 0, 0))
@@ -83,9 +85,8 @@ class DumbProfileGenerator:
         ):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
         matrix_world.translation = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world.translation.z = self.collection_obj.location.z
-        self.collection.objects.link(obj)
+        if self.container_obj:
+            matrix_world.translation.z = self.container_obj.location.z
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,

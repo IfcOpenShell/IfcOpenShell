@@ -708,10 +708,6 @@ class Spatial(blenderbim.core.tool.Spatial):
             obj.location = obj.location + Vector((0, 0, z))
 
     @classmethod
-    def link_obj_to_active_collection(cls, obj):
-        bpy.context.view_layer.active_layer_collection.collection.objects.link(obj)
-
-    @classmethod
     def get_2d_vertices_from_obj(cls, obj):
         points = []
         vectors = [v.co for v in obj.data.vertices.values()]
@@ -772,20 +768,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         blenderbim.core.type.assign_type(ifc, Type, element=element, type=relating_type)
 
     @classmethod
-    def assign_container_to_obj(cls, obj):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        container = ifcopenshell.util.element.get_container(element)
-        container_obj = tool.Ifc.get_object(container)
-        blenderbim.core.spatial.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, structure_obj=container_obj, element_obj=obj
-        )
-
-    @classmethod
-    def regen_obj_representation(cls, ifc, geometry, obj, body):
+    def regen_obj_representation(cls, obj, body):
         blenderbim.core.geometry.switch_representation(
-            ifc,
-            geometry,
+            tool.Ifc,
+            tool.Geometry,
             obj=obj,
             representation=body,
             should_reload=True,

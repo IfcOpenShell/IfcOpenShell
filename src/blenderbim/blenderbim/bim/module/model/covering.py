@@ -22,6 +22,7 @@ import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.core.covering as core
 
+
 class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_flooring_covering_from_cursor"
     bl_label = "Add Flooring From Cursor"
@@ -30,28 +31,16 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
 
     @classmethod
     def poll(cls, context):
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
         relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        return tool.Ifc.get_entity(collection_obj) and relating_type == "FLOORING"
+        return relating_type == "FLOORING"
 
     def _execute(self, context):
+        try:
+            core.add_instance_flooring_covering_from_cursor(tool.Ifc, tool.Root, tool.Spatial)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
 
-        def msg(self, context):
-            self.layout.label(text="NO ACTIVE STOREY")
-
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        if not collection_obj:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            return
-        spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            return
-
-        core.add_instance_flooring_covering_from_cursor(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
 
 class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_ceiling_covering_from_cursor"
@@ -61,28 +50,16 @@ class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator
 
     @classmethod
     def poll(cls, context):
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
         relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        return tool.Ifc.get_entity(collection_obj) and relating_type == "CEILING"
+        return relating_type == "CEILING"
 
     def _execute(self, context):
+        try:
+            core.add_instance_ceiling_covering_from_cursor(tool.Ifc, tool.Root, tool.Covering, tool.Spatial)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
 
-        def msg(self, context):
-            self.layout.label(text="NO ACTIVE STOREY")
-
-        collection = context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
-        if not collection_obj:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            return
-        spatial_element = tool.Ifc.get_entity(collection_obj)
-        if not spatial_element:
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            return
-
-        core.add_instance_ceiling_covering_from_cursor(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry, tool.Covering)
 
 class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.regen_selected_covering_object"
@@ -92,39 +69,31 @@ class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
+        element = tool.Ifc.get_entity(bpy.context.active_object)
         return element and element.is_a("IfcCovering")
 
     def _execute(self, context):
-
-        def msg(self, context):
-            self.layout.label(text="NO ACTIVE STOREY")
-
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
-        if not  element.is_a("IfcCovering"):
-            bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-            return
-
-        core.regen_selected_covering_object(tool.Ifc, tool.Spatial, tool.Model, tool.Type, tool.Geometry)
+        try:
+            core.regen_selected_covering_object(tool.Root, tool.Spatial)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
 
 
 class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_flooring_coverings_from_walls"
     bl_label = "Add Flooring From Walls"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add instance flooring coverings from selected walls. The active object must be a wall and layered vertically"
+    bl_description = (
+        "Add instance flooring coverings from selected walls. The active object must be a wall and layered vertically"
+    )
 
     @classmethod
     def poll(cls, context):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
+        element = tool.Ifc.get_entity(bpy.context.active_object)
         relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        if element:
-            if element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-                return context.selected_objects and relating_type == "FLOORING"
+        if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
+            return context.selected_objects and relating_type == "FLOORING"
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -132,40 +101,27 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
         # In order to run, the active object must be a wall and
         # there must be selected walls
 
-        active_obj = bpy.context.active_object
-        if not active_obj:
-            self.report({"ERROR"}, "No active object. Please select a wall")
-            return
+        try:
+            core.add_instance_flooring_coverings_from_walls(tool.Root, tool.Spatial)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
 
-        element = tool.Ifc.get_entity(active_obj)
-        if element and not element.is_a("IfcWall"):
-            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
-
-        container = ifcopenshell.util.element.get_container(element)
-        if not container:
-            self.report({"ERROR"}, "The wall is not contained.")
-
-        if not bpy.context.selected_objects:
-            self.report({"ERROR"}, "No selected objects found. Please select walls.")
-            return
-
-        core.add_instance_flooring_coverings_from_walls(tool.Ifc, tool.Spatial, tool.Collector, tool.Geometry)
 
 class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_instance_ceiling_coverings_from_walls"
     bl_label = "Add Ceiling From Walls"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add instance ceiling coverings from selected walls. The active object must be a wall and layered vertically"
+    bl_description = (
+        "Add instance ceiling coverings from selected walls. The active object must be a wall and layered vertically"
+    )
 
     @classmethod
     def poll(cls, context):
-        active_obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(active_obj)
+        element = tool.Ifc.get_entity(bpy.context.active_object)
         relating_type_id = int(bpy.data.scenes["Scene"].BIMModelProperties.relating_type_id)
         relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        if element:
-            if element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-                return context.selected_objects and relating_type == "CEILING"
+        if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
+            return context.selected_objects and relating_type == "CEILING"
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -173,22 +129,7 @@ class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator
         # In order to run, the active object must be a wall and
         # there must be selected walls
 
-        active_obj = bpy.context.active_object
-        if not active_obj:
-            self.report({"ERROR"}, "No active object. Please select a wall")
-            return
-
-        element = tool.Ifc.get_entity(active_obj)
-        if element and not element.is_a("IfcWall"):
-            return self.report({"ERROR"}, "The active object is not a wall. Please select a wall.")
-
-        container = ifcopenshell.util.element.get_container(element)
-        if not container:
-            self.report({"ERROR"}, "The wall is not contained.")
-
-        if not bpy.context.selected_objects:
-            self.report({"ERROR"}, "No selected objects found. Please select walls.")
-            return
-
-        core.add_instance_ceiling_coverings_from_walls(tool.Ifc, tool.Spatial, tool.Collector, tool.Geometry, tool.Covering)
-
+        try:
+            core.add_instance_ceiling_coverings_from_walls(tool.Root, tool.Spatial, tool.Covering)
+        except core.NoDefaultContainer:
+            return self.report({"ERROR"}, "Please set a default container to create the covering in.")
