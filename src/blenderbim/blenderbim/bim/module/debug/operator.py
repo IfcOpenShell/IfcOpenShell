@@ -26,6 +26,7 @@ import platform
 import subprocess
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation

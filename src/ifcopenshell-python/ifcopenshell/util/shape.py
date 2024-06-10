@@ -23,6 +23,7 @@ import numpy.typing as npt
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+from ifcopenshell.geom import ShapeElementType, ShapeType
 from typing import Optional, Literal, Union, Iterable
 
 tol = 1e-6
@@ -50,7 +51,7 @@ def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     return abs(x - value) < tolerance
 
 
-def get_volume(geometry) -> float:
+def get_volume(geometry: ShapeType) -> float:
     """Calculates the total internal volume of a geometry
 
     Volumes of non-manifold geometry will be unpredictable.
@@ -81,7 +82,7 @@ def get_volume(geometry) -> float:
     return abs(sum(volumes))
 
 
-def get_x(geometry) -> float:
+def get_x(geometry: ShapeType) -> float:
     """Calculates the X length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -93,7 +94,7 @@ def get_x(geometry) -> float:
     return max(x_values) - min(x_values)
 
 
-def get_y(geometry) -> float:
+def get_y(geometry: ShapeType) -> float:
     """Calculates the Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -105,7 +106,7 @@ def get_y(geometry) -> float:
     return max(y_values) - min(y_values)
 
 
-def get_z(geometry) -> float:
+def get_z(geometry: ShapeType) -> float:
     """Calculates the Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -117,7 +118,7 @@ def get_z(geometry) -> float:
     return max(z_values) - min(z_values)
 
 
-def get_max_xy(geometry) -> float:
+def get_max_xy(geometry: ShapeType) -> float:
     """Gets the maximum X or Y length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -128,7 +129,7 @@ def get_max_xy(geometry) -> float:
     return max(get_x(geometry), get_y(geometry))
 
 
-def get_max_xyz(geometry) -> float:
+def get_max_xyz(geometry: ShapeType) -> float:
     """Gets the maximum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -139,7 +140,7 @@ def get_max_xyz(geometry) -> float:
     return max(get_x(geometry), get_y(geometry), get_z(geometry))
 
 
-def get_min_xyz(geometry) -> float:
+def get_min_xyz(geometry: ShapeType) -> float:
     """Gets the minimum X, Y, or Z length of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -150,7 +151,7 @@ def get_min_xyz(geometry) -> float:
     return min(get_x(geometry), get_y(geometry), get_z(geometry))
 
 
-def get_shape_matrix(shape) -> MatrixType:
+def get_shape_matrix(shape: ShapeElementType) -> MatrixType:
     """Formats the transformation matrix of a shape as a 4x4 numpy array
 
     :param shape: Shape output calculated by IfcOpenShell
@@ -161,7 +162,7 @@ def get_shape_matrix(shape) -> MatrixType:
     return np.array(shape.transformation.matrix).reshape((4, 4), order="F")
 
 
-def get_bbox_centroid(geometry) -> tuple[float, float, float]:
+def get_bbox_centroid(geometry: ShapeType) -> tuple[float, float, float]:
     """Calculates the bounding box centroid of the geometry
 
     The centroid is in local coordinates relative to the object's placement.
@@ -206,7 +207,7 @@ def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry) -
     return (mat @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_shape_bbox_centroid(shape, geometry) -> npt.NDArray[np.float64]:
+def get_shape_bbox_centroid(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
@@ -223,7 +224,7 @@ def get_shape_bbox_centroid(shape, geometry) -> npt.NDArray[np.float64]:
     return (get_shape_matrix(shape) @ np.array([*centroid, 1.0]))[0:3]
 
 
-def get_vertices(geometry) -> npt.NDArray[np.float64]:
+def get_vertices(geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get all the vertices as a numpy array
 
     Vertices are in local coordinates.
@@ -239,7 +240,7 @@ def get_vertices(geometry) -> npt.NDArray[np.float64]:
     return np.array([np.array([verts[i], verts[i + 1], verts[i + 2]]) for i in range(0, len(verts), 3)])
 
 
-def get_edges(geometry) -> npt.NDArray[np.int32]:
+def get_edges(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get all the edges as a numpy array
 
     Results are a nested numpy array e.g. [[e1v1, e1v2], [e2v1, e2v2], ...]
@@ -257,7 +258,7 @@ def get_edges(geometry) -> npt.NDArray[np.int32]:
     return np.array([[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)])
 
 
-def get_faces(geometry) -> npt.NDArray[np.int32]:
+def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get all the faces as a numpy array
 
     Faces are always triangulated. If the shape is a BRep and you want to get
@@ -274,7 +275,7 @@ def get_faces(geometry) -> npt.NDArray[np.int32]:
     return np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
 
 
-def get_shape_vertices(shape, geometry) -> npt.NDArray[np.float64]:
+def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
@@ -294,7 +295,7 @@ def get_shape_vertices(shape, geometry) -> npt.NDArray[np.float64]:
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_element_vertices(element: ifcopenshell.entity_instance, geometry) -> npt.NDArray[np.float64]:
+def get_element_vertices(element: ifcopenshell.entity_instance, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
@@ -316,7 +317,7 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry) -> npt
     return np.delete((mat @ np.hstack((verts, np.ones((len(verts), 1)))).T).T, -1, axis=1)
 
 
-def get_bottom_elevation(geometry) -> float:
+def get_bottom_elevation(geometry: ShapeType) -> float:
     """Gets the lowest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -328,7 +329,7 @@ def get_bottom_elevation(geometry) -> float:
     return min(z_values)
 
 
-def get_top_elevation(geometry) -> float:
+def get_top_elevation(geometry: ShapeType) -> float:
     """Gets the highest local Z ordinate of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -340,7 +341,7 @@ def get_top_elevation(geometry) -> float:
     return max(z_values)
 
 
-def get_shape_bottom_elevation(shape, geometry) -> float:
+def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     """Gets the lowest global Z ordinate of the shape
 
     If you do not have the shape, you can use ``get_element_bottom_elevation``
@@ -356,7 +357,7 @@ def get_shape_bottom_elevation(shape, geometry) -> float:
     return min([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_shape_top_elevation(shape, geometry) -> float:
+def get_shape_top_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     """Gets the highest global Z ordinate of the shape
 
     If you do not have the shape, you can use ``get_element_top_elevation``
@@ -372,7 +373,7 @@ def get_shape_top_elevation(shape, geometry) -> float:
     return max([v[2] for v in get_shape_vertices(shape, geometry)])
 
 
-def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry) -> float:
+def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry: ShapeType) -> float:
     """Gets the lowest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -388,7 +389,7 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
     return min([v[2] for v in get_element_vertices(element, geometry)])
 
 
-def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry) -> float:
+def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: ShapeType) -> float:
     """Gets the highest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
@@ -451,7 +452,7 @@ def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32])
     return mesh_area
 
 
-def get_area(geometry) -> float:
+def get_area(geometry: ShapeType) -> float:
     """Calculates the surface area of the geometry
 
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -467,7 +468,7 @@ def get_area(geometry) -> float:
 
 
 def get_side_area(
-    geometry,
+    geometry: ShapeType,
     axis: AXIS_LITERAL = "Y",
     direction: Optional[VECTOR_3D] = None,
 ) -> float:
@@ -518,7 +519,7 @@ def get_side_area(
     return get_area_vf(vertices, filtered_faces)
 
 
-def get_max_side_area(geometry) -> float:
+def get_max_side_area(geometry: ShapeType) -> float:
     """Returns the maximum X, Y, or Z side area
 
     See :func:`get_side_area` for how side area is calculated.
@@ -532,7 +533,7 @@ def get_max_side_area(geometry) -> float:
 
 
 def get_footprint_area(
-    geometry,
+    geometry: ShapeType,
     axis: AXIS_LITERAL = "Z",
     direction: Optional[VECTOR_3D] = None,
 ) -> float:
@@ -615,7 +616,7 @@ def get_footprint_area(
     return unioned_polygon.area
 
 
-def get_outer_surface_area(geometry) -> float:
+def get_outer_surface_area(geometry: ShapeType) -> float:
     """Calculates the outer surface area (i.e. all sides except for top and bottom)
 
     This is typically useful for calculating painted areas of beams which
@@ -645,7 +646,7 @@ def get_outer_surface_area(geometry) -> float:
     return get_area_vf(vertices, filtered_faces)
 
 
-def get_footprint_perimeter(geometry) -> float:
+def get_footprint_perimeter(geometry: ShapeType) -> float:
     """Calculates the footprint perimeter of the geometry
 
     All faces with a negative Z normal are considered and the distance of all

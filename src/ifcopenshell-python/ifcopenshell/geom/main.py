@@ -27,7 +27,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator
+from typing import TypeVar, Union, Optional, Generator, Any
 
 T = TypeVar("T")
 ShapeElementType = Union[
@@ -87,7 +87,12 @@ class settings_mixin:
     def rname(k):
         return k.upper().replace('-', '_')
     
-    def set(self, k, v):
+    def set(self, k: str, v: Any) -> None:
+        """
+        Set value of the setting named `k` to `v`.
+
+        :raises RuntimeError: If there is no setting with name `k`.
+        """
         if k == "USE_PYTHON_OPENCASCADE":
             if not has_occ:
                 raise ArgumentError("Python OpenCASCADE is not installed")
@@ -98,7 +103,13 @@ class settings_mixin:
         else:
             self.set_(self.name(k), v)
         
-    def get(self, k):
+    def get(self, k: str) -> Any:
+        """
+        Return value of the setting named `k`.
+
+        :raises RuntimeError: If there is no setting with name `k`.
+        """
+        
         return self.get_(self.name(k))
 
     def __getattr__(self, k):
@@ -247,7 +258,7 @@ class tree(ifcopenshell_wrapper.tree):
 
 def create_shape(
     settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None
-) -> ifcopenshell_wrapper.TriangulationElement:
+) -> ShapeElementType:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
