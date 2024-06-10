@@ -26,6 +26,10 @@
  *                                                                              *
  ********************************************************************************/
 
+// windows stuff: defines max as a macro when including windows.h
+// error C2589: '(': illegal token on right side of '::'
+#define NOMINMAX
+
 #include "../serializers/ColladaSerializer.h"
 #include "../serializers/GltfSerializer.h"
 #include "../serializers/HdfSerializer.h"
@@ -841,7 +845,7 @@ int main(int argc, char** argv) {
 #endif
 #ifdef WITH_USD
 	} else if (output_extension == USD || output_extension == USDA || output_extension == USDC) {
-		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), settings);
+		serializer = boost::make_shared<USDSerializer>(IfcUtil::path::to_utf8(output_filename), geometry_settings, serializer_settings);
 #endif
 #ifdef IFOPSH_WITH_OPENCASCADE
 	} else if (output_extension == STP) {
