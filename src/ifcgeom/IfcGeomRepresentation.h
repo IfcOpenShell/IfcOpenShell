@@ -108,7 +108,7 @@ namespace IfcGeom {
 			std::vector<double> _normals;
 			std::vector<double> uvs_;
 			std::vector<int> _material_ids;
-			std::vector<ifcopenshell::geometry::taxonomy::style> _materials;
+			std::vector<ifcopenshell::geometry::taxonomy::style::ptr> _materials;
 			std::vector<int> _item_ids;
 			size_t weld_offset_;
 			VertexKeyMap welds;
@@ -127,7 +127,7 @@ namespace IfcGeom {
 			std::vector<double>& uvs() { return uvs_; }
 			const std::vector<double>& uvs() const { return uvs_; }
 			const std::vector<int>& material_ids() const { return _material_ids; }
-			const std::vector<ifcopenshell::geometry::taxonomy::style>& materials() const { return _materials; }
+			const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials() const { return _materials; }
 			const std::vector<int>& item_ids() const { return _item_ids; }
 
 			Triangulation(const BRep& shape_model);
@@ -142,7 +142,7 @@ namespace IfcGeom {
 				const std::vector<double>& normals,
 				const std::vector<double>& uvs,
 				const std::vector<int>& material_ids,
-				const std::vector<ifcopenshell::geometry::taxonomy::style>& materials,
+				const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& materials,
 				const std::vector<int>& item_ids
 			)
 				: Representation(settings, entity)

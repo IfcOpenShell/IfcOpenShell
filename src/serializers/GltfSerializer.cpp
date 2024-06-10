@@ -86,29 +86,29 @@ void GltfSerializer::writeHeader() {
 	json_["materials"] = json::array();
 }
 
-int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
-	auto it = materials_.find(style.name);
+int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style) {
+	auto it = materials_.find(style->name);
 	if (it != materials_.end()) {
 		return it->second;
 	}
 	
 	int idx = json_["materials"].size();
-	materials_[style.name] = idx;
+	materials_[style->name] = idx;
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style.diffuse) {
+	if (style->diffuse) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style.diffuse.ccomponents()(i);
+			base[i] = style->diffuse.ccomponents()(i);
 		}
 	}
-	if (style.transparency == style.transparency) {
-		base[3] = 1. - style.transparency;
+	if (style->transparency == style->transparency) {
+		base[3] = 1. - style->transparency;
 	}
 
 	json_["materials"].push_back({ {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
 	
-	if (style.transparency == style.transparency && style.transparency > 1.e-9) {
+	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 

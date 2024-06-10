@@ -31,9 +31,9 @@
 #include <memory>
 
 namespace IfcGeom {
-	IFC_GEOM_API const ifcopenshell::geometry::taxonomy::style& get_default_style(const std::string& ifc_type);
+	IFC_GEOM_API const ifcopenshell::geometry::taxonomy::style::ptr& get_default_style(const std::string& ifc_type);
 
-	IFC_GEOM_API ifcopenshell::geometry::taxonomy::style& update_default_style(const std::string& ifc_type);
+	IFC_GEOM_API ifcopenshell::geometry::taxonomy::style::ptr& update_default_style(const std::string& ifc_type);
 
 	IFC_GEOM_API void set_default_style_file(const std::string& json_file);
 }

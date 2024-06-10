@@ -40,8 +40,6 @@
 	}
 }
 
-%template(material_vector) std::vector<ifcopenshell::geometry::taxonomy::style>;
-
 // SWIG does not support bool references in a meaningful way, so the
 // ifcopenshell::geometry::Settings functions degrade to return a read only value
 %typemap(out) double& {
@@ -197,6 +195,8 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 %include "../serializers/WavefrontObjSerializer.h"
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
+
+%template(material_vector) std::vector<ifcopenshell::geometry::taxonomy::style::ptr>;
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
@@ -529,7 +529,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     PyObject* colors_buffer() const {
         std::vector<double> clrs;
         clrs.reserve(self->materials().size() * 4);
-        for (auto& m : self->materials()) {
+        for (auto& mptr : self->materials()) {
+			auto& m = *mptr;
             if (m.diffuse) {
                 clrs.push_back(m.diffuse.ccomponents()[0]);
                 clrs.push_back(m.diffuse.ccomponents()[1]);

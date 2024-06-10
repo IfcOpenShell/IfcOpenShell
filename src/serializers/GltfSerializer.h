@@ -39,7 +39,7 @@ private:
 	boost::optional<json> ecef_transform_, north_rotation_;
 	int bufferViewId;
 
-	int writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
+	int writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
 public:
 	GltfSerializer(const std::string& filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings);
 	virtual ~GltfSerializer();
