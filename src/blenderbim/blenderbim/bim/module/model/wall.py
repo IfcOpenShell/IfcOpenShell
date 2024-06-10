@@ -34,7 +34,7 @@ import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, radians
+from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from typing import Optional
@@ -449,8 +449,10 @@ class DumbWallGenerator:
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
         props = bpy.context.scene.BIMModelProperties
-        self.collection = bpy.context.view_layer.active_layer_collection.collection
-        self.collection_obj = self.collection.BIMCollectionProperties.obj
+        self.container = None
+        if container := tool.Root.get_default_container():
+            self.container = container
+            self.container_obj = tool.Ifc.get_object(container)
         self.width = self.layers["thickness"]
         self.height = props.extrusion_depth
         self.length = props.length
@@ -540,11 +542,12 @@ class DumbWallGenerator:
     def derive_from_cursor(self):
         RAYCAST_PRECISION = 0.01
         self.location = bpy.context.scene.cursor.location
-        if self.collection:
-            for sibling_obj in self.collection.objects:
-                if not isinstance(sibling_obj.data, bpy.types.Mesh):
+        if self.container:
+            for subelement in ifcopenshell.util.element.get_decomposition(self.container):
+                if not subelement.is_a("IfcWall"):
                     continue
-                if "IfcWall" not in sibling_obj.name:
+                sibling_obj = tool.Ifc.get_object(subelement)
+                if not sibling_obj or not isinstance(sibling_obj.data, bpy.types.Mesh):
                     continue
                 inv_obj_matrix = sibling_obj.matrix_world.inverted()
                 local_location = inv_obj_matrix @ self.location
@@ -594,11 +597,10 @@ class DumbWallGenerator:
 
         matrix_world = Matrix.Rotation(self.rotation, 4, "Z")
         matrix_world.translation = self.location
-        if self.collection_obj and self.collection_obj.BIMObjectProperties.ifc_definition_id:
-            matrix_world.translation.z = self.collection_obj.location.z + props.rl1
+        if self.container_obj:
+            matrix_world.translation.z = self.container_obj.location.z + props.rl1
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
-        self.collection.objects.link(obj)
 
         element = blenderbim.core.root.assign_class(
             tool.Ifc,
