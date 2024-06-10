@@ -46,7 +46,7 @@
 
 #include "../ifcparse/utils.h"
 
-#ifdef IFOPSH_WITH_CGAL
+#ifdef IFOPSH_WITH_CITYJSON
 #include "./cityjson/geobim.h"
 #endif
 
