@@ -57,13 +57,15 @@ if has_occ:
 class missing_setting:
     def __repr__(self): return '-'
 
-class settings_mixin:
+class settings_mixin:  
     """
     Pythonic interface mixin to the settings modules and
     to provide an additional setting to enable pythonOCC
     when available
     """
-    
+
+    USE_PYTHON_OPENCASCADE = 'USE_PYTHON_OPENCASCADE'
+
     def __init__(self, **kwargs):
         super(settings_mixin, self).__init__()
         for k, v in kwargs.items():
@@ -95,7 +97,7 @@ class settings_mixin:
         """
         if k == "USE_PYTHON_OPENCASCADE":
             if not has_occ:
-                raise ArgumentError("Python OpenCASCADE is not installed")
+                raise AttributeError("Python OpenCASCADE is not installed")
             if v:
                 self.set_("iterator-output", ifcopenshell_wrapper.SERIALIZED)
                 self.set_("use-world-coords", True)
