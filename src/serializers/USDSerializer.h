@@ -22,8 +22,11 @@
 
 #ifdef WITH_USD
 
+#define __TBB_NO_IMPLICIT_LINKAGE 1
+#define __TBB_LIB_NAME bier
+
 #include "../serializers/serializers_api.h"
-#include "../ifcgeom_schema_agnostic/GeometrySerializer.h"
+#include "../ifcgeom/GeometrySerializer.h"
 #include "../ifcparse/utils.h"
 
 // undefine opencascade Handle macro, because it conflicts with USD
@@ -67,10 +70,10 @@ private:
 	std::map<std::string, pxr::UsdShadeMaterial> materials_;
 	std::map<std::string, std::string> meshes_;
 
-	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<IfcGeom::Material>&);
-	pxr::GfVec3f rotation_degrees_from_matrix(const std::vector<double>&) const;
+	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&);
+	pxr::GfVec3f rotation_degrees_from_matrix(const double*) const;
 public:
-	USDSerializer(const std::string&, const SerializerSettings&);
+	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&);
 	virtual ~USDSerializer();
 	bool ready() { return ready_; }
 	void writeHeader();

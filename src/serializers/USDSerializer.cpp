@@ -19,6 +19,10 @@
 
 #ifdef WITH_USD
 
+ // windows stuff: defines max as a macro when including windows.h
+ // error C2589: '(': illegal token on right side of '::'
+#define NOMINMAX
+
 #include "USDSerializer.h"
 
 #include "pxr/base/gf/vec3f.h"
@@ -32,8 +36,8 @@
 
 #include <math.h>
 
-USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSettings& settings):
-	WriteOnlyGeometrySerializer(settings),
+USDSerializer::USDSerializer(const std::string& out_filename, const ifcopenshell::geometry::Settings& geometry_settings, const ifcopenshell::geometry::SerializerSettings& settings):
+	WriteOnlyGeometrySerializer(geometry_settings, settings),
 	filename_(out_filename)
 {
 	std::size_t found = filename_.find_last_of("/\\");
@@ -43,8 +47,9 @@ USDSerializer::USDSerializer(const std::string& out_filename, const SerializerSe
 	if(!stage_)
 		throw std::runtime_error("Could not create USD stage");
 
-	if(!settings.get(SerializerSettings::USE_Y_UP))
-		pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
+    if (!settings.get<ifcopenshell::geometry::settings::UseYUp>().get()) {
+        pxr::UsdGeomSetStageUpAxis(stage_, pxr::UsdGeomTokens->z);
+    }
 
 	pxr::UsdGeomSetStageMetersPerUnit(stage_, 1.0f);
 
@@ -61,15 +66,16 @@ USDSerializer::~USDSerializer() {
 
 }
 
-std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const std::vector<IfcGeom::Material>& styles) 
+std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles)
 {
   	if(styles.empty())
   	  	throw std::runtime_error("No styles to create materials from");
 
   	std::vector<pxr::UsdShadeMaterial> materials {};
 
-  	for(auto style : styles) {
-		std::string material_path(style.original_name());
+  	for(auto styleptr : styles) {
+        auto& style = *styleptr;
+        std::string material_path(style.name);
 		usd_utils::toPath(material_path);
 
 		if(materials_.find(material_path) != materials_.end()) {
@@ -83,18 +89,18 @@ std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const std::vec
   	  	shader.CreateIdAttr().Set(pxr::TfToken("UsdPreviewSurface"));
 
   	  	float rgba[4] { 0.18f, 0.18f, 0.18f, 1.0f };
-  	  	if (style.hasDiffuse())
+  	  	if (style.diffuse)
 			for (int i = 0; i < 3; ++i)
-  	  	    	rgba[i] = static_cast<float>(style.diffuse()[i]);
+  	  	    	rgba[i] = static_cast<float>(style.diffuse.ccomponents()(i));
   	  	shader.CreateInput(pxr::TfToken("diffuseColor"), pxr::SdfValueTypeNames->Color3f).Set(pxr::GfVec3f(rgba[0], rgba[1], rgba[2]));
 
-  	  	if(style.hasTransparency())
-  	  		rgba[3] -= style.transparency();
+        if (style.has_transparency())
+            rgba[3] -= style.transparency;
   	  	shader.CreateInput(pxr::TfToken("opacity"), pxr::SdfValueTypeNames->Float).Set(rgba[3]);
 
-  	  	if(style.hasSpecular()) {
+  	  	if(style.specular) {
   	  		for (int i = 0; i < 3; ++i)
-  	  	    	rgba[i] = static_cast<float>(style.specular()[i]);
+  	  	    	rgba[i] = static_cast<float>(style.specular.ccomponents()(i));
   	  	  	shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(1);
   	  	} else {
   	  	  	shader.CreateInput(pxr::TfToken("useSpecularWorkflow"), pxr::SdfValueTypeNames->Int).Set(0);
@@ -109,7 +115,7 @@ std::vector<pxr::UsdShadeMaterial> USDSerializer::createMaterials(const std::vec
   	return materials;
 }
 
-pxr::GfVec3f USDSerializer::rotation_degrees_from_matrix(const std::vector<double>& matrix) const {
+pxr::GfVec3f USDSerializer::rotation_degrees_from_matrix(const double* matrix) const {
 		const double epsilon = 1e-6;
     	double angleX, angleY, angleZ;
 
@@ -137,7 +143,7 @@ void USDSerializer::write(const IfcGeom::TriangulationElement* o) {
   	const auto verts = mesh.verts();
   	const auto faces = mesh.faces();
   	const auto material_ids = mesh.material_ids();
-  	const std::vector<double>& m = o->transformation().matrix().data();
+    auto m = o->transformation().data()->ccomponents().data();
 
 	if (material_ids.empty() || verts.empty() || faces.empty())
 		return;
