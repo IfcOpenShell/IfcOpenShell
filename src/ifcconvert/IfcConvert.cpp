@@ -823,7 +823,7 @@ int main(int argc, char** argv) {
 	}
 
 	if (geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has()) {
-		IfcGeom::update_default_style("IfcSpace").transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
+		IfcGeom::update_default_style("IfcSpace")->transparency = geometry_settings.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().get();
 	}
 
 	if (output_extension == OBJ || output_extension == STP || output_extension == IGS) {
