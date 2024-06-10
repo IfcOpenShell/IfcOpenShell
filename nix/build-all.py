@@ -205,7 +205,7 @@ dependency_tree = {
     'cgal': (),
     'eigen': (),
     'freetype': (),
-    'usd': ('boost', 'oneTBB')
+    # 'usd': ('boost', 'oneTBB')
 }
 
 def v(dep):
