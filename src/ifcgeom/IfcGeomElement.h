@@ -42,7 +42,13 @@ namespace IfcGeom {
 			: settings_(settings)
 			, matrix_(matrix)
 		{}
-		const ifcopenshell::geometry::taxonomy::matrix4::ptr& data() const { return matrix_; }
+		const ifcopenshell::geometry::taxonomy::matrix4::ptr& data() const {
+			if (matrix_) {
+				return matrix_;
+			}
+			static ifcopenshell::geometry::taxonomy::matrix4::ptr iden = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+			return iden;
+		}
 	};
 
 	class Element {
