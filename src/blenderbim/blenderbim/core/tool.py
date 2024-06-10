@@ -602,7 +602,6 @@ class Project:
     def run_owner_set_user(cls, user=None): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
     def run_unit_assign_scene_units(cls): pass
-    def set_active_spatial_element(cls, obj): pass
     def set_context(cls, context): pass
     def set_default_context(cls): pass
     def set_default_modeling_dimensions(cls): pass
