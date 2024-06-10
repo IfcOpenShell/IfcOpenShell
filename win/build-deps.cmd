@@ -514,44 +514,44 @@ set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
-:tbb
-set DEPENDENCY_NAME=tbb
-set DEPENDENCY_DIR=%DEPS_DIR%\tbb
-call :GitCloneAndCheckoutRevision https://github.com/wjakob/tbb  "%DEPENDENCY_DIR%" 9e219e24fe223b299783200f217e9d27790a87b0
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"  ^
-               -DBUILD_SHARED_LIBS=Off
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\TBB.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-
-:usd
-set DEPENDENCY_NAME=usd
-set DEPENDENCY_DIR=%DEPS_DIR%\usd
-call :GitCloneAndCheckoutRevision https://github.com/PixarAnimationStudios/OpenUSD "%DEPENDENCY_DIR%" v24.05
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-cd "%DEPENDENCY_DIR%"
-call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
-               -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
-               -DOneTBB_CMAKE_ENABLE=On                    ^
-               -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
-               -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
-               -DPXR_ENABLE_GL_SUPPORT=FALSE               ^
-               -DPXR_BUILD_IMAGING=FALSE                   ^
-               -DPXR_BUILD_TUTORIALS=FALSE                 ^
-               -DPXR_BUILD_EXAMPLES=FALSE                  ^
-               -DPXR_BUILD_USD_TOOLS=FALSE                 ^
-               -DPXR_BUILD_TESTS=FALSE                     ^
-               -DBUILD_SHARED_LIBS=Off                     ^
-               -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
-IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: :tbb
+:: set DEPENDENCY_NAME=tbb
+:: set DEPENDENCY_DIR=%DEPS_DIR%\tbb
+:: call :GitCloneAndCheckoutRevision https://github.com/wjakob/tbb  "%DEPENDENCY_DIR%" 9e219e24fe223b299783200f217e9d27790a87b0
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"  ^
+::                -DBUILD_SHARED_LIBS=Off
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\TBB.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: 
+:: :usd
+:: set DEPENDENCY_NAME=usd
+:: set DEPENDENCY_DIR=%DEPS_DIR%\usd
+:: call :GitCloneAndCheckoutRevision https://github.com/PixarAnimationStudios/OpenUSD "%DEPENDENCY_DIR%" v24.05
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
+::                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
+::                -DOneTBB_CMAKE_ENABLE=On                    ^
+::                -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
+::                -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
+::                -DPXR_ENABLE_GL_SUPPORT=FALSE               ^
+::                -DPXR_BUILD_IMAGING=FALSE                   ^
+::                -DPXR_BUILD_TUTORIALS=FALSE                 ^
+::                -DPXR_BUILD_EXAMPLES=FALSE                  ^
+::                -DPXR_BUILD_USD_TOOLS=FALSE                 ^
+::                -DPXR_BUILD_TESTS=FALSE                     ^
+::                -DBUILD_SHARED_LIBS=Off                     ^
+::                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Successful
 echo.
