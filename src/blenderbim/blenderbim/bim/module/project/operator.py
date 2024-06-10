@@ -47,6 +47,7 @@ from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
+from ifcopenshell.geom import ShapeElementType, ShapeType
 from blenderbim.bim.module.project.data import LinksData
 from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from typing import Union
@@ -1453,7 +1454,7 @@ class LoadLinkedProject(bpy.types.Operator):
             break
         return {"FINISHED"}
 
-    def is_local(self, shape):
+    def is_local(self, shape: ShapeElementType) -> bool:
         m = shape.transformation.matrix
         if max([abs(co) for co in (m[9], m[10], m[11])]) > 1000:
             return False
@@ -1461,7 +1462,7 @@ class LoadLinkedProject(bpy.types.Operator):
             return False
         return True
 
-    def process_occurrence(self, shape):
+    def process_occurrence(self, shape: ShapeElementType) -> None:
         element = self.file.by_id(shape.id)
         matrix = shape.transformation.matrix
         faces = shape.geometry.faces

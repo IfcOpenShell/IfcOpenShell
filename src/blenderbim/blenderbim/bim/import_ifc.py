@@ -896,7 +896,7 @@ class IfcImporter:
 
     def create_generic_shape(
         self, element: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell_wrapper.TriangulationElement, None]:
+    ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         for settings in self.context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element)
@@ -1730,7 +1730,7 @@ class IfcImporter:
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
-                # shape is ifcopenshell_wrapper.TriangulationElement
+                # shape is ShapeElementType
                 geometry = shape.geometry
             else:
                 geometry = shape
