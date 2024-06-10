@@ -890,7 +890,6 @@ class Spatial:
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
     def translate_obj_to_z_location(cls, obj): pass
-    def link_obj_to_active_collection(cls, obj): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def get_scaled_2d_vertices(cls, points): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass

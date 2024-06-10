@@ -35,6 +35,7 @@ class Operator:
         blenderbim.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
+
 class CoveringTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -53,17 +54,18 @@ class CoveringTool(WorkSpaceTool):
     def draw_settings(cls, context, layout, ws_tool):
         CoveringToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
+
 def add_layout_hotkey(layout, text, hotkey, description):
     args = ["covering", layout, text, hotkey, description]
     tool.Blender.add_layout_hotkey_operator(*args)
 
+
 class CoveringToolUI:
     @classmethod
-    def draw(cls, context, layout, ifc_element_type = None):
+    def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
         cls.props = context.scene.BIMModelProperties
         cls.covering_props = context.scene.BIMCoveringProperties
-
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -82,8 +84,6 @@ class CoveringToolUI:
 
         cls.draw_default_interface()
 
-
-
     @classmethod
     def draw_header_interface(cls):
         cls.draw_type_selection_interface()
@@ -95,122 +95,35 @@ class CoveringToolUI:
         row = cls.layout.row(align=True)
         row.prop(data=cls.covering_props, property="ceiling_height", text="Ceiling Height")
         if AuthoringData.data["ifc_classes"]:
-            active_obj = bpy.context.active_object
-            element = tool.Ifc.get_entity(active_obj)
-            collection = bpy.context.view_layer.active_layer_collection.collection
-            collection_obj = collection.BIMCollectionProperties.obj
-
-            relating_type_id = int(cls.props.relating_type_id)
-            type_material_usage = ifcopenshell.util.element.get_material(tool.Ifc.get().by_id(relating_type_id)).is_a()
-
-#               PLEASE KEEP COMMENTS AS A REMINDER
-#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
-#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
-
-#            if (type_material_usage == "IfcMaterialLayerSet" and
-#                not bpy.context.selected_objects):
-#                row = cls.layout.row(align=True)
-#                row.label(text="", icon="EVENT_SHIFT")
-#                row.label(text="", icon="EVENT_A")
-#                if tool.Ifc.get_entity(collection_obj):
-#                    if AuthoringData.data["predefined_type"] == "FLOORING":
-#                        op = row.operator("bim.add_instance_flooring_covering_from_cursor")
-#                    elif AuthoringData.data["predefined_type"] == "CEILING":
-#                        op = row.operator("bim.add_instance_ceiling_covering_from_cursor")
-#                    else:
-#                        op = row.operator("bim.add_constr_type_instance", text="Add")
-#                        op.from_invoke = True
-#                        if cls.props.relating_type_id.isnumeric():
-#                            op.relating_type_id = int(cls.props.relating_type_id)
-#
-#                else:
-#                    op = row.operator("bim.add_constr_type_instance", text="Add")
-#                    op.from_invoke = True
-#                    if cls.props.relating_type_id.isnumeric():
-#                        op.relating_type_id = int(cls.props.relating_type_id)
-#
-#            elif (AuthoringData.data["predefined_type"] == "FLOORING" and
-#                type_material_usage == "IfcMaterialLayerSet" and
-#                element and
-#                bpy.context.selected_objects and
-#                element.is_a("IfcWall")):
-#                    row = cls.layout.row(align=True)
-#                    row.label(text="", icon="EVENT_SHIFT")
-#                    row.label(text="", icon="EVENT_A")
-#                    op = row.operator("bim.add_instance_flooring_coverings_from_walls")
-#
-#            elif (AuthoringData.data["predefined_type"] == "CEILING" and
-#                type_material_usage == "IfcMaterialLayerSet" and
-#                element and
-#                bpy.context.selected_objects and
-#                element.is_a("IfcWall")):
-#                    row = cls.layout.row(align=True)
-#                    row.label(text="", icon="EVENT_SHIFT")
-#                    row.label(text="", icon="EVENT_A")
-#                    op = row.operator("bim.add_instance_ceiling_coverings_from_walls")
-#
-#            elif (element and
-#                  bpy.context.selected_objects and
-#                  element.is_a("IfcCovering") and
-##                  AuthoringData.data["predefined_type"] == "FLOORING" and
-#                  AuthoringData.data["active_material_usage"] == "LAYER3"):
-#                row = cls.layout.row(align=True)
-#                row.label(text="", icon="EVENT_SHIFT")
-#                row.label(text="", icon="EVENT_G")
-#                op = row.operator("bim.regen_selected_covering_object")
-
+            row = cls.layout.row(align=True)
+            row.label(text="", icon="EVENT_SHIFT")
+            row.label(text="", icon="EVENT_A")
+            row.operator("bim.add_constr_type_instance", text="Add")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            op = row.operator("bim.add_constr_type_instance", text="Add")
+            row.operator("bim.add_instance_flooring_covering_from_cursor")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            op = row.operator("bim.add_instance_flooring_covering_from_cursor")
+            row.operator("bim.add_instance_ceiling_covering_from_cursor")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            op = row.operator("bim.add_instance_ceiling_covering_from_cursor")
+            row.operator("bim.add_instance_flooring_coverings_from_walls")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            op = row.operator("bim.add_instance_flooring_coverings_from_walls")
-
-            row = cls.layout.row(align=True)
-            row.label(text="", icon="EVENT_SHIFT")
-            row.label(text="", icon="EVENT_A")
-            op = row.operator("bim.add_instance_ceiling_coverings_from_walls")
+            row.operator("bim.add_instance_ceiling_coverings_from_walls")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_G")
-            op = row.operator("bim.regen_selected_covering_object")
-
-#            elif AuthoringData.data["predefined_type"] == "CEILING":
-#                row = cls.layout.row(align=True)
-#                row.prop(data=cls.props, property="ceiling_height", text="ceiling height")
-#                if element and bpy.context.selected_objects and element.is_a("IfcWall"):
-#                    op = row.operator("bim.add_instance_ceiling_coverings_from_walls")
-#                elif element and bpy.context.selected_objects and element.is_a("IfcSpace"):
-#                    op. = row.operator("bim.add_istance_flooring_from_spaces"):
-#                else:
-#                    op = row.operator("bim.add_instance_ceiling_from_cursor")
-#                    op = row.operator("bim.add_constr_type_instance", text="Add")
-#                    op.from_invoke = True
-#                    if cls.props.relating_type_id.isnumeric():
-#                        op.relating_type_id = int(cls.props.relating_type_id)
-#            else:
-#                row = cls.layout.row(align=True)
-#                row.label(text="", icon="EVENT_SHIFT")
-#                row.label(text="", icon="EVENT_A")
-#                op = row.operator("bim.add_constr_type_instance", text="Add")
-#                op.from_invoke = True
-#                if cls.props.relating_type_id.isnumeric():
-#                    op.relating_type_id = int(cls.props.relating_type_id)
+            row.operator("bim.regen_selected_covering_object")
 
     @classmethod
     def draw_type_selection_interface(cls):
@@ -256,7 +169,7 @@ class Hotkey(bpy.types.Operator, Operator):
         return operator.description or ""
 
     def _execute(self, context):
-#        self.props = context.scene.BIMCoveringProperties
+        #        self.props = context.scene.BIMCoveringProperties
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
@@ -270,20 +183,19 @@ class Hotkey(bpy.types.Operator, Operator):
     def hotkey_S_A(self):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        collection = bpy.context.view_layer.active_layer_collection.collection
-        collection_obj = collection.BIMCollectionProperties.obj
+        container = tool.Root.get_default_container()
 
         if AuthoringData.data["predefined_type"] == "FLOORING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_flooring_coverings_from_walls()
-            elif tool.Ifc.get_entity(collection_obj):
+            elif container:
                 bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
                 bpy.ops.bim.add_constr_type_instance()
         elif AuthoringData.data["predefined_type"] == "CEILING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
-            elif tool.Ifc.get_entity(collection_obj):
+            elif container:
                 bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
             else:
                 bpy.ops.bim.add_constr_type_instance()
@@ -293,9 +205,10 @@ class Hotkey(bpy.types.Operator, Operator):
     def hotkey_S_G(self):
         active_obj = bpy.context.active_object
         element = tool.Ifc.get_entity(active_obj)
-        if (element and
-            bpy.context.selected_objects and
-            element.is_a("IfcCovering") and
-            AuthoringData.data["active_material_usage"] == "LAYER3"):
-                bpy.ops.bim.regen_selected_covering_object()
-
+        if (
+            element
+            and bpy.context.selected_objects
+            and element.is_a("IfcCovering")
+            and AuthoringData.data["active_material_usage"] == "LAYER3"
+        ):
+            bpy.ops.bim.regen_selected_covering_object()

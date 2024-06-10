@@ -629,24 +629,18 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             # TODO : refactor to be able to generate all boundaries for selected space automatically or with an option
 
             def msg(self, context):
-                self.layout.label(text="NO ACTIVE STOREY")
+                self.layout.label(text="Please set an active container to detect space boundaries from.")
 
             element = tool.Ifc.get_entity(objs[0])
             if element.is_a("IfcSpace"):
                 relating_space = element
                 relating_space_obj = objs[0]
 
-            collection = context.view_layer.active_layer_collection.collection
-            collection_obj = bpy.data.objects.get(collection.name)
-            if not collection_obj:
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                return
-            spatial_element = tool.Ifc.get_entity(collection_obj)
-            if not spatial_element:
+            if not (container := tool.Root.get_default_container()):
                 bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
                 return
 
-            for subelement in ifcopenshell.util.element.get_decomposition(spatial_element):
+            for subelement in ifcopenshell.util.element.get_decomposition(container):
                 if not (
                     subelement.is_a("IfcWall") or subelement.is_a("IfcSlab") or subelement.is_a("IfcVirtualElement")
                 ):
