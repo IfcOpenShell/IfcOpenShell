@@ -33,6 +33,23 @@ class TestRemoveTask(test.bootstrap.IFC4):
         ifcopenshell.api.sequence.remove_task(self.file, task)
         assert len(self.file.by_type("IfcTask")) == 0
 
+    def test_remove_task_times(self):
+        self.file.create_entity("IfcProject")
+
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task, is_recurring=True)
+        ifcopenshell.api.sequence.assign_recurrence_pattern(self.file, task_time, recurrence_type="DAILY")
+
+        task2 = ifcopenshell.api.sequence.add_task(self.file)
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task2, is_recurring=False)
+
+        ifcopenshell.api.sequence.remove_task(self.file, task)
+        ifcopenshell.api.sequence.remove_task(self.file, task2)
+
+        assert len(self.file.by_type("IfcTask")) == 0
+        assert len(self.file.by_type("IfcTaskTime")) == 0
+        assert len(self.file.by_type("IfcRecurrencePattern")) == 0
+
     def test_remove_task_with_subtasks(self):
         self.file.create_entity("IfcProject")
         work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
