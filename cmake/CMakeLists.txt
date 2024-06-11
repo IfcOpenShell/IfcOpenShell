@@ -1177,7 +1177,7 @@ if(BUILD_IFCGEOM)
         DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
     )
 
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom
+    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
         ARCHIVE DESTINATION ${LIBDIR}
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
