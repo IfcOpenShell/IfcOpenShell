@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-PYTHON:=python3.10
-PIP:=pip3.10
+PYTHON:=python3.11
+PIP:=pip3.11
 PATCH:=patch
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
