@@ -35,7 +35,11 @@ class BIM_PT_webui(Panel):
         props = scene.WebProperties
 
         row = layout.row()
-        row.prop(props, "Webserver_port", text="Webserver Port")
+        row.prop(props, "webserver_port", text="Webserver Port")
+
+        if props.show_webserver_running:
+            row = layout.row()
+            row.label(text=f"Web Server running on port {props.webserver_port}")
 
         row = layout.row()
         row.operator("bim.connect_websocket_server")
