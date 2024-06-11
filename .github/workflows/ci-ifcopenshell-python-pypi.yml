@@ -27,19 +27,19 @@ jobs:
         pyver: [py39, py310, py311, py312]
         config:
           - {
-            name: "Windows Build",
+            name: "Windows 64bit",
             short_name: win64,
           }
           - {
-            name: "Linux Build",
+            name: "Linux 64bit",
             short_name: linux64
           }
           - {
-            name: "MacOS Build",
+            name: "MacOS Intel 64bit",
             short_name: macos64
           }
           - {
-            name: "MacOS ARM Build",
+            name: "MacOS Silicon 64bit",
             short_name: macosm164
           }
     steps:
