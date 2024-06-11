@@ -470,8 +470,7 @@ class AppendLibraryElement(bpy.types.Operator):
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = self.file
-        blender_material = ifc_importer.create_material(element)
-        self.import_material_styles(blender_material, element, ifc_importer)
+        self.import_material_styles(element, ifc_importer)
 
     def import_product_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
         self.file = IfcStore.get_file()
@@ -515,8 +514,7 @@ class AppendLibraryElement(bpy.types.Operator):
         for material in ifcopenshell.util.element.get_materials(element):
             if IfcStore.get_element(material.id()):
                 continue
-            blender_material = ifc_importer.create_material(material)
-            self.import_material_styles(blender_material, material, ifc_importer)
+            self.import_material_styles(material, ifc_importer)
 
     def import_styles(self, element: ifcopenshell.entity_instance, ifc_importer: import_ifc.IfcImporter) -> None:
         if element.is_a("IfcTypeProduct"):
@@ -533,7 +531,6 @@ class AppendLibraryElement(bpy.types.Operator):
 
     def import_material_styles(
         self,
-        blender_material: bpy.types.Material,
         material: ifcopenshell.entity_instance,
         ifc_importer: import_ifc.IfcImporter,
     ) -> None:
@@ -541,7 +538,7 @@ class AppendLibraryElement(bpy.types.Operator):
             return
         for element in self.file.traverse(material.HasRepresentation[0]):
             if element.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element.id()):
-                ifc_importer.create_style(element, blender_material)
+                ifc_importer.create_style(element)
 
 
 class EnableEditingHeader(bpy.types.Operator):
