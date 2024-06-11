@@ -1,7 +1,26 @@
+# BlenderBIM Add-on - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
+#
+# This file is part of BlenderBIM Add-on.
+#
+# BlenderBIM Add-on is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BlenderBIM Add-on is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
+
 import bpy
 import json
 import blenderbim.core.tool
 from typing import Union, Literal
+import socket
 import os
 import webbrowser
 import asyncio
@@ -14,7 +33,34 @@ connected_sockets = set()
 websocket_server: websockets.WebSocketServer
 ws_thread_loop = asyncio.new_event_loop()
 
+
 class Web(blenderbim.core.tool.Web):
+    @classmethod
+    def generate_port_number(cls):
+        print("Generating port number")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("localhost", 0))  # Bind to a free port
+            port = s.getsockname()[1]  # get the bound port
+            print(f"Port number: {port}")
+            return port
+
+    @classmethod
+    def is_port_available(cls, port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # connect_ex returns 0 if the connection succeeds
+            # indicating the port is in use
+            # otherwise returns 10061 if no server is listening
+            # indicating the port is available for use
+            return s.connect_ex(("localhost", port)) == 10061
+
+    @classmethod
+    def start_websocket_server(cls, port):
+        pass
+
+    @classmethod
+    def connect_websocket_server(cls, port):
+        pass
+
     @classmethod
     def get_webui_data(cls):
         data = {}

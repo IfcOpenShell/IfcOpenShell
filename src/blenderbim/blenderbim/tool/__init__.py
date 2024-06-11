@@ -60,3 +60,4 @@ from blenderbim.tool.type import Type
 from blenderbim.tool.unit import Unit
 from blenderbim.tool.search import Search
 from blenderbim.tool.cost import Cost
+from blenderbim.tool.web import Web
