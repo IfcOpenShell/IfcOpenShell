@@ -188,7 +188,6 @@ class ExecuteIfcDiff(bpy.types.Operator):
             tool.Ifc.set(ifc_diff.old)
             ifc_importer.file = ifc_diff.old
             ifc_importer.process_context_filter()
-            ifc_importer.create_materials()
             ifc_importer.create_styles()
 
             elements = {ifc_diff.old.by_guid(guid) for guid in ifc_diff.deleted_elements}
@@ -204,7 +203,6 @@ class ExecuteIfcDiff(bpy.types.Operator):
             tool.Ifc.set(ifc_diff.new)
             ifc_importer.file = ifc_diff.new
             ifc_importer.process_context_filter()
-            ifc_importer.create_materials()
             ifc_importer.create_styles()
 
             elements = {ifc_diff.new.by_guid(guid) for guid in ifc_diff.added_elements}

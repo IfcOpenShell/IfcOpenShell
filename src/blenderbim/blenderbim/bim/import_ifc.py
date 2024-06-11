@@ -273,8 +273,6 @@ class IfcImporter:
         self.profile_code("Create project")
         self.process_element_filter()
         self.profile_code("Process element filter")
-        self.create_materials()
-        self.profile_code("Create materials")
         self.create_styles()
         self.profile_code("Create styles")
         self.parse_native_elements()
@@ -1602,28 +1600,15 @@ class IfcImporter:
         self.project["blender"].BIMCollectionProperties.obj = obj
         obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
 
-    def create_materials(self) -> None:
-        for material in self.file.by_type("IfcMaterial"):
-            self.create_material(material)
-
-    def create_material(self, material: ifcopenshell.entity_instance) -> bpy.types.Material:
-        blender_material = bpy.data.materials.new(material.Name)
-        self.link_element(material, blender_material)
-        self.material_creator.materials[material.id()] = blender_material
-        blender_material.use_fake_user = True
-        return blender_material
-
     def create_styles(self) -> None:
         for style in self.file.by_type("IfcSurfaceStyle"):
             self.create_style(style)
 
-    def create_style(
-        self, style: ifcopenshell.entity_instance, blender_material: Optional[bpy.types.Material] = None
-    ) -> None:
-        if not blender_material:
-            name = style.Name or str(style.id())
-            blender_material = bpy.data.materials.new(name)
-            blender_material.use_fake_user = True
+    def create_style(self, style: ifcopenshell.entity_instance) -> None:
+        """Set up a Blender material for an IfcSurfaceStyle."""
+        name = style.Name or str(style.id())
+        blender_material = bpy.data.materials.new(name)
+        blender_material.use_fake_user = True
 
         self.link_element(style, blender_material)
 
