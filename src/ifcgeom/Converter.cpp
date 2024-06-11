@@ -174,10 +174,26 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 			std::transform(openings->begin(), openings->end(), std::back_inserter(opening_items), [this](IfcUtil::IfcBaseClass* opening) {
 				auto prod_item = mapping()->map(opening);
-				return std::make_pair(mapping()->map(mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>())), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
+				auto repr = mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>());
+				if (repr) {
+					return std::make_pair(mapping()->map(repr), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
+				} else {
+					return std::make_pair(taxonomy::ptr{}, taxonomy::matrix4{});
+				}
 			});
 
-			kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
+			opening_items.erase(
+				std::remove_if(
+					opening_items.begin(),
+					opening_items.end(),
+					[](const std::pair<taxonomy::ptr, taxonomy::matrix4>& p) { return !p.first; }
+			), opening_items.end());
+
+			if (opening_items.empty()) {
+				opened_shapes = shapes;
+			} else {
+				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
+			}
 		} catch (const std::exception& e) {
 			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
