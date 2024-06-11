@@ -50,7 +50,6 @@ class MaterialCreator:
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
         self.mesh: bpy.types.Mesh = None
         self.obj: bpy.types.Object = None
-        self.materials: Dict[int, bpy.types.Material] = {}
         self.styles: Dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
@@ -85,15 +84,9 @@ class MaterialCreator:
             if surface_style:
                 self.mesh.materials.append(self.styles[surface_style[0].id()])
                 return
-        # For authoring convenience, we choose to assign a material, even if it has no surface style. See #1585.
-        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
-            self.mesh.materials.append(self.materials[material.id()])
-            return
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
-            if material.BIMObjectProperties.ifc_definition_id:
-                self.materials[material.BIMObjectProperties.ifc_definition_id] = material
             if material.BIMMaterialProperties.ifc_style_id:
                 self.styles[material.BIMMaterialProperties.ifc_style_id] = material
 
@@ -163,22 +156,40 @@ class MaterialCreator:
     def assign_material_slots_to_faces(self) -> None:
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
-        if len(self.mesh.materials) == 1:
-            return
-        material_to_slot = {}
 
+        # Cannot return here if len(ios_materials) == 1 because
+        # even with 1 style it may be not assigned to the entire geometry
+        # as some faces need another empty material slot.
+        material_to_slot: dict[int, int] = {}
+
+        empty_slot_index = None
+
+        def get_empty_slot_index() -> int:
+            nonlocal empty_slot_index
+            if empty_slot_index is None:
+                self.mesh.materials.append(None)
+                empty_slot_index = len(self.mesh.materials) - 1
+            return empty_slot_index
+
+        # TODO: When they are not equal?
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
             for i, style_or_material_id in enumerate(self.mesh["ios_materials"]):
-                if style_or_material_id in self.styles:
-                    blender_material = self.styles[style_or_material_id]
+                # ios_materials will contain not ifc style but ifc material id if both true:
+                # - there are parts of the geometry that has no style assigned to them;
+                # - element has a material without a style.
+                # It can also contain -1 in case if there is no material.
+                material_without_style = style_or_material_id not in self.styles
+                if material_without_style:
+                    slot_index = get_empty_slot_index()
                 else:
-                    blender_material = self.materials[style_or_material_id]
-                slot_index = self.mesh.materials.find(blender_material.name)
+                    blender_material = self.styles[style_or_material_id]
+                    slot_index = self.mesh.materials.find(blender_material.name)
                 material_to_slot[i] = slot_index
 
-            material_index = [
-                (material_to_slot[mat_id] if mat_id != -1 else 0) for mat_id in self.mesh["ios_material_ids"]
-            ]
+            if -1 in self.mesh["ios_material_ids"]:
+                material_to_slot[-1] = get_empty_slot_index()
+
+            material_index = [material_to_slot[mat_id] for mat_id in self.mesh["ios_material_ids"]]
             self.mesh.polygons.foreach_set("material_index", material_index)
 
     def resolve_all_stylable_representation_items(
