@@ -284,5 +284,6 @@ def guess_format(path: Path) -> Union[str, None]:
     return None
 
 
-version = ifcopenshell_wrapper.version()
+version_core = ifcopenshell_wrapper.version()
+__version__ = version = "0.0.0"
 get_log = ifcopenshell_wrapper.get_log
