@@ -20,6 +20,7 @@ import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.util.element
+from typing import Union
 
 
 class Collector(blenderbim.core.tool.Collector):
@@ -33,39 +34,39 @@ class Collector(blenderbim.core.tool.Collector):
 
         if element.is_a("IfcProject"):
             if collection := cls._create_own_collection(obj):
-                collection.objects.link(obj)
-                bpy.context.scene.collection.children.link(collection)
+                cls.link_to_collection_safe(obj, collection)
+                cls.link_to_collection_safe(collection, bpy.context.scene.collection)
         elif element.is_a("IfcTypeProduct"):
             collection = cls._create_project_child_collection("IfcTypeProduct")
-            collection.objects.link(obj)
+            cls.link_to_collection_safe(obj, collection)
         elif element.is_a("IfcOpeningElement"):
             collection = cls._create_project_child_collection("IfcOpeningElement")
-            collection.objects.link(obj)
+            cls.link_to_collection_safe(obj, collection)
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
-            collection.objects.link(obj)
+            cls.link_to_collection_safe(obj, collection)
         elif tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement"):
             if collection := cls._create_own_collection(obj):
-                collection.objects.link(obj)
+                cls.link_to_collection_safe(obj, collection)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                project_obj.BIMObjectProperties.collection.children.link(collection)
+                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
         elif tool.Ifc.get_schema() != "IFC2X3" and element.is_a("IfcSpatialElement"):
             if collection := cls._create_own_collection(obj):
-                collection.objects.link(obj)
+                cls.link_to_collection_safe(obj, collection)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                project_obj.BIMObjectProperties.collection.children.link(collection)
+                cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
         elif container := ifcopenshell.util.element.get_container(element):
             container_obj = tool.Ifc.get_object(container)
             if not (collection := container_obj.BIMObjectProperties.collection):
                 cls.assign(container_obj)
                 collection = container_obj.BIMObjectProperties.collection
-            collection.objects.link(obj)
+            cls.link_to_collection_safe(obj, collection)
         elif element.is_a("IfcAnnotation"):
             if element.ObjectType == "DRAWING":
                 if collection := cls._create_own_collection(obj):
-                    collection.objects.link(obj)
+                    cls.link_to_collection_safe(obj, collection)
                     project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                    project_obj.BIMObjectProperties.collection.children.link(collection)
+                    cls.link_to_collection_safe(collection, project_obj.BIMObjectProperties.collection)
             else:
                 for rel in element.HasAssignments or []:
                     if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.ObjectType == "DRAWING":
@@ -73,10 +74,10 @@ class Collector(blenderbim.core.tool.Collector):
                             if related_object.is_a("IfcAnnotation") and related_object.ObjectType == "DRAWING":
                                 drawing_obj = tool.Ifc.get_object(related_object)
                                 if drawing_obj:
-                                    drawing_obj.BIMObjectProperties.collection.objects.link(obj)
+                                    cls.link_to_collection_safe(obj, drawing_obj.BIMObjectProperties.collection)
         else:
             collection = cls._create_project_child_collection("Unsorted")
-            collection.objects.link(obj)
+            cls.link_to_collection_safe(obj, collection)
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:
@@ -98,3 +99,25 @@ class Collector(blenderbim.core.tool.Collector):
         obj.BIMObjectProperties.collection = collection
         collection.BIMCollectionProperties.obj = obj
         return collection
+
+    @classmethod
+    def link_to_collection_safe(
+        cls, obj_or_col: Union[bpy.types.Object, bpy.types.Collection], collection: bpy.types.Collection
+    ) -> None:
+        """Link `obj_or_col` (an object or a collection) to the `collection`
+        if `obj_or_col` is not part of that collection already.
+
+        Method is needed to avoid RuntimeErrors like below that occur if you link object/collection
+        to the collection directly and they are already part of that collection.
+        RuntimeError: Error: Object 'xxx' already in collection 'xxx'.
+        """
+        # TODO: Maybe just catching RuntimeError is faster?
+        if isinstance(obj_or_col, bpy.types.Object):
+            if collection.objects.find(obj_or_col.name) != -1:
+                return
+            collection.objects.link(obj_or_col)
+            return
+
+        if collection.children.find(obj_or_col.name) != -1:
+            return
+        collection.children.link(obj_or_col)
