@@ -1,7 +1,32 @@
+import pytest
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.geom
 import ifcopenshell.api.owner.settings
+from typing import get_args
+
+
+class TestGeomSettings:
+    def test_run(self):
+        settings = ifcopenshell.geom.settings()
+        assert set(get_args(ifcopenshell.geom.SETTING)) == set(settings.setting_names())
+
+        assert settings.get(settings.USE_PYTHON_OPENCASCADE) is False
+        assert settings.get("use-python-opencascade") is False
+        assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
+
+        if ifcopenshell.geom.has_occ:
+            settings.set("use-python-opencascade", True)
+            settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+            assert settings.get(settings.USE_PYTHON_OPENCASCADE) is True
+            assert "USE_PYTHON_OPENCASCADE = True" in repr(settings)
+        else:
+            with pytest.raises(AttributeError):
+                settings.set("use-python-opencascade", True)
+            with pytest.raises(AttributeError):
+                settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+            assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
+
 
 class TestAssignObject:
     def test_no_welding_on_distinct_items(self):
