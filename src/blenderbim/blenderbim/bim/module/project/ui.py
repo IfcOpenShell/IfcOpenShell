@@ -137,10 +137,6 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
         row = self.layout.row()
-        row.prop(pprops, "is_coordinating")
-        if pprops.is_coordinating:
-            prop_with_search(self.layout, pprops, "merge_mode")
-        row = self.layout.row()
         row.prop(pprops, "deflection_tolerance")
         row = self.layout.row()
         row.prop(pprops, "angular_tolerance")
