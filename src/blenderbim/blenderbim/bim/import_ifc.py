@@ -399,6 +399,7 @@ class IfcImporter:
             settings.set("mesher-angular-deflection", self.ifc_import_settings.angular_tolerance)
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             settings.set("context-ids", [context.id()])
+            settings.set("apply-default-materials", False)
             self.context_settings.append(settings)
 
             settings = ifcopenshell.geom.settings()
@@ -407,6 +408,7 @@ class IfcImporter:
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             settings.set("disable-opening-subtractions", True)
             settings.set("context-ids", [context.id()])
+            settings.set("apply-default-materials", False)
             self.gross_context_settings.append(settings)
 
     def process_element_filter(self) -> None:
