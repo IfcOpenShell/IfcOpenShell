@@ -32,10 +32,27 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
 from blenderbim.tool.brick import BrickStore
-from typing import Set, Union, Optional
+from typing import Set, Union, Optional, TypedDict, Callable
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
+
+
+class OperationData(TypedDict):
+    id: int
+    guid: Union[str, None]
+    obj: str
+
+
+class Operation(TypedDict):
+    rollback: Callable
+    commit: Callable
+    data: OperationData
+
+
+class TransactionStep(TypedDict):
+    key: str
+    operations: list[Operation]
 
 
 class IfcStore:
@@ -55,8 +72,8 @@ class IfcStore:
     library_file: Optional[ifcopenshell.file] = None
     current_transaction = ""
     last_transaction = ""
-    history = []
-    future = []
+    history: list[TransactionStep] = []
+    future: list[TransactionStep] = []
     schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
     session_files: dict[str, ifcopenshell.file] = {}
 
@@ -194,7 +211,7 @@ class IfcStore:
                 element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
             except:
                 return
-            data = {"id": element.id(), "obj": obj.name}
+            data = OperationData(id=element.id(), obj=obj.name)
             if hasattr(element, "GlobalId"):
                 data["guid"] = element.GlobalId
             IfcStore.commit_link_element(data)
@@ -203,7 +220,7 @@ class IfcStore:
                 element = IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id)
             except:
                 return
-            data = {"id": element.id(), "obj": obj.name}
+            data = OperationData(id=element.id(), obj=obj.name)
             IfcStore.commit_link_element(data)
 
     @staticmethod
@@ -241,19 +258,19 @@ class IfcStore:
             )
 
         if IfcStore.history:
-            data = {"id": element.id(), "guid": getattr(element, "GlobalId", None), "obj": obj.name}
+            data = OperationData(id=element.id(), guid=getattr(element, "GlobalId", None), obj=obj.name)
             IfcStore.history[-1]["operations"].append(
-                {"rollback": IfcStore.rollback_link_element, "commit": IfcStore.commit_link_element, "data": data}
+                Operation(rollback=IfcStore.rollback_link_element, commit=IfcStore.commit_link_element, data=data)
             )
 
     @staticmethod
-    def rollback_link_element(data):
+    def rollback_link_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
         if data["guid"]:
             del IfcStore.guid_map[data["guid"]]
 
     @staticmethod
-    def commit_link_element(data):
+    def commit_link_element(data: OperationData) -> None:
         obj = bpy.data.objects.get(data["obj"])
         if not obj:
             obj = bpy.data.materials.get(data["obj"])
@@ -271,7 +288,7 @@ class IfcStore:
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
 
     @staticmethod
-    def rollback_unlink_element(data) -> None:
+    def rollback_unlink_element(data: OperationData) -> None:
         if "id" not in data or "obj" not in data:
             return
         obj = bpy.data.objects.get(data["obj"])
@@ -280,7 +297,7 @@ class IfcStore:
             IfcStore.guid_map[data["guid"]] = obj
 
     @staticmethod
-    def commit_unlink_element(data) -> None:
+    def commit_unlink_element(data: OperationData) -> None:
         del IfcStore.id_map[data["id"]]
         if data["guid"]:
             del IfcStore.guid_map[data["guid"]]
@@ -332,13 +349,11 @@ class IfcStore:
                 pass
 
         if IfcStore.history:
-            data = {}
-            data["id"] = element.id()
-            data["guid"] = global_id
+            data = OperationData(id=element.id(), guid=global_id)
             if obj:
                 data["obj"] = obj.name
             IfcStore.history[-1]["operations"].append(
-                {"rollback": IfcStore.rollback_unlink_element, "commit": IfcStore.commit_unlink_element, "data": data}
+                Operation(rollback=IfcStore.rollback_unlink_element, commit=IfcStore.commit_unlink_element, data=data)
             )
 
     @staticmethod
@@ -399,15 +414,15 @@ class IfcStore:
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)
         if IfcStore.history and IfcStore.history[-1]["key"] == key:
-            IfcStore.history[-1]["operations"].append({"rollback": rollback, "commit": commit, "data": data})
+            IfcStore.history[-1]["operations"].append(OperationData(rollback=rollback, commit=commit, data=data))
         else:
             IfcStore.history.append(
-                {"key": key, "operations": [{"rollback": rollback, "commit": commit, "data": data}]}
+                TransactionStep(key=key, operations=[OperationData(rollback=rollback, commit=commit, data=data)])
             )
         IfcStore.future = []
 
     @staticmethod
-    def undo(until_key=None) -> None:
+    def undo(until_key: str = None) -> None:
         BrickStore.undo()
         if not IfcStore.history:
             return
@@ -422,7 +437,7 @@ class IfcStore:
             IfcStore.future.append(event)
 
     @staticmethod
-    def redo(until_key=None) -> None:
+    def redo(until_key: str = None) -> None:
         BrickStore.redo()
 
         if not IfcStore.future:
