@@ -218,12 +218,10 @@ class IfcStore:
         existing_obj = IfcStore.id_map.get(element.id(), None)
         if existing_obj == obj:
             return
-        elif existing_obj:
-            try:
-                existing_obj.name
-                IfcStore.unlink_element(element=element, obj=existing_obj)
-            except:
-                pass
+        # TODO: When does this occur?
+        elif existing_obj and tool.Blender.is_valid_data_block(existing_obj):
+            IfcStore.unlink_element(obj=existing_obj)
+
         IfcStore.id_map[element.id()] = obj
         if hasattr(element, "GlobalId"):
             IfcStore.guid_map[element.GlobalId] = obj
@@ -291,44 +289,52 @@ class IfcStore:
     def unlink_element(
         element: Optional[ifcopenshell.entity_instance] = None, obj: Optional[IFC_CONNECTED_TYPE] = None
     ) -> None:
-        if element is None:
-            try:
-                element = tool.Ifc.get_entity(obj)
-            except:
-                pass
+        """Unlink IFC `element` or Blender `obj`.
 
+        If element is provided then it will be unlinked from the related Blender object.
+        Blender object's IFC information is also will be purged.
+
+        If Blender object is provided  then all IFC information will be purged from this object.
+        Method won't be searching for related IFC elements as Blender object might come from
+        different Blender session and there might be an ids/guids clash.
+
+        Only one argument must be provided and other should be omitted as they have different meaning.
+        :raises TypeError: If both arguments or no arguments provided.
+
+        """
+        if not bool(element) ^ bool(obj):
+            raise TypeError("Only one argument must be provided - element or obj.")
+
+        if obj:
+            if isinstance(obj, bpy.types.Material):
+                obj.BIMMaterialProperties.ifc_style_id = 0
+            obj.BIMObjectProperties.ifc_definition_id = 0
+            return
+
+        assert element  # Type checker.
         if obj is None:
             try:
                 potential_obj = IfcStore.id_map[element.id()]
-                potential_obj.name
-                obj = potential_obj
+                if tool.Blender.is_valid_data_block(potential_obj):
+                    obj = potential_obj
             except:
                 pass
 
         try:
-            if element:
-                del IfcStore.id_map[element.id()]
-            else:
-                del IfcStore.id_map[obj.BIMObjectProperties.ifc_definition_id]
+            del IfcStore.id_map[element.id()]
         except:
             pass
 
-        try:
-            if element and hasattr(element, "GlobalId"):
-                del IfcStore.guid_map[element.GlobalId]
-        except:
-            pass
-
-        if element and element.is_a("IfcSurfaceStyle"):
-            obj.BIMMaterialProperties.ifc_style_id = 0
-        elif obj:
-            obj.BIMObjectProperties.ifc_definition_id = 0
+        if global_id := getattr(element, "GlobalId", None):
+            try:
+                del IfcStore.guid_map[global_id]
+            except:
+                pass
 
         if IfcStore.history:
             data = {}
-            if element:
-                data["id"] = element.id()
-                data["guid"] = getattr(element, "GlobalId", None)
+            data["id"] = element.id()
+            data["guid"] = global_id
             if obj:
                 data["obj"] = obj.name
             IfcStore.history[-1]["operations"].append(
