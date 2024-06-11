@@ -1,0 +1,66 @@
+name: ci-ifcopenshell-python-pypi
+
+on:
+  workflow_dispatch:
+
+env:
+  major: 0
+  minor: 0
+  name: ifcopenshell
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ${{ matrix.config.name }}-${{ matrix.pyver }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        pyver: [py39, py310, py311, py312]
+        config:
+          - {
+            name: "Windows Build",
+            short_name: win64,
+          }
+          - {
+            name: "Linux Build",
+            short_name: linux64
+          }
+          - {
+            name: "MacOS Build",
+            short_name: macos64
+          }
+          - {
+            name: "MacOS ARM Build",
+            short_name: macosm164
+          }
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+      - run: echo ${{ env.DATE }}
+      - name: Get current date
+        id: date
+        run: echo "::set-output name=date::$(date +'%y%m%d')"
+      - name: Compile
+        run: |
+          pip install build
+          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+      - name: Publish a Python distribution to PyPI
+        uses: ortega2247/pypi-upload-action@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages_dir: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
