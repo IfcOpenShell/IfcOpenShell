@@ -1614,26 +1614,7 @@ class IfcImporter:
         return blender_material
 
     def create_styles(self) -> None:
-        parsed_styles = set()
-
-        for material_definition_representation in self.file.by_type("IfcMaterialDefinitionRepresentation"):
-            material = material_definition_representation.RepresentedMaterial
-            blender_material = self.material_creator.materials[material.id()]
-            for representation in material_definition_representation.Representations:
-                styles = []
-                for styled_item in representation.Items:
-                    styles.extend(styled_item.Styles)
-                while styles:
-                    style = styles.pop()
-                    if style.is_a("IfcSurfaceStyle"):
-                        self.create_style(style, blender_material)
-                        parsed_styles.add(style.id())
-                    elif style.is_a("IfcPresentationStyleAssignment"):
-                        styles.extend(style.Styles)
-
         for style in self.file.by_type("IfcSurfaceStyle"):
-            if style.id() in parsed_styles:
-                continue
             self.create_style(style)
 
     def create_style(
