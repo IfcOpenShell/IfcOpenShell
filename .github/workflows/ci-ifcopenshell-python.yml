@@ -46,7 +46,7 @@ jobs:
       - run: echo ${{ env.DATE }}
       - name: Get current version
         id: version
-        run: echo "::set-output name=version::$(cat ../../VERSION)"
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
