@@ -547,12 +547,15 @@ taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     // of if-statements and whether a switch on e.g inst->declaration()->index_in_schema()
     // isn't more efficient (which would disable inheritance though).
 
+    bool matched = false;
+
 #include "bind_convert_impl.i"
 
-    if (use_caching_ && item) {
-        cache_.insert({ iden, item });
-    }
-    else {
+    if (item) {
+        if (use_caching_) {
+            cache_.insert({ iden, item });
+        }
+    } else if (!matched) {
         Logger::Message(Logger::LOG_ERROR, "No operation defined for:", inst);
     }
     return item;

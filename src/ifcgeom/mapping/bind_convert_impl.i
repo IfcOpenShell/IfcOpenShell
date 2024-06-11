@@ -4,6 +4,7 @@
 
 #define BIND(T) \
 	if (!item && inst->as<IfcSchema::T>()) { \
+		matched = true; \
 		try { \
 			item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
