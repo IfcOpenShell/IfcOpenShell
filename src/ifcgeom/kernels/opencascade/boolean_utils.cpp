@@ -981,7 +981,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	if (Logger::LOG_NOTICE >= Logger::Verbosity()) {
 		PERF("preliminary manifoldness check");
 
-		Logger::Notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+		if (!a.IsNull()) {
+			Logger::Notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+		}
 
 		TopTools_ListIteratorOfListOfShape it(b);
 		for (int i = 0; it.More(); it.Next(), ++i) {
