@@ -123,6 +123,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			for (auto& r : cr) {
 				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
+				if (S.IsNull()) {
+					Logger::Error("Null operand");
+					continue;
+				}
 				gp_GTrsf trsf;
 				convert(r.Placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead
@@ -155,7 +159,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 	TopoDS_Shape r;
 
-	if (a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
+	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
 		TopoDS_Compound C;
 		BRep_Builder B;
 		B.MakeCompound(C);

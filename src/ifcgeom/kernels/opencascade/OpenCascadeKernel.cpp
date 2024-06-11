@@ -280,6 +280,10 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		std::list<TopoDS_Shape> parts;
 
 		auto it3_shape = std::static_pointer_cast<OpenCascadeShape>(it3->Shape())->shape();
+		if (it3_shape.IsNull()) {
+			Logger::Error("Null operand");
+			continue;
+		}
 
 		bool is_multiple = it3_shape.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(it3_shape).More() && util::is_nested_compound_of_solid(it3_shape);
 
