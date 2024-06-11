@@ -24,6 +24,11 @@ VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
 VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 
+SED:=sed -i
+ifeq ($(UNAME_S),Darwin)
+SED:=sed -i '' -e
+endif
+
 .PHONY: dist
 dist:
 	rm -rf dist

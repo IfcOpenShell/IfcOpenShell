@@ -94,7 +94,9 @@ endif
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win)
+ifeq ($(PLATFORM), win64)
+	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
+else ifeq ($(PLATFORM), win32)
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
 else
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
@@ -117,7 +119,9 @@ endif
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win)
+ifeq ($(PLATFORM), win64)
+	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
+else ifeq ($(PLATFORM), win32)
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
 else
 	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
