@@ -22,6 +22,7 @@ import blenderbim.core.tool
 from typing import Union, Literal
 import socket
 import os
+import subprocess
 import webbrowser
 import asyncio
 import threading
@@ -32,6 +33,7 @@ CONNECTION_CHECK_DELAY = 10
 connected_sockets = set()
 websocket_server: websockets.WebSocketServer
 ws_thread_loop = asyncio.new_event_loop()
+ws_process = None
 
 
 class Web(blenderbim.core.tool.Web):
@@ -55,11 +57,38 @@ class Web(blenderbim.core.tool.Web):
 
     @classmethod
     def start_websocket_server(cls, port):
-        pass
+        global ws_process
+        ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "app.py")
+
+        env = os.environ.copy()
+        env["FLASK_APP"] = ws_path
+
+        ws_process = subprocess.Popen(["flask", "run", str(port), "--debug"], env=env)
 
     @classmethod
     def connect_websocket_server(cls, port):
         pass
+
+    @classmethod
+    def kill_websocket_server(cls):
+        global ws_process
+
+        if ws_process is None:
+            print("No webserver running")
+            return
+
+        ws_process.terminate()
+        ws_process.wait()
+        print("Webserver terminated successfully")
+        ws_process = None
+
+    @classmethod
+    def show_webserver_running(cls):
+        bpy.context.scene.WebProperties.show_webserver_running = True
+
+    @classmethod
+    def hide_webserver_running(cls):
+        bpy.context.scene.WebProperties.show_webserver_running = False
 
     @classmethod
     def get_webui_data(cls):

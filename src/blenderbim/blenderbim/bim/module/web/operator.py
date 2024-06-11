@@ -28,11 +28,11 @@ class ConnectToWebsocketServer(bpy.types.Operator):
     bl_description = "Start/Connect to a Websocket server"
 
     def execute(self, context):
-        port = context.scene.WebProperties.Webserver_port
+        port = context.scene.WebProperties.webserver_port
         if port == 0:
-            context.scene.WebProperties.Webserver_port = core.generate_port_number(tool.Web)
+            context.scene.WebProperties.webserver_port = core.generate_port_number(tool.Web)
 
-        port = context.scene.WebProperties.Webserver_port
+        port = context.scene.WebProperties.webserver_port
         core.connect_websocket_server(tool.Web, port)
         return {"FINISHED"}
 
@@ -43,4 +43,5 @@ class killWebsocketServer(bpy.types.Operator):
     bl_description = "Kill running websocket server"
 
     def execute(self, context):
+        core.kill_websocket_server(tool.Web)
         return {"FINISHED"}
