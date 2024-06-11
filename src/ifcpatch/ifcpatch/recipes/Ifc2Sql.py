@@ -180,6 +180,7 @@ class Patcher:
             self.elements = self.file.by_type("IfcElement")
 
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set("apply-default-materials", False)
 
         self.body_contexts = [
             c.id()

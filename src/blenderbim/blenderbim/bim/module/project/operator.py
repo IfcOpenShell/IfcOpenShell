@@ -1292,6 +1292,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         for settings in ifc_importer.context_settings:
             settings = ifcopenshell.geom.settings()
+            settings.set("apply-default-materials", False)
 
             if has_model_offset:
                 offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
