@@ -1,5 +1,5 @@
-VERSION:=`date '+%y%m%d'`
-PYVERSION:=py310
+VERSION:=$(shell cat ../../VERSION)
+PYVERSION:=py311
 PLATFORM:=linux
 
 SED:=sed -i
@@ -101,11 +101,13 @@ endif
 	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
 	cp README.md ../README.bak
 	cp ../../README.md README.md
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
+	cp pyproject.toml pyproject.toml.bak
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+	mv pyproject.toml.bak pyproject.toml
 	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	cd dist && mv ifcopenshell-$(VERSION)-py3-none-any.whl ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf dist/ifcopenshell
 	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-0.7.0.$(VERSION).tar.gz
+	rm -rf dist/ifcopenshell-$(VERSION).tar.gz

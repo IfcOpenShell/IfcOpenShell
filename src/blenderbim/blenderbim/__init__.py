@@ -38,7 +38,7 @@ bl_info = {
     "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
     "author": "IfcOpenShell Contributors",
     "blender": (3, 1, 0),
-    "version": (9, 9, 9),
+    "version": (0, 0, 0),
     "location": "File Menu, Scene Properties Tab. See documentation for more.",
     "doc_url": "https://docs.blenderbim.org/",
     "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",

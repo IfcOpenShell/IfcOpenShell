@@ -36,11 +36,11 @@ endif
 endif
 
 IS_DEV_BUILD:=TRUE
-VERSION:=`cat '../../VERSION'`
-VERSION_MAJOR:=`cat '../../VERSION' | cut -d '.' -f 1`
-VERSION_MINOR:=`cat '../../VERSION' | cut -d '.' -f 2`
-VERSION_PATCH:=`cat '../../VERSION' | cut -d '.' -f 3`
-VERSION_DATE:=`date '+%y%m%d'`
+VERSION:=$(shell cat ../../VERSION)
+VERSION_MAJOR:=$(shell cat '../../VERSION' | cut -d '.' -f 1)
+VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
+VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
+VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
 PYVERSION:=py310
 PYPI_IMP:=cp
@@ -287,13 +287,13 @@ endif
 	rm -rf dist/blenderbim/libs/site/packages/numpy.libs
 
 ifeq ($(IS_DEV_BUILD), TRUE)
-	cd dist/blenderbim && $(SED) "s/9, 9, 9/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
-	cd dist/blenderbim && $(SED) "s/9.9.9/$(VERSION).$(VERSION_DATE)/" blender_manifest.toml
+	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION).$(VERSION_DATE)/" blender_manifest.toml
 	cd dist/blenderbim/bim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION).$(VERSION_DATE)-$(PYVERSION)-$(PLATFORM).zip ./*
 else
-	cd dist/blenderbim && $(SED) "s/9, 9, 9/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
-	cd dist/blenderbim && $(SED) "s/9.9.9/$(VERSION)/" blender_manifest.toml
+	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
 	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 endif
 	rm -rf dist/blenderbim
