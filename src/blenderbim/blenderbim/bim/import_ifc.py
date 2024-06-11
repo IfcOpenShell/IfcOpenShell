@@ -289,9 +289,8 @@ class IfcImporter:
         self.profile_code("Create spatial elements")
         self.create_structural_items()
         self.profile_code("Create structural items")
-        if not self.ifc_import_settings.is_coordinating:
-            self.create_element_types()
-            self.profile_code("Create element types")
+        self.create_element_types()
+        self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
         self.add_project_to_scene()
@@ -444,9 +443,6 @@ class IfcImporter:
         self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
-        if self.ifc_import_settings.is_coordinating:
-            self.elements = [e for e in self.elements if e.Representation]
-
         self.elements = set(self.elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
@@ -875,7 +871,6 @@ class IfcImporter:
                     )
                 )
                 checkpoint = time.time()
-                self.incrementally_merge_objects()
             native_data = self.native_data[element.GlobalId]
             mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
@@ -1024,7 +1019,6 @@ class IfcImporter:
                 )
                 checkpoint = time.time()
                 self.update_progress((percent_average / 100 * progress_range) + start_progress)
-                self.incrementally_merge_objects()
             shape = iterator.get()
             if shape:
                 product = self.file.by_id(shape.id)
@@ -1034,19 +1028,6 @@ class IfcImporter:
                 break
         print("Done creating geometry")
         return results
-
-    def incrementally_merge_objects(self):
-        if not self.ifc_import_settings.is_coordinating:
-            return
-        if self.ifc_import_settings.merge_mode == "IFC_CLASS":
-            self.merge_by_class()
-            self.profile_code("Merging by class")
-        elif self.ifc_import_settings.merge_mode == "IFC_TYPE":
-            self.merge_by_type()
-            self.profile_code("Merging by type")
-        elif self.ifc_import_settings.merge_mode == "MATERIAL":
-            self.merge_by_material()
-            self.profile_code("Merging by material")
 
     def create_structural_items(self):
         self.create_generic_elements(set(self.file.by_type("IfcStructuralCurveMember")))
@@ -1403,78 +1384,6 @@ class IfcImporter:
         curve.bevel_depth = self.unit_scale * item.Radius
         curve.use_fill_caps = True
         return curve
-
-    def merge_by_class(self):
-        merge_set = {}
-        id_set = {}
-        for ifc_definition_id, obj in self.added_data.items():
-            if not isinstance(obj, bpy.types.Object) or not obj.data:
-                continue
-            element = self.file.by_id(ifc_definition_id)
-            if not element.is_a("IfcElement"):
-                continue
-            merge_set.setdefault(element.is_a(), []).append(obj)
-            id_set.setdefault(element.is_a(), []).append(ifc_definition_id)
-        self.merge_objects(merge_set, id_set)
-
-    def merge_by_type(self):
-        merge_set = {}
-        id_set = {}
-        for ifc_definition_id, obj in self.added_data.items():
-            if not isinstance(obj, bpy.types.Object) or not obj.data:
-                continue
-            element = self.file.by_id(ifc_definition_id)
-            if not element.is_a("IfcElement"):
-                continue
-            element_type = ifcopenshell.util.element.get_type(element)
-            if not element_type:
-                continue
-            merge_key = str(element_type.id()) + "-" + (element_type.Name or "Unnamed")
-            merge_set.setdefault(merge_key, []).append(obj)
-            id_set.setdefault(merge_key, []).append(ifc_definition_id)
-        self.merge_objects(merge_set, id_set)
-
-    def merge_by_material(self):
-        merge_set = {}
-        id_set = {}
-        for ifc_definition_id, obj in self.added_data.items():
-            if not isinstance(obj, bpy.types.Object) or not obj.data:
-                continue
-            element = self.file.by_id(ifc_definition_id)
-            if not element.is_a("IfcElement"):
-                continue
-            merge_key = obj.material_slots[0].name if obj.material_slots else "no-material"
-            merge_set.setdefault(merge_key, []).append(obj)
-            id_set.setdefault(merge_key, []).append(ifc_definition_id)
-        self.merge_objects(merge_set, id_set)
-
-    def merge_objects(self, merge_set, id_set):
-        total_objs = sum([len(o) for o in merge_set.values()])
-        cumulative_total = 0
-        merge_set = {k: v for k, v in sorted(merge_set.items(), key=lambda i: len(i[1]), reverse=True)}
-        for group_name, objs in merge_set.items():
-            total_group_objs = len(objs)
-            if total_group_objs < 10:
-                continue
-            merge_potential = total_objs - cumulative_total
-            if merge_potential < 250:
-                print("Merge target achieved")
-                return
-            cumulative_total += total_group_objs
-            print(f"Merging {total_group_objs} objects, {merge_potential} potentially remaining -", group_name)
-            try:
-                target = objs[0]
-                target.data = target.data.copy()
-                context_override = {}
-                context_override["object"] = context_override["active_object"] = target
-                context_override["selected_objects"] = context_override["selected_editable_objects"] = objs
-                with bpy.context.temp_override(**context_override):
-                    bpy.ops.object.join()
-                target.data.name += "-merge"
-                for ifc_definition_id in id_set[group_name][1:]:
-                    del self.added_data[ifc_definition_id]
-            except:
-                print("Merge failed")
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -1846,13 +1755,11 @@ class IfcImportSettings:
         self.input_file = None
         self.diff_file = None
         self.should_use_cpu_multiprocessing = True
-        self.merge_mode = None
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
         self.should_use_native_meshes = False
         self.should_clean_mesh = False
         self.should_cache = True
-        self.is_coordinating = True
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
@@ -1876,13 +1783,11 @@ class IfcImportSettings:
         settings.logger = logger
         settings.diff_file = scene_diff.diff_json_file
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
-        settings.merge_mode = props.merge_mode
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
         settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache
-        settings.is_coordinating = props.is_coordinating
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
