@@ -27,7 +27,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any
+from typing import TypeVar, Union, Optional, Generator, Any, Literal
 
 T = TypeVar("T")
 ShapeElementType = Union[
@@ -54,17 +54,62 @@ if has_occ:
         else:
             return shape
 
-class missing_setting:
-    def __repr__(self): return '-'
 
-class settings_mixin:  
+SETTING = Literal[
+    "mesher-linear-deflection",
+    "mesher-angular-deflection",
+    "reorient-shells",
+    "length-unit",
+    "angle-unit",
+    "precision",
+    "dimensionality",
+    "layerset-first",
+    "disable-boolean-result",
+    "no-wire-intersection-check",
+    "no-wire-intersection-tolerance",
+    "precision-factor",
+    "debug-boolean",
+    "boolean-attempt-2d",
+    "weld-vertices",
+    "use-world-coords",
+    "use-material-names",
+    "convert-back-units",
+    "context-ids",
+    "context-types",
+    "context-identifiers",
+    "iterator-output",
+    "disable-opening-subtractions",
+    "apply-default-materials",
+    "no-normals",
+    "generate-uvs",
+    "enable-layerset-slicing",
+    "element-hierarchy",
+    "validate",
+    "edge-arrows",
+    "building-local-placement",
+    "site-local-placement",
+    "force-space-transparency",
+    "circle-segments",
+    "keep-bounding-boxes",
+    "piecewise-step-type",
+    "piecewise-step-param",
+    "use-python-opencascade",
+]
+
+
+class missing_setting:
+    def __repr__(self):
+        return '-'
+
+
+class settings_mixin:
     """
     Pythonic interface mixin to the settings modules and
     to provide an additional setting to enable pythonOCC
     when available
     """
 
-    USE_PYTHON_OPENCASCADE = 'USE_PYTHON_OPENCASCADE'
+    use_python_opencascade = False
 
     def __init__(self, **kwargs):
         super(settings_mixin, self).__init__()
@@ -73,29 +118,33 @@ class settings_mixin:
 
     def __repr__(self):
         def safe_get(x):
-            try: return self.get_(x)
-            except: return missing_setting()
+            try:
+                return self.get(x)
+            except RuntimeError:
+                return missing_setting()
+
         fmt_pair = lambda x: "%s = %r" % (self.rname(x), safe_get(x))
         return "%s(%s)" % (
             type(self).__name__,
             ", ".join(map(fmt_pair, self.setting_names()))
         )
-        
+
     @staticmethod
-    def name(k):
-        return k.lower().replace('_', '-')
-        
+    def name(k: str) -> SETTING:
+        return k.lower().replace("_", "-")
+
     @staticmethod
-    def rname(k):
-        return k.upper().replace('-', '_')
-    
-    def set(self, k: str, v: Any) -> None:
+    def rname(k: SETTING) -> str:
+        return k.upper().replace("-", "_")
+
+    def set(self, k: SETTING, v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
 
         :raises RuntimeError: If there is no setting with name `k`.
         """
-        if k == "USE_PYTHON_OPENCASCADE":
+        k = self.name(k)
+        if k == "use-python-opencascade":
             if not has_occ:
                 raise AttributeError("Python OpenCASCADE is not installed")
             if v:
@@ -104,17 +153,22 @@ class settings_mixin:
                 self.use_python_opencascade = True
         else:
             self.set_(self.name(k), v)
-        
-    def get(self, k: str) -> Any:
+
+    def get(self, k: SETTING) -> Any:
         """
         Return value of the setting named `k`.
 
         :raises RuntimeError: If there is no setting with name `k`.
         """
-        
-        return self.get_(self.name(k))
+        k = self.name(k)
+        if k == "use-python-opencascade":
+            return self.use_python_opencascade
+        return self.get_(k)
 
-    def __getattr__(self, k):
+    def setting_names(self) -> tuple[SETTING, ...]:
+        return super().setting_names() + ("use-python-opencascade",)
+
+    def __getattr__(self, k: str) -> SETTING:
         if k in map(self.rname, self.setting_names()):
             return k
         else:
