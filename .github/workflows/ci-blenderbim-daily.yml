@@ -71,7 +71,7 @@ jobs:
           cp -r src/blenderbim src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           cd src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
-      - name: Upload Zip file to release
+      - name: Upload zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}

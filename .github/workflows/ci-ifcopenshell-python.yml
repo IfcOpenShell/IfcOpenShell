@@ -1,24 +1,7 @@
-name: ci-ifcopenshell-pypi
+name: ci-ifcopenshell-python
 
 on:
   workflow_dispatch:
-  schedule:
-    #         ┌───────────── minute (0 - 59)
-    #         │  ┌───────────── hour (0 - 23)
-    #         │  │ ┌───────────── day of the month (1 - 31)
-    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
-    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
-    #         *  * * * *
-    - cron: "0 0 18 * *"
-  push:
-    paths:
-      - '.github/workflows/ci-ifcopenshell-pypi.yml'
-
-
-env:
-  major: 0
-  minor: 0
-  name: ifcopenshell
 
 jobs:
   activate:
@@ -40,19 +23,19 @@ jobs:
         config:
           - {
             name: "Windows Build",
-            short_name: win,
+            short_name: win64,
           }
           - {
             name: "Linux Build",
-            short_name: linux
+            short_name: linux64
           }
           - {
             name: "MacOS Build",
-            short_name: macos
+            short_name: macos64
           }
           - {
             name: "MacOS ARM Build",
-            short_name: macosm1
+            short_name: macosm164
           }
     steps:
       - uses: actions/checkout@v2
@@ -61,18 +44,19 @@ jobs:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - run: echo ${{ env.DATE }}
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%y%m%d')"
+      - name: Get current version
+        id: version
+        run: echo "::set-output name=version::$(cat ../../VERSION)"
       - name: Compile
         run: |
-          pip install build
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
-      - name: Publish a Python distribution to PyPI
-        uses: ortega2247/pypi-upload-action@master
+          make zip PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@v2
         with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
-          packages_dir: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/ifcopenshell-python-${{ steps.version.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: ifcopenshell-python-${{ steps.version.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          overwrite: true
+          body: "IfcOpenShell-Python Build ifcopenshell-python-${{steps.version.outputs.version}}"

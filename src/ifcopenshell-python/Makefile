@@ -1,6 +1,6 @@
 VERSION:=$(shell cat ../../VERSION)
 PYVERSION:=py311
-PLATFORM:=linux
+PLATFORM:=linux64
 
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
@@ -31,18 +31,20 @@ ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
 endif
 
-ifeq ($(PLATFORM), linux)
+ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
-ifeq ($(PLATFORM), macos)
+ifeq ($(PLATFORM), macos64)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
-ifeq ($(PLATFORM), macosm1)
+ifeq ($(PLATFORM), macosm164)
 PLATFORMTAG:=macosx_11_0_arm64
 endif
-ifeq ($(PLATFORM), win)
+ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
+
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.0-90ae709-$(PLATFORM).zip
 
 .PHONY: test
 test:
@@ -79,6 +81,29 @@ coverage:
 clean:
 	rm -rf htmlcov
 
+.PHONY: zip
+zip:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	rm -rf dist
+	mkdir -p dist/working
+	mkdir -p dist/ifcopenshell
+	cp -r ifcopenshell/* dist/ifcopenshell/
+
+	cd dist/working && wget $(IOS_URL)
+	cd dist/working && unzip ifcopenshell-python*
+	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
+ifeq ($(PLATFORM), win)
+	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
+else
+	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
+endif
+	rm -rf dist/working
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
+	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
+	rm -rf dist/ifcopenshell
+
 .PHONY: dist
 dist:
 ifndef PLATFORM
@@ -89,7 +114,7 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.0-90ae709-$(PLATFORM)64.zip
+	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
 ifeq ($(PLATFORM), win)
