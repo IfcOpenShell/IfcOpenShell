@@ -171,6 +171,10 @@ namespace IfcGeom {
 
 			converter_ = new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_);
 			std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
+			if (num_threads_ != 1) {
+				// @todo this shouldn't be necessary with properly immutable taxonomy items
+				converter_->mapping()->use_caching() = false;
+			}
 			converter_->mapping()->get_representations(reps, filters_);
 
 			for (auto& task : reps) {
