@@ -29,7 +29,6 @@ classes = (
     operator.RemoveCsvAttribute,
     operator.ReorderCsvAttribute,
     operator.SelectCsvIfcFile,
-    operator.OpenWebUi,
     prop.CsvAttribute,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,

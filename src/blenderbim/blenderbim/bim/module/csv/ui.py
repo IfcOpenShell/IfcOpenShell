@@ -123,8 +123,3 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row(align=True)
         row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
-
-    def draw_header(self, context):
-        row = self.layout.row(align=True)
-        row.label(text="")
-        row.operator("bim.open_web_ui", text="", icon="URL")
