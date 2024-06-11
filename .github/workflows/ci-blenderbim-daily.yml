@@ -59,7 +59,6 @@ jobs:
         with:
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
           python-version: '3.11'
-      - run: echo ${{ env.DATE }}
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
@@ -77,6 +76,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           asset_name: blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          release_name: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
           tag: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
           overwrite: true
-          body: "Daily developer testing build blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"

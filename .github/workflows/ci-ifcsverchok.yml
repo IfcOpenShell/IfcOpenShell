@@ -1,0 +1,42 @@
+name: ci-ifcsverchok
+
+on:
+  workflow_dispatch:
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: ifcsverchok
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
+        with:
+          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+          python-version: '3.11'
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      - name: Compile
+        run: |
+          cd src/ifcsverchok
+          make dist IS_STABLE=TRUE
+      - name: Upload zip file to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: src/ifcsverchok/dist/ifcsverchok-${{steps.version.outputs.version}}.zip
+          asset_name: ifcsverchok-${{steps.version.outputs.version}}.zip
+          release_name: "ifcsverchok-${{steps.version.outputs.version}}"
+          tag: "ifcsverchok-${{steps.version.outputs.version}}"
+          overwrite: true
