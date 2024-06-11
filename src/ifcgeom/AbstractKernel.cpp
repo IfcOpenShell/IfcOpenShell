@@ -31,6 +31,9 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 	} catch (std::exception& e) {
 		Logger::Error(e, item->instance);
 		return false;
+	} catch (...) {
+		// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
+		return false;
 	}
 }
 
