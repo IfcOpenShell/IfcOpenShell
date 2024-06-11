@@ -28,6 +28,8 @@ namespace geometry {
     class abstract_mapping {
 	protected:
 		Settings settings_;
+
+		bool use_caching_ = true;
 	public:
 		abstract_mapping(Settings& s) : settings_(s) {}
 
@@ -45,6 +47,9 @@ namespace geometry {
 
 		const Settings& settings() const { return settings_; }
 		Settings& settings() { return settings_; }
+
+		bool use_caching() const { return use_caching_; }
+		bool& use_caching() { return use_caching_; }
     };
 
 	namespace impl {

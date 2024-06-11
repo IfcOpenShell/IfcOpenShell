@@ -520,9 +520,11 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
 	auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
-	auto it = cache_.find(iden);
-	if (it != cache_.end()) {
-		return it->second;
+	if (use_caching_) {
+		auto it = cache_.find(iden);
+		if (it != cache_.end()) {
+			return it->second;
+		}
 	}
 	taxonomy::ptr item = nullptr;
 
@@ -532,7 +534,7 @@ taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
 
 #include "bind_convert_impl.i"
 
-	if (item) {
+	if (use_caching_ && item) {
 		cache_.insert({ iden, item });
 	}
 	else {
