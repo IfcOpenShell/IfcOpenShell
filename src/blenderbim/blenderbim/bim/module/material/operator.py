@@ -198,16 +198,6 @@ class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_material_set(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
-class UnlinkMaterial(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.unlink_material"
-    bl_label = "Unlink Material"
-    bl_options = {"REGISTER", "UNDO"}
-    material: bpy.props.IntProperty(name="Material ID")
-
-    def _execute(self, context):
-        core.unlink_material(tool.Ifc, obj=tool.Ifc.get_object(tool.Ifc.get().by_id(self.material)))
-
-
 class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_material"
     bl_label = "Assign Material"

@@ -58,7 +58,6 @@ classes = (
     operator.SelectByMaterial,
     operator.UnassignMaterial,
     operator.UnassignMaterialStyle,
-    operator.UnlinkMaterial,
     prop.Material,
     prop.BIMMaterialProperties,
     prop.BIMObjectMaterialProperties,

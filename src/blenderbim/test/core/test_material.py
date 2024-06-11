@@ -20,12 +20,6 @@ import blenderbim.core.material as subject
 from test.core.bootstrap import ifc, material, style, spatial
 
 
-class TestUnlinkMaterial:
-    def test_run(self, ifc):
-        ifc.unlink(obj="obj").should_be_called()
-        subject.unlink_material(ifc, obj="obj")
-
-
 class TestAddMaterial:
     def test_add_a_default_material(self, ifc, material, style):
         material.add_default_material_object("name").should_be_called().will_return("obj")

@@ -25,10 +25,6 @@ if TYPE_CHECKING:
     import blenderbim.tool as tool
 
 
-def unlink_material(ifc: tool.Ifc, obj: bpy.types.Material) -> None:
-    ifc.unlink(obj=obj)
-
-
 def add_material(
     ifc: tool.Ifc,
     material: tool.Material,
