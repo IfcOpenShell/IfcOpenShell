@@ -1014,3 +1014,8 @@ class Voider:
     def set_void_display(cls, opening_obj): pass
     def unvoid(cls, opening_obj): pass
     def void(cls, opening_obj, building_obj): pass
+
+
+@interface
+class Web:
+    pass
