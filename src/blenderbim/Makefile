@@ -87,7 +87,6 @@ bump:
 	cd . && $(SED) "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
-	cd ../ifcopenshell-python/docs/ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
 
 .PHONY: dist
 dist:

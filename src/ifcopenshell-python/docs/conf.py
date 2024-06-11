@@ -30,7 +30,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
@@ -43,6 +44,18 @@ author = "IfcOpenShell Contributors"
 cwd = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
     release = f.read().strip()
+
+from docutils import nodes
+
+
+def versioned_link_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcopenshell-python-{release}/ifcopenshell-python-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
+def setup(app):
+    app.add_role("ios_python_url", versioned_link_role)
 
 
 # -- General configuration ---------------------------------------------------
@@ -65,7 +78,7 @@ autosectionlabel_prefix_document = True
 autoapi_add_toctree_entry = True
 
 # We're only documenting Python here
-autoapi_type = 'python'
+autoapi_type = "python"
 
 # autoapi works by reading source code instead of importing modules
 autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
@@ -86,10 +99,10 @@ autoapi_template_dir = "_autoapi_templates"
 # ifcopenshell.file is imported from ifcopenshell.file.file, but it gets pretty
 # confusing to see the docs again in multiple places (seriously,
 # ifcopenshell.file.file is everywhere).
-autoapi_options = ['members', 'undoc-members', 'show-inheritance', 'imported-members']
+autoapi_options = ["members", "undoc-members", "show-inheritance", "imported-members"]
 
 # This option is set to both to allow both class docstrings and __init__ docstrings.
-autoapi_python_class_content = 'both'
+autoapi_python_class_content = "both"
 
 # Group by type (e.g. attribute, class, function, etc) then alphabetically.
 autoapi_member_order = "groupwise"
@@ -139,7 +152,7 @@ html_theme_options = {
         "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
     "dark_css_variables": {
         "color-brand-primary": "#39b54a",
@@ -153,9 +166,8 @@ html_theme_options = {
         "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
-
     "footer_icons": [
         {
             "name": "IfcOpenShell",
