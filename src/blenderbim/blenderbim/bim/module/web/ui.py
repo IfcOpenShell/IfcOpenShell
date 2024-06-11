@@ -38,7 +38,7 @@ class BIM_PT_webui(Panel):
         row.prop(props, "Webserver_port", text="Webserver Port")
 
         row = layout.row()
-        row.operator("bim.connect_to_websocket_server")
+        row.operator("bim.connect_websocket_server")
 
         row = layout.row()
         row.operator("bim.kill_websocket_server")
