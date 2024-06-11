@@ -76,7 +76,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blenderbim-${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
           tag: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
           overwrite: true
           body: "Daily developer testing build blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
