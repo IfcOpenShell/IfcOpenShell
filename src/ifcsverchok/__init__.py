@@ -19,8 +19,8 @@
 bl_info = {
     "name": "IFC for Sverchok",
     "author": "Martina Jakubowska, Dion Moult",
-    "version": (0, 0, 999999),
-    "blender": (2, 90, 0),
+    "version": (0, 0, 0),
+    "blender": (3, 1, 0),
     "location": "Node Editor",
     "category": "Node",
     "description": "An extension to Sverchok to work with IFC data",

@@ -35,7 +35,7 @@ SED:=sed -i '' -e
 endif
 endif
 
-IS_DEV_BUILD:=TRUE
+IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
 VERSION_MAJOR:=$(shell cat '../../VERSION' | cut -d '.' -f 1)
 VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
@@ -111,7 +111,7 @@ endif
 
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working
-	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/v0.8.0.zip
+	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip
 	cd dist/working && unzip v0.8.0.zip
 	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
 	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/util/
@@ -286,15 +286,15 @@ endif
 	rm -rf dist/blenderbim/libs/site/packages/numpy
 	rm -rf dist/blenderbim/libs/site/packages/numpy.libs
 
-ifeq ($(IS_DEV_BUILD), TRUE)
+ifeq ($(IS_STABLE), TRUE)
+	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
+	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
+else
 	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION).$(VERSION_DATE)/" blender_manifest.toml
 	cd dist/blenderbim/bim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION).$(VERSION_DATE)-$(PYVERSION)-$(PLATFORM).zip ./*
-else
-	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
-	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
-	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
 endif
 	rm -rf dist/blenderbim
 

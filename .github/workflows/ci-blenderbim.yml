@@ -1,4 +1,4 @@
-name: ci-ifcopenshell-python
+name: ci-blenderbim
 
 on:
   workflow_dispatch:
@@ -23,41 +23,40 @@ jobs:
         config:
           - {
             name: "Windows Build",
-            short_name: win64,
+            short_name: win,
           }
           - {
             name: "Linux Build",
-            short_name: linux64
+            short_name: linux
           }
           - {
             name: "MacOS Build",
-            short_name: macos64
+            short_name: macos
           }
           - {
             name: "MacOS ARM Build",
-            short_name: macosm164
+            short_name: macosm1
           }
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
         with:
-          python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
-      - run: echo ${{ env.DATE }}
+          python-version: '3.11'
       - name: Get current version
         id: version
         run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
       - name: Compile
         run: |
-          cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          make zip PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+          cp -r src/blenderbim src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          cd src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
+          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Upload zip file to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/ifcopenshell-python-${{ steps.version.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: ifcopenshell-python-${{ steps.version.outputs.version }}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          release_name: "ifcopenshell-python-${{steps.version.outputs.version}}"
-          tag: "ifcopenshell-python-${{steps.version.outputs.version}}"
+          file: src/blenderbim_${{ matrix.config.short_name }}_${{ matrix.pyver }}/dist/blenderbim-${{steps.version.outputs.version}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          asset_name: blenderbim-${{steps.version.outputs.version}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
+          release_name: "blenderbim-${{steps.version.outputs.version}}"
+          tag: "blenderbim-${{steps.version.outputs.version}}"
           overwrite: true
