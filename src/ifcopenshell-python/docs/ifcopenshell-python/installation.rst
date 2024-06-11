@@ -2,11 +2,12 @@ Installation
 ============
 
 There are different methods of installation, depending on your situation. If
-you aren't sure which to choose, if you're a programmer, go for the **Pre-built
-packages**. If you aren't a programmer, go for the **BlenderBIM Add-on**.
+you aren't sure which to choose, if you're a programmer, go for **PyPI** if you
+use Pip, otherwise go for the **ZIP packages**. If you aren't a programmer, go
+for the **BlenderBIM Add-on**.
 
-1. **Pre-built packages** is recommended for users wanting to use the latest IfcOpenShell builds.
-2. **PyPI** is recommended for developers using Pip.
+1. **PyPI** is recommended for developers using Pip.
+2. **ZIP packages** is recommended for users doing a manual installation.
 3. **Conda** is recommended for developers using Anaconda.
 4. **Docker** is recommended for developers using Docker.
 5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
@@ -16,49 +17,30 @@ packages**. If you aren't a programmer, go for the **BlenderBIM Add-on**.
 9. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
 10. **Compiling from source** is recommended for developers actively working with the C++ core.
 
-Pre-built packages
-------------------
+PyPI
+----
 
-Pre-built packages are prepared sporadically depending on whether there are
-changes in the IfcOpenShell C++ core. This will give you the latest available
-C++ bindings, but may potentially contain outdated pure Python modules, such as
-the API.
+.. code-block::
+
+    pip install ifcopenshell
+
+ZIP packages
+------------
 
 1. Choose which version to download based on your operating system, Python
    version, and computer architecture.
 
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   |             | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS Intel 64bit | MacOS Silicon 64bit |
-   +=============+================+================+================+===================+=====================+
-   | Python 3.9  | py39-linux64_  | py39-win32_    | py39-win64_    | py39-macos64_     | py39-macosm164_     |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.10 | py310-linux64_ | py310-win32_   | py310-win64_   | py310-macos64_    | py310-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | py311-macos64_    | py311-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | py312-macos64_    | py312-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-
-.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.8.0-90ae709-linux64.zip
-.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.8.0-90ae709-linux64.zip
-.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.8.0-90ae709-linux64.zip
-.. _py312-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.8.0-90ae709-linux64.zip
-.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.8.0-90ae709-win32.zip
-.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.8.0-90ae709-win32.zip
-.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.8.0-90ae709-win32.zip
-.. _py312-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.8.0-90ae709-win32.zip
-.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.8.0-90ae709-win64.zip
-.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.8.0-90ae709-win64.zip
-.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.8.0-90ae709-win64.zip
-.. _py312-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.8.0-90ae709-win64.zip
-.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.8.0-90ae709-macos64.zip
-.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.8.0-90ae709-macos64.zip
-.. _py311-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.8.0-90ae709-macos64.zip
-.. _py312-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.8.0-90ae709-macos64.zip
-.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.8.0-90ae709-macosm164.zip
-.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.8.0-90ae709-macosm164.zip
-.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.8.0-90ae709-macosm164.zip
-.. _py312-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.8.0-90ae709-macosm164.zip
+   +-------------+---------------------------------+-------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   |             | Linux 64bit                     | Windows 32bit                 | Windows 64bit                 | MacOS Intel 64bit               | MacOS Silicon 64bit               |
+   +=============+=================================+===============================+===============================+=================================+===================================+
+   | Python 3.9  | :ios_python_url:`py39-linux64`  | :ios_python_url:`py39-win32`  | :ios_python_url:`py39-win64`  | :ios_python_url:`py39-macos64`  | :ios_python_url:`py39-macosm164`  |
+   +-------------+---------------------------------+-------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.10 | :ios_python_url:`py310-linux64` | :ios_python_url:`py310-win32` | :ios_python_url:`py310-win64` | :ios_python_url:`py310-macos64` | :ios_python_url:`py310-macosm164` |
+   +-------------+---------------------------------+-------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.11 | :ios_python_url:`py311-linux64` | :ios_python_url:`py311-win32` | :ios_python_url:`py311-win64` | :ios_python_url:`py311-macos64` | :ios_python_url:`py311-macosm164` |
+   +-------------+---------------------------------+-------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.12 | :ios_python_url:`py312-linux64` | :ios_python_url:`py312-win32` | :ios_python_url:`py312-win64` | :ios_python_url:`py312-macos64` | :ios_python_url:`py312-macosm164` |
+   +-------------+---------------------------------+-------------------------------+-------------------------------+---------------------------------+-----------------------------------+
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -80,20 +62,6 @@ the API.
       import ifcopenshell
       print(ifcopenshell.version)
       model = ifcopenshell.file()
-
-PyPI
-----
-
-PyPI releases are automatically performed once a month and contain the latest
-Python code that point in time.
-
-Releases on PyPI may potentially ship slightly outdated precompiled binaries of
-the C++ core. This is because the binaries typically go through a period of
-manual testing prior in case of high-risk changes.
-
-.. code-block::
-
-    pip install ifcopenshell
 
 Conda
 -----
