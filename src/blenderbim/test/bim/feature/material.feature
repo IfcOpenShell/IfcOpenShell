@@ -59,15 +59,6 @@ Scenario: Remove material set
     When I press "bim.remove_material_set(material={material})"
     Then nothing happens
 
-Scenario: Unlink material
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I add a material
-    And I press "bim.add_material(obj='Material')"
-    When I press "bim.unlink_material"
-    Then the material "Material" is not an IFC material
-
 Scenario: Assign material - single material
     Given an empty IFC project
     And I add a cube

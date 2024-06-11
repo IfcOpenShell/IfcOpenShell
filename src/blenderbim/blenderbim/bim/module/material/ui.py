@@ -69,8 +69,6 @@ class BIM_PT_materials(Panel):
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
                     op.material = material.ifc_definition_id
-                    op = row.operator("bim.unlink_material", icon="UNLINKED", text="")
-                    op.material = material.ifc_definition_id
                     row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
 
             self.draw_editing_ui()
