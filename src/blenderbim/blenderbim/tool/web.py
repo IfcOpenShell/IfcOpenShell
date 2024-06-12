@@ -83,12 +83,12 @@ class Web(blenderbim.core.tool.Web):
         print("Webserver terminated successfully")
 
     @classmethod
-    def show_webserver_running(cls):
-        bpy.context.scene.WebProperties.show_webserver_running = True
+    def set_is_running(cls, is_running):
+        bpy.context.scene.WebProperties.is_running = is_running
 
     @classmethod
-    def hide_webserver_running(cls):
-        bpy.context.scene.WebProperties.show_webserver_running = False
+    def set_is_connected(cls, is_connected):
+        bpy.context.scene.WebProperties.is_connected = is_connected
 
     @classmethod
     def get_webui_data(cls):
