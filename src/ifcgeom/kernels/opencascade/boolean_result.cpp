@@ -175,6 +175,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		}
 		r = C;
 	} else {
+		if (br->operation != taxonomy::boolean_result::SUBTRACTION && a.IsNull()) {
+			a = b.First();
+			b.RemoveFirst();
+		}
 		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
 	}
 
