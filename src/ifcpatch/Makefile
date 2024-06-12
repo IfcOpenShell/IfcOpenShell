@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=`date '+%y%m%d'`
+VERSION:=$(shell cat ../../VERSION)
 SED:=sed -i
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
@@ -33,6 +33,10 @@ qa:
 .PHONY: dist
 dist:
 	rm -rf dist
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
+	cp pyproject.toml pyproject.toml.bak
+	cp ifcpatch/__init__.py __init__.py.bak
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' ifcpatch/__init__.py
 	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+	mv pyproject.toml.bak pyproject.toml
+	mv __init__.py.bak ifcpatch/__init__.py
