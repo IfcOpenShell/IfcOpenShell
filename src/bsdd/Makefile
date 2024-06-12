@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with bSDD.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=`date '+%y%m%d'`
+VERSION:=$(shell cat ../../VERSION)
 SED:=sed -i
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
@@ -29,6 +29,10 @@ test:
 .PHONY: dist
 dist:
 	rm -rf dist
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
+	cp pyproject.toml pyproject.toml.bak
+	cp bsdd.py bsdd.py.bak
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' bsdd.py
 	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+	mv pyproject.toml.bak pyproject.toml
+	mv bsdd.py.bak bsdd.py

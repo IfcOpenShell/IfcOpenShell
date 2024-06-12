@@ -25,6 +25,9 @@ import webbrowser
 import http.server
 from typing import TypedDict, Literal, Optional
 
+
+__version__ = version = "0.0.0"
+
 Status = Literal["Preview", "Active", "Inactive"]
 ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 
@@ -517,14 +520,16 @@ class Client:
     # deprecated
     def Property(self, namespaceUri, version="v2", languageCode=""):
         print(f"function 'Client.Property' is deprecated, use 'Client.get_property' instead")
-        return self._get_deprecated(f"api/Property/{version}",
-                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        return self._get_deprecated(
+            f"api/Property/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode}
+        )
 
     # deprecated
     def PropertyValue(self, namespaceUri, version="v1", languageCode=""):
         print(f"function 'Client.PropertyValue' is deprecated, use 'Client.get_property_value' instead")
-        return self._get_deprecated(f"api/PropertyValue/{version}",
-                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        return self._get_deprecated(
+            f"api/PropertyValue/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode}
+        )
 
     # deprecated
     def ReferenceDocument(self, version="v1"):
@@ -574,9 +579,16 @@ class Client:
         }
         return self.get(endpoint, params)
 
-    def get_classes(self, dictionary_uri: str, use_nested_classes: bool = True,
-                    class_type: ClassTypes = "Class",
-                    language_code: str = "", version: int = 1, offset=0, limit=1000) -> DictionaryClassesResponseContractV1:
+    def get_classes(
+        self,
+        dictionary_uri: str,
+        use_nested_classes: bool = True,
+        class_type: ClassTypes = "Class",
+        language_code: str = "",
+        version: int = 1,
+        offset=0,
+        limit=1000,
+    ) -> DictionaryClassesResponseContractV1:
         """
         Get Dictionary with tree of classes
         This API replaces Domain
@@ -587,29 +599,32 @@ class Client:
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
-            "offset" : offset,
-            "limit" : limit
+            "offset": offset,
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
-    def get_properties(self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "",
-                       version: int = 1) -> DictionaryPropertiesResponseContractV1:
+    def get_properties(
+        self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "", version: int = 1
+    ) -> DictionaryPropertiesResponseContractV1:
         """
         Get Dictionary with its properties
         """
         endpoint = f"Dictionary/v{version}/Properties"
-        params = {
-            "Uri": dictionary_uri,
-            "languageCode": language_code,
-            "offset": offset,
-            "limit": limit 
-        }
+        params = {"Uri": dictionary_uri, "languageCode": language_code, "offset": offset, "limit": limit}
         return self.get(endpoint, params)
 
-    def get_class(self, class_uri: str, include_class_properties: bool = True,
-                  include_child_class_reference: bool = True, include_class_relations: bool = True,
-                  include_reverse_relations: bool = False, reverse_relation_dictionary_uris: Optional[list[str]]=None,
-                  language_code: str = "", version: int = 1) -> ClassContractV1:
+    def get_class(
+        self,
+        class_uri: str,
+        include_class_properties: bool = True,
+        include_child_class_reference: bool = True,
+        include_class_relations: bool = True,
+        include_reverse_relations: bool = False,
+        reverse_relation_dictionary_uris: Optional[list[str]] = None,
+        language_code: str = "",
+        version: int = 1,
+    ) -> ClassContractV1:
         """
         Get Class details
         this API replaces Classification
@@ -627,8 +642,7 @@ class Client:
         params = {k: v for k, v in params.items() if v is not None}
         return self.get(endpoint, params)
 
-    def get_property(self, uri, include_classes=False, language_code="",
-                     version: int = 4) -> PropertyContractV4:
+    def get_property(self, uri, include_classes=False, language_code="", version: int = 4) -> PropertyContractV4:
         """
         Get Property Detail
         this API replaces Property
@@ -654,8 +668,15 @@ class Client:
         }
         return self.get(endpoint, params)
 
-    def search_text(self, search_text: str, type_filter="All", dictionary_uris=None,
-                    version: int = 1, offset: int = 0, limit: int = 100) -> TextSearchResponseContractV1:
+    def search_text(
+        self,
+        search_text: str,
+        type_filter="All",
+        dictionary_uris=None,
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> TextSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes and/or Properties matching the text.
         Pagination options are for Classes and Properties combined.
@@ -670,14 +691,21 @@ class Client:
             "TypeFilter": type_filter,
             "DictionaryUris": dictionary_uris,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
         pass
 
-    def search_in_dictionary(self, dictionary_uri: str, search_text: str = "", language_code: str = "",
-                             related_ifc_entity: str = "",
-                             version: int = 1, offset: int = 0, limit: int = 100) -> SearchInDictionaryResponseContractV1:
+    def search_in_dictionary(
+        self,
+        dictionary_uri: str,
+        search_text: str = "",
+        language_code: str = "",
+        related_ifc_entity: str = "",
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> SearchInDictionaryResponseContractV1:
         """
         Search the bSDD database, get list of Classes without details.
         This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
@@ -690,12 +718,19 @@ class Client:
             "LanguageCode": language_code,
             "RelatedIfcEntity": related_ifc_entity,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
-    def search_class(self, search_text: str, dictionary_uris=None, related_ifc_entities=None,
-                     version: int = 1, offset: int = 0, limit: int = 100) -> ClassSearchResponseContractV1:
+    def search_class(
+        self,
+        search_text: str,
+        dictionary_uris=None,
+        related_ifc_entities=None,
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> ClassSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes matching the text and optional additional filters.
         this API replaces ClassificationSearch
@@ -711,13 +746,13 @@ class Client:
             "DictionaryUris": dictionary_uris,
             "RelatedIfcEntities": related_ifc_entities,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
     def get_countries(self, version: int = 1) -> list[CountryContractV1]:
         """
-        Get list of all Countries 
+        Get list of all Countries
         this API replaces Country
         """
         endpoint = f"Country/v{version}"

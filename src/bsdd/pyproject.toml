@@ -1,21 +1,20 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "bsdd"
-version = "0.0.999999"
+version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
 description = "Library to interact with the buildingSMART Data Dictionary"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["IFC", "bSDD", "BIM"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -26,19 +25,16 @@ classifiers = [
 ]
 dependencies = ["requests"]
 
+[project.optional-dependencies]
+dev = [
+    "coverage[toml]>=6.5",
+    "pytest",
+]
+
 [project.urls]
 Homepage = "http://ifcopenshell.org"
 Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
-[tool.hatch.envs.default]
-dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest",
-]
-
-[[tool.hatch.envs.all.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
-
-[tool.pytest.ini_options]
-pythonpath = [".", "src"]
+[tool.setuptools]
+py-modules = ["bsdd"]
