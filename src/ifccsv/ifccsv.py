@@ -53,6 +53,9 @@ except:
     pass  # No Pandas support
 
 
+__version__ = version = "0.0.0"
+
+
 FILE_FORMAT = Literal[
     "csv",
     "ods",
