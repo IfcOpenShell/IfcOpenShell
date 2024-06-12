@@ -18,7 +18,12 @@ def connect_websocket_server(web, port):
     web.set_is_connected(True)
 
 
+def disconnect_websocket_server(web):
+    web.disconnect_websocket_server()
+    web.set_is_connected(False)
+
+
 def kill_websocket_server(web):
+    web.kill_websocket_server()
     web.set_is_running(False)
     web.set_is_connected(False)
-    web.kill_websocket_server()

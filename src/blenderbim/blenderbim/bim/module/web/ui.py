@@ -50,3 +50,6 @@ class BIM_PT_webui(Panel):
 
         row = layout.row()
         row.operator("bim.kill_websocket_server")
+
+        row = layout.row()
+        row.operator("bim.disconnect_websocket_server")
