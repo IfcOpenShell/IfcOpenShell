@@ -103,10 +103,6 @@ try:
 except:
     pass
 
-READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
-NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
-UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
-
 
 class Error(Exception):
     """Error used when a generic problem occurs"""
@@ -162,18 +158,7 @@ def open(path: Union[os.PathLike, str], format: Optional[str] = None, should_str
     if should_stream:
         return stream(path)
     f = ifcopenshell_wrapper.open(str(path.absolute()))
-    if f.good():
-        return file(f)
-    else:
-        exc, msg = {
-            READ_ERROR: (IOError, "Unable to open file for reading"),
-            NO_HEADER: (Error, "Unable to parse IFC SPF header"),
-            UNSUPPORTED_SCHEMA: (
-                SchemaError,
-                "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
-            ),
-        }[f.good().value()]
-        raise exc(msg)
+    return file(f)
 
 
 def create_entity(type, schema="IFC4", *args, **kwargs):
