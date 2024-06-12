@@ -175,6 +175,10 @@ class Transaction:
 
 file_dict = {}
 
+READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
+NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
+UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+
 
 class file:
     """Base class for containing IFC files.
@@ -246,6 +250,18 @@ class file:
         else:
             schema = {"IFC4X3": "IFC4X3_ADD2"}.get(schema, schema)
         if f is not None:
+            if not f.good():
+                from . import Error, SchemaError
+
+                exc, msg = {
+                    READ_ERROR: (IOError, "Unable to open file for reading"),
+                    NO_HEADER: (Error, "Unable to parse IFC SPF header"),
+                    UNSUPPORTED_SCHEMA: (
+                        SchemaError,
+                        "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
+                    ),
+                }[f.good().value()]
+                raise exc(msg)
             self.wrapped_data = f
         else:
             args = filter(None, [schema])
