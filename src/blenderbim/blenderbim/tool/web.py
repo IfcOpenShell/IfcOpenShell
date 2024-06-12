@@ -63,7 +63,7 @@ class Web(blenderbim.core.tool.Web):
         env = os.environ.copy()
         env["FLASK_APP"] = ws_path
 
-        ws_process = subprocess.Popen(["flask", "run", str(port), "--debug"], env=env)
+        ws_process = subprocess.Popen(["flask", "run", "-p", str(port)], env=env)
 
     @classmethod
     def connect_websocket_server(cls, port):
@@ -79,8 +79,8 @@ class Web(blenderbim.core.tool.Web):
 
         ws_process.terminate()
         ws_process.wait()
-        print("Webserver terminated successfully")
         ws_process = None
+        print("Webserver terminated successfully")
 
     @classmethod
     def show_webserver_running(cls):
