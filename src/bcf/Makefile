@@ -1,4 +1,22 @@
-VERSION:=`date '+%y%m%d'`
+# BCF - BCF Python library
+# Copyright (C) 2021 Prabhat Singh <singh01prabhat@gmail.com>
+#
+# This file is part of BCF.
+#
+# BCF is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# BCF is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with BCF.  If not, see <http://www.gnu.org/licenses/>.
+
+VERSION:=$(shell cat ../../VERSION)
 SED:=sed -i
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
@@ -21,9 +39,13 @@ models:
 .PHONY: dist
 dist:
 	rm -rf dist
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
+	cp pyproject.toml pyproject.toml.bak
+	cp src/bcf/__init__.py __init__.py.bak
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' src/bcf/__init__.py
 	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
+	mv pyproject.toml.bak pyproject.toml
+	mv __init__.py.bak src/bcf/__init__.py
 
 # .PHONY
 # api:
