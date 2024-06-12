@@ -31,5 +31,6 @@ from bpy.props import (
 
 
 class WebProperties(PropertyGroup):
-    webserver_port: IntProperty(name="Webserver Port")
-    show_webserver_running: BoolProperty(name="Show Webserver Running", default=False)
+    webserver_port: IntProperty(name="Webserver Port", min=0, max=65535)
+    is_running: BoolProperty(name="Webserver Running Status", default=False)
+    is_connected: BoolProperty(name="Connection Status", default=False)
