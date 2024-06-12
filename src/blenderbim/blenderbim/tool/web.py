@@ -66,12 +66,13 @@ class Web(blenderbim.core.tool.Web):
 
     @classmethod
     def connect_websocket_server(cls, port):
-        def set_thread_loop(url):
-            asyncio.set_event_loop(ws_thread_loop)
-            asyncio.run(cls.sio_connect(url))
+        def start_thread_loop(url):
+            global ws_thread_loop
+            ws_thread_loop = asyncio.new_event_loop()
+            ws_thread_loop.run_until_complete(cls.sio_connect(url))
 
-        ws_url = "ws://localhost:" + str(port) + "/blender"
-        wserver_thread = threading.Thread(target=set_thread_loop, args=(ws_url))
+        ws_url = f"ws://localhost:{port}/blender"
+        wserver_thread = threading.Thread(target=start_thread_loop, args=(ws_url,))
         wserver_thread.daemon = True
         wserver_thread.start()
 
@@ -83,7 +84,15 @@ class Web(blenderbim.core.tool.Web):
         # sio.on("data", test.message_handler, namespace="/blender")
 
         # await sio.emit("data", {"from": "client"}, namespace="/blender")
-        await sio.wait()
+
+    @classmethod
+    def disconnect_websocket_server(cls):
+        ws_thread_loop.run_until_complete(cls.sio_disconnect())
+        print("Disconnected from websocket server")
+
+    @classmethod
+    async def sio_disconnect(cls):
+        await sio.disconnect()
 
     @classmethod
     def kill_websocket_server(cls):
