@@ -68,7 +68,7 @@ class LateBoundSchemaInstantiator:
     def enumeration(self, name, enum):
         schema_name = self.schema_name
         index_in_schema = self.names.index(str(name))
-        self.declarations[str(name)] = w.enumeration_type(name, index_in_schema, sorted(enum.values))
+        self.declarations[str(name)] = w.enumeration_type(name, index_in_schema, enum.values)
 
     def entity(self, name, type):
         index_in_schema = self.names.index(str(name))
@@ -207,7 +207,7 @@ class EarlyBoundCodeWriter:
         schema_name = self.schema_name
         index_in_schema = self.names.index(name)
         ref = self.strings.append(name)
-        items = ",".join(self.strings.append(v) for v in sorted(enum.values))
+        items = ",".join(self.strings.append(v) for v in enum.values)
         self.statements.append(
             '    %(schema_name)s_types[%(index_in_schema)d] = new enumeration_type(%(ref)s, %(index_in_schema)d, {%(items)s});'
             % locals()
