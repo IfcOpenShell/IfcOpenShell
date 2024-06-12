@@ -160,7 +160,14 @@ class entity_instance:
         instance references prevents file gc, even with all instance
         refs deleted. This is a work-around for that.
         """
-        self.wrapped_data.file = None
+        # Avoid infinite recursion if entity is failed to initialize
+        # and wrapped_data is unset. Hacky since we override
+        # both __dict__ and __dir__.
+        try:
+            wrapped_data = super().__getattribute__("wrapped_data")
+            wrapped_data.file = None
+        except AttributeError:
+            return
 
     @property
     def file(self):

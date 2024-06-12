@@ -277,6 +277,10 @@ class file:
         file_dict[self.file_pointer()] = weakref.ref(self)
 
     def __del__(self) -> None:
+        # Avoid infinite recursion if file is failed to initialize
+        # and wrapped_data is unset.
+        if "wrapped_data" not in dir(self):
+            return
         del file_dict[self.file_pointer()]
 
     def set_history_size(self, size: int) -> None:
