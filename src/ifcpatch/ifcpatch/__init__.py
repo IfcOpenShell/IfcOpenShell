@@ -29,6 +29,9 @@ import importlib
 from typing import Union
 
 
+__version__ = version = "0.0.0"
+
+
 def execute(args: dict) -> Union[ifcopenshell.file, str]:
     """Execute a patch recipe
 
