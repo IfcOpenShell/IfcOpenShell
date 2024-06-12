@@ -21,6 +21,7 @@ from . import ui, prop, operator
 
 classes = (
     operator.ConnectToWebsocketServer,
+    operator.DisconnectWebsocketServer,
     operator.killWebsocketServer,
     prop.WebProperties,
     ui.BIM_PT_webui,

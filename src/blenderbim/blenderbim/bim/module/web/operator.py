@@ -37,6 +37,16 @@ class ConnectToWebsocketServer(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class DisconnectWebsocketServer(bpy.types.Operator):
+    bl_idname = "bim.disconnect_websocket_server"
+    bl_label = "Disconnect from websocket server"
+    bl_description = "disconnect from current websocket server"
+
+    def execute(self, context):
+        core.disconnect_websocket_server(tool.Web)
+        return {"FINISHED"}
+
+
 class killWebsocketServer(bpy.types.Operator):
     bl_idname = "bim.kill_websocket_server"
     bl_label = "Kill websocket server"
