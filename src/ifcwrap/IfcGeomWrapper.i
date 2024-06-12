@@ -213,6 +213,15 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 			aggregate_of_instance::ptr styles = *ent->get("Styles");
 			if (styles->size() == 1) {
 				ent = (*styles->begin())->as<IfcUtil::IfcBaseEntity>();
+				// < IFC4X3.
+				if (ent->declaration().name() == "IfcPresentationStyleAssignment") {
+					aggregate_of_instance::ptr styles = *ent->get("Styles");
+					if (styles->size() == 1) {
+						ent = (*styles->begin())->as<IfcUtil::IfcBaseEntity>();
+					} else {
+						return 0;
+					}
+				}
 			} else {
 				return 0;
 			}
