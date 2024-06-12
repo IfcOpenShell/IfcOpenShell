@@ -363,8 +363,13 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 }
 
 IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product) {
+	auto interpreted_representation = mapping_->map(representation);
+	if (!interpreted_representation) {
+		interpreted_representation = taxonomy::make<taxonomy::collection>();
+		interpreted_representation->instance = representation;
+	}
 	return create_brep_for_representation_and_product(
-		mapping_->map(representation),
+		interpreted_representation,
 		product,
 		taxonomy::cast<taxonomy::geom_item>(mapping_->map(product))->matrix
 	);
