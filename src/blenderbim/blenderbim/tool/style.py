@@ -565,26 +565,67 @@ class Style(blenderbim.core.tool.Style):
     def assign_style_to_representation_item(
         cls, representation_item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
     ) -> None:
-        ifc_file = tool.Ifc.get()
-        if not representation_item.StyledByItem:
+        """Assign specified style to a representation item and unassign all previously assigned styles."""
+        ifc_file = representation_item.file
+        if not (styled_item := next(iter(representation_item.StyledByItem), None)):
             if style is None:
                 return
-            ifc_file.createIfcStyledItem(representation_item, (style,))
+            if ifc_file.schema == "IFC2X3":
+                style = ifc_file.create_entity("IfcPresentationStyleAssignment", (style,))
+            ifc_file.create_entity("IfcStyledItem", representation_item, (style,))
+            return
 
-        styled_item = representation_item.StyledByItem[0]
+        styled_item_styles = styled_item.Styles
+        if style and styled_item_styles == (style,):
+            return
+
+        if ifc_file.schema == "IFC4X3":
+            if style is None:
+                ifc_file.remove(styled_item)
+                return
+            styled_item.Styles = (style,)
+            return
+
+        # < IFC4X3
+        # Can't just remove a styled item or assign a style
+        # since we need to remove/change the possible style assignments.
+        assignment = None
+        for style_ in styled_item_styles:
+            if not style_.is_a("IfcPresentationStyleAssignment"):
+                continue
+            # Remove second assignment.
+            if style is None or assignment:
+                ifc_file.remove(style_)
+            else:
+                assignment = style_
+                if assignment.Styles != (style,):
+                    assignment.Styles = (style,)
+
         if style is None:
             ifc_file.remove(styled_item)
             return
+
+        if assignment:
+            if styled_item_styles == (assignment,):
+                return
+            styled_item.Styles = (assignment,)
+            return
+
         styled_item.Styles = (style,)
 
     @classmethod
     def get_representation_item_style(
         cls, representation_item: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        for inverse in tool.Ifc.get().get_inverse(representation_item):
-            if inverse.is_a("IfcStyledItem"):
-                for style in inverse.Styles:
-                    return style
+        """Return IfcPresentationStyle associated with a representation item."""
+        is_4x3 = representation_item.file.schema == "IFC4X3"
+        for style in representation_item.StyledByItem:
+            for style_or_assignment in style.Styles:
+                if not is_4x3 and style_or_assignment.is_a("IfcPresentationStyleAssignment"):
+                    for assignment_style in style_or_assignment.Styles:
+                        return assignment_style
+                else:  # IfcPresentationStyle
+                    return style_or_assignment
 
     @classmethod
     def reload_material_from_ifc(cls, blender_material: bpy.types.Material) -> None:
