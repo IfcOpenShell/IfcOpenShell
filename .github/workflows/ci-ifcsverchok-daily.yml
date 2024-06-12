@@ -46,6 +46,6 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: src/ifcsverchok/dist/ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}.zip
           asset_name: ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}.zip
-          release_name: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
+          release_name: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
           tag: "ifcsverchok-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
           overwrite: true

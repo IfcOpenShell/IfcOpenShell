@@ -812,7 +812,7 @@ class IfcImporter:
             self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
             self.create_grid_axes(grid.VAxes, grid_obj, grid_placement)
             if grid.WAxes:
-                self.create_grid_axes(grid.WAxes, grid_obj)
+                self.create_grid_axes(grid.WAxes, grid_obj, grid_placement)
 
     def create_grid_axes(self, axes, grid_obj, grid_placement):
         for axis in axes:
