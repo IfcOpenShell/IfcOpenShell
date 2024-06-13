@@ -41,8 +41,9 @@ class BIM_PT_webui(Panel):
             row = layout.row()
             row.label(text=f"Running on port: {props.webserver_port}")
 
-        row = layout.row()
+        row = layout.row(align=True)
         row.operator("bim.connect_websocket_server")
+        row.operator("bim.open_web_browser", icon="URL", text="")
 
         if props.is_connected:
             row = layout.row()
