@@ -10,20 +10,13 @@ def connect_websocket_server(web, port):
     # check if port already has a server listening to it
     if web.is_port_available(port):
         web.start_websocket_server(port)
-        web.set_is_running(True)
-    else:
-        web.set_is_running(False)
 
     web.connect_websocket_server(port)
-    web.set_is_connected(True)
 
 
 def disconnect_websocket_server(web):
     web.disconnect_websocket_server()
-    web.set_is_connected(False)
 
 
 def kill_websocket_server(web):
     web.kill_websocket_server()
-    web.set_is_running(False)
-    web.set_is_connected(False)
