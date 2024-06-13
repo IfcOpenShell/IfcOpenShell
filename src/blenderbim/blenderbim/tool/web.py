@@ -59,6 +59,7 @@ class Web(blenderbim.core.tool.Web):
         global ws_process
         ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "sioserver.py")
         ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"])
+        cls.open_web_browser(port)
         cls.set_is_running(True)
 
     @classmethod
@@ -117,6 +118,10 @@ class Web(blenderbim.core.tool.Web):
         data = {}
         data["ifc_file"] = bpy.context.scene.BIMProperties.ifc_file
         return json.dumps(data)
+
+    @classmethod
+    def open_web_browser(cls, port):
+        webbrowser.open(f"http://127.0.0.1:{port}/")
 
     @classmethod
     async def sio_connect(cls, url):

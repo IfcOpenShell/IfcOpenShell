@@ -55,3 +55,12 @@ class killWebsocketServer(bpy.types.Operator):
     def execute(self, context):
         core.kill_websocket_server(tool.Web)
         return {"FINISHED"}
+
+
+class OpenWebBrowser(bpy.types.Operator):
+    bl_idname = "bim.open_web_browser"
+    bl_label = "Open Web Browser"
+    bl_description = "Open the web UI base URL in your Web Browser"
+
+    def execute(self, context):
+        core.open_web_browser(tool.Web)

@@ -1,7 +1,3 @@
-def open_web_ui(web):
-    web.open_web_ui()
-
-
 def generate_port_number(web):
     return web.generate_port_number()
 
@@ -20,3 +16,7 @@ def disconnect_websocket_server(web):
 
 def kill_websocket_server(web):
     web.kill_websocket_server()
+
+
+def open_web_browser(web):
+    web.open_web_browser()
