@@ -255,6 +255,8 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def import_spatial_element(cls, element, level_index):
+        if not element.is_a("IfcProject") and not tool.Root.is_spatial_element(element):
+            return
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         new = props.containers.add()
         new.ifc_class = element.is_a()
