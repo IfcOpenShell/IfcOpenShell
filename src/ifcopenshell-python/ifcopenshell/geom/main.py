@@ -169,6 +169,12 @@ class settings_mixin:
         return super().setting_names() + ("use-python-opencascade",)
 
     def __getattr__(self, k: str) -> SETTING:
+        # Swig wrapper will try to access "this",
+        # ensure we won't accidentally call any c-extension methods
+        # like .setting_names() until wrapper is not completely initialized.
+        # See #4861.
+        if k == "this":
+            raise AttributeError("Swig wrapper's 'this' is unset.")
         if k in map(self.rname, self.setting_names()):
             return k
         else:
