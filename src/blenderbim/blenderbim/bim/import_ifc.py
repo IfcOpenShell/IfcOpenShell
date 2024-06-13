@@ -526,6 +526,8 @@ class IfcImporter:
                     if representation_id is None:
                         representation_id = rep.id()
                 rep = rep.Items[0].MappingSource.MappedRepresentation
+                if not rep: # Accommodate invalid files
+                    return False
             else:
                 if representation_id is None:
                     representation_id = rep.id()
