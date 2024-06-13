@@ -23,6 +23,7 @@ classes = (
     operator.ConnectToWebsocketServer,
     operator.DisconnectWebsocketServer,
     operator.killWebsocketServer,
+    operator.OpenWebBrowser,
     prop.WebProperties,
     ui.BIM_PT_webui,
 )
