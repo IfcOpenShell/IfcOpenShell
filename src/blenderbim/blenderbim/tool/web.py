@@ -30,9 +30,9 @@ import threading
 import json
 
 
-sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=3, reconnection_delay=2, logger=True)
-ws_thread_loop = asyncio.new_event_loop()
+sio = None
 ws_process = None
+ws_thread = None
 
 
 class Web(blenderbim.core.tool.Web):
@@ -57,24 +57,44 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def start_websocket_server(cls, port):
         global ws_process
-        ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "app.py")
-
-        env = os.environ.copy()
-        env["FLASK_APP"] = ws_path
-
-        ws_process = subprocess.Popen(["flask", "run", "-p", str(port)], env=env)
+        ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "sioserver.py")
+        ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"])
 
     @classmethod
     def connect_websocket_server(cls, port):
-        def start_thread_loop(url):
-            global ws_thread_loop
-            ws_thread_loop = asyncio.new_event_loop()
-            ws_thread_loop.run_until_complete(cls.sio_connect(url))
+        global ws_thread, sio
+
+        sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=3, reconnection_delay=2, logger=True)
+
+        ws_thread = AsyncioThread()
+        ws_thread.daemon = True
+        ws_thread.start()
 
         ws_url = f"ws://localhost:{port}/blender"
-        wserver_thread = threading.Thread(target=start_thread_loop, args=(ws_url,))
-        wserver_thread.daemon = True
-        wserver_thread.start()
+        ws_thread.run_coro(cls.sio_connect(ws_url))
+
+    @classmethod
+    def disconnect_websocket_server(cls):
+        global ws_thread, sio
+        ws_thread.run_coro(cls.sio_disconnect())
+        ws_thread.stop()
+        ws_thread = None
+        sio = None
+
+    @classmethod
+    def kill_websocket_server(cls):
+        global ws_process
+
+        if ws_process is None:
+            print("No webserver running")
+            return
+
+        cls.disconnect_websocket_server()
+        ws_process.terminate()
+        ws_process.wait()
+        ws_process = None
+
+        print("Webserver terminated successfully")
 
     @classmethod
     async def sio_connect(cls, url):
@@ -86,26 +106,12 @@ class Web(blenderbim.core.tool.Web):
         # await sio.emit("data", {"from": "client"}, namespace="/blender")
 
     @classmethod
-    def disconnect_websocket_server(cls):
-        ws_thread_loop.run_until_complete(cls.sio_disconnect())
-        print("Disconnected from websocket server")
-
-    @classmethod
     async def sio_disconnect(cls):
         await sio.disconnect()
 
     @classmethod
-    def kill_websocket_server(cls):
-        global ws_process
-
-        if ws_process is None:
-            print("No webserver running")
-            return
-
-        ws_process.terminate()
-        ws_process.wait()
-        ws_process = None
-        print("Webserver terminated successfully")
+    async def sio_send(cls, message):
+        await sio.emit("data", {"from": "client"}, namespace="/blender")
 
     @classmethod
     def set_is_running(cls, is_running):
@@ -120,3 +126,22 @@ class Web(blenderbim.core.tool.Web):
         data = {}
         data["ifc_file"] = bpy.context.scene.BIMProperties.ifc_file
         return json.dumps(data)
+
+
+class AsyncioThread(threading.Thread):
+    def __init__(self, *args, loop=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.loop = loop or asyncio.new_event_loop()
+        self.running = False
+
+    def run(self):
+        self.running = True
+        self.loop.run_forever()
+
+    def run_coro(self, coro):
+        return asyncio.run_coroutine_threadsafe(coro, loop=self.loop).result()
+
+    def stop(self):
+        self.loop.call_soon_threadsafe(self.loop.stop)
+        self.join()
+        self.running = False
