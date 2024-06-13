@@ -97,6 +97,18 @@ class Web(blenderbim.core.tool.Web):
         print("Webserver terminated successfully")
 
     @classmethod
+    def send_webui_data(cls):
+        global ws_thread
+        data = cls.get_webui_data()
+        ws_thread.run_coro(cls.sio_send(data))
+
+    @classmethod
+    def get_webui_data(cls):
+        data = {}
+        data["ifc_file"] = bpy.context.scene.BIMProperties.ifc_file
+        return json.dumps(data)
+
+    @classmethod
     async def sio_connect(cls, url):
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
 
@@ -110,8 +122,8 @@ class Web(blenderbim.core.tool.Web):
         await sio.disconnect()
 
     @classmethod
-    async def sio_send(cls, message):
-        await sio.emit("data", {"from": "client"}, namespace="/blender")
+    async def sio_send(cls, data):
+        await sio.emit("data", data, namespace="/blender")
 
     @classmethod
     def set_is_running(cls, is_running):
@@ -120,12 +132,6 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def set_is_connected(cls, is_connected):
         bpy.context.scene.WebProperties.is_connected = is_connected
-
-    @classmethod
-    def get_webui_data(cls):
-        data = {}
-        data["ifc_file"] = bpy.context.scene.BIMProperties.ifc_file
-        return json.dumps(data)
 
 
 class AsyncioThread(threading.Thread):
