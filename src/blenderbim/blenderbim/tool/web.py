@@ -59,10 +59,15 @@ class Web(blenderbim.core.tool.Web):
         global ws_process
         ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "sioserver.py")
         ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"])
+        cls.set_is_running(True)
 
     @classmethod
     def connect_websocket_server(cls, port):
         global ws_thread, sio
+
+        if bpy.context.scene.WebProperties.is_connected:
+            print(f"Already connected to websocket server on port: {port}")
+            return
 
         sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=3, reconnection_delay=2, logger=True)
 
@@ -72,6 +77,7 @@ class Web(blenderbim.core.tool.Web):
 
         ws_url = f"ws://localhost:{port}/blender"
         ws_thread.run_coro(cls.sio_connect(ws_url))
+        cls.set_is_connected(True)
 
     @classmethod
     def disconnect_websocket_server(cls):
@@ -80,21 +86,25 @@ class Web(blenderbim.core.tool.Web):
         ws_thread.stop()
         ws_thread = None
         sio = None
+        cls.set_is_connected(False)
 
     @classmethod
     def kill_websocket_server(cls):
         global ws_process
 
         if ws_process is None:
-            print("No webserver running")
+            print("No Websocket server running")
             return
 
-        cls.disconnect_websocket_server()
+        if bpy.context.scene.WebProperties.is_connected:
+            cls.disconnect_websocket_server()
+
         ws_process.terminate()
         ws_process.wait()
         ws_process = None
+        cls.set_is_running(False)
 
-        print("Webserver terminated successfully")
+        print("Websocket server terminated successfully")
 
     @classmethod
     def send_webui_data(cls):
