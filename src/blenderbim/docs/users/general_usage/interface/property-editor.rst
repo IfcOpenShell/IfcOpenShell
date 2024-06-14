@@ -54,6 +54,9 @@ The "Project Info" subsection in the BlenderBIM Add-on interface changes dependi
 
 **Not Created or Loaded state**
 
+.. figure:: images/interface_property-editor_project-overview_new_load.png
+   :alt: Project Info when project is not created or loaded
+
 When no IFC file is loaded, the "Project Info" subsection displays options to create a new IFC project or load an existing one.
 
 Buttons:
@@ -63,13 +66,19 @@ Buttons:
 
 **Not Saved state**
 
-When a new IFC project is created but not yet saved, the "Project Info" subsection displays the following message: "No File Found". Indicates that the current IFC project has not been saved to a file. The IFC header can be edited by clicking the pencil button. In this mode you can't unload the IFC project and go back to the Not Create or Loaded mode. You have to save the IFC file first and then unload the project.
+.. figure:: images/interface_property-editor_project-overview_unsaved.png
+   :alt: Project Info when IFC project is created but IFC file is not saved
+
+When a new IFC project is created but not yet saved, the "Project Info" subsection displays the following message: "File Not Saved". Indicates that the current IFC project has not been saved to a file. The IFC header can be edited by clicking the pencil button. In this mode you can't unload the IFC project and go back to the Not Create or Loaded mode. You have to save the IFC file first and then unload the project.
 
 Buttons:
 
 - **Edit (pencil icon)**: Clicking this button switches the "Project Info" subsection to editing mode, allowing users to modify the IFC header/metadata fields.
 
 **Saved and Loaded state**
+
+.. figure:: images/interface_property-editor_project-overview_saved.png
+   :alt: Project Info when IFC project is created and IFC file is saved
 
 Fields:
 
