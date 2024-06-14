@@ -23,6 +23,7 @@ import collections
 import collections.abc
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
@@ -460,7 +461,7 @@ class Model(blenderbim.core.tool.Model):
         return ifc_importer.added_data.values()
 
     @classmethod
-    def clear_scene_openings(cls):
+    def clear_scene_openings(cls) -> None:
         props = bpy.context.scene.BIMModelProperties
         has_deleted_opening = True
         while has_deleted_opening:
@@ -525,7 +526,9 @@ class Model(blenderbim.core.tool.Model):
         return booleans
 
     @classmethod
-    def mark_manual_booleans(cls, element, booleans):
+    def mark_manual_booleans(
+        cls, element: ifcopenshell.entity_instance, booleans: list[ifcopenshell.entity_instance]
+    ) -> None:
         pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         boolean_ids = [b.id() for b in booleans]
         if pset_data:

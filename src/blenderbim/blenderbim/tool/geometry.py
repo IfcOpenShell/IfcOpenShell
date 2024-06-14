@@ -45,14 +45,14 @@ from typing import Union, Iterable, Optional
 
 class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
-    def change_object_data(cls, obj, data, is_global=False):
+    def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         if is_global:
             cls.replace_object_data_globally(obj.data, data)
         else:
             obj.data = data
 
     @classmethod
-    def replace_object_data_globally(cls, old_data, new_data):
+    def replace_object_data_globally(cls, old_data: bpy.types.ID, new_data: bpy.types.ID) -> None:
         if getattr(old_data, "is_editmode", None):
             raise Exception("user_remap is not supported for meshes in EDIT mode")
         old_data.user_remap(new_data)
@@ -653,7 +653,14 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.name = name
 
     @classmethod
-    def replace_object_with_empty(cls, obj):
+    def replace_object_with_empty(cls, obj: bpy.types.Object) -> None:
+        """Recreate a Blender object as an empty object.
+
+        This method is useful when an object should no longer have associated
+        data (in Blender, you cannot simply assign .data to None). Note that the
+        object's original data is not handled by this method and should be
+        processed separately to avoid leaving orphan data.
+        """
         element = tool.Ifc.get_entity(obj)
         name = obj.name
         if element:

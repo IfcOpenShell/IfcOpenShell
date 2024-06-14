@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.tool as tool
 import blenderbim.core.geometry
