@@ -18,5 +18,5 @@ def kill_websocket_server(web):
     web.kill_websocket_server()
 
 
-def open_web_browser(web):
-    web.open_web_browser()
+def open_web_browser(web, port):
+    web.open_web_browser(port)
