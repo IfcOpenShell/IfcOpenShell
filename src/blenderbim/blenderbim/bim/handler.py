@@ -51,8 +51,6 @@ def name_callback(obj, data):
         return
 
     if isinstance(obj, bpy.types.Material):
-        if obj.BIMObjectProperties.ifc_definition_id:
-            IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id).Name = obj.name
         if obj.BIMMaterialProperties.ifc_style_id:
             IfcStore.get_file().by_id(obj.BIMMaterialProperties.ifc_style_id).Name = obj.name
         refresh_ui_data()
