@@ -63,4 +63,6 @@ class OpenWebBrowser(bpy.types.Operator):
     bl_description = "Open the web UI base URL in your Web Browser"
 
     def execute(self, context):
-        core.open_web_browser(tool.Web)
+        port = context.scene.WebProperties.webserver_port
+        core.open_web_browser(tool.Web, port)
+        return {"FINISHED"}
