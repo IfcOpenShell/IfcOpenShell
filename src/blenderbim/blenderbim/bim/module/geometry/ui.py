@@ -419,10 +419,11 @@ class BIM_PT_placement(Panel):
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
             row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
 
-            row = self.layout.row(align=True)
-            row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
-            row.label(text=PlacementData.data["original_y"])
-            row.label(text=PlacementData.data["original_z"])
+            if context.active_object.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
+                row = self.layout.row(align=True)
+                row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
+                row.label(text=PlacementData.data["original_y"])
+                row.label(text=PlacementData.data["original_z"])
 
 
 class BIM_PT_derived_coordinates(Panel):
