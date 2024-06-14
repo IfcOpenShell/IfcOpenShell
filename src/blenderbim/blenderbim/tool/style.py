@@ -50,6 +50,10 @@ class Style(blenderbim.core.tool.Style):
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
 
     @classmethod
+    def delete_object(cls, obj: bpy.types.Material) -> None:
+        bpy.data.materials.remove(obj)
+
+    @classmethod
     def disable_editing(cls, obj: bpy.types.Material) -> None:
         obj.BIMStyleProperties.is_editing = False
 

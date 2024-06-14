@@ -224,7 +224,7 @@ class FilledOpeningGenerator:
         else:
             opening_obj = tool.Ifc.get_object(opening)
             if opening_obj:
-                tool.Ifc.unlink(obj=opening_obj)
+                tool.Ifc.unlink(element=opening)
                 bpy.data.objects.remove(opening_obj)
 
             filling_obj = tool.Ifc.get_object(filling)
@@ -772,9 +772,9 @@ class HideOpenings(Operator, tool.Ifc.Operator):
             for opening in openings:
                 opening_obj = tool.Ifc.get_object(opening)
                 if opening_obj:
-                    to_delete.add(opening_obj)
-        for opening_obj in to_delete:
-            tool.Ifc.unlink(obj=opening_obj)
+                    to_delete.add((opening, opening_obj))
+        for opening, opening_obj in to_delete:
+            tool.Ifc.unlink(element=opening)
             bpy.data.objects.remove(opening_obj)
         tool.Model.clear_scene_openings()
         return {"FINISHED"}
@@ -824,7 +824,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     building_objs.update(
                         self.get_all_building_objects_of_similar_openings(opening)
                     )  # NB this has nothing to do with clone similar_opening
-                    tool.Ifc.unlink(element=opening, obj=opening_obj)
+                    tool.Ifc.unlink(element=opening)
                     bpy.data.objects.remove(opening_obj)
 
         tool.Model.reload_body_representation(building_objs)

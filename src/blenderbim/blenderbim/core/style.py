@@ -59,13 +59,12 @@ def update_external_style(
 
 
 def remove_style(
-    ifc: tool.Ifc, material: tool.Material, style_tool: tool.Style, style: ifcopenshell.entity_instance
+    ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance
 ) -> None:
     obj = ifc.get_object(style)
-    ifc.unlink(obj=obj, element=style)
+    ifc.unlink(element=style)
     ifc.run("style.remove_style", style=style)
-    if obj and not ifc.get_entity(obj):
-        material.delete_object(obj)
+    style_tool.delete_object(obj)
     if style_tool.is_editing_styles():
         style_tool.import_presentation_styles(style_tool.get_active_style_type())
 
@@ -130,8 +129,7 @@ def update_style_textures(
 
 
 def unlink_style(ifc: tool.Ifc, style: ifcopenshell.entity_instance) -> None:
-    obj = ifc.get_object(style)
-    ifc.unlink(obj=obj, element=style)
+    ifc.unlink(element=style)
 
 
 def enable_editing_style(style: tool.Style, obj: bpy.types.Material) -> None:

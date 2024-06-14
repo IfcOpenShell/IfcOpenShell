@@ -53,32 +53,23 @@ class TestAddStyle:
 
 
 class TestRemoveStyle:
-    def test_removing_a_style(self, ifc, material, style):
+    def test_removing_a_style(self, ifc, style):
         ifc.get_object("style").should_be_called().will_return("obj")
-        ifc.unlink(obj="obj", element="style").should_be_called()
+        ifc.unlink(element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return("material")
+        style.delete_object("obj").should_be_called()
         style.is_editing_styles().should_be_called().will_return(False)
-        subject.remove_style(ifc, material, style, style="style")
+        subject.remove_style(ifc, style, style="style")
 
-    def test_removing_a_style_and_reloading_imported_styles(self, ifc, material, style):
+    def test_removing_a_style_and_reloading_imported_styles(self, ifc, style):
         ifc.get_object("style").should_be_called().will_return("obj")
-        ifc.unlink(obj="obj", element="style").should_be_called()
+        ifc.unlink(element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return("material")
+        style.delete_object("obj").should_be_called()
         style.is_editing_styles().should_be_called().will_return(True)
         style.get_active_style_type().should_be_called().will_return("style_type")
         style.import_presentation_styles("style_type").should_be_called()
-        subject.remove_style(ifc, material, style, style="style")
-
-    def test_removing_an_object_if_it_is_not_still_used_for_a_material(self, ifc, material, style):
-        ifc.get_object("style").should_be_called().will_return("obj")
-        ifc.unlink(obj="obj", element="style").should_be_called()
-        ifc.run("style.remove_style", style="style").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return(None)
-        material.delete_object("obj").should_be_called()
-        style.is_editing_styles().should_be_called().will_return(False)
-        subject.remove_style(ifc, material, style, style="style")
+        subject.remove_style(ifc, style, style="style")
 
 
 class TestUpdateStyleColours:

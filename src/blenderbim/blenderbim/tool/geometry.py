@@ -656,9 +656,12 @@ class Geometry(blenderbim.core.tool.Geometry):
     def replace_object_with_empty(cls, obj):
         element = tool.Ifc.get_entity(obj)
         name = obj.name
-        tool.Ifc.unlink(obj=obj, element=element)
+        if element:
+            tool.Ifc.unlink(element=element)
+
         obj.name = ifcopenshell.guid.new()
         new_obj = bpy.data.objects.new(name, None)
+
         if element:
             tool.Ifc.link(element, new_obj)
         for collection in obj.users_collection:
