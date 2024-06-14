@@ -509,6 +509,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
+    def has_material_style_override(cls, element: ifcopenshell.entity_instance) -> bool:
+        if element.is_a("IfcTypeProduct"):
+            return False
+        own_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+        if own_material:
+            inherited_style = cls.get_inherited_material_style(element)
+            style = tool.Material.get_style(own_material) if own_material else None
+            if inherited_style != style:
+                return True
+        return False
+
+    @classmethod
     def import_representation(cls, obj, representation, apply_openings=True):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
@@ -802,17 +814,29 @@ class Geometry(blenderbim.core.tool.Geometry):
         meshes_to_objects = {(obj := tool.Ifc.get_object(element)).data: obj for element in elements}
 
         for obj in meshes_to_objects.values():
-            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            blenderbim.core.geometry.switch_representation(
-                tool.Ifc,
-                tool.Geometry,
-                obj=obj,
-                representation=representation,
-                should_reload=True,
-                is_global=True,
-                should_sync_changes_first=False,
-                apply_openings=True,
-            )
+            cls._reload_representation(obj)
+
+    @classmethod
+    def _reload_representation(cls, obj: bpy.types.Object) -> None:
+        """Reload representation only for this object.
+
+        Be careful as this method won't reload representation for related objects
+        that use the same representation but have different meshes
+        (e.g. because of the openings).
+        In the most cases just use reload_representation
+        as it will handle those complications by itself.
+        """
+        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+            apply_openings=True,
+        )
 
     @classmethod
     def remove_representation_item(cls, representation_item):
@@ -1010,3 +1034,64 @@ class Geometry(blenderbim.core.tool.Geometry):
             if (result := obj.BIMObjectProperties.blender_offset_type) == "NONE":
                 result = obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
             return result
+
+    @classmethod
+    def has_geometry_without_styles(cls, mesh: bpy.types.Mesh) -> bool:
+        """Check if mesh has geometry without styles.
+
+        Detects geometry without styles based on how
+        MaterialCreator works - will check if either
+        mesh has no material slots or has an empty material slot.
+        """
+        return not mesh.materials or any(m is None for m in mesh.materials)
+
+    @classmethod
+    def get_representation_styles(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> set[ifcopenshell.entity_instance]:
+        """Return a set of styles assigned to the representation directly."""
+
+        styles = set()
+
+        # Get all stylable representation items.
+        items = []
+        for item in representation.Items:
+            if item.is_a("IfcMappedItem"):
+                items.extend(item.MappingSource.MappedRepresentation.Items)
+            if item.is_a("IfcBooleanResult"):
+                operand = item.FirstOperand
+                while True:
+                    items.append(operand)
+                    if operand.is_a("IfcBooleanResult"):
+                        operand = operand.FirstOperand
+                    else:
+                        break
+            items.append(item)
+
+        for item in items:
+            if not item.StyledByItem:
+                continue
+            current_styles = list(item.StyledByItem[0].Styles)
+            while current_styles:
+                style = current_styles.pop()
+                if style.is_a("IfcPresentationStyle"):
+                    styles.add(style)
+                elif style.is_a("IfcPresentationStyleAssignment"):
+                    current_styles.extend(style.Styles)
+
+        return styles
+
+    @classmethod
+    def get_inherited_material_style(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        if element.is_a("IfcTypeProduct"):
+            return
+        element_type = ifcopenshell.util.element.get_type(element)
+        if not element_type:
+            return
+        materials = ifcopenshell.util.element.get_materials(element_type)
+        if not materials:
+            return
+        material_style = tool.Material.get_style(materials[0])
+        return material_style

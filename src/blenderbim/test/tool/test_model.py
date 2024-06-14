@@ -18,13 +18,18 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.material
+import ifcopenshell.api.style
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import numpy as np
 import json
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.model import Model as subject
-from ifcopenshell.util.shape_builder import V
+from ifcopenshell.util.shape_builder import V, ShapeBuilder
 
 
 class TestImplementsTool(NewFile):
@@ -438,3 +443,212 @@ class TestUsingArrays(NewFile):
             element = tool.Ifc.get_entity(obj)
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
             assert pset is None, (obj, pset)
+
+
+class TestApplyIfcMaterialChanges(NewFile):
+    def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        return {ifc_file.by_id(s.material.BIMMaterialProperties.ifc_style_id) for s in obj.material_slots if s.material}
+
+    def get_mesh(self, obj: bpy.types.Object) -> bpy.types.Mesh:
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        return mesh
+
+    def setup_test(self, and_elements: bool = True) -> None:
+        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+
+        # Setup materials and styles.
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        assert context  # Type checker.
+
+        red_material = ifcopenshell.api.material.add_material(ifc_file, "Red Material")
+        bpy.ops.bim.load_styles(style_type="IfcSurfaceStyle")
+        bpy.ops.bim.enable_adding_presentation_style()
+        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Red"
+        bpy.ops.bim.add_presentation_style()
+        red_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red"))
+        ifcopenshell.api.style.assign_material_style(ifc_file, red_material, red_style, context)
+
+        blue_material = ifcopenshell.api.material.add_material(ifc_file, "Blue Material")
+        bpy.ops.bim.enable_adding_presentation_style()
+        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Blue"
+        bpy.ops.bim.add_presentation_style()
+        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+        ifcopenshell.api.style.assign_material_style(ifc_file, blue_material, blue_style, context)
+
+        bpy.ops.bim.enable_adding_presentation_style()
+        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Green"
+        bpy.ops.bim.add_presentation_style()
+
+        if and_elements:
+            self.setup_elements()
+
+    def setup_elements(self) -> None:
+        ifc_file = tool.Ifc.get()
+        blue_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Blue Material"))
+        blue_style = tool.Material.get_style(blue_material)
+
+        # Element type.
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        element_type_obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcActuatorType", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+        element_type = tool.Ifc.get_entity(element_type_obj)
+
+        # Setup occurrences.
+        relating_type_id = element_type.id()
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        simple = bpy.context.active_object
+        simple.name = "Simple"
+
+        # Occurrence with an opening.
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        with_opening = bpy.context.active_object
+        with_opening.name = "With Opening"
+        bpy.ops.bim.add_potential_opening()
+        tool.Blender.set_objects_selection(
+            bpy.context, active_object=with_opening, selected_objects=[with_opening, bpy.data.objects["Opening"]]
+        )
+        bpy.ops.bim.add_opening()
+
+        # Occurrence with a material override.
+        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        with_material = bpy.context.active_object
+        with_material.name = "With Material"
+        tool.Blender.set_objects_selection(bpy.context, active_object=with_material, selected_objects=[with_material])
+
+        ifcopenshell.api.material.assign_material(
+            ifc_file, products=[tool.Ifc.get_entity(with_material)], material=blue_material
+        )
+
+        assert self.get_used_styles(element_type_obj) == set()
+        for element in ifc_file.by_type("IfcActuator"):
+            obj = tool.Ifc.get_object(element)
+            expected = {blue_style} if obj.name == "With Material" else set()
+            assert self.get_used_styles(obj) == expected
+
+    def test_element_type_and_occurrences(self):
+        self.setup_test()
+        ifc_file = tool.Ifc.get()
+        element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
+        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_style = tool.Material.get_style(red_material)
+        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+
+        ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+        assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {red_style}
+        for element in ifc_file.by_type("IfcActuator"):
+            obj = tool.Ifc.get_object(element)
+            expected = {blue_style} if obj.name == "With Material" else {red_style}
+            assert self.get_used_styles(obj) == expected
+
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        assert self.get_used_styles(tool.Ifc.get_object(element_type)) == set()
+        for element in ifc_file.by_type("IfcActuator"):
+            obj = tool.Ifc.get_object(element)
+            expected = {blue_style} if obj.name == "With Material" else set()
+            assert self.get_used_styles(obj) == expected
+
+    def test_dont_override_exisiting_styles(self):
+        self.setup_test()
+        ifc_file = tool.Ifc.get()
+        element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
+        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+
+        # Occurrence with a style.
+        element_type_obj = tool.Ifc.get_object(element_type)
+        tool.Blender.set_objects_selection(
+            bpy.context, active_object=element_type_obj, selected_objects=[element_type_obj]
+        )
+        bpy.ops.bim.assign_style_to_selected(style_id=green_style.id())
+
+        ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+        assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {green_style}
+        for element in ifc_file.by_type("IfcActuator"):
+            obj = tool.Ifc.get_object(element)
+            assert self.get_used_styles(obj) == {green_style}
+
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {green_style}
+        for element in ifc_file.by_type("IfcActuator"):
+            obj = tool.Ifc.get_object(element)
+            assert self.get_used_styles(obj) == {green_style}
+
+    def test_assign_material_to_representation_that_has_2_items_and_1_item_has_a_style(self):
+        self.setup_test(and_elements=False)
+        ifc_file = tool.Ifc.get()
+        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_style = tool.Material.get_style(red_material)
+        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
+        element = tool.Ifc.get_entity(obj)
+        builder = ShapeBuilder(ifc_file)
+
+        # Change representation that consists of 2 rep items:
+        # 1 with style and other without.
+        rep = tool.Geometry.get_active_representation(obj)
+        assert rep
+        cube = rep.Items[0]
+        cube2 = builder.deep_copy(cube)
+        rep.Items = [cube, cube2]
+        tool.Style.assign_style_to_representation_item(cube, green_style)
+        tool.Geometry._reload_representation(obj)
+
+        def get_material_indices(mesh: bpy.types.Mesh) -> np.ndarray:
+            buffer = np.empty(len(mesh.polygons), dtype=np.int32)
+            mesh.polygons.foreach_get("material_index", buffer)
+            return buffer
+
+        mesh = self.get_mesh(obj)
+        assert len(mesh.materials) == 2
+        assert set(mesh.materials) == {bpy.data.materials["Green"], None}
+
+        ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
+        assert self.get_used_styles(obj) == {green_style, red_style}
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        mesh = self.get_mesh(obj)
+        assert len(mesh.materials) == 2
+        assert set(mesh.materials) == {bpy.data.materials["Green"], None}
+
+        # Test that if style is the same it would just reuse it.
+        tool.Style.assign_style_to_representation_item(cube, red_style)
+        tool.Geometry._reload_representation(obj)
+        mesh = self.get_mesh(obj)
+        assert len(mesh.materials) == 2
+        assert set(mesh.materials) == {bpy.data.materials["Red"], None}
+
+        ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
+        assert mesh.materials[:] == [bpy.data.materials["Red"]]
+        # All polygons are just reassigned to the existing material.
+        assert set(get_material_indices(mesh)) == {mesh.materials.find("Red")}
+
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        mesh = self.get_mesh(obj)
+        assert len(mesh.materials) == 2
+        assert set(mesh.materials) == {bpy.data.materials["Red"], None}
+        assert set(get_material_indices(mesh)) == {0, 1}
+
+    def test_assign_unassign_overriding_occurrence_material(self):
+        self.setup_test(and_elements=True)
+        ifc_file = tool.Ifc.get()
+        element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
+        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        no_style_material = ifcopenshell.api.material.add_material(ifc_file, "No Style")
+        obj = bpy.data.objects["Simple"]
+        element = tool.Ifc.get_entity(obj)
+
+        ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
+
+        # Override type material.
+        ifcopenshell.api.material.assign_material(ifc_file, material=no_style_material, products=[element])
+        assert self.get_mesh(obj).materials[:] == []
+
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]
