@@ -1277,7 +1277,10 @@ class LoadLinkedProject(bpy.types.Operator):
         self.elements = set(self.file.by_type("IfcElement"))
         if self.file.schema in ("IFC2X3", "IFC4"):
             self.elements |= set(self.file.by_type("IfcProxy"))
-        self.elements |= set(self.file.by_type("IfcSite"))
+        if self.file.schema == "IFC2X3":
+            self.elements |= set(self.file.by_type("IfcSpatialStructureElement"))
+        else:
+            self.elements |= set(self.file.by_type("IfcSpatialElement"))
         self.elements -= set(self.file.by_type("IfcFeatureElement"))
         self.elements = list(self.elements)
 
