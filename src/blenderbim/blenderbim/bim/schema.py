@@ -52,7 +52,6 @@ class IfcSchema:
         self.classification_files = {}
         self.classifications = {}
         self.load_pset_templates()
-        self.load()
 
     def load_pset_templates(self):
         property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
@@ -64,13 +63,6 @@ class IfcSchema:
         self.psetqto.get_by_name.cache_clear()
         for path in property_paths:
             self.psetqto.templates.append(ifcopenshell.open(path))
-
-    def load(self):
-        # TODO: need to update for ifc4x3?
-        for product in self.products:
-            with open(os.path.join(self.schema_dir, f"{product}_IFC4.json")) as f:
-                setattr(self, product, json.load(f))
-                self.elements.update(getattr(self, product))
 
     def load_classification(self, name, classification_index=None):
         if name not in self.classifications:
