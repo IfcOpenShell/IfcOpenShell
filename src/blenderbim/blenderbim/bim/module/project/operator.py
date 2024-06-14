@@ -1316,7 +1316,6 @@ class LoadLinkedProject(bpy.types.Operator):
             material_offset = 0
             max_slot_index = 0
             chunk_size = 10000
-            r4 = np.array([[0, 0, 0, 1]])
             offset = 0
 
             ci = 0
@@ -1370,8 +1369,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
 
-                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 3))
-                    M4 = np.concatenate((M4.T, r4))
+                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 4), order="F")
                     vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
                     vs = (np.asmatrix(M4) * np.asmatrix(vs).T).T.A
