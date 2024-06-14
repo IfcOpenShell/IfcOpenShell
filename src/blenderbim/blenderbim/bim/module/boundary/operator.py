@@ -602,6 +602,11 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         parent_boundaries = []
 
         objs = context.selected_objects
+
+        if not any((element:=tool.Ifc.get_entity(obj)) and element.is_a("IfcSpace") for obj in objs):
+            self.report({"INFO"}, "No IfcSpace elements selected.")
+            return {"FINISHED"}
+
         if len(objs) == 2:
             # The user may select two objects, a space and its related building element
             for obj in objs:
