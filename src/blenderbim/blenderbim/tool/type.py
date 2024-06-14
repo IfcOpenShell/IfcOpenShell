@@ -18,27 +18,32 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.helper
+from typing import Union
 
 
 class Type(blenderbim.core.tool.Type):
     @classmethod
-    def change_object_data(cls, obj, data, is_global=False):
+    def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         tool.Geometry.change_object_data(obj, data, is_global)
 
     @classmethod
-    def disable_editing(cls, obj):
+    def disable_editing(cls, obj: bpy.types.Object) -> None:
         obj.BIMTypeProperties.is_editing_type = False
 
     @classmethod
-    def get_body_context(cls):
+    def get_body_context(cls) -> ifcopenshell.entity_instance:
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def get_body_representation(cls, element):
+    def get_body_representation(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if element.is_a("IfcProduct") and element.Representation and element.Representation.Representations:
             for representation in element.Representation.Representations:
                 if representation.ContextOfItems.ContextIdentifier == "Body":
@@ -49,7 +54,7 @@ class Type(blenderbim.core.tool.Type):
                     return representation_map.MappedRepresentation
 
     @classmethod
-    def get_ifc_representation_class(cls, element):
+    def get_ifc_representation_class(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
         material = ifcopenshell.util.element.get_material(element)
         if material:
             if material.is_a("IfcMaterialProfileSetUsage"):
@@ -58,7 +63,7 @@ class Type(blenderbim.core.tool.Type):
                 return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
-    def get_model_types(cls):
+    def get_model_types(cls) -> list[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         types = ifc_file.by_type("IfcElementType")
         # exclude IfcSpatialElementType
@@ -69,39 +74,43 @@ class Type(blenderbim.core.tool.Type):
         return types
 
     @classmethod
-    def get_object_data(cls, obj):
+    def get_object_data(cls, obj: bpy.types.Object) -> Union[bpy.types.ID, None]:
         return obj.data
 
     @classmethod
-    def get_profile_set_usage(cls, element):
+    def get_profile_set_usage(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         material = ifcopenshell.util.element.get_material(element)
         if material:
             if material.is_a("IfcMaterialProfileSetUsage"):
                 return material
 
     @classmethod
-    def get_representation_context(cls, representation):
+    def get_representation_context(cls, representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return representation.ContextOfItems
 
     @classmethod
-    def get_type_occurrences(cls, element_type):
+    def get_type_occurrences(cls, element_type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_types(element_type)
 
     @classmethod
-    def has_material_usage(cls, element):
+    def has_material_usage(cls, element: ifcopenshell.entity_instance) -> bool:
         material = ifcopenshell.util.element.get_material(element)
         if material:
             return "Usage" in material.is_a()
         return False
 
     @classmethod
-    def remove_object(cls, obj):
+    def remove_object(cls, obj: bpy.types.Object) -> None:
         bpy.data.objects.remove(obj)
 
     @classmethod
     def run_geometry_add_representation(
-        cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None
-    ):
+        cls,
+        obj: bpy.types.Object,
+        context: ifcopenshell.entity_instance,
+        ifc_representation_class: Union[str, None] = None,
+        profile_set_usage: Union[ifcopenshell.entity_instance, None] = None,
+    ) -> ifcopenshell.entity_instance:
         return blenderbim.core.geometry.add_representation(
             tool.Ifc,
             tool.Geometry,
@@ -115,8 +124,12 @@ class Type(blenderbim.core.tool.Type):
 
     @classmethod
     def run_geometry_switch_representation(
-        cls, obj=None, representation=None, should_reload=None, is_global=None
-    ):
+        cls,
+        obj: bpy.types.Object,
+        representation: ifcopenshell.entity_instance,
+        should_reload: bool = False,
+        is_global: bool = False,
+    ) -> None:
         return blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,

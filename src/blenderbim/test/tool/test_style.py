@@ -19,6 +19,8 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from test.bim.bootstrap import NewFile
