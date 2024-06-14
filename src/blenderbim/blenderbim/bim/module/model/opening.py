@@ -541,20 +541,23 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         obj1, obj2 = context.selected_objects
         element1 = tool.Ifc.get_entity(obj1)
         element2 = tool.Ifc.get_entity(obj2)
-        if element1 and element2:
+        if not (bool(element1) ^ bool(element2)):
+            self.report({"INFO"}, "One of the selected objects should be blender object and another IFC object.")
             return {"FINISHED"}
-        if not element1 and not element2:
-            return {"FINISHED"}
+
+        # element1 - IFC object, element2 - blender object.
         if element2 and not element1:
             obj1, obj2 = obj2, obj1
             element1, element2 = element2, element1
-        if not obj1.data or not hasattr(obj1.data, "BIMMeshProperties"):
+
+        representation = tool.Geometry.get_active_representation(obj1)
+        if not representation:
+            self.report({"INFO"}, "No representation found for the selected IFC object.")
             return {"FINISHED"}
-        representation = tool.Ifc.get().by_id(obj1.data.BIMMeshProperties.ifc_definition_id)
 
         if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
             mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
-        elif obj2.data:
+        else:
             mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
 
         booleans = ifcopenshell.api.run(
@@ -574,7 +577,6 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             should_sync_changes_first=False,
         )
 
-        tool.Ifc.unlink(obj=obj2)
         bpy.data.objects.remove(obj2)
         return {"FINISHED"}
 
