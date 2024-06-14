@@ -30,26 +30,6 @@ class TestImplementsTool(NewFile):
         assert isinstance(subject(), blenderbim.core.tool.Material)
 
 
-class TestAddDefaultMaterialObject(NewFile):
-    def test_run(self):
-        material = subject.add_default_material_object(None)
-        assert isinstance(material, bpy.types.Material)
-        assert material.name == "Default"
-
-    def test_specify_a_name(self):
-        material = subject.add_default_material_object("Material")
-        assert isinstance(material, bpy.types.Material)
-        assert material.name == "Material"
-
-
-class TestDeleteObject(NewFile):
-    def test_run(self):
-        material = subject.add_default_material_object(None)
-        assert bpy.data.materials.get("Default")
-        subject.delete_object(material)
-        assert not bpy.data.materials.get("Default")
-
-
 class TestDisableEditingMaterials(NewFile):
     def test_run(self):
         bpy.context.scene.BIMMaterialProperties.is_editing = True
@@ -82,11 +62,6 @@ class TestGetElementsByMaterial(NewFile):
         material = ifcopenshell.api.run("material.add_material", ifc)
         ifcopenshell.api.run("material.assign_material", ifc, products=[element], material=material)
         assert subject.get_elements_by_material(material) == {element}
-
-
-class TestGetName(NewFile):
-    def test_run(self):
-        assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
 
 
 class TestImportMaterialDefinitions(NewFile):

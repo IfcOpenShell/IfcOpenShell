@@ -28,23 +28,11 @@ if TYPE_CHECKING:
 def add_material(
     ifc: tool.Ifc,
     material: tool.Material,
-    style: tool.Style,
-    obj: Optional[bpy.types.Material] = None,
-    name: Optional[str] = None,
+    name: str,
     category: Optional[str] = None,
     description: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
-    if not obj:
-        obj = material.add_default_material_object(name)
-    ifc_material = ifc.run(
-        "material.add_material", name=material.get_name(obj), category=category, description=description
-    )
-    ifc.link(ifc_material, obj)
-    ifc_style = style.get_style(obj)
-    if ifc_style:
-        context = style.get_context(obj)
-        if context:
-            ifc.run("style.assign_material_style", material=ifc_material, style=ifc_style, context=context)
+    ifc_material = ifc.run("material.add_material", name=name, category=category, description=description)
     if material.is_editing_materials():
         material.import_material_definitions(material.get_active_material_type())
     return ifc_material
@@ -57,9 +45,7 @@ def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> i
     return ifc_material
 
 
-def remove_material(
-    ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance
-) -> bool:
+def remove_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> bool:
     """Remove an IFC material.
 
     Return True if deletion succeeded,\n
