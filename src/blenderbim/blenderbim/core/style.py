@@ -37,7 +37,7 @@ def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifco
 
     material = ifc.get_entity(obj)
     if material:
-        ifc.run("style.assign_material_style", material=material, style=element, context=style.get_context(obj))
+        ifc.run("style.assign_material_style", material=material, style=element, context=style.get_context())
     return element
 
 

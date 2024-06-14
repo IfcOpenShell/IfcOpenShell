@@ -95,7 +95,7 @@ class TestGetContext(NewFile):
     def test_run(self):
         bpy.ops.bim.create_project()
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
-        assert subject.get_context("obj") == context
+        assert subject.get_context() == context
 
 
 class TestGetElementsByStyle(NewFile):

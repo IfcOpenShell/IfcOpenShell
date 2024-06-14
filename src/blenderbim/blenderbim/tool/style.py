@@ -95,9 +95,8 @@ class Style(blenderbim.core.tool.Style):
     def get_active_style_type(cls) -> str:
         return bpy.context.scene.BIMStylesProperties.style_type
 
-    # TODO: `obj` argument is unused?
     @classmethod
-    def get_context(cls, obj) -> Union[ifcopenshell.entity_instance, None]:
+    def get_context(cls) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
     @classmethod
