@@ -179,14 +179,13 @@ class IfcStore:
     @staticmethod
     def get_element(id_or_guid: Union[int, str]) -> IFC_CONNECTED_TYPE:
         if isinstance(id_or_guid, int):
-            map_object = IfcStore.id_map
+            obj = IfcStore.id_map.get(id_or_guid)
         else:
-            map_object = IfcStore.guid_map
-        try:
-            obj = map_object[id_or_guid]
-            obj.name  # In case the object has been deleted, this triggers an exception
-        except:
-            return
+            obj = IfcStore.guid_map.get(id_or_guid)
+        if obj is None:
+            return None
+        if not tool.Blender.is_valid_data_block(obj):
+            return None
         return obj
 
     @staticmethod
