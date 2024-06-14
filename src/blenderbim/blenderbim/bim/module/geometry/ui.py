@@ -33,6 +33,8 @@ from blenderbim.bim.module.layer.data import LayersData
 
 
 def mode_menu(self, context):
+    if not tool.Ifc.get():
+        return
     row = self.layout.row(align=True)
     if context.scene.BIMGeometryProperties.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
