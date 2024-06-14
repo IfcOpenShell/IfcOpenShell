@@ -18,6 +18,7 @@
 
 import bpy
 import mathutils
+import numpy as np
 from functools import reduce
 import ifcopenshell
 import ifcopenshell.api
@@ -39,7 +40,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 import json
-from typing import Any, Union
+from typing import Any, Union, Optional
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
@@ -513,88 +514,19 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
 
 
 def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    if usecase_path == "material.assign_material":
-        if not settings.get("material", None):
-            return
-        elements = settings["products"]
-    else:
-        elements = []
-        for rel in ifc_file.by_type("IfcRelAssociatesMaterial"):
-            if rel.RelatingMaterial == settings["material"] or [
-                e for e in ifc_file.traverse(rel.RelatingMaterial) if e == settings["material"]
-            ]:
-                elements.extend(rel.RelatedObjects)
+    elements = settings["products"]
 
-    update_blender_ifc_materials(elements)
+    for element in elements[:]:
+        if element.is_a("IfcElementType"):
+            elements.extend(tool.Model.get_occurrences_without_material_override(element))
+
+    tool.Model.apply_ifc_material_changes(elements, assigned_material=settings["material"])
 
 
 def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     elements = settings["products"]
-    if elements[0].is_a("IfcElementType"):
-        elements.extend(ifcopenshell.util.element.get_types(elements[0]))
-    update_blender_ifc_materials(elements)
 
-
-def update_blender_ifc_materials(elements: list[ifcopenshell.entity_instance]) -> None:
-    """update mesh blender materials that have ifc material connected to them
-    by replacing them with `blender_material`"""
-    # since different elements can share meshes (e.g. occurrecnes without openings)
-    # we need to make sure not to affect them accidentally
-    meshes_users: dict[bpy.types.Mesh, set[bpy.types.Object]] = dict()
-    for obj in bpy.data.objects:
-        if not obj.data:
-            continue
-        meshes_users.setdefault(obj.data, set()).add(obj)
-
-    objects: set[bpy.types.Object] = set()
-    for element in elements:
-        obj: bpy.types.Object = tool.Ifc.get_object(element)
-        if not obj or not obj.data:
-            continue
-        objects.add(obj)
-
-    meshes: set[bpy.types.Mesh] = {obj.data for obj in objects}
-
-    for mesh in meshes:
-        mesh_users = meshes_users[mesh]
-        if not mesh_users.issubset(objects):
-            continue
-
-        # NOTE: we need `obj` as removing materials and appending them to `mesh.materials`
-        # will mess up mesh faces material indices
-
-        # NOTE: we make an assumption here that all mesh users
-        # have the same material - they either inherit it from the type
-        # or type doesn't have a material.
-        #
-        # If we add option to UI to add materials overriding type materials
-        # then this assumption won't be safe anymore
-
-        obj = next(iter(mesh_users))
-        element = tool.Ifc.get_entity(obj)
-        current_material = ifcopenshell.util.element.get_material(element)
-        if current_material:
-            current_material = tool.Ifc.get_object(current_material)
-
-        material_replaced = False
-
-        for material_slot in obj.material_slots:
-            material = material_slot.material
-            if material is None:
-                continue
-            ifc_material = tool.Ifc.get_entity(material)
-            # it's blender material for style, so ignore it
-            if not ifc_material:
-                continue
-            if ifc_material == current_material:
-                continue
-            material_slot.material = current_material
-            material_replaced = True
-
-        if not material_replaced and current_material:
-            mesh.materials.append(current_material)
-
-        # clear empty slots
-        for i, material in reversed(list(enumerate(mesh.materials[:]))):
-            if material is None:
-                mesh.materials.pop(index=i)
+    for element in elements[:]:
+        if element.is_a("IfcElementType"):
+            elements.extend(tool.Model.get_occurrences_without_material_override(element))
+    tool.Model.apply_ifc_material_changes(elements)

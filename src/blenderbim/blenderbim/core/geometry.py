@@ -128,8 +128,9 @@ def switch_representation(
     if not current_obj_data and geometry.is_text_literal(representation):
         return
 
-    has_openings = apply_openings and getattr(entity, "HasOpenings", None)
-    if has_openings:
+    use_immediate_repr = apply_openings and getattr(entity, "HasOpenings", None)
+    use_immediate_repr = use_immediate_repr or geometry.has_material_style_override(entity)
+    if use_immediate_repr:
         # if it has openings make sure to switch to element's mapped representation
         representation = geometry.unresolve_type_representation(representation, entity)
     else:
@@ -145,7 +146,7 @@ def switch_representation(
     else:
         new_repr_data = old_repr_data
 
-    geometry.change_object_data(obj, new_repr_data, is_global=is_global and not has_openings)
+    geometry.change_object_data(obj, new_repr_data, is_global=is_global and not use_immediate_repr)
     geometry.record_object_materials(obj)
 
     # we assume that all the occurences and the type have the same representation context active
