@@ -59,6 +59,10 @@ The "Project Info" subsection in the BlenderBIM Add-on interface changes dependi
 
 When no IFC file is loaded, the "Project Info" subsection displays options to create a new IFC project or load an existing one.
 
+Fields:
+
+- **IFC Schema**. Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: "IFC4"
+
 Buttons:
 
 - **Create Project**. Button to create a new IFC project with the selected IFC schema, unit system, and template. Clicking this button changes to the Not Saved mode, waiting for user to edit metadata and save the IFC file.
@@ -70,6 +74,10 @@ Buttons:
    :alt: Project Info when IFC project is created but IFC file is not saved
 
 When a new IFC project is created but not yet saved, the "Project Info" subsection displays the following message: "File Not Saved". Indicates that the current IFC project has not been saved to a file. The IFC header can be edited by clicking the pencil button. In this mode you can't unload the IFC project and go back to the Not Create or Loaded mode. You have to save the IFC file first and then unload the project.
+
+Fields:
+
+- **IFC Schema** (read-only). Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: "IFC4"
 
 Buttons:
 
@@ -94,11 +102,14 @@ When an IFC project is created or loaded and saved additional buttons appear (be
 
 **IFC Header Editing toggle**
 
+.. figure:: images/interface_property-editor_project-overview_edit-header.png
+   :alt: Project Info when edit header toggle is active
+
 Clicking the pencil button (which doesn't exist when in the Not Created or Loaded state) switches the "Project Info" subsection to editing mode, allowing users to modify the IFC header/metadata fields
 
 Fields:
 
-- **IFC Schema**. Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: "IFC4"
+- **IFC Schema** (read only). Indicates the version of the Industry Foundation Classes (IFC) schema used by the loaded file. Example: "IFC4"
 - **IFC MVD**. Specifies the Model View Definition (MVD) used by the loaded IFC file. An MVD defines a subset of the IFC schema for a specific data exchange purpose. Example: "DesignTransferView"
 - **Author**. Displays the author of the IFC file.
 - **Author Email**. Shows the email address of the IFC file author.
@@ -107,6 +118,10 @@ Fields:
 - **Authoriser**. Shows the authoriser of the IFC file, if available. Example: "Nobody"
 - **Saved**. Displays the last saved date and time of the loaded IFC file. Example: "2024-06-10 13:15"
 
+Buttons:
+
+- **Save header information (checkbox icon)**
+- **Cancel unsaved header information (cross icon)**
 
 Project Setup
 ^^^^^^^^^^^^^
