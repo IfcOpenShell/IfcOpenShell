@@ -21,51 +21,17 @@ from test.core.bootstrap import ifc, material, style, spatial
 
 
 class TestAddMaterial:
-    def test_add_a_default_material(self, ifc, material, style):
-        material.add_default_material_object("name").should_be_called().will_return("obj")
-        material.get_name("obj").should_be_called().will_return("name")
+    def test_add_a_material(self, ifc, material):
         ifc.run("material.add_material", name="name").should_be_called().will_return("material")
-        ifc.link("material", "obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return(None)
         material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, style, name="name") == "material"
+        assert subject.add_material(ifc, material, name="name") == "material"
 
-    def test_add_a_material_to_a_blender_material_object(self, ifc, material, style):
-        material.get_name("obj").should_be_called().will_return("name")
+    def test_reloading_imported_materials_if_you_are_editing_scene_materials(self, ifc, material):
         ifc.run("material.add_material", name="name").should_be_called().will_return("material")
-        ifc.link("material", "obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return(None)
-        material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, style, obj="obj") == "material"
-
-    def test_reloading_imported_materials_if_you_are_editing_scene_materials(self, ifc, material, style):
-        material.get_name("obj").should_be_called().will_return("name")
-        ifc.run("material.add_material", name="name").should_be_called().will_return("material")
-        ifc.link("material", "obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return(None)
         material.is_editing_materials().should_be_called().will_return(True)
         material.get_active_material_type().should_be_called().will_return("material_type")
         material.import_material_definitions("material_type").should_be_called()
-        assert subject.add_material(ifc, material, style, obj="obj") == "material"
-
-    def test_add_a_style_to_the_material_if_the_object_also_has_an_attached_style(self, ifc, material, style):
-        material.get_name("obj").should_be_called().will_return("name")
-        ifc.run("material.add_material", name="name").should_be_called().will_return("material")
-        ifc.link("material", "obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return("style")
-        style.get_context("obj").should_be_called().will_return("context")
-        ifc.run("style.assign_material_style", material="material", style="style", context="context").should_be_called()
-        material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, style, obj="obj") == "material"
-
-    def test_not_adding_a_style_if_there_is_no_style_context_available(self, ifc, material, style):
-        material.get_name("obj").should_be_called().will_return("name")
-        ifc.run("material.add_material", name="name").should_be_called().will_return("material")
-        ifc.link("material", "obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return("style")
-        style.get_context("obj").should_be_called().will_return(None)
-        material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, style, obj="obj") == "material"
+        assert subject.add_material(ifc, material, name="name") == "material"
 
 
 class TestAddMaterialSet:

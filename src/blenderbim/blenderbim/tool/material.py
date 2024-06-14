@@ -35,10 +35,6 @@ if TYPE_CHECKING:
 
 class Material(blenderbim.core.tool.Material):
     @classmethod
-    def add_default_material_object(cls, name: Union[str, None]) -> bpy.types.Material:
-        return bpy.data.materials.new(name or "Default")
-
-    @classmethod
     def disable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 
@@ -53,10 +49,6 @@ class Material(blenderbim.core.tool.Material):
     @classmethod
     def get_elements_by_material(cls, material: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
-
-    @classmethod
-    def get_name(cls, obj: bpy.types.Material) -> str:
-        return obj.name
 
     @classmethod
     def get_active_material_item(cls) -> Union[MaterialItem, None]:

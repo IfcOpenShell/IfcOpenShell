@@ -118,7 +118,6 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_material"
     bl_label = "Add Material"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty(name="Material Name")
     name: bpy.props.StringProperty(default="Default")
     category: bpy.props.StringProperty(default="")
     description: bpy.props.StringProperty(default="")
@@ -135,8 +134,7 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "category", text="Category")
 
     def _execute(self, context):
-        obj = bpy.data.materials.get(self.obj) if self.obj else None
-        core.add_material(tool.Ifc, tool.Material, tool.Style, obj=obj, name=self.name, category=self.category, description=self.description)
+        core.add_material(tool.Ifc, tool.Material, name=self.name, category=self.category, description=self.description)
         material_prop_purge()
 
 
