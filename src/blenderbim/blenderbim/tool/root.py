@@ -344,12 +344,17 @@ class Root(blenderbim.core.tool.Root):
 
     @classmethod
     def unlink_object(cls, obj: bpy.types.Object) -> None:
+        """Purge all IFC data associated with a Blender object.
+
+        This method is safe to run on objects from other Blender sessions
+        as it won't try to find related IFC elements from the IFC data
+        to unlink them.
+        """
         tool.Ifc.unlink(obj=obj)
         if hasattr(obj.data, "BIMMeshProperties"):
             obj.data.BIMMeshProperties.ifc_definition_id = 0
         for material_slot in obj.material_slots:
-            if material_slot.material:
-                blenderbim.core.style.unlink_style(tool.Ifc, style=material_slot.material)
-                blenderbim.core.material.unlink_material(tool.Ifc, obj=material_slot.material)
+            if material := material_slot.material:
+                tool.Ifc.unlink(obj=material)
         if "Ifc" in obj.name and "/" in obj.name:
             obj.name = obj.name.split("/", 1)[1]

@@ -47,6 +47,6 @@ class TestPurgeUnusedTypes:
         type.get_type_occurrences("element_type").should_be_called().will_return([])
         ifc.run("root.remove_product", product="element_type").should_be_called()
         ifc.get_object("element_type").should_be_called().will_return("obj")
-        ifc.unlink(obj="obj").should_be_called()
+        ifc.unlink(element="element_type").should_be_called()
         type.remove_object("obj").should_be_called()
         subject.purge_unused_types(ifc, type)

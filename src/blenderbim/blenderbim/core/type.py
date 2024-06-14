@@ -39,6 +39,6 @@ def purge_unused_types(ifc, type):
             ifc.run("root.remove_product", product=element_type)
             purged_types += 1
             if obj:
-                ifc.unlink(obj=obj)
+                ifc.unlink(element=element_type)
                 type.remove_object(obj)
     return purged_types

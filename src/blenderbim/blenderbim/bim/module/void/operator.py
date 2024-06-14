@@ -74,6 +74,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 obj1, obj2 = obj2, obj1
                 element1, element2 = element2, element1
 
+            # element1 - voided element, element2 - opening.
             if element1.is_a("IfcOpeningElement"):
                 self.report({"INFO"}, "You can't add an opening to another opening.")
                 continue
@@ -127,7 +128,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     )
 
             if not has_visible_openings:
-                tool.Ifc.unlink(obj=obj2)
+                tool.Ifc.unlink(element=element2)
                 bpy.data.objects.remove(obj2)
 
         context.view_layer.objects.active = obj1
@@ -148,7 +149,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         if opening_obj:
             opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
-            tool.Ifc.unlink(obj=opening_obj)
+            tool.Ifc.unlink(element=opening)
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 

@@ -551,9 +551,9 @@ class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             for boundary in element.BoundedBy or []:
                 boundary_obj = tool.Ifc.get_object(boundary)
                 if boundary_obj:
-                    to_delete.add(boundary_obj)
-        for boundary_obj in to_delete:
-            tool.Ifc.unlink(obj=boundary_obj)
+                    to_delete.add((boundary, boundary_obj))
+        for boundary, boundary_obj in to_delete:
+            tool.Ifc.unlink(element=boundary)
             bpy.data.objects.remove(boundary_obj)
         context.scene.BIMBoundaryProperties.boundaries.clear()
         return {"FINISHED"}

@@ -322,9 +322,7 @@ class IfcStore:
             raise TypeError("Only one argument must be provided - element or obj.")
 
         if obj:
-            if isinstance(obj, bpy.types.Material):
-                obj.BIMMaterialProperties.ifc_style_id = 0
-            obj.BIMObjectProperties.ifc_definition_id = 0
+            IfcStore.purge_blender_ifc_data(obj)
             return
 
         assert element  # Type checker.
@@ -333,6 +331,7 @@ class IfcStore:
                 potential_obj = IfcStore.id_map[element.id()]
                 if tool.Blender.is_valid_data_block(potential_obj):
                     obj = potential_obj
+                    IfcStore.purge_blender_ifc_data(obj)
             except:
                 pass
 
@@ -354,6 +353,12 @@ class IfcStore:
             IfcStore.history[-1]["operations"].append(
                 Operation(rollback=IfcStore.rollback_unlink_element, commit=IfcStore.commit_unlink_element, data=data)
             )
+
+    @staticmethod
+    def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
+        if isinstance(obj, bpy.types.Material):
+            obj.BIMMaterialProperties.ifc_style_id = 0
+        obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod
     def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):

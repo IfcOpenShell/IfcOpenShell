@@ -58,17 +58,16 @@ def add_material_set(ifc: tool.Ifc, material: tool.Material, set_type: str) -> i
 
 
 def remove_material(
-    ifc: tool.Ifc, material_tool: tool.Material, style: tool.Style, material: ifcopenshell.entity_instance
+    ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance
 ) -> bool:
-    """returns True after deleting False,\n
-    returns False if material used in material sets and cannot be removed"""
+    """Remove an IFC material.
+
+    Return True if deletion succeeded,\n
+    return False if material is used in material sets and cannot be removed.
+    """
     if material_tool.is_material_used_in_sets(material):
         return False
-    obj = ifc.get_object(material)
-    ifc.unlink(element=material)
     ifc.run("material.remove_material", material=material)
-    if obj and not style.get_style(obj):
-        material_tool.delete_object(obj)
     if material_tool.is_editing_materials():
         material_tool.import_material_definitions(material_tool.get_active_material_type())
     return True

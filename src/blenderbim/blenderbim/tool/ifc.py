@@ -191,6 +191,7 @@ class Ifc(blenderbim.core.tool.Ifc):
     def unlink(
         cls, element: Optional[ifcopenshell.entity_instance] = None, obj: Optional[IFC_CONNECTED_TYPE] = None
     ) -> None:
+        """See IfcStore.unlink_element doc for details."""
         IfcStore.unlink_element(element, obj)
 
     @classmethod
