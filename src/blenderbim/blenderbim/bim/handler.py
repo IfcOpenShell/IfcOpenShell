@@ -193,6 +193,8 @@ def refresh_ui_data():
         tool.Ifc.get().clear_cache()
 
     bpy.context.scene.DocProperties.should_draw_decorations = bpy.context.scene.DocProperties.should_draw_decorations
+    if bpy.context.scene.WebProperties.is_connected:
+        tool.Web.send_webui_data()
 
 
 @persistent
