@@ -182,8 +182,7 @@ class Usecase:
         if self.settings["pset_template"]:
             self.pset_template = self.settings["pset_template"]
         else:
-            # TODO: add IFC2X3 PsetQto template support
-            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema)
+            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
             self.pset_template = self.psetqto.get_by_name(self.settings["pset"].Name)
 
     def _should_update_prop(self, prop: ifcopenshell.entity_instance) -> bool:
