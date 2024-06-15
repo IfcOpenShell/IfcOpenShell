@@ -67,7 +67,7 @@ def assign_class(
     predefined_type: Optional[str] = None,
     should_add_representation: bool = True,
     ifc_representation_class: Optional[str] = None,
-) -> ifcopenshell.entity_instance:
+) -> Optional[ifcopenshell.entity_instance]:
     """
     Args:
         context: is not optional if `should_add_representation` is True
@@ -86,6 +86,10 @@ def assign_class(
             obj=obj, context=context, ifc_representation_class=ifc_representation_class, profile_set_usage=None
         )
 
-    collector.sync(obj)
+    if default_container := root.get_default_container():
+        if root.is_spatial_element(element):
+            ifc.run("aggregate.assign_object", products=[element], relating_object=default_container)
+        elif root.is_containable(element):
+            ifc.run("spatial.assign_container", products=[element], relating_structure=default_container)
     collector.assign(obj)
     return element

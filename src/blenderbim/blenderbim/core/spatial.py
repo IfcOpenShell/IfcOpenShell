@@ -86,7 +86,6 @@ def copy_to_container(ifc, collector, spatial, obj=None, containers=None):
     element = ifc.get_entity(obj)
     if not element:
         return
-    collector.sync(obj)
     from_container = spatial.get_container(element)
     if from_container:
         matrix = spatial.get_relative_object_matrix(obj, ifc.get_object(from_container))

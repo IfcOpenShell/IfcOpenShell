@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import blenderbim.tool as tool
 
 
-def create_project(ifc: tool.Ifc, project: tool.Project, schema: str, template: Optional[str] = None) -> None:
+def create_project(ifc: tool.Ifc, project: tool.Project, spatial: tool.Spatial, schema: str, template: Optional[str] = None) -> None:
     if ifc.get():
         return
 
@@ -90,7 +90,10 @@ def create_project(ifc: tool.Ifc, project: tool.Project, schema: str, template: 
     project.run_aggregate_assign_object(relating_obj=building, related_obj=storey)
 
     project.set_context(body)
-    project.set_active_spatial_element(storey)
+    spatial.run_spatial_import_spatial_decomposition()
+    if default_container := spatial.guess_default_container():
+        spatial.set_default_container(default_container)
+
     project.create_project_collections()
 
     if template:

@@ -99,7 +99,6 @@ class IfcExporter:
                     continue
                 if obj.library:
                     continue
-                tool.Collector.sync(obj, skip_unlinking)
                 result = self.sync_object_placement(obj)
                 if result:
                     results.append(result)
