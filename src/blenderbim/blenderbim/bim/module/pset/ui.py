@@ -79,7 +79,7 @@ def draw_enumerated_property(prop, layout, copy_operator=None):
 
 
 def get_active_pset_obj_name(context, obj_type):
-    if obj_type in ("Object", "Material", "MaterialSet", "MaterialSetItem"):
+    if obj_type in ("Object", "MaterialSet", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
