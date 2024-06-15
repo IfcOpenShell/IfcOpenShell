@@ -50,8 +50,6 @@ from bpy.props import (
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
-materialpsetnames_enum = []
-
 
 def update_tab(self, context):
     self.alt_tab = self.previous_tab
@@ -125,15 +123,6 @@ def update_data_dir(self, context):
 def update_ifc_file(self, context):
     if context.scene.BIMProperties.ifc_file:
         blenderbim.bim.handler.loadIfcStore(context.scene)
-
-
-def getMaterialPsetNames(self, context):
-    global materialpsetnames_enum
-    materialpsetnames_enum.clear()
-    psetqto = ifcopenshell.util.pset.get_template("IFC4")
-    pset_names = psetqto.get_applicable_names("IfcMaterial", pset_only=True)
-    materialpsetnames_enum.extend([(p, p, "") for p in pset_names])
-    return materialpsetnames_enum
 
 
 def update_section_color(self, context):
@@ -457,8 +446,6 @@ class BIMMaterialProperties(PropertyGroup):
     location: StringProperty(name="Location")
     identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
-    pset_name: EnumProperty(items=getMaterialPsetNames, name="Pset Name")
-    psets: CollectionProperty(name="Psets", type=PsetQto)
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
     ifc_style_id: IntProperty(name="IFC Style ID")
