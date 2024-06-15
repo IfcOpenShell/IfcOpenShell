@@ -74,7 +74,7 @@ class IfcStore:
     last_transaction = ""
     history: list[TransactionStep] = []
     future: list[TransactionStep] = []
-    schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+    schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
     session_files: dict[str, ifcopenshell.file] = {}
 
     @staticmethod
@@ -94,7 +94,7 @@ class IfcStore:
         IfcStore.last_transaction = ""
         IfcStore.history = []
         IfcStore.future = []
-        IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3"]
+        IfcStore.schema_identifiers = ["IFC4", "IFC2X3", "IFC4X3_ADD2"]
         IfcStore.session_files = {}
 
     @staticmethod

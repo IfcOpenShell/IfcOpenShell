@@ -116,7 +116,6 @@ class CreateProject(bpy.types.Operator):
     def _execute(self, context):
         props = context.scene.BIMProjectProperties
         template = None if props.template_file == "0" else props.template_file
-        blenderbim.bim.schema.reload(props.export_schema)
         if tool.Blender.is_default_scene():
             for obj in bpy.data.objects:
                 bpy.data.objects.remove(obj)
@@ -125,6 +124,7 @@ class CreateProject(bpy.types.Operator):
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
         core.create_project(tool.Ifc, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
+        blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):

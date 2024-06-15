@@ -27,11 +27,10 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 
 
 class IfcSchema:
-    def __init__(self, schema_name="IFC4"):
-        schema_name = schema_name.upper()
-        if schema_name not in ("IFC2X3", "IFC4", "IFC4X3"):
-            schema_name = "IFC4"
-        self.schema_name = schema_name
+    def __init__(self, schema_identifier="IFC4"):
+        if schema_identifier not in ("IFC2X3", "IFC4", "IFC4X3_ADD2"):
+            schema_identifier = "IFC4"
+        self.schema_identifier = schema_identifier
 
         self.schema_dir = Path(cwd).joinpath("schema")
         self.data_dir = Path(cwd).joinpath("data")
@@ -55,7 +54,7 @@ class IfcSchema:
 
     def load_pset_templates(self):
         property_paths = self.data_dir.joinpath("pset").glob("*.ifc")
-        self.psetqto = ifcopenshell.util.pset.get_template(self.schema_name)
+        self.psetqto = ifcopenshell.util.pset.get_template(self.schema_identifier)
         # Keep only the first template, which is the official buildingSMART one
         self.psetqto.templates = self.psetqto.templates[0:1]
         self.psetqto.get_applicable.cache_clear()
@@ -96,6 +95,6 @@ class IfcSchema:
 ifc = IfcSchema()
 
 
-def reload(schema_name):
+def reload(schema_identifier):
     global ifc
-    ifc = IfcSchema(schema_name)
+    ifc = IfcSchema(schema_identifier)

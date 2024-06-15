@@ -43,7 +43,7 @@ class ProjectData:
 
     @classmethod
     def get_export_schema(cls):
-        return [(s, s, "") for s in IfcStore.schema_identifiers]
+        return [(s, "IFC4X3" if s == "IFC4X3_ADD2" else s, "") for s in IfcStore.schema_identifiers]
 
     @classmethod
     def library_file(cls):
