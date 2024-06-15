@@ -99,7 +99,7 @@ SETTING = Literal[
 
 class missing_setting:
     def __repr__(self):
-        return '-'
+        return "-"
 
 
 class settings_mixin:
@@ -124,10 +124,7 @@ class settings_mixin:
                 return missing_setting()
 
         fmt_pair = lambda x: "%s = %r" % (self.rname(x), safe_get(x))
-        return "%s(%s)" % (
-            type(self).__name__,
-            ", ".join(map(fmt_pair, self.setting_names()))
-        )
+        return "%s(%s)" % (type(self).__name__, ", ".join(map(fmt_pair, self.setting_names())))
 
     @staticmethod
     def name(k: str) -> SETTING:
@@ -184,8 +181,10 @@ class settings_mixin:
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
     pass
 
+
 class settings(settings_mixin, ifcopenshell_wrapper.Settings):
     pass
+
 
 class iterator(ifcopenshell_wrapper.Iterator):
     def __init__(
@@ -193,9 +192,9 @@ class iterator(ifcopenshell_wrapper.Iterator):
         settings: settings,
         file_or_filename: Union[file, str],
         num_threads: int = 1,
-        include: Optional[Union[list[entity_instance],list[str]]] = None,
-        exclude: Optional[Union[list[entity_instance],list[str]]] = None,
-        geometry_library: str = "opencascade"
+        include: Optional[Union[list[entity_instance], list[str]]] = None,
+        exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+        geometry_library: str = "opencascade",
     ):
         self.settings = settings
         if isinstance(file_or_filename, file):
@@ -318,9 +317,7 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
 
-def create_shape(
-    settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None
-) -> ShapeElementType:
+def create_shape(settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None) -> ShapeElementType:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
