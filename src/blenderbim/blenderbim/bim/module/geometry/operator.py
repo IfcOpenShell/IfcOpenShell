@@ -1531,7 +1531,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
-        selected_objs = context.selected_objects or ([context.active_object] if context.active_object else [])
+        selected_objs = tool.Blender.get_selected_objects()
         active_obj = context.active_object
 
         if context.active_object:
@@ -1542,22 +1542,12 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 return bpy.ops.bim.enable_editing_boundary_geometry()
 
         for obj in selected_objs:
-            if not obj:
-                continue
-            obj_supports_edit_mode, message = tool.Blender.object_supports_edit_mode(obj)
-            if not obj_supports_edit_mode:
-                self.report({"INFO"}, message)
+            if not tool.Blender.is_editable(obj):
+                self.report({"INFO"}, f"Object cannot be edited: {obj.name}")
                 obj.select_set(False)
                 continue
             element = tool.Ifc.get_entity(obj)
             if not element:
-                continue
-            usage_type = tool.Model.get_usage_type(element)
-            if usage_type is not None and usage_type not in ("PROFILE", "LAYER3"):
-                # Parametric objects shall not be edited as meshes as they
-                # can be modified to be incompatible with the parametric
-                # constraints.
-                obj.select_set(False)
                 continue
             representation = tool.Geometry.get_active_representation(obj)
             if not representation:
@@ -1566,6 +1556,7 @@ class OverrideModeSetEdit(bpy.types.Operator):
                 obj.select_set(False)
                 continue
 
+            usage_type = tool.Model.get_usage_type(element)
             is_profile = True
             representation_class = tool.Geometry.get_ifc_representation_class(element, representation)
             if usage_type == "PROFILE":

@@ -24,11 +24,34 @@ from mathutils import Vector
 
 
 def refresh():
+    ViewportData.is_loaded = False
     PlacementData.is_loaded = False
     DerivedCoordinatesData.is_loaded = False
     RepresentationsData.is_loaded = False
     RepresentationItemsData.is_loaded = False
     ConnectionsData.is_loaded = False
+
+
+class ViewportData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.data = {"mode": cls.mode()}
+
+    @classmethod
+    def mode(cls):
+        obj = bpy.context.active_object
+        obj_mode = [("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0)]
+        mesh_modes = [
+            ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
+            ("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 1),
+        ]
+        if not obj or not tool.Blender.is_editable(obj):
+            return obj_mode
+        return mesh_modes
 
 
 class RepresentationsData:
@@ -334,11 +357,13 @@ class PlacementData:
         obj = bpy.context.active_object
         if obj and props.has_blender_offset:
             xyz = cls.original_xyz(obj)
-            cls.data.update({
-                "original_x": str(xyz[0]),
-                "original_y": str(xyz[1]),
-                "original_z": str(xyz[2]),
-            })
+            cls.data.update(
+                {
+                    "original_x": str(xyz[0]),
+                    "original_y": str(xyz[1]),
+                    "original_z": str(xyz[2]),
+                }
+            )
         cls.is_loaded = True
 
     @classmethod

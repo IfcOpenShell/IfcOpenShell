@@ -131,8 +131,12 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
         if bpy.context.selected_objects:
-            return set(bpy.context.selected_objects + [bpy.context.active_object])
-        return set([bpy.context.active_object])
+            if active_obj := bpy.context.active_object:
+                return set(bpy.context.selected_objects + [active_obj])
+            return set(bpy.context.selected_objects)
+        if active_obj := bpy.context.active_object:
+            return {active_obj}
+        return set()
 
     @classmethod
     def create_ifc_object(
@@ -666,8 +670,7 @@ class Blender(blenderbim.core.tool.Blender):
             return bpy.ops.object.mode_set(mode="EDIT", toggle=True)
         elif ao.type in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE:
             return bpy.ops.object.mode_set(mode="EDIT_GPENCIL", toggle=True)
-        else:
-            return {"CANCELLED"}
+        return {"CANCELLED"}
 
     @classmethod
     def is_object_an_ifc_class(cls, obj: bpy.types.Object, classes: Iterable[str]) -> bool:
@@ -766,12 +769,19 @@ class Blender(blenderbim.core.tool.Blender):
         return collections_mapping
 
     @classmethod
-    def object_supports_edit_mode(cls, obj):
-        if not obj.data:
-            return False, "Can't Edit Empty Object"
+    def is_editable(cls, obj):
+        if obj.type not in cls.OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE:
+            return False
+        if not (element := tool.Ifc.get_entity(obj)):
+            return True
         if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
-            return False, "Can't Edit Clipping Plane Geometry"
-        return True, ""
+            return False
+        usage_type = tool.Model.get_usage_type(element)
+        if usage_type in ("LAYER1", "LAYER2"):
+            # At the moment, these type types of parametric elements (walls,
+            # and "blocks") cannot be edited as a mesh-like object.
+            return False
+        return True
 
     class Modifier:
         @classmethod

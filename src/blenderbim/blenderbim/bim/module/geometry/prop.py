@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.tool as tool
 from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.geometry.data import RepresentationsData
+from blenderbim.bim.module.geometry.data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -46,6 +46,12 @@ def update_mode(self, context):
         bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
     elif self.mode == "EDIT":
         bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
+
+
+def get_mode(self, context):
+    if not ViewportData.is_loaded:
+        ViewportData.load()
+    return ViewportData.data["mode"]
 
 
 def get_styles(self, context):
@@ -129,13 +135,5 @@ class BIMGeometryProperties(PropertyGroup):
     # Navisworks workaround
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
-    mode: EnumProperty(
-        default="OBJECT",
-        items=[
-            ("OBJECT", "IFC Object Mode", "", "OBJECT_DATAMODE", 0),
-            ("EDIT", "IFC Edit Mode", "", "EDITMODE_HLT", 1),
-        ],
-        name="IFC Interaction Mode",
-        update=update_mode,
-    )
+    mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
     representation_from_object: PointerProperty(type=bpy.types.Object)
