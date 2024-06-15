@@ -19,7 +19,7 @@ class BlenderImporter:
         self.settings.set("mesher-linear-deflection", self.deflection_tolerance)
         self.settings.set("mesher-angular-deflection", self.angular_tolerance)
         self.settings_2d = ifcopenshell.geom.settings()
-        self.settings_2d.set(self.settings_2d.INCLUDE_CURVES, True)
+        self.settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
 
         self.process_element_filter()
         self.process_context_filter()
