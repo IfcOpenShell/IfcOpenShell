@@ -54,6 +54,7 @@ extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosectionlabel", "sphinx_copyb
 
 # Auto add document prefixes to help guarantee uniqueness of automatic section references.
 autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 2
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

@@ -24,7 +24,9 @@ documentation>`. Traditional references like `Writing technical documentation`_
 work too but are discouraged. You can link to other pages, like :doc:`Hello
 World<hello_world>` or sections within other pages, like
 :ref:`devs/installation:unstable installation`. We have ``autosectionlabel``
-enabled so it is not necessary to manually create labels.
+enabled so it is not necessary to manually create labels. The depth of sections
+with automatic labels is set to 2, so the third level of titles
+will not get automatic labels to avoid duplication.
 
 The following colours and annotation styles should be used for annotating
 images. All stroke widths are 3px with a corner radius of 3px.  Horizontal
