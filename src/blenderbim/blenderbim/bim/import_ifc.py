@@ -217,9 +217,6 @@ class IfcImporter:
         self.ifc_import_settings = ifc_import_settings
         self.diff = None
         self.file: ifcopenshell.file = None
-        self.context_settings: list[ifcopenshell.geom.main.settings] = []
-        self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
-        self.contexts = []
         self.project = None
         self.has_existing_project = False
         # element guids to blender collections mapping
@@ -255,6 +252,7 @@ class IfcImporter:
         bpy.context.window_manager.progress_update(self.progress)
 
     def execute(self) -> None:
+        tool.Loader.set_settings(self.ifc_import_settings)
         bpy.context.window_manager.progress_begin(0, 100)
         self.profile_code("Starting import process")
         self.load_file()
@@ -313,111 +311,10 @@ class IfcImporter:
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
-    def is_element_far_away(self, element: ifcopenshell.entity_instance) -> bool:
-        try:
-            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-            point = placement[:, 3][0:3]
-            return self.is_point_far_away(point, is_meters=False)
-        except:
-            return False
-
-    def is_point_far_away(
-        self, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]], is_meters: bool = True
-    ) -> bool:
-        # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
-        # Users can configure this if they have to handle larger sites but beware of surveying precision
-        limit = self.ifc_import_settings.distance_limit
-        limit = limit if is_meters else (limit / self.unit_scale)
-        coords = getattr(point, "Coordinates", point)
-        return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
-
     def process_context_filter(self) -> None:
-        # Annotation ContextType is to accommodate broken Revit files
-        # See https://github.com/Autodesk/revit-ifc/issues/187
-        type_priority = ["Model", "Plan", "Annotation"]
-        identifier_priority = [
-            "Body",
-            "Body-FallBack",
-            "Facetation",
-            "FootPrint",
-            "Profile",
-            "Surface",
-            "Reference",
-            "Axis",
-            "Clearance",
-            "Box",
-            "Lighting",
-            "Annotation",
-            "CoG",
-        ]
-        target_view_priority = [
-            "MODEL_VIEW",
-            "PLAN_VIEW",
-            "REFLECTED_PLAN_VIEW",
-            "ELEVATION_VIEW",
-            "SECTION_VIEW",
-            "GRAPH_VIEW",
-            "SKETCH_VIEW",
-            "USERDEFINED",
-            "NOTDEFINED",
-        ]
-
-        def sort_context(context):
-            priority = []
-            if context.ContextType in type_priority:
-                priority.append(len(type_priority) - type_priority.index(context.ContextType))
-            else:
-                priority.append(0)
-            return tuple(priority)
-
-        def sort_subcontext(context):
-            priority = []
-
-            if context.ContextType in type_priority:
-                priority.append(len(type_priority) - type_priority.index(context.ContextType))
-            else:
-                priority.append(0)
-
-            if context.ContextIdentifier in identifier_priority:
-                priority.append(len(identifier_priority) - identifier_priority.index(context.ContextIdentifier))
-            else:
-                priority.append(0)
-
-            if context.TargetView in target_view_priority:
-                priority.append(len(target_view_priority) - target_view_priority.index(context.TargetView))
-            else:
-                priority.append(0)
-
-            priority.append(context.TargetScale or 0)  # Big then small
-
-            return tuple(priority)
-
-        # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-        self.contexts = sorted(
-            self.file.by_type("IfcGeometricRepresentationSubContext"), key=sort_subcontext, reverse=True
-        ) + sorted(
-            self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False),
-            key=sort_context,
-            reverse=True,
-        )
-
-        for context in self.contexts:
-            settings = ifcopenshell.geom.settings()
-            settings.set("mesher-linear-deflection", self.ifc_import_settings.deflection_tolerance)
-            settings.set("mesher-angular-deflection", self.ifc_import_settings.angular_tolerance)
-            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            settings.set("context-ids", [context.id()])
-            settings.set("apply-default-materials", False)
-            self.context_settings.append(settings)
-
-            settings = ifcopenshell.geom.settings()
-            settings.set("mesher-linear-deflection", self.ifc_import_settings.deflection_tolerance)
-            settings.set("mesher-angular-deflection", self.ifc_import_settings.angular_tolerance)
-            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
-            settings.set("disable-opening-subtractions", True)
-            settings.set("context-ids", [context.id()])
-            settings.set("apply-default-materials", False)
-            self.gross_context_settings.append(settings)
+        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
+        tool.Loader.settings.context_settings = tool.Loader.create_settings()
+        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
         offset = self.ifc_import_settings.element_offset
@@ -504,8 +401,8 @@ class IfcImporter:
         context = None
 
         for rep in element.Representation.Representations:
-            if rep.ContextOfItems in self.contexts:
-                rep_priority = self.contexts.index(rep.ContextOfItems)
+            if rep.ContextOfItems in tool.Loader.settings.contexts:
+                rep_priority = tool.Loader.settings.contexts.index(rep.ContextOfItems)
                 if representation is None or rep_priority < representation_priority:
                     representation = rep
                     representation_priority = rep_priority
@@ -526,7 +423,7 @@ class IfcImporter:
                     if representation_id is None:
                         representation_id = rep.id()
                 rep = rep.Items[0].MappingSource.MappedRepresentation
-                if not rep: # Accommodate invalid files
+                if not rep:  # Accommodate invalid files
                     return False
             else:
                 if representation_id is None:
@@ -646,105 +543,18 @@ class IfcImporter:
         if props.has_blender_offset:
             return
         if self.ifc_import_settings.false_origin:
-            return self.set_manual_blender_offset()
+            return tool.Loader.set_manual_blender_offset()
         if self.file.schema == "IFC2X3":
             project = self.file.by_type("IfcProject")[0]
         else:
             project = self.file.by_type("IfcContext")[0]
-        site = self.find_decomposed_ifc_class(project, "IfcSite")
-        if site and self.is_element_far_away(site):
-            return self.guess_false_origin_and_project_north(site)
-        building = self.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and self.is_element_far_away(building):
-            return self.guess_false_origin_and_project_north(building)
-        return self.guess_false_origin()
-
-    def set_manual_blender_offset(self) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(self.ifc_import_settings.false_origin[0])
-        props.blender_northings = str(self.ifc_import_settings.false_origin[1])
-        props.blender_orthogonal_height = str(self.ifc_import_settings.false_origin[2])
-        props.has_blender_offset = True
-
-    def guess_false_origin_and_project_north(self, element: ifcopenshell.entity_instance) -> None:
-        if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
-            return
-        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(placement[0][3])
-        props.blender_northings = str(placement[1][3])
-        props.blender_orthogonal_height = str(placement[2][3])
-        x_axis = mathutils.Vector(placement[:, 0][0:3])
-        default_x_axis = mathutils.Vector((1, 0, 0))
-        if (default_x_axis - x_axis).length > 0.01:
-            props.blender_x_axis_abscissa = str(placement[0][0])
-            props.blender_x_axis_ordinate = str(placement[1][0])
-        props.has_blender_offset = True
-
-    def guess_false_origin(self) -> None:
-        # Civil BIM applications like to work in absolute coordinates, where the
-        # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
-        # check for the actual transformation) but each individual coordinate of
-        # the shape representation is in absolute values.
-        offset_point = self.get_offset_point()
-        if offset_point is None:
-            return
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(offset_point[0])
-        props.blender_northings = str(offset_point[1])
-        props.blender_orthogonal_height = str(offset_point[2])
-        props.has_blender_offset = True
-
-    def get_offset_point(self) -> Union[npt.NDArray[np.float64], None]:
-        elements_checked = 0
-        # If more than these elements aren't far away, the file probably isn't absolutely positioned
-        element_checking_threshold = 3
-        for element in self.file.by_type("IfcElement"):
-            if not element.Representation:
-                continue
-            elements_checked += 1
-            if elements_checked > element_checking_threshold:
-                return
-            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
-                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
-                if self.is_point_far_away(placement, is_meters=False):
-                    return placement
-            if not self.does_element_likely_have_geometry_far_away(element):
-                continue
-            shape = self.create_generic_shape(element)
-            if not shape:
-                continue
-            mat = ifcopenshell.util.shape.get_shape_matrix(shape)
-            point = mat @ np.array(
-                (
-                    shape.geometry.verts[0],
-                    shape.geometry.verts[1],
-                    shape.geometry.verts[2],
-                    0.0,
-                )
-            )
-            point = point / self.unit_scale
-            if self.is_point_far_away(point, is_meters=False):
-                return point
-
-    def does_element_likely_have_geometry_far_away(self, element: ifcopenshell.entity_instance) -> bool:
-        for representation in element.Representation.Representations:
-            items = []
-            for item in representation.Items:
-                if item.is_a("IfcMappedItem"):
-                    items.extend(item.MappingSource.MappedRepresentation.Items)
-                else:
-                    items.append(item)
-            for item in items:
-                for subelement in self.file.traverse(item):
-                    if subelement.is_a("IfcCartesianPointList3D"):
-                        for point in subelement.CoordList:
-                            if len(point) == 3 and self.is_point_far_away(point, is_meters=False):
-                                return True
-                    if subelement.is_a("IfcCartesianPoint"):
-                        if len(subelement.Coordinates) == 3 and self.is_point_far_away(subelement, is_meters=False):
-                            return True
-        return False
+        site = tool.Loader.find_decomposed_ifc_class(project, "IfcSite")
+        if site and tool.Loader.is_element_far_away(site):
+            return tool.Loader.guess_false_origin_and_project_north(site)
+        building = tool.Loader.find_decomposed_ifc_class(project, "IfcBuilding")
+        if building and tool.Loader.is_element_far_away(building):
+            return tool.Loader.guess_false_origin_and_project_north(building)
+        return tool.Loader.guess_false_origin_from_elements(self.file)
 
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -782,18 +592,6 @@ class IfcImporter:
 
         return mathutils.Matrix(matrix.tolist())
 
-    def find_decomposed_ifc_class(
-        self, element: ifcopenshell.entity_instance, ifc_class: str
-    ) -> Union[ifcopenshell.entity_instance, None]:
-        if element.is_a(ifc_class):
-            return element
-        rel_aggregates = element.IsDecomposedBy
-        for rel_aggregate in rel_aggregates:
-            for part in rel_aggregate.RelatedObjects:
-                result = self.find_decomposed_ifc_class(part, ifc_class)
-                if result:
-                    return result
-
     def create_grids(self):
         if not self.ifc_import_settings.should_load_geometry:
             return
@@ -805,7 +603,7 @@ class IfcImporter:
                 self.ifc_import_settings.logger.error("An invalid grid was found %s", grid)
                 continue
             if grid.Representation:
-                shape = self.create_generic_shape(grid)
+                shape = tool.Loader.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             grid_placement = self.get_element_matrix(grid)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
@@ -818,7 +616,7 @@ class IfcImporter:
 
     def create_grid_axes(self, axes, grid_obj, grid_placement):
         for axis in axes:
-            shape = self.create_generic_shape(axis.AxisCurve)
+            shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
             if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
@@ -837,14 +635,14 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("Creating object %s", element)
         mesh = None
         if self.ifc_import_settings.should_load_geometry:
-            for context in self.contexts:
+            for context in tool.Loader.settings.contexts:
                 representation = ifcopenshell.util.representation.get_representation(element, context)
                 if not representation:
                     continue
                 mesh_name = "{}/{}".format(representation.ContextOfItems.id(), representation.id())
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
-                    shape = self.create_generic_shape(representation)
+                    shape = tool.Loader.create_generic_shape(representation)
                     if shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
@@ -897,28 +695,19 @@ class IfcImporter:
 
     def create_elements(self) -> None:
         self.create_generic_elements(self.elements)
-        tmp = self.context_settings
-        self.context_settings = self.gross_context_settings
-        self.create_generic_elements(self.gross_elements)
-        self.context_settings = tmp
+        self.create_generic_elements(self.gross_elements, is_gross=True)
 
-    def create_generic_shape(
-        self, element: ifcopenshell.entity_instance
-    ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
-        for settings in self.context_settings:
-            try:
-                result = ifcopenshell.geom.create_shape(settings, element)
-                if result:
-                    return result
-            except:
-                pass
-
-    def create_generic_elements(self, elements: set[ifcopenshell.entity_instance], unselectable=False) -> None:
+    def create_generic_elements(
+        self, elements: set[ifcopenshell.entity_instance], unselectable=False, is_gross=False
+    ) -> None:
         if isinstance(self.file, ifcopenshell.sqlite):
             return self.create_generic_sqlite_elements(elements)
 
         if self.ifc_import_settings.should_load_geometry:
-            for settings in self.context_settings:
+            context_settings = (
+                tool.Loader.settings.gross_context_settings if is_gross else tool.Loader.settings.context_settings
+            )
+            for settings in context_settings:
                 if not elements:
                     break
                 products = self.create_products(elements, settings=settings)
@@ -992,7 +781,7 @@ class IfcImporter:
         results = set()
         if not products:
             return results
-        if self.ifc_import_settings.should_use_cpu_multiprocessing:
+        if tool.Loader.settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         else:
             iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
@@ -1216,7 +1005,7 @@ class IfcImporter:
         mesh = bpy.data.meshes.new("Native")
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and self.is_point_far_away(self.mesh_data["co"][0:3], is_meters=False):
+        if props.has_blender_offset and tool.Loader.is_point_far_away(self.mesh_data["co"][0:3], is_meters=False):
             verts_array = np.array(self.mesh_data["co"])
             verts_array *= self.unit_scale
             offset_x, offset_y, offset_z = verts_array[0:3]
@@ -1368,7 +1157,7 @@ class IfcImporter:
             matrix[1][3] *= self.unit_scale
             matrix[2][3] *= self.unit_scale
             # TODO: support inner radius, start param, and end param
-            geometry = self.create_generic_shape(item.Directrix)
+            geometry = tool.Loader.create_generic_shape(item.Directrix)
             e = geometry.edges
             v = geometry.verts
             vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
@@ -1458,6 +1247,7 @@ class IfcImporter:
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        tool.Loader.set_unit_scale(self.unit_scale)
 
     def set_units(self):
         units = self.file.by_type("IfcUnitAssignment")[0]
@@ -1631,7 +1421,9 @@ class IfcImporter:
             if (
                 props.has_blender_offset
                 and geometry.verts
-                and self.is_point_far_away((geometry.verts[0], geometry.verts[1], geometry.verts[2]))
+                and tool.Loader.is_point_far_away(
+                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
+                )
             ):
                 # Shift geometry close to the origin based off that first vert it found
                 verts_array = np.array(geometry.verts)
@@ -1765,6 +1557,8 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
+        # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
+        # Users can configure this if they have to handle larger sites but beware of surveying precision
         self.distance_limit = 1000
         self.false_origin = None
         self.element_offset = 0
@@ -1772,6 +1566,9 @@ class IfcImportSettings:
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
+        self.contexts = []
+        self.context_settings: list[ifcopenshell.geom.main.settings] = []
+        self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
         self.elements: set[ifcopenshell.entity_instance] = set()
 
     @staticmethod

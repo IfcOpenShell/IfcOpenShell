@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import os
 import re
 import bpy
 import bmesh
@@ -23,8 +24,8 @@ import ifcopenshell.geom
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
-import os
 import numpy as np
+import numpy.typing as npt
 from mathutils import Vector
 from pathlib import Path
 from typing import Union
@@ -40,6 +41,17 @@ OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
 
 
 class Loader(blenderbim.core.tool.Loader):
+    unit_scale: float = 1
+    settings = None
+
+    @classmethod
+    def set_unit_scale(cls, unit_scale: float) -> None:
+        cls.unit_scale = unit_scale
+
+    @classmethod
+    def set_settings(cls, settings) -> None:
+        cls.settings = settings
+
     @classmethod
     def create_project_collection(cls, name: str) -> bpy.types.Collection:
         project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
@@ -508,3 +520,148 @@ class Loader(blenderbim.core.tool.Loader):
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
         bm.free()
+
+    @classmethod
+    def is_point_far_away(
+        cls, point: Union[ifcopenshell.entity_instance, npt.NDArray[np.float64]], is_meters: bool = True
+    ) -> bool:
+        limit = cls.settings.distance_limit
+        limit = limit if is_meters else (limit / cls.unit_scale)
+        coords = getattr(point, "Coordinates", point)
+        return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
+
+    @classmethod
+    def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
+        try:
+            placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+            point = placement[:, 3][0:3]
+            return tool.Loader.is_point_far_away(point, is_meters=False)
+        except:
+            return False
+
+    @classmethod
+    def create_settings(cls, is_gross=False):
+        results = []
+        for context in cls.settings.contexts:
+            settings = ifcopenshell.geom.settings()
+            settings.set("mesher-linear-deflection", cls.settings.deflection_tolerance)
+            settings.set("mesher-angular-deflection", cls.settings.angular_tolerance)
+            settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+            settings.set("context-ids", [context.id()])
+            settings.set("apply-default-materials", False)
+            if is_gross:
+                settings.set("disable-opening-subtractions", True)
+            results.append(settings)
+        return results
+
+    @classmethod
+    def set_manual_blender_offset(cls) -> None:
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(cls.settings.false_origin[0])
+        props.blender_northings = str(cls.settings.false_origin[1])
+        props.blender_orthogonal_height = str(cls.settings.false_origin[2])
+        props.has_blender_offset = True
+
+    @classmethod
+    def guess_false_origin_and_project_north(cls, element: ifcopenshell.entity_instance) -> None:
+        if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
+            return
+        placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(placement[0][3])
+        props.blender_northings = str(placement[1][3])
+        props.blender_orthogonal_height = str(placement[2][3])
+        x_axis = mathutils.Vector(placement[:, 0][0:3])
+        default_x_axis = mathutils.Vector((1, 0, 0))
+        if (default_x_axis - x_axis).length > 0.01:
+            props.blender_x_axis_abscissa = str(placement[0][0])
+            props.blender_x_axis_ordinate = str(placement[1][0])
+        props.has_blender_offset = True
+
+    @classmethod
+    def find_decomposed_ifc_class(
+        cls, element: ifcopenshell.entity_instance, ifc_class: str
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        if element.is_a(ifc_class):
+            return element
+        rel_aggregates = element.IsDecomposedBy
+        for rel_aggregate in rel_aggregates:
+            for part in rel_aggregate.RelatedObjects:
+                result = cls.find_decomposed_ifc_class(part, ifc_class)
+                if result:
+                    return result
+
+    @classmethod
+    def create_generic_shape(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
+        for settings in cls.settings.context_settings:
+            try:
+                result = ifcopenshell.geom.create_shape(settings, element)
+                if result:
+                    return result
+            except:
+                pass
+
+    @classmethod
+    def does_element_likely_have_geometry_far_away(
+        cls, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
+    ) -> bool:
+        for representation in element.Representation.Representations:
+            items = []
+            for item in representation.Items:
+                if item.is_a("IfcMappedItem"):
+                    items.extend(item.MappingSource.MappedRepresentation.Items)
+                else:
+                    items.append(item)
+            for item in items:
+                for subelement in ifc_file.traverse(item):
+                    if subelement.is_a("IfcCartesianPointList3D"):
+                        for point in subelement.CoordList:
+                            if len(point) == 3 and cls.is_point_far_away(point, is_meters=False):
+                                return True
+                    if subelement.is_a("IfcCartesianPoint"):
+                        if len(subelement.Coordinates) == 3 and cls.is_point_far_away(subelement, is_meters=False):
+                            return True
+        return False
+
+    @classmethod
+    def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
+        elements_checked = 0
+        # If more than these elements aren't far away, the file probably isn't absolutely positioned
+        element_checking_threshold = 3
+        for element in ifc_file.by_type("IfcElement"):
+            if not element.Representation:
+                continue
+            elements_checked += 1
+            if elements_checked > element_checking_threshold:
+                return
+            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
+                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
+                if cls.is_point_far_away(placement, is_meters=False):
+                    return placement
+            if not cls.does_element_likely_have_geometry_far_away(ifc_file, element):
+                continue
+            shape = cls.create_generic_shape(element)
+            if not shape:
+                continue
+            mat = ifcopenshell.util.shape.get_shape_matrix(shape)
+            point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 0.0))
+            point = point / cls.unit_scale
+            if cls.is_point_far_away(point, is_meters=False):
+                return point
+
+    @classmethod
+    def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
+        # Civil BIM applications like to work in absolute coordinates, where the
+        # ObjectPlacement is usually 0,0,0 (but not always, so we'll need to
+        # check for the actual transformation) but each individual coordinate of
+        # the shape representation is in absolute values.
+        offset_point = cls.get_offset_point(ifc_file)
+        if offset_point is None:
+            return
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        props.blender_eastings = str(offset_point[0])
+        props.blender_northings = str(offset_point[1])
+        props.blender_orthogonal_height = str(offset_point[2])
+        props.has_blender_offset = True
