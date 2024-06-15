@@ -17,9 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import json
+from blenderbim.bim.module.web.data import WebData
 import blenderbim.core.tool
-from typing import Union, Literal
 import socket
 import os
 import subprocess
@@ -27,8 +26,6 @@ import webbrowser
 import asyncio
 import socketio
 import threading
-import json
-
 
 sio = None
 ws_process = None
@@ -79,6 +76,7 @@ class Web(blenderbim.core.tool.Web):
         ws_url = f"ws://localhost:{port}/blender"
         ws_thread.run_coro(cls.sio_connect(ws_url))
         cls.set_is_connected(True)
+        cls.send_webui_data()
 
     @classmethod
     def disconnect_websocket_server(cls):
@@ -110,14 +108,11 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def send_webui_data(cls):
         global ws_thread
-        data = cls.get_webui_data()
-        ws_thread.run_coro(cls.sio_send(data))
 
-    @classmethod
-    def get_webui_data(cls):
-        data = {}
-        data["ifc_file"] = bpy.context.scene.BIMProperties.ifc_file
-        return json.dumps(data)
+        if not WebData.is_loaded:
+            WebData.load()
+
+        ws_thread.run_coro(cls.sio_send(WebData.data))
 
     @classmethod
     def open_web_browser(cls, port):
