@@ -62,7 +62,8 @@ Filtered model loading
 ----------------------
 
 You may filter elements and only load a portion of the model. Click on 
-:ref:`users/general_usage/ifc_project:Advanced mode` when loading a model.
+:ref:`Advanced Mode <Project Info Advanced Mode>` checkbox when loading a model.
+
 
 .. image:: images/advanced-mode.png
 
