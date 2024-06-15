@@ -40,19 +40,19 @@ class PsetQto:
     templates_path = {
         "IFC2X3": "Pset_IFC2X3.ifc",
         "IFC4": "Pset_IFC4_ADD2.ifc",
-        "IFC4X3": "Pset_IFC4X3.ifc"
+        "IFC4X3_ADD2": "Pset_IFC4X3.ifc"
     }
     # fmt: on
 
-    def __init__(self, schema: str, templates=None) -> None:
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema)
+    def __init__(self, schema_identifier: str, templates=None) -> None:
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_identifier)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
-            path = str(folder_path.joinpath("schema", self.templates_path[schema]))
+            path = str(folder_path.joinpath("schema", self.templates_path[schema_identifier]))
             templates = [ifcopenshell.open(path)]
             # See bug 3583. We backport this change from IFC4X3 because it just makes sense.
             # Users aren't forced to use it.
-            if schema == "IFC4":
+            if schema_identifier == "IFC4":
                 for element in templates[0].by_type("IfcPropertySetTemplate"):
                     if element.TemplateType == "QTO_OCCURRENCEDRIVEN":
                         element.TemplateType = "QTO_TYPEDRIVENOVERRIDE"
