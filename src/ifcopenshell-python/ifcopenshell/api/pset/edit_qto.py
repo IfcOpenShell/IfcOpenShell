@@ -140,8 +140,7 @@ class Usecase:
         if self.settings["pset_template"]:
             self.pset_template = self.settings["pset_template"]
         else:
-            # TODO: add IFC2X3 PsetQto template support
-            self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
+            self.psetqto = ifcopenshell.util.pset.get_template(self.file.schema_identifier)
             self.qto_template = self.psetqto.get_by_name(self.settings["qto"].Name)
 
     def update_existing_properties(self):
