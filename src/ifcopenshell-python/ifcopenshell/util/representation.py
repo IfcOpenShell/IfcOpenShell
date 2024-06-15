@@ -75,6 +75,14 @@ def get_representation(
     subcontext: Optional[str] = None,
     target_view: Optional[str] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
+    """Gets a IfcShapeRepresentation filtered by the context type, identifier, and target view
+
+    :param element: An IfcProduct or IfcTypeProduct
+    :param context: Either a specific IfcGeometricRepresentationContext or a ContextType
+    :param subcontext: A ContextIdentifier string, or any if left blank.
+    :param target_view: A TargetView string, or any if left blank.
+    :return: The first IfcShapeRepresentation matching the criteria.
+    """
     if element.is_a("IfcProduct") and element.Representation:
         for r in element.Representation.Representations:
             if is_representation_of_context(r, context, subcontext, target_view):
@@ -89,9 +97,7 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
     """Resolve possibly mapped representation.
 
     :param representation: IfcRepresentation
-    :type representation: ifcopenshell.entity_instance
     :return: Representation resolved from mappings
-    :rtype: ifcopenshell.entity_instance
     """
     if len(representation.Items) == 1 and representation.Items[0].is_a("IfcMappedItem"):
         return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
@@ -118,3 +124,86 @@ def resolve_items(
         else:
             results.append(ResolvedItemDict(matrix=matrix.copy(), item=item))
     return results
+
+
+def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
+    """Gets a list of contexts ordered from high priority to low priority
+
+    Models can contain multiple geometric contexts. When visualising models,
+    you may want to prioritise visualising certain contexts over others,
+    determined by the context type, identifier, target view, and target scale.
+
+    The default prioritises subcontexts, then contexts. It then prioritises 3D,
+    then 2D. It then prioritises bodies, then others. It also prioritises model
+    views, then plan views, then others.
+
+    :param ifc_file: The model containing contexts
+    :return: A list of IfcGeometricRepresentationContext (or SubContext) from
+        high priority to low priority.
+    """
+    # Annotation ContextType is to accommodate broken Revit files
+    # See https://github.com/Autodesk/revit-ifc/issues/187
+    type_priority = ["Model", "Plan", "Annotation"]
+    identifier_priority = [
+        "Body",
+        "Body-FallBack",
+        "Facetation",
+        "FootPrint",
+        "Profile",
+        "Surface",
+        "Reference",
+        "Axis",
+        "Clearance",
+        "Box",
+        "Lighting",
+        "Annotation",
+        "CoG",
+    ]
+    target_view_priority = [
+        "MODEL_VIEW",
+        "PLAN_VIEW",
+        "REFLECTED_PLAN_VIEW",
+        "ELEVATION_VIEW",
+        "SECTION_VIEW",
+        "GRAPH_VIEW",
+        "SKETCH_VIEW",
+        "USERDEFINED",
+        "NOTDEFINED",
+    ]
+
+    def sort_context(context):
+        priority = []
+        if context.ContextType in type_priority:
+            priority.append(len(type_priority) - type_priority.index(context.ContextType))
+        else:
+            priority.append(0)
+        return tuple(priority)
+
+    def sort_subcontext(context):
+        priority = []
+
+        if context.ContextType in type_priority:
+            priority.append(len(type_priority) - type_priority.index(context.ContextType))
+        else:
+            priority.append(0)
+
+        if context.ContextIdentifier in identifier_priority:
+            priority.append(len(identifier_priority) - identifier_priority.index(context.ContextIdentifier))
+        else:
+            priority.append(0)
+
+        if context.TargetView in target_view_priority:
+            priority.append(len(target_view_priority) - target_view_priority.index(context.TargetView))
+        else:
+            priority.append(0)
+
+        priority.append(context.TargetScale or 0)  # Big then small
+
+        return tuple(priority)
+
+    # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
+    return sorted(ifc_file.by_type("IfcGeometricRepresentationSubContext"), key=sort_subcontext, reverse=True) + sorted(
+        ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False),
+        key=sort_context,
+        reverse=True,
+    )
