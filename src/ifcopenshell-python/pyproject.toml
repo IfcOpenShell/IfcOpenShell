@@ -15,7 +15,11 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["mathutils", "shapely", "numpy", "isodate", "python-dateutil", "lark"]
+dependencies = ["shapely", "numpy", "isodate", "python-dateutil", "lark"]
+
+[project.optional-dependencies]
+geometry = ["mathutils"]
+dev = ["pytest"]
 
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"

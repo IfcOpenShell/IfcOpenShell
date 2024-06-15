@@ -25,7 +25,7 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from math import cos, sin, pi, tan, radians, degrees, atan, sqrt, ceil
+from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
 from typing import Union, Optional, Literal, Any, Sequence
 from itertools import chain
 from mathutils import Vector, Matrix
