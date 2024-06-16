@@ -988,7 +988,9 @@ class LoadLink(bpy.types.Operator):
 import bpy
 
 def run():
-    bpy.ops.bim.load_linked_project(filepath="{self.filepath}", false_origin="{self.false_origin}")
+    props = bpy.context.scene.BIMProjectProperties
+    props.false_origin = "{self.false_origin}"
+    bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
     bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
 
 try:
@@ -1245,7 +1247,6 @@ class LoadLinkedProject(bpy.types.Operator):
     bl_label = "Load a project for viewing only."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty()
-    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
         import ifcpatch
@@ -1269,10 +1270,9 @@ class LoadLinkedProject(bpy.types.Operator):
         print("Finished writing property database")
 
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
-        ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-        ifc_importer.file = self.file
-        ifc_importer.process_context_filter()
+        tool.Loader.set_settings(import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger))
+        tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
+        tool.Loader.settings.context_settings = tool.Loader.create_settings()
 
         self.elements = set(self.file.by_type("IfcElement"))
         if self.file.schema in ("IFC2X3", "IFC4"):
@@ -1282,18 +1282,21 @@ class LoadLinkedProject(bpy.types.Operator):
         else:
             self.elements |= set(self.file.by_type("IfcSpatialElement"))
         self.elements -= set(self.file.by_type("IfcFeatureElement"))
-        self.elements = list(self.elements)
 
-        model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0))
-        false_origin = np.array([float(o.strip()) for o in self.false_origin.split(",")])
-        model_offset = model_origin - false_origin
-        zero_origin = np.array((0, 0, 0))
-        has_model_offset = not np.allclose(model_offset, zero_origin)
+        if tool.Loader.settings.false_origin:
+            model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0))
+            false_origin = np.array(tool.Loader.settings.false_origin)
+            model_offset = model_origin - false_origin
+            zero_origin = np.array((0, 0, 0))
+            has_model_offset = not np.allclose(model_offset, zero_origin)
+        else:
+            has_model_offset = False
 
-        for settings in ifc_importer.context_settings:
-            settings = ifcopenshell.geom.settings()
-            settings.set("apply-default-materials", False)
+        for settings in tool.Loader.settings.context_settings:
+            if not self.elements:
+                break
 
+            results = set()
             if has_model_offset:
                 offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
                 offset[0], offset[1], offset[2] = model_offset
@@ -1314,7 +1317,6 @@ class LoadLinkedProject(bpy.types.Operator):
             chunked_materials = []
             chunked_material_ids = []
             material_offset = 0
-            max_slot_index = 0
             chunk_size = 10000
             offset = 0
 
@@ -1322,6 +1324,8 @@ class LoadLinkedProject(bpy.types.Operator):
             if iterator.initialize():
                 while True:
                     shape = iterator.get()
+                    results.add(self.file.by_id(shape.id))
+
                     if len(shape.geometry.faces) > 1000 and self.is_local(shape):  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
@@ -1418,7 +1422,6 @@ class LoadLinkedProject(bpy.types.Operator):
                         chunked_materials = []
                         chunked_material_ids = []
                         material_offset = 0
-                        max_slot_index = 0
                         offset = 0
 
                     if not iterator.next():
@@ -1448,10 +1451,10 @@ class LoadLinkedProject(bpy.types.Operator):
                                 chunked_guid_ids,
                             )
                         break
+            self.elements -= results
 
-            bpy.context.scene.collection.children.link(self.collection)
-            print("Finished", time.time() - start)
-            break
+        bpy.context.scene.collection.children.link(self.collection)
+        print("Finished", time.time() - start)
         return {"FINISHED"}
 
     def is_local(self, shape: ShapeElementType) -> bool:
