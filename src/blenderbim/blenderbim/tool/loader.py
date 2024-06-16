@@ -605,49 +605,23 @@ class Loader(blenderbim.core.tool.Loader):
                 pass
 
     @classmethod
-    def does_element_likely_have_geometry_far_away(
-        cls, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
-    ) -> bool:
-        for representation in element.Representation.Representations:
-            items = []
-            for item in representation.Items:
-                if item.is_a("IfcMappedItem"):
-                    items.extend(item.MappingSource.MappedRepresentation.Items)
-                else:
-                    items.append(item)
-            for item in items:
-                for subelement in ifc_file.traverse(item):
-                    if subelement.is_a("IfcCartesianPointList3D"):
-                        for point in subelement.CoordList:
-                            if len(point) == 3 and cls.is_point_far_away(point, is_meters=False):
-                                return True
-                    if subelement.is_a("IfcCartesianPoint"):
-                        if len(subelement.Coordinates) == 3 and cls.is_point_far_away(subelement, is_meters=False):
-                            return True
-        return False
-
-    @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
         elements_checked = 0
-        # If more than these elements aren't far away, the file probably isn't absolutely positioned
+        # If more than these elements aren't far away, the file probably isn't
+        # absolutely positioned. We check more than 1 because sometimes users
+        # try to be clever and put "origin marker" objects.
         element_checking_threshold = 3
         for element in ifc_file.by_type("IfcElement"):
-            if not element.Representation:
-                continue
-            elements_checked += 1
             if elements_checked > element_checking_threshold:
                 return
-            if element.ObjectPlacement and element.ObjectPlacement.is_a("IfcLocalPlacement"):
-                placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)[:, 3][0:3]
-                if cls.is_point_far_away(placement, is_meters=False):
-                    return placement
-            if not cls.does_element_likely_have_geometry_far_away(ifc_file, element):
+            if not element.Representation:
                 continue
-            shape = cls.create_generic_shape(element)
+            shape = cls.create_generic_shape(element, is_gross=True)
             if not shape:
                 continue
+            elements_checked += 1
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
-            point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 0.0))
+            point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
             point = point / cls.unit_scale
             if cls.is_point_far_away(point, is_meters=False):
                 return point
