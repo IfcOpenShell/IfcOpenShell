@@ -539,7 +539,7 @@ class IfcImporter:
         elif self.ifc_import_settings.false_origin_mode == "DISABLED":
             return
         elif self.ifc_import_settings.false_origin_mode == "MANUAL":
-            return tool.Loader.set_manual_blender_offset()
+            return tool.Loader.set_manual_blender_offset(self.file)
         return tool.Loader.guess_false_origin(self.file)
 
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
@@ -569,9 +569,9 @@ class IfcImporter:
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
-                float(props.blender_eastings) * self.unit_scale,
-                float(props.blender_northings) * self.unit_scale,
-                float(props.blender_orthogonal_height) * self.unit_scale,
+                float(props.blender_offset_x) * self.unit_scale,
+                float(props.blender_offset_y) * self.unit_scale,
+                float(props.blender_offset_z) * self.unit_scale,
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
             )

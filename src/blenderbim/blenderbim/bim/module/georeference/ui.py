@@ -90,7 +90,7 @@ class BIM_PT_gis(Panel):
 
         if props.has_blender_offset:
             row = self.layout.row()
-            row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
+            row.label(text="Blender Session Origin", icon="TRACKING_REFINE_FORWARDS")
 
             row = self.layout.row(align=True)
             row.label(text="Eastings")
