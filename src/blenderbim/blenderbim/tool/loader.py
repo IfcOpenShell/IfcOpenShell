@@ -593,9 +593,10 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def create_generic_shape(
-        cls, element: ifcopenshell.entity_instance
+        cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
-        for settings in cls.settings.context_settings:
+        context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
+        for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element)
                 if result:
