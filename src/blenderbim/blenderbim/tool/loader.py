@@ -555,24 +555,33 @@ class Loader(blenderbim.core.tool.Loader):
         return results
 
     @classmethod
-    def set_manual_blender_offset(cls) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(cls.settings.false_origin[0])
-        props.blender_northings = str(cls.settings.false_origin[1])
-        props.blender_orthogonal_height = str(cls.settings.false_origin[2])
-        props.has_blender_offset = True
+    def set_manual_blender_offset(cls, ifc_file: ifcopenshell.file) -> None:
+        model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
+        false_origin = np.array(cls.settings.false_origin)
+        model_offset = false_origin - model_origin
+        zero_origin = np.array((0, 0, 0))
+        has_model_offset = not np.allclose(model_offset, zero_origin)
+        if has_model_offset:
+            props = bpy.context.scene.BIMGeoreferenceProperties
+            props.blender_offset_x = str(model_offset[0])
+            props.blender_offset_y = str(model_offset[1])
+            props.blender_offset_z = str(model_offset[2])
+            props.blender_eastings = str(false_origin[0])
+            props.blender_northings = str(false_origin[1])
+            props.blender_orthogonal_height = str(false_origin[2])
+            props.has_blender_offset = True
 
     @classmethod
-    def guess_false_origin_and_project_north(cls, element: ifcopenshell.entity_instance) -> None:
+    def guess_false_origin_and_project_north(cls, ifc_file: ifcopenshell.file,  element: ifcopenshell.entity_instance) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        offset_point = [placement[0][3], placement[1][3], placement[2][3]]
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.set_manual_blender_offset(ifc_file)
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(placement[0][3])
-        props.blender_northings = str(placement[1][3])
-        props.blender_orthogonal_height = str(placement[2][3])
-        x_axis = mathutils.Vector(placement[:, 0][0:3])
-        default_x_axis = mathutils.Vector((1, 0, 0))
+        x_axis = Vector(placement[:, 0][0:3])
+        default_x_axis = Vector((1, 0, 0))
         if (default_x_axis - x_axis).length > 0.01:
             props.blender_x_axis_abscissa = str(placement[0][0])
             props.blender_x_axis_ordinate = str(placement[1][0])
@@ -622,9 +631,10 @@ class Loader(blenderbim.core.tool.Loader):
             elements_checked += 1
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
-            point = point / cls.unit_scale
-            if cls.is_point_far_away(point, is_meters=False):
-                return point
+            if cls.is_point_far_away(point, is_meters=True):
+                # Arbitrary origins should be to the nearest millimeter.
+                # Anything more precise is just ridiculous from a practical surveying perspective.
+                return [round(float(p), 3) / cls.unit_scale for p in point[:3]]
 
     @classmethod
     def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
@@ -635,11 +645,8 @@ class Loader(blenderbim.core.tool.Loader):
         offset_point = cls.get_offset_point(ifc_file)
         if offset_point is None:
             return
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.blender_eastings = str(offset_point[0])
-        props.blender_northings = str(offset_point[1])
-        props.blender_orthogonal_height = str(offset_point[2])
-        props.has_blender_offset = True
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.set_manual_blender_offset(ifc_file)
 
     @classmethod
     def guess_false_origin(cls, ifc_file: ifcopenshell.file) -> None:
@@ -649,8 +656,8 @@ class Loader(blenderbim.core.tool.Loader):
             project = ifc_file.by_type("IfcContext")[0]
         site = cls.find_decomposed_ifc_class(project, "IfcSite")
         if site and cls.is_element_far_away(site):
-            return cls.guess_false_origin_and_project_north(site)
+            return cls.guess_false_origin_and_project_north(ifc_file, site)
         building = cls.find_decomposed_ifc_class(project, "IfcBuilding")
         if building and cls.is_element_far_away(building):
-            return cls.guess_false_origin_and_project_north(building)
+            return cls.guess_false_origin_and_project_north(ifc_file, building)
         return cls.guess_false_origin_from_elements(ifc_file)

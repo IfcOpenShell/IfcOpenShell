@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
+from blenderbim.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -49,6 +49,9 @@ class BIMGeoreferenceProperties(PropertyGroup):
     blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")
     blender_x_axis_abscissa: StringProperty(name="Blender X Axis Abscissa", default="1")
     blender_x_axis_ordinate: StringProperty(name="Blender X Axis Ordinate", default="0")
+    blender_offset_x: StringProperty(name="Blender Offset X", default="0")
+    blender_offset_y: StringProperty(name="Blender Offset Y", default="0")
+    blender_offset_z: StringProperty(name="Blender Offset Z", default="0")
     has_true_north: BoolProperty(name="Has True North", default=True)
     true_north_abscissa: StringProperty(name="True North Abscissa")
     true_north_ordinate: StringProperty(name="True North Ordinate")
