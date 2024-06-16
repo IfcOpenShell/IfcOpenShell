@@ -153,13 +153,22 @@ class BIMProjectProperties(PropertyGroup):
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
     void_limit: IntProperty(name="Void Limit", default=30)
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
+    false_origin_mode: bpy.props.EnumProperty(
+        items=[
+            (
+                "AUTOMATIC",
+                "Automatic",
+                "An automatic false origin will be detected from geometry with large coordinates",
+            ),
+            ("MANUAL", "Manual", "You can specify the false origin coordinates"),
+            ("DISABLED", "Disabled", "The model in original local coordinates will be shown as is"),
+        ],
+        name="False Origin Mode",
+        default="AUTOMATIC",
+    )
     false_origin: StringProperty(
         name="False Origin",
-        description=(
-            "False origin that will be used to offset the entire model.\n"
-            "(0,0,0) value is interpreted as an unset false origin - false origin will be guessed based on Distance Limit.\n"
-            "False origin is defined in project units"
-        ),
+        description="False origin in project units that the Blender origin will correlate to",
         default="0,0,0",
     )
     element_offset: IntProperty(name="Element Offset", default=0)

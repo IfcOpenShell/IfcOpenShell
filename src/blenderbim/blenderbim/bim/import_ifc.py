@@ -17,16 +17,12 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-import os
-import re
 import bpy
 import time
 import json
-import bmesh
 import logging
 import mathutils
 import numpy as np
-import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -37,8 +33,6 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import blenderbim.tool as tool
-import blenderbim.core.spatial
-import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from blenderbim.tool.loader import OBJECT_DATA_TYPE
@@ -542,19 +536,11 @@ class IfcImporter:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             return
-        if self.ifc_import_settings.false_origin:
+        elif self.ifc_import_settings.false_origin_mode == "DISABLED":
+            return
+        elif self.ifc_import_settings.false_origin_mode == "MANUAL":
             return tool.Loader.set_manual_blender_offset()
-        if self.file.schema == "IFC2X3":
-            project = self.file.by_type("IfcProject")[0]
-        else:
-            project = self.file.by_type("IfcContext")[0]
-        site = tool.Loader.find_decomposed_ifc_class(project, "IfcSite")
-        if site and tool.Loader.is_element_far_away(site):
-            return tool.Loader.guess_false_origin_and_project_north(site)
-        building = tool.Loader.find_decomposed_ifc_class(project, "IfcBuilding")
-        if building and tool.Loader.is_element_far_away(building):
-            return tool.Loader.guess_false_origin_and_project_north(building)
-        return tool.Loader.guess_false_origin_from_elements(self.file)
+        return tool.Loader.guess_false_origin(self.file)
 
     def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -1560,6 +1546,7 @@ class IfcImportSettings:
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         self.distance_limit = 1000
+        self.false_origin_mode = "AUTOMATIC"
         self.false_origin = None
         self.element_offset = 0
         self.element_limit = 30000
@@ -1591,9 +1578,11 @@ class IfcImportSettings:
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
         settings.distance_limit = props.distance_limit
-        settings.false_origin = [float(o) for o in props.false_origin.split(",")] if props.false_origin else None
-        if settings.false_origin == [0, 0, 0]:
-            settings.false_origin = None
+        settings.false_origin_mode = props.false_origin_mode
+        try:
+            settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
+        except:
+            settings.false_origin = [0, 0, 0]
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
         return settings

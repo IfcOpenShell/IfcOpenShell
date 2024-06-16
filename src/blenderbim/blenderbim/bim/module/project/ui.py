@@ -145,7 +145,10 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "distance_limit")
         row = self.layout.row()
-        row.prop(pprops, "false_origin")
+        row.prop(pprops, "false_origin_mode")
+        if pprops.false_origin_mode == "MANUAL":
+            row = self.layout.row()
+            row.prop(pprops, "false_origin")
 
         row = self.layout.row()
         row.label(text="Element Range")

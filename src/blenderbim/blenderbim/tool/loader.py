@@ -665,3 +665,17 @@ class Loader(blenderbim.core.tool.Loader):
         props.blender_northings = str(offset_point[1])
         props.blender_orthogonal_height = str(offset_point[2])
         props.has_blender_offset = True
+
+    @classmethod
+    def guess_false_origin(cls, ifc_file: ifcopenshell.file) -> None:
+        if ifc_file.schema == "IFC2X3":
+            project = ifc_file.by_type("IfcProject")[0]
+        else:
+            project = ifc_file.by_type("IfcContext")[0]
+        site = cls.find_decomposed_ifc_class(project, "IfcSite")
+        if site and cls.is_element_far_away(site):
+            return cls.guess_false_origin_and_project_north(site)
+        building = cls.find_decomposed_ifc_class(project, "IfcBuilding")
+        if building and cls.is_element_far_away(building):
+            return cls.guess_false_origin_and_project_north(building)
+        return cls.guess_false_origin_from_elements(ifc_file)
