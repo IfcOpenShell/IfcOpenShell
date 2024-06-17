@@ -14,22 +14,22 @@ Overview
 The "Project Info" panel in the "Project Overview" tab of "Scene Properties" of "Properties Editor"
 provides an overview of the essential information about the currently loaded IFC file or allows users to create a new or load an existing IFC project.
 
-The "Project Info" panel has four distinct states depending on the state of the IFC project:
+The "Project Info" panel has four distinct modes depending on the state of the IFC project:
 
-1. Not Created or Loaded State
-2. Not Saved State
-3. Saved and Loaded State
-4. Preloaded State (Advanced Mode)
+1. `Project Setup Mode`_
+2. `Project Unsaved Mode`_
+3. `Project Loaded Mode`_
+4. `Advanced Loading Mode`_
 
-There's also an edit toggle in some states that allows to modify the various metadata of the IFC file i.e. the IFC header section of the file.
+There's also an editing submode in some modes that allows to modify the various metadata of the IFC file i.e. the IFC header section of the file.
 
-Not Created or Loaded State
----------------------------
+Project Setup Mode
+------------------
 
 .. figure:: images/interface_property-editor_project-overview_new_load.png
-   :alt: Project Info when project is not created or loaded
+   :alt: Project Info in Project Setup Mode
 
-When no IFC file is loaded, the "Project Info" panel displays options to create a new IFC project or load an existing one.
+When no IFC file is loaded or created, the "Project Info" panel displays options to create a new IFC project or load an existing one.
 
 Fields
 ^^^^^^
@@ -80,20 +80,26 @@ Buttons
   By default, your project will be created with a basic spatial tree with the structure ``IfcProject > IfcSite >
   IfcBuilding > IfcStorey``. Template might include additional colllections and classes, such as Types. You can see the tree of collections in the outliner when this is done.
 
+  After creation Project Info will transition into `Project Unsaved Mode`_
+
 **Load Project**
   Load an existing project from an IFC file. The IFC may come from any source, including exported from proprietary BIM software.
 
-Not Saved State
----------------
+  This will open an Open Dialog that is customized with some additional IFC loading functionality. See `Advanced Loading Mode`_
+
+  After loading Project Info will transition into `Project Loaded Mode`_
+
+Project Unsaved Mode
+--------------------
 
 .. figure:: images/interface_property-editor_project-overview_unsaved.png
    :alt: Project Info when IFC project is created but IFC file is not saved
 
 Once a project is created, basic metadata about the project will be displayed.
 
-The IFC header can be edited by clicking the pencil button (see `IFC Header Editing toggle`_).
+The IFC header can be edited by clicking the pencil button (see `Project Info Editing Mode`_).
 
-Caveat: In this state you can't unload the IFC project and go back to the Not Created or Loaded State. You have to save the IFC file first and then unload the project.
+Caveat: In this mode you can't unload the IFC project and go back to the Project Setup Mode. You have to save the IFC file first and then unload the project.
 
 Static text
 ^^^^^^^^^^^
@@ -119,10 +125,10 @@ Buttons
 ^^^^^^^
 
 |GREASEPENCIL| **Edit**
-  Clicking this button switches the "Project Info" panel to `editing mode <IFC Header Editing toggle_>`_, allowing users to modify the IFC header fields.
+  Clicking this button switches the "Project Info" panel to `editing mode <Project Info Editing Mode_>`_, allowing users to modify the IFC header fields.
 
-Saved and Loaded State
-----------------------
+Project Loaded Mode
+-------------------
 
 .. figure:: images/interface_property-editor_project-overview_saved.png
    :alt: Project Info when IFC project is created and IFC file is saved
@@ -134,10 +140,10 @@ Fields
   Displays the name of the loaded IFC file. Example: "demo.ifc"
 
 |FILE_CACHE| **IFC Schema** (read-only)
-  Same as in `Not Saved State`_.
+  Same as in `Project Unsaved Mode`_.
 
 |FILE_HIDDEN| **IFC MVD**
-  Same as in `Not Saved State`_.
+  Same as in `Project Unsaved Mode`_.
 
 |EXPORT| **Saved**
   Displays the last saved date and time of the loaded IFC file. Example: "2024-06-10 13:15"
@@ -149,22 +155,22 @@ Buttons
 ^^^^^^^
 
 |GREASEPENCIL| **Edit**
-  Same as in `Not Saved State`_, switches to `editing mode <IFC Header Editing toggle_>`_.
+  Same as in `Project Unsaved Mode`_, switches to `editing mode <Project Info Editing Mode_>`_.
 
 **Select a different IFC file**
   This button allows users to choose and load a different IFC file. Clicking the button will open a file browser dialog, enabling users to navigate to and select the desired IFC file.
 
 **Unload the IFC project**
-  This button allows users to unload the currently loaded IFC file from the Blender scene. Clicking the button will remove the IFC data and clear the "Project Info" panel, returning it to the Not Created or Loaded State.
+  This button allows users to unload the currently loaded IFC file from the Blender scene. Clicking the button will remove the IFC data and clear the "Project Info" panel, switching it to the Project Setup Mode.
 
 
-IFC Header Editing toggle
+Project Info Editing Mode
 -------------------------
 
 .. figure:: images/interface_property-editor_project-overview_edit-header.png
    :alt: Project Info when edit header toggle is active
 
-Clicking the pencil button (which doesn't exist when in the Not Created or Loaded State) switches the "Project Info" panel to editing mode, allowing users to modify the IFC header. The IFC Schema version can't be edited. You can upgrade the IFC schema when opening a file though.
+Clicking the pencil button (which doesn't exist when in the Project Setup Mode) switches the "Project Info" panel to `editing mode <Project Info Editing Mode_>`_, allowing users to modify the IFC header. The IFC Schema version can't be edited. You can upgrade the IFC schema when opening a file though.
 
 Fields
 ^^^^^^
@@ -200,39 +206,39 @@ Buttons
 **Cancel unsaved header information (cross icon)**
   Discards the changes made to the IFC header/metadata fields and returns to the non-editing mode.
 
-.. _Advanced: Advanced
-
-.. _Project Info Advanced Mode:
+.. _Project Info Advanced Loading Mode:
 
 
-Preloaded State (Advanced Mode)
--------------------------------
+Advanced Loading Mode
+---------------------
 
 .. seealso::
   :ref:`users/dealing_with_large_models:Filtered model loading`.
 
-The Preloaded State is an additional state that appears when loading an IFC file using the "Advanced Mode" checkbox.
+The Advanced Loading Mode is an additional mode that is available when loading an IFC file using the **Enable Advanced Mode** checkbox.
 
 This mode allows users to preload the model and filter elements, loading only a portion of the model.
 
-The Advanced Mode Loading State provides users with extensive control over the loading process,
+The Advanced Loading Mode provides users with extensive control over the loading process,
 allowing them to customize which elements are loaded and how they are represented in the Blender scene.
 
 This can be particularly helpful when working with large and complex IFC models, as it enables users to selectively load and optimize specific portions
 of the model based on their requirements.
 
-Once the desired settings have been configured, users can click on the "Load Project Elements" button to load the filtered and optimized IFC model into the Blender scene. After the model has been loaded using the Advanced Mode Loading State, the "Project Info" panel will transition to the "Saved and Loaded State", displaying the relevant metadata and options for the loaded IFC project.
+Once the desired settings have been configured, users can click on the "Load Project Elements" button to load the filtered and
+optimized IFC model into the Blender scene. After the model has been loaded using the Advanced Loading Mode,
+the "Project Info" panel will transition to the `Project Loaded Mode`_, displaying the relevant metadata and options for the loaded IFC project.
 
 
-To access this mode, click on "Advanced Mode" checkbox when loading a model.
+To access this mode, click on **Enable Advanced Mode** checkbox when loading a model.
 
 .. image:: images/advanced-mode.png
    :alt: Open file dialog
 
-In the Advanced Mode Loading State, the "Project Info" panel presents the following options:
+In the Advanced Loading Mode, the "Project Info" panel presents the following options:
 
 .. image:: images/advanced-mode-settings.png
-   :alt: Project Info when in Advanced Mode Loading State
+   :alt: Project Info when in Advanced Loading Mode
 
 Fields
 ^^^^^^
