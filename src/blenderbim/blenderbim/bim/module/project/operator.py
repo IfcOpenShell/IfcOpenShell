@@ -1326,7 +1326,8 @@ class LoadLinkedProject(bpy.types.Operator):
                     shape = iterator.get()
                     results.add(self.file.by_id(shape.id))
 
-                    if len(shape.geometry.faces) > 1000 and self.is_local(shape):  # 333 tris
+                    # Elements with a lot of geometry benefit from instancing to save memory
+                    if len(shape.geometry.faces) > 1000:  # 333 tris
                         self.process_occurrence(shape)
                         if not iterator.next():
                             if not chunked_verts:
@@ -1373,10 +1374,19 @@ class LoadLinkedProject(bpy.types.Operator):
                     chunked_material_ids.append(mi + material_offset + 1)
                     material_offset += len(ms)
 
-                    M4 = np.frombuffer(shape.transformation_buffer).reshape((4, 4), order="F")
+                    matrix = np.frombuffer(shape.transformation_buffer).reshape((4, 4), order="F")
+                    if gprops.has_blender_offset:
+                        matrix = ifcopenshell.util.geolocation.global2local(
+                            matrix,
+                            float(gprops.blender_offset_x) * self.unit_scale,
+                            float(gprops.blender_offset_y) * self.unit_scale,
+                            float(gprops.blender_offset_z) * self.unit_scale,
+                            float(gprops.blender_x_axis_abscissa),
+                            float(gprops.blender_x_axis_ordinate),
+                        )
                     vs = np.frombuffer(shape.geometry.verts_buffer).reshape((-1, 3))
                     vs = np.hstack((vs, np.ones((len(vs), 1))))
-                    vs = (np.asmatrix(M4) * np.asmatrix(vs).T).T.A
+                    vs = (np.asmatrix(matrix) * np.asmatrix(vs).T).T.A
                     vs = vs[:, :3].flatten()
                     fs = np.frombuffer(shape.geometry.faces_buffer, dtype=np.int32)
                     chunked_verts.append(vs)
@@ -1457,14 +1467,6 @@ class LoadLinkedProject(bpy.types.Operator):
         print("Finished", time.time() - start)
         return {"FINISHED"}
 
-    def is_local(self, shape: ShapeElementType) -> bool:
-        m = shape.transformation.matrix
-        if max([abs(co) for co in (m[9], m[10], m[11])]) > 1000:
-            return False
-        elif max([abs(co) for co in shape.geometry.verts[0:3]]) > 1000:
-            return False
-        return True
-
     def process_occurrence(self, shape: ShapeElementType) -> None:
         element = self.file.by_id(shape.id)
         faces = shape.geometry.faces
@@ -1477,6 +1479,27 @@ class LoadLinkedProject(bpy.types.Operator):
         mesh = self.meshes.get(shape.geometry.id, None)
         if not mesh:
             mesh = bpy.data.meshes.new("Mesh")
+
+            geometry = shape.geometry
+            gprops = bpy.context.scene.BIMGeoreferenceProperties
+            if (
+                gprops.has_blender_offset
+                and geometry.verts
+                and tool.Loader.is_point_far_away(
+                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
+                )
+            ):
+                # Shift geometry close to the origin based off that first vert it found
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+
+                mesh["has_cartesian_point_offset"] = True
+                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+            else:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
 
             material_to_slot = {}
             max_slot_index = 0
@@ -1525,7 +1548,7 @@ class LoadLinkedProject(bpy.types.Operator):
             self.meshes[shape.geometry.id] = mesh
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
-        obj.matrix_world = Matrix(mat.tolist())
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, mat)
 
         obj["guids"] = [shape.guid]
         obj["guid_ids"] = [len(mesh.polygons)]

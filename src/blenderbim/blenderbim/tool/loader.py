@@ -26,7 +26,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import numpy as np
 import numpy.typing as npt
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from pathlib import Path
 from typing import Union
 
@@ -572,7 +572,9 @@ class Loader(blenderbim.core.tool.Loader):
             props.has_blender_offset = True
 
     @classmethod
-    def guess_false_origin_and_project_north(cls, ifc_file: ifcopenshell.file,  element: ifcopenshell.entity_instance) -> None:
+    def guess_false_origin_and_project_north(
+        cls, ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
+    ) -> None:
         if not element.ObjectPlacement or not element.ObjectPlacement.is_a("IfcLocalPlacement"):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
@@ -661,3 +663,41 @@ class Loader(blenderbim.core.tool.Loader):
         if building and cls.is_element_far_away(building):
             return cls.guess_false_origin_and_project_north(ifc_file, building)
         return cls.guess_false_origin_from_elements(ifc_file)
+
+    @classmethod
+    def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if props.has_blender_offset:
+            if (
+                not obj.data
+                and tool.Cad.is_x(matrix[0][3], 0)
+                and tool.Cad.is_x(matrix[1][3], 0)
+                and tool.Cad.is_x(matrix[2][3], 0)
+            ):
+                # We assume any non-geometric matrix at 0,0,0 is not
+                # positionally significant and is left alone. This handles
+                # scenarios where often spatial elements are left at 0,0,0 and
+                # everything else is at map coordinates.
+                obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
+                return Matrix(matrix.tolist())
+            elif obj.data and obj.data.get("has_cartesian_point_offset", None):
+                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+                if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
+                    obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
+                    offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
+                    offset_xyz = matrix @ offset_xyz
+                    matrix[0][3] = offset_xyz[0]
+                    matrix[1][3] = offset_xyz[1]
+                    matrix[2][3] = offset_xyz[2]
+            else:
+                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            matrix = ifcopenshell.util.geolocation.global2local(
+                matrix,
+                float(props.blender_offset_x) * cls.unit_scale,
+                float(props.blender_offset_y) * cls.unit_scale,
+                float(props.blender_offset_z) * cls.unit_scale,
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            )
+
+        return Matrix(matrix.tolist())
