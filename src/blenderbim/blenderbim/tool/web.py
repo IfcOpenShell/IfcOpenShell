@@ -26,6 +26,7 @@ import webbrowser
 import asyncio
 import socketio
 import threading
+from time import sleep
 
 sio = None
 ws_process = None
@@ -54,8 +55,12 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def start_websocket_server(cls, port):
         global ws_process
-        ws_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui", "sioserver.py")
-        ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"])
+
+        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
+
+        ws_path = os.path.join(webui_path, "sioserver.py")
+
+        ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path)
         cls.open_web_browser(port)
         cls.set_is_running(True)
 
@@ -98,9 +103,12 @@ class Web(blenderbim.core.tool.Web):
         if bpy.context.scene.WebProperties.is_connected:
             cls.disconnect_websocket_server()
 
+        sleep(0.5)
+
         ws_process.terminate()
         ws_process.wait()
         ws_process = None
+
         cls.set_is_running(False)
 
         print("Websocket server terminated successfully")
