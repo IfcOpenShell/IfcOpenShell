@@ -1076,13 +1076,13 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
-    def polygonal_face_set(self, points: list[Vector], faces: list[[list[int]]]) -> ifcopenshell.entity_instance:
+    def polygonal_face_set(self, points: list[Vector], faces: list[list[int]]) -> ifcopenshell.entity_instance:
         """
-        > `points` - list of points
+        Generate an IfcPolygonalFaceSet.
 
-        > `faces` - list of faces consisted of point indices (points indices starting from 0)
-
-        < IfcPolygonalFaceSet
+        :param points: rectangle size, could be either 2d or 3d, defaults to `(1,1)`
+        :param faces: list of faces consisted of point indices (points indices starting from 0)
+        :return: IfcPolygonalFaceSet
         """
 
         ifc_points = self.file.createIfcCartesianPointList3D(points)

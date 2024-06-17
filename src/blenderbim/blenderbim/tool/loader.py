@@ -16,14 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import bpy
 import bmesh
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import blenderbim.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
@@ -42,14 +45,14 @@ OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
 
 class Loader(blenderbim.core.tool.Loader):
     unit_scale: float = 1
-    settings = None
+    settings: blenderbim.bim.import_ifc.IfcImportSettings = None
 
     @classmethod
     def set_unit_scale(cls, unit_scale: float) -> None:
         cls.unit_scale = unit_scale
 
     @classmethod
-    def set_settings(cls, settings) -> None:
+    def set_settings(cls, settings: blenderbim.bim.import_ifc.IfcImportSettings) -> None:
         cls.settings = settings
 
     @classmethod
@@ -469,7 +472,7 @@ class Loader(blenderbim.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_texture_map(cls, coordinates, mesh):
+    def load_indexed_texture_map(cls, coordinates: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(mesh)
