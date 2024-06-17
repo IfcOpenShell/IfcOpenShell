@@ -534,13 +534,11 @@ class IfcImporter:
 
     def calculate_model_offset(self) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset:
-            return
-        elif self.ifc_import_settings.false_origin_mode == "DISABLED":
-            return
-        elif self.ifc_import_settings.false_origin_mode == "MANUAL":
-            return tool.Loader.set_manual_blender_offset(self.file)
-        return tool.Loader.guess_false_origin(self.file)
+        if self.ifc_import_settings.false_origin_mode == "MANUAL":
+            tool.Loader.set_manual_blender_offset(self.file)
+        elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
+            if not props.has_blender_offset:
+                tool.Loader.guess_false_origin(self.file)
 
     def create_grids(self):
         if not self.ifc_import_settings.should_load_geometry:
