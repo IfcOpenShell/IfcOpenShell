@@ -96,13 +96,16 @@ class BIM_PT_project(Panel):
         pprops = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
         if pprops.is_loading:
-            self.draw_load_ui(context)
+            self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
-            self.draw_project_ui(context)
+            if props.ifc_file:
+                self.draw_loaded_project_ui(context)
+            else:
+                self.draw_unsaved_project_ui(context)
         else:
-            self.draw_create_project_ui(context)
+            self.draw_project_setup_ui(context)
 
-    def draw_load_ui(self, context):
+    def draw_advanced_loading_ui(self, context):
         pprops = context.scene.BIMProjectProperties
         prop_with_search(self.layout, pprops, "filter_mode")
         if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
@@ -160,12 +163,8 @@ class BIM_PT_project(Panel):
         row.operator("bim.load_project_elements")
         row.operator("bim.unload_project", text="", icon="CANCEL")
 
-    def draw_project_ui(self, context):
-        props = context.scene.BIMProperties
+    def draw_editing_buttons(self, context, row):
         pprops = context.scene.BIMProjectProperties
-        row = self.layout.row(align=True)
-        row.label(text=os.path.basename(props.ifc_file) or "No File Found", icon="FILE")
-
         if IfcStore.get_file():
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
@@ -173,6 +172,10 @@ class BIM_PT_project(Panel):
             else:
                 row.operator("bim.enable_editing_header", icon="GREASEPENCIL", text="")
 
+    def draw_editable_file_info(self, context):
+        pprops = context.scene.BIMProjectProperties
+
+        if IfcStore.get_file():
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
             row.label(text=IfcStore.get_file().schema)
@@ -200,27 +203,48 @@ class BIM_PT_project(Panel):
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)
+
         else:
             row = self.layout.row(align=True)
             row.label(text="File Not Loaded", icon="ERROR")
 
-        if props.ifc_file:
-            row = self.layout.row(align=True)
-            if context.scene.BIMProperties.is_dirty:
-                row.label(text="Saved*", icon="EXPORT")
-            else:
-                row.label(text="Saved", icon="EXPORT")
-            row.label(text=ProjectData.data["last_saved"])
+    def draw_unsaved_project_ui(self, context):
+        # file name row
+        file_name_row = self.layout.row(align=True)
+        file_name_row.label(text="No File Found", icon="FILE")
+        self.draw_editing_buttons(context, file_name_row)
 
-            row = self.layout.row(align=True)
-            row.prop(props, "ifc_file", text="")
-            row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-            row.operator("bim.unload_project", text="", icon="CANCEL")
+        # main section
+        self.draw_editable_file_info(context)
+
+        # file path row and actions section
+        row = self.layout.row()
+        row.label(text="File Not Saved", icon="ERROR")
+
+    def draw_loaded_project_ui(self, context):
+        # file name row
+        props = context.scene.BIMProperties
+        file_name_row = self.layout.row(align=True)
+        file_name_row.label(text=os.path.basename(props.ifc_file), icon="FILE")
+        self.draw_editing_buttons(context, file_name_row)
+
+        # main section
+        self.draw_editable_file_info(context)
+
+        # file path row and actions section
+        row = self.layout.row(align=True)
+        if context.scene.BIMProperties.is_dirty:
+            row.label(text="Saved*", icon="EXPORT")
         else:
-            row = self.layout.row()
-            row.label(text="File Not Saved", icon="ERROR")
+            row.label(text="Saved", icon="EXPORT")
+        row.label(text=ProjectData.data["last_saved"])
 
-    def draw_create_project_ui(self, context):
+        row = self.layout.row(align=True)
+        row.prop(props, "ifc_file", text="")
+        row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
+        row.operator("bim.unload_project", text="", icon="CANCEL")
+
+    def draw_project_setup_ui(self, context):
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         prop_with_search(self.layout, pprops, "export_schema")

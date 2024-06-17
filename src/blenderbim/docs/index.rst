@@ -3,8 +3,7 @@ Let's get started
 
 The BlenderBIM Add-on lets you analyse, create, and modify OpenBIM with Blender.
 
-Quickstart video tutorial
--------------------------
+**Quickstart video tutorial**
 
 Learn how to model a small building and create simple architectural plans, sections, 2D details, and sheet layouts in this short tutorial series.
 
