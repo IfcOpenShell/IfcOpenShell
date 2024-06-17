@@ -19,6 +19,7 @@
 import os
 import bpy
 import time
+import json
 import logging
 import tempfile
 import traceback
@@ -43,12 +44,11 @@ from blenderbim.bim.ui import IFCFileSelector
 from blenderbim.bim import import_ifc
 from blenderbim.bim import export_ifc
 from collections import defaultdict
-import json
 from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
-from ifcopenshell.geom import ShapeElementType, ShapeType
+from ifcopenshell.geom import ShapeElementType
 from blenderbim.bim.module.project.data import LinksData
 from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from typing import Union
@@ -992,24 +992,16 @@ class LoadLink(bpy.types.Operator):
         h5_filepath = self.filepath + ".cache.h5"
 
         if not os.path.exists(blend_filepath):
-            gprops = bpy.context.scene.BIMGeoreferenceProperties
             pprops = bpy.context.scene.BIMProjectProperties
-            host_model_origin = ""
-            if tool.Ifc.get():
-                if gprops.has_blender_offset:
-                    host_model_origin = (
-                        f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
-                    )
-                else:
-                    host_model_origin = ",".join(
-                        map(str, ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), 0, 0, 0))
-                    )
+            gprops = bpy.context.scene.BIMGeoreferenceProperties
+            tool.Loader.calculate_model_origin(tool.Ifc.get())
             code = f"""
 import bpy
 
 def run():
     gprops = bpy.context.scene.BIMGeoreferenceProperties
-    gprops.host_model_origin = "{host_model_origin}"
+    # Our model origin becomes their host model origin
+    gprops.host_model_origin = "{gprops.model_origin}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
     gprops.blender_eastings = "{gprops.blender_eastings}"
     gprops.blender_northings = "{gprops.blender_northings}"
@@ -1043,7 +1035,25 @@ except Exception as e:
                 if not os.path.exists(blend_filepath) or os.stat(blend_filepath).st_mtime < t:
                     return {"CANCELLED"}
 
+            self.set_model_origin_from_link()
+
         self.link_blend(blend_filepath)
+
+    def set_model_origin_from_link(self):
+        if tool.Ifc.get():
+            return  # The current model's coordinates always take priority.
+
+        json_filepath = self.filepath + ".cache.json"
+        if not os.path.exists(json_filepath):
+            return
+
+        with open(json_filepath, "r") as f:
+            data = json.load(f)
+
+        gprops = bpy.context.scene.BIMGeoreferenceProperties
+        for prop in ("model_origin", "blender_x_axis_abscissa", "blender_x_axis_ordinate"):
+            if (value := data.get(prop, None)) is not None:
+                setattr(gprops, prop, value)
 
 
 class ReloadLink(bpy.types.Operator):
@@ -1288,6 +1298,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         start = time.time()
 
+        pprops = bpy.context.scene.BIMProjectProperties
         gprops = bpy.context.scene.BIMGeoreferenceProperties
 
         self.filepath = self.filepath.replace("\\", "/")
@@ -1328,6 +1339,27 @@ class LoadLinkedProject(bpy.types.Operator):
                 tool.Loader.set_manual_blender_offset(self.file)
             else:
                 tool.Loader.guess_false_origin(self.file)
+
+        tool.Loader.calculate_model_origin(self.file)
+        self.json_filepath = self.filepath + ".cache.json"
+        data = {
+            "host_model_origin": gprops.host_model_origin,
+            "model_origin": gprops.model_origin,
+            "has_blender_offset": gprops.has_blender_offset,
+            "blender_eastings": gprops.blender_eastings,
+            "blender_northings": gprops.blender_northings,
+            "blender_orthogonal_height": gprops.blender_orthogonal_height,
+            "blender_offset_x": gprops.blender_offset_x,
+            "blender_offset_y": gprops.blender_offset_y,
+            "blender_offset_z": gprops.blender_offset_z,
+            "blender_x_axis_abscissa": gprops.blender_x_axis_abscissa,
+            "blender_x_axis_ordinate": gprops.blender_x_axis_ordinate,
+            "distance_limit": pprops.distance_limit,
+            "false_origin_mode": pprops.false_origin_mode,
+            "false_origin": pprops.false_origin,
+        }
+        with open(self.json_filepath, "w") as f:
+            json.dump(data, f)
 
         for settings in tool.Loader.settings.context_settings:
             if not self.elements:

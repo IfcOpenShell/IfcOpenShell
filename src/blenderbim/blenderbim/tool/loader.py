@@ -701,3 +701,17 @@ class Loader(blenderbim.core.tool.Loader):
             )
 
         return Matrix(matrix.tolist())
+
+    @classmethod
+    def calculate_model_origin(cls, ifc_file: ifcopenshell.file | None) -> None:
+        if not ifc_file:
+            return
+        gprops = bpy.context.scene.BIMGeoreferenceProperties
+        if gprops.has_blender_offset:
+            gprops.model_origin = (
+                f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
+            )
+        else:
+            gprops.model_origin = ",".join(
+                map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
+            )
