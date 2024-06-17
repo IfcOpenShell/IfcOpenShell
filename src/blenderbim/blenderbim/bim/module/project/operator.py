@@ -856,7 +856,16 @@ class LinkIfc(bpy.types.Operator):
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
-    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
+
+    def draw(self, context):
+        pprops = context.scene.BIMProjectProperties
+        row = self.layout.row()
+        row.prop(self, "use_relative_path")
+        row = self.layout.row()
+        row.prop(pprops, "false_origin_mode")
+        if pprops.false_origin_mode == "MANUAL":
+            row = self.layout.row()
+            row.prop(pprops, "false_origin")
 
     def execute(self, context):
         start = time.time()
@@ -873,7 +882,7 @@ class LinkIfc(bpy.types.Operator):
                 except:
                     pass  # Perhaps on another drive or something
             new.name = filepath
-            status = bpy.ops.bim.load_link(filepath=filepath, false_origin=self.false_origin)
+            status = bpy.ops.bim.load_link(filepath=filepath)
             if status == {"CANCELLED"}:
                 error_msg = (
                     f'Error processing IFC file "{self.filepath}" '
@@ -951,7 +960,6 @@ class LoadLink(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
     filepath: bpy.props.StringProperty()
-    false_origin: bpy.props.StringProperty(name="False Origin", default="0,0,0")
 
     def execute(self, context):
         self.filepath = self.filepath.replace("\\", "/")
@@ -984,12 +992,37 @@ class LoadLink(bpy.types.Operator):
         h5_filepath = self.filepath + ".cache.h5"
 
         if not os.path.exists(blend_filepath):
+            gprops = bpy.context.scene.BIMGeoreferenceProperties
+            pprops = bpy.context.scene.BIMProjectProperties
+            host_model_origin = ""
+            if tool.Ifc.get():
+                if gprops.has_blender_offset:
+                    host_model_origin = (
+                        f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
+                    )
+                else:
+                    host_model_origin = ",".join(
+                        map(str, ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), 0, 0, 0))
+                    )
             code = f"""
 import bpy
 
 def run():
-    props = bpy.context.scene.BIMProjectProperties
-    props.false_origin = "{self.false_origin}"
+    gprops = bpy.context.scene.BIMGeoreferenceProperties
+    gprops.host_model_origin = "{host_model_origin}"
+    gprops.has_blender_offset = {gprops.has_blender_offset}
+    gprops.blender_eastings = "{gprops.blender_eastings}"
+    gprops.blender_northings = "{gprops.blender_northings}"
+    gprops.blender_orthogonal_height = "{gprops.blender_orthogonal_height}"
+    gprops.blender_offset_x = "{gprops.blender_offset_x}"
+    gprops.blender_offset_y = "{gprops.blender_offset_y}"
+    gprops.blender_offset_z = "{gprops.blender_offset_z}"
+    gprops.blender_x_axis_abscissa = "{gprops.blender_x_axis_abscissa}"
+    gprops.blender_x_axis_ordinate = "{gprops.blender_x_axis_ordinate}"
+    pprops = bpy.context.scene.BIMProjectProperties
+    pprops.distance_limit = {pprops.distance_limit}
+    pprops.false_origin_mode = "{pprops.false_origin_mode}"
+    pprops.false_origin = "{pprops.false_origin}"
     bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
     bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
 
@@ -1255,6 +1288,8 @@ class LoadLinkedProject(bpy.types.Operator):
 
         start = time.time()
 
+        gprops = bpy.context.scene.BIMGeoreferenceProperties
+
         self.filepath = self.filepath.replace("\\", "/")
         print("Processing", self.filepath)
 
@@ -1270,6 +1305,8 @@ class LoadLinkedProject(bpy.types.Operator):
         print("Finished writing property database")
 
         logger = logging.getLogger("ImportIFC")
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        tool.Loader.set_unit_scale(self.unit_scale)
         tool.Loader.set_settings(import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger))
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
@@ -1283,25 +1320,20 @@ class LoadLinkedProject(bpy.types.Operator):
             self.elements |= set(self.file.by_type("IfcSpatialElement"))
         self.elements -= set(self.file.by_type("IfcFeatureElement"))
 
-        if tool.Loader.settings.false_origin:
-            model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0))
-            false_origin = np.array(tool.Loader.settings.false_origin)
-            model_offset = model_origin - false_origin
-            zero_origin = np.array((0, 0, 0))
-            has_model_offset = not np.allclose(model_offset, zero_origin)
-        else:
-            has_model_offset = False
+        if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
+            tool.Loader.set_manual_blender_offset(self.file)
+        elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
+            if gprops.host_model_origin:
+                tool.Loader.settings.false_origin = list(map(float, gprops.host_model_origin.split(",")))
+                tool.Loader.set_manual_blender_offset(self.file)
+            else:
+                tool.Loader.guess_false_origin(self.file)
 
         for settings in tool.Loader.settings.context_settings:
             if not self.elements:
                 break
 
             results = set()
-            if has_model_offset:
-                offset = ifcopenshell.ifcopenshell_wrapper.float_array_3()
-                offset[0], offset[1], offset[2] = model_offset
-                settings.offset = offset
-
             iterator = ifcopenshell.geom.iterator(
                 settings, self.file, multiprocessing.cpu_count(), include=self.elements
             )
