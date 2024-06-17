@@ -62,13 +62,14 @@ Filtered model loading
 ----------------------
 
 You may filter elements and only load a portion of the model. Click on 
-:ref:`Advanced Mode <Project Info Advanced Mode>` checkbox when loading a model.
+:ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>` checkbox when loading a model.
 
 
 .. image:: images/advanced-mode.png
 
 This will preload the model and present you with model loading options in the
-**IFC Project** panel.
+:doc:`Project Info </users/user_interface/property_editor/scene_editor/project_overview/project_info>`
+panel.
 
 .. image:: images/advanced-mode-settings.png
 
@@ -89,7 +90,7 @@ Large polygon counts
 --------------------
 
 If objects with large polygon counts are blocking you from importing, consider
-enabling **Native Meshes** in the **Advanced Mode** when loading projects.
+enabling **Native Meshes** in the :ref:`Advanced Loading Mode <Project Info Advanced Loading Mode>` when loading projects.
 
 The **Debug Panel** allows you to **Select High Polygon Meshes** or **Select
 Highest Polygon Meshes** to isolate geometrically complex objects by a polygon
@@ -123,8 +124,8 @@ here.
 High number of elements
 -----------------------
 
-Click on **Enable Advanced Mode** when loading a model and you will be presented
-with model loading options in the **IFC Project** panel.
+Click on :ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>`  when loading a model and you will be presented
+with model loading options in the **Project Info** panel.
 
 You may specify an **Element Range** to process. The **Element Offset** says the
 first element to start processing at, and the **Element Limit** says how many
@@ -146,8 +147,8 @@ geometry and basic attributes such as names are sufficient. Example usecases
 include CG visualisation, overall federated model coordination, or pure
 geometric checks.
 
-Click on **Enable Advanced Mode** when loading a model and you will be presented
-with model loading options in the **IFC Project** panel. Enable **For
+Click on :ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>` checkbox when loading a model and you will be presented
+with model loading options in the **Project Info** panel. Enable **For
 Coordination Only**, which will exclude non geometric elements, openings, and
 types from being imported. This leads to slightly faster imports, and a
 decreased object count.

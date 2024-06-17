@@ -144,10 +144,10 @@ temporarily affects your Blender session.
 This distance limit of 1km and autodetected false origin may not be appropriate
 for your project. For example, your project may exceed the 1km limit, or you may
 want to federate multiple files together and manually specify a consistent and
-fixed false origin. You can customise these options by choosing **Enable
-Advanced Mode** when loading a project. Then, set the **Distance Limit** (in
-meters) and the **False Origin** coordinate before pressing **Load Project
-Elements**.
+fixed false origin. You can customise these options by choosing
+:ref:`Enable Advanced Mode <Project Info Advanced Loading Mode>`  when loading a project.
+Then, set the **Distance Limit** (in meters) and the **False Origin** coordinate
+before pressing **Load Project Elements**.
 
 .. image:: images/manualorigin.png
 
