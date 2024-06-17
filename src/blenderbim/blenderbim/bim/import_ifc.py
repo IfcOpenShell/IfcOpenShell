@@ -209,6 +209,7 @@ class MaterialCreator:
 class IfcImporter:
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
+        tool.Loader.set_settings(ifc_import_settings)
         self.diff = None
         self.file: ifcopenshell.file = None
         self.project = None
@@ -246,7 +247,6 @@ class IfcImporter:
         bpy.context.window_manager.progress_update(self.progress)
 
     def execute(self) -> None:
-        tool.Loader.set_settings(self.ifc_import_settings)
         bpy.context.window_manager.progress_begin(0, 100)
         self.profile_code("Starting import process")
         self.load_file()
