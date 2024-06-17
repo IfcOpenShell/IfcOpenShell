@@ -542,42 +542,6 @@ class IfcImporter:
             return tool.Loader.set_manual_blender_offset(self.file)
         return tool.Loader.guess_false_origin(self.file)
 
-    def apply_blender_offset_to_matrix_world(self, obj: bpy.types.Object, matrix: np.ndarray) -> mathutils.Matrix:
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset:
-            if (
-                not obj.data
-                and tool.Cad.is_x(matrix[0][3], 0)
-                and tool.Cad.is_x(matrix[1][3], 0)
-                and tool.Cad.is_x(matrix[2][3], 0)
-            ):
-                # We assume any non-geometric matrix at 0,0,0 is not
-                # positionally significant and is left alone. This handles
-                # scenarios where often spatial elements are left at 0,0,0 and
-                # everything else is at map coordinates.
-                obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
-                return mathutils.Matrix(matrix.tolist())
-            elif obj.data and obj.data.get("has_cartesian_point_offset", None):
-                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-                if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
-                    obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
-                    offset_x, offset_y, offset_z = map(float, cartesian_point_offset.split(","))
-                    matrix[0][3] += offset_x
-                    matrix[1][3] += offset_y
-                    matrix[2][3] += offset_z
-            else:
-                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
-            matrix = ifcopenshell.util.geolocation.global2local(
-                matrix,
-                float(props.blender_offset_x) * self.unit_scale,
-                float(props.blender_offset_y) * self.unit_scale,
-                float(props.blender_offset_z) * self.unit_scale,
-                float(props.blender_x_axis_abscissa),
-                float(props.blender_x_axis_ordinate),
-            )
-
-        return mathutils.Matrix(matrix.tolist())
-
     def create_grids(self):
         if not self.ifc_import_settings.should_load_geometry:
             return
@@ -609,7 +573,7 @@ class IfcImporter:
                 obj.lock_location = (True, True, True)
                 obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
     def create_element_types(self):
         for element_type in self.element_types:
@@ -835,7 +799,7 @@ class IfcImporter:
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
             obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
 
     def get_pointcloud_representation(self, product):
@@ -901,7 +865,7 @@ class IfcImporter:
         tool.Ifc.link(representation, mesh)
 
         obj = bpy.data.objects.new("{}/{}".format(product.is_a(), product.Name), mesh)
-        self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, placement_matrix))
+        self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
         self.link_element(product, obj)
         return product
 
@@ -942,13 +906,17 @@ class IfcImporter:
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
-            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, mat))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             self.material_creator.create(element, obj, mesh)
         elif mesh:
-            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
+            self.set_matrix_world(
+                obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
+            )
             self.material_creator.create(element, obj, mesh)
         elif hasattr(element, "ObjectPlacement"):
-            self.set_matrix_world(obj, self.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element)))
+            self.set_matrix_world(
+                obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
+            )
 
         return obj
 
