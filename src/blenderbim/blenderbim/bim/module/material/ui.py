@@ -150,7 +150,7 @@ class BIM_PT_object_material(Panel):
         if not ObjectMaterialData.data["materials"]:
             row = self.layout.row(align=True)
             row.label(text="No Materials Available")
-            row.operator("bim.add_material", icon="ADD", text="").obj = ""
+            row.operator("bim.add_material", icon="ADD", text="")
             return
 
         if ObjectMaterialData.data["type_material"]:
