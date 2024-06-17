@@ -59,103 +59,72 @@ class MaterialCreator:
             return
         if not self.mesh or self.mesh.name in self.parsed_meshes:
             return
-        self.parsed_meshes.add(self.mesh.name)
-        self.add_default_material(element)
-        if self.parse_representations(element):
-            self.assign_material_slots_to_faces()
-        tool.Geometry.record_object_materials(obj)
 
-    def add_default_material(self, element: ifcopenshell.entity_instance) -> None:
-        element_material = ifcopenshell.util.element.get_material(element)
-        if not element_material:
-            return
-        for material in [m for m in self.ifc_importer.file.traverse(element_material) if m.is_a("IfcMaterial")]:
-            if not material.HasRepresentation:
-                continue
-            surface_style = [
-                s for s in self.ifc_importer.file.traverse(material.HasRepresentation[0]) if s.is_a("IfcSurfaceStyle")
-            ]
-            if surface_style:
-                self.mesh.materials.append(self.styles[surface_style[0].id()])
-                return
+        # mesh["ios_materials"] can contain:
+        # - ifc style id if style assigned to the representation items directly
+        # or through material with a style;
+        # - ifc material id if both true:
+        #   - element has a material without a style;
+        #   - there are parts of the geometry that has no other style assigned to them;
+        # - -1 in case if there is no material;
+        # - 0 in case if there are default materials used.
+        # Though 0 value will not occur as we don't use default materials in IfcImporter.
+
+        self.parsed_meshes.add(self.mesh.name)
+        self.load_texture_maps()
+        self.assign_material_slots_to_faces()
+        tool.Geometry.record_object_materials(obj)
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
             if material.BIMMaterialProperties.ifc_style_id:
                 self.styles[material.BIMMaterialProperties.ifc_style_id] = material
 
-    def parse_representations(self, element: ifcopenshell.entity_instance) -> bool:
-        """Search for styles in in all `element`'s representation items
-        and adds them to `self.mesh.materials`.\n
-        Returns `True` if any styles were found and added, returns `False` otherwise."""
-        has_parsed = False
-        if hasattr(element, "Representation"):
-            for representation in element.Representation.Representations:
-                if self.parse_representation(representation):
-                    has_parsed = True
-        elif hasattr(element, "RepresentationMaps"):
-            for representation_map in element.RepresentationMaps:
-                if not representation_map.MappedRepresentation:
-                    has_parsed = True  # Accommodate invalid IFC data from Revit
-                elif self.parse_representation(representation_map.MappedRepresentation):
-                    has_parsed = True
-        return has_parsed
-
-    def parse_representation(self, representation: ifcopenshell.entity_instance) -> bool:
-        has_parsed = False
-        representation_items = self.resolve_all_stylable_representation_items(representation)
-        for item in representation_items:
-            if self.parse_representation_item(item):
-                has_parsed = True
-        return has_parsed
-
-    def parse_representation_item(self, item: ifcopenshell.entity_instance) -> bool:
-        if not item.StyledByItem:
-            return False
-        style_ids = []
-        styles = list(item.StyledByItem[0].Styles)
-        while styles:
-            style = styles.pop()
-            if style.is_a("IfcSurfaceStyle"):
-                style_ids.append(style.id())
-            elif style.is_a("IfcPresentationStyleAssignment"):
-                styles.extend(style.Styles)
-        if not style_ids:
-            return False
-        for style_id in style_ids:
-            material = self.styles[style_id]
-
-            def get_ifc_coordinate(material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-                """returns IfcTextureCoordinate"""
-                texture_style = tool.Style.get_texture_style(material)
-                if not texture_style:
+    def get_ifc_coordinate(self, material: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
+        """Get IfcTextureCoordinate"""
+        texture_style = tool.Style.get_texture_style(material)
+        if not texture_style:
+            return
+        for texture in texture_style.Textures or []:
+            if coords := getattr(texture, "IsMappedBy", None):
+                coords = coords[0]
+                # IfcTextureCoordinateGenerator handled in the style shader graph
+                if coords.is_a("IfcIndexedTextureMap"):
+                    return coords
+                # TODO: support IfcTextureMap
+                if coords.is_a("IfcTextureMap"):
+                    print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
-                for texture in texture_style.Textures or []:
-                    if coords := getattr(texture, "IsMappedBy", None):
-                        coords = coords[0]
-                        # IfcTextureCoordinateGenerator handled in the style shader graph
-                        if coords.is_a("IfcIndexedTextureMap"):
-                            return coords
-                        # TODO: support IfcTextureMap
-                        if coords.is_a("IfcTextureMap"):
-                            print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
-                            return
 
-            if coords := get_ifc_coordinate(material):
+    def load_texture_maps(self) -> None:
+        for style_or_material_id in self.mesh["ios_materials"]:
+            if not (material := self.styles.get(style_or_material_id)):
+                continue
+
+            material = self.styles[style_or_material_id]
+            if coords := self.get_ifc_coordinate(material):
                 tool.Loader.load_indexed_texture_map(coords, self.mesh)
-            if self.mesh.materials.find(material.name) == -1:
-                self.mesh.materials.append(material)
-        return True
 
     def assign_material_slots_to_faces(self) -> None:
         if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
             return
 
-        # Cannot return here if len(ios_materials) == 1 because
-        # even with 1 style it may be not assigned to the entire geometry
-        # as some faces need another empty material slot.
-        material_to_slot: dict[int, int] = {}
+        ios_materials = self.mesh["ios_materials"]
+        if len(ios_materials) == 1:
+            style_or_material_id = ios_materials[0]
+            # Has no styles / has just a material without a style.
+            if not (material := self.styles.get(style_or_material_id)):
+                return
+            # Has a style and it's assigned to the entire geometry.
+            # Otherwise we'll need to proceed as faces without styles
+            # will require an empty material slot.
+            if -1 not in self.mesh["ios_material_ids"]:
+                self.mesh.materials.append(material)
+                return
 
+        # Mapping of ios_materials indices
+        # to blender material slots indices.
+        material_to_slot: dict[int, int] = {}
         empty_slot_index = None
 
         def get_empty_slot_index() -> int:
@@ -167,17 +136,14 @@ class MaterialCreator:
 
         # TODO: When they are not equal?
         if len(self.mesh.polygons) == len(self.mesh["ios_material_ids"]):
-            for i, style_or_material_id in enumerate(self.mesh["ios_materials"]):
-                # ios_materials will contain not ifc style but ifc material id if both true:
-                # - there are parts of the geometry that has no style assigned to them;
-                # - element has a material without a style.
-                # It can also contain -1 in case if there is no material.
+            for i, style_or_material_id in enumerate(ios_materials):
                 material_without_style = style_or_material_id not in self.styles
                 if material_without_style:
                     slot_index = get_empty_slot_index()
                 else:
                     blender_material = self.styles[style_or_material_id]
-                    slot_index = self.mesh.materials.find(blender_material.name)
+                    self.mesh.materials.append(blender_material)
+                    slot_index = len(self.mesh.materials) - 1
                 material_to_slot[i] = slot_index
 
             if -1 in self.mesh["ios_material_ids"]:
