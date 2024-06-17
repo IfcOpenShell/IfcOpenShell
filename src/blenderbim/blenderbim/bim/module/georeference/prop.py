@@ -56,6 +56,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
         description="Y axis abscissa and ordinate",
     )
     host_model_origin: StringProperty(name="Host Model Origin")
+    model_origin: StringProperty(name="Model Origin")
     has_blender_offset: BoolProperty(name="Has Blender Offset")
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")
