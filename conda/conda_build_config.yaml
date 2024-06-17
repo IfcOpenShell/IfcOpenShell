@@ -1,11 +1,33 @@
-CONDA_BUILD_SYSROOT: # used for github actions conda daily build
-  - /Users/runner/work/MacOSX10.13.sdk       # [osx]
+variant:
+  - novtk
+  - all
 
 occt:
-  - 7.7.1
+  - 7.8.1
 
 c_compiler:
-  - vs2022  # [win]
-
+- vs2022    # [win]
+c_stdlib:
+- vs        # [win]
 cxx_compiler:
-  - vs2022  # [win]
+- vs2022    # [win]
+hdf5:
+- 1.14.3
+libboost_devel:
+- '1.84'
+libxml2:
+- '2'
+mpfr:
+- '4'
+pin_run_as_build:
+  python:
+    min_pin: x.x
+    max_pin: x.x
+
+target_platform:
+- win-64
+zlib:
+- '1'
+
+CONDA_BUILD_SYSROOT:
+  - "/Users/runner/work/MacOSX10.15.sdk"  # [osx]

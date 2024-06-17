@@ -6,16 +6,14 @@
 
 if [ "$(uname)" == "Darwin" ]; then
     export FSUFFIX=dylib
-    export CFLAGS="$CFLAGS -Wl,-flat_namespace,-undefined,suppress"
-    export CXXFLAGS="$CXXFLAGS -Wl,-flat_namespace,-undefined,suppress"
     export LDFLAGS="$LDFLAGS -Wl,-flat_namespace,-undefined,suppress"
 elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     export FSUFFIX=so
 fi
 
 
-cmake -G Ninja \
- -DSCHEMA_VERSIONS="2x3;4;4x1;4x3;4x3_add1" \
+cmake ${CMAKE_ARGS} -G Ninja \
+ -DSCHEMA_VERSIONS="2x3;4;4x1;4x3_add2" \
  -DCMAKE_BUILD_TYPE=Release \
  -DCMAKE_INSTALL_PREFIX=$PREFIX \
   ${CMAKE_PLATFORM_FLAGS[@]} \

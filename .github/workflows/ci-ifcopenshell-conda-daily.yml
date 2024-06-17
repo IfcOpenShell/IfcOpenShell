@@ -10,7 +10,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
@@ -35,24 +35,22 @@ jobs:
           { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
         ]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Download and extract MacOSX SDK
-        if: ${{ matrix.platform.name == 'macOS' }}
+        if: ${{ runner.os == 'macOS' }}
         run: |
-          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
-          tar xf MacOSX10.13.sdk.tar.xz && \
-          sudo mv -v MacOSX10.13.sdk /opt/ && \
-          ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
+          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.15.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
+
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          environment-file: conda/environment.build.yml
+          environment-name: test-env
           create-args: >-
-            python=${{ matrix.pyver.distver }}
+            python=3.11
             anaconda-client
+            boa
 
       - name: create conda package dist dir
         run: |
@@ -60,7 +58,7 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
+          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
         working-directory: ./conda
 
       - name: upload to anaconda
