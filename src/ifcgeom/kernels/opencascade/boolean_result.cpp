@@ -182,12 +182,16 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
 	}
 
+	if (valid_result) {
+		std::swap(r, a);
+	}
+
 	results.emplace_back(IfcGeom::ConversionResult(
 		(int) br->instance->data().id(),
 		br->matrix,
-		new OpenCascadeShape(r),
+		new OpenCascadeShape(a),
 		br->surface_style ? br->surface_style : first_item_style
 	));
 
-	return valid_result;
+	return true;
 }
