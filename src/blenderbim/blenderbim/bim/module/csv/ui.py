@@ -25,7 +25,7 @@ from blenderbim.bim.module.search.data import SearchData
 class BIM_PT_ifccsv(Panel):
     bl_label = "Spreadsheet Import/Export"
     bl_idname = "BIM_PT_ifccsv"
-    bl_options = {"DEFAULT_CLOSED", "HEADER_LAYOUT_EXPAND"}
+    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
