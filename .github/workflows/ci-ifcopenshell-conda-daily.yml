@@ -2,21 +2,44 @@ name: ci-ifcopenshell-conda-daily-v0.8.0
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - v0.8.0
+  schedule:
+  #         ┌───────────── minute (0 - 59)
+  #         │  ┌───────────── hour (0 - 23)
+  #         │  │ ┌───────────── day of the month (1 - 31)
+  #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+  #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+  #         *  * * * *
+  - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date: ${{ steps.date.outputs.date }}
+      verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
+      - uses: actions/checkout@v4
       - name: Set env
         run: echo ok go
+      
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
 
+      - name: Version + date str
+        id: verdate
+        run: echo "verdate='${{ steps.version.outputs.version }}.${{ steps.date.outputs.date }}'" >> $GITHUB_OUTPUT
+
+      
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -25,8 +48,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        variant: [novtk, all]
         pyver: [
-          { name: py311, distver: '3.11'},
+#          { name: py311, distver: '3.11'},
           { name: py312, distver: '3.12'}
         ]
         platform: [
@@ -35,24 +59,28 @@ jobs:
           { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
         ]
     steps:
-      - uses: actions/checkout@v3
+      - name: Set up swap space
+        if: runner.os == 'Linux'
+        uses: pierotofy/set-swap-space@v1.0
+        with:
+          swap-size-gb: 10
+
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Download and extract MacOSX SDK
-        if: ${{ matrix.platform.name == 'macOS' }}
+        if: ${{ runner.os == 'macOS' }}
         run: |
-          curl -o MacOSX10.13.sdk.tar.xz -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz && \
-          tar xf MacOSX10.13.sdk.tar.xz && \
-          sudo mv -v MacOSX10.13.sdk /opt/ && \
-          ls /opt/
-      - uses: seanmiddleditch/gha-setup-ninja@master
+          curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
+
       - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
         with:
-          environment-file: conda/environment.build.yml
+          environment-name: test-env
           create-args: >-
-            python=${{ matrix.pyver.distver }}
+            python=3.11
             anaconda-client
+            boa
 
       - name: create conda package dist dir
         run: |
@@ -60,8 +88,10 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          boa build . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist'
+          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
         working-directory: ./conda
+        env:
+          VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
