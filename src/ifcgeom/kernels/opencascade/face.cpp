@@ -306,33 +306,14 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 }
 
 bool OpenCascadeKernel::convert_impl(const taxonomy::face::ptr face, IfcGeom::ConversionResults& results) {
-	throw std::runtime_error("Root-level face not expected");
-	/*
-
-	// Root level faces are only encountered in case of half spaces
-	// @todo this is not true, halfspace will be solid>face
-
-	if (face->basis == nullptr) {
-		Logger::Error("Half space without underlying surface:", face->instance);
+	TopoDS_Shape shape;
+	if (!convert(face, shape)) {
 		return false;
 	}
-
-	if (face->basis->kind() != taxonomy::PLANE) {
-		Logger::Message(Logger::LOG_ERROR, "Unsupported BaseSurface:", face->basis->instance);
-		return false;
-	}
-
-	// @todo boundary
-	const auto& m = ((taxonomy::geom_ptr)face->basis)->matrix.ccomponents();
-	gp_Pln pln(convert_xyz2<gp_Pnt>(m.col(3)), convert_xyz2<gp_Dir>(m.col(2)));
-	const gp_Pnt pnt = pln.Location().Translated(face->orientation.get_value_or(false) ? -pln.Axis().Direction() : pln.Axis().Direction());
-	TopoDS_Shape shape = BRepPrimAPI_MakeHalfSpace(BRepBuilderAPI_MakeFace(pln), pnt).Solid();
 	results.emplace_back(ConversionResult(
 		face->instance->data().id(),
 		new OpenCascadeShape(shape),
 		face->surface_style
 	));
-
 	return true;
-	*/
 }
