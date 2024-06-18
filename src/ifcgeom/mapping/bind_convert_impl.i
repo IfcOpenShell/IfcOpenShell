@@ -8,7 +8,9 @@
 		try { \
 			item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
-				item->instance = inst; \
+				if (!(item->instance && inst->as<IfcSchema::IfcMaterial>())) { \
+					item->instance = inst; \
+				} \
 				try { \
 					if (inst->as<IfcSchema::IfcRepresentationItem>() && !inst->as<IfcSchema::IfcStyledItem>() && \
 						/* @todo */ \
