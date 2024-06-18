@@ -248,9 +248,8 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		AbstractKernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			TopoDS_Shape opening_shape_solid;
 			auto opening_shape_i = std::static_pointer_cast<OpenCascadeShape>(opening_shapes[i].Shape())->shape();
-			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, opening_shape_solid, settings_.get<settings::Precision>().get());
+			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, settings_.get<settings::Precision>().get());
 
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
@@ -306,13 +305,11 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			TopoDS_Shape entity_part_result;
 
 			for (int as_shell = 0; as_shell < 2; ++as_shell) {
-
-				TopoDS_Shape entity_shape_solid;
 				TopoDS_Shape entity_shape_unlocated;
 				if (as_shell) {
 					entity_shape_unlocated = entity_part;
 				} else {
-					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, entity_shape_solid, settings_.get<settings::Precision>().get());
+					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, settings_.get<settings::Precision>().get());
 				}
 				const auto& m = it3->Placement()->ccomponents();
 				// @todo

@@ -1430,14 +1430,15 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	return boolean_operation(settings, a, bs, op, result, fuzziness);
 }
 
-const TopoDS_Shape& IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid, double tol) {
+TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
 	const bool is_comp = is_compound(shape);
 	if (!is_comp) {
-		return solid = shape;
+		return shape;
 	}
 
+	TopoDS_Solid solid;
 	if (!create_solid_from_compound(shape, solid, tol)) {
-		return solid = shape;
+		return shape;
 	}
 
 	return solid;

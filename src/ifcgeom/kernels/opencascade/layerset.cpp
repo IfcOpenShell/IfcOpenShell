@@ -167,7 +167,7 @@ namespace {
 bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const std::vector< std::vector<Handle_Geom_Surface> >& surfaces, const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles, ConversionResults& result, double tol) {
 	Bnd_Box bb;
 	TopoDS_Shape input;
-	flatten_shape_list(items, input, false, tol);
+	flatten_shape_list(items, input, false, false, tol);
 
 	typedef std::vector< std::vector<Handle_Geom_Surface> > folded_surfaces_t;
 	typedef std::vector< std::pair< TopoDS_Face, std::pair<gp_Pnt, gp_Pnt> > > faces_with_mass_t;
@@ -263,8 +263,7 @@ bool IfcGeom::util::apply_folded_layerset(const ConversionResults& items, const 
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
 			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
-			TopoDS_Solid sld;
-			ensure_fit_for_subtraction(s, sld, tol);
+			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
 			std::vector<TopoDS_Shape> slices;
 			if (split(s, shells, tol, slices) && slices.size() == styles.size()) {
@@ -335,8 +334,7 @@ bool IfcGeom::util::apply_layerset(const ConversionResults& items, const std::ve
 		for (ConversionResults::const_iterator it = items.begin(); it != items.end(); ++it) {
 
 			const TopoDS_Shape& s = std::static_pointer_cast<OpenCascadeShape>(it->Shape())->shape();
-			TopoDS_Solid sld;
-			ensure_fit_for_subtraction(s, sld, tol);
+			TopoDS_Shape sld = ensure_fit_for_subtraction(s, tol);
 
 			TopTools_ListOfShape operands;
 			for (unsigned i = 1; i < surfaces.size() - 1; ++i) {
