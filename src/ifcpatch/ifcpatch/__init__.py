@@ -76,10 +76,11 @@ def execute(args: dict) -> Union[ifcopenshell.file, str]:
     logger = logging.getLogger("IFCPatch")
     recipes = getattr(__import__("ifcpatch.recipes.{}".format(args["recipe"])), "recipes")
     recipe = getattr(recipes, args["recipe"])
+    arguments = args.get("arguments", [])
     if recipe.Patcher.__init__.__doc__ is not None:
-        patcher = recipe.Patcher(args.get("input"), args["file"], logger, *args["arguments"])
+        patcher = recipe.Patcher(args.get("input"), args["file"], logger, *arguments)
     else:
-        patcher = recipe.Patcher(args.get("input"), args["file"], logger, args["arguments"])
+        patcher = recipe.Patcher(args.get("input"), args["file"], logger, arguments)
     patcher.patch()
     output = getattr(patcher, "file_patched", patcher.file)
     return output
