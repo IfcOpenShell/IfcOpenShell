@@ -856,11 +856,14 @@ class LinkIfc(bpy.types.Operator):
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
 
     def draw(self, context):
         pprops = context.scene.BIMProjectProperties
         row = self.layout.row()
         row.prop(self, "use_relative_path")
+        row = self.layout.row()
+        row.prop(self, "use_cache")
         row = self.layout.row()
         row.prop(pprops, "false_origin_mode")
         if pprops.false_origin_mode == "MANUAL":
@@ -882,7 +885,7 @@ class LinkIfc(bpy.types.Operator):
                 except:
                     pass  # Perhaps on another drive or something
             new.name = filepath
-            status = bpy.ops.bim.load_link(filepath=filepath)
+            status = bpy.ops.bim.load_link(filepath=filepath, use_cache=self.use_cache)
             if status == {"CANCELLED"}:
                 error_msg = (
                     f'Error processing IFC file "{self.filepath}" '
@@ -960,6 +963,7 @@ class LoadLink(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load the selected file"
     filepath: bpy.props.StringProperty()
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
 
     def execute(self, context):
         self.filepath = self.filepath.replace("\\", "/")
@@ -990,6 +994,9 @@ class LoadLink(bpy.types.Operator):
     def link_ifc(self) -> Union[set[str], None]:
         blend_filepath = self.filepath + ".cache.blend"
         h5_filepath = self.filepath + ".cache.h5"
+
+        if not self.use_cache and os.path.exists(blend_filepath):
+            os.remove(blend_filepath)
 
         if not os.path.exists(blend_filepath):
             pprops = bpy.context.scene.BIMProjectProperties
