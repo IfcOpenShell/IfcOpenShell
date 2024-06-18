@@ -17,6 +17,12 @@ cxx_compiler:
 - vs2022    # [win]
 - gcc       # [linux]
 - clangxx   # [osx]
+c_compiler_version:
+- '12'    # [linux]
+- '16'    # [osx]
+cxx_compiler_version:
+- '12'    # [linux]
+- '16'    # [osx]
 c_stdlib_version:
 - '2.12'    # [linux]
 - '10.15'   # [osx]
