@@ -1239,7 +1239,11 @@ typedef item const* ptr;
             if (pwupg) {
                return pwupg;
             }
-				return std::static_pointer_cast<T>(u);
+				if (auto r = std::dynamic_pointer_cast<T>(u)) {
+					return r;
+				} else {
+					throw std::runtime_error("Unexpected topology");
+				}
 			}
 			template <typename T, typename U>
 			std::shared_ptr<T> dcast(const std::shared_ptr<U>& u) {
