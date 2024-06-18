@@ -15,7 +15,7 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'Krande/IfcOpenShell'
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     outputs:
       version: ${{ steps.version.outputs.version }}
       date: ${{ steps.date.outputs.date }}
