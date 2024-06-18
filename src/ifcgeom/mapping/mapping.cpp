@@ -256,8 +256,23 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     }
 }
 
-const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const IfcUtil::IfcBaseEntity* product_) {
+const IfcUtil::IfcBaseEntity* mapping::get_product_type(const IfcUtil::IfcBaseEntity* product_) {
     auto product = product_->as<IfcSchema::IfcProduct>();
+    auto rels = product->IsTypedBy();
+    for (auto it = rels->begin(); it != rels->end(); ++it) {
+        auto rel = *it;
+        // Avoid segfault if RelatingType is unset.
+        if (rel->get("RelatingType")->isNull()){
+            break;
+            return nullptr;
+        }
+        return rel->RelatingType();
+    }
+    return nullptr;
+}
+
+const IfcUtil::IfcBaseEntity* mapping::get_single_material_association(const IfcUtil::IfcBaseEntity* product_) {
+    auto product = product_->as<IfcSchema::IfcObjectDefinition>();
     IfcSchema::IfcMaterial* single_material = 0;
     IfcSchema::IfcRelAssociatesMaterial::list::ptr associated_materials = product->HasAssociations()->as<IfcSchema::IfcRelAssociatesMaterial>();
     if (associated_materials->size() == 1) {
