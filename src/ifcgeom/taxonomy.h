@@ -8,6 +8,7 @@
 
 #include <boost/variant.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/math/constants/constants.hpp>
 
 #include <Eigen/Dense>
 
@@ -1116,39 +1117,22 @@ typedef item const* ptr;
 				static const size_t max = std::tuple_size<impl::SurfacesTuple>::value;
 			};
 
-			// Hacks around not wanting to use if constexpr
 			template <typename T>
 			class loop_to_face_upgrade {
-			public:
-				loop_to_face_upgrade(taxonomy::ptr) {}
-
-				operator bool() const {
-					return false;
-				}
-
-				operator taxonomy::face::ptr() const {
-					throw taxonomy::topology_error();
-				}
-
-				operator typename T::ptr() const {
-					throw taxonomy::topology_error();
-				}
-			};
-
-			template <>
-			class loop_to_face_upgrade<taxonomy::face> {
 			private:
 				boost::optional<taxonomy::face::ptr> face_;
 			public:
 				loop_to_face_upgrade(taxonomy::ptr item) {
-					auto loop = taxonomy::dcast<taxonomy::loop>(item);
-					if (loop) {
-						loop->external = true;
+					if constexpr (std::is_same_v<T, face>) {
+						auto loop = taxonomy::dcast<taxonomy::loop>(item);
+						if (loop) {
+							loop->external = true;
 
-						face_ = taxonomy::make<taxonomy::face>();
-						(*face_)->instance = loop->instance;
-						(*face_)->matrix = loop->matrix;
-						(*face_)->children = { taxonomy::clone(loop) };
+							face_ = taxonomy::make<taxonomy::face>();
+							(*face_)->instance = loop->instance;
+							(*face_)->matrix = loop->matrix;
+							(*face_)->children = { taxonomy::clone(loop) };
+						}
 					}
 				}
 
@@ -1156,66 +1140,178 @@ typedef item const* ptr;
 					return face_.is_initialized();
 				}
 
-				operator taxonomy::face::ptr() const {
-					return *face_;
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, face>) {
+						if (face_) {
+							return *face_;
+						}
+					}
+					return nullptr;
 				}
 			};
 
-			// Hacks around not wanting to use if constexpr
-         template <typename T>
-         class loop_to_piecewise_function_upgrade {
-              public:
-                loop_to_piecewise_function_upgrade(taxonomy::ptr) {}
+			template <typename T>
+			class curve_to_edge_upgrade {
+			private:
+				boost::optional<taxonomy::edge::ptr> edge_;
+			public:
+				curve_to_edge_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, edge>) {
+						auto circle = taxonomy::dcast<taxonomy::circle>(item);
+						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
+						if (circle || ellipse) {
+							edge_ = taxonomy::make<taxonomy::edge>();
+							if (circle) {
+								(*edge_)->basis = circle;
+							} else {
+								(*edge_)->basis = ellipse;
+							}
+							// @todo make trims optional to allow unbounded edges
+							(*edge_)->start = 0.;
+							(*edge_)->end = 2 * boost::math::constants::pi<double>();
+						}
+					}
+				}
 
-                operator bool() const {
-                    return false;
-                }
+				operator bool() const {
+					return edge_.is_initialized();
+				}
 
-                operator taxonomy::piecewise_function::ptr() const {
-                    throw taxonomy::topology_error();
-                }
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, edge>) {
+						if (edge_) {
+							return *edge_;
+						}
+					}
+					return nullptr;
+				}
+			};
 
-                operator typename T::ptr() const {
-                    throw taxonomy::topology_error();
-                }
-            };
 
-            template <>
-            class loop_to_piecewise_function_upgrade<taxonomy::piecewise_function> {
+			template <typename T>
+			class curve_to_loop_upgrade {
+			private:
+				boost::optional<taxonomy::loop::ptr> loop_;
+			public:
+				curve_to_loop_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, loop>) {
+						auto circle = taxonomy::dcast<taxonomy::circle>(item);
+						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
+						if (circle || ellipse) {
+							auto edge = taxonomy::make<taxonomy::edge>();
+							if (circle) {
+								edge->basis = circle;
+							} else {
+								edge->basis = ellipse;
+							}
+							// @todo make trims optional to allow unbounded edges
+							edge->start = 0.;
+							edge->end = 2 * boost::math::constants::pi<double>();
+
+							loop_ = taxonomy::make<taxonomy::loop>();
+							(*loop_)->children.push_back(edge);
+						}
+					}
+				}
+
+				operator bool() const {
+					return loop_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, loop>) {
+						if (loop_) {
+							return *loop_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+
+			template <typename T>
+			class curve_to_face_upgrade {
+			private:
+				boost::optional<taxonomy::face::ptr> face_;
+			public:
+				curve_to_face_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, edge>) {
+						auto circle = taxonomy::dcast<taxonomy::circle>(item);
+						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
+						if (circle || ellipse) {
+							auto edge = taxonomy::make<taxonomy::edge>();
+							if (circle) {
+								edge->basis = circle;
+							} else {
+								edge->basis = ellipse;
+							}
+							// @todo make trims optional to allow unbounded edges
+							edge->start = 0.;
+							edge->end = 2 * boost::math::constants::pi<double>();
+							
+							auto loop = taxonomy::make<taxonomy::loop>();
+							loop->children.push_back(edge);
+
+							face_ = taxonomy::make<taxonomy::face>();
+							(*face_)->instance = loop->instance;
+							(*face_)->matrix = loop->matrix;
+							(*face_)->children = { taxonomy::clone(loop) };
+						}
+					}
+				}
+
+				operator bool() const {
+					return face_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, face>) {
+						if (face_) {
+							return *face_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+            template <typename T>
+            class loop_to_piecewise_function_upgrade {
               private:
                 boost::optional<taxonomy::piecewise_function::ptr> pwf_;
 
               public:
                 loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
-                    auto loop = taxonomy::dcast<taxonomy::loop>(item);
-                    if (loop) {
-                        if (loop->pwf.is_initialized()) {
-                            pwf_ = loop->pwf;
-                        } else {
-                            taxonomy::piecewise_function::spans spans;
-                            spans.reserve(loop->children.size());
-                            for (auto& edge : loop->children) {
-                                // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
-                                if (edge->basis) {
-                                    Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
-                                }
+					if constexpr (std::is_same_v<T, piecewise_function>) {
+						auto loop = taxonomy::dcast<taxonomy::loop>(item);
+						if (loop) {
+							if (loop->pwf.is_initialized()) {
+								pwf_ = loop->pwf;
+							} else {
+								taxonomy::piecewise_function::spans spans;
+								spans.reserve(loop->children.size());
+								for (auto& edge : loop->children) {
+									// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+									if (edge->basis) {
+										Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+									}
 
-                                const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
-                                const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
-                                Eigen::Vector3d v = e - s;
-                                auto l = v.norm(); // the norm of a vector is a measure of its length
-                                v.normalize();     // normalize the vector so that it is a unit direction vector
-                                std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-                                    Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-                                    auto Y = axis.cross(refDirection).normalized();
-                                    axis = refDirection.cross(Y).normalized();
-                                    return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
-                                };
-                                spans.emplace_back(l, fn);
-                            }
-                            pwf_ = taxonomy::make<taxonomy::piecewise_function>(spans);
-                            loop->pwf = pwf_;
-                        }
+									const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
+									const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
+									Eigen::Vector3d v = e - s;
+									auto l = v.norm(); // the norm of a vector is a measure of its length
+									v.normalize();     // normalize the vector so that it is a unit direction vector
+									std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+										Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+										auto Y = axis.cross(refDirection).normalized();
+										axis = refDirection.cross(Y).normalized();
+										return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
+									};
+									spans.emplace_back(l, fn);
+								}
+								pwf_ = taxonomy::make<taxonomy::piecewise_function>(spans);
+								loop->pwf = pwf_;
+							}
+						}
                     }
                 }
 
@@ -1223,22 +1319,49 @@ typedef item const* ptr;
                     return pwf_.is_initialized();
                 }
 
-                operator taxonomy::piecewise_function::ptr() const {
-                    return *pwf_;
+                operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, piecewise_function>) {
+						if (pwf_) {
+							return *pwf_;
+						}
+					}
+					return nullptr;
                 }
             };
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 			template <typename T, typename U>
 			std::shared_ptr<T> cast(const std::shared_ptr<U>& u) {
-				loop_to_face_upgrade<T> upg(u);
-				if (upg) {
-					return upg;
+				{
+					curve_to_edge_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
 				}
-            loop_to_piecewise_function_upgrade<T> pwupg(u);
-            if (pwupg) {
-               return pwupg;
-            }
+				{
+					curve_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					curve_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_piecewise_function_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
 				if (auto r = std::dynamic_pointer_cast<T>(u)) {
 					return r;
 				} else {
@@ -1247,15 +1370,31 @@ typedef item const* ptr;
 			}
 			template <typename T, typename U>
 			std::shared_ptr<T> dcast(const std::shared_ptr<U>& u) {
-				loop_to_face_upgrade<T> upg(u);
-				if (upg) {
-					return upg;
+				{
+					curve_to_edge_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
 				}
-            loop_to_piecewise_function_upgrade<T> pwupg(u);
-            if (pwupg) {
-               return pwupg;
-            }
-            return std::dynamic_pointer_cast<T>(u);
+				{
+					curve_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_piecewise_function_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				return std::dynamic_pointer_cast<T>(u);
 			}
 #endif
 #ifdef TAXONOMY_USE_UNIQUE_PTR
