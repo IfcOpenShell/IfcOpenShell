@@ -21,6 +21,7 @@ jobs:
       date: ${{ steps.date.outputs.date }}
       verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
+      - uses: actions/checkout@v4
       - name: Set env
         run: echo ok go
       
@@ -34,7 +35,7 @@ jobs:
 
       - name: Version + date str
         id: verdate
-        run: echo "verdate=$('${{ steps.version.outputs.version }}' +'.${{ steps.date.outputs.date }}')" >> $GITHUB_OUTPUT
+        run: echo "verdate='${{ steps.version.outputs.version }}' +'.${{ steps.date.outputs.date }}'" >> $GITHUB_OUTPUT
 
       
   test:
