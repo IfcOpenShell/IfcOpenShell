@@ -1432,7 +1432,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     ms = np.vstack([default_mat, np.frombuffer(shape.geometry.colors_buffer).reshape((-1, 4))])
                     mi = np.frombuffer(shape.geometry.material_ids_buffer, dtype=np.int32)
                     for geom_material_idx, geom_material in enumerate(shape.geometry.materials):
-                        if not geom_material.has_diffuse:
+                        if not geom_material.instance_id():
                             ms[geom_material_idx + 1] = (0.8, 0.8, 0.8, 1)
                     chunked_materials.append(ms)
                     chunked_material_ids.append(mi + material_offset + 1)
@@ -1572,7 +1572,7 @@ class LoadLinkedProject(bpy.types.Operator):
                 alpha = 1.0
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
-                if material.has_diffuse:
+                if material.instance_id():
                     diffuse = material.diffuse + (alpha,)
                 else:
                     diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
