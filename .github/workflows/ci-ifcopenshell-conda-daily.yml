@@ -16,7 +16,7 @@ jobs:
         run: echo ok go
 
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
