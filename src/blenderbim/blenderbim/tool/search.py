@@ -6,12 +6,6 @@ import ifcopenshell.guid
 import ifcopenshell.util.selector
 from blenderbim.bim.prop import BIMFacet
 from typing import Union, Literal
-import os
-import webbrowser
-import asyncio
-import threading
-import websockets
-import json
 
 
 class Search(blenderbim.core.tool.Search):
