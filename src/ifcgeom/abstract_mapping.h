@@ -41,6 +41,7 @@ namespace geometry {
 		virtual void initialize_settings() = 0;
 		virtual bool get_layerset_information(const IfcUtil::IfcBaseInterface*, layerset_information&, int&) = 0;
 		virtual bool get_wall_neighbours(const IfcUtil::IfcBaseInterface*, std::vector<endpoint_connection>&) = 0;
+		virtual const IfcUtil::IfcBaseEntity* get_product_type(const IfcUtil::IfcBaseEntity*) = 0;
 		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity*) = 0;
 		virtual double get_length_unit() const = 0;
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product) = 0;

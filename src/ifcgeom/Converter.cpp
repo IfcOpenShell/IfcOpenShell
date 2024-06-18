@@ -107,6 +107,13 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	bool material_style_applied = false;
 
 	auto single_material = mapping_->get_single_material_association(product);
+	if (!single_material) {
+		auto type_product = mapping_->get_product_type(product);
+		if (type_product) {
+			single_material = mapping_->get_single_material_association(type_product);
+		}
+	}
+
 	if (single_material) {
 		auto s = taxonomy::cast<taxonomy::style>(mapping_->map(single_material));
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
