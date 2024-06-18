@@ -15,11 +15,28 @@ jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'IfcOpenShell/IfcOpenShell'
+      github.repository == 'Krande/IfcOpenShell'
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      date: ${{ steps.date.outputs.date }}
+      verdate: ${{ steps.verdate.outputs.verdate }}
     steps:
       - name: Set env
         run: echo ok go
+      
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Get current date
+        id: date
+        run: echo "date=$(date +'%y%m%d')" >> $GITHUB_OUTPUT
 
+      - name: Version + date str
+        id: verdate
+        run: echo "verdate=$('${{ steps.version.outputs.version }}' +'.${{ steps.date.outputs.date }}')" >> $GITHUB_OUTPUT
+
+      
   test:
     name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
     needs: activate
@@ -51,10 +68,6 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Get current version
-        id: version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
-      
       - name: Download and extract MacOSX SDK
         if: ${{ runner.os == 'macOS' }}
         run: |
@@ -77,7 +90,7 @@ jobs:
           conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
         working-directory: ./conda
         env:
-          VERSION_OVERRIDE: ${{ steps.version.outputs.version }}
+          VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
