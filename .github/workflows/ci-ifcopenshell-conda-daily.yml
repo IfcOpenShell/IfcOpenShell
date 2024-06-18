@@ -51,6 +51,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Get current version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
       - name: Download and extract MacOSX SDK
         if: ${{ runner.os == 'macOS' }}
         run: |
@@ -72,6 +76,8 @@ jobs:
         run: |
           conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
         working-directory: ./conda
+        env:
+          VERSION_OVERRIDE: ${{ steps.version.outputs.version }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
