@@ -1,4 +1,4 @@
-{% set version = "0.8.0" %}
+{% set version = environ.get('VERSION_OVERRIDE', '0.8.0') %}
 {% set build = 0 %}
 
 # Higher number -> Always prioritize "novtk" variant over "all" variant
