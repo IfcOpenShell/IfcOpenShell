@@ -38,6 +38,8 @@ pin_run_as_build:
 zlib:
 - '1'
 
+macos_machine:
+- x86_64-apple-darwin13.4.0
 MACOSX_DEPLOYMENT_TARGET:
 - '10.15'
 MACOSX_SDK_VERSION:
