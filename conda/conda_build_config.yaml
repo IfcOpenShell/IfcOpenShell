@@ -43,7 +43,10 @@ pin_run_as_build:
 
 zlib:
 - '1'
-
+target_platform:
+- win-64    # [win]
+- linux-64  # [linux]
+- osx-64    # [osx]
 macos_machine:
 - x86_64-apple-darwin13.4.0
 MACOSX_DEPLOYMENT_TARGET:
