@@ -61,5 +61,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEllipseProfileDef* inst) {
 	ed->basis = el;
 	lp->children.push_back(ed);
 	fc->children.push_back(lp);
+	fc->matrix = m4;
 	return fc;
 }
