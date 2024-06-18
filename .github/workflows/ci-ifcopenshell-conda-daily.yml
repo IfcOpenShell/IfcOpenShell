@@ -2,15 +2,20 @@ name: ci-ifcopenshell-conda-daily-v0.8.0
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - v0.8.0
+  schedule:
+  #         ┌───────────── minute (0 - 59)
+  #         │  ┌───────────── hour (0 - 23)
+  #         │  │ ┌───────────── day of the month (1 - 31)
+  #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+  #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+  #         *  * * * *
+  - cron: "49 23 * * *" # 11min before utc midnight every day
 
 jobs:
   activate:
     runs-on: ubuntu-latest
     if: |
-      github.repository == 'Krande/IfcOpenShell'
+      github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
       - name: Set env
         run: echo ok go
