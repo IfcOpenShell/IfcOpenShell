@@ -7,10 +7,19 @@ occt:
 
 c_compiler:
 - vs2022    # [win]
+- gcc       # [linux]
+- clang     # [osx]
 c_stdlib:
 - vs        # [win]
+- sysroot   # [linux]
+- macosx_deployment_target  # [osx]
 cxx_compiler:
 - vs2022    # [win]
+- gcc       # [linux]
+- clangxx   # [osx]
+c_stdlib_version:
+- '2.12'    # [linux]
+- '10.15'   # [osx]
 hdf5:
 - 1.14.3
 libboost_devel:
@@ -19,15 +28,20 @@ libxml2:
 - '2'
 mpfr:
 - '4'
+gmp:
+- '6'  # [not win]
 pin_run_as_build:
   python:
     min_pin: x.x
     max_pin: x.x
 
-target_platform:
-- win-64
 zlib:
 - '1'
+
+MACOSX_DEPLOYMENT_TARGET:
+- '10.15'
+MACOSX_SDK_VERSION:
+- '10.15'
 
 CONDA_BUILD_SYSROOT:
   - "/Users/runner/work/MacOSX10.15.sdk"  # [osx]
