@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Client</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+      var SOCKET_PORT = {{port}};
+    </script>
+    <script defer src="./static/js/index.js"></script>
+  </head>
+  <body>
+    <h1>IFC Files</h1>
+    <div id="messages"></div>
+  </body>
+</html>
