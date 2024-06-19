@@ -557,14 +557,19 @@ class TestAttribute:
             expected=False,
         )
 
-        facet = Attribute(name="IsMilestone", value="TRUE")
+        facet = Attribute(name="IsMilestone", value="true")
         ifc = ifcopenshell.file()
         element = ifc.createIfcTask(IsMilestone=False)
-        run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
-        facet = Attribute(name="IsMilestone", value="FALSE")
-        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
+        run("Booleans must be specified as lowercase strings 1/3", facet=facet, inst=element, expected=False)
+        facet = Attribute(name="IsMilestone", value="false")
+        run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=True)
         facet = Attribute(name="IsMilestone", value="False")
-        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=False)
+        run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=False)
+
+        facet = Attribute(name="IsMilestone", value="0")
+        run("Booleans can be specified as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
+        facet = Attribute(name="IsMilestone", value="1")
+        run("Booleans can be specified as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
 
         facet = Attribute(name="EditionDate", value="2022-01-01")
         ifc = ifcopenshell.file()
@@ -982,13 +987,18 @@ class TestProperty:
         )
         run("Floating point numbers are compared with a 1e-6 tolerance 4/4", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="TRUE", dataType="IFCBOOLEAN")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="true", dataType="IFCBOOLEAN")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(False)})
         run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="FALSE", dataType="IFCBOOLEAN")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="false", dataType="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="False", dataType="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 3/3", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="0", dataType="IFCBOOLEAN")
+        run("Booleans can be specified as as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="1", dataType="IFCBOOLEAN")
+        run("Booleans can be specified as as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
 
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="2022-01-01", dataType="IFCDATE")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01")})
