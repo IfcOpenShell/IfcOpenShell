@@ -5,15 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Client</title>
     <link rel="stylesheet" href="/static/css/styles.css" />
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+    ></script>
     <script>
       var SOCKET_PORT = {{port}};
     </script>
     <script defer src="./static/js/index.js"></script>
   </head>
   <body>
-    <h1>IFC Files</h1>
-    <div id="messages"></div>
+    <h1>IFC Data</h1>
+    <div id="container"></div>
   </body>
 </html>
