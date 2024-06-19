@@ -13,6 +13,12 @@
 #include "base_utils.h"
 #include "boolean_utils.h"
 
+#include <Standard_Version.hxx>
+
+#if OCC_VERSION_HEX >= 0x70600
+#include <TopTools_FormatVersion.hxx>
+#endif
+
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
 using IfcGeom::NumberNativeDouble;
@@ -242,7 +248,11 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
 	auto s = IfcGeom::util::apply_transformation(shape_, place);
 	std::stringstream sstream;
+#if OCC_VERSION_HEX >= 0x70600
+	BRepTools::Write(s, sstream, false, false, TopTools_FormatVersion_VERSION_2);
+#else
 	BRepTools::Write(s, sstream);
+#endif
 	r = sstream.str();
 }
 
