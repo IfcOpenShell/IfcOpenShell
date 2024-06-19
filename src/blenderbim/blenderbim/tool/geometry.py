@@ -515,6 +515,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         element = tool.Ifc.get_entity(obj)
         settings = ifcopenshell.geom.settings()
         settings.set("weld-vertices", True)
+        settings.set("apply-default-materials", False)
         context = representation.ContextOfItems
 
         if element.is_a("IfcTypeProduct"):
