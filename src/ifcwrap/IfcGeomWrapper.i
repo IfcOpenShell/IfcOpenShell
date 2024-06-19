@@ -724,7 +724,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			
 			typename Schema::IfcProductRepresentation* prodrep = product->Representation();
 			typename Schema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-			typename Schema::IfcRepresentation* ifc_representation = representation->as<typename Schema::IfcRepresentation>();
+			typename Schema::IfcRepresentation* ifc_representation = representation ? representation->as<typename Schema::IfcRepresentation>() : nullptr;
 			
 			if (!ifc_representation) {
 				// First, try to find a representation based on the settings
