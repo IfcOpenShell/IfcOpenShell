@@ -213,7 +213,8 @@ endif
 	# Required by IFC4D
 	cd dist/working && . env/bin/activate && $(PIP) install PyP6Xer --target=./site-packages
 	# Required by Web module
-	cd dist/working && . env/bin/activate && $(PIP) install socketio --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install python-socketio[asyncio_client] --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install aiohttp --target=./site-packages
 
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
