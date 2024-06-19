@@ -88,6 +88,7 @@ class CsvProperties(PropertyGroup):
             ("csv", "csv", ""),
             ("xlsx", "xlsx", ""),
             ("ods", "ods", ""),
+            ("web", "web", ""),
         ],
         name="Output format",
         default="csv",

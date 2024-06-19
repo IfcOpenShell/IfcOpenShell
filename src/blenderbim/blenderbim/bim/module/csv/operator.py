@@ -185,6 +185,8 @@ class ExportIfcCsv(bpy.types.Operator):
 
     def invoke(self, context, event):
         props = context.scene.CsvProperties
+        if props.format == "web":
+            return self.execute(context)
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
         WindowManager = context.window_manager
         WindowManager.fileselect_add(self)
@@ -222,6 +224,10 @@ class ExportIfcCsv(bpy.types.Operator):
             if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
                 formatting.append({"name": attribute.name, "format": attribute.formatting})
 
+        file_format = props.format
+        if props.format == "web":
+            file_format = "pd"
+
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
         ifc_csv.export(
             ifc_file,
@@ -229,7 +235,7 @@ class ExportIfcCsv(bpy.types.Operator):
             attributes,
             headers=headers,
             output=self.filepath,
-            format=props.format,
+            format=file_format,
             should_preserve_existing=props.should_preserve_existing,
             delimiter=sep,
             include_global_id=props.include_global_id,
@@ -247,6 +253,8 @@ class ExportIfcCsv(bpy.types.Operator):
         if props.format != "csv" and props.should_generate_svg:
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
+        if props.format == "web":
+            tool.Web.send_webui_data(ifc_csv.dataframe.to_csv(index=False), event="csv_data")
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
