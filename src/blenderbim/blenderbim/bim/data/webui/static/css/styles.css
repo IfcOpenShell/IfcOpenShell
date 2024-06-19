@@ -1,12 +1,23 @@
 body {
+    background-color: #2e2e2e;
+    /* Dark background color */
+    color: #e0e0e0;
+    /* Light text color */
     font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 20px;
+}
+
+#messages {
+    margin: 20px;
 }
 
 .message {
-    margin-bottom: 10px;
+    background-color: #3c3c3c;
     padding: 10px;
-    border: 1px solid #ccc;
+    margin-bottom: 10px;
     border-radius: 5px;
+    color: #ffffff;
+}
+
+.csv-table {
+    margin-top: 20px;
 }
