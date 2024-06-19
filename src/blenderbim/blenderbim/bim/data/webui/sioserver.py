@@ -38,7 +38,7 @@ class WebNamespace(socketio.AsyncNamespace):
     async def on_operator(self, sid, data):
         print(f"Web client {sid} operator: {data}")
         json_data = json.loads(data)
-        # need to add event listeners in blenderbim side for event web_operator
+        # TODO: need to add event listeners in blenderbim side for event web_operator
         # await sio.emit("web_operator", json_data, namespace="/blender", room=json_data["blenderId"])
 
 
@@ -68,10 +68,10 @@ class BlenderNamespace(socketio.AsyncNamespace):
     async def on_default_data(self, sid, data):
         print(f"Default data from Blender client {sid}: {data}")
         # blender_messages[sid] = data
-        await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
+        # await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_csv_data(self, sid, data):
-        print(f"CSV data from Blender client {sid}: {data}")
+        print(f"CSV data from Blender client {sid}:")
         # Store the message and forward it to the web client
         blender_messages[sid] = data
         await sio.emit("csv_data", {"blenderId": sid, "data": data}, namespace="/web")

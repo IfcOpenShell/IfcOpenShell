@@ -4,29 +4,41 @@ $(document).ready(function () {
   const socket = io(url);
   console.log("socket: ", socket);
 
-  connectedClients = [];
+  const connectedClients = {};
 
-  function addTableElement(blenderId, csvData) {
+  function addTableElement(blenderId, csvData, filename) {
+    const tableContainer = $("<div></div>")
+      .addClass("table-container")
+      .attr("id", "container-" + blenderId);
+
+    const tableTitle = $("<h3></h3>")
+      .attr("id", "title-" + blenderId)
+      .text(filename)
+      .css("margin-bottom", "10px");
+
     const tableDiv = $("<div></div>")
       .addClass("csv-table")
       .attr("id", "table-" + blenderId);
-    $("#container").append(tableDiv);
+
+    tableContainer.append(tableTitle);
+    tableContainer.append(tableDiv);
+    $("#container").append(tableContainer);
 
     var table = new Tabulator("#table-" + blenderId, {
+      height: "400px",
       index: "GlobalId",
       data: csvData,
       importFormat: "csv",
       autoColumns: true,
       selectableRows: 1,
       layout: "fitColumns",
-      // selectableRowsRangeMode: "click",
     });
 
     table.on("rowSelected", function (row) {
       var index = row.getIndex(); // the guid of the object
       var tableId = row.getTable().element.id.substr(6);
 
-      msg = JSON.stringify({
+      const msg = JSON.stringify({
         operator_type: "selection",
         blenderId: tableId,
         guid: index,
@@ -35,21 +47,22 @@ $(document).ready(function () {
     });
   }
 
-  function updateTableElement(blenderId, csvData) {
+  function updateTableElement(blenderId, csvData, filename) {
     const table = Tabulator.findTable("#table-" + blenderId)[0];
     if (table) {
       table.replaceData(csvData, { importFormat: "csv" });
+      $("#title-" + blenderId).text(filename); // Update the title
     }
   }
 
   function removeTableElement(blenderId) {
-    $("#table-" + blenderId).remove();
+    $("#container-" + blenderId).remove();
   }
 
   socket.on("blender_connect", (blenderId) => {
     console.log("blender_connect: ", blenderId);
     if (!connectedClients.hasOwnProperty(blenderId)) {
-      connectedClients[blenderId] = false; // No data shown yet
+      connectedClients[blenderId] = { shown: false, ifc_file: "" };
     }
   });
 
@@ -63,19 +76,20 @@ $(document).ready(function () {
 
   socket.on("csv_data", (data) => {
     const blenderId = data["blenderId"];
-    const csvData = data["data"];
+    const csvData = data["data"]["data"];
+    const filename = data["data"]["IFC_File"];
     console.log(data);
 
     if (connectedClients.hasOwnProperty(blenderId)) {
-      if (!connectedClients[blenderId]) {
-        addTableElement(blenderId, csvData);
-        connectedClients[blenderId] = true; // Data has been shown
+      if (!connectedClients[blenderId].shown) {
+        addTableElement(blenderId, csvData, filename);
+        connectedClients[blenderId] = { shown: true, ifc_file: filename };
       } else {
-        updateTableElement(blenderId, csvData);
+        updateTableElement(blenderId, csvData, filename);
       }
     } else {
-      connectedClients[blenderId] = true;
-      addTableElement(blenderId, csvData);
+      connectedClients[blenderId] = { shown: true, ifc_file: filename };
+      addTableElement(blenderId, csvData, filename);
     }
   });
 });
