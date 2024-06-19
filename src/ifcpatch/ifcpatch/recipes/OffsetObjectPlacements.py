@@ -86,12 +86,12 @@ class Patcher:
         self.ax = ax
         self.ay = ay
         self.az = az
-        if self.ay is not None:
-            self.angle_type = "3D"
-        elif self.ay is not None:
+        if self.ax is None:
+            self.angle_type = None
+        elif self.ay is None:
             self.angle_type = "2D"
         else:
-            self.angle_type = None
+            self.angle_type = "3D"
 
     def patch(self):
         absolute_placements = []
