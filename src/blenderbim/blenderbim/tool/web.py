@@ -81,7 +81,7 @@ class Web(blenderbim.core.tool.Web):
         ws_url = f"ws://localhost:{port}/blender"
         ws_thread.run_coro(cls.sio_connect(ws_url))
         cls.set_is_connected(True)
-        cls.send_webui_data()
+        cls.send_default_webui_data()
 
     @classmethod
     def disconnect_websocket_server(cls):
@@ -114,13 +114,16 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server terminated successfully")
 
     @classmethod
-    def send_webui_data(cls):
-        global ws_thread
-
+    def send_default_webui_data(cls, event="default_data", namespace="/blender"):
         if not WebData.is_loaded:
             WebData.load()
+        cls.send_webui_data(WebData.data, event=event, namespace=namespace)
 
-        ws_thread.run_coro(cls.sio_send(WebData.data))
+    @classmethod
+    def send_webui_data(cls, data, event="data", namespace="/blender"):
+        global ws_thread
+        if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
+            ws_thread.run_coro(cls.sio_send(data, event, namespace))
 
     @classmethod
     def open_web_browser(cls, port):
@@ -140,8 +143,8 @@ class Web(blenderbim.core.tool.Web):
         await sio.disconnect()
 
     @classmethod
-    async def sio_send(cls, data):
-        await sio.emit("data", data, namespace="/blender")
+    async def sio_send(cls, data, event="data", namespace="/blender"):
+        await sio.emit(event, data, namespace=namespace)
 
     @classmethod
     def set_is_running(cls, is_running):
