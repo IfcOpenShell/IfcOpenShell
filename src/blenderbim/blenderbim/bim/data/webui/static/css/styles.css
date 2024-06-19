@@ -6,18 +6,20 @@ body {
     font-family: Arial, sans-serif;
 }
 
-#messages {
-    margin: 20px;
+#container {
+    margin-top: 20px;
+    margin-bottom: 20px
 }
 
-.message {
-    background-color: #3c3c3c;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    color: #ffffff;
+.table-container {
+    margin-bottom: 40px;
+    /* Space between tables */
 }
 
 .csv-table {
-    margin-top: 20px;
+    margin-top: 10px;
+}
+
+h3 {
+    margin-top: 0;
 }

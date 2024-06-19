@@ -122,6 +122,11 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def send_webui_data(cls, data, event="data", namespace="/blender"):
         global ws_thread
+        # TODO: find a better way to include ifc_filename with the csv data
+        data = {
+            "IFC_File": bpy.context.scene.BIMProperties.ifc_file,
+            "data": data,
+        }
         if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
             ws_thread.run_coro(cls.sio_send(data, event, namespace))
 
