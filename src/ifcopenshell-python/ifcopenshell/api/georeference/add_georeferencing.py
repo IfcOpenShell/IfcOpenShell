@@ -42,7 +42,8 @@ def add_georeferencing(file: ifcopenshell.file) -> None:
 
         ifcopenshell.api.run("georeference.add_georeferencing", model)
     """
-
+    if file.by_type("IfcProjectedCRS"):
+        return
     source_crs = None
     for context in file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
         if context.ContextType == "Model":
@@ -50,14 +51,7 @@ def add_georeferencing(file: ifcopenshell.file) -> None:
             break
     if not source_crs:
         return
-    projected_crs = file.create_entity("IfcProjectedCRS", **{"Name": ""})
+    projected_crs = file.create_entity("IfcProjectedCRS", Name="")
     file.create_entity(
-        "IfcMapConversion",
-        **{
-            "SourceCRS": source_crs,
-            "TargetCRS": projected_crs,
-            "Eastings": 0,
-            "Northings": 0,
-            "OrthogonalHeight": 0,
-        }
+        "IfcMapConversion", SourceCRS=source_crs, TargetCRS=projected_crs, Eastings=0, Northings=0, OrthogonalHeight=0
     )
