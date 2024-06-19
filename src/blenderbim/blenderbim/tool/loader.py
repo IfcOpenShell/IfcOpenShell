@@ -666,30 +666,32 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
+        if (
+            not obj.data
+            and tool.Cad.is_x(matrix[0][3], 0)
+            and tool.Cad.is_x(matrix[1][3], 0)
+            and tool.Cad.is_x(matrix[2][3], 0)
+        ):
+            # We assume any non-geometric matrix at 0,0,0 is not
+            # positionally significant and is left alone. This handles
+            # scenarios where often spatial elements are left at 0,0,0 and
+            # everything else is at map coordinates.
+            obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
+            return Matrix(matrix.tolist())
+
+        if obj.data and obj.data.get("has_cartesian_point_offset", None):
+            obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+            if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
+                obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
+                offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
+                offset_xyz = matrix @ offset_xyz
+                matrix[0][3] = offset_xyz[0]
+                matrix[1][3] = offset_xyz[1]
+                matrix[2][3] = offset_xyz[2]
+
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
-            if (
-                not obj.data
-                and tool.Cad.is_x(matrix[0][3], 0)
-                and tool.Cad.is_x(matrix[1][3], 0)
-                and tool.Cad.is_x(matrix[2][3], 0)
-            ):
-                # We assume any non-geometric matrix at 0,0,0 is not
-                # positionally significant and is left alone. This handles
-                # scenarios where often spatial elements are left at 0,0,0 and
-                # everything else is at map coordinates.
-                obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
-                return Matrix(matrix.tolist())
-            elif obj.data and obj.data.get("has_cartesian_point_offset", None):
-                obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-                if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
-                    obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
-                    offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
-                    offset_xyz = matrix @ offset_xyz
-                    matrix[0][3] = offset_xyz[0]
-                    matrix[1][3] = offset_xyz[1]
-                    matrix[2][3] = offset_xyz[2]
-            else:
+            if obj.BIMObjectProperties.blender_offset_type == "NONE":
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
@@ -699,7 +701,6 @@ class Loader(blenderbim.core.tool.Loader):
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
             )
-
         return Matrix(matrix.tolist())
 
     @classmethod

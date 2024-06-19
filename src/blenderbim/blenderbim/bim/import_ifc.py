@@ -1369,13 +1369,8 @@ class IfcImporter:
 
             mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name(geometry))
 
-            props = bpy.context.scene.BIMGeoreferenceProperties
-            if (
-                props.has_blender_offset
-                and geometry.verts
-                and tool.Loader.is_point_far_away(
-                    (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-                )
+            if geometry.verts and tool.Loader.is_point_far_away(
+                (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):
                 # Shift geometry close to the origin based off that first vert it found
                 verts_array = np.array(geometry.verts)
