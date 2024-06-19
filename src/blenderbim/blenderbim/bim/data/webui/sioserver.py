@@ -2,8 +2,9 @@ import argparse
 from aiohttp import web
 import socketio
 import pystache
+import json
 
-sio_port = 8080
+sio_port = 8080  # default port
 
 sio = socketio.AsyncServer(
     cors_allowed_origins="*",
@@ -34,6 +35,11 @@ class WebNamespace(socketio.AsyncNamespace):
     async def on_disconnect(self, sid):
         print(f"Web client disconnected: {sid}")
 
+    async def on_operator(self, sid, data):
+        print(f"Web client {sid} operator: {data}")
+        json_data = json.loads(data)
+        await sio.emit("web_operator", json_data, namespace="/blender", room=json_data["blenderId"])
+
 
 # Blender namespace
 class BlenderNamespace(socketio.AsyncNamespace):
@@ -57,6 +63,17 @@ class BlenderNamespace(socketio.AsyncNamespace):
         # Store the message and forward it to the web client
         blender_messages[sid] = data
         await sio.emit("blender_data", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_default_data(self, sid, data):
+        print(f"Default data from Blender client {sid}: {data}")
+        # blender_messages[sid] = data
+        # await sio.emit("blender_data", {"blenderId": sid, "data": data}, namespace="/web")
+
+    async def on_csv_data(self, sid, data):
+        print(f"CSV data from Blender client {sid}: {data}")
+        # Store the message and forward it to the web client
+        blender_messages[sid] = data
+        await sio.emit("csv_data", {"blenderId": sid, "data": data}, namespace="/web")
 
 
 # Attach namespaces
