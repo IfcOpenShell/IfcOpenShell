@@ -547,7 +547,7 @@ class PartOf(Facet):
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IFCRELNESTS":
-            nest = self.get_nested_whole(inst)
+            nest = ifcopenshell.util.element.get_nest(inst)
             is_pass = nest is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
@@ -565,17 +565,17 @@ class PartOf(Facet):
                         else:
                             is_pass = True
                         break
-                    nest = self.get_nested_whole(nest)
+                    nest = ifcopenshell.util.element.get_nest(nest)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELVOIDSELEMENT IFCRELFILLSELEMENT":
             if inst.is_a("IfcOpeningElement"):
-                building_element = self.get_voided_element(inst)
+                building_element = ifcopenshell.util.element.get_voided_element(inst)
             else:
                 building_element = None
-                opening = self.get_filled_opening(inst)
+                opening = ifcopenshell.util.element.get_filled_void(inst)
                 if opening:
-                    building_element = self.get_voided_element(opening)
+                    building_element = ifcopenshell.util.element.get_voided_element(opening)
             is_pass = building_element is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
@@ -593,33 +593,13 @@ class PartOf(Facet):
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
         return PartOfResult(is_pass, reason)
 
-    def get_nested_whole(self, element):
-        for rel in getattr(element, "Nests", []) or []:
-            return rel.RelatingObject
-
-    def get_voided_element(self, element):
-        for rel in getattr(element, "VoidsElements", []) or []:
-            return rel.RelatingBuildingElement
-
-    def get_filled_opening(self, element):
-        for rel in getattr(element, "FillsVoids", []) or []:
-            return rel.RelatingOpeningElement
-
     def get_parent(self, element):
-        parent = ifcopenshell.util.element.get_aggregate(element)
-        if not parent:
-            parent = ifcopenshell.util.element.get_container(element, should_get_direct=True)
+        parent = ifcopenshell.util.element.get_parent(element)
         if not parent:
             for rel in getattr(element, "HasAssignments", []) or []:
                 if rel.is_a("IfcRelAssignsToGroup"):
                     parent = rel.RelatingGroup
                     break
-        if not parent:
-            self.get_nested_whole(element)
-        if not parent:
-            self.get_voided_element(element)
-        if not parent:
-            self.get_filled_opening(element)
         return parent
 
 
