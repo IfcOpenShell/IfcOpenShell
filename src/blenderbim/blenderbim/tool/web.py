@@ -19,6 +19,7 @@
 import bpy
 from blenderbim.bim.module.web.data import WebData
 import blenderbim.core.tool
+import blenderbim.tool as tool
 import socket
 import os
 import subprocess
@@ -26,11 +27,13 @@ import webbrowser
 import asyncio
 import socketio
 import threading
+import queue
 from time import sleep
 
 sio = None
 ws_process = None
 ws_thread = None
+web_operator_queue = queue.Queue()
 
 
 class Web(blenderbim.core.tool.Web):
@@ -81,6 +84,7 @@ class Web(blenderbim.core.tool.Web):
         ws_url = f"ws://localhost:{port}/blender"
         ws_thread.run_coro(cls.sio_connect(ws_url))
         cls.set_is_connected(True)
+        bpy.app.timers.register(cls.check_operator_queue)
         cls.send_default_webui_data()
 
     @classmethod
@@ -131,6 +135,27 @@ class Web(blenderbim.core.tool.Web):
             ws_thread.run_coro(cls.sio_send(data, event, namespace))
 
     @classmethod
+    def check_operator_queue(cls):
+        if not bpy.context.scene.WebProperties.is_connected:
+            with web_operator_queue.mutex:
+                web_operator_queue.queue.clear()
+            return None  # unregister timer if not connected
+
+        while not web_operator_queue.empty():
+            operator_data = web_operator_queue.get_nowait()
+            if not operator_data:
+                continue
+
+            if operator_data["type"] == "selection":
+                bpy.ops.object.select_all(action="DESELECT")
+                guid = operator_data["GlobalId"]
+                ele = tool.Ifc.get().by_guid(guid)
+                obj = tool.Ifc.get_object(ele)
+                obj.select_set(True)
+
+        return 1.0
+
+    @classmethod
     def open_web_browser(cls, port):
         webbrowser.open(f"http://127.0.0.1:{port}/")
 
@@ -139,9 +164,7 @@ class Web(blenderbim.core.tool.Web):
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
 
         # TODO: register event handlers to handle incoming messages
-        # sio.on("data", test.message_handler, namespace="/blender")
-
-        # await sio.emit("data", {"from": "client"}, namespace="/blender")
+        sio.on("web_operator", cls.sio_handle_web_operator, namespace="/blender")
 
     @classmethod
     async def sio_disconnect(cls):
@@ -150,6 +173,13 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     async def sio_send(cls, data, event="data", namespace="/blender"):
         await sio.emit(event, data, namespace=namespace)
+
+    @classmethod
+    async def sio_handle_web_operator(cls, data):
+        try:
+            web_operator_queue.put_nowait(data)
+        except queue.Full:
+            pass
 
     @classmethod
     def set_is_running(cls, is_running):
