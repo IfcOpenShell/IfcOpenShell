@@ -21,7 +21,6 @@ import os
 import re
 import sys
 import math
-import logging
 import datetime
 import ifcopenshell
 import ifcopenshell.util.unit
