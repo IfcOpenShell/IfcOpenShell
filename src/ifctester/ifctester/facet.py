@@ -436,6 +436,7 @@ class PartOf(Facet):
             "An element with an {relation} relationship",
         ]
         self.requirement_templates = [
+            "An element must have an {relation} relationship with an {name} of predefined type {predefinedType}",
             "An element must have an {relation} relationship with an {name}",
             "An element must have an {relation} relationship",
         ]
@@ -478,10 +479,12 @@ class PartOf(Facet):
             ancestors = []
             parent = self.get_parent(inst)
             while parent:
-                ancestors.append(parent.is_a())
+                ancestors.append(parent.is_a().upper())
                 if parent.is_a().upper() == self.name:
                     if self.predefinedType:
-                        if ifcopenshell.util.element.get_predefined_type(parent) == self.predefinedType:
+                        predefined_type = ifcopenshell.util.element.get_predefined_type(parent)
+                        ancestors[-1] += f".{predefined_type}"
+                        if predefined_type == self.predefinedType:
                             is_pass = True
                     else:
                         is_pass = True
@@ -498,10 +501,12 @@ class PartOf(Facet):
                 is_pass = False
                 ancestors = []
                 while aggregate is not None:
-                    ancestors.append(aggregate.is_a())
+                    ancestors.append(aggregate.is_a().upper())
                     if aggregate.is_a().upper() == self.name:
                         if self.predefinedType:
-                            if ifcopenshell.util.element.get_predefined_type(aggregate) == self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(aggregate)
+                            ancestors[-1] += f".{predefined_type}"
+                            if predefined_type == self.predefinedType:
                                 is_pass = True
                         else:
                             is_pass = True
@@ -536,7 +541,7 @@ class PartOf(Facet):
                 if container.is_a().upper() != self.name:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": container.is_a().upper()}
-                if self.predefinedType:
+                if is_pass and self.predefinedType:
                     predefined_type = ifcopenshell.util.element.get_predefined_type(container)
                     if predefined_type != self.predefinedType:
                         is_pass = False
@@ -550,10 +555,12 @@ class PartOf(Facet):
                 is_pass = False
                 ancestors = []
                 while nest is not None:
-                    ancestors.append(nest.is_a())
+                    ancestors.append(nest.is_a().upper())
                     if nest.is_a().upper() == self.name:
                         if self.predefinedType:
-                            if ifcopenshell.util.element.get_predefined_type(nest) == self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(nest)
+                            ancestors[-1] += f".{predefined_type}"
+                            if predefined_type == self.predefinedType:
                                 is_pass = True
                         else:
                             is_pass = True
@@ -573,15 +580,14 @@ class PartOf(Facet):
             if not is_pass:
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
-                is_pass = False
-                if building_element.is_a().upper() == self.name:
-                    if self.predefinedType:
-                        if ifcopenshell.util.element.get_predefined_type(building_element) == self.predefinedType:
-                            is_pass = True
-                    else:
-                        is_pass = True
-                if not is_pass:
-                    reason = {"type": "ENTITY", "actual": building_element}
+                if building_element.is_a().upper() != self.name:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": building_element.is_a().upper()}
+                if is_pass and self.predefinedType:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
+                    if predefined_type != self.predefinedType:
+                        is_pass = False
+                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
 
         if self.cardinality == "prohibited":
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
@@ -1086,11 +1092,11 @@ class AttributeResult(Result):
         elif self.reason["type"] == "FALSEY":
             return f"The attribute value \"{str(self.reason['actual'])}\" is empty"
         elif self.reason["type"] == "INVALID":
-            return f"An invalid attribute name was specified in the IDS"
+            return "An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
             return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
         elif self.reason["type"] == "PROHIBITED":
-            return f"The attribute value should not have met the requirement"
+            return "The attribute value should not have met the requirement"
 
 
 class ClassificationResult(Result):
@@ -1102,7 +1108,7 @@ class ClassificationResult(Result):
         elif self.reason["type"] == "SYSTEM":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "PROHIBITED":
-            return f"The classification should not have met the requirement"
+            return "The classification should not have met the requirement"
 
 
 class PartOfResult(Result):
@@ -1111,8 +1117,10 @@ class PartOfResult(Result):
             return "The entity has no relationship"
         elif self.reason["type"] == "ENTITY":
             return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+        elif self.reason["type"] == "PREDEFINEDTYPE":
+            return f"The entity has a relationship with incorrect predefined type: \"{str(self.reason['actual'])}\""
         elif self.reason["type"] == "PROHIBITED":
-            return f"The relationship should not have met the requirement"
+            return "The relationship should not have met the requirement"
 
 
 class PropertyResult(Result):
