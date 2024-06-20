@@ -92,6 +92,7 @@ class ResultsSpecification(TypedDict):
 
 class ResultsRequirement(TypedDict):
     facet_type: str
+    metadata: dict
     label: str
     value: str
     description: str
@@ -334,6 +335,7 @@ class Json(Reporter):
             requirements.append(
                 ResultsRequirement(
                     facet_type=facet_type,
+                    metadata=requirement.asdict("requirement"),
                     label=label,
                     value=value,
                     description=requirement.to_string("requirement", specification, requirement),
