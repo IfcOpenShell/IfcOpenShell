@@ -4,8 +4,11 @@ $(document).ready(function () {
   const socket = io(url);
   console.log("socket: ", socket);
 
+  // keeps track of blenders connected in form of
+  // {shown:bool, filename:name}
   const connectedClients = {};
 
+  // add a new talbe with data and filename
   function addTableElement(blenderId, csvData, filename) {
     const tableContainer = $("<div></div>")
       .addClass("table-container")
@@ -36,21 +39,29 @@ $(document).ready(function () {
 
     table.on("rowSelected", function (row) {
       var index = row.getIndex(); // the guid of the object
+      // table id is usually "table-BlenderId" so blender id is always
+      // after the first 6 characters
       var tableId = row.getTable().element.id.substr(6);
 
-      const msg = JSON.stringify({
-        operator_type: "selection",
+      const msg = {
         blenderId: tableId,
-        guid: index,
-      });
-      socket.emit("operator", msg);
+        operator: {
+          type: "selection",
+          GlobalId: index,
+        },
+      };
+      socket.emit("web_operator", msg);
     });
   }
 
+  // update table and filename
   function updateTableElement(blenderId, csvData, filename) {
+    // TODO: see if we can only replace updated rows only.
+    // TODO: and handle case where new columns are added
+    // for now just replace the data in the table
     const table = Tabulator.findTable("#table-" + blenderId)[0];
     if (table) {
-      table.replaceData(csvData, { importFormat: "csv" });
+      table.setData(csvData);
       $("#title-" + blenderId).text(filename); // Update the title
     }
   }
