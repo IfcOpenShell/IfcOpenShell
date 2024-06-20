@@ -174,6 +174,7 @@ class Specification:
         self.instructions = instructions
 
         self.applicable_entities: list[ifcopenshell.entity_instance] = []
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failed_entities: set[ifcopenshell.entity_instance] = set()
         self.status = None
 
@@ -238,6 +239,7 @@ class Specification:
 
     def reset_status(self):
         self.applicable_entities.clear()
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failed_entities: set[ifcopenshell.entity_instance] = set()
         for facet in self.requirements:
             facet.status = None
@@ -270,13 +272,19 @@ class Specification:
                 result = facet(element)
                 is_pass = bool(result)
                 if self.maxOccurs != 0:  # This is a required or optional specification
-                    if not is_pass:
+                    if is_pass:
+                        self.passed_entities.add(element)
+                        facet.passed_entities.add(element)
+                    else:
                         self.failed_entities.add(element)
                         facet.failures.append(FacetFailure(element=element, reason=str(result)))
                 else:  # This is a prohibited specification
                     if is_pass:
                         self.failed_entities.add(element)
                         facet.failures.append(FacetFailure(element=element, reason=str(result)))
+                    else:
+                        self.passed_entities.add(element)
+                        facet.passed_entities.add(element)
 
         self.status = True
         for facet in self.requirements:
