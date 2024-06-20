@@ -85,7 +85,7 @@ class Web(blenderbim.core.tool.Web):
         ws_thread.run_coro(cls.sio_connect(ws_url))
         cls.set_is_connected(True)
         bpy.app.timers.register(cls.check_operator_queue)
-        cls.send_default_webui_data()
+        cls.send_webui_data()
 
     @classmethod
     def disconnect_websocket_server(cls):
@@ -118,19 +118,18 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server terminated successfully")
 
     @classmethod
-    def send_default_webui_data(cls, event="default_data", namespace="/blender"):
-        if not WebData.is_loaded:
-            WebData.load()
-        cls.send_webui_data(WebData.data, event=event, namespace=namespace)
-
-    @classmethod
-    def send_webui_data(cls, data, event="data", namespace="/blender"):
+    def send_webui_data(cls, extra_data=None, event="data", namespace="/blender", use_web_data=True):
         global ws_thread
-        # TODO: find a better way to include ifc_filename with the csv data
-        data = {
-            "IFC_File": bpy.context.scene.BIMProperties.ifc_file,
-            "data": data,
-        }
+        data = {}
+
+        if use_web_data:
+            if not WebData.is_loaded:
+                WebData.load()
+            data = WebData.data
+
+        if extra_data is not None:
+            data["data"] = extra_data
+
         if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
             ws_thread.run_coro(cls.sio_send(data, event, namespace))
 
