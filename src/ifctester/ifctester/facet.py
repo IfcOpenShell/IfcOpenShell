@@ -1025,37 +1025,40 @@ class Restriction:
         if other is None:
             return False
         for constraint, value in self.options.items():
-            if constraint == "enumeration":
-                if other not in [cast_to_value(v, other) for v in value]:
-                    return False
-            elif constraint == "pattern":
-                if not isinstance(other, str):
-                    return False
-                value = value if isinstance(value, list) else [value]
-                for pattern in value:
-                    if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+            try:
+                if constraint == "enumeration":
+                    if other not in [cast_to_value(v, other) for v in value]:
                         return False
-            elif constraint == "length":
-                if len(str(other)) != int(value):
-                    return False
-            elif constraint == "maxLength":
-                if len(str(other)) > int(value):
-                    return False
-            elif constraint == "minLength":
-                if len(str(other)) < int(value):
-                    return False
-            elif constraint == "maxExclusive":
-                if float(other) >= float(value):
-                    return False
-            elif constraint == "maxInclusive":
-                if float(other) > float(value):
-                    return False
-            elif constraint == "minExclusive":
-                if float(other) <= float(value):
-                    return False
-            elif constraint == "minInclusive":
-                if float(other) < float(value):
-                    return False
+                elif constraint == "pattern":
+                    if not isinstance(other, str):
+                        return False
+                    value = value if isinstance(value, list) else [value]
+                    for pattern in value:
+                        if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                            return False
+                elif constraint == "length":
+                    if len(str(other)) != int(value):
+                        return False
+                elif constraint == "maxLength":
+                    if len(str(other)) > int(value):
+                        return False
+                elif constraint == "minLength":
+                    if len(str(other)) < int(value):
+                        return False
+                elif constraint == "maxExclusive":
+                    if float(other) >= float(value):
+                        return False
+                elif constraint == "maxInclusive":
+                    if float(other) > float(value):
+                        return False
+                elif constraint == "minExclusive":
+                    if float(other) <= float(value):
+                        return False
+                elif constraint == "minInclusive":
+                    if float(other) < float(value):
+                        return False
+            except ValueError:
+                return False
         return True
 
     def __str__(self):
