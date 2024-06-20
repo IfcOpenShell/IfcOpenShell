@@ -108,7 +108,7 @@ class Ids:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": info,
             "specifications": {"specification": []},
         }
@@ -158,7 +158,7 @@ class Specification:
         name="Unnamed",
         minOccurs=0,
         maxOccurs="unbounded",
-        ifcVersion=["IFC2X3", "IFC4"],
+        ifcVersion=["IFC2X3", "IFC4", "IFC4X3_ADD2"],
         identifier=None,
         description=None,
         instructions=None,

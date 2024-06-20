@@ -60,7 +60,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -80,7 +80,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {
                 "title": "title",
                 "copyright": "copyright",
@@ -100,7 +100,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -255,7 +255,7 @@ class TestSpecification:
         spec = ids.Specification()
         assert spec.asdict() == {
             "@name": "Unnamed",
-            "@ifcVersion": ["IFC2X3", "IFC4"],
+            "@ifcVersion": ["IFC2X3", "IFC4", "IFC4X3_ADD2"],
             "applicability": {},
             "requirements": {},
         }
