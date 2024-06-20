@@ -374,8 +374,8 @@ class Json(Reporter):
             ResultsFailedEntity(
                 {
                     "reason": f["reason"],
-                    "element": str(f["element"]),
-                    "element_type": str(ifcopenshell.util.element.get_type(f["element"])),
+                    "element": f["element"],
+                    "element_type": ifcopenshell.util.element.get_type(f["element"]),
                     "class": f["element"].is_a(),
                     "predefined_type": ifcopenshell.util.element.get_predefined_type(f["element"]),
                     "name": getattr(f["element"], "Name", None),
@@ -391,13 +391,16 @@ class Json(Reporter):
     def to_string(self) -> str:
         import json
 
-        return json.dumps(self.results)
+        return json.dumps(self.results, default=self.encode)
 
     def to_file(self, filepath: str) -> None:
         import json
 
         with open(filepath, "w", encoding="utf-8") as outfile:
-            return json.dump(self.results, outfile, ensure_ascii=False)
+            return json.dump(self.results, outfile, ensure_ascii=False, default=self.encode)
+
+    def encode(self, obj):
+        return str(obj)
 
 
 class Html(Json):
