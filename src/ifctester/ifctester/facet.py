@@ -81,6 +81,7 @@ class Facet:
 
     def __init__(self, *parameters):
         self.status = None
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
         self.failures: list[FacetFailure] = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])

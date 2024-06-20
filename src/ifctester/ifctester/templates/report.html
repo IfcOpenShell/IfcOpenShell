@@ -59,10 +59,13 @@
         .percent { text-align: left; padding-top: 5px; padding-left: 5px; padding-bottom: 5px; color: white; border-radius: 5px; white-space: nowrap; }
         .pass { background-color: var(--green); }
         .fail { background-color: var(--red); }
-        table { width: 100%; border-bottom: 2px solid var(--red); border-spacing: 0; border-radius: 5px; margin-top: 10px; }
-        th, td { padding: 5px; }
-        thead>tr { background-color: var(--red); font-weight: bold; color: #fff; }
-        tbody tr { border-bottom: 1px solid var(--red); }
+        table { width: 100%; border-spacing: 0; border-radius: 5px; margin-top: 10px; }
+        th, td { padding: 5px; color: #000; }
+        table.pass { border-bottom: 2px solid var(--green); }
+        table.fail { border-bottom: 2px solid var(--red); }
+        table thead>tr { font-weight: bold; color: #000; }
+        table.pass tbody tr { border-bottom: 1px solid var(--green); }
+        table.fail tbody tr { border-bottom: 1px solid var(--red); }
         tbody tr:nth-child(odd) { background-color: rgba(1, 1, 1, 0.05); }
         tbody tr:nth-child(even) { background-color: rgba(1, 1, 1, 0.1); }
         tbody tr:hover { background-color: rgba(0, 0, 0, 0); }
@@ -130,8 +133,39 @@
                     <summary>
                         {{description}}
                     </summary>
+                    {{#total_pass}}
+                    <table class="pass">
+                        <thead>
+                            <tr>
+                                <th>Class</th>
+                                <th>PredefinedType</th>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>GlobalId</th>
+                                <th>Tag</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#passed_entities}}
+                            <tr>
+                                <td>{{class}}</td>
+                                <td>{{predefined_type}}</td>
+                                <td>{{name}}</td>
+                                <td>{{description}}</td>
+                                <td>{{global_id}}</td>
+                                <td>{{tag}}</td>
+                            </tr>
+                            {{/passed_entities}}
+                            {{#has_omitted_passes}}
+                            <tr>
+                                <td colspan="7"> ... {{total_omitted_passes}} more passing elements not shown out of {{total_passed_entities}} total ...</td>
+                            </tr>
+                            {{/has_omitted_passes}}
+                        </tbody>
+                    </table>
+                    {{/total_pass}}
                     {{#total_fail}}
-                    <table>
+                    <table class="fail">
                         <thead>
                             <tr>
                                 <th>Class</th>
@@ -155,11 +189,11 @@
                                 <td>{{tag}}</td>
                             </tr>
                             {{/failed_entities}}
-                            {{#has_omitted}}
+                            {{#has_omitted_failures}}
                             <tr>
-                                <td colspan="7"> ... {{total_omitted}} more elements not shown out of {{total_entities}} total ...</td>
+                                <td colspan="7"> ... {{total_omitted_failures}} more failing elements not shown out of {{total_failed_entities}} total ...</td>
                             </tr>
-                            {{/has_omitted}}
+                            {{/has_omitted_failures}}
                         </tbody>
                     </table>
                     {{/total_fail}}

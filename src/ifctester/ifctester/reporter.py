@@ -96,7 +96,8 @@ class ResultsRequirement(TypedDict):
     value: str
     description: str
     status: bool
-    failed_entities: list[ResultsFailedEntity]
+    passed_entities: list[ResultsEntity]
+    failed_entities: list[ResultsEntity]
     total_applicable: int
     total_pass: int
     total_fail: int
@@ -104,8 +105,8 @@ class ResultsRequirement(TypedDict):
 
 
 # use different syntax because of the "class" key
-ResultsFailedEntity = TypedDict(
-    "ResultsFailedEntity",
+ResultsEntity = TypedDict(
+    "ResultsEntity",
     {
         "reason": str,
         "element": str,
@@ -339,6 +340,7 @@ class Json(Reporter):
                     value=value,
                     description=requirement.to_string("requirement", specification, requirement),
                     status=requirement.status,
+                    passed_entities=self.report_passed_entities(requirement),
                     failed_entities=self.report_failed_entities(requirement),
                     total_applicable=total_applicable,
                     total_pass=total_pass,
@@ -370,9 +372,27 @@ class Json(Reporter):
             requirements=requirements,
         )
 
-    def report_failed_entities(self, requirement: Facet) -> list[ResultsFailedEntity]:
+    def report_passed_entities(self, requirement: Facet) -> list[ResultsEntity]:
         return [
-            ResultsFailedEntity(
+            ResultsEntity(
+                {
+                    "element": e,
+                    "element_type": ifcopenshell.util.element.get_type(e),
+                    "class": e.is_a(),
+                    "predefined_type": ifcopenshell.util.element.get_predefined_type(e),
+                    "name": getattr(e, "Name", None),
+                    "description": getattr(e, "Description", None),
+                    "id": e.id(),
+                    "global_id": getattr(e, "GlobalId", None),
+                    "tag": getattr(e, "Tag", None),
+                }
+            )
+            for e in requirement.passed_entities
+        ]
+
+    def report_failed_entities(self, requirement: Facet) -> list[ResultsEntity]:
+        return [
+            ResultsEntity(
                 {
                     "reason": f["reason"],
                     "element": f["element"],
@@ -413,11 +433,17 @@ class Html(Json):
         entity_limit = 100
         for spec in self.results["specifications"]:
             for requirement in spec["requirements"]:
-                total = len(requirement["failed_entities"])
+                total_passed_entities = len(requirement["passed_entities"])
+                total_failed_entities = len(requirement["failed_entities"])
+                requirement["passed_entities"] = requirement["passed_entities"][0:entity_limit]
                 requirement["failed_entities"] = requirement["failed_entities"][0:entity_limit]
-                requirement["has_omitted"] = total > entity_limit
-                requirement["total_entities"] = total
-                requirement["total_omitted"] = total - entity_limit
+                requirement["total_failed_entities"] = total_failed_entities
+                requirement["total_omitted_failures"] = total_failed_entities - entity_limit
+                requirement["has_omitted_failures"] = total_failed_entities > entity_limit
+                requirement["total_passed_entities"] = total_passed_entities
+                requirement["total_omitted_passes"] = total_passed_entities - entity_limit
+                requirement["has_omitted_passes"] = total_passed_entities > entity_limit
+
 
     def to_string(self) -> str:
         import pystache
