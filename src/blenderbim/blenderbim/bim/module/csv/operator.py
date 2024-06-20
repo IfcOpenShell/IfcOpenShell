@@ -254,7 +254,7 @@ class ExportIfcCsv(bpy.types.Operator):
             schedule_creator = scheduler.Scheduler()
             schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
         if props.format == "web":
-            tool.Web.send_webui_data(ifc_csv.dataframe.to_csv(index=False), event="csv_data")
+            tool.Web.send_webui_data(extra_data=ifc_csv.dataframe.to_csv(index=False), event="csv_data")
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
