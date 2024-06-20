@@ -22,6 +22,30 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.helper import draw_attributes
 
 
+def draw_ResetAbsoluteCoordinates(props, layout):
+    col = layout.column(align=True)
+    col.prop(props, "ifc_patch_reset_absolute_coordinates_mode")
+    col.separator(factor=0.5)
+    col.prop(props, "ifc_patch_reset_absolute_coordinates_offset")
+
+    if props.ifc_patch_reset_absolute_coordinates_offset == "auto":
+        col.prop(
+            props,
+            "ifc_patch_reset_absolute_coordinates_threshold",
+            text="Threshold",
+        )
+    elif props.ifc_patch_reset_absolute_coordinates_offset == "manual":
+        col.prop(
+            props,
+            "ifc_patch_reset_absolute_coordinates_threshold",
+            text="Threshold",
+        )
+        row = col.row(align=True)
+        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_x", text="")
+        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_y", text="")
+        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_z", text="")
+
+
 class BIM_PT_patch(bpy.types.Panel):
     bl_label = "Patch"
     bl_idname = "BIM_PT_patch"
@@ -54,7 +78,10 @@ class BIM_PT_patch(bpy.types.Panel):
         row.prop(props, "ifc_patch_output")
         row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
 
-        if props.ifc_patch_args_attr:
+        if props.ifc_patch_recipes == "ResetAbsoluteCoordinates":
+            draw_ResetAbsoluteCoordinates(props, layout)
+
+        elif props.ifc_patch_args_attr:
             draw_attributes(props.ifc_patch_args_attr, layout)
         else:
             layout.row().prop(props, "ifc_patch_args")
