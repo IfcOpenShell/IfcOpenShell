@@ -150,6 +150,7 @@ class Web(blenderbim.core.tool.Web):
                 guid = operator_data["GlobalId"]
                 ele = tool.Ifc.get().by_guid(guid)
                 obj = tool.Ifc.get_object(ele)
+                bpy.context.view_layer.objects.active = obj
                 obj.select_set(True)
 
         return 1.0
