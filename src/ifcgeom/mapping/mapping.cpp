@@ -258,9 +258,20 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
 
 const IfcUtil::IfcBaseEntity* mapping::get_product_type(const IfcUtil::IfcBaseEntity* product_) {
     auto product = product_->as<IfcSchema::IfcProduct>();
+#ifdef SCHEMA_IfcObject_HAS_IsTypedBy
     auto rels = product->IsTypedBy();
+#else // IFC2X3.
+    auto rels = product->IsDefinedBy();
+#endif
     for (auto it = rels->begin(); it != rels->end(); ++it) {
+#ifdef SCHEMA_IfcObject_HAS_IsTypedBy
         auto rel = *it;
+#else // IFC2X3.
+        IfcSchema::IfcRelDefinesByType* rel = (*it)->as<IfcSchema::IfcRelDefinesByType>();
+        if (rel == nullptr) {
+            continue;
+        }
+#endif
         // Avoid segfault if RelatingType is unset.
         if (rel->get("RelatingType")->isNull()){
             break;
