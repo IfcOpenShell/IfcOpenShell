@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 
 
 def add_georeferencing(file: ifcopenshell.file) -> None:
@@ -42,6 +44,25 @@ def add_georeferencing(file: ifcopenshell.file) -> None:
 
         ifcopenshell.api.run("georeference.add_georeferencing", model)
     """
+    if file.schema == "IFC2X3":
+        if not (project := file.by_type("IfcProject")):
+            return
+        project = project[0]
+        if ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS"):
+            return
+        conversion = ifcopenshell.api.pset.add_pset(file, project, "ePSet_MapConversion")
+        crs = ifcopenshell.api.pset.add_pset(file, project, "ePSet_ProjectedCRS")
+        ifcopenshell.api.pset.edit_pset(file, crs, properties={"Name": ""})
+        ifcopenshell.api.pset.edit_pset(
+            file,
+            conversion,
+            properties={
+                "Eastings": file.createIfcLengthMeasure(0),
+                "Northings": file.createIfcLengthMeasure(0),
+                "OrthogonalHeight": file.createIfcLengthMeasure(0),
+            },
+        )
+        return
     if file.by_type("IfcProjectedCRS"):
         return
     source_crs = None

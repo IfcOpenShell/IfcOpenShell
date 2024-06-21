@@ -100,13 +100,36 @@ def edit_georeferencing(
 
 class Usecase:
     def execute(self):
+        self.set_true_north()
+        if self.file.schema == "IFC2X3":
+            if not (project := self.file.by_type("IfcProject")):
+                return
+            project = project[0]
+            if (crs := ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS")):
+                crs = self.file.by_id(crs["id"])
+                for k, v in self.settings["projected_crs"].items():
+                    if k == "Description":
+                        v = self.file.createIfcText(v)
+                    elif k == "Name":
+                        v = self.file.createIfcLabel(v)
+                    else:
+                        v = self.file.createIfcIdentifier(v)
+                ifcopenshell.api.pset.edit_pset(self.file, crs, properties=self.settings["projected_crs"])
+            if (conversion := ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")):
+                conversion = self.file.by_id(conversion["id"])
+                for k, v in self.settings["map_conversion"].items():
+                    if k in ("XAxisAbscissa", "XAxisOrdinate", "Scale"):
+                        v = self.file.createIfcReal(v)
+                    else:
+                        v = self.file.createIfcLengthMeasure(v)
+                ifcopenshell.api.pset.edit_pset(self.file, conversion, properties=self.settings["map_conversion"])
+            return
         map_conversion = self.file.by_type("IfcMapConversion")[0]
         projected_crs = self.file.by_type("IfcProjectedCRS")[0]
         for name, value in self.settings["map_conversion"].items():
             setattr(map_conversion, name, value)
         for name, value in self.settings["projected_crs"].items():
             setattr(projected_crs, name, value)
-        self.set_true_north()
 
     def set_true_north(self):
         if not self.settings["true_north"]:
