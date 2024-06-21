@@ -24,6 +24,7 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import multiprocessing
 from logging import Logger
+from typing import Union
 
 
 class Patcher:
@@ -65,6 +66,9 @@ class Patcher:
 
     def patch(self):
         context = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        if not context:
+            return
+
         elements = ifcopenshell.util.selector.filter_elements(self.file, self.query)
 
         if not elements:
@@ -72,17 +76,38 @@ class Patcher:
 
         settings = ifcopenshell.geom.settings()
         settings.set("context-ids", [context.id()])
-        iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=elements)
+
+        # Iterator can handle only products, so we filter out everything else (IfcTypeProducts).
+        products = []
+        non_products = []
+        for element in elements:
+            if element.is_a("IfcProduct"):
+                products.append(element)
+            else:
+                non_products.append(element)
+
+        def store_geometry(
+            element: ifcopenshell.entity_instance,
+            shape: Union[ifcopenshell.geom.ShapeType, ifcopenshell.geom.ShapeElementType],
+        ) -> None:
+            geometry = getattr(shape, "geometry", shape)
+            v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(geometry)]]
+            f = [ifcopenshell.util.shape.get_faces(geometry)]
+            replacements[element] = (v, f)
+
+        iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         replacements = {}
         if iterator.initialize():
-            while True:
-                shape = iterator.get()
+            for shape in iterator:
                 element = self.file.by_guid(shape.guid)
-                v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(shape.geometry)]]
-                f = [ifcopenshell.util.shape.get_faces(shape.geometry)]
-                replacements[element] = (v, f)
-                if not iterator.next():
-                    break
+                store_geometry(element, shape)
+
+        for element in non_products:
+            representation = ifcopenshell.util.representation.get_representation(element, context)
+            if not representation:
+                continue
+            shape = ifcopenshell.geom.create_shape(settings, representation)
+            store_geometry(element, shape)
 
         # Do the replacements outside the iterator to prevent messing up iterator state.
         for element, geometry in replacements.items():
@@ -95,7 +120,14 @@ class Patcher:
                 faces=f,
                 force_faceted_brep=self.force_faceted_brep,
             )
-            representations = element.Representation.Representations
-            representations = [r for r in representations if r.ContextOfItems != context]
-            representations.append(mesh)
-            element.Representation.Representations = representations
+            if element.is_a("IfcProduct"):
+                representations = element.Representation.Representations
+                representations = [r for r in representations if r.ContextOfItems != context]
+                representations.append(mesh)
+                element.Representation.Representations = representations
+            else:  # IfcTypeProduct.
+                rep_maps = element.RepresentationMaps
+                for rep_map in rep_maps:
+                    mapped_rep = rep_map.MappedRepresentation
+                    if mapped_rep.ContextOfItems == context:
+                        rep_map.MappedRepresentation = mesh
