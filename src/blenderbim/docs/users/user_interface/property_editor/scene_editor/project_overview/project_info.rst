@@ -62,9 +62,15 @@ Fields
 **Template**
   Choose between starting a completely blank project with no objects, or with preloaded object assets (such as wall types, beam types, etc) that you can use immediately.
 
-  The blank project is recommended for users who want to curate assets, whereas the IFC4 Demo Template is recommended for users wanting to experiment and learn with a basic set of objects.
+  - **Blank**: Start with an empty project and no predefined objects.
+  - **IFC4 Demo Template**: Includes a basic set of common object types like bunny, windows, doors, and other basic elements with complex geometry.
 
-  This also shows other larger object libraries for steel and countries available with the BlenderBIM Add-on. These contain hundreds of objects and are not recommended to be loaded as a template.
+  The blank project is recommended for users who want to curate assets,
+  whereas the IFC4 Demo Template is recommended for users wanting to experiment
+  and learn with a basic set of objects.
+
+  The BlenderBIM Add-on provides other larger libraries containing hundreds of objects,
+  but loading them as a template is not recommended due to their size and complexity.
 
   .. seealso::
 
@@ -148,8 +154,8 @@ Fields
 |EXPORT| **Saved**
   Displays the last saved date and time of the loaded IFC file. Example: "2024-06-10 13:15"
 
-**File path**
-  Shows the location of the loaded IFC file on the user's file system. Example: "/home/user/Docum...lenderbim/demo.ifc"
+**IFC File**
+  Shows the location of the loaded IFC file on the user's file system. Example: "/home/user/Docum...lenderbim/demo.ifc". If part of the path is hidden by ellipsis, hovering over it will reveal the full file path.
 
 Buttons
 ^^^^^^^
@@ -161,7 +167,8 @@ Buttons
   This button allows users to choose and load a different IFC file. Clicking the button will open a file browser dialog, enabling users to navigate to and select the desired IFC file.
 
 **Unload the IFC project**
-  This button allows users to unload the currently loaded IFC file from the Blender scene. Clicking the button will remove the IFC data and clear the "Project Info" panel, switching it to the Project Setup Mode.
+  This button allows users to unload the currently loaded IFC file from the Blender scene.
+  Clicking the button will remove the IFC data and clear the "Project Info" panel, returning it to the `Project Setup Mode`_.
 
 
 Project Info Editing Mode
@@ -170,7 +177,15 @@ Project Info Editing Mode
 .. figure:: images/interface_property-editor_project-overview_edit-header.png
    :alt: Project Info when edit header toggle is active
 
-Clicking the pencil button (which doesn't exist when in the Project Setup Mode) switches the "Project Info" panel to `editing mode <Project Info Editing Mode_>`_, allowing users to modify the IFC header. The IFC Schema version can't be edited. You can upgrade the IFC schema when opening a file though.
+Clicking the pencil button (which doesn't exist when in the Project Setup Mode) switches the "Project Info" panel to `editing mode <Project Info Editing Mode_>`_, allowing users to modify the IFC header.
+
+The header section has information about:
+  - the IFC version used
+  - the application that exported the file
+  - the date and time when the export was done
+  - other optional user defined fields like the author's name, company and authorizing person of the file
+
+The IFC Schema version cannot be edited in this mode. However, you have the option to upgrade the IFC schema when opening a file.
 
 Fields
 ^^^^^^
@@ -195,7 +210,7 @@ Fields
   Displays the email address of the organization.
 
 **Authoriser**
-  Shows the authoriser of the IFC file, if available. Example: "Nobody"
+  Shows the authoriser of the IFC file. Example: "Nobody". The authoriser typically represents the person or entity responsible for approving the IFC file and its contents. 
 
 Buttons
 ^^^^^^^
@@ -213,7 +228,7 @@ Advanced Loading Mode
 ---------------------
 
 .. seealso::
-  :ref:`users/dealing_with_large_models:Filtered model loading`.
+  :ref:`users/advanced/dealing_with_large_models:Filtered model loading`.
 
 The Advanced Loading Mode is an additional mode that is available when loading an IFC file using the **Enable Advanced Mode** checkbox.
 
@@ -263,17 +278,64 @@ Fields
   When "Whitelist" or "Blacklist" is chosen, users can input a custom query in the "Filter Query" field to define the specific criteria for filtering elements.
 
 **Deflection Tolerance**
+  Maximum distance between a curved surface and its tessellation (mesh approximation).
+  Higher values result in a coarser tessellation, while lower values produce a finer mesh approximation.
+
+  .. seealso
+  
+    `IfcOpenShell deflection_tolerance <https://docs.ifcopenshell.org/ifcopenshell/geometry_settings.html#deflection-tolerance>`__
 
 **Angular Tolerance**
+  Maximum angle between adjacent face normals in a tessellation (mesh approximation).
+  Higher values result in a smoother tessellation, while lower values may produce more angular or faceted surfaces.
+
+  .. seealso
+  
+    `IfcOpenShell angular_tolerance <https://docs.ifcopenshell.org/ifcopenshell/geometry_settings.html#angular-tolerance>`__
+
 
 **Void Limit**
+  The maximum number of voids or openings an element can have before being considered excessive and skipped during the loading process.
+  Elements with a number of openings exceeding the specified limit will be excluded from the loaded model,
+  and a warning message will be displayed in the console, listing the skipped elements.
+
+  Openings slowdown the rendering process, so lower values result in improved performance.
 
 **Distance Limit**
 
-**False Origin**
+  Maximum distance between vertices in a tessellation (mesh approximation).
+  Higher values result in a coarser mesh, while lower values produce a denser mesh with more vertices.
+
+**False Origin Mode**
+  Sets the origin point or reference point for the loaded model geometry. This can be useful for aligning or positioning the model within the Blender scene.
+
+  There are three modes available for setting the False Origin:
+
+  - **Automatic**: An automatic false origin will be detected and applied based on the geometry with large coordinate values.
+    This mode is useful when the model's coordinates are extremely large or outside the typical Blender coordinate range.
+
+  - **Manual**: You can specify the false origin coordinates manually.
+    This mode allows you to enter the desired origin coordinates in the project's units (e.g., meters, millimeters) where the Blender origin (0,0,0) should be positioned.
+
+  - **Disabled**: The model will be loaded with its original local coordinates, without any false origin adjustments.
+    This mode is suitable when the model's coordinates are within the standard Blender coordinate range and do not require any origin shifting.
+
+  When the "Manual" mode is selected, an additional field **False Origin** will appear,
+  allowing you to enter the desired false origin coordinates in the project's units, separated by commas (e.g., "20.1,10.9,-3.1").
+
+  Applying a false origin can help prevent precision issues and ensure accurate positioning and scaling of the model within the Blender scene,
+  especially when working with large-scale projects or models with coordinates outside the typical Blender range.
 
 **Element Range**
-  Users can define a range of elements to load based on their index within the IFC file. This is useful for loading a specific subset of elements when dealing with large models.
+  Users can define a range of elements to load based on their index within the IFC file.
+  This is useful for loading a specific subset of elements when dealing with large models.
+
+  - **Element Offset**: Specifies the starting index of the elements to be loaded. 
+  - **Element Limit**: Specifies the maximum number of elements to be loaded from the specified offset.
+
+  For example, if the offset is set to 10 and the limit is set to 50, only 50 elements will be loaded, starting from the 11th element.
+
+  If no offset or limit is specified, all elements within the specified filter criteria will be loaded.
 
 
 Checkboxes

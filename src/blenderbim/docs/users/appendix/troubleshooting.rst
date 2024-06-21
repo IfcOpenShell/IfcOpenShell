@@ -44,10 +44,10 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
    enabled with factory settings.
 
    To quickly test in a clean environment, first :ref:`find your Blender
-   configuration folder<users/installation:where is the add-on installed?>`.
+   configuration folder<installation_location>`.
    Rename the folder from ``X.XX`` to something else like ``X.XX_backup``, then
    restart Blender and try follow the :doc:`installation
-   instructions<installation>` again.
+   instructions</users/quickstart/installation>` again.
 
    If this fixes your issue, consider disabling other add-ons one by one until
    you find a conflict as a next step to isolating the issue.
