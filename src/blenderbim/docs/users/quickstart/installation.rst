@@ -1,6 +1,11 @@
 Installation
 ============
 
+.. raw:: html
+
+    <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/videoseries?list=PLMDcOjMJYxUPHHvEHqAsOuBdSPsp6or32" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+
+
 1. **Download and install Blender**
 
    Blender is a free and open-source program for 3D authoring. It works on
@@ -25,7 +30,7 @@ Installation
 
 .. warning::
 
-   If you are not using Blender version >=4.1, please follow the **Unstable installation** instructions. :doc:`Read more <../devs/installation>`
+   If you are not using Blender version >=4.1, please follow the **Unstable installation** instructions. :doc:`Read more </devs/installation>`
 
 3. **Install the BlenderBIM Add-on**
 
@@ -54,7 +59,7 @@ You can enable add-ons permanently by using ``Save User Settings`` from the Addo
 
 .. seealso::
 
-    If you are a poweruser, you may be interested in the **Unstable installation** to help with testing. :doc:`Read more <../devs/installation>`
+    If you are a poweruser, you may be interested in the **Unstable installation** to help with testing. :doc:`Read more </devs/installation>`
 
 .. _where is the add-on installed:
 
@@ -83,6 +88,9 @@ installed>`.
     It is important to follow the sequence of disabling, restarting, then removing.
     If you do not restart Blender, the add-on will fail to remove correctly, and you
     will need to uninstall manually.
+
+
+.. _installation_location:
 
 Where is the add-on installed?
 ------------------------------

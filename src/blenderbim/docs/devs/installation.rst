@@ -15,7 +15,7 @@ Unstable installation
 that they are typically updated every day. Simply download a daily build from
 the `GitHub releases page
 <https://github.com/IfcOpenShell/IfcOpenShell/releases>`__, then follow the
-usual :doc:`installation instructions</users/installation>`.
+usual :doc:`installation instructions</users/quickstart/installation>`.
 
 You will need to choose which build to download.
 
