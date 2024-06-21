@@ -32,10 +32,10 @@ def add_mesh_representation(
     vertices: list[COORD_3D],
     # A list of edges, represented by vertex index pairs
     # ... where itemN = [(0, 1), (1, 2), (v1, v2), ...]
-    edges: list[tuple[int, int]],
+    edges: list[tuple[int, int]] = None,
     # A list of polygons, represented by vertex indices
     # ... where itemN = [(0, 1, 2), (5, 4, 2, 3), (v1, v2, v3, ... vN), ...]
-    faces: list[list[int]],
+    faces: list[list[int]] = None,
     # Optionally apply a vector offset to all coordinates
     cooridnate_offset: Optional[COORD_3D] = None,
     # A scale factor to apply for all vectors in case the unit is different
@@ -43,6 +43,8 @@ def add_mesh_representation(
     # Force using IfcFacetedBreps instead of IfcPolygonalFaceSets
     force_faceted_brep: bool = False,
 ) -> ifcopenshell.entity_instance:
+    # TODO: Support edges without faces.
+    assert faces is not None, f"Currently 'faces' argument is not optional."
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
