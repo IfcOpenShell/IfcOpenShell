@@ -185,7 +185,7 @@ You can automate model processing using this command (~5% speedup):
 
 .. code-block:: bash
 
-    $ blender -b -P headless_import.py
+    blender -b -P headless_import.py
 
 The ``headless_import.py`` script contains instructions on how to configure
 model loading settings.

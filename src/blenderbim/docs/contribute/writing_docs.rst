@@ -88,10 +88,10 @@ aware of should be bolded, titlecased, and used consistently. You *may*
 use italics to emphasize words or phrases. Inline code must be ``quoted`` and
 longer code snippets may use code blocks.
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ cd /path/to/blenderbim
-    $ ls
+    cd /path/to/blenderbim
+    ls
 
 Be sure to specify the language to enable syntax highlighting.
 
@@ -149,19 +149,19 @@ If you want to build the documentation locally, the documentation system uses
 `Sphinx <https://www.sphinx-doc.org/en/master/>`_. First, install the theme and
 theme dependencies:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ pip install furo
-    $ pip install sphinx-autoapi
-    $ pip install sphinx-copybutton
+    pip install furo
+    pip install sphinx-autoapi
+    pip install sphinx-copybutton
 
 Now you can generate the documentation:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ cd /path/to/ifcopenshell/src/blenderbim/docs/
-    $ make html
-    $ cd _build/html
-    $ python -m http.server
+    cd /path/to/ifcopenshell/src/blenderbim/docs/
+    make html
+    cd _build/html
+    python -m http.server
 
 You will now have a local webserver running hosting the documentation.

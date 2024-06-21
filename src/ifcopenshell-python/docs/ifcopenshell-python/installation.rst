@@ -99,9 +99,9 @@ Conda
 Docker
 ------
 
-.. code-block::
+.. code-block:: bash
 
-    $ docker run -it aecgeeks/ifcopenshell python3 -c 'import ifcopenshell; print(ifcopenshell.version)'
+    docker run -it aecgeeks/ifcopenshell python3 -c 'import ifcopenshell; print(ifcopenshell.version)'
 
 .. note::
 
@@ -140,15 +140,15 @@ Gateways, etc.
 
 5. Build the Docker image:
 
-   .. code-block::
+   .. code-block:: bash
 
-      $ docker build -t lambda-ifcopenshell .
+      docker build -t lambda-ifcopenshell .
 
 6. Run the Docker container:
 
-   .. code-block::
+   .. code-block:: bash
 
-      $ docker run lambda-ifcopenshell
+      docker run lambda-ifcopenshell
 
 7. Test lambda locally by following the `AWS guide on testing Lambda container
    images locally

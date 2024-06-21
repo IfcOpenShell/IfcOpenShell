@@ -17,7 +17,7 @@ Source installation
 Here is a minimal example of how to use IfcPatch as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcpatch -h
 
@@ -45,10 +45,10 @@ This recipe expects one argument, which uses the
 :ref:`ifcopenshell-python/selector_syntax:filtering elements` syntax.  In this
 example, we'll extract out all `IfcWall` elements.
 
-::
+.. code-block:: bash
 
-    $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
-    $ cat output.ifc
+    ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
+    cat output.ifc
 
 Here is a minimal example of how to use IfcPatch as a library:
 
@@ -66,16 +66,16 @@ Here is a minimal example of how to use IfcPatch as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcpatch='python -m ifcpatch'
+    alias ifcpatch='python -m ifcpatch'
 
 Alternatively, you can package it as an executable.
 
-::
+.. code-block:: bash
 
-    $ python make.py
-    $ ./dist/ifcpatch
+    python make.py
+    ./dist/ifcpatch
 
 Patch recipes
 -------------
