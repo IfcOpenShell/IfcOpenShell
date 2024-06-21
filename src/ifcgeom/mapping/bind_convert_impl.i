@@ -8,7 +8,7 @@
 		try { \
 			item = map_impl(inst->as<IfcSchema::T>()); \
 			if (item != nullptr) { \
-				if (!(item->instance && inst->as<IfcSchema::IfcMaterial>())) { \
+				if (item->instance == nullptr) { \
 					item->instance = inst; \
 				} \
 				try { \
