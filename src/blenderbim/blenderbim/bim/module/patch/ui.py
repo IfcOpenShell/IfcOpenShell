@@ -22,28 +22,57 @@ from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.helper import draw_attributes
 
 
+def has_digits(text):
+    """Checks if a string contains no digits (0-9) and float decimal."""
+    if "," in text:
+        return False
+    return any(char.isdigit() or char == "." for char in text)
+
+
 def draw_ResetAbsoluteCoordinates(props, layout):
     col = layout.column(align=True)
     col.prop(props, "ifc_patch_reset_absolute_coordinates_mode")
     col.separator(factor=0.5)
     col.prop(props, "ifc_patch_reset_absolute_coordinates_offset")
 
+    col_digit = layout.column(align=True)
+
     if props.ifc_patch_reset_absolute_coordinates_offset == "auto":
-        col.prop(
+        col_digit.alert = not has_digits(
+            props.ifc_patch_reset_absolute_coordinates_threshold
+        )
+        col_digit.prop(
             props,
             "ifc_patch_reset_absolute_coordinates_threshold",
             text="Threshold",
         )
     elif props.ifc_patch_reset_absolute_coordinates_offset == "manual":
-        col.prop(
+        col_digit.alert = not has_digits(
+            props.ifc_patch_reset_absolute_coordinates_threshold
+        )
+        col_digit.prop(
             props,
             "ifc_patch_reset_absolute_coordinates_threshold",
             text="Threshold",
         )
-        row = col.row(align=True)
-        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_x", text="")
-        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_y", text="")
-        row.prop(props, "ifc_patch_reset_absolute_coordinates_offset_z", text="")
+        row = col_digit.row(align=True)
+        row_x = row.row()
+        row_x.alert = not has_digits(
+            props.ifc_patch_reset_absolute_coordinates_offset_x
+        )
+        row_x.prop(props, "ifc_patch_reset_absolute_coordinates_offset_x", text="")
+
+        row_y = row.row()
+        row_y.alert = not has_digits(
+            props.ifc_patch_reset_absolute_coordinates_offset_y
+        )
+        row_y.prop(props, "ifc_patch_reset_absolute_coordinates_offset_y", text="")
+
+        row_z = row.row()
+        row_z.alert = not has_digits(
+            props.ifc_patch_reset_absolute_coordinates_offset_z
+        )
+        row_z.prop(props, "ifc_patch_reset_absolute_coordinates_offset_z", text="")
 
 
 class BIM_PT_patch(bpy.types.Panel):
@@ -83,7 +112,9 @@ class BIM_PT_patch(bpy.types.Panel):
 
         elif props.ifc_patch_args_attr:
             draw_attributes(props.ifc_patch_args_attr, layout)
+
         else:
             layout.row().prop(props, "ifc_patch_args")
+
         op = layout.operator("bim.execute_ifc_patch")
         op.use_json_for_args = len(props.ifc_patch_args_attr) == 0
