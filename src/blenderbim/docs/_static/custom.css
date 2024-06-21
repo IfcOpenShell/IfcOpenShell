@@ -78,3 +78,14 @@ img.icon {
     font-size: small;
     color: #808080;
 }
+
+
+
+/* Start section cards. */
+.toc-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-gap: 20px;
+    list-style-type: none;
+    margin-bottom: 24px;
+}
