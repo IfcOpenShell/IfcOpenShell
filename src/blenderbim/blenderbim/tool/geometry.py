@@ -686,16 +686,25 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation
 
     @classmethod
-    def unresolve_type_representation(cls, representation, occurence):
+    def unresolve_type_representation(
+        cls, representation: ifcopenshell.entity_instance, occurence: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         if not ifcopenshell.util.element.get_type(occurence):
             return representation
 
         if representation.RepresentationType == "MappedRepresentation":
             return representation
 
+        context = representation.ContextOfItems
         for mapped_representation in occurence.Representation.Representations:
+            if mapped_representation.ContextOfItems != context:
+                continue
             if cls.resolve_mapped_representation(mapped_representation) == representation:
                 return mapped_representation
+
+        raise Exception(
+            f"Couldn't find any representation matching type representation {representation} in occurrence {occurence}."
+        )
 
     @classmethod
     def run_geometry_update_representation(cls, obj=None):
