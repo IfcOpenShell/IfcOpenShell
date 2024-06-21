@@ -56,7 +56,7 @@ class Patcher:
         .. code:: python
 
             # Set the current origin 0,0,0 to correlate to map coordinates 1000,1000,0 and a grid north of 15.
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetFalseOrigin", "arguments": [0, 0, 0, 1000, 1000, 0, 15, 0]})
+            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetFalseOrigin", "arguments": ["EPSG:1234", 0, 0, 0, 1000, 1000, 0, 15, 0]})
         """
         self.src = src
         self.file = file
