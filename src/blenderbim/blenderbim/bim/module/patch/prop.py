@@ -47,13 +47,19 @@ def get_ifcpatch_recipes(self, context):
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         ifcpatchrecipes_enum.clear()
-        ifcpatch_path = Path(importlib.util.find_spec("ifcpatch").submodule_search_locations[0])
+        ifcpatch_path = Path(
+            importlib.util.find_spec("ifcpatch").submodule_search_locations[0]
+        )
         for filename in ifcpatch_path.joinpath("recipes").glob("*.py"):
             f = str(filename.stem)
             if f == "__init__":
                 continue
-            docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
-            ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
+            docs = ifcpatch.extract_docs(
+                f, "Patcher", "__init__", ("src", "file", "logger", "args")
+            )
+            ifcpatchrecipes_enum.append(
+                (f, f, docs.get("description", "") if docs else "")
+            )
     return sorted(ifcpatchrecipes_enum, key=lambda x: x[0])
 
 
@@ -76,7 +82,7 @@ def update_coordinate_threshold(self, context):
     offset = props.ifc_patch_reset_absolute_coordinates_offset
     offset_threshold = props.ifc_patch_reset_absolute_coordinates_threshold
     threshold = props.ifc_patch_args_attr.get("d")
-    threshold.string_value = offset_threshold if offset != "select" else "0"
+    threshold.set_value(offset_threshold if offset != "select" else "0")
 
 
 def update_coordinate_offset(self, context):
@@ -87,13 +93,15 @@ def update_coordinate_offset(self, context):
     offset_x = props.ifc_patch_reset_absolute_coordinates_offset_x
     offset_y = props.ifc_patch_reset_absolute_coordinates_offset_y
     offset_z = props.ifc_patch_reset_absolute_coordinates_offset_z
-    x.string_value = offset_x
-    y.string_value = offset_y
-    z.string_value = offset_z
+    x.set_value(offset_x)
+    y.set_value(offset_y)
+    z.set_value(offset_z)
 
 
 class BIMPatchProperties(PropertyGroup):
-    ifc_patch_recipes: EnumProperty(items=get_ifcpatch_recipes, name="Recipes", update=update_ifc_patch_recipe)
+    ifc_patch_recipes: EnumProperty(
+        items=get_ifcpatch_recipes, name="Recipes", update=update_ifc_patch_recipe
+    )
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
     ifc_patch_args: StringProperty(default="", name="Arguments")
