@@ -463,9 +463,14 @@ def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity
     """
     if element.is_a("IfcTypeObject"):
         return element
-    elif (is_typed_by := getattr(element, "IsTypedBy", None)) is not None and is_typed_by:
-        return is_typed_by[0].RelatingType
-    elif (is_defined_by := getattr(element, "IsDefinedBy", None)) is not None and is_defined_by:  # IFC2X3
+
+    schema = element.file.schema
+    if schema != "IFC2X3":
+        if is_typed_by := element.IsTypedBy:
+            return is_typed_by[0].RelatingType
+        return
+
+    if is_defined_by := element.IsDefinedBy:  # IFC2X3
         for relationship in is_defined_by:
             if relationship.is_a("IfcRelDefinesByType"):
                 return relationship.RelatingType
