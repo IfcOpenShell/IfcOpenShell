@@ -65,7 +65,7 @@ dependencies:
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifccsv -h
     usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [--concat CONCAT] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]]

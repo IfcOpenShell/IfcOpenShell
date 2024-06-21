@@ -24,21 +24,21 @@ If you want to build the documentation locally, the documentation system uses
 `Sphinx <https://www.sphinx-doc.org/en/master/>`_. First, install Sphinx and
 dependencies:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ pip install sphinx
-    $ pip install sphinx-autoapi
-    $ pip install sphinx-copybutton
-    $ pip install furo
+    pip install sphinx
+    pip install sphinx-autoapi
+    pip install sphinx-copybutton
+    pip install furo
 
 Now you can generate the documentation:
 
-.. code-block:: console
+.. code-block:: bash
 
-    $ cd /path/to/ifcopenshell/src/ifcopenshell-python/docs/
-    $ make html
-    $ cd _build/html
-    $ python -m http.server
+    cd /path/to/ifcopenshell/src/ifcopenshell-python/docs/
+    make html
+    cd _build/html
+    python -m http.server
 
 You will now have a local webserver running hosting the documentation.
 

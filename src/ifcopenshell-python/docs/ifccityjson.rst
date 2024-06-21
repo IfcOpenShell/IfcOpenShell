@@ -38,7 +38,7 @@ documentation:
 
 The example file that could be used is example/3D_BAG_example.json
 
-.. code-block:: console
+.. code-block:: bash
 
     python ifccityjson.py -i example/geometries.json -o output.ifc -n identificatie
 

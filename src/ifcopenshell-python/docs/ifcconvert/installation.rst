@@ -43,9 +43,9 @@ Conda
 Docker
 ------
 
-.. code-block::
+.. code-block:: bash
 
-    $ docker run -it aecgeeks/ifcopenshell IfcConvert
+    docker run -it aecgeeks/ifcopenshell IfcConvert
 
 .. note::
 

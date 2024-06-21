@@ -71,23 +71,23 @@ Just symbolically link the IfcSverchok add-on files to your Git repository. If
 you're on Windows, use ``mklink`` instead. This allows us to code in our Git
 repository, and see the changes in our Blender installation.
 
-::
+.. code-block:: bash
 
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
+    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    cd IfcOpenShell
 
     # Link the repository to blender
-    $ ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
+    ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
     
 On Windows:
 
-::
+.. code-block:: bat
 
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
+    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    cd IfcOpenShell
 
     # Link the repository to blender
-    $ mklink /D "\path\to\blender\2.XX\scripts\addons\ifcsverchok" "\path\to\src\ifcsverchok"
+    mklink /D "\path\to\blender\2.XX\scripts\addons\ifcsverchok" "\path\to\src\ifcsverchok"
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you

@@ -34,7 +34,7 @@ Source installation
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcdiff -h
     usage: ifcdiff.py [-h] [-o OUTPUT] [-r RELATIONSHIPS] old new
@@ -72,9 +72,9 @@ Here is a minimal example of how to use IfcDiff as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcdiff='python -m ifcdiff'
+    alias ifcdiff='python -m ifcdiff'
 
 Using the BlenderBIM Add-on
 ---------------------------

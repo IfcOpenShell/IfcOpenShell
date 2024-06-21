@@ -14,7 +14,7 @@ These tests use ``pytest`` as the test framework and runner, so install it:
 
 .. code-block:: bash
 
-    $ pip install pytest
+    pip install pytest
 
 All development is expected to use test driven development, and so we expect
 test coverage to be 100% where it is technically possible to test.
@@ -42,10 +42,10 @@ similar.
 
 .. code-block:: bash
 
-    $ cd src/blenderbim/
-    $ make test-core
+    cd src/blenderbim/
+    make test-core
     # If you're on Windows, and don't want to use make, use:
-    $ pytest -p no:pytest-blender test/core
+    pytest -p no:pytest-blender test/core
 
 Tool tests
 ----------
@@ -59,9 +59,9 @@ following dependencies:
 
 .. code-block:: bash
 
-    $ pip install pytest-blender
+    pip install pytest-blender
     # Check that "Blender" is in your system's path
-    $ blender
+    blender
 
 On Windows, you can add Blender to the system path by doing:
 
@@ -104,12 +104,12 @@ of all concrete functions.
 
 .. code-block:: bash
 
-    $ cd src/blenderbim/
-    $ make test-tool # Test everything
-    $ make test-tool MODULE=foo # Only test a single module
+    cd src/blenderbim/
+    make test-tool # Test everything
+    make test-tool MODULE=foo # Only test a single module
     # If you're on Windows, and don't want to use make, use:
-    $ pytest test/tool # Test everything
-    $ pytest test/tool/test_foo.py # Only test a single module
+    pytest test/tool # Test everything
+    pytest test/tool/test_foo.py # Only test a single module
 
 BlenderBIM Add-on tests
 -----------------------
@@ -128,9 +128,9 @@ test georeferencing features: ``Edit > Preferences > Add-ons`` and enable
 
 .. code-block:: bash
 
-    $ cd src/blenderbim/
-    $ make test-bim # Test everything
-    $ make test-bim MODULE=foo # Only test a single module
+    cd src/blenderbim/
+    make test-bim # Test everything
+    make test-bim MODULE=foo # Only test a single module
     # If you're on Windows, and don't want to use make, use:
-    $ pytest test/bim # Test everything
-    $ pytest test/bim -m "foo" ./ --maxfail=1 # Only test a single module
+    pytest test/bim # Test everything
+    pytest test/bim -m "foo" ./ --maxfail=1 # Only test a single module

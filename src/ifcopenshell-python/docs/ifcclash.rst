@@ -17,7 +17,7 @@ Source installation
 Here is a minimal example of how to use IfcPatch as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcclash -h
 
@@ -77,10 +77,10 @@ defined with data sources.
 Once your have your JSON description of your clashes, usage is like any other
 CLI app.
 
-::
+.. code-block:: bash
 
-    $ ifcclash clash_sets.json
-    $ cat output.json
+    ifcclash clash_sets.json
+    cat output.json
 
 Here is a minimal example of how to use IfcClash as a library:
 
@@ -106,13 +106,13 @@ Here is a minimal example of how to use IfcClash as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcclash='python -m ifcclash'
+    alias ifcclash='python -m ifcclash'
 
 Alternatively, you can package it as an executable.
 
 ::
 
-    $ python make.py
-    $ ./dist/ifcclash
+    python make.py
+    ./dist/ifcclash

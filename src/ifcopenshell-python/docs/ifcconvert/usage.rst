@@ -7,9 +7,9 @@ Example commands
 For the most basic usage, specify an input and output file. The file extension
 you provide for the output file determines what format the IFC is converted to.
 
-::
+.. code-block:: bash
 
-    $ IfcConvert /path/to/input.ifc /path/to/output.obj
+    IfcConvert /path/to/input.ifc /path/to/output.obj
 
 .. tip::
 
@@ -19,37 +19,37 @@ you provide for the output file determines what format the IFC is converted to.
 For any conversion, it is recommended to use multiple cores to speed up
 processing:
 
-::
+.. code-block:: bash
 
     # Change "7" to the number of CPU cores you have then plus one.
-    $ IfcConvert -j 7 /path/to/input.ifc /path/to/output.dae
+    IfcConvert -j 7 /path/to/input.ifc /path/to/output.dae
 
 By default, units are converted to meters. If you want to retain the original units:
 
-::
+.. code-block:: bash
 
-    $ IfcConvert --convert-back-units /path/to/input.ifc /path/to/output.stp
+    IfcConvert --convert-back-units /path/to/input.ifc /path/to/output.stp
 
 If your IFC uses large map coordinates and your desired format cannot handle it:
 
-::
+.. code-block:: bash
 
-    $ IfcConvert --center-model /path/to/input.ifc /path/to/output.glb
+    IfcConvert --center-model /path/to/input.ifc /path/to/output.glb
     # Alternatively:
-    $ IfcConvert --center-model-geometry /path/to/input.ifc /path/to/output.glb
+    IfcConvert --center-model-geometry /path/to/input.ifc /path/to/output.glb
     # Or you can specify a manual offset in X;Y;Z format
-    $ IfcConvert --model-offset "10000;10000;0" /path/to/input.ifc /path/to/output.glb
+    IfcConvert --model-offset "10000;10000;0" /path/to/input.ifc /path/to/output.glb
 
 IfcConvert can be used to convert only specific elements.
 
-::
+.. code-block:: bash
 
     # Convert only walls and slabs
-    $ IfcConvert  --include entities IfcWall IfcSlab -v /path/to/input.ifc /path/to/output.glb
+    IfcConvert  --include entities IfcWall IfcSlab -v /path/to/input.ifc /path/to/output.glb
     # Convert only these two particular elements filtered by GlobalId
-    $ IfcConvert  --include attribute GlobalId 1yETHMphv6LwABqR4Pbs5g attribute GlobalId 1yETHMphv6LwABqR0Pbs5g -v /path/to/input.ifc /path/to/output.glb
+    IfcConvert  --include attribute GlobalId 1yETHMphv6LwABqR4Pbs5g attribute GlobalId 1yETHMphv6LwABqR0Pbs5g -v /path/to/input.ifc /path/to/output.glb
     # Convert all objects on level 1. Note how "+" is used.
-    $ IfcConvert  --include+=attribute Name "Level 1" -v /path/to/input.ifc /path/to/output.glb
+    IfcConvert  --include+=attribute Name "Level 1" -v /path/to/input.ifc /path/to/output.glb
 
 .. warning::
 
@@ -58,15 +58,15 @@ IfcConvert can be used to convert only specific elements.
 
 IfcConvert can also be used to generate SVG floorplans:
 
-::
+.. code-block:: bash
 
-    $ IfcConvert /path/to/input.ifc -yv /path/to/output.svg \
+    IfcConvert /path/to/input.ifc -yv /path/to/output.svg \
         -j 7 --exclude entities IfcOpeningElement IfcSpace
 
 CLI Manual
 ----------
 
-::
+.. code-block:: console
 
     $ IfcConvert -h
 
