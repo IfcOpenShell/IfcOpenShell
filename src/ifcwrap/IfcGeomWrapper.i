@@ -200,31 +200,12 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
-		// @todo for some reason we have the IfcStyledItem/IfcMaterial here, but
-		// BlenderBIM expects IfcSurfaceStyle/IfcMaterial
 		if (self->instance == nullptr) {
 			return 0;
 		}
 		const IfcUtil::IfcBaseEntity* ent;
 		if ((ent = self->instance->as<IfcUtil::IfcBaseEntity>()) == nullptr) {
 			return 0;
-		}
-		if (ent->declaration().name() == "IfcStyledItem") {
-			aggregate_of_instance::ptr styles = *ent->get("Styles");
-			if (styles->size() == 1) {
-				ent = (*styles->begin())->as<IfcUtil::IfcBaseEntity>();
-				// < IFC4X3.
-				if (ent->declaration().name() == "IfcPresentationStyleAssignment") {
-					aggregate_of_instance::ptr styles = *ent->get("Styles");
-					if (styles->size() == 1) {
-						ent = (*styles->begin())->as<IfcUtil::IfcBaseEntity>();
-					} else {
-						return 0;
-					}
-				}
-			} else {
-				return 0;
-			}
 		}
 		return ent->data().id();
 	}
