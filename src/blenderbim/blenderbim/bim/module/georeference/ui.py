@@ -93,13 +93,13 @@ class BIM_PT_gis(Panel):
             row.label(text="Blender Session Origin", icon="TRACKING_REFINE_FORWARDS")
 
             row = self.layout.row(align=True)
-            row.label(text="Eastings")
+            row.label(text=f"Eastings ({GeoreferenceData.data['local_unit_symbol']})")
             row.label(text=props.blender_eastings)
             row = self.layout.row(align=True)
-            row.label(text="Northings")
+            row.label(text=f"Northings ({GeoreferenceData.data['local_unit_symbol']})")
             row.label(text=props.blender_northings)
             row = self.layout.row(align=True)
-            row.label(text="OrthogonalHeight")
+            row.label(text=f"OrthogonalHeight ({GeoreferenceData.data['local_unit_symbol']})")
             row.label(text=props.blender_orthogonal_height)
             row = self.layout.row(align=True)
             row.label(text="XAxisAbscissa")
@@ -133,7 +133,10 @@ class BIM_PT_gis(Panel):
             if value is None:
                 continue
             row = self.layout.row(align=True)
-            row.label(text=key)
+            if key in ("Eastings", "Northings", "OrthogonalHeight"):
+                row.label(text=f"{key} ({GeoreferenceData.data['map_unit_symbol']})")
+            else:
+                row.label(text=key)
             row.label(text=str(value))
             if key == "XAxisOrdinate":
                 row = self.layout.row(align=True)

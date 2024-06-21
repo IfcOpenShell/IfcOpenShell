@@ -38,6 +38,8 @@ class GeoreferenceData:
         cls.data["projected_crs"] = cls.projected_crs()
         cls.data["true_north"] = cls.true_north()
         cls.data["true_derived_angle"] = cls.true_derived_angle()
+        cls.data["local_unit_symbol"] = cls.local_unit_symbol()
+        cls.data["map_unit_symbol"] = cls.map_unit_symbol()
         cls.is_loaded = True
 
     @classmethod
@@ -131,3 +133,20 @@ class GeoreferenceData:
     def true_derived_angle(cls):
         if cls.data["true_north"]:
             return str(round(ifcopenshell.util.geolocation.yaxis2angle(*cls.data["true_north"][0:2]), 3))
+
+    @classmethod
+    def local_unit_symbol(cls):
+        if not (unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")):
+            return "n/a"
+        return ifcopenshell.util.unit.get_unit_symbol(unit)
+
+    @classmethod
+    def map_unit_symbol(cls):
+        if tool.Ifc.get().schema == "IFC2X3":
+            return cls.local_unit_symbol()
+        if crs := tool.Ifc.get().by_type("IfcProjectedCRS"):
+            crs = crs[0]
+            if not (unit := crs.MapUnit):
+                return cls.local_unit_symbol()
+            return ifcopenshell.util.unit.get_unit_symbol(unit)
+        return "n/a"
