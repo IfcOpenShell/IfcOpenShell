@@ -326,6 +326,9 @@ def create_shape(settings: settings, inst: entity_instance, repr: Optional[entit
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
 
+    To create a representation for IfcTypeProduct you need to provide use `create_shape(settings, representation)`
+    (representation is provided as `inst` argument).
+
     example:
 
     settings = ifcopenshell.geom.settings()
