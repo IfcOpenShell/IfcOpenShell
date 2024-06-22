@@ -423,7 +423,7 @@ class Georeference:
     def get_angle(cls, type): pass
     def get_coordinates(cls, io): pass
     def get_cursor_location(cls): pass
-    def get_map_conversion_attributes(cls): pass
+    def get_coordinate_operation_attributes(cls): pass
     def get_projected_crs_attributes(cls): pass
     def get_true_north_attributes(cls): pass
     def import_map_conversion(cls): pass

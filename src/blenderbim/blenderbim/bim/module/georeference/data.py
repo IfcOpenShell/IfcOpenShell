@@ -20,6 +20,7 @@
 import bpy
 import ifcopenshell.util.geolocation
 import blenderbim.tool as tool
+from ifcopenshell.util.doc import get_entity_doc
 
 
 def refresh():
@@ -32,8 +33,9 @@ class GeoreferenceData:
 
     @classmethod
     def load(cls):
+        cls.data["coordinate_operation_class"] = cls.coordinate_operation_class()
         cls.data["blender_derived_angle"] = cls.blender_derived_angle()
-        cls.data["map_conversion"] = cls.map_conversion()
+        cls.data["coordinate_operation"] = cls.coordinate_operation()
         cls.data["map_derived_angle"] = cls.map_derived_angle()
         cls.data["projected_crs"] = cls.projected_crs()
         cls.data["true_north"] = cls.true_north()
@@ -41,6 +43,14 @@ class GeoreferenceData:
         cls.data["local_unit_symbol"] = cls.local_unit_symbol()
         cls.data["map_unit_symbol"] = cls.map_unit_symbol()
         cls.is_loaded = True
+
+    @classmethod
+    def coordinate_operation_class(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcCoordinateOperation")
+        declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+        names = [d.name() for d in declarations]
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def blender_derived_angle(cls):
@@ -56,36 +66,37 @@ class GeoreferenceData:
             )
 
     @classmethod
-    def map_conversion(cls):
+    def coordinate_operation(cls):
         if tool.Ifc.get_schema() == "IFC2X3":
             project = tool.Ifc.get().by_type("IfcProject")[0]
-            map_conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
-            if not map_conversion:
+            coordinate_operation = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
+            if not coordinate_operation:
                 return {}
-            del map_conversion["id"]
-            return map_conversion
+            del coordinate_operation["id"]
+            coordinate_operation["type"] = "ePSet_MapConversion"
+            return coordinate_operation
 
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
-                map_conversion = context.HasCoordinateOperation[0].get_info()
-                del map_conversion["id"]
-                del map_conversion["type"]
-                del map_conversion["SourceCRS"]
-                del map_conversion["TargetCRS"]
-                return map_conversion
+                coordinate_operation = context.HasCoordinateOperation[0].get_info()
+                del coordinate_operation["id"]
+                del coordinate_operation["SourceCRS"]
+                del coordinate_operation["TargetCRS"]
+                return coordinate_operation
         return {}
 
     @classmethod
     def map_derived_angle(cls):
         if (
-            cls.data["map_conversion"]
-            and cls.data["map_conversion"].get("XAxisAbscissa", None) is not None
-            and cls.data["map_conversion"].get("XAxisOrdinate", None) is not None
+            cls.data["coordinate_operation"]
+            and cls.data["coordinate_operation"].get("XAxisAbscissa", None) is not None
+            and cls.data["coordinate_operation"].get("XAxisOrdinate", None) is not None
         ):
             return str(
                 round(
                     ifcopenshell.util.geolocation.xaxis2angle(
-                        cls.data["map_conversion"]["XAxisAbscissa"], cls.data["map_conversion"]["XAxisOrdinate"]
+                        cls.data["coordinate_operation"]["XAxisAbscissa"],
+                        cls.data["coordinate_operation"]["XAxisOrdinate"],
                     ),
                     3,
                 )

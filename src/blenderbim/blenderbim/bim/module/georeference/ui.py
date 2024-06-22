@@ -53,9 +53,9 @@ class BIM_PT_gis(Panel):
         draw_attributes(props.projected_crs, self.layout)
 
         row = self.layout.row()
-        row.label(text="Map Conversion", icon="GRID")
+        row.label(text="Coordinate Operation", icon="GRID")
 
-        for attribute in props.map_conversion:
+        for attribute in props.coordinate_operation:
             if attribute.name == "Scale" and hasattr(context.scene, "sun_pos_properties"):
                 row = self.layout.row(align=True)
                 row.operator("bim.set_ifc_grid_north", text="Set IFC North")
@@ -80,12 +80,14 @@ class BIM_PT_gis(Panel):
 
         if tool.Ifc.get_schema() == "IFC2X3":
             row = self.layout.row()
-            row.label(text="IFC2X3 Fallback In Use", icon="ERROR")
+            row.label(text="IFC2X3 Fallback In Use", icon="INFO")
 
         if not GeoreferenceData.data["projected_crs"]:
-            row = self.layout.row(align=True)
-            row.label(text="Not Georeferenced")
+            row = self.layout.row()
+            row.label(text="Not Georeferenced", icon="ERROR")
             if tool.Ifc.get_schema() != "IFC2X3":
+                row = self.layout.row(align=True)
+                row.prop(props, "coordinate_operation_class", text="")
                 row.operator("bim.add_georeferencing", icon="ADD", text="")
 
         if props.has_blender_offset:
@@ -125,13 +127,15 @@ class BIM_PT_gis(Panel):
             row.label(text=key)
             row.label(text=str(value))
 
-        if GeoreferenceData.data["map_conversion"]:
+        if GeoreferenceData.data["coordinate_operation"]:
             row = self.layout.row(align=True)
-            row.label(text="Map Conversion", icon="GRID")
+            row.label(text="Coordinate Operation", icon="GRID")
 
-        for key, value in GeoreferenceData.data["map_conversion"].items():
+        for key, value in GeoreferenceData.data["coordinate_operation"].items():
             if value is None:
                 continue
+            if key == "type":
+                key = "Type"
             row = self.layout.row(align=True)
             if key in ("Eastings", "Northings", "OrthogonalHeight"):
                 row.label(text=f"{key} ({GeoreferenceData.data['map_unit_symbol']})")
