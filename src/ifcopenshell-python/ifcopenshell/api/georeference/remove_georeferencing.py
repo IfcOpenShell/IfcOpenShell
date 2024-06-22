@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 
 
 def remove_georeferencing(file: ifcopenshell.file) -> None:
@@ -25,8 +27,7 @@ def remove_georeferencing(file: ifcopenshell.file) -> None:
     All georeferencing parameters such as projected CRS and map conversion
     data will be lost.
 
-    :return: None
-    :rtype: None
+    In IFC2X3, the psets will be removed from the IfcProject.
 
     Example:
 
@@ -34,11 +35,17 @@ def remove_georeferencing(file: ifcopenshell.file) -> None:
         # Let's change our mind
         ifcopenshell.api.run("georeference.remove_georeferencing", model)
     """
-
-    map_conversion = file.by_type("IfcMapConversion")[0]
-    projected_crs = file.by_type("IfcProjectedCRS")[0]
-    if projected_crs.MapUnit and len(file.get_inverse(projected_crs.MapUnit)) == 1:
-        # TODO: go deeper for conversion units
-        file.remove(projected_crs.MapUnit)
-    file.remove(projected_crs)
-    file.remove(map_conversion)
+    if file.schema == "IFC2X3":
+        project = file.by_type("IfcProject")[0]
+        if pset := ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS"):
+            ifcopenshell.api.pset.remove_pset(file, project, file.by_id(pset["id"]))
+        if pset := ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion"):
+            ifcopenshell.api.pset.remove_pset(file, project, file.by_id(pset["id"]))
+        return
+    for projected_crs in file.by_type("IfcProjectedCRS"):
+        if (unit := projected_crs.MapUnit) and len(file.get_inverse(unit)) == 1:
+            projected_crs.MapUnit = None
+            ifcopenshell.util.element.remove_deep2(file, unit)
+        file.remove(projected_crs)
+    for coordinate_operation in file.by_type("IfcCoordinateOperation"):
+        file.remove(coordinate_operation)
