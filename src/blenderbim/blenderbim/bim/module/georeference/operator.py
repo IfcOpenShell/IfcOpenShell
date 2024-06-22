@@ -29,7 +29,7 @@ class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a new georeference"
 
     def _execute(self, context):
-        core.add_georeferencing(tool.Ifc)
+        core.add_georeferencing(tool.Georeference)
 
 
 class EnableEditingGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):

@@ -29,11 +29,21 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from blenderbim.bim.module.georeference.data import GeoreferenceData
+
+
+def get_coordinate_operation_class(self, context):
+    if not GeoreferenceData.is_loaded:
+        GeoreferenceData.load()
+    return GeoreferenceData.data["coordinate_operation_class"]
 
 
 class BIMGeoreferenceProperties(PropertyGroup):
+    coordinate_operation_class: bpy.props.EnumProperty(
+        items=get_coordinate_operation_class, name="Coordinate Operation Class"
+    )
     is_editing: BoolProperty(name="Is Editing")
-    map_conversion: CollectionProperty(name="Map Conversion", type=Attribute)
+    coordinate_operation: CollectionProperty(name="Coordinate Operation", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
     local_coordinates: StringProperty(
         name="Local Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"

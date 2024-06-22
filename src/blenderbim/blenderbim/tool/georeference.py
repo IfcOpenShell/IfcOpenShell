@@ -22,10 +22,17 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell
 import blenderbim.bim.helper
-from math import radians, degrees, atan, tan, cos, sin
+from math import radians, cos, sin
 
 
 class Georeference(blenderbim.core.tool.Georeference):
+    @classmethod
+    def add_georeferencing(cls):
+        tool.Ifc.run(
+            "georeference.add_georeferencing",
+            ifc_class=bpy.context.scene.BIMGeoreferenceProperties.coordinate_operation_class,
+        )
+
     @classmethod
     def import_projected_crs(cls):
         def callback(name, prop, data):
@@ -59,24 +66,44 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return
 
     @classmethod
-    def import_map_conversion(cls):
+    def import_coordinate_operation(cls):
         def callback(name, prop, data):
-            if name not in ["SourceCRS", "TargetCRS"]:
+            if name in ("FirstCoordinate", "SecondCoordinate"):
+                props = bpy.context.scene.BIMGeoreferenceProperties
+                if name == "FirstCoordinate":
+                    new = props.coordinate_operation.add()
+                    new.name = "Measure Type"
+                    new.data_type = "enum"
+                    new.is_optional = False
+                    new.is_null = False
+                    new.enum_items = json.dumps(["IfcLengthMeasure", "IfcPlaneAngleMeasure"])
+                    new.enum_value = data[name].is_a()
+                prop = props.coordinate_operation.add()
+                prop.name = name
+                prop.is_optional = False
+                prop.is_null = False
+                # Enforce a string data type to prevent data loss in single-precision Blender props
+                prop.data_type = "string"
+                prop.string_value = "" if prop.is_null else str(data[name].wrappedValue)
+                return True
+            elif name not in ("SourceCRS", "TargetCRS"):
                 # Enforce a string data type to prevent data loss in single-precision Blender props
                 prop.data_type = "string"
                 prop.string_value = "" if prop.is_null else str(data[name])
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.map_conversion.clear()
+        props.coordinate_operation.clear()
 
         if tool.Ifc.get_schema() == "IFC2X3":
             return
 
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
-                map_conversion = context.HasCoordinateOperation[0]
-                blenderbim.bim.helper.import_attributes2(map_conversion, props.map_conversion, callback=callback)
+                coordinate_operation = context.HasCoordinateOperation[0]
+                blenderbim.bim.helper.import_attributes2(
+                    coordinate_operation, props.coordinate_operation, callback=callback
+                )
                 return
 
     @classmethod
@@ -105,15 +132,24 @@ class Georeference(blenderbim.core.tool.Georeference):
         return blenderbim.bim.helper.export_attributes(props.projected_crs, callback=callback)
 
     @classmethod
-    def get_map_conversion_attributes(cls):
+    def get_coordinate_operation_attributes(cls):
+        measure_type = None
+
         def callback(attributes, prop):
-            if not prop.is_null and prop.data_type == "string":
+            global measure_type
+            if prop.name == "Measure Type":
+                measure_type = prop.get_value()
+                return True
+            elif prop.name in ("FirstCoordinate", "SecondCoordinate"):
+                attributes[prop.name] = tool.Ifc.get().create_entity(measure_type, float(prop.string_value))
+                return True
+            elif not prop.is_null and prop.data_type == "string":
                 # We store our floats as string to prevent single precision data loss
                 attributes[prop.name] = float(prop.string_value)
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        return blenderbim.bim.helper.export_attributes(props.map_conversion, callback=callback)
+        return blenderbim.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
 
     @classmethod
     def get_true_north_attributes(cls):
@@ -210,15 +246,15 @@ class Georeference(blenderbim.core.tool.Georeference):
     def set_ifc_grid_north(cls):
         x_angle = bpy.context.scene.sun_pos_properties.north_offset
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.map_conversion.get("XAxisAbscissa").string_value = str(cos(x_angle))
-        props.map_conversion.get("XAxisOrdinate").string_value = str(sin(x_angle))
+        props.coordinate_operation.get("XAxisAbscissa").string_value = str(cos(x_angle))
+        props.coordinate_operation.get("XAxisOrdinate").string_value = str(sin(x_angle))
 
     @classmethod
     def set_blender_grid_north(cls):
         props = bpy.context.scene.BIMGeoreferenceProperties
         angle = ifcopenshell.util.geolocation.xaxis2angle(
-            float(props.map_conversion.get("XAxisAbscissa").string_value),
-            float(props.map_conversion.get("XAxisOrdinate").string_value),
+            float(props.coordinate_operation.get("XAxisAbscissa").string_value),
+            float(props.coordinate_operation.get("XAxisOrdinate").string_value),
         )
         bpy.context.scene.sun_pos_properties.north_offset = -radians(angle)
 
@@ -247,7 +283,7 @@ class Georeference(blenderbim.core.tool.Georeference):
             bpy.context.scene.BIMGeoreferenceProperties.y_axis_ordinate_output = str(y)
 
     @classmethod
-    def import_plot(cls, filepath, map_conversion):
+    def import_plot(cls, filepath):
         import bmesh
 
         def parse_csv(file_path):

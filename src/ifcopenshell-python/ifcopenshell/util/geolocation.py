@@ -226,13 +226,12 @@ def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Option
             else:
                 factor_x = factor_y = factor_z = 1
         elif conversion.is_a() == "IfcRigidOperation":
-            # TODO
-            e = conversion.FirstCoordinate
-            n = conversion.SecondCoordinate
+            e = conversion.FirstCoordinate.wrappedValue
+            n = conversion.SecondCoordinate.wrappedValue
             h = conversion.Height or 0
             xaa = 1.0
             xao = 0.0
-            factor_x = factor_y = factor_z = 1
+            scale = factor_x = factor_y = factor_z = 1
 
     if not xaa and not xao:
         xaa = 1.0

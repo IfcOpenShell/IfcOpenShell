@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def add_georeferencing(ifc):
-    ifc.run("georeference.add_georeferencing")
+def add_georeferencing(georeference):
+    georeference.add_georeferencing()
 
 
 def enable_editing_georeferencing(georeference):
     georeference.import_projected_crs()
-    georeference.import_map_conversion()
+    georeference.import_coordinate_operation()
     georeference.import_true_north()
     georeference.enable_editing()
 
@@ -40,7 +40,7 @@ def edit_georeferencing(ifc, georeference):
     ifc.run(
         "georeference.edit_georeferencing",
         projected_crs=georeference.get_projected_crs_attributes(),
-        map_conversion=georeference.get_map_conversion_attributes(),
+        coordinate_operation=georeference.get_coordinate_operation_attributes(),
         true_north=georeference.get_true_north_attributes(),
     )
     georeference.disable_editing()
@@ -77,9 +77,11 @@ def convert_global_to_local(georeference):
     georeference.set_coordinates("local", coordinates)
     georeference.set_cursor_location()
 
+
 def convert_angle_to_coord(georeference, type):
     vector_coordinates = georeference.angle2coords(georeference.get_angle(type), type)
-    georeference.set_vector_coordinates(vector_coordinates,type)
+    georeference.set_vector_coordinates(vector_coordinates, type)
+
 
 def import_plot(georeference, filepath):
     georeference.import_plot(filepath)
