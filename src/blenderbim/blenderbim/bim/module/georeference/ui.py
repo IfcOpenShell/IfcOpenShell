@@ -164,14 +164,16 @@ class BIM_PT_gis_calculator(Panel):
     bl_parent_id = "BIM_PT_gis"
 
     def draw(self, context):
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+
         props = context.scene.BIMGeoreferenceProperties
 
         row = self.layout.row(align=True)
-        row.prop(props, "coordinate_input", text="Input")
+        row.prop(props, "local_coordinates", text=f"Local ({GeoreferenceData.data['local_unit_symbol']})")
         row.operator("bim.get_cursor_location", text="", icon="TRACKER")
-        row = self.layout.row(align=True)
-        row.prop(props, "coordinate_output", text="Output")
-        row.operator("bim.set_cursor_location", text="", icon="TRACKER")
+        row = self.layout.row()
+        row.prop(props, "map_coordinates", text=f"Map ({GeoreferenceData.data['map_unit_symbol']})")
 
         row = self.layout.row(align=True)
         row.operator("bim.convert_local_to_global", text="Local to Global")

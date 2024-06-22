@@ -106,21 +106,6 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
         core.get_cursor_location(tool.Georeference)
 
 
-class SetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_cursor_location"
-    bl_label = "Set Cursor Location"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Move cursor location to the specified coordinates"
-
-    @classmethod
-    def poll(cls, context):
-        props = context.scene.BIMGeoreferenceProperties
-        return tool.Ifc.get() and props.coordinate_output.count(",") == 2
-
-    def _execute(self, context):
-        core.set_cursor_location(tool.Georeference)
-
-
 class SetIfcTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_ifc_true_north"
     bl_label = "Set IFC True North"
@@ -151,7 +136,7 @@ class ConvertLocalToGlobal(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         file = tool.Ifc.get()
         props = context.scene.BIMGeoreferenceProperties
-        return file and props.coordinate_input.count(",") == 2
+        return file and props.local_coordinates.count(",") == 2
 
     def _execute(self, context):
         core.convert_local_to_global(tool.Georeference)
@@ -167,7 +152,7 @@ class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         file = tool.Ifc.get()
         props = context.scene.BIMGeoreferenceProperties
-        return file and file.by_type("IfcUnitAssignment") and props.coordinate_input.count(",") == 2
+        return file and file.by_type("IfcUnitAssignment") and props.local_coordinates.count(",") == 2
 
     def _execute(self, context):
         core.convert_global_to_local(tool.Georeference)
