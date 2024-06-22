@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import numpy as np
 import test.bootstrap
 import ifcopenshell.api.root
@@ -138,7 +137,7 @@ class TestAutoZ2E(test.bootstrap.IFC4):
 
 
 class TestLocal2Global(test.bootstrap.IFC4):
-    def test_converting_from_a_local_matrix_to_a_global_matrix(self):
+    def test_run(self):
         m = np.eye(4)
         m2 = np.eye(4)
         assert np.allclose(subject.local2global(m, 0, 0, 0, 1.0, 0.0), m2)
@@ -155,42 +154,121 @@ class TestLocal2Global(test.bootstrap.IFC4):
         m2[:, 3][0:3] = [2, 3, 3]
         assert np.allclose(subject.local2global(m, 1, 2, 3, 1.0, 0.0), m2)
 
-        m2[:, 3][0:3] = [3, 4, 3]
-        assert np.allclose(subject.local2global(m, 1, 2, 3, 1.0, 0.0, 2), m2)
+        m[:, 3][0:3] = [1000, 1000, 0]
+        m2[:, 3][0:3] = [2, 3, 3]
+        assert np.allclose(subject.local2global(m, 1, 2, 3, 1.0, 0.0, 0.001), m2)
 
+        m[:, 3][0:3] = [1, 1, 0]
         m2[:, 0][0:3] = [0, 1, 0]
         m2[:, 1][0:3] = [-1, 0, 0]
         m2[:, 3][0:3] = [0, 3, 3]
         assert np.allclose(subject.local2global(m, 1, 2, 3, 0.0, 1.0), m2)
 
+        m[:, 3][0:3] = [1, 1, 1]
+        m2 = np.eye(4)
+        m2[:, 3][0:3] = [5, 8, 11]
+        assert np.allclose(subject.local2global(m, 1, 2, 3, 1.0, 0.0, 2, 2, 3, 4), m2)
 
-class TestLocal2GlobalIfc4X3(test.bootstrap.IFC4):
-    def test_converting_from_a_local_matrix_to_a_global_matrix(self):
+
+class TestGlobal2Local(test.bootstrap.IFC4):
+    def test_run(self):
         m = np.eye(4)
         m2 = np.eye(4)
-        assert np.allclose(subject.local2global_ifc4x3(m, 0, 0, 0, 1.0, 0.0), m2)
+        assert np.allclose(subject.global2local(m2, 0, 0, 0, 1.0, 0.0), m)
 
         m2[:, 3][0:3] = [1, 2, 3]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 1.0, 0.0), m2)
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 1.0, 0.0), m)
 
         m2[:, 0][0:3] = [0, 1, 0]
         m2[:, 1][0:3] = [-1, 0, 0]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 0.0, 1.0), m2)
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 0.0, 1.0), m)
 
         m[:, 3][0:3] = [1, 1, 0]
         m2 = np.eye(4)
         m2[:, 3][0:3] = [2, 3, 3]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 1.0, 0.0), m2)
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 1.0, 0.0), m)
 
-        m2[:, 3][0:3] = [3, 4, 3]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 1.0, 0.0, 2), m2)
+        m[:, 3][0:3] = [1000, 1000, 0]
+        m2[:, 3][0:3] = [2, 3, 3]
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 1.0, 0.0, 0.001), m)
 
+        m[:, 3][0:3] = [1, 1, 0]
         m2[:, 0][0:3] = [0, 1, 0]
         m2[:, 1][0:3] = [-1, 0, 0]
         m2[:, 3][0:3] = [0, 3, 3]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 0.0, 1.0), m2)
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 0.0, 1.0), m)
 
         m[:, 3][0:3] = [1, 1, 1]
         m2 = np.eye(4)
         m2[:, 3][0:3] = [5, 8, 11]
-        assert np.allclose(subject.local2global_ifc4x3(m, 1, 2, 3, 1.0, 0.0, 2, 2, 3, 4), m2)
+        assert np.allclose(subject.global2local(m2, 1, 2, 3, 1.0, 0.0, 2, 2, 3, 4), m)
+
+
+class TestAutoLocal2Global(test.bootstrap.IFC4):
+    def test_no_georeferencing(self):
+        m = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        assert np.allclose(subject.auto_local2global(self.file, m), m)
+        m[:, 3][0:3] = [1, 2, 3]
+        assert np.allclose(subject.auto_local2global(self.file, m), m)
+
+    def test_map_conversion(self):
+        m = np.eye(4)
+        m2 = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            map_conversion={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        m2[:, 3][0:3] = [1, 2, 3]
+        assert np.allclose(subject.auto_local2global(self.file, m), m2)
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, map_conversion={"Scale": 0.001})
+        assert np.allclose(subject.auto_local2global(self.file, m), m2)
+        m2[:, 3][0:3] = [1000, 2000, 3000]
+        assert np.allclose(subject.auto_local2global(self.file, m, should_return_in_map_units=False), m2)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file, map_conversion={"XAxisAbscissa": 0, "XAxisOrdinate": 1}
+        )
+        m[:, 3][0:3] = [1000, 1000, 0]
+        m2[:, 0][0:3] = [0, 1, 0]
+        m2[:, 1][0:3] = [-1, 0, 0]
+        m2[:, 3][0:3] = [0, 3, 3]
+        assert np.allclose(subject.auto_local2global(self.file, m), m2)
+
+
+class TestAutoGlobal2Local(test.bootstrap.IFC4):
+    def test_no_georeferencing(self):
+        m = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        assert np.allclose(subject.auto_global2local(self.file, m), m)
+        m[:, 3][0:3] = [1, 2, 3]
+        assert np.allclose(subject.auto_global2local(self.file, m), m)
+
+    def test_map_conversion(self):
+        m = np.eye(4)
+        m2 = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            map_conversion={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        m2[:, 3][0:3] = [1, 2, 3]
+        assert np.allclose(subject.auto_global2local(self.file, m2), m)
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, map_conversion={"Scale": 0.001})
+        assert np.allclose(subject.auto_global2local(self.file, m2), m)
+        m2[:, 3][0:3] = [1000, 2000, 3000]
+        assert np.allclose(subject.auto_global2local(self.file, m2, is_specified_in_map_units=False), m)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file, map_conversion={"XAxisAbscissa": 0, "XAxisOrdinate": 1}
+        )
+        m[:, 3][0:3] = [1000, 1000, 0]
+        m2[:, 0][0:3] = [0, 1, 0]
+        m2[:, 1][0:3] = [-1, 0, 0]
+        m2[:, 3][0:3] = [0, 3, 3]
+        assert np.allclose(subject.auto_global2local(self.file, m2), m)
