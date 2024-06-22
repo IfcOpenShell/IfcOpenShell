@@ -20,36 +20,42 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
+from typing import NamedTuple, Optional, Union
 
 
-def dms2dd(degrees, minutes, seconds, ms=0):
+class HelmertTransformation(NamedTuple):
+    e: float
+    n: float
+    h: float
+    xaa: float
+    xao: float
+    scale: float
+    factor_x: float
+    factor_y: float
+    factor_z: float
+
+
+def dms2dd(degrees: int, minutes: int, seconds: int, ms: int = 0) -> float:
     """Convert degrees, minutes, and (milli)seconds to decimal degrees
 
     :param degrees: The degrees component
-    :type degrees: int
     :param minutes: The minutes component
-    :type minutes: int
     :param seconds: The seconds component
-    :type seconds: int
     :param ms: The milliseconds component
-    :type ms: int
     :return: The angle in decimal degrees.
-    :rtype: float
     """
     dd = float(degrees) + float(minutes) / 60.0 + float(seconds) / (3600.0) + float(ms / 3600000000.0)
     return dd
 
 
-def dd2dms(dd, use_ms=False):
+def dd2dms(dd: float, use_ms: bool = False) -> Union[tuple[float, float, float, float], tuple[float, float, float]]:
     """Convert decimal degrees to degrees, minutes, and (milli)seconds format
 
     :param dd: The decimal degrees
-    :type dd: float
     :param use_ms: True if to include milliseconds and false otherwise. Defaults to false.
-    :type use_ms: bool
     :return: The angle in a tuple of either 3 or 4 values, being degrees,
         minutes, seconds, and optionally milliseconds.
-    :rtype: tuple[float]
     """
     dd = float(dd)
     sign = 1 if dd >= 0 else -1
@@ -65,7 +71,20 @@ def dd2dms(dd, use_ms=False):
     return (int(degrees) * sign, int(minutes) * sign, int(seconds) * sign)
 
 
-def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
+def xyz2enh(
+    x: float,
+    y: float,
+    z: float,
+    eastings: float = 0.0,
+    northings: float = 0.0,
+    orthogonal_height: float = 0.0,
+    x_axis_abscissa: float = 1.0,
+    x_axis_ordinate: float = 0.0,
+    scale: float = 1.0,
+    factor_x: float = 1.0,
+    factor_y: float = 1.0,
+    factor_z: float = 1.0,
+) -> tuple[float, float, float]:
     """Manually convert local XYZ coordinates to map eastings, northings, and height
 
     This function is for advanced users as it allows you to specify your own
@@ -75,59 +94,29 @@ def xyz2enh(x, y, z, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     you are applying your own temporary false origin (such as when federating
     models for digital twins of large cities).
 
-    No unit conversion is performed.
-
     For most scenarios you should use ``auto_xyz2enh`` instead.
 
     :param x: The X local engineering coordinate.
-    :type x: float
     :param y: The Y local engineering coordinate.
-    :type y: float
     :param z: The Z local engineering coordinate.
-    :type z: float
     :param eastings: The eastings offset to apply.
-    :type eastings: float
     :param northings: The northings offset to apply.
-    :type northings: float
     :param orthogonal_height: The orthogonal height offset to apply.
-    :type orthogonal_height: float
     :param x_axis_abscissa: The X axis abscissa (i.e. first coordinate) of the
         2D vector that points to the local X axis when in map coordinates.
-    :type x_axis_abscissa: float
     :param x_axis_ordinate: The X axis ordinate (i.e. second coordinate) of the
         2D vector that points to the local X axis when in map coordinates.
-    :type x_axis_ordinate: float
-    :param scale: The combined scale factor to convert from local coordinates
-        to map coordinates.
-    :type scale: float
+    :param scale: The unit scale such that local ordinate * scale = map
+        ordinate. E.g. if your project is in millimeters but your CRS is in
+        meters, your scale should be 0.001.
+    :param factor_x: The combined scale factor for the X value to convert from
+        local coordinates to map coordinates. Your surveyor will typically know
+        this number and approximate it as a constant on a small site. Typically
+        factor_x and factor_y will be identical, and factor_z will be 1.
+    :param factor_y: Same but for the Y value.
+    :param factor_z: Same but for the Z value.
     :return: A tuple of three ordinates representing the easting, northing and height.
-    :rtype: tuple[float]
     """
-    if scale is None:
-        scale = 1.0
-    rotation = math.atan2(x_axis_ordinate, x_axis_abscissa)
-    a = scale * math.cos(rotation)
-    b = scale * math.sin(rotation)
-    eastings = (a * x) - (b * y) + eastings
-    northings = (b * x) + (a * y) + northings
-    height = z + orthogonal_height
-    return (eastings, northings, height)
-
-
-def xyz2enh_ifc4x3(
-    x,
-    y,
-    z,
-    eastings,
-    northings,
-    orthogonal_height,
-    x_axis_abscissa,
-    x_axis_ordinate,
-    scale=1.0,
-    factor_x=1.0,
-    factor_y=1.0,
-    factor_z=1.0,
-):
     theta = math.atan2(x_axis_ordinate, x_axis_abscissa)
     eastings = (scale * factor_x * math.cos(theta) * x) - (scale * factor_y * math.sin(theta) * y) + eastings
     northings = (scale * factor_x * math.sin(theta) * x) + (scale * factor_y * math.cos(theta) * y) + northings
@@ -135,7 +124,9 @@ def xyz2enh_ifc4x3(
     return (eastings, northings, height)
 
 
-def auto_xyz2enh(ifc_file, x, y, z):
+def auto_xyz2enh(
+    ifc_file: ifcopenshell.file, x: float, y: float, z: float, should_return_in_map_units: bool = True
+) -> tuple[float, float, float]:
     """Convert from local XYZ coordinates to global map coordinate eastings, northings, and heights
 
     The necessary georeferencing map conversion is automatically detected from
@@ -147,63 +138,24 @@ def auto_xyz2enh(ifc_file, x, y, z):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param x: The X local engineering coordinate provided in project length units.
-    :type x: float
     :param y: The Y local engineering coordinate provided in project length units.
-    :type y: float
     :param z: The Z local engineering coordinate provided in project length units.
-    :type z: float
-    :return: The global map coordinate eastings, northings, and height in map units.
+    :param should_return_in_map_units: If true, the result is given in map units.
+        If false, the result will be converted back into project units.
+    :return: The global map coordinate eastings, northings, and height.
     :rtype: tuple[float]
     """
-    conversion = None
-    try:
-        conversion = ifc_file.by_type("IfcMapConversion")
-    except:
-        pass
-
-    if conversion:
-        conversion = conversion[0]
-        e = conversion.Eastings or 0
-        n = conversion.Northings or 0
-        h = conversion.OrthogonalHeight or 0
-        xaa = conversion.XAxisAbscissa or 0
-        xao = conversion.XAxisOrdinate or 0
-        scale = conversion.Scale or 1
-        map_unit = conversion.TargetCRS.MapUnit
-    else:
-        project = ifc_file.by_type("IfcProject")[0]
-        conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
-        if not conversion:
-            return (x, y, z)
-
-        e = conversion.get("Eastings", None) or 0
-        n = conversion.get("Northings", None) or 0
-        h = conversion.get("OrthogonalHeight", None) or 0
-        xaa = conversion.get("XAxisAbscissa", None) or 0
-        xao = conversion.get("XAxisOrdinate", None) or 0
-        scale = conversion.get("Scale", None) or 1
-        map_unit = None
-
-    if not xaa and not xao:
-        xaa = 1.0
-        xao = 0.0
-
-    if map_unit:
-        # Warning! This definition has changed in IFC4X3 such that map_unit no
-        # longer affects unit conversion, only the Scale attribute affects unit
-        # conversion. TODO: consolidate once IFC4X3 confirmed.
-        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
-        map_prefix = getattr(map_unit, "Prefix", None)
-        project_prefix = getattr(project_unit, "Prefix", None)
-        e = ifcopenshell.util.unit.convert(e, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-        n = ifcopenshell.util.unit.convert(n, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-        h = ifcopenshell.util.unit.convert(h, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-    return xyz2enh(x, y, z, e, n, h, xaa, xao, scale)
+    parameters = get_helmert_transformation_parameters(ifc_file)
+    if not parameters:
+        return x, y, z
+    enh = xyz2enh(x, y, z, *parameters)
+    if should_return_in_map_units:
+        return enh
+    return enh[0] / parameters.scale, enh[1] / parameters.scale, enh[2] / parameters.scale
 
 
-def auto_enh2xyz(ifc_file, easting, northing, height):
+def auto_enh2xyz(ifc_file, easting, northing, height, is_specified_in_map_units: bool = True):
     """Convert from global map coordinate eastings, northings, and heights to local XYZ coordinates
 
     The necessary georeferencing map conversion is automatically detected from
@@ -215,63 +167,80 @@ def auto_enh2xyz(ifc_file, easting, northing, height):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param easting: The global easting map coordinate provided in map units.
-    :type easting: float
     :param northing: The global northing map coordinate provided in map units.
-    :type northing: float
     :param height: The global height map coordinate provided in map units.
-    :type height: float
     :return: The local engineering XYZ coordinates in project length units.
-    :rtype: tuple[float]
     """
-    conversion = None
-    try:
-        conversion = ifc_file.by_type("IfcMapConversion")
-    except:
-        pass
+    parameters = get_helmert_transformation_parameters(ifc_file)
+    if not parameters:
+        return easting, northing, height
+    if not is_specified_in_map_units:
+        easting *= parameters.scale
+        northing *= parameters.scale
+        height *= parameters.scale
+    return enh2xyz(easting, northing, height, *parameters)
 
-    if conversion:
-        conversion = conversion[0]
-        e = conversion.Eastings or 0
-        n = conversion.Northings or 0
-        h = conversion.OrthogonalHeight or 0
-        xaa = conversion.XAxisAbscissa or 0
-        xao = conversion.XAxisOrdinate or 0
-        scale = conversion.Scale or 1
-        map_unit = conversion.TargetCRS.MapUnit
-    else:
+
+def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Optional[HelmertTransformation]:
+    """Retrieves the parameters of a helmert transformation that represents a
+    coordinate operation
+
+    This coordinate operation is typically what is used to convert between
+    local engineering coordinates and map coordinates.
+
+    :param ifc_file: The IFC model, typically containing an
+        IfcCoordinateOperation such as an IfcMapConversion.
+    :return: The parameters of the transformation.
+    """
+    if ifc_file.schema == "IFC2X3":
         project = ifc_file.by_type("IfcProject")[0]
         conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
         if not conversion:
-            return (easting, northing, height)
-
+            return
         e = conversion.get("Eastings", None) or 0
         n = conversion.get("Northings", None) or 0
         h = conversion.get("OrthogonalHeight", None) or 0
         xaa = conversion.get("XAxisAbscissa", None) or 0
         xao = conversion.get("XAxisOrdinate", None) or 0
         scale = conversion.get("Scale", None) or 1
-        map_unit = None
+        factor_x = factor_y = factor_z = 1
+    else:
+        conversion = ifc_file.by_type("IfcCoordinateOperation")
+        if not conversion:
+            return
+        conversion = conversion[0]
+
+        if conversion.is_a("IfcMapConversion"):
+            e = conversion.Eastings or 0
+            n = conversion.Northings or 0
+            h = conversion.OrthogonalHeight or 0
+            xaa = conversion.XAxisAbscissa or 0
+            xao = conversion.XAxisOrdinate or 0
+            scale = conversion.Scale or 1
+            if conversion.is_a() == "IfcMapConversionScaled":
+                factor_x = conversion.FactorX
+                factor_y = conversion.FactorY
+                factor_z = conversion.FactorZ
+            else:
+                factor_x = factor_y = factor_z = 1
+        elif conversion.is_a() == "IfcRigidOperation":
+            # TODO
+            e = conversion.FirstCoordinate
+            n = conversion.SecondCoordinate
+            h = conversion.Height or 0
+            xaa = 1.0
+            xao = 0.0
+            factor_x = factor_y = factor_z = 1
 
     if not xaa and not xao:
         xaa = 1.0
         xao = 0.0
 
-    if map_unit:
-        # Warning! This definition has changed in IFC4X3 such that map_unit no
-        # longer affects unit conversion, only the Scale attribute affects unit
-        # conversion. TODO: consolidate once IFC4X3 confirmed.
-        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
-        map_prefix = getattr(map_unit, "Prefix", None)
-        project_prefix = getattr(project_unit, "Prefix", None)
-        e = ifcopenshell.util.unit.convert(e, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-        n = ifcopenshell.util.unit.convert(n, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-        h = ifcopenshell.util.unit.convert(h, map_prefix, map_unit.Name, project_prefix, project_unit.Name)
-    return enh2xyz(easting, northing, height, e, n, h, xaa, xao, scale)
+    return HelmertTransformation(e, n, h, xaa, xao, scale, factor_x, factor_y, factor_z)
 
 
-def auto_z2e(ifc_file, z):
+def auto_z2e(ifc_file: ifcopenshell.file, z: float, should_return_in_map_units: bool = True) -> float:
     """Convert a Z coordinate to an elevation using model georeferencing data
 
     The necessary georeferencing map conversion is automatically detected from
@@ -283,66 +252,56 @@ def auto_z2e(ifc_file, z):
     https://www.buildingsmart.org/standards/bsi-standards/standards-library/
 
     :param ifc_file: The IFC file
-    :type ifc_file: ifcopenshell.file
     :param z: The Z local engineering coordinate provided in project length units.
-    :type z: float
     :return: The elevation in project length units.
-    :rtype: float
     """
-    conversion = None
-    try:
-        conversion = ifc_file.by_type("IfcMapConversion")
-    except:
-        pass
-
-    if conversion and not conversion[0].OrthogonalHeight:
-        conversion = conversion[0]
-        h = conversion.OrthogonalHeight
-        map_unit = conversion.TargetCRS.MapUnit
-    else:
-        project = ifc_file.by_type("IfcProject")[0]
-        conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")
-        if not conversion:
-            return z
-
-        h = conversion.get("OrthogonalHeight", None) or 0
-        map_unit = None
-
-    if map_unit:
-        # Warning! This definition has changed in IFC4X3 such that map_unit no
-        # longer affects unit conversion, only the Scale attribute affects unit
-        # conversion. TODO: consolidate once IFC4X3 confirmed.
-        project_unit = ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT")
-        h = ifcopenshell.util.unit.convert(
-            h,
-            getattr(map_unit, "Prefix", None),
-            map_unit.Name,
-            getattr(project_unit, "Prefix", None),
-            project_unit.Name,
-        )
-    return z2e(z, h)
+    parameters = get_helmert_transformation_parameters(ifc_file)
+    if not parameters:
+        return z
+    e = z2e(z, parameters.h, parameters.scale, parameters.factor_z)
+    if should_return_in_map_units:
+        return e
+    return e / parameters.scale
 
 
-def z2e(z, h):
-    """Manually convert a Z coordinate to an elevation
+def z2e(z: float, orthogonal_height: float = 0.0, scale: float = 1.0, factor_z: float = 1.0) -> float:
+    """Manually convert a Z coordinate to a map elevation
 
     This function is for advanced users as it allows you to specify your own
-    orthogonal height offset.
+    orthogonal height offset and transformation parameters.
 
     For most scenarios you should use ``auto_z2e`` instead.
 
     :param z: The Z local engineering coordinate provided in project length units.
-    :type z: float
-    :param h: The orthogonal height offset in project length units.
-    :type h: float
-    :return: The elevation in project length units.
-    :rtype: float
+    :param orthogonal_height: The orthogonal height offset to apply.
+    :param scale: The unit scale such that local ordinate * scale = map
+        ordinate. E.g. if your project is in millimeters but your CRS is in
+        meters, your scale should be 0.001.
+    :param factor_x: The combined scale factor for the Z value to convert from
+        local coordinates to map coordinates. Your surveyor will typically know
+        this number and approximate it as a constant on a small site. This is
+        typically just 1.0, as average combined scale factors usually only
+        affect the XY axes.
+    :return: The elevation in map units.
     """
-    return z + h
+    return (scale * factor_z * z) + orthogonal_height
 
 
-def enh2xyz(e, n, h, eastings, northings, orthogonal_height, x_axis_abscissa, x_axis_ordinate, scale=None):
-    """Manually convert  map eastings, northings, and height to local XYZ coordinates
+def enh2xyz(
+    e: float,
+    n: float,
+    h: float,
+    eastings: float = 0.0,
+    northings: float = 0.0,
+    orthogonal_height: float = 0,
+    x_axis_abscissa: float = 1.0,
+    x_axis_ordinate: float = 0.0,
+    scale: float = 1.0,
+    factor_x: float = 1.0,
+    factor_y: float = 1.0,
+    factor_z: float = 1.0,
+) -> tuple[float, float, float]:
+    """Manually convert map eastings, northings, and height to local XYZ coordinates
 
     This function is for advanced users as it allows you to specify your own
     helmert transformation parameters (i.e. those typically stored in
@@ -351,42 +310,35 @@ def enh2xyz(e, n, h, eastings, northings, orthogonal_height, x_axis_abscissa, x_
     you are applying your own temporary false origin (such as when federating
     models for digital twins of large cities).
 
-    No unit conversion is performed.
-
     For most scenarios you should use ``auto_enh2xyz`` instead.
 
     :param e: The global easting map coordinate.
-    :type e: float
     :param n: The global northing map coordinate.
-    :type n: float
     :param h: The global height map coordinate.
-    :type h: float
     :param eastings: The eastings offset to apply.
-    :type eastings: float
     :param northings: The northings offset to apply.
-    :type northings: float
     :param orthogonal_height: The orthogonal height offset to apply.
-    :type orthogonal_height: float
     :param x_axis_abscissa: The X axis abscissa (i.e. first coordinate) of the
         2D vector that points to the local X axis when in map coordinates.
-    :type x_axis_abscissa: float
     :param x_axis_ordinate: The X axis ordinate (i.e. second coordinate) of the
         2D vector that points to the local X axis when in map coordinates.
-    :type x_axis_ordinate: float
-    :param scale: The combined scale factor to convert from local coordinates
-        to map coordinates.
-    :type scale: float
+    :param scale: The unit scale such that local ordinate * scale = map
+        ordinate. E.g. if your project is in millimeters but your CRS is in
+        meters, your scale should be 0.001.
+    :param factor_x: The combined scale factor for the X value to convert from
+        local coordinates to map coordinates. Your surveyor will typically know
+        this number and approximate it as a constant on a small site. Typically
+        factor_x and factor_y will be identical, and factor_z will be 1.
+    :param factor_y: Same but for the Y value.
+    :param factor_z: Same but for the Z value.
     :return: A tuple of three ordinates representing XYZ.
-    :rtype: tuple[float]
     """
-    if scale is None:
-        scale = 1.0
-    rotation = math.atan2(x_axis_ordinate, x_axis_abscissa)
-    a = scale * math.cos(rotation)
-    b = scale * math.sin(rotation)
-    x = ((b * n) - (b * northings) - (a * eastings) + (a * e)) / ((a * a) + (b * b))
-    y = ((a * n) - (a * northings) + (b * eastings) - (b * e)) / ((a * a) + (b * b))
-    z = h - orthogonal_height
+    theta = math.atan2(x_axis_ordinate, x_axis_abscissa)
+    sint = math.sin(theta)
+    cost = math.cos(theta)
+    x = (((e - eastings) * cost) + ((n - northings) * sint)) / (scale * factor_x)
+    y = (((eastings - e) * sint) + ((n - northings) * cost)) / (scale * factor_y)
+    z = ((h - orthogonal_height) / scale) / factor_z
     return (x, y, z)
 
 
