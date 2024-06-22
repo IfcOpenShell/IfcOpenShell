@@ -21,7 +21,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
-def add_georeferencing(file: ifcopenshell.file) -> None:
+def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversion") -> None:
     """Add empty georeferencing entities to a model
 
     By default, models are not georeferenced. Georeferencing requires two
@@ -35,8 +35,8 @@ def add_georeferencing(file: ifcopenshell.file) -> None:
     georeferencing parameters. See
     ifcopenshell.api.georeference.edit_georeferencing.
 
-    :return: None
-    :rtype: None
+    :param ifc_class: A type of IfcCoordinateOperation. For IFC2X3, this has no
+        impact and only uses ePSet_MapConversion.
 
     Example:
 
@@ -73,6 +73,27 @@ def add_georeferencing(file: ifcopenshell.file) -> None:
     if not source_crs:
         return
     projected_crs = file.create_entity("IfcProjectedCRS", Name="")
-    file.create_entity(
-        "IfcMapConversion", SourceCRS=source_crs, TargetCRS=projected_crs, Eastings=0, Northings=0, OrthogonalHeight=0
-    )
+    if ifc_class == "IfcMapConversion":
+        file.create_entity(
+            ifc_class, SourceCRS=source_crs, TargetCRS=projected_crs, Eastings=0, Northings=0, OrthogonalHeight=0
+        )
+    elif ifc_class == "IfcMapConversionScaled":
+        file.create_entity(
+            ifc_class,
+            SourceCRS=source_crs,
+            TargetCRS=projected_crs,
+            Eastings=0,
+            Northings=0,
+            OrthogonalHeight=0,
+            FactorX=1,
+            FactorY=1,
+            FactorZ=1,
+        )
+    elif ifc_class == "IfcRigidOperation":
+        file.create_entity(
+            ifc_class,
+            SourceCRS=source_crs,
+            TargetCRS=projected_crs,
+            FirstCoordinate=file.createIfcLengthMeasure(0),
+            SecondCoordinate=file.createIfcLengthMeasure(0),
+        )
