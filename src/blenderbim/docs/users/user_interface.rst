@@ -18,5 +18,6 @@ The documentation doesn't cover Blender UI, but makes references to `Blender doc
 
    user_interface/topbar
    user_interface/workspace
+   user_interface/toolbar/index
    user_interface/property-editor
 
