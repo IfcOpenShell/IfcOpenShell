@@ -1553,6 +1553,14 @@ class ActivateDrawing(bpy.types.Operator):
         core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=tool.Ifc.get().by_id(self.drawing))
         CutDecorator.install(context)
         tool.Drawing.show_decorations()
+
+        # Save drawing bounds to the .ifc file
+        camera = context.scene.camera
+        camera_props = camera.data.BIMCameraProperties
+        if camera_props.update_representation(camera):
+            bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
+
+            
         return {"FINISHED"}
 
 
