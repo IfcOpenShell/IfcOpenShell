@@ -31,10 +31,7 @@ class TestEditGeoreferencing(test.bootstrap.IFC4):
         ifcopenshell.api.georeference.edit_georeferencing(
             self.file,
             projected_crs={"Name": "EPSG:7856"},
-            map_conversion={
-                "Eastings": 123.45,
-                "Northings": 234.56,
-            },
+            map_conversion={"Eastings": 123.45, "Northings": 234.56},
         )
         crs = self.file.by_type("IfcProjectedCRS")[0]
         assert crs.Name == "EPSG:7856"
@@ -47,9 +44,9 @@ class TestEditGeoreferencing(test.bootstrap.IFC4):
         model = ifcopenshell.api.context.add_context(self.file, "Model")
         plan = ifcopenshell.api.context.add_context(self.file, "Plan")
         ifcopenshell.api.georeference.add_georeferencing(self.file)
-        ifcopenshell.api.georeference.edit_georeferencing(self.file, true_north=[0., 1.])
-        assert model.TrueNorth[0] == (0., 1., 0.)
-        assert plan.TrueNorth[0] == (0., 1.)
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, true_north=[0.0, 1.0])
+        assert model.TrueNorth[0] == (0.0, 1.0, 0.0)
+        assert plan.TrueNorth[0] == (0.0, 1.0)
 
 
 class TestEditGeoreferencingIFC2X3(test.bootstrap.IFC2X3):
@@ -59,10 +56,7 @@ class TestEditGeoreferencingIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.georeference.edit_georeferencing(
             self.file,
             projected_crs={"Name": "EPSG:7856"},
-            map_conversion={
-                "Eastings": 123.45,
-                "Northings": 234.56,
-            },
+            map_conversion={"Eastings": 123.45, "Northings": 234.56},
         )
         conversion = ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion", verbose=True)
         crs = ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS", verbose=True)
