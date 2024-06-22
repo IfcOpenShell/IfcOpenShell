@@ -32,7 +32,6 @@ classes = (
     operator.ConvertLocalToGlobal,
     operator.ConvertGlobalToLocal,
     operator.GetCursorLocation,
-    operator.SetCursorLocation,
     operator.ConvertAngleToCoordinates,
     operator.ImportPlot,
     prop.BIMGeoreferenceProperties,

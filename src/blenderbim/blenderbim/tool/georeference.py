@@ -135,26 +135,26 @@ class Georeference(blenderbim.core.tool.Georeference):
 
     @classmethod
     def set_coordinates(cls, io, coordinates):
-        if io == "input":
-            bpy.context.scene.BIMGeoreferenceProperties.coordinate_input = ",".join([str(o) for o in coordinates])
-        elif io == "output":
-            bpy.context.scene.BIMGeoreferenceProperties.coordinate_output = ",".join([str(o) for o in coordinates])
+        if io == "local":
+            bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = ",".join([str(o) for o in coordinates])
+        elif io == "map":
+            bpy.context.scene.BIMGeoreferenceProperties.map_coordinates = ",".join([str(o) for o in coordinates])
 
     @classmethod
     def get_coordinates(cls, io):
-        if io == "input":
-            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.coordinate_input.split(",")]
-        elif io == "output":
-            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.coordinate_output.split(",")]
+        if io == "local":
+            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.local_coordinates.split(",")]
+        elif io == "map":
+            return [float(co) for co in bpy.context.scene.BIMGeoreferenceProperties.map_coordinates.split(",")]
 
     @classmethod
     def get_cursor_location(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
         scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         return [o / scale for o in bpy.context.scene.cursor.location]
 
     @classmethod
-    def set_cursor_location(cls, coordinates):
+    def set_cursor_location(cls):
+        coordinates = cls.get_coordinates("local")
         scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         bpy.context.scene.cursor.location = [co * scale for co in coordinates]
 
@@ -186,7 +186,6 @@ class Georeference(blenderbim.core.tool.Georeference):
                 float(props.blender_orthogonal_height),
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
-                1.0,
             )
         return ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *coordinates)
 
@@ -204,7 +203,6 @@ class Georeference(blenderbim.core.tool.Georeference):
                 float(props.blender_orthogonal_height),
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
-                1.0,
             )
         return coordinates
 

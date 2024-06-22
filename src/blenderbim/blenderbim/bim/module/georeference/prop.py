@@ -35,8 +35,12 @@ class BIMGeoreferenceProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     map_conversion: CollectionProperty(name="Map Conversion", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
-    coordinate_input: StringProperty(name="Coordinate Input", description='Formatted "x,y,z" (without quotes)')
-    coordinate_output: StringProperty(name="Coordinate Output", description='Formatted "x,y,z" (without quotes)')
+    local_coordinates: StringProperty(
+        name="Local Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+    )
+    map_coordinates: StringProperty(
+        name="Map Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+    )
     angle_degree_input_x: FloatProperty(name="Angle Degree Input", description="Angle (in degrees) rel to Easting")
     angle_degree_input_y: FloatProperty(name="Angle Degree Input", description="Angle (in degrees) rel to +Y")
     x_axis_abscissa_output: StringProperty(

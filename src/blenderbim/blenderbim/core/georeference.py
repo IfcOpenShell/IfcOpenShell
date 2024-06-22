@@ -63,23 +63,19 @@ def set_blender_true_north(georeference):
 
 
 def get_cursor_location(georeference):
-    georeference.set_coordinates("input", georeference.get_cursor_location())
-
-
-def set_cursor_location(georeference):
-    georeference.set_cursor_location(georeference.get_coordinates("output"))
+    georeference.set_coordinates("local", georeference.get_cursor_location())
 
 
 def convert_local_to_global(georeference):
-    coordinates = georeference.xyz2enh(georeference.get_coordinates("input"))
-    georeference.set_coordinates("output", coordinates)
-    georeference.set_cursor_location(coordinates)
+    coordinates = georeference.xyz2enh(georeference.get_coordinates("local"))
+    georeference.set_coordinates("map", coordinates)
+    georeference.set_cursor_location()
 
 
 def convert_global_to_local(georeference):
-    coordinates = georeference.enh2xyz(georeference.get_coordinates("input"))
-    georeference.set_coordinates("output", coordinates)
-    georeference.set_cursor_location(coordinates)
+    coordinates = georeference.enh2xyz(georeference.get_coordinates("map"))
+    georeference.set_coordinates("local", coordinates)
+    georeference.set_cursor_location()
 
 def convert_angle_to_coord(georeference, type):
     vector_coordinates = georeference.angle2coords(georeference.get_angle(type), type)
