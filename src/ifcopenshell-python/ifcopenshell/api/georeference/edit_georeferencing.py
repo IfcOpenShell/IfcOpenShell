@@ -22,7 +22,7 @@ from typing import Optional, Any
 
 def edit_georeferencing(
     file: ifcopenshell.file,
-    map_conversion: Optional[dict[str, Any]] = None,
+    coordinate_operation: Optional[dict[str, Any]] = None,
     projected_crs: Optional[dict[str, Any]] = None,
     true_north: Optional[tuple[float, float]] = None,
 ) -> None:
@@ -48,9 +48,9 @@ def edit_georeferencing(
     See ifcopenshell.util.geolocation for more utilities to convert to and
     from local and map coordinates to check your results.
 
-    :param map_conversion: The IfcMapConversion dictionary of attribute
-        names and values you want to edit.
-    :type map_conversion: dict, optional
+    :param coordinate_operation: The dictionary of attribute names and values
+        you want to edit.
+    :type coordinate_operation: dict, optional
     :param projected_crs: The IfcProjectedCRS dictionary of attribute
         names and values you want to edit.
     :type projected_crs: dict, optional
@@ -78,7 +78,7 @@ def edit_georeferencing(
         # Ordinate.
         ifcopenshell.api.run("georeference.edit_georeferencing", model,
             projected_crs={"Name": "EPSG:7856"},
-            map_conversion={
+            coordinate_operation={
                 "Eastings": 335087.17, # The architect nominates a false origin
                 "Northings": 6251635.41, # The architect nominates a false origin
                 # Note: this is the angle difference between Project North
@@ -91,7 +91,7 @@ def edit_georeferencing(
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
-        "map_conversion": map_conversion or {},
+        "coordinate_operation": coordinate_operation or {},
         "projected_crs": projected_crs or {},
         "true_north": true_north or [],
     }
@@ -117,17 +117,17 @@ class Usecase:
                 ifcopenshell.api.pset.edit_pset(self.file, crs, properties=self.settings["projected_crs"])
             if (conversion := ifcopenshell.util.element.get_pset(project, "ePSet_MapConversion")):
                 conversion = self.file.by_id(conversion["id"])
-                for k, v in self.settings["map_conversion"].items():
+                for k, v in self.settings["coordinate_operation"].items():
                     if k in ("XAxisAbscissa", "XAxisOrdinate", "Scale"):
                         v = self.file.createIfcReal(v)
                     else:
                         v = self.file.createIfcLengthMeasure(v)
-                ifcopenshell.api.pset.edit_pset(self.file, conversion, properties=self.settings["map_conversion"])
+                ifcopenshell.api.pset.edit_pset(self.file, conversion, properties=self.settings["coordinate_operation"])
             return
-        map_conversion = self.file.by_type("IfcMapConversion")[0]
+        coordinate_operation = self.file.by_type("IfcCoordinateOperation")[0]
         projected_crs = self.file.by_type("IfcProjectedCRS")[0]
-        for name, value in self.settings["map_conversion"].items():
-            setattr(map_conversion, name, value)
+        for name, value in self.settings["coordinate_operation"].items():
+            setattr(coordinate_operation, name, value)
         for name, value in self.settings["projected_crs"].items():
             setattr(projected_crs, name, value)
 
