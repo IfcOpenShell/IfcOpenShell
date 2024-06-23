@@ -219,3 +219,33 @@ class DisableEditingWCS(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.disable_editing_wcs(tool.Georeference)
+
+
+class EnableEditingTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_true_north"
+    bl_label = "Enable Editing True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Enable editing True North"
+
+    def _execute(self, context):
+        core.enable_editing_true_north(tool.Georeference)
+
+
+class EditTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_true_north"
+    bl_label = "Edit True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Edit the True North"
+
+    def _execute(self, context):
+        core.edit_true_north(tool.Ifc, tool.Georeference)
+
+
+class DisableEditingTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_true_north"
+    bl_label = "Disable Editing True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Close editing panel"
+
+    def _execute(self, context):
+        core.disable_editing_true_north(tool.Georeference)

@@ -24,7 +24,6 @@ def add_georeferencing(georeference):
 def enable_editing_georeferencing(georeference):
     georeference.import_projected_crs()
     georeference.import_coordinate_operation()
-    georeference.import_true_north()
     georeference.enable_editing()
 
 
@@ -100,3 +99,17 @@ def edit_wcs(ifc, georeference):
     wcs = georeference.export_wcs()
     georeference.set_wcs(wcs)
     georeference.disable_editing_wcs()
+
+
+def enable_editing_true_north(georeference):
+    georeference.import_true_north()
+    georeference.enable_editing_true_north()
+
+
+def disable_editing_true_north(georeference):
+    georeference.disable_editing_true_north()
+
+
+def edit_true_north(ifc, georeference):
+    ifc.run("georeference.edit_true_north", true_north=georeference.get_true_north_attributes())
+    georeference.disable_editing_true_north()

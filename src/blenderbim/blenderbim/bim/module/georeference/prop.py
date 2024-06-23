@@ -44,6 +44,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
     )
     is_editing: BoolProperty(name="Is Editing")
     is_editing_wcs: BoolProperty(name="Is Editing WCS")
+    is_editing_true_north: BoolProperty(name="Is Editing True North")
     coordinate_operation: CollectionProperty(name="Coordinate Operation", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
     local_coordinates: StringProperty(
