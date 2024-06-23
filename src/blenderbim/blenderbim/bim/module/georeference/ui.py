@@ -44,11 +44,6 @@ class BIM_PT_gis(Panel):
         else:
             self.draw_ui(context)
 
-        if props.is_editing_wcs:
-            self.draw_editable_wcs_ui(context)
-        else:
-            self.draw_wcs_ui()
-
     def draw_editable_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
         row = self.layout.row(align=True)
@@ -67,19 +62,6 @@ class BIM_PT_gis(Panel):
                 row.operator("bim.set_ifc_grid_north", text="Set IFC North")
                 row.operator("bim.set_blender_grid_north", text="Set Blender North")
             draw_attribute(attribute, self.layout.row())
-
-        row = self.layout.row()
-        row.label(text="True North", icon="LIGHT_SUN")
-        row = self.layout.row()
-        row.prop(props, "has_true_north")
-        row = self.layout.row()
-        row.prop(props, "true_north_abscissa")
-        row = self.layout.row()
-        row.prop(props, "true_north_ordinate")
-        if hasattr(context.scene, "sun_pos_properties"):
-            row = self.layout.row(align=True)
-            row.operator("bim.set_ifc_true_north", text="Set IFC North")
-            row.operator("bim.set_blender_true_north", text="Set Blender North")
 
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -153,24 +135,83 @@ class BIM_PT_gis(Panel):
                 row.label(text="Derived Angle")
                 row.label(text=GeoreferenceData.data["map_derived_angle"])
 
+
+class BIM_PT_gis_true_north(Panel):
+    bl_idname = "BIM_PT_gis_true_north"
+    bl_label = "True North"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_gis"
+
+    def draw(self, context):
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+
+        self.props = context.scene.BIMGeoreferenceProperties
+
+        if self.props.is_editing_true_north:
+            self.draw_editable_ui(context)
+        else:
+            self.draw_ui()
+
+    def draw_editable_ui(self, context):
+        row = self.layout.row()
+        row.prop(self.props, "has_true_north")
+        row = self.layout.row()
+        row.prop(self.props, "true_north_abscissa")
+        row = self.layout.row()
+        row.prop(self.props, "true_north_ordinate")
+        if hasattr(context.scene, "sun_pos_properties"):
+            row = self.layout.row(align=True)
+            row.operator("bim.set_ifc_true_north", text="Set IFC North")
+            row.operator("bim.set_blender_true_north", text="Set Blender North")
+
+        row = self.layout.row(align=True)
+        row.operator("bim.edit_true_north", icon="CHECKMARK")
+        row.operator("bim.disable_editing_true_north", icon="CANCEL", text="")
+
+    def draw_ui(self):
         if GeoreferenceData.data["true_north"]:
-            row = self.layout.row()
-            row.label(text="True North", icon="LIGHT_SUN")
             row = self.layout.row(align=True)
             row.label(text="Vector")
             row.label(text=str(GeoreferenceData.data["true_north"][0:2])[1:-1])
+            row.operator("bim.enable_editing_true_north", icon="GREASEPENCIL", text="")
             row = self.layout.row(align=True)
             row.label(text="Derived Angle")
             row.label(text=GeoreferenceData.data["true_derived_angle"])
+        else:
+            row = self.layout.row(align=True)
+            row.label(text="No True North Found", icon="LIGHT_SUN")
+            row.operator("bim.enable_editing_true_north", icon="GREASEPENCIL", text="")
 
-    def draw_wcs_ui(self):
-        row = self.layout.row(align=True)
-        row.label(text="World Coordinate System", icon="EMPTY_ARROWS")
-        row.operator("bim.enable_editing_wcs", icon="GREASEPENCIL", text="")
 
+class BIM_PT_gis_wcs(Panel):
+    bl_idname = "BIM_PT_gis_wcs"
+    bl_label = "World Coordinate System"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_gis"
+
+    def draw(self, context):
+        if not GeoreferenceData.is_loaded:
+            GeoreferenceData.load()
+
+        props = context.scene.BIMGeoreferenceProperties
+
+        if props.is_editing_wcs:
+            self.draw_editable_ui(context)
+        else:
+            self.draw_ui()
+
+    def draw_ui(self):
         if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text="Unrecommended Transformation Found", icon="ERROR")
+            row.operator("bim.enable_editing_wcs", icon="GREASEPENCIL", text="")
             row = self.layout.row(align=True)
             row.label(text="X")
             row.label(text=str(GeoreferenceData.data["world_coordinate_system"]["x"]))
@@ -186,8 +227,9 @@ class BIM_PT_gis(Panel):
         else:
             row = self.layout.row()
             row.label(text="No WCS Transformation", icon="CHECKMARK")
+            row.operator("bim.enable_editing_wcs", icon="GREASEPENCIL", text="")
 
-    def draw_editable_wcs_ui(self, context):
+    def draw_editable_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
 
         row = self.layout.row(align=True)

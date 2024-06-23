@@ -25,10 +25,13 @@ classes = (
     operator.ConvertGlobalToLocal,
     operator.ConvertLocalToGlobal,
     operator.DisableEditingGeoreferencing,
+    operator.DisableEditingTrueNorth,
     operator.DisableEditingWCS,
     operator.EditGeoreferencing,
+    operator.EditTrueNorth,
     operator.EditWCS,
     operator.EnableEditingGeoreferencing,
+    operator.EnableEditingTrueNorth,
     operator.EnableEditingWCS,
     operator.GetCursorLocation,
     operator.ImportPlot,
@@ -39,6 +42,8 @@ classes = (
     operator.SetIfcTrueNorth,
     prop.BIMGeoreferenceProperties,
     ui.BIM_PT_gis,
+    ui.BIM_PT_gis_wcs,
+    ui.BIM_PT_gis_true_north,
     ui.BIM_PT_gis_calculator,
 )
 

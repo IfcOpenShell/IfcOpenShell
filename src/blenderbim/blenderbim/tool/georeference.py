@@ -180,6 +180,15 @@ class Georeference(blenderbim.core.tool.Georeference):
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = False
 
     @classmethod
+    def enable_editing_true_north(cls):
+        bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = True
+
+    @classmethod
+    def disable_editing_true_north(cls):
+        bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = False
+
+
+    @classmethod
     def set_coordinates(cls, io, coordinates):
         if io == "local":
             bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = ",".join([str(o) for o in coordinates])
