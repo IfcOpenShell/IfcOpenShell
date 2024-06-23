@@ -33,7 +33,7 @@ class TestAddGeoreferencing(test.bootstrap.IFC4):
         assert (conversion := self.file.by_type("IfcMapConversion")[0])
         assert (crs := self.file.by_type("IfcProjectedCRS")[0])
         assert conversion.Eastings == conversion.Northings == conversion.OrthogonalHeight == 0
-        assert crs.Name == ""
+        assert crs.Name == "EPSG:3857"
 
     def test_not_doing_anything_if_no_model_context(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -61,7 +61,7 @@ class TestAddGeoreferencingIFC2X3(test.bootstrap.IFC2X3):
         assert len(self.file.by_type("IfcPropertySet")) == 2
         assert conversion
         assert crs
-        assert crs["Name"]["value"] == ""
+        assert crs["Name"]["value"] == "EPSG:3857"
         assert self.file.by_id(crs["Name"]["id"]).NominalValue.is_a("IfcLabel")
         assert conversion["Eastings"]["value"] == 0
         assert self.file.by_id(conversion["Eastings"]["id"]).NominalValue.is_a("IfcLengthMeasure")
