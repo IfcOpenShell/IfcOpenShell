@@ -21,7 +21,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
-def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversion") -> None:
+def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversion", name: str = "EPSG:3857") -> None:
     """Add empty georeferencing entities to a model
 
     By default, models are not georeferenced. Georeferencing requires two
@@ -52,7 +52,7 @@ def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversi
             return
         conversion = ifcopenshell.api.pset.add_pset(file, project, "ePSet_MapConversion")
         crs = ifcopenshell.api.pset.add_pset(file, project, "ePSet_ProjectedCRS")
-        ifcopenshell.api.pset.edit_pset(file, crs, properties={"Name": ""})
+        ifcopenshell.api.pset.edit_pset(file, crs, properties={"Name": name})
         ifcopenshell.api.pset.edit_pset(
             file,
             conversion,
@@ -72,7 +72,7 @@ def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversi
             break
     if not source_crs:
         return
-    projected_crs = file.create_entity("IfcProjectedCRS", Name="")
+    projected_crs = file.create_entity("IfcProjectedCRS", Name=name)
     if ifc_class == "IfcMapConversion":
         file.create_entity(
             ifc_class, SourceCRS=source_crs, TargetCRS=projected_crs, Eastings=0, Northings=0, OrthogonalHeight=0
