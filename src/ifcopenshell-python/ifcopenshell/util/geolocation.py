@@ -22,6 +22,7 @@ import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 from typing import NamedTuple, Optional, Union
 
 
@@ -522,6 +523,14 @@ def auto_global2local(
 def xaxis2angle(x: float, y: float) -> float:
     """Converts X axis abscissa and ordinates to an angle in decimal degrees
 
+    The X axis abscissa and ordinate is how IFC stores grid north.
+
+    This X axis vector indicates "where is project east, if grid north is up
+    the page?". See the diagram on the IfcGeometricRepresentationContext
+    documentation for clarification.
+
+    The angle indicates "how do I rotate grid east to get to project east?".
+
     :param x: The X axis abscissa
     :param y: The X axis ordinate
     :return: The equivalent angle in decimal degrees from the X axis
@@ -533,6 +542,12 @@ def yaxis2angle(x: float, y: float) -> float:
     """Converts Y axis abscissa and ordinates to an angle in decimal degrees
 
     The Y axis abscissa and ordinate is how IFC stores true north.
+
+    This Y axis vector indicates "where is true north, if project north is up
+    the page?". See the diagram on the IfcGeometricRepresentationContext
+    documentation for clarification.
+
+    The angle indicates "how do I rotate project north to get to true north?".
 
     :param x: The Y axis abscissa
     :param y: The Y axis ordinate
@@ -617,3 +632,18 @@ def angle2yaxis(angle: float) -> tuple[float, float]:
     x = -math.sin(angle_rad)
     y = math.cos(angle_rad)
     return x, y
+
+
+def get_wcs(ifc_file: ifcopenshell.file) -> Optional[npt.NDArray[np.float64]]:
+    """Gets the WCS (prioritising 3D contexts) as a matrix
+
+    :param: The IFC file
+    :return: A 4x4 matrix in project units
+    """
+    wcs = None
+    for context in ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+        wcs = context.WorldCoordinateSystem
+        if context.ContextType == "Model":
+            break
+    if wcs:
+        return ifcopenshell.util.placement.get_axis2placement(wcs)
