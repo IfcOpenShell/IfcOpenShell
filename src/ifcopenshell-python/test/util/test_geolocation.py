@@ -358,3 +358,43 @@ class TestAutoGlobal2Local(test.bootstrap.IFC4):
         m2[:, 1][0:3] = [-1, 0, 0]
         m2[:, 3][0:3] = [0, 3, 3]
         assert np.allclose(subject.auto_global2local(self.file, m2), m)
+
+
+class TestXAxis2Angle(test.bootstrap.IFC4):
+    def test_run(self):
+        assert subject.xaxis2angle(1, 0) == 0
+        assert subject.xaxis2angle(1, 1) == -45
+        assert subject.xaxis2angle(-1, 1) == -135
+        assert subject.xaxis2angle(1, -1) == 45
+        assert subject.xaxis2angle(-1, -1) == 135
+        assert np.isclose(subject.xaxis2angle(0.8660254, -0.5), 30)
+
+
+class TestAngle2XAxis(test.bootstrap.IFC4):
+    def test_run(self):
+        a = 0.707106781186
+        assert np.allclose(subject.angle2xaxis(0), (1, 0))
+        assert np.allclose(subject.angle2xaxis(-45), (a, a))
+        assert np.allclose(subject.angle2xaxis(-135), (-a, a))
+        assert np.allclose(subject.angle2xaxis(45), (a, -a))
+        assert np.allclose(subject.angle2xaxis(135), (-a, -a))
+
+
+class TestYAxis2Angle(test.bootstrap.IFC4):
+    def test_run(self):
+        assert subject.yaxis2angle(0, 1) == 0
+        assert np.isclose(subject.yaxis2angle(-0.5, 0.8660254), 30)
+        assert subject.yaxis2angle(1, 1) == -45
+        assert subject.yaxis2angle(-1, 1) == 45
+        assert subject.yaxis2angle(1, -1) == -135
+        assert subject.yaxis2angle(-1, -1) == 135
+
+
+class TestAngle2YAxis(test.bootstrap.IFC4):
+    def test_run(self):
+        a = 0.707106781186
+        assert np.allclose(subject.angle2yaxis(0), (0, 1))
+        assert np.allclose(subject.angle2yaxis(-45), (a, a))
+        assert np.allclose(subject.angle2yaxis(45), (-a, a))
+        assert np.allclose(subject.angle2yaxis(-135), (a, -a))
+        assert np.allclose(subject.angle2yaxis(135), (-a, -a))
