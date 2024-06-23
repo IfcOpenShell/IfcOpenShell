@@ -18,8 +18,9 @@
 
 
 import bpy
-import ifcopenshell.util.geolocation
+import numpy as np
 import blenderbim.tool as tool
+import ifcopenshell.util.geolocation
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -42,6 +43,7 @@ class GeoreferenceData:
         cls.data["true_derived_angle"] = cls.true_derived_angle()
         cls.data["local_unit_symbol"] = cls.local_unit_symbol()
         cls.data["map_unit_symbol"] = cls.map_unit_symbol()
+        cls.data["world_coordinate_system"] = cls.world_coordinate_system()
         cls.is_loaded = True
 
     @classmethod
@@ -143,7 +145,7 @@ class GeoreferenceData:
     @classmethod
     def true_derived_angle(cls):
         if cls.data["true_north"]:
-            return str(round(ifcopenshell.util.geolocation.yaxis2angle(*cls.data["true_north"][0:2]), 3))
+            return str(round(ifcopenshell.util.geolocation.yaxis2angle(*cls.data["true_north"][:2]), 3))
 
     @classmethod
     def local_unit_symbol(cls):
@@ -161,3 +163,18 @@ class GeoreferenceData:
                 return cls.local_unit_symbol()
             return ifcopenshell.util.unit.get_unit_symbol(unit)
         return "n/a"
+
+    @classmethod
+    def world_coordinate_system(cls):
+        wcs = ifcopenshell.util.geolocation.get_wcs(tool.Ifc.get())
+        result = {}
+        if wcs is None:
+            result["has_transformation"] = False
+            return result
+        if np.allclose(wcs, np.eye(4)):
+            result["has_transformation"] = False
+        else:
+            result["has_transformation"] = True
+            result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
+            result["x"], result["y"], result["z"] = wcs[:, 3][:3]
+        return result

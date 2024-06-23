@@ -85,3 +85,18 @@ def convert_angle_to_coord(georeference, type):
 
 def import_plot(georeference, filepath):
     georeference.import_plot(filepath)
+
+
+def enable_editing_wcs(georeference):
+    georeference.import_wcs()
+    georeference.enable_editing_wcs()
+
+
+def disable_editing_wcs(georeference):
+    georeference.disable_editing_wcs()
+
+
+def edit_wcs(ifc, georeference):
+    wcs = georeference.export_wcs()
+    georeference.set_wcs(wcs)
+    georeference.disable_editing_wcs()

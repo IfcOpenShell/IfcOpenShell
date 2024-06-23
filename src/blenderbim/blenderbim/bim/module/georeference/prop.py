@@ -43,6 +43,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
         items=get_coordinate_operation_class, name="Coordinate Operation Class"
     )
     is_editing: BoolProperty(name="Is Editing")
+    is_editing_wcs: BoolProperty(name="Is Editing WCS")
     coordinate_operation: CollectionProperty(name="Coordinate Operation", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
     local_coordinates: StringProperty(
@@ -83,3 +84,7 @@ class BIMGeoreferenceProperties(PropertyGroup):
     has_true_north: BoolProperty(name="Has True North", default=True)
     true_north_abscissa: StringProperty(name="True North Abscissa")
     true_north_ordinate: StringProperty(name="True North Ordinate")
+    wcs_x: StringProperty(name="WCS X", default="0")
+    wcs_y: StringProperty(name="WCS Y", default="0")
+    wcs_z: StringProperty(name="WCS Z", default="0")
+    wcs_rotation: StringProperty(name="WCS Rotation", default="0")
