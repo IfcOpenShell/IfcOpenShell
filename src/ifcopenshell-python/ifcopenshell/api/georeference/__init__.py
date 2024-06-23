@@ -26,6 +26,7 @@ map coordinates and project local engineering coordinates.
 from .. import wrap_usecases
 from .add_georeferencing import add_georeferencing
 from .edit_georeferencing import edit_georeferencing
+from .edit_wcs import edit_wcs
 from .remove_georeferencing import remove_georeferencing
 
 wrap_usecases(__path__, __name__)
@@ -33,5 +34,6 @@ wrap_usecases(__path__, __name__)
 __all__ = [
     "add_georeferencing",
     "edit_georeferencing",
+    "edit_wcs",
     "remove_georeferencing",
 ]

@@ -189,3 +189,33 @@ class ImportPlot(bpy.types.Operator, tool.Ifc.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+
+class EnableEditingWCS(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.enable_editing_wcs"
+    bl_label = "Enable Editing WCS"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Enable editing WCS"
+
+    def _execute(self, context):
+        core.enable_editing_wcs(tool.Georeference)
+
+
+class EditWCS(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_wcs"
+    bl_label = "Edit WCS"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Edit the WCS"
+
+    def _execute(self, context):
+        core.edit_wcs(tool.Ifc, tool.Georeference)
+
+
+class DisableEditingWCS(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.disable_editing_wcs"
+    bl_label = "Disable Editing WCS"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Close editing panel"
+
+    def _execute(self, context):
+        core.disable_editing_wcs(tool.Georeference)

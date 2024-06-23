@@ -40,8 +40,14 @@ class BIM_PT_gis(Panel):
             GeoreferenceData.load()
 
         if props.is_editing:
-            return self.draw_editable_ui(context)
-        self.draw_ui(context)
+            self.draw_editable_ui(context)
+        else:
+            self.draw_ui(context)
+
+        if props.is_editing_wcs:
+            self.draw_editable_wcs_ui(context)
+        else:
+            self.draw_wcs_ui()
 
     def draw_editable_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -156,6 +162,47 @@ class BIM_PT_gis(Panel):
             row = self.layout.row(align=True)
             row.label(text="Derived Angle")
             row.label(text=GeoreferenceData.data["true_derived_angle"])
+
+    def draw_wcs_ui(self):
+        row = self.layout.row(align=True)
+        row.label(text="World Coordinate System", icon="EMPTY_ARROWS")
+        row.operator("bim.enable_editing_wcs", icon="GREASEPENCIL", text="")
+
+        if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
+            row = self.layout.row()
+            row.label(text="Unrecommended Transformation Found", icon="ERROR")
+            row = self.layout.row(align=True)
+            row.label(text="X")
+            row.label(text=str(GeoreferenceData.data["world_coordinate_system"]["x"]))
+            row = self.layout.row(align=True)
+            row.label(text="Y")
+            row.label(text=str(GeoreferenceData.data["world_coordinate_system"]["y"]))
+            row = self.layout.row(align=True)
+            row.label(text="Z")
+            row.label(text=str(GeoreferenceData.data["world_coordinate_system"]["z"]))
+            row = self.layout.row(align=True)
+            row.label(text="Rotation")
+            row.label(text=str(GeoreferenceData.data["world_coordinate_system"]["rotation"]))
+        else:
+            row = self.layout.row()
+            row.label(text="No WCS Transformation", icon="CHECKMARK")
+
+    def draw_editable_wcs_ui(self, context):
+        props = context.scene.BIMGeoreferenceProperties
+
+        row = self.layout.row(align=True)
+        row.label(text="World Coordinate System", icon="EMPTY_ARROWS")
+        row.operator("bim.edit_wcs", icon="CHECKMARK", text="")
+        row.operator("bim.disable_editing_wcs", icon="CANCEL", text="")
+
+        row = self.layout.row()
+        row.prop(props, "wcs_x")
+        row = self.layout.row()
+        row.prop(props, "wcs_y")
+        row = self.layout.row()
+        row.prop(props, "wcs_z")
+        row = self.layout.row()
+        row.prop(props, "wcs_rotation")
 
 
 class BIM_PT_gis_calculator(Panel):

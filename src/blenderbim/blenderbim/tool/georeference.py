@@ -18,9 +18,11 @@
 
 import bpy
 import json
+import numpy as np
+import ifcopenshell
+import ifcopenshell.api.georeference
 import blenderbim.core.tool
 import blenderbim.tool as tool
-import ifcopenshell
 import blenderbim.bim.helper
 from math import radians, cos, sin
 
@@ -170,6 +172,14 @@ class Georeference(blenderbim.core.tool.Georeference):
         bpy.context.scene.BIMGeoreferenceProperties.is_editing = False
 
     @classmethod
+    def enable_editing_wcs(cls):
+        bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = True
+
+    @classmethod
+    def disable_editing_wcs(cls):
+        bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = False
+
+    @classmethod
     def set_coordinates(cls, io, coordinates):
         if io == "local":
             bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = ",".join([str(o) for o in coordinates])
@@ -315,3 +325,34 @@ class Georeference(blenderbim.core.tool.Georeference):
             bm.verts.new(vertex)
         bm.to_mesh(mesh)
         bm.free()
+
+    @classmethod
+    def import_wcs(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        wcs = None
+        for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            wcs = context.WorldCoordinateSystem
+            if context.ContextType == "Model":
+                break
+        if not wcs:
+            return
+        placement = ifcopenshell.util.placement.get_axis2placement(wcs)
+        if np.allclose(placement, np.eye(4)):
+            props.wcs_x = props.wcs_y = props.wcs_z = props.wcs_rotation = "0"
+        else:
+            props.wcs_rotation = str(round(ifcopenshell.util.geolocation.yaxis2angle(*placement[:, 1][:2]), 3))
+            props.wcs_x, props.wcs_y, props.wcs_z = map(str, placement[:, 3][:3])
+
+    @classmethod
+    def export_wcs(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        return {
+            "x": float(props.wcs_x),
+            "y": float(props.wcs_y),
+            "z": float(props.wcs_z),
+            "rotation": float(props.wcs_rotation),
+        }
+
+    @classmethod
+    def set_wcs(cls, wcs):
+        ifcopenshell.api.georeference.edit_wcs(tool.Ifc.get(), **wcs, is_si=False)
