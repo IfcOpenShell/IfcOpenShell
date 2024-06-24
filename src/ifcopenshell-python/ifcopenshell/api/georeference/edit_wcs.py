@@ -33,9 +33,19 @@ def edit_wcs(
 ) -> None:
     """Edits the WCS for all geometric contexts to a translation and rotation
 
-    It's recommended to leave the WCS at 0,0,0. You should generally not be
-    setting it to any value. Instead, your project's origin should use a
-    coordinate operation to convert to the projected CRS.
+    Typically, a project's local engineering origin (0, 0, 0) has a coordinate
+    operation (e.g. map conversion) to a projected CRS. If a WCS is provided,
+    the coordinate operation is relative to the WCS, not the local engineering
+    origin.
+
+    For example, if I have an IfcSite with a placement at (10, 0, 0) and a map
+    conversion of (50, 0, 0), my IfcSite's local XYZ is at (10, 0, 0) with an
+    ENH (Easting, Northing, Height) of (60, 0, 0).
+
+    If I then define by WCS at (15, 0, 0), my IfcSite's local XYZ is still at
+    (10, 0, 0) but its ENH is now at (45, 0, 0).
+
+    It's recommended to leave the WCS at 0,0,0. Please :)
 
     :param x: The X translation of the WCS
     :param y: The Y translation of the WCS
