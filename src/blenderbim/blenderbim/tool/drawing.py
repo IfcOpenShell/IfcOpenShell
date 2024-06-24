@@ -1729,28 +1729,33 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def isolate_camera_collection(cls, camera: bpy.types.Object) -> None:
-        views_collection = bpy.data.collections.get("Views")
-        for collection in views_collection.children:
-            # We assume the project collection is at the top level
-            for project_collection in bpy.context.view_layer.layer_collection.children:
-                # We assume a convention that the 'Views' collection is directly
-                # in the project collection
-                if (
-                    "Views" in project_collection.children
-                    and collection.name in project_collection.children["Views"].children
-                ):
-                    project_collection.children["Views"].children[collection.name].hide_viewport = True
-                    bpy.data.collections.get(collection.name).hide_render = True
+        drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+        drawing_collections = []
+        camera_collection = camera.BIMObjectProperties.collection
+        for drawing in drawings:
+            if not (drawing_obj := tool.Ifc.get_object(drawing)):
+                continue
+            if not (drawing_collection := drawing_obj.BIMObjectProperties.collection):
+                continue
+            if drawing_obj == camera:
+                drawing_collection.hide_render = False
+            else:
+                drawing_collection.hide_render = True
 
-                    project_collection.children["Views"].children[
-                        camera.BIMObjectProperties.collection.name
-                    ].hide_viewport = False
-        camera.BIMObjectProperties.collection.hide_render = False
+        project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = project.BIMObjectProperties.collection
+        for layer_collection in bpy.context.view_layer.layer_collection.children:
+            if layer_collection.collection == project_collection:
+                for layer_collection2 in layer_collection.children:
+                    if layer_collection2.collection in drawing_collections:
+                        layer_collection2.hide_viewport = True
+                    elif layer_collection2.collection == camera_collection:
+                        layer_collection2.hide_viewport = False
 
     @classmethod
     def activate_drawing(cls, camera: bpy.types.Object) -> None:
         selected_objects_before = bpy.context.selected_objects
-        
+
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
 
@@ -1839,7 +1844,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         cls.import_camera_props(drawing, camera)
 
         for obj in selected_objects_before:
-            obj.hide_set(False) 
+            obj.hide_set(False)
             obj.select_set(True)
 
     @classmethod
