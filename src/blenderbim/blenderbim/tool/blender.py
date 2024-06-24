@@ -740,10 +740,14 @@ class Blender(blenderbim.core.tool.Blender):
         return {"PASS_THROUGH"}
 
     @classmethod
-    def get_layer_collection(
-        cls, collection: bpy.types.Collection, view_layer: Optional[bpy.types.ViewLayer] = None
-    ) -> Union[bpy.types.LayerCollection, None]:
-        return cls.get_layer_collections_mapping([collection], view_layer).get(collection)
+    def get_layer_collection(cls, collection: bpy.types.Collection) -> Union[bpy.types.LayerCollection, None]:
+        project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = project.BIMObjectProperties.collection
+        for layer_collection in bpy.context.view_layer.layer_collection.children:
+            if layer_collection.collection == project_collection:
+                for layer_collection2 in layer_collection.children:
+                    if layer_collection2.collection == collection:
+                        return layer_collection2
 
     @classmethod
     def get_layer_collections_mapping(
