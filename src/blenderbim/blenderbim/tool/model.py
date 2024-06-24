@@ -1320,6 +1320,7 @@ class Model(blenderbim.core.tool.Model):
                     ms2 = inherited_mstyle
 
                 cls.replace_material_style(mesh, obj, ms1, ms2)
+                tool.Geometry.record_object_materials(obj)
 
             else:  # Material unnassignment.
                 if not tool.Geometry.has_geometry_without_styles(mesh):
@@ -1330,6 +1331,7 @@ class Model(blenderbim.core.tool.Model):
                     continue
 
                 cls.replace_material_style(mesh, obj, None, inherited_mstyle)
+                tool.Geometry.record_object_materials(obj)
 
     @classmethod
     def get_occurrences_without_material_override(
