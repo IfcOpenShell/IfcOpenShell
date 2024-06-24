@@ -89,7 +89,7 @@ class IfcExporter:
             self.get_application_name(), tool.Blender.get_blenderbim_version()
         )
 
-    def sync_all_objects(self, skip_unlinking=False) -> list[ifcopenshell.entity_instance]:
+    def sync_all_objects(self) -> list[ifcopenshell.entity_instance]:
         results: list[ifcopenshell.entity_instance] = []
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         for ifc_definition_id in list(IfcStore.id_map.keys()):
