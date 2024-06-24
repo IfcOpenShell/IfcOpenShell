@@ -1004,6 +1004,7 @@ void mapping::addRepresentationsFromContextIds(IfcSchema::IfcRepresentation::lis
             context = file_->instance_by_id(context_id)->as<IfcSchema::IfcGeometricRepresentationContext>();
         } catch (IfcParse::IfcException& e) {
             Logger::Error(e);
+            continue;
         }
 
         if (!context) {
