@@ -156,6 +156,12 @@ function addTableElement(blenderId, csvData, filename) {
 
   table.on("rowSelected", function (row) {
     var index = row.getIndex(); // the guid of the object
+
+    if (!index) {
+      console.log("No Global ID found");
+      return;
+    }
+
     // table id is usually "table-BlenderId" so blender id is always
     // after the first 6 characters
     var tableId = row.getTable().element.id.substr(6);
