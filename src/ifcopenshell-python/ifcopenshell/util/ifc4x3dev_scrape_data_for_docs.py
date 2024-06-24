@@ -25,16 +25,17 @@ except ModuleNotFoundError as e:
     )
     raise e
 
-from collections import Counter
 import itertools
 import operator
-from bs4 import BeautifulSoup
 import json
 import ifcopenshell
+from collections import Counter
+from bs4 import BeautifulSoup
+from typing import Any
 
 
 # Hacky modified functions from server.py to make parser work
-def get_definition_from_md(resource, mdc):
+def get_definition_from_md(resource: str, mdc: str) -> str:
     # Only match up to the first h2
     lines = []
     for line in mdc.split("\n"):
@@ -49,7 +50,7 @@ def get_definition_from_md(resource, mdc):
     return mdc_splitted[1] if len(mdc_splitted) > 1 else ""
 
 
-def get_type_values(resource, mdc):
+def get_type_values(resource: str, mdc: str) -> dict[str, Any]:
     values = R.type_values.get(resource)
     if not values:
         return
@@ -128,7 +129,7 @@ def get_attributes_keep_md(resource, builder):
 # -------------------------
 
 
-def get_description_json(resource):
+def get_description_json(resource: str) -> str:
     md = get_resource_path(resource, abort_on_error=False)
     mdc = open(md, "r", encoding="utf-8").read()
     description = get_definition_from_md(resource, mdc)
@@ -153,7 +154,7 @@ def get_predefined_type_values_json(resource):
     return get_type_values(resource, mdc)["schema_values"]
 
 
-def save_entities_data(entities):
+def save_entities_data(entities: list[str]) -> None:
     entities_description = dict()
     for entity in entities:
         entity_data = dict()
@@ -198,6 +199,6 @@ def save_entities_data(entities):
 
 
 if __name__ == "__main__":
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3")
-    entities = [e.name() for e in schema.declarations()]
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3_ADD2")
+    entities: list[str] = [e.name() for e in schema.declarations()]
     save_entities_data(entities)

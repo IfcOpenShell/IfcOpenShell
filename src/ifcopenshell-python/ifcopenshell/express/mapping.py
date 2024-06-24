@@ -17,9 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import sys
 import nodes
 import templates
+import schema
 
 
 class Mapping:
@@ -55,7 +57,7 @@ class Mapping:
         ]
     )
 
-    def __init__(self, schema):
+    def __init__(self, schema: schema.Schema):
         self.schema = schema
 
     def flatten_type_string(self, type):

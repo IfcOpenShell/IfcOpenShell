@@ -20,6 +20,7 @@
 import nodes
 import platform
 import collections
+import pyparsing
 
 if tuple(map(int, platform.python_version_tuple())) < (2, 7):
     import ordereddict
@@ -83,7 +84,7 @@ class Schema:
     def __getitem__(self, key):
         return self.all_declarations[OrderedCaseInsensitiveDict_KeyObject(key)]
 
-    def __init__(self, parsetree):
+    def __init__(self, parsetree: pyparsing.ParseResults):
         self.tree = parsetree
         schema = next(iter(parsetree.syntax[0]))
         self.name = schema.simple_id
