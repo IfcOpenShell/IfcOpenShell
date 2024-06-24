@@ -18,6 +18,9 @@ env:
 jobs:
   activate:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell'
     steps:
