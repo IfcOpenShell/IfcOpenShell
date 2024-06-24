@@ -197,7 +197,10 @@ class entity_instance:
         except:
             import os
             current_dir_files = {fn.lower(): fn for fn in os.listdir('.')}
-            schema_path = current_dir_files.get(schema_name.lower() + '.exp')
+            exp_filename = schema_name.lower() + '.exp'
+            schema_path = current_dir_files.get(exp_filename)
+            if schema_path is None:
+                raise Exception(f"Couldn't find express file '{schema_name.lower()}.exp' in the current folder: '{os.getcwd()}'.")
             fn = schema_path[:-4] + '.py'
             if not os.path.exists(fn):
                 subprocess.run([sys.executable, "-m", "ifcopenshell.express.rule_compiler", schema_path, fn], check=True)
