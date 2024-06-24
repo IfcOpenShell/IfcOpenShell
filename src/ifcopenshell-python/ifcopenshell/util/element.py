@@ -468,7 +468,7 @@ def get_type(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity
 
     schema = element.file.schema
     if schema != "IFC2X3":
-        if is_typed_by := element.IsTypedBy:
+        if is_typed_by := getattr(element, "IsTypedBy", []):
             return is_typed_by[0].RelatingType
         return
 
