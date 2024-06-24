@@ -815,6 +815,16 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def set_default_container(cls, container):
         bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
+        project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
+        project_collection = project.BIMObjectProperties.collection
+        obj = tool.Ifc.get_object(container)
+        if obj and (collection := obj.BIMObjectProperties.collection):
+            for layer_collection in bpy.context.view_layer.layer_collection.children:
+                if layer_collection.collection == project_collection:
+                    for layer_collection2 in layer_collection.children:
+                        if layer_collection2.collection == collection:
+                            bpy.context.view_layer.active_layer_collection = layer_collection2
+                            break
 
     @classmethod
     def guess_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
