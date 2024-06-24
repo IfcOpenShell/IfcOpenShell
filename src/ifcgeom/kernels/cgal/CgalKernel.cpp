@@ -835,7 +835,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 
 
 		CGAL::Nef_polyhedron_3<Kernel_> a;
-		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_UNIFY_PLANES_INTERNALLY)) {
+		if (!preprocess_boolean_operand(entity, {}, {}, {}, entity_shape, a, PP_NONE /*PP_UNIFY_PLANES_INTERNALLY*/)) {
 			continue;
 		}
 
@@ -870,7 +870,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 				continue;
 			}
 
-			auto tree = build_halfspace_tree_decomposed(nef, all_operand_planes);
+			// auto tree = build_halfspace_tree_decomposed(nef, all_operand_planes);
 
 			second_operand_instances.push_back(op.first->instance->as<IfcUtil::IfcBaseClass>());
 			second_operands.push_back(entity_shape);
@@ -883,7 +883,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	for (auto& nef : second_operands_nef) {
 		auto& inst = *iit++;
 		auto& entity_shape = *pit++;
-		if (!preprocess_boolean_operand(inst, first_operands, first_operands_nef, all_operand_planes, entity_shape, nef, PP_SNAP_PLANES_TO_FIRST_OPERAND)) {
+		if (!preprocess_boolean_operand(inst, first_operands, first_operands_nef, all_operand_planes, entity_shape, nef, PP_MINKOWSKY_DILATE/*PP_SNAP_PLANES_TO_FIRST_OPERAND*/)) {
 			continue;
 		}
 		second_operand_collector.add_polyhedron(nef);
@@ -901,7 +901,7 @@ bool ifcopenshell::geometry::kernels::CgalKernel::convert_openings(const IfcUtil
 	for (auto& entity_shape : first_operands) {
 		auto& a = *nit;
 
-		{
+		if constexpr (false) {
 			static int NN = 0;
 			auto s = std::string("debug-first-operand-") + std::to_string(NN++) + ".off";
 			std::ofstream ofs(s.c_str());
@@ -2000,7 +2000,7 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 			CGAL::Nef_polyhedron_3<Kernel_> nef;
 			if (!preprocess_boolean_operand(entity_instance, ops, nefops, all_operand_planes, entity_shape, nef,
 				// Snap boolean subtraction operands
-				first ? PP_NONE : PP_SNAP_PLANES_TO_FIRST_OPERAND)) {
+				first ? PP_NONE : PP_MINKOWSKY_DILATE/*PP_SNAP_PLANES_TO_FIRST_OPERAND*/)) {
 				continue;
 			}
 
