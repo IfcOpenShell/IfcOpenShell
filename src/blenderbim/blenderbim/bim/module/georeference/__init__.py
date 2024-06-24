@@ -36,6 +36,7 @@ classes = (
     operator.GetCursorLocation,
     operator.ImportPlot,
     operator.RemoveGeoreferencing,
+    operator.RemoveTrueNorth,
     operator.SetBlenderGridNorth,
     operator.SetBlenderTrueNorth,
     operator.SetIfcGridNorth,

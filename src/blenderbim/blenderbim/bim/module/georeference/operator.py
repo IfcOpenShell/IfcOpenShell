@@ -249,3 +249,13 @@ class DisableEditingTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.disable_editing_true_north(tool.Georeference)
+
+
+class RemoveTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_true_north"
+    bl_label = "Remove True North"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Remove true north"
+
+    def _execute(self, context):
+        core.remove_true_north(tool.Ifc)

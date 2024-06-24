@@ -82,7 +82,6 @@ class BIMGeoreferenceProperties(PropertyGroup):
     blender_offset_x: StringProperty(name="Blender Offset X", default="0")
     blender_offset_y: StringProperty(name="Blender Offset Y", default="0")
     blender_offset_z: StringProperty(name="Blender Offset Z", default="0")
-    has_true_north: BoolProperty(name="Has True North", default=True)
     true_north_abscissa: StringProperty(name="True North Abscissa")
     true_north_ordinate: StringProperty(name="True North Ordinate")
     wcs_x: StringProperty(name="WCS X", default="0")
