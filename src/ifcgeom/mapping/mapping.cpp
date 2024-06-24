@@ -681,6 +681,7 @@ void mapping::initialize_units_() {
     auto unit_assignments = file_->instances_by_type<IfcSchema::IfcUnitAssignment>();
     if (unit_assignments->size() != 1) {
         Logger::Warning("Not a single unit assignment in file");
+        return;
     }
     auto unit_assignment = *unit_assignments->begin();
 
