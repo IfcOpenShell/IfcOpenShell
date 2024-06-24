@@ -88,6 +88,23 @@ class Georeference(blenderbim.core.tool.Georeference):
                 prop.data_type = "string"
                 prop.string_value = "" if prop.is_null else str(data[name].wrappedValue)
                 return True
+            elif name == "XAxisAbscissa":
+                props = bpy.context.scene.BIMGeoreferenceProperties
+                props.is_changing_angle = True
+                if data["XAxisAbscissa"] is None or data["XAxisOrdinate"]:
+                    props.x_axis_is_null = True
+                else:
+                    props.grid_north_angle = str(
+                        round(
+                            ifcopenshell.util.geolocation.xaxis2angle(data["XAxisAbscissa"], data["XAxisOrdinate"]), 7
+                        )
+                    )
+                    props.x_axis_abscissa = str(data["XAxisAbscissa"])
+                    props.x_axis_ordinate = str(data["XAxisOrdinate"])
+                props.is_changing_angle = False
+                return True
+            elif name == "XAxisOrdinate":
+                return True
             elif name not in ("SourceCRS", "TargetCRS"):
                 # Enforce a string data type to prevent data loss in single-precision Blender props
                 prop.data_type = "string"
@@ -114,11 +131,20 @@ class Georeference(blenderbim.core.tool.Georeference):
             return
 
         props = bpy.context.scene.BIMGeoreferenceProperties
+        props.is_changing_angle = True
+        props.true_north_abscissa = "0"
+        props.true_north_ordinate = "1"
+        props.true_north_angle = "0"
+        props.is_changing_angle = False
+
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.TrueNorth:
                 true_north = context.TrueNorth.DirectionRatios
+                props.is_changing_angle = True
                 props.true_north_abscissa = str(true_north[0])
                 props.true_north_ordinate = str(true_north[1])
+                props.true_north_angle = str(round(ifcopenshell.util.geolocation.yaxis2angle(*true_north[:2]), 7))
+                props.is_changing_angle = False
                 return
 
     @classmethod
@@ -142,6 +168,17 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return True
             elif prop.name in ("FirstCoordinate", "SecondCoordinate"):
                 attributes[prop.name] = tool.Ifc.get().create_entity(measure_type, float(prop.string_value))
+                return True
+            elif prop.name == "XAxisAbscissa":
+                props = bpy.context.scene.BIMGeoreferenceProperties
+                if props.x_axis_is_null:
+                    attributes["XAxisAbscissa"] = None
+                    attributes["XAxisOrdinate"] = None
+                else:
+                    attributes["XAxisAbscissa"] = float(props.x_axis_abscissa)
+                    attributes["XAxisOrdinate"] = float(props.x_axis_ordinate)
+                return True
+            elif prop.name == "XAxisOrdinate":
                 return True
             elif not prop.is_null and prop.data_type == "string":
                 # We store our floats as string to prevent single precision data loss
@@ -182,7 +219,6 @@ class Georeference(blenderbim.core.tool.Georeference):
     @classmethod
     def disable_editing_true_north(cls):
         bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = False
-
 
     @classmethod
     def set_coordinates(cls, io, coordinates):
@@ -345,7 +381,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         if np.allclose(placement, np.eye(4)):
             props.wcs_x = props.wcs_y = props.wcs_z = props.wcs_rotation = "0"
         else:
-            props.wcs_rotation = str(round(ifcopenshell.util.geolocation.yaxis2angle(*placement[:, 1][:2]), 3))
+            props.wcs_rotation = str(round(ifcopenshell.util.geolocation.yaxis2angle(*placement[:, 1][:2]), 7))
             props.wcs_x, props.wcs_y, props.wcs_z = map(str, placement[:, 3][:3])
 
     @classmethod
