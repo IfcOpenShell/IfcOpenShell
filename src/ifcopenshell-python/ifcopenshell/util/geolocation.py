@@ -150,6 +150,9 @@ def auto_xyz2enh(
     parameters = get_helmert_transformation_parameters(ifc_file)
     if not parameters:
         return x, y, z
+    wcs = get_wcs(ifc_file)
+    if wcs is not None:
+        x, y, z = (np.linalg.inv(wcs) @ np.array((x, y, z, 1)))[:3]
     enh = xyz2enh(x, y, z, *parameters)
     if should_return_in_map_units:
         return enh
@@ -181,7 +184,11 @@ def auto_enh2xyz(ifc_file, easting, northing, height, is_specified_in_map_units:
         easting *= parameters.scale
         northing *= parameters.scale
         height *= parameters.scale
-    return enh2xyz(easting, northing, height, *parameters)
+    xyz = enh2xyz(easting, northing, height, *parameters)
+    wcs = get_wcs(ifc_file)
+    if wcs is not None:
+        xyz = tuple((wcs @ np.array((*xyz, 1)))[:3])
+    return xyz
 
 
 def get_helmert_transformation_parameters(ifc_file: ifcopenshell.file) -> Optional[HelmertTransformation]:
@@ -423,6 +430,9 @@ def auto_local2global(
     parameters = get_helmert_transformation_parameters(ifc_file)
     if not parameters:
         return matrix.copy()
+    wcs = get_wcs(ifc_file)
+    if wcs is not None:
+        matrix = np.linalg.inv(wcs) @ matrix
     result = local2global(matrix, *parameters)
     if should_return_in_map_units:
         return result
@@ -517,7 +527,11 @@ def auto_global2local(
         matrix[0][3] *= parameters.scale
         matrix[1][3] *= parameters.scale
         matrix[2][3] *= parameters.scale
-    return global2local(matrix, *parameters)
+    result = global2local(matrix, *parameters)
+    wcs = get_wcs(ifc_file)
+    if wcs is not None:
+        return wcs @ result
+    return result
 
 
 def xaxis2angle(x: float, y: float) -> float:

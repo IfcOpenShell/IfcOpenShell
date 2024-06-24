@@ -81,6 +81,22 @@ class TestAutoXYZ2ENH(test.bootstrap.IFC4X3):
         )
         assert np.allclose(subject.auto_xyz2enh(self.file, 1000, 1000, 0), (0, 3, 3))
 
+    def test_map_conversion_with_wcs(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            coordinate_operation={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=2, z=3)
+        assert np.allclose(subject.auto_xyz2enh(self.file, 0, 0, 0), (0, 0, 0))
+        assert np.allclose(subject.auto_xyz2enh(self.file, 1, 2, 3), (1, 2, 3))
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=1, z=2)
+        assert np.allclose(subject.auto_xyz2enh(self.file, 0, 0, 0), (0, 1, 1))
+        assert np.allclose(subject.auto_xyz2enh(self.file, 1, 2, 3), (1, 3, 4))
+
     def test_map_conversion_scaled(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         ifcopenshell.api.context.add_context(self.file, "Model")
@@ -151,6 +167,22 @@ class TestAutoENH2XYZ(test.bootstrap.IFC4X3):
             self.file, coordinate_operation={"XAxisAbscissa": 0, "XAxisOrdinate": 1}
         )
         assert np.allclose(subject.auto_enh2xyz(self.file, 0, 3, 3), (1000, 1000, 0))
+
+    def test_map_conversion_with_wcs(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            coordinate_operation={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=2, z=3)
+        assert np.allclose(subject.auto_enh2xyz(self.file, 0, 0, 0), (0, 0, 0))
+        assert np.allclose(subject.auto_enh2xyz(self.file, 1, 2, 3), (1, 2, 3))
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=1, z=2)
+        assert np.allclose(subject.auto_enh2xyz(self.file, 0, 1, 1), (0, 0, 0))
+        assert np.allclose(subject.auto_enh2xyz(self.file, 1, 3, 4), (1, 2, 3))
 
     def test_map_conversion_scaled(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -324,6 +356,25 @@ class TestAutoLocal2Global(test.bootstrap.IFC4):
         m2[:, 3][0:3] = [0, 3, 3]
         assert np.allclose(subject.auto_local2global(self.file, m), m2)
 
+    def test_map_conversion_with_wcs(self):
+        m = np.eye(4)
+        m2 = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            coordinate_operation={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=2, z=3)
+        assert np.allclose(subject.auto_local2global(self.file, m), m2)
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, coordinate_operation={"Scale": 0.001})
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1000, y=1000, z=2000)
+        m[:, 3][0:3] = [1000, 2000, 3000]
+        m2[:, 3][0:3] = [1, 3, 4]
+        assert np.allclose(subject.auto_local2global(self.file, m), m2)
+
 
 class TestAutoGlobal2Local(test.bootstrap.IFC4):
     def test_no_georeferencing(self):
@@ -357,6 +408,25 @@ class TestAutoGlobal2Local(test.bootstrap.IFC4):
         m2[:, 0][0:3] = [0, 1, 0]
         m2[:, 1][0:3] = [-1, 0, 0]
         m2[:, 3][0:3] = [0, 3, 3]
+        assert np.allclose(subject.auto_global2local(self.file, m2), m)
+
+    def test_map_conversion_with_wcs(self):
+        m = np.eye(4)
+        m2 = np.eye(4)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.context.add_context(self.file, "Model")
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.edit_georeferencing(
+            self.file,
+            projected_crs={"Name": "EPSG:7856"},
+            coordinate_operation={"Eastings": 1, "Northings": 2, "OrthogonalHeight": 3},
+        )
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1, y=2, z=3)
+        assert np.allclose(subject.auto_global2local(self.file, m2), m)
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, coordinate_operation={"Scale": 0.001})
+        ifcopenshell.api.georeference.edit_wcs(self.file, x=1000, y=1000, z=2000)
+        m[:, 3][0:3] = [1000, 2000, 3000]
+        m2[:, 3][0:3] = [1, 3, 4]
         assert np.allclose(subject.auto_global2local(self.file, m2), m)
 
 

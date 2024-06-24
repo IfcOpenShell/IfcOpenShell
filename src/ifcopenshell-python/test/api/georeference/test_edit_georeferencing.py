@@ -39,6 +39,11 @@ class TestEditGeoreferencing(test.bootstrap.IFC4):
         assert conversion.Eastings == 123.45
         assert conversion.Northings == 234.56
 
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, projected_crs={"Name": "EPSG:1234"})
+        assert crs.Name == "EPSG:1234"
+        ifcopenshell.api.georeference.edit_georeferencing(self.file, coordinate_operation={"Eastings": 42})
+        assert conversion.Eastings == 42
+
 
 class TestEditGeoreferencingIFC2X3(test.bootstrap.IFC2X3):
     def test_editing_georeferencing(self):
