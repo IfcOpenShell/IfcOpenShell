@@ -559,3 +559,120 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 }
 
 std::atomic_uint32_t item::counter_(0);
+
+void ifcopenshell::geometry::taxonomy::piecewise_function::print(std::ostream& o, int) const {
+	o << "piecewise_function" << std::endl;
+}
+
+void ifcopenshell::geometry::taxonomy::matrix4::print(std::ostream& o, int indent) const {
+	print_impl(o, "matrix4", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::colour::print(std::ostream& o, int indent) const {
+	print_impl(o, "colour", indent);
+}
+
+
+void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "style" << std::endl;
+	o << std::string(indent, ' ') << "     " << "name" << (name) << std::endl;
+	if (diffuse.components_) {
+		o << std::string(indent, ' ') << "     " << "diffuse" << (name) << std::endl;
+		diffuse.print(o, indent + 5 + 7);
+	}
+	if (specular.components_) {
+		o << std::string(indent, ' ') << "     " << "specular" << (name) << std::endl;
+		specular.print(o, indent + 5 + 8);
+	}
+	// @todo
+}
+
+void ifcopenshell::geometry::taxonomy::point3::print(std::ostream& o, int indent) const {
+	print_impl(o, "point3", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::direction3::print(std::ostream& o, int indent) const {
+	print_impl(o, "direction3", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::line::print(std::ostream& o, int indent) const {
+	print_impl(o, "line", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::circle::print(std::ostream& o, int indent) const {
+	print_impl(o, "circle", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::ellipse::print(std::ostream& o, int indent) const {
+	print_impl(o, "ellipse", indent);
+}
+
+void ifcopenshell::geometry::taxonomy::bspline_curve::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "bspline curve" << std::endl;
+}
+
+void ifcopenshell::geometry::taxonomy::offset_curve::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "offset_curve" << std::endl;
+}
+
+void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "trimmed_curve";
+	if (!this->orientation.get_value_or(true)) {
+		o << " [R]";
+	} else {
+		o << " [ ]";
+	}
+	if (!this->curve_sense.get_value_or(true)) {
+		o << " [R]";
+	} else {
+		o << " [ ]";
+	}
+	o << std::endl;
+	if (basis) {
+		basis->print(o, indent + 4);
+	}
+
+	const boost::variant<point3::ptr, double>* const start_end[2] = { &start, &end };
+	for (int i = 0; i < 2; ++i) {
+		o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
+		if (start_end[i]->which() == 0) {
+			boost::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
+		} else if (start_end[i]->which() == 1) {
+			o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
+		}
+	}
+
+	if (this->instance) {
+		o << std::string(indent, ' ') << this->instance->data().toString() << std::endl;
+	}
+}
+
+void ifcopenshell::geometry::taxonomy::plane::print(std::ostream& o, int indent) const {
+	o << "not implemented";
+}
+
+void ifcopenshell::geometry::taxonomy::cylinder::print(std::ostream& o, int indent) const {
+	o << "not implemented";
+}
+
+void ifcopenshell::geometry::taxonomy::sphere::print(std::ostream& o, int indent) const {
+	o << "not implemented";
+}
+
+void ifcopenshell::geometry::taxonomy::bspline_surface::print(std::ostream& o, int indent) const {
+	o << "not implemented";
+}
+
+void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
+	direction->print(o, indent + 4);
+	basis->print(o, indent + 4);
+}
+
+void ifcopenshell::geometry::taxonomy::revolve::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "revolve" << std::endl;
+}
+
+void ifcopenshell::geometry::taxonomy::surface_curve_sweep::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << "surface_curve_sweep" << std::endl;
+}

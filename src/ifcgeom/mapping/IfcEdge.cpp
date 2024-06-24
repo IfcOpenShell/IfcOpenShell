@@ -41,7 +41,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 
 	if (inst->as<IfcSchema::IfcEdgeCurve>()) {
 		e->basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
-		e->orientation = inst->as<IfcSchema::IfcEdgeCurve>()->SameSense();
+		e->curve_sense = inst->as<IfcSchema::IfcEdgeCurve>()->SameSense();
 	}
 
 	return e;
