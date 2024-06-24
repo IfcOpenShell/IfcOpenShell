@@ -96,11 +96,48 @@ class AddStyle(bpy.types.Operator, tool.Ifc.Operator):
 class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unlink_style"
     bl_label = "Unlink Style"
+    bl_description = (
+        "Unlink Blender material from it's linked IFC style.\n\n"
+        "You can either remove style the material is linked to from IFC or keep it. "
+        "Note that keeping the unlinked style in IFC might lead to unpredictable issues"
+        "and should be used only by advanced users"
+    )
     bl_options = {"REGISTER", "UNDO"}
-    style: bpy.props.IntProperty(default=0)
+    blender_material: bpy.props.StringProperty(name="Blender Material")
+    should_delete: bpy.props.BoolProperty(name="Delete IFC Style", default=True)
+
+    def draw(self, context):
+        row = self.layout.row()
+        row.prop(self, "should_delete")
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
-        core.unlink_style(tool.Ifc, style=tool.Ifc.get().by_id(self.style))
+        # TODO: move to core.style
+        # Don't check blender_material and style_id as this operator is only called from UI.
+        assert isinstance(self.blender_material, str)  # Type checker.
+        material = bpy.data.materials[self.blender_material]
+        style_id = material.BIMMaterialProperties.ifc_style_id
+        style = tool.Ifc.get_entity_by_id(style_id)
+
+        # Material is linked to a style from a different project.
+        if not style or tool.Ifc.get_object(style) != material:
+            tool.Ifc.unlink(obj=material)
+            return {"FINISHED"}
+
+        if self.should_delete:
+            # Create a copy that will be removed
+            # and leave user with unlinked original material.
+            # It's needed so we don't need to search everywhere original
+            # material was used and replace it with the unlinked version.
+            material_copy = material.copy()
+            tool.Ifc.unlink(element=style)
+            tool.Ifc.link(style, material_copy)
+            core.remove_style(tool.Ifc, tool.Style, style)
+        else:
+            tool.Ifc.unlink(element=style)
+        return {"FINISHED"}
 
 
 class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):

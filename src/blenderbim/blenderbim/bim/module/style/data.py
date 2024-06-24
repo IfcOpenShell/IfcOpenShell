@@ -20,10 +20,12 @@ import bpy
 import ifcopenshell
 import blenderbim.tool as tool
 from ifcopenshell.util.doc import get_entity_doc
+from typing import Union
 
 
 def refresh():
     StylesData.is_loaded = False
+    BlenderMaterialStyleData.is_loaded = False
 
 
 class StylesData:
@@ -67,3 +69,55 @@ class StylesData:
     @classmethod
     def total_styles(cls):
         return len(tool.Ifc.get().by_type("IfcPresentationStyle"))
+
+
+class BlenderMaterialStyleData:
+    style: Union[ifcopenshell.entity_instance, None] = None
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "is_linked_to_style": cls.is_linked_to_style(),
+            # After is_linked_to_style.
+            "linked_style_name": cls.linked_style_name(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def is_linked_to_style(cls) -> bool:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return False
+        context = bpy.context
+        cls.linked_style = None
+        obj = context.active_object
+        if not obj:
+            return False
+        material = obj.active_material
+        if not material:
+            return False
+        props = material.BIMMaterialProperties
+        style_id = props.ifc_style_id
+        style = tool.Ifc.get_entity_by_id(style_id)
+        if not style:
+            return False
+
+        # Double check that it's the right material
+        # and not material from other Blender session.
+        linked_material = tool.Ifc.get_object(style)
+        if linked_material != material:
+            return False
+        cls.style = style
+        return True
+
+    @classmethod
+    def linked_style_name(cls) -> Union[str, None]:
+        """Return str if Blender Material is linked to IFC style or None if it's not.
+
+        Method will return "Unnamed" if style name is None.
+        """
+        if cls.style:
+            return cls.style.Name or "Unnamed"
+        return None
