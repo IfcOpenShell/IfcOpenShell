@@ -137,6 +137,7 @@ function addTableElement(blenderId, csvData, filename) {
 
   var table = new Tabulator("#table-" + blenderId, {
     height: "400px",
+    resizableColumnGuide: true,
     index: "GlobalId",
     data: csvData,
     importFormat: "csv",
