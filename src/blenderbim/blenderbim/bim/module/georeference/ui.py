@@ -57,11 +57,23 @@ class BIM_PT_gis(Panel):
         row.label(text="Coordinate Operation", icon="GRID")
 
         for attribute in props.coordinate_operation:
-            if attribute.name == "Scale" and hasattr(context.scene, "sun_pos_properties"):
+            if attribute.name == "XAxisAbscissa":
                 row = self.layout.row(align=True)
-                row.operator("bim.set_ifc_grid_north", text="Set IFC North")
-                row.operator("bim.set_blender_grid_north", text="Set Blender North")
-            draw_attribute(attribute, self.layout.row())
+                row.prop(props, "grid_north_angle", text="Angle")
+                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+                row = self.layout.row(align=True)
+                row.prop(props, "x_axis_abscissa", text="XAxis Abscissa")
+                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+            elif attribute.name == "XAxisOrdinate":
+                row = self.layout.row(align=True)
+                row.prop(props, "x_axis_ordinate", text="XAxis Ordinate")
+                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+                if hasattr(context.scene, "sun_pos_properties"):
+                    row = self.layout.row(align=True)
+                    row.operator("bim.set_ifc_grid_north", text="Set IFC North")
+                    row.operator("bim.set_blender_grid_north", text="Set Blender North")
+            else:
+                draw_attribute(attribute, self.layout.row())
 
     def draw_ui(self, context):
         props = context.scene.BIMGeoreferenceProperties
@@ -158,9 +170,11 @@ class BIM_PT_gis_true_north(Panel):
 
     def draw_editable_ui(self, context):
         row = self.layout.row()
-        row.prop(self.props, "true_north_abscissa")
+        row.prop(self.props, "true_north_angle", text="Angle")
         row = self.layout.row()
-        row.prop(self.props, "true_north_ordinate")
+        row.prop(self.props, "true_north_abscissa", text="Abscissa")
+        row = self.layout.row()
+        row.prop(self.props, "true_north_ordinate", text="Ordinate")
         if hasattr(context.scene, "sun_pos_properties"):
             row = self.layout.row(align=True)
             row.operator("bim.set_ifc_true_north", text="Set IFC North")
@@ -173,8 +187,11 @@ class BIM_PT_gis_true_north(Panel):
     def draw_ui(self):
         if GeoreferenceData.data["true_north"]:
             row = self.layout.row(align=True)
-            row.label(text="Vector")
-            row.label(text=str(GeoreferenceData.data["true_north"][0:2])[1:-1])
+            row.label(text="Abscissa")
+            row.label(text=str(GeoreferenceData.data["true_north"][0]))
+            row = self.layout.row(align=True)
+            row.label(text="Ordinate")
+            row.label(text=str(GeoreferenceData.data["true_north"][1]))
             row.operator("bim.enable_editing_true_north", icon="GREASEPENCIL", text="")
             row.operator("bim.remove_true_north", icon="X", text="")
             row = self.layout.row(align=True)
