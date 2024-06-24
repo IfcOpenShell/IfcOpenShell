@@ -114,13 +114,11 @@ class Georeference(blenderbim.core.tool.Georeference):
             return
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        props.has_true_north = False
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.TrueNorth:
                 true_north = context.TrueNorth.DirectionRatios
                 props.true_north_abscissa = str(true_north[0])
                 props.true_north_ordinate = str(true_north[1])
-                props.has_true_north = True
                 return
 
     @classmethod
@@ -156,12 +154,10 @@ class Georeference(blenderbim.core.tool.Georeference):
     @classmethod
     def get_true_north_attributes(cls):
         props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_true_north:
-            try:
-                return [float(props.true_north_abscissa), float(props.true_north_ordinate)]
-            except ValueError:
-                print("ERROR, True North Abscissa and Ordinate expect a number")
-                # self.report({"ERROR"}, "True North Abscissa and Ordinate expect a number")
+        try:
+            return [float(props.true_north_abscissa), float(props.true_north_ordinate)]
+        except ValueError:
+            print("ERROR, True North Abscissa and Ordinate expect a number")
 
     @classmethod
     def enable_editing(cls):

@@ -40,7 +40,6 @@ def edit_georeferencing(ifc, georeference):
         "georeference.edit_georeferencing",
         projected_crs=georeference.get_projected_crs_attributes(),
         coordinate_operation=georeference.get_coordinate_operation_attributes(),
-        true_north=georeference.get_true_north_attributes(),
     )
     georeference.disable_editing()
 
@@ -113,3 +112,7 @@ def disable_editing_true_north(georeference):
 def edit_true_north(ifc, georeference):
     ifc.run("georeference.edit_true_north", true_north=georeference.get_true_north_attributes())
     georeference.disable_editing_true_north()
+
+
+def remove_true_north(ifc):
+    ifc.run("georeference.edit_true_north", true_north=None)
