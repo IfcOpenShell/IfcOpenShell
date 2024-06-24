@@ -40,7 +40,7 @@ import blenderbim.bim.import_ifc
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional
+from typing import Union, Iterable, Optional, Literal
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -58,18 +58,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         old_data.user_remap(new_data)
 
     @classmethod
-    def clear_cache(cls, element):
+    def clear_cache(cls, element: ifcopenshell.entity_instance) -> None:
         cache = IfcStore.get_cache()
         if cache and hasattr(element, "GlobalId"):
             cache.remove(element.GlobalId)
 
     @classmethod
-    def clear_modifiers(cls, obj):
+    def clear_modifiers(cls, obj: bpy.types.Object) -> None:
         for modifier in obj.modifiers:
             obj.modifiers.remove(modifier)
 
     @classmethod
-    def clear_scale(cls, obj):
+    def clear_scale(cls, obj: bpy.types.Object) -> None:
         # Note that clearing scale has no impact on cameras.
         if (obj.scale - Vector((1.0, 1.0, 1.0))).length > 1e-4:
             if not obj.data:
@@ -86,7 +86,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                 obj.scale = Vector((1.0, 1.0, 1.0))
 
     @classmethod
-    def delete_data(cls, data):
+    def delete_data(cls, data: bpy.types.Mesh) -> None:
         bpy.data.meshes.remove(data)
 
     @classmethod
@@ -158,7 +158,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             pass
 
     @classmethod
-    def dissolve_triangulated_edges(cls, obj):
+    def dissolve_triangulated_edges(cls, obj: bpy.types.Object) -> None:
         if obj.data and "ios_edges" in obj.data:
             bm = bmesh.new()
             bm.from_mesh(obj.data)
@@ -173,7 +173,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             del obj.data["ios_edges"]
 
     @classmethod
-    def does_representation_id_exist(cls, representation_id):
+    def does_representation_id_exist(cls, representation_id: int) -> bool:
         try:
             tool.Ifc.get().by_id(representation_id)
             return True
@@ -181,12 +181,12 @@ class Geometry(blenderbim.core.tool.Geometry):
             return False
 
     @classmethod
-    def duplicate_object_data(cls, obj):
+    def duplicate_object_data(cls, obj: bpy.types.Object) -> Union[bpy.types.ID, None]:
         if obj.data:
             return obj.data.copy()
 
     @classmethod
-    def generate_2d_box_mesh(cls, obj, axis="Z"):
+    def generate_2d_box_mesh(cls, obj: bpy.types.Object, axis: Literal["X", "Y", "Z"] = "Z") -> bpy.types.Mesh:
         bm = bmesh.new()
         verts = [Vector(corner) for corner in obj.bound_box]
         if axis == "Z":
@@ -209,7 +209,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return mesh
 
     @classmethod
-    def generate_3d_box_mesh(cls, obj):
+    def generate_3d_box_mesh(cls, obj: bpy.types.Object) -> bpy.types.Mesh:
         bm = bmesh.new()
         verts = [bm.verts.new(Vector(corner)) for corner in obj.bound_box]
 
@@ -226,8 +226,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         return mesh
 
     @classmethod
-    def generate_outline_mesh(cls, obj, axis="+Z"):
-        def get_visible_faces(obj, bm, axis="+Z"):
+    def generate_outline_mesh(cls, obj: bpy.types.Object, axis: Literal["+Z", "-Y"] = "+Z") -> bpy.types.Mesh:
+        def get_visible_faces(
+            obj: bpy.types.Object, bm: bmesh.types.BMesh, axis: Literal["+Z", "-Y"] = "+Z"
+        ) -> list[bmesh.types.BMFace]:
             # A visible face is any face with the normal facing the axis and
             # its centroid not obscured (tested via raycasting) by any other
             # face.
@@ -258,7 +260,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                     visible_faces.append(face)
             return visible_faces
 
-        def get_contour_edges(visible_faces):
+        def get_contour_edges(visible_faces: list[bmesh.types.BMFace]) -> list[bmesh.types.BMEdge]:
             # A contour is any edge where one face is visible and the other isn't.
             contour_edges = []
             for face in visible_faces:
@@ -272,7 +274,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                             contour_edges.append(edge)
             return contour_edges
 
-        def get_crease_edges(visible_faces, threshold):
+        def get_crease_edges(visible_faces: list[bmesh.types.BMFace], threshold: float) -> list[bmesh.types.BMEdge]:
             # A crease is any edge with a face angle greater than a threshold.
             crease_edges = []
             for face in visible_faces:
@@ -327,7 +329,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 
     @classmethod
-    def get_active_representation_context(cls, obj):
+    def get_active_representation_context(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         active_representation = tool.Geometry.get_active_representation(obj)
         if active_representation:
             return active_representation.ContextOfItems
@@ -344,7 +346,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
-    def get_representation_by_context(cls, element, context):
+    def get_representation_by_context(
+        cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if element.is_a("IfcProduct") and element.Representation:
             for r in element.Representation.Representations:
                 if r.ContextOfItems == context:
@@ -355,7 +359,7 @@ class Geometry(blenderbim.core.tool.Geometry):
                     return r.MappedRepresentation
 
     @classmethod
-    def get_cartesian_point_coordinate_offset(cls, obj):
+    def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
             return Vector(
@@ -367,15 +371,17 @@ class Geometry(blenderbim.core.tool.Geometry):
             )
 
     @classmethod
-    def get_element_type(cls, element):
+    def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_elements_of_type(cls, type):
+    def get_elements_of_type(cls, type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_types(type)
 
     @classmethod
-    def get_ifc_representation_class(cls, element, representation):
+    def get_ifc_representation_class(
+        cls, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> Union[str, None]:
         if element.is_a("IfcAnnotation"):
             if element.ObjectType == "TEXT":
                 return "IfcTextLiteral"
@@ -400,7 +406,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
-    def get_mesh_checksum(cls, mesh):
+    def get_mesh_checksum(cls, mesh: Union[bpy.types.Mesh, bpy.types.Curve]) -> str:
         data_bytes = b""
         if isinstance(mesh, bpy.types.Mesh):
             vertices = mesh.vertices[:]
@@ -432,32 +438,32 @@ class Geometry(blenderbim.core.tool.Geometry):
         return hasher.hexdigest()
 
     @classmethod
-    def get_object_data(cls, obj):
+    def get_object_data(cls, obj: bpy.types.Object) -> bpy.types.ID:
         return obj.data
 
     @classmethod
-    def get_object_materials_without_styles(cls, obj):
+    def get_object_materials_without_styles(cls, obj: bpy.types.Object) -> list[bpy.types.Material]:
         return [
             s.material for s in obj.material_slots if s.material and not s.material.BIMMaterialProperties.ifc_style_id
         ]
 
     @classmethod
-    def get_profile_set_usage(cls, element):
+    def get_profile_set_usage(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         material = ifcopenshell.util.element.get_material(element)
         if material:
             if material.is_a("IfcMaterialProfileSetUsage"):
                 return material
 
     @classmethod
-    def get_representation_data(cls, representation):
+    def get_representation_data(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
         return bpy.data.meshes.get(cls.get_representation_name(representation))
 
     @classmethod
-    def get_representation_id(cls, representation):
+    def get_representation_id(cls, representation: ifcopenshell.entity_instance) -> int:
         return representation.id()
 
     @classmethod
-    def get_representation_name(cls, representation):
+    def get_representation_name(cls, representation: ifcopenshell.entity_instance) -> str:
         return f"{representation.ContextOfItems.id()}/{representation.id()}"
 
     @classmethod
@@ -485,21 +491,23 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     # TODO: multiple Literals?
     @classmethod
-    def get_text_literal(cls, representation):
+    def get_text_literal(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         texts = [i for i in representation.Items if i.is_a("IfcTextLiteral")]
         if texts:
             return texts[0]
 
     @classmethod
-    def get_total_representation_items(cls, obj):
+    def get_total_representation_items(cls, obj: bpy.types.Object) -> int:
         return max(1, len(obj.material_slots))
 
     @classmethod
-    def has_data_users(cls, data):
+    def has_data_users(cls, data: bpy.types.ID) -> bool:
         return data.users != 0
 
     @classmethod
-    def has_geometric_data(cls, obj):
+    def has_geometric_data(cls, obj: bpy.types.Object) -> bool:
         if not obj.data:
             return False
         if isinstance(obj.data, bpy.types.Mesh):
@@ -521,7 +529,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
-    def import_representation(cls, obj, representation, apply_openings=True):
+    def import_representation(
+        cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance, apply_openings: bool = True
+    ) -> Union[bpy.types.Mesh, bpy.types.Curve]:
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
@@ -567,7 +577,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return mesh
 
     @classmethod
-    def import_representation_parameters(cls, data):
+    def import_representation_parameters(cls, data: bpy.types.Mesh) -> None:
         props = data.BIMMeshProperties
         elements = tool.Ifc.get().traverse(tool.Ifc.get().by_id(props.ifc_definition_id))
         props.ifc_parameters.clear()
@@ -592,7 +602,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return representation.ContextOfItems.ContextIdentifier == "Box"
 
     @classmethod
-    def is_edited(cls, obj):
+    def is_edited(cls, obj: bpy.types.Object) -> bool:
         return not all([tool.Cad.is_x(o, 1.0) for o in obj.scale]) or obj in IfcStore.edited_objs
 
     @classmethod
@@ -625,30 +635,30 @@ class Geometry(blenderbim.core.tool.Geometry):
         return False
 
     @classmethod
-    def is_profile_based(cls, data):
+    def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
         return data.BIMMeshProperties.subshape_type == "PROFILE"
 
     @classmethod
-    def is_swept_profile(cls, representation):
+    def is_swept_profile(cls, representation: ifcopenshell.entity_instance) -> bool:
         return ifcopenshell.util.representation.resolve_representation(representation).RepresentationType in (
             "SweptSolid",
         )
 
     @classmethod
-    def is_text_literal(cls, representation):
+    def is_text_literal(cls, representation: ifcopenshell.entity_instance) -> bool:
         items = ifcopenshell.util.representation.resolve_items(representation)
         return bool([i for i in items if i["item"].is_a("IfcTextLiteral")])
 
     @classmethod
-    def is_type_product(cls, element):
+    def is_type_product(cls, element: ifcopenshell.entity_instance) -> bool:
         return element.is_a("IfcTypeProduct")
 
     @classmethod
-    def link(cls, element, obj):
+    def link(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Mesh) -> None:
         obj.BIMMeshProperties.ifc_definition_id = element.id()
 
     @classmethod
-    def record_object_materials(cls, obj):
+    def record_object_materials(cls, obj: bpy.types.Object) -> None:
         obj.data.BIMMeshProperties.material_checksum = str([s.id() for s in cls.get_styles(obj) if s])
 
     @classmethod
@@ -658,11 +668,11 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
-    def remove_connection(cls, connection):
+    def remove_connection(cls, connection: ifcopenshell.entity_instance) -> None:
         tool.Ifc.get().remove(connection)
 
     @classmethod
-    def rename_object(cls, obj, name):
+    def rename_object(cls, obj: bpy.types.Object, name: str) -> None:
         obj.name = name
 
     @classmethod
@@ -719,15 +729,15 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
-    def run_geometry_update_representation(cls, obj=None):
+    def run_geometry_update_representation(cls, obj: bpy.types.Object) -> None:
         bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
 
     @classmethod
-    def run_style_add_style(cls, obj=None):
+    def run_style_add_style(cls, obj: bpy.types.Material) -> ifcopenshell.entity_instance:
         return blenderbim.core.style.add_style(tool.Ifc, tool.Style, obj=obj)
 
     @classmethod
-    def select_connection(cls, connection):
+    def select_connection(cls, connection: ifcopenshell.entity_instance) -> None:
         obj = tool.Ifc.get_object(connection.RelatingElement)
         if obj:
             obj.select_set(True)
@@ -736,15 +746,15 @@ class Geometry(blenderbim.core.tool.Geometry):
             obj.select_set(True)
 
     @classmethod
-    def should_force_faceted_brep(cls):
+    def should_force_faceted_brep(cls) -> bool:
         return bpy.context.scene.BIMGeometryProperties.should_force_faceted_brep
 
     @classmethod
-    def should_force_triangulation(cls):
+    def should_force_triangulation(cls) -> bool:
         return bpy.context.scene.BIMGeometryProperties.should_force_triangulation
 
     @classmethod
-    def should_generate_uvs(cls, obj):
+    def should_generate_uvs(cls, obj: bpy.types.Object) -> bool:
         if tool.Ifc.get().schema == "IFC2X3":
             return False
         for slot in obj.material_slots:
@@ -765,7 +775,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return tool.Ifc.get().by_type("IfcShapeRepresentation")
 
     @classmethod
-    def flip_object(cls, obj, flip_local_axes):
+    def flip_object(cls, obj: bpy.types.Object, flip_local_axes: str) -> None:
         assert len(flip_local_axes) == 2, "flip_local_axes must be two axes to flip"
         rotation_axis = next(i for i in "XYZ" if i not in flip_local_axes)
         rotation_axis_i = "XYZ".index(rotation_axis)
@@ -839,7 +849,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
-    def remove_representation_item(cls, representation_item):
+    def remove_representation_item(cls, representation_item: ifcopenshell.entity_instance) -> None:
         # NOTE: we assume it's not the last representation item
         # otherwise we probably would need to remove representation too
         # NOTE: a lot of shared code with `geometry.remove_representation`
@@ -884,7 +894,13 @@ class Geometry(blenderbim.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
     @classmethod
-    def create_shape_aspect(cls, product_shape, base_representation, items, previous_shape_aspect=None):
+    def create_shape_aspect(
+        cls,
+        product_shape: ifcopenshell.entity_instance,
+        base_representation: ifcopenshell.entity_instance,
+        items: list[ifcopenshell.entity_instance],
+        previous_shape_aspect: Optional[ifcopenshell.entity_instance] = None,
+    ) -> ifcopenshell.entity_instance:
         """
         > `product_shape` - IfcProductDefinitionShape or IfcRepresentationMap\n
         > `base_representation` - base representation to get context attributes from\n
@@ -908,7 +924,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return shape_aspect
 
     @classmethod
-    def remove_representation_items_from_shape_aspect(cls, representation_items, shape_aspect):
+    def remove_representation_items_from_shape_aspect(
+        cls, representation_items: list[ifcopenshell.entity_instance], shape_aspect: ifcopenshell.entity_instance
+    ) -> None:
         ifc_file = tool.Ifc.get()
         # as shape aspect might have multiple representations
         # it's easier to find it from the item
@@ -929,7 +947,9 @@ class Geometry(blenderbim.core.tool.Geometry):
             representation.Items = tuple(items)
 
     @classmethod
-    def add_representation_item_to_shape_aspect(cls, representation_items, shape_aspect):
+    def add_representation_item_to_shape_aspect(
+        cls, representation_items: list[ifcopenshell.entity_instance], shape_aspect: ifcopenshell.entity_instance
+    ) -> None:
         """NOTE: we assume that all items belonged to the same representation and to the same shape aspect"""
         ifc_file = tool.Ifc.get()
         previous_shape_aspect = None
@@ -952,7 +972,12 @@ class Geometry(blenderbim.core.tool.Geometry):
         shape_aspect_representation.Items = shape_aspect_representation.Items + tuple(representation_items)
 
     @classmethod
-    def get_shape_aspect_representation(cls, shape_aspect, base_representation, create_new=False):
+    def get_shape_aspect_representation(
+        cls,
+        shape_aspect: ifcopenshell.entity_instance,
+        base_representation: ifcopenshell.entity_instance,
+        create_new: bool = False,
+    ) -> Union[ifcopenshell.entity_instance, None]:
         for representation in shape_aspect.ShapeRepresentations:
             if (
                 representation.ContextOfItems == base_representation.ContextOfItems
@@ -967,7 +992,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return cls.add_shape_aspect_representation(shape_aspect, base_representation)
 
     @classmethod
-    def add_shape_aspect_representation(cls, shape_aspect, base_representation):
+    def add_shape_aspect_representation(
+        cls, shape_aspect: ifcopenshell.entity_instance, base_representation: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         shape_aspect_representation = tool.Ifc.get().createIfcShapeRepresentation(
             ContextOfItems=base_representation.ContextOfItems,
             RepresentationIdentifier=base_representation.RepresentationIdentifier,
@@ -977,7 +1004,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         return shape_aspect_representation
 
     @classmethod
-    def get_shape_aspect_representation_for_item(cls, shape_aspect, representation_item):
+    def get_shape_aspect_representation_for_item(
+        cls, shape_aspect: ifcopenshell.entity_instance, representation_item: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         ifc_file = tool.Ifc.get()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
@@ -986,7 +1015,12 @@ class Geometry(blenderbim.core.tool.Geometry):
                         return inverse
 
     @classmethod
-    def get_shape_aspect_styles(cls, element, shape_aspect, representation_item) -> list[ifcopenshell.entity_instance]:
+    def get_shape_aspect_styles(
+        cls,
+        element: ifcopenshell.entity_instance,
+        shape_aspect: ifcopenshell.entity_instance,
+        representation_item: ifcopenshell.entity_instance,
+    ) -> list[ifcopenshell.entity_instance]:
         """update `representation_item` style based on styles connected to the `shape_aspect`
         through material constituents with the same name
         """
@@ -1023,7 +1057,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         return styles
 
     @classmethod
-    def delete_opening_object_placement(cls, placement):
+    def delete_opening_object_placement(cls, placement: ifcopenshell.entity_instance) -> None:
         model = tool.Ifc.get()
         ifcopenshell.util.element.remove_deep2(model, placement)
 
