@@ -916,7 +916,7 @@ class DocExtractor:
 
         entities_dict = dict()
         types_dict = dict()
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3")
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3_ADD2")
 
         for entity in schema.declarations():
             entity_name = entity.name()
