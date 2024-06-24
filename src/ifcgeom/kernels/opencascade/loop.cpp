@@ -110,8 +110,14 @@ namespace {
 			}
 
 			TopoDS_Edge E;
-			if (e->basis) {
-				auto crv_or_wire = convert_curve(kernel, e->basis);
+			auto e_basis = e->basis;
+			if (e_basis) {
+				while (e_basis->kind() == taxonomy::EDGE && e_basis->instance && e_basis->instance->declaration().name() == "IfcTrimmedCurve") {
+					// @todo we still might have something to wrt orientation on periodic curves
+					// to make sure we select the correct arc later on.
+					e_basis = taxonomy::cast<taxonomy::edge>(e_basis)->basis;
+				}
+				auto crv_or_wire = convert_curve(kernel, e_basis);
 				Handle(Geom_Curve) curve;
 				if (crv_or_wire.which() == 0) {
 					curve = boost::get<Handle(Geom_Curve)>(crv_or_wire);
@@ -131,26 +137,22 @@ namespace {
 					curve = approx.Curve();
 				}
 
-				const bool reversed = !taxonomy::cast<taxonomy::geom_item>(e->basis)->orientation.get_value_or(true);
-				const bool is_conic = e->basis->kind() == taxonomy::ELLIPSE || e->basis->kind() == taxonomy::CIRCLE;
+				const bool reversed = !e->orientation.get_value_or(true);
+				const bool is_conic = e_basis->kind() == taxonomy::ELLIPSE || e_basis->kind() == taxonomy::CIRCLE;
+
+				if (!e->curve_sense) {
+					curve->Reverse();
+				}
 
 				// @todo, copy over logic from previous IfcTrimmedCurve handling
 				if (e->start.which() == 0) {
 					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->start));
 					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
 
-					if (reversed) {
-						std::swap(p1, p2);
-					}
-
 					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
 				} else {
 					auto v1 = boost::get<double>(e->start);
 					auto v2 = boost::get<double>(e->end);
-
-					if (reversed) {
-						std::swap(v1, v2);
-					}
 
 					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI*2.), 0.)) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
@@ -171,6 +173,18 @@ namespace {
 
 				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
 			}
+
+#ifdef IFOPSH_DEBUG
+			std::ostringstream oss;
+			e->print(oss);
+			TopoDS_Vertex v0, v1;
+			TopExp::Vertices(E, v0, v1, true);
+			BRep_Tool::Pnt(v0).DumpJson(oss);
+			BRep_Tool::Pnt(v1).DumpJson(oss);
+			auto osss = oss.str();
+			std::wcout << osss.c_str() << std::endl;
+#endif 
+
 			BRep_Builder B;
 			TopoDS_Wire W;
 			B.MakeWire(W);
@@ -221,7 +235,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		std::wcout << o_str.c_str() << std::endl;
 #endif
 
-		if (!segment->orientation_2.get_value_or(true)) {
+		if (!segment->curve_sense.get_value_or(true)) {
 			segment_wire.Reverse();
 		}
 

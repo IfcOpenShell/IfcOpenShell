@@ -165,9 +165,7 @@ typedef item const* ptr;
                return *length_;
             }
 
-				void print(std::ostream& o, int = 0) const {
-					o << "piecewise_function" << std::endl;
-				}
+				void print(std::ostream& o, int = 0) const;
 
 				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
 				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
@@ -376,9 +374,7 @@ typedef item const* ptr;
 					return !components_ || components_->isIdentity();
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "matrix4", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual matrix4* clone_() const { return new matrix4(*this); }
 				virtual kinds kind() const { return MATRIX4; }
@@ -394,9 +390,7 @@ typedef item const* ptr;
 			struct colour : public item, public eigen_base<Eigen::Vector3d> {
 				DECLARE_PTR(colour)
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "colour", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual colour* clone_() const { return new colour(*this); }
 				virtual kinds kind() const { return COLOUR; }
@@ -422,19 +416,7 @@ typedef item const* ptr;
 				colour specular;
 				double specularity, transparency;
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "style" << std::endl;
-					o << std::string(indent, ' ') << "     " << "name" << (name) << std::endl;
-					if (diffuse.components_) {
-						o << std::string(indent, ' ') << "     " << "diffuse" << (name) << std::endl;
-						diffuse.print(o, indent + 5 + 7);
-					}
-					if (specular.components_) {
-						o << std::string(indent, ' ') << "     " << "specular" << (name) << std::endl;
-						specular.print(o, indent + 5 + 8);
-					}
-					// @todo
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual style* clone_() const { return new style(*this); }
 				virtual kinds kind() const { return STYLE; }
@@ -489,9 +471,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "point3", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				point3() : cartesian_base() {}
 				point3(const Eigen::Vector3d& c) : cartesian_base(c) {}
@@ -509,9 +489,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "direction3", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				direction3() : cartesian_base() {}
 				direction3(const Eigen::Vector3d& c) : cartesian_base(c) {}
@@ -536,9 +514,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "line", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct circle : public curve {
@@ -554,9 +530,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "circle", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				static circle::ptr from_3_points(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, const Eigen::Vector3d& p3) {
 					Eigen::Vector3d t = p2 - p1;
@@ -600,9 +574,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "ellipse", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct bspline_curve : public curve {
@@ -637,9 +609,7 @@ typedef item const* ptr;
 				boost::optional<std::vector<double>> weights;
 				int degree;
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "bspline curve" << std::endl;
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct offset_curve : public curve {
@@ -657,9 +627,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "offset_curve" << std::endl;
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct trimmed_curve : public item {
@@ -673,37 +641,17 @@ typedef item const* ptr;
 				item::ptr basis;
 
 				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
-				boost::optional<bool> orientation_2;
+				boost::optional<bool> curve_sense;
 
-				trimmed_curve() : basis(nullptr), orientation_2(true) {}
+				trimmed_curve() : basis(nullptr), curve_sense(true) {}
 				trimmed_curve(const point3::ptr& a, const point3::ptr& b) : start(a), end(b), basis(nullptr) {}
 
 				virtual void reverse() {
 					// std::swap(start, end);
-					orientation = !orientation;
+					orientation = !orientation.get_value_or(true);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "trimmed_curve" << std::endl;
-					if (basis) {
-						basis->print(o, indent + 4);
-					}
-
-					const boost::variant<point3::ptr, double>* const start_end[2] = { &start, &end };
-					for (int i = 0; i < 2; ++i) {
-						o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
-						if (start_end[i]->which() == 0) {
-							boost::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
-						}
-						else if (start_end[i]->which() == 1) {
-							o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
-						}
-					}
-
-					if (this->instance) {
-						o << std::string(indent, ' ') << this->instance->data().toString() << std::endl;
-					}
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct edge : public trimmed_curve {
@@ -717,7 +665,7 @@ typedef item const* ptr;
 				virtual kinds kind() const { return EDGE; }
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(EDGE), start, end, basis ? basis->hash() : size_t(0), orientation_2 ? *orientation_2 ? 2 : 1 : 0);
+					auto v = std::make_tuple(static_cast<size_t>(EDGE), start, end, basis ? basis->hash() : size_t(0), curve_sense ? *curve_sense ? 2 : 1 : 0);
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
@@ -758,7 +706,7 @@ typedef item const* ptr;
 
 				void print(std::ostream& o, int indent = 0) const {
 					o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
-					if (!matrix->is_identity()) {
+					if (matrix && !matrix->is_identity()) {
 						matrix->print(o, indent + 4);
 					}
 					for (auto& c : children) {
@@ -885,9 +833,7 @@ typedef item const* ptr;
 				virtual plane* clone_() const { return new plane(*this); }
 				virtual kinds kind() const { return PLANE; }
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
+				void print(std::ostream& o, int) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(PLANE), matrix->hash_components());
@@ -903,9 +849,8 @@ typedef item const* ptr;
 				virtual cylinder* clone_() const { return new cylinder(*this); }
 				virtual kinds kind() const { return CYLINDER; }
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
+				void print(std::ostream& o, int) const;
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(CYLINDER), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
@@ -920,9 +865,8 @@ typedef item const* ptr;
 				virtual sphere* clone_() const { return new sphere(*this); }
 				virtual kinds kind() const { return SPHERE; }
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
+				void print(std::ostream& o, int) const;
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SPHERE), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
@@ -971,9 +915,7 @@ typedef item const* ptr;
 				boost::optional<std::vector<std::vector<double>>> weights;
 				std::array<int, 2> degree;
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
+				void print(std::ostream& o, int) const;
 			};
 
 			struct sweep : public geom_item {
@@ -996,11 +938,7 @@ typedef item const* ptr;
 
 				extrusion(matrix4::ptr m, face::ptr basis, direction3::ptr dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
-					direction->print(o, indent + 4);
-					basis->print(o, indent + 4);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(EXTRUSION), matrix->hash_components(), basis->calc_hash(), direction->hash_components(), depth);
@@ -1020,9 +958,7 @@ typedef item const* ptr;
 
 				revolve(matrix4::ptr m, face::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "revolve" << std::endl;
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(REVOLVE), matrix->hash_components(), basis->calc_hash(), axis_origin->hash_components(), direction->hash_components(), angle ? *angle : 1000.);
@@ -1041,9 +977,7 @@ typedef item const* ptr;
 
 				surface_curve_sweep(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "surface_curve_sweep" << std::endl;
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SURFACE_CURVE_SWEEP), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());

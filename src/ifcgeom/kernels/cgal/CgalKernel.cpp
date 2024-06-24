@@ -650,7 +650,7 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 		std::vector<taxonomy::point3> edge;
 		if (e->basis) {
 			convert_curve(settings_, e, edge);
-			if (!e->orientation_2.get_value_or(true)) {
+			if (!e->curve_sense.get_value_or(true)) {
 				std::reverse(edge.begin(), edge.end());
 			}
 		} else {
@@ -658,6 +658,9 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 				*boost::get<taxonomy::point3::ptr>(e->start),
 				*boost::get<taxonomy::point3::ptr>(e->end)
 			};
+		}
+		if (!e->orientation.get_value_or(true)) {
+			std::reverse(edge.begin(), edge.end());
 		}
 		extend_wire(points, edge);
 	}

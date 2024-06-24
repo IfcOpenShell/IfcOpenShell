@@ -49,6 +49,13 @@ using namespace IfcGeom;
 using namespace IfcGeom::util;
 
 bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result) {
+#ifdef IFOPSH_DEBUG
+	std::ostringstream oss;
+	face->print(oss);
+	auto osss = oss.str();
+	std::wcout << osss.c_str() << std::endl;
+#endif
+
 	face_definition fd;
 
 	const bool is_face_surface = false; /* todo */

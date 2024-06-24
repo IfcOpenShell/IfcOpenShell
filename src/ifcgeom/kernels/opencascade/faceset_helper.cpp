@@ -155,7 +155,6 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				// @todo does this work with tesselated face sets, will they have an associated instance? Guess not.
 				duplicates_.insert(loop->identity());
 				continue;
 			}
@@ -203,6 +202,9 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geome
 		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(b->start)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
+		if (!b->orientation) {
+			fwd = !fwd;
+		}
 		if (!fwd) {
 			std::swap(C, D);
 		}

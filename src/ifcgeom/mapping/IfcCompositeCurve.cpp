@@ -45,7 +45,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			e->basis = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			e->start = u0;
 			e->end = u1;
-			e->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
+			e->curve_sense.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 
 			loop->children.push_back(e);
 		}
@@ -54,7 +54,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 			if (crv) {
 				if (crv->kind() == taxonomy::EDGE) {
 					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
-					ecrv->orientation_2.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
+					ecrv->curve_sense.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 					loop->children.push_back(ecrv);
 				}
 				else if (crv->kind() == taxonomy::LOOP) {
