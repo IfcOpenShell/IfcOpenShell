@@ -199,7 +199,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcAlarmType.htm"
     },
     "IfcAlignment": {
-        "description": "For the purposes of IFC the English term \"alignment\" defines three essentially separate but closely interconnected concepts.",
+        "description": "For the purposes of IFC the English term \"alignment\" defines three separate but closely interconnected concepts.",
         "predefined_types": {
             "NOTDEFINED": "",
             "USERDEFINED": ""
@@ -220,7 +220,7 @@
             "HorizontalLength": "Length measured as distance along the horizontal alignment of the segment.",
             "StartCantLeft": "Length measured for the left cant at the beginning of the segment.",
             "StartCantRight": "Length measured for the right cant at the beginning of the segment.",
-            "StartDistAlong": "Distance along the horizontal alignment, measured along the IfcAlignment2DHorizontal given in the length unit of the global IfcUnitAssignment."
+            "StartDistAlong": "Distance along the horizontal alignment, measured along the IfcAlignmentHorizontal given in the length unit of the global IfcUnitAssignment."
         },
         "description": "An IfcAlignmentCantSegment is an individual segment along IfcAlignmentCant.\nThe cant alignment is defined by ordered segments that connect end-to-start. The points defined in a cant alignment segment are defined in a plane with x = distance along horizontal alignment and y = height relative to projected points in vertical alignment.\nThe following cant segment types are defined:",
         "predefined_types": {
@@ -299,19 +299,19 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcAlignmentVerticalSegment.htm"
     },
     "IfcAnnotation": {
-        "description": "An annotation is an information element within the geometric (and spatial) context of a project, that adds a note or meaning to the objects which constitutes the project model. Annotations include additional points, curves, text, dimensioning, hatching and other forms of graphical notes. It also includes virtual or symbolic representations of additional model components, not representing products or spatial structures, such as event elements, survey points, contour lines or similar.",
+        "description": "An annotation is an information element within the geometric (and spatial) context of a project, that adds a note or meaning to the objects which constitutes the project model. Annotations include additional points, curves, text, dimensioning, hatching and other forms of graphical notes. It also includes virtual or symbolic representations of additional model components, not representing products or spatial structures, such as survey points and lines, contour lines or similar.",
         "predefined_types": {
-            "ASBUILTAREA": "A set of as-built survey points on a surface.",
-            "ASBUILTLINE": "A set of as-built survey points on a line (e.g. breakline).",
-            "ASBUILTPOINT": "A single as-built survey point.",
-            "ASSUMEDAREA": "A set of extra points on a surface as an assumption or interpretation, used to complement survey data in initial state modelling.",
-            "ASSUMEDLINE": "A set of extra points on a line (breakline) as an assumption or interpretation, used to complement survey data in initial state modelling.",
-            "ASSUMEDPOINT": "A single extra point (assumption or interpretation), used to complement survey data in initial state modelling.",
-            "NON_PHYSICAL_SIGNAL": "A virtual or fictitious signal. As opposed to the physical signal, the non-physical signal does not need to send information to the train. E.g. a fictitious signal on the signalman's display needed to define the route exit towards open line where there's no real signal. A virtual ERTMS L2 signal is also a non-physical signal but can have a physical presence, i.e. a stop marker board along the track.",
+            "CONTOURLINE": "Annotation used to illustrate lines connecting points of equal elevation or depth, on a map or chart.",
+            "DIMENSION": "Annotation used to illustrate the measurement or size of an object, often accompanied by numerical values.",
+            "ISOBAR": "Annotation used to illustrate lines connecting points of equal pressure on a map or chart.",
+            "ISOLUX": "Annotation used to illustrate lines connecting points of equal illuminance or light intensity.",
+            "ISOTHERM": "Annotation used to illustrate lines connecting points of equal temperature on a map or chart.",
+            "LEADER": "Annotation that includes a line or arrow.",
             "NOTDEFINED": "Undefined type.",
-            "SUPERELEVATIONEVENT": "A kind of event that specifies the superelevation (cross slope) at a specific location along a road alignment, and the type of transition from the previous location. The locations are specified using an IfcLinearPlacement measured along the alignment axis curve.",
-            "USERDEFINED": "User-defined type",
-            "WIDTHEVENT": "A kind of event that specifies the width at a specific location along a road alignment, and the type of transition from the previous location. The locations are specified using an IfcLinearPlacement measured along the alignment axis curve. The element(s) that are affected by the width event is currently proposed to be specified by containing the event in a specific lateral breakdown element of the road spatial structure (e.g. a Lane or the entire carriageway)."
+            "SURVEY": "Annotation used for survey information, such as survey points, survey lines or survey areas.",
+            "SYMBOL": "Annotation that employs graphical symbols or icons to represent specific meanings.",
+            "TEXT": "A textual annotation.",
+            "USERDEFINED": "User-defined type"
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcAnnotation.htm"
     },
@@ -563,7 +563,7 @@
             "NOTDEFINED": "Undefined linear beam element.",
             "PIERCAP": "A transversal beam on top of a pier (on a single column or extending from one column of a pier to another column of the same pier).",
             "SPANDREL": "A tall beam placed on the facade of a building. One tall side is usually finished to provide the exterior of the building. Can be used to support joists or slab elements on its interior side.",
-            "T_BEAM": "A beam that forms part of a slab construction and acts together with the slab which its carries. Such beams are often of T-shape (therefore the English name), but may have other shapes as well, e.g. an L-Shape or an Inverted-T-Shape.",
+            "T_BEAM": "A beam that forms part of a slab construction and acts together with the slab which it carries. Such beams are often of T-shape (therefore the English name), but may have other shapes as well, e.g. an L-Shape or an Inverted-T-Shape.",
             "USERDEFINED": "User-defined linear beam element."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBeam.htm"
@@ -583,7 +583,7 @@
             "NOTDEFINED": "Undefined linear beam element.",
             "PIERCAP": "A transversal beam on top of a pier (on a single column or extending from one column of a pier to another column of the same pier).",
             "SPANDREL": "A tall beam placed on the facade of a building. One tall side is usually finished to provide the exterior of the building. Can be used to support joists or slab elements on its interior side.",
-            "T_BEAM": "A beam that forms part of a slab construction and acts together with the slab which its carries. Such beams are often of T-shape (therefore the English name), but may have other shapes as well, e.g. an L-Shape or an Inverted-T-Shape.",
+            "T_BEAM": "A beam that forms part of a slab construction and acts together with the slab which it carries. Such beams are often of T-shape (therefore the English name), but may have other shapes as well, e.g. an L-Shape or an Inverted-T-Shape.",
             "USERDEFINED": "User-defined linear beam element."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBeamType.htm"
@@ -634,7 +634,7 @@
             "YLength": "The size of the block along the placement Y axis. It is provided by the inherited axis placement through SELF\\IfcCsgPrimitive3D.Position.P[2].",
             "ZLength": "The size of the block along the placement Z axis. It is provided by the inherited axis placement through SELF\\IfcCsgPrimitive3D.Position.P[3]."
         },
-        "description": "The IfcBlock is a Construction Solid Geometry (CSG) 3D primitive. It is defined by a position and a positive distance along the three orthogonal axes. The inherited Position attribute has the IfcAxisPlacement3D type and provides:",
+        "description": "The IfcBlock is a Construction Solid Geometry (CSG) 3D primitive. It is defined by a position and a positive distance along the three orthogonal axes. The inherited Position attribute has the IfcAxis2Placement3D type and provides:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBlock.htm"
     },
     "IfcBoiler": {
@@ -751,17 +751,17 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBoxedHalfSpace.htm"
     },
     "IfcBridge": {
-        "description": "A Bridge is civil engineering works that affords passage to pedestrians, animals, vehicles, and services above obstacles or between two points at a height above ground.",
+        "description": "A Bridge is a civil engineering work that affords passage to pedestrians, animals, vehicles, and services above obstacles or between two points at a height above ground.",
         "predefined_types": {
-            "ARCHED": "Arched bridge.",
-            "CABLE_STAYED": "Cable Stayed bridge.",
-            "CANTILEVER": "Cantilever bridge.",
-            "CULVERT": "Culvert bridge.",
+            "ARCHED": "ISO 6707: Bridge that has one or more arches as its main structure.",
+            "CABLE_STAYED": "ISO 6707: Bridge with one or more towers and inclined cables that are connected to the top or the shaft of the tower and support the deck.",
+            "CANTILEVER": "ISO 6707: Bridge, the main structural members of which are cantilevers.",
+            "CULVERT": "ISO 6707: Transverse drain or waterway construction under a road, railway, or canal, or through an embankment, in the form of a large pipe or enclosed channel.",
             "FRAMEWORK": "Framework bridge.",
-            "GIRDER": "Girder bridge.",
+            "GIRDER": "A bridge that uses girders as the means of supporting its deck.",
             "NOTDEFINED": "Undefined bridge.",
-            "SUSPENSION": "Suspension bridge.",
-            "TRUSS": "Truss bridge.",
+            "SUSPENSION": "ISO 6707: Bridge, the main structural members of which are catenary cables from which the deck is suspended.",
+            "TRUSS": "ISO 6707: Bridge with braced triangulated frame designed to act as a beam.",
             "USERDEFINED": "User defined bridge."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBridge.htm"
@@ -769,17 +769,17 @@
     "IfcBridgePart": {
         "description": "Part of a bridge.\n",
         "predefined_types": {
-            "ABUTMENT": "Abutment",
-            "DECK": "Deck",
-            "DECK_SEGMENT": "Deck Segment",
-            "FOUNDATION": "Foundation",
+            "ABUTMENT": "The substructures at the ends of a bridge, supporting its superstructure. They may be composed of wing walls (on each side), head wall, stem wall, and cone",
+            "DECK": "A bridge deck is comprised of those elements used for conveying traffic but does not perform structural functions of the superstructure",
+            "DECK_SEGMENT": "A segment of the bridge deck. Segments may be separated by construction or expansion joints",
+            "FOUNDATION": "The structural elements that support and anchor the bridge to the ground, transmitting all loads to the supporting strata",
             "NOTDEFINED": "Not defined",
-            "PIER": "Pier",
-            "PIER_SEGMENT": "Pier segment",
-            "PYLON": "Pylon",
-            "SUBSTRUCTURE": "Substructure",
-            "SUPERSTRUCTURE": "Superstructure",
-            "SURFACESTRUCTURE": "Surfacestructure",
+            "PIER": "A bridge pier is a type of structure that extends to the ground below or into the water. It is used to support bridge superstructure and transfer the loads to the foundation.",
+            "PIER_SEGMENT": "A segment of the bridge pier. Segments may be separated by construction or expansion joints",
+            "PYLON": "A vertical structure supporting cables in suspended or stayed structures",
+            "SUBSTRUCTURE": "The elements that transfer loads to the ground. It includes abutments and piers",
+            "SUPERSTRUCTURE": "The part of the bridge that span horizontally and transfers the traffic load to the bridge substructures",
+            "SURFACESTRUCTURE": "",
             "USERDEFINED": "User defined"
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBridgePart.htm"
@@ -820,12 +820,14 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBuildingElementPartType.htm"
     },
     "IfcBuildingElementProxy": {
-        "description": "The IfcBuildingElementProxy is a proxy definition that provides the same functionality as subtypes of IfcBuildingElement, but without having a predefined meaning of the special type of building element it represents.",
+        "description": "The IfcBuildingElementProxy is a proxy definition that provides the same functionality as subtypes of IfcBuiltElement, but without having a predefined meaning of the special type of building element it represents.",
         "predefined_types": {
             "COMPLEX": "Not used - kept for upward compatibility.",
             "ELEMENT": "Not used - kept for upward compatibility.",
             "NOTDEFINED": "Undefined building element proxy.",
             "PARTIAL": "Not used - kept for upward compatibility.",
+            "PROVISIONFORSPACE": "The proxy denotes a provision for space (e.g. the space allocated as a provision for mechanical equipment or furniture).",
+            "PROVISIONFORVOID": "The proxy denotes a provision for voids (a proposed opening not applied as void yet).",
             "USERDEFINED": "User-defined building element proxy."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBuildingElementProxy.htm"
@@ -837,6 +839,8 @@
             "ELEMENT": "Not used - kept for upward compatibility.",
             "NOTDEFINED": "Undefined building element proxy.",
             "PARTIAL": "Not used - kept for upward compatibility.",
+            "PROVISIONFORSPACE": "The proxy denotes a provision for space (e.g. the space allocated as a provision for mechanical equipment or furniture).",
+            "PROVISIONFORVOID": "The proxy denotes a provision for voids (a proposed opening not applied as void yet).",
             "USERDEFINED": "User-defined building element proxy."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBuildingElementProxyType.htm"
@@ -854,14 +858,11 @@
         },
         "description": "A building system is a group by which building elements are grouped according to a common function within the facility.",
         "predefined_types": {
-            "EROSIONPREVENTION": "",
             "FENESTRATION": "System of doors, windows, and other fillings in openings in a built envelope that are designed to permit the passage of air or light.",
-            "FOUNDATION": "System of shallow and deep foundation element that transmit forces to the supporting ground.",
+            "FOUNDATION": "System of shallow and deep foundation elements that transmit forces to the supporting ground.",
             "LOADBEARING": "System of built elements that transmit forces and stiffen the construction.",
             "NOTDEFINED": "",
             "OUTERSHELL": "System of built elements that provide the outer skin to protect the construction (such as the facade).",
-            "PRESTRESSING": "",
-            "REINFORCING": "",
             "SHADING": "System of shading elements (external or internal) that permits the limitation or control of impact of natural sun light.",
             "TRANSPORT": "System of all transport elements in a building that enables the transport of people or goods.",
             "USERDEFINED": ""
@@ -935,6 +936,7 @@
             "CROSS": "A fitting at which two branches are taken from the main route of the cable carrier simultaneously.",
             "JUNCTION": "A fitting with typically more than two ports used to redistribute flow among the ports and/or to change the direction of flow between connected elements (e.g, tee, cross, wye, etc.).",
             "NOTDEFINED": "Undefined type.",
+            "REDUCER": "A fitting that changes the physical size of the main route of the cable carrier.",
             "TEE": "A fitting at which a branch is taken from the main route of the cable carrier.",
             "TRANSITION": "A fitting with typically two ports having different shapes or sizes. Can also be used to change the direction of flow between connected elements.",
             "USERDEFINED": "User-defined type."
@@ -949,6 +951,7 @@
             "CROSS": "A fitting at which two branches are taken from the main route of the cable carrier simultaneously.",
             "JUNCTION": "A fitting with typically more than two ports used to redistribute flow among the ports and/or to change the direction of flow between connected elements (e.g, tee, cross, wye, etc.).",
             "NOTDEFINED": "Undefined type.",
+            "REDUCER": "A fitting that changes the physical size of the main route of the cable carrier.",
             "TEE": "A fitting at which a branch is taken from the main route of the cable carrier.",
             "TRANSITION": "A fitting with typically two ports having different shapes or sizes. Can also be used to change the direction of flow between connected elements.",
             "USERDEFINED": "User-defined type."
@@ -1162,7 +1165,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcChillerType.htm"
     },
     "IfcChimney": {
-        "description": "Chimneys are typically vertical, or as near as vertical, parts of the construction of a building and part of the building fabric. Often constructed by pre-cast or insitu concrete, today seldom by bricks.",
+        "description": "Chimneys are typically vertical, or as near as vertical, parts of the construction of a building and part of the building fabric. Often constructed by pre-cast or insitu concrete, today seldom by bricks. Chimneys are used to evacuate flues from e.g. boilers or fire places.",
         "predefined_types": {
             "NOTDEFINED": "",
             "USERDEFINED": ""
@@ -1199,7 +1202,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCircleProfileDef.htm"
     },
     "IfcCivilElement": {
-        "description": "An IfcCivilElement is a generalization of all elements within a civil engineering works that cannot be represented as BuildingElements, DistributionElements or GeographicElements. Depending on the context of the construction project, included building work, such as buildings or factories, are represented as a collection of IfcBuildingElement's, distribution systems, such as piping or drainage, are represented as a collection of IfcDistributionElement's, and other geographic elements, such as trees, light posts, traffic signs etc. are represented as IfcGeographicElement's.",
+        "description": "An IfcCivilElement is a generalization of all elements within a civil engineering works that cannot be represented as BuildingElements, DistributionElements or GeographicElements. Depending on the context of the construction project, included building work, such as buildings or factories, are represented as a collection of IfcBuiltElement's, distribution systems, such as piping or drainage, are represented as a collection of IfcDistributionElement's, and other geographic elements, such as trees, light posts, traffic signs etc. are represented as IfcGeographicElement's.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCivilElement.htm"
     },
     "IfcCivilElementType": {
@@ -1304,7 +1307,7 @@
             "PIERSTEM": "An individual vertical part of a pier, may be a simple column, i.e. no breakdown into segments or separate structural parts such as flanges and web(s), or may be an aggregation of segments and/or parts.",
             "PIERSTEM_SEGMENT": "A vertical segment of a pier column.",
             "PILASTER": "A column element embedded within a wall that can be required to be load bearing but may also only be used for decorative purposes.",
-            "STANDCOLUMN": "A column transmitting vertical loads from superstructure to an arch below it.",
+            "STANDCOLUMN": "A column transmitting vertical loads from a superstructure to an arch below it.",
             "USERDEFINED": "User-defined linear element."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcColumn.htm"
@@ -1317,7 +1320,7 @@
             "PIERSTEM": "An individual vertical part of a pier, may be a simple column, i.e. no breakdown into segments or separate structural parts such as flanges and web(s), or may be an aggregation of segments and/or parts.",
             "PIERSTEM_SEGMENT": "A vertical segment of a pier column.",
             "PILASTER": "A column element embedded within a wall that can be required to be load bearing but may also only be used for decorative purposes.",
-            "STANDCOLUMN": "A column transmitting vertical loads from superstructure to an arch below it.",
+            "STANDCOLUMN": "A column transmitting vertical loads from a superstructure to an arch below it.",
             "USERDEFINED": "User-defined linear element."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcColumnType.htm"
@@ -1397,8 +1400,8 @@
     "IfcComplexPropertyTemplate": {
         "attributes": {
             "HasPropertyTemplates": "Reference to a set of property templates. It should only be provided, if the PropertyType is set to COMPLEX.",
-            "TemplateType": "",
-            "UsageName": ""
+            "TemplateType": "Property type defining whether the property template defines a property as a IfcComplexProperty or IfcPhysicalComplexQuantity",
+            "UsageName": "Usage description of the IfcComplexPropertyTemplate."
         },
         "description": "The IfcComplexPropertyTemplate defines the template for all complex properties, either the IfcComplexProperty's, or the IfcPhysicalComplexQuantity's. The individual complex property templates are interpreted according to their Name attribute and and optional UsageName attribute.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcComplexPropertyTemplate.htm"
@@ -1598,7 +1601,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionEquipmentResource.htm"
     },
     "IfcConstructionEquipmentResourceType": {
-        "description": "The resource type IfcConstructionEquipmentType defines commonly shared information for occurrences of construction equipment resources. The set of shared information may include:",
+        "description": "The resource type IfcConstructionEquipmentResourceType defines commonly shared information for occurrences of construction equipment resources. The set of shared information may include:",
         "predefined_types": {
             "DEMOLISHING": "Removal or destruction of building elements.",
             "EARTHMOVING": "Excavating, filling, or contouring earth.",
@@ -1631,7 +1634,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionMaterialResource.htm"
     },
     "IfcConstructionMaterialResourceType": {
-        "description": "The resource type IfcConstructionMaterialType defines commonly shared information for occurrences of construction material resources. The set of shared information may include:",
+        "description": "The resource type IfcConstructionMaterialResourceType defines commonly shared information for occurrences of construction material resources. The set of shared information may include:",
         "predefined_types": {
             "AGGREGATES": "Construction aggregate including sand, gravel, and crushed stone.",
             "CONCRETE": "Cast-in-place concrete.",
@@ -1658,7 +1661,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcConstructionProductResource.htm"
     },
     "IfcConstructionProductResourceType": {
-        "description": "The resource type IfcConstructionProductType defines commonly shared information for occurrences of construction product resources. The set of shared information may include:",
+        "description": "The resource type IfcConstructionProductResourceType defines commonly shared information for occurrences of construction product resources. The set of shared information may include:",
         "predefined_types": {
             "ASSEMBLY": "Construction of assemblies for use as input to the building model or other assemblies.",
             "FORMWORK": "Construction or placement of forms for placing materials such as concrete.",
@@ -1686,7 +1689,7 @@
     },
     "IfcContext": {
         "attributes": {
-            "Declares": "Reference to the IfcRelDeclares relationship that assigns the uppermost entities of includes hierarchies to this context instance.",
+            "Declares": "Reference to the IfcRelDeclares relationship that assigns the uppermost entities of included hierarchies to this context instance.",
             "LongName": "Long name for the context as used for reference purposes.",
             "ObjectType": "The object type denotes a particular type that indicates the object further. The use has to be established at the level of instantiable subtypes.",
             "Phase": "Current project phase, or life-cycle phase of this project. Applicable values have to be agreed upon by view definitions or implementer agreements.",
@@ -1825,16 +1828,16 @@
             "SourceCRS": "Source coordinate reference system for the operation.",
             "TargetCRS": "Target coordinate reference system for the operation."
         },
-        "description": "The coordinate operation is an abstract supertype to handle any operation (transformation or conversion) between two coordinate reference systems. It is meant to provide expandability for future versions, since currently only the conversion of a local engineering coordinate system into a map coordinate reference system is dealt with by the subtype IfcMapConversion.",
+        "description": "IfcCoordinateOperation is an abstract supertype to handle any operation (transformation or conversion) between two coordinate reference systems (CRSs).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCoordinateOperation.htm"
     },
     "IfcCoordinateReferenceSystem": {
         "attributes": {
-            "Description": "Informal description of this coordinate reference system",
-            "GeodeticDatum": "",
-            "HasCoordinateOperation": "Indicates conversion between coordinate systems. In particular it refers to an IfcCoordinateOperation between this coordinate reference system, and another Geographic coordinate reference system.",
+            "Description": "Informal description of this coordinate reference system.",
+            "GeodeticDatum": "Name by which this datum is identified. The geodetic datum is associated with the coordinate reference system and indicates the shape and size of the rotation ellipsoid and this ellipsoid's connection and orientation to the actual globe/earth. It needs to be provided, if the Name identifier does not unambiguously define the geodetic datum as well.",
+            "HasCoordinateOperation": "Indicates conversion between coordinate reference systems. In particular it refers to an IfcCoordinateOperation between this coordinate reference system, and another coordinate reference system.",
             "Name": "Name by which the coordinate reference system is identified.",
-            "VerticalDatum": ""
+            "WellKnownText": "Well Known Text (WKT) definition for this coordinate reference system inversely associated as a IfcWellKnownText entity."
         },
         "description": "The IfcCoordinateReferenceSystem is a definition of a coordinate reference system by means of qualified identifiers only. The interpretation of the identifier is expected to be well-known to the receiving software.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCoordinateReferenceSystem.htm"
@@ -2001,7 +2004,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCurrencyRelationship.htm"
     },
     "IfcCurtainWall": {
-        "description": "A curtain wall is a wall of a building which is an assembly of components, hung from the edge of the floor/roof structure rather than bearing on a floor. Curtain wall is represented as a building element assembly and implemented as a subtype of IfcBuildingElement that uses an IfcRelAggregates relationship. A curtain wall is often external, but using Pset_CurtainWallCommon.IsExternal can be used to define interior curtain walls.",
+        "description": "A curtain wall is a wall of a building which is an assembly of components, hung from the edge of the floor/roof structure rather than bearing on a floor. Curtain wall is represented as a building element assembly and implemented as a subtype of IfcBuiltElement that uses an IfcRelAggregates relationship. A curtain wall is often external, but using _Pset_CurtainWallCommon.IsExternal_ can be used to define interior curtain walls.",
         "predefined_types": {
             "NOTDEFINED": "",
             "USERDEFINED": ""
@@ -2041,11 +2044,11 @@
     "IfcCurveSegment": {
         "attributes": {
             "ParentCurve": "Curve to be used as base for the segment definition.",
-            "Placement": "Placement in the context of the curve using this segment. As insertion point SegmentStart is the reference point of Placement. RefDirection of Placement also specifies the sense of the trimmed segment of ParentCurve. RefDirection is bound to the paramettrization sense of the segment.",
+            "Placement": "Placement in the context of the curve using this segment. As insertion point SegmentStart is the reference point of Placement. RefDirection of Placement also specifies the sense of the trimmed segment of ParentCurve. RefDirection is bound to the parametrization sense of the segment.",
             "SegmentLength": "Length of segment measured as length or parameter value from SegmentStart. The sign of this value defines the sense agreement.",
             "SegmentStart": "First trimming point of the curve segment on the ParentCurve. This point is used as the insertion point into the segmented, gradient or composite curve using this segment."
         },
-        "description": "A type of segment positioned along a curve cutting a segment from the parent curve. If the segment is placed through IfcAxis2PlacementLinear, the positioning curve (Placement.Location.BasisCurve) does not necessarily correspond with the ParentCurve.\n",
+        "description": "A type of segment positioned along a curve cutting a segment from the parent curve. If the segment is placed through IfcAxis2PlacementLinear, the positioning curve (Placement.Location.BasisCurve) does not necessarily correspond with the ParentCurve.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCurveSegment.htm"
     },
     "IfcCurveStyle": {
@@ -2189,11 +2192,11 @@
             "EndParam": "The parameter value on the Directrix at which the sweeping operation ends. If no value is provided the end of the sweeping operation is at the end of the Directrix.",
             "StartParam": "The parameter value on the Directrix at which the sweeping operation commences. If no value is provided the start of the sweeping operation is at the start of the Directrix."
         },
-        "description": "An abstract entity defining common information about a type of swept area solid which is the result of sweeping an area along a Directrix. The swept area is provided by a subtype of IfcProfileDef. The profile is placed by an implicit cartesian transformation operator at the start point of the sweep, where the profile normal agrees to the tangent of the directrix at this point. The direction of profile\ufffds x-axis is specialized by the subtypes of IfcDirextrixCurveSweptAreaSolid.\nThe start of the sweeping operation is at the StartParam, the parameter value is provided based on the curve parameterization. If no StartParam is provided the start defaults to the begin of the directrix. The end of the sweeping operation is at the EndParam, the parameter value is provided based on the curve parameterization. If no EndParam is provided the end defaults to the end of the directrix.\n",
+        "description": "An abstract entity defining common information about a type of swept area solid which is the result of sweeping an area along a Directrix. The swept area is provided by a subtype of IfcProfileDef. The profile is placed by an implicit cartesian transformation operator at the start point of the sweep, where the profile normal agrees to the tangent of the directrix at this point. The direction of profile's x-axis is specialized by the subtypes of IfcDirectrixCurveSweptAreaSolid.\nThe start of the sweeping operation is at the StartParam, the parameter value is provided based on the curve parameterization. If no StartParam is provided the start defaults to the begin of the directrix. The end of the sweeping operation is at the EndParam, the parameter value is provided based on the curve parameterization. If no EndParam is provided the end defaults to the end of the directrix.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDirectrixCurveSweptAreaSolid.htm"
     },
     "IfcDirectrixDerivedReferenceSweptAreaSolid": {
-        "description": "In most cases the case the IfcDirectrixDerivedReferenceSweptAreaSolid has exactly the same behavior as IfcFixedReferenceSweptAreaSolid, except when the Directrix not only defines a tangent direction but a tangent plane for each point on the curve. Like for example in the case of a IfcSegmentReferenceCurve, the change in y directioin of the tangent plane is added to the fixed reference. The change in y direction at the start of the directrix is defined to be 0 independent from StartParam value, this means the change can be non-zero at the start of the resulting Swept Area Solid.\n",
+        "description": "In most cases the case the IfcDirectrixDerivedReferenceSweptAreaSolid has exactly the same behavior as IfcFixedReferenceSweptAreaSolid, except when the Directrix not only defines a tangent direction but a tangent plane for each point on the curve. Like for example in the case of a IfcSegmentReferenceCurve, the change in y direction of the tangent plane is added to the fixed reference. The change in y direction at the start of the directrix is defined to be 0 independent from StartParam value, this means the change can be non-zero at the start of the resulting Swept Area Solid.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDirectrixDerivedReferenceSweptAreaSolid.htm"
     },
     "IfcDiscreteAccessory": {
@@ -2333,7 +2336,7 @@
         "attributes": {
             "HasPorts": "Reference to the element to port connection relationship. The relationship then refers to the port which is contained in this element."
         },
-        "description": "This IfcDistributionElement is a generalization of all elements that participate in a distribution system. Typical examples of IfcDistributionElement's are (among others):",
+        "description": "IfcDistributionElement is a generalization of all elements that participate in a distribution system. Typical examples of IfcDistributionElement entities are (among others):",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDistributionElement.htm"
     },
     "IfcDistributionElementType": {
@@ -2476,8 +2479,8 @@
     "IfcDoor": {
         "attributes": {
             "OperationType": "Type defining the general layout and operation of the door type in terms of the partitioning of panels and panel operations.",
-            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the door is inserted.",
-            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of theE door opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the door is inserted.",
+            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpeningElement in which the door is inserted.",
+            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the body of the door opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpeningElement in which the door is inserted.",
             "UserDefinedOperationType": "Designator for the user defined operation type, shall only be provided, if the value of OperationType is set to USERDEFINED."
         },
         "description": "The door is a built element that is predominately used to provide controlled access for people, goods, animals and vehicles. It includes constructions with hinged, pivoted, sliding, and additionally revolving and folding operations. A door can:",
@@ -2621,7 +2624,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDuctSilencerType.htm"
     },
     "IfcEarthworksCut": {
-        "description": "The resulting void from modification of existing terrain or road structure by excavation or by other means of removing material.\nNOTE Definition from ISO 6707-1: void that results from bulk excavation of material.\nNOTE The material excavated and either used as fill or discarded as waste is not modelled as Cut, but may be handled as a different concept (Resource) in the future.\n",
+        "description": "The resulting void from modification of existing terrain or road structure by excavation or by other means of removing material.",
         "predefined_types": {
             "BASE_EXCAVATION": "Excavation for basements of buildings, abutments of bridges or similar structures either partially or completely below ground level.",
             "CUT": "Excavation where soil or rock below topsoil is cut to the depth required for the construction of facilities such as roads and railways. The removed material can be used as fill (IfcEarthworksElement) for embankments or to form a level surface on which to build.",
@@ -2877,10 +2880,10 @@
         "attributes": {
             "ConnectedFrom": "Reference to the element connection relationship. The relationship then refers to the other element that is connected to this element.",
             "ConnectedTo": "Reference to the element connection relationship. The relationship then refers to the other element to which this element is connected to.",
-            "FillsVoids": "Reference to the IfcRelFillsElement Relationship that puts the element as a filling into the opening created within another element.",
-            "HasCoverings": "Reference to IfcCovering by virtue of the objectified relationship IfcRelCoversBldgElement. It defines the concept of an element having coverings associated.",
+            "FillsVoids": "Reference to the IfcRelFillsElement relationship that puts the element as a filling into the opening created within another element.",
+            "HasCoverings": "Reference to IfcCovering by virtue of the objectified relationship IfcRelCoversBldgElements. It defines the concept of an element having coverings associated.",
             "HasOpenings": "Reference to the IfcRelVoidsElement relationship that creates an opening in an element. An element can incorporate zero-to-many openings. For each opening, that voids the element, a new relationship IfcRelVoidsElement is generated.",
-            "HasProjections": "Projection relationship that adds a feature (using a Boolean union) to the IfcBuildingElement.",
+            "HasProjections": "Projection relationship that adds a feature (using a Boolean union) to the IfcBuiltElement.",
             "HasSurfaceFeatures": "Reference to the IfcRelAdheresToElement relationship that adheres a IfcSurfaceFeature to an element. An element can incorporate zero-to-many surface features in one relationship.",
             "InterferesElements": "Reference to the interference relationship to indicate the element that interferes. The relationship, if provided, indicates that this element has an interference with one or many other elements.",
             "IsConnectionRealization": "Reference to the connection relationship with realizing element. The relationship, if provided, assigns this element as the realizing element to the connection, which provides the physical manifestation of the connection relationship.",
@@ -2888,7 +2891,7 @@
             "ProvidesBoundaries": "Reference to space boundaries by virtue of the objectified relationship IfcRelSpaceBoundary. It defines the concept of an element bounding spaces.",
             "Tag": "The tag (or label) identifier at the particular instance of a product, e.g. the serial number, or the position number. It is the identifier at the occurrence level."
         },
-        "description": "An element is a generalization of all components that make up an AEC product.",
+        "description": "An element is a generalization of all components that make up a facility.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcElement.htm"
     },
     "IfcElementAssembly": {
@@ -2904,7 +2907,7 @@
             "BRACED_FRAME": "A rigid frame with additional bracing members.",
             "CROSS_BRACING": "A Structural linear member or assembly of members inside a box girder or between girders, typically on a pier, to resist lateral forces and transfer them to the support.",
             "DECK": "A platform (such as floor or bridge deck) built up of beams, slabs.",
-            "DILATATIONPANEL": "Device which permits longitudinal relative rail movement of two adjacent rails, while maintaining correct guidance and support. Note: definition from NF EN 13232-1-2004.",
+            "DILATATIONPANEL": "Device which permits longitudinal relative rail movement of two adjacent rails, while maintaining correct guidance and support.",
             "ENTRANCEWORKS": "An assembly forming the support structure of a chamber (lock, dock) gate and associated elements, plus the containment of operational equipment.",
             "GIRDER": "A beam-like superstructure, such as bridge main girder extending between abutments and piers built up of beams, braces (as Members) etc. - may also be an aggregation of girder segments.",
             "GRID": "A framework of spaced cables or bars that are parallel to or cross each other.",
@@ -2925,7 +2928,7 @@
             "TRACTION_SWITCHING_ASSEMBLY": "A common assembly used to insure the switching function. It is composed of switches, control instruments and other components.",
             "TRAFFIC_CALMING_DEVICE": "A structure on the carriageway to control the speed of vehicles.",
             "TRUSS": "A structure built up of members with (quasi) pinned joint.",
-            "TURNOUTPANEL": "Trackwork ensuring the support and guidance of a vehicle along any given route among various diverging or intersecting tracks. Note: definition from NF EN 13232-1-2004.",
+            "TURNOUTPANEL": "Trackwork ensuring the support and guidance of a vehicle along any given route among various diverging or intersecting tracks.",
             "USERDEFINED": "User-defined element assembly."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcElementAssembly.htm"
@@ -2940,7 +2943,7 @@
             "BRACED_FRAME": "A rigid frame with additional bracing members.",
             "CROSS_BRACING": "A Structural linear member or assembly of members inside a box girder or between girders, typically on a pier, to resist lateral forces and transfer them to the support.",
             "DECK": "A platform (such as floor or bridge deck) built up of beams, slabs.",
-            "DILATATIONPANEL": "Device which permits longitudinal relative rail movement of two adjacent rails, while maintaining correct guidance and support. Note: definition from NF EN 13232-1-2004.",
+            "DILATATIONPANEL": "Device which permits longitudinal relative rail movement of two adjacent rails, while maintaining correct guidance and support.",
             "ENTRANCEWORKS": "An assembly forming the support structure of a chamber (lock, dock) gate and associated elements, plus the containment of operational equipment.",
             "GIRDER": "A beam-like superstructure, such as bridge main girder extending between abutments and piers built up of beams, braces (as Members) etc. - may also be an aggregation of girder segments.",
             "GRID": "A framework of spaced cables or bars that are parallel to or cross each other.",
@@ -2961,7 +2964,7 @@
             "TRACTION_SWITCHING_ASSEMBLY": "A common assembly used to insure the switching function. It is composed of switches, control instruments and other components.",
             "TRAFFIC_CALMING_DEVICE": "A structure on the carriageway to control the speed of vehicles.",
             "TRUSS": "A structure built up of members with (quasi) pinned joint.",
-            "TURNOUTPANEL": "Trackwork ensuring the support and guidance of a vehicle along any given route among various diverging or intersecting tracks. Note: definition from NF EN 13232-1-2004.",
+            "TURNOUTPANEL": "Trackwork ensuring the support and guidance of a vehicle along any given route among various diverging or intersecting tracks.",
             "USERDEFINED": "User-defined element assembly."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcElementAssemblyType.htm"
@@ -3017,7 +3020,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcEnergyConversionDevice.htm"
     },
     "IfcEnergyConversionDeviceType": {
-        "description": "The element type IfcEnergyConversionType defines a list of commonly shared property set definitions of an energy conversion device and an optional set of product representations. It is used to define an energy conversion device specification (the specific product information, that is common to all occurrences of that product type).",
+        "description": "The element type IfcEnergyConversionDeviceType defines a list of commonly shared property set definitions of an energy conversion device and an optional set of product representations. It is used to define an energy conversion device specification (the specific product information, that is common to all occurrences of that product type).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcEnergyConversionDeviceType.htm"
     },
     "IfcEngine": {
@@ -3105,8 +3108,8 @@
     "IfcEvent": {
         "attributes": {
             "EventOccurenceTime": "The date and/or time at which an event occurs.",
-            "EventTriggerType": "Identifies the predefined types of event trigger from which     the type required may be set.",
-            "UserDefinedEventTriggerType": "A user defined event trigger type, the value of which is     asserted when the value of an event trigger type is declared     as USERDEFINED."
+            "EventTriggerType": "Identifies the predefined types of event trigger from which the type required may be set.",
+            "UserDefinedEventTriggerType": "A user defined event trigger type, the value of which is asserted when the value of an event trigger type is declared as USERDEFINED."
         },
         "description": "An IfcEvent is something that happens that triggers an action or response.",
         "predefined_types": {
@@ -3130,10 +3133,10 @@
     },
     "IfcEventType": {
         "attributes": {
-            "EventTriggerType": "Identifies the predefined types of event trigger from which     the type required may be set.",
-            "UserDefinedEventTriggerType": "A user defined event trigger type, the value of which     is asserted when the value of an event trigger type is     declared as USERDEFINED."
+            "EventTriggerType": "Identifies the predefined types of event trigger from which the type required may be set.",
+            "UserDefinedEventTriggerType": "A user defined event trigger type, the value of which is asserted when the value of an event trigger type is declared as USERDEFINED."
         },
-        "description": "An IfcEventType defines a particular type of event that may be specified.",
+        "description": "> HISTORY  New entity in IFC4",
         "predefined_types": {
             "ENDEVENT": "A terminating event of a process.",
             "INTERMEDIATEEVENT": "An event that occurs at an intermediate stage of a process.",
@@ -3176,7 +3179,7 @@
     },
     "IfcExternalSpatialElement": {
         "attributes": {
-            "BoundedBy": "Reference to a set of IfcRelSpaceBoundary's that defines the physical or virtual delimitation of that external spacial element against physical or virtual boundaries."
+            "BoundedBy": "Reference to a set of IfcRelSpaceBoundary entities that defines the physical or virtual delimitation of that external spatial element against physical or virtual boundaries."
         },
         "description": "The external spatial element defines external regions at the building site. Those regions can be defined:",
         "predefined_types": {
@@ -3272,13 +3275,13 @@
     },
     "IfcFacilityPart": {
         "attributes": {
-            "UsageType": ""
+            "UsageType": "Defines the convention used to subdivide or decompose the facility."
         },
         "description": "IfcFacilityPart provides for spatial breakdown of built facilities. It may be further specialised according to the type of facility being broken down.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcFacilityPart.htm"
     },
     "IfcFacilityPartCommon": {
-        "description": "A part of a facility.\n",
+        "description": "A part that is not clearly part of one domain but is a hybrid and has shared responsibilities in multiple domains.",
         "predefined_types": {
             "ABOVEGROUND": "A vertical facility part for elements belonging to the space above the finished ground.",
             "BELOWGROUND": "A vertical facility part for the containment of elements below the finished ground. This may include for example earthworks elements and elements in a pavement structure.",
@@ -3372,7 +3375,7 @@
         "attributes": {
             "VoidsElements": "Reference to the Voids Relationship that uses this Opening Element to create a void within an Element. The Opening Element can only be used to create a single void within a single Element."
         },
-        "description": "The IfcFeatureElementSubtraction is specialization of the general feature element, that represents an existence dependent elements which modifies the shape and appearance of the associated master element. The IfcFeatureElementSubtraction offers the ability to handle shape modifiers as semantic objects within the IFC object model that subtract from the shape of the master element.",
+        "description": "The IfcFeatureElementSubtraction is specialization of the general feature element, that represents an existence dependent element which modifies the shape and appearance of the associated master element. The IfcFeatureElementSubtraction offers the ability to handle shape modifiers as semantic objects within the IFC object model that subtract from the shape of the master element.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcFeatureElementSubtraction.htm"
     },
     "IfcFillAreaStyle": {
@@ -3651,6 +3654,15 @@
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcFurnitureType.htm"
     },
+    "IfcGeographicCRS": {
+        "attributes": {
+            "AngleUnit": "Unit of latitude and longitude coordinate axes composing the geographic coordinate system.",
+            "HeightUnit": "Unit of the height coordinate axis of the geographic coordinate system.",
+            "PrimeMeridian": "The identification of the meridian defining zero longitude in the used geographic CRS."
+        },
+        "description": "A IfcGeographicCRS is a coordinate reference system (CRS) that uses a three-dimensional ellipsoid surface to reference locations on the Earth. Any location on Earth can be described by a point with longitude and latitude coordinates and the height above or below the ellipsoid surface.",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcGeographicCRS.htm"
+    },
     "IfcGeographicElement": {
         "description": "An IfcGeographicElement is a generalization of all elements within a geographical landscape. It includes occurrences of typical geographical elements, often referred to as features, such as trees or terrain. Common type information behind several occurrences of IfcGeographicElement is provided by the IfcGeographicElementType.",
         "predefined_types": {
@@ -3719,7 +3731,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcGeoslice.htm"
     },
     "IfcGeotechnicalAssembly": {
-        "description": "Representation of the abstract concept of a geological and geotechnical model, usually an interpretation but sometimes created direct from ground penetrating measurement.\nUse of an assembly is optional but can carry the methodology and uncertainty information.\nSuch assemblies will include IfcGeotechnicalStratum entity types and may include other entity types such as IfcPile, IfcSlab or IfcSensor to represent the capping, lining or logging equipment present.\nIfcBorehole or IfcGeoSlice  can have a physical reality as a construction hazard alongside being the carrier for the interpreted results. Geological hazards may be associated to any IfcGeotechnicalAssembly or IfcGeotechnicalStratum.\n",
+        "description": "Representation of the abstract concept of a geological and geotechnical model, usually an interpretation but sometimes created direct from ground penetrating measurement.\nUse of an assembly is optional but can carry the methodology and uncertainty information.\nSuch assemblies will include IfcGeotechnicalStratum entity types and may include other entity types such as IfcPile, IfcSlab or IfcSensor to represent the capping, lining or logging equipment present.\nIfcBorehole or IfcGeoslice  can have a physical reality as a construction hazard alongside being the carrier for the interpreted results. Geological hazards may be associated to any IfcGeotechnicalAssembly or IfcGeotechnicalStratum.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcGeotechnicalAssembly.htm"
     },
     "IfcGeotechnicalElement": {
@@ -3884,7 +3896,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcImageTexture.htm"
     },
     "IfcImpactProtectionDevice": {
-        "description": "A impact protection device is a component used to protect other built elements from kinetic damage. impact protection devices currently come in different varieties:\n- A vibration damper used to minimize the effects of vibration in a structure by dissipating kinetic energy. The damper may be passive (elastic, frictional, inertia) or active (in a system using sensors and actuators).\n- A vibration isolator is a device used to minimize the effects of vibration transmissibility in a structure.\n- Impact devices that dissipate kinetic energy from impacting elements (such as vehicles) by deformation or elastic mechanics.\n",
+        "description": "An impact protection device is a component used to protect other built elements from kinetic damage. Impact protection devices currently come in different varieties:",
         "predefined_types": {
             "BUMPER": "A bumper is a buffer object at end of track that prevents driving over. It can be fixed on rails or the track panel, or can also be a natural element (e.g. rock, sand).",
             "CRASHCUSHION": "NOTE Definition from EN1317-1:2010: road vehicle energy absorption device installed in front of one or more hazards to reduce the severity of impact",
@@ -3896,7 +3908,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcImpactProtectionDevice.htm"
     },
     "IfcImpactProtectionDeviceType": {
-        "description": "The IfcImpactProtectionDeviceType provides the type information for IfcImpactProtectionDevice occurrences.\nA impact protection device is a component used to protect other built elements from kinetic damage.\n",
+        "description": "The IfcImpactProtectionDeviceType provides the type information for IfcImpactProtectionDevice occurrences.\nAn impact protection device is a component used to protect other built elements from kinetic damage.\n",
         "predefined_types": {
             "BUMPER": "A bumper is a buffer object at end of track that prevents driving over. It can be fixed on rails or the track panel, or can also be a natural element (e.g. rock, sand).",
             "CRASHCUSHION": "NOTE Definition from EN1317-1:2010: road vehicle energy absorption device installed in front of one or more hazards to reduce the severity of impact",
@@ -4046,17 +4058,19 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcJunctionBoxType.htm"
     },
     "IfcKerb": {
-        "attributes": {
-            "Mountable": ""
-        },
         "description": "A border of stone, concrete or other rigid material formed at the edge of the carriageway or footway.",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcKerb.htm"
     },
     "IfcKerbType": {
-        "attributes": {
-            "Mountable": ""
-        },
         "description": "The IfcKerbType provides the type information for the IfcKerb element.\nAn IfcKerb is a border of stone, concrete or other rigid material formed at the edge of the carriageway or footway.\n",
+        "predefined_types": {
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
+        },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcKerbType.htm"
     },
     "IfcLShapeProfileDef": {
@@ -4298,14 +4312,14 @@
     },
     "IfcLinearPlacement": {
         "attributes": {
-            "CartesianPosition": "",
-            "RelativePlacement": ""
+            "CartesianPosition": "Optional fallback for the RelativePlacement attribute, which may be used by importing applications that do not support linear placement.",
+            "RelativePlacement": "Placement that provides location and orientation confined to the context of a curve. Linear placement is 3D in nature even in case of a 2D basis curve."
         },
         "description": "IfcLinearPlacement provides a specialization of IfcObjectPlacement in which the placement and axis direction of the object coordinate system is defined by a reference to a curve. RelativePlacement is therefore restricted to IfcAxis2PlacementLinear.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcLinearPlacement.htm"
     },
     "IfcLinearPositioningElement": {
-        "description": "An IfcLinearPositioningElement is an abstract entity describing positioning according to a curve.\n",
+        "description": "An IfcLinearPositioningElement is an entity describing positioning according to a curve.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcLinearPositioningElement.htm"
     },
     "IfcLiquidTerminal": {
@@ -4352,13 +4366,20 @@
             "Northings": "Specifies the location along the northing of the coordinate system of the target map coordinate reference system.",
             "OrthogonalHeight": "Orthogonal height relative to the vertical datum specified.",
             "Scale": "Scale to be used, when the units of the CRS are not identical to the units of the engineering coordinate system. If omitted, the value of 1.0 is assumed.",
-            "ScaleY": "",
-            "ScaleZ": "",
             "XAxisAbscissa": "Specifies the value along the easting axis of the end point of a vector indicating the position of the local x axis of the engineering coordinate reference system.",
             "XAxisOrdinate": "Specifies the value along the northing axis of the end point of a vector indicating the position of the local x axis of the engineering coordinate reference system."
         },
         "description": "The map conversion deals with transforming the local engineering coordinate system, often called world coordinate system, into the coordinate reference system of the underlying map.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcMapConversion.htm"
+    },
+    "IfcMapConversionScaled": {
+        "attributes": {
+            "FactorX": "",
+            "FactorY": "",
+            "FactorZ": ""
+        },
+        "description": "An IfcMapConversionScaled is a type of IfcMapConversion that supplies factors for coordinate conversion. The usage is restricted to when factors are explicitly exchanged. ",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcMapConversionScaled.htm"
     },
     "IfcMappedItem": {
         "attributes": {
@@ -4513,7 +4534,7 @@
             "ForLayerSet": "The IfcMaterialLayerSet set to which the usage is applied.",
             "LayerSetDirection": "Orientation of the material layer set relative to element reference geometry. The meaning of the value of this attribute shall be specified in the geometry use section for each element. For extruded shape representation, direction can be given along the extrusion path (e.g. for slabs) or perpendicular to it (e.g. for walls).",
             "OffsetFromReferenceLine": "Offset of the material layer set base line (MlsBase) from reference geometry (line or plane) of element. The offset can be positive or negative, unless restricted for a particular building element type in its use definition or by implementer agreement. A positive value means, that the MlsBase is placed on the positive side of the reference line or plane, on the axis established by LayerSetDirection (in case of AXIS2 into the direction of +y, or in case of AXIS2 into the direction of +z). A negative value means that the MlsBase is placed on the negative side, as established by LayerSetDirection (in case of AXIS2 into the direction of -y).",
-            "ReferenceExtent": "Extent of the extrusion of the elements body shape representation to which the IfcMaterialLayerSetUsage applies. It is used as the reference value for the upper OffsetValues[2] provided by the IfcMaterialLayerSetWithOffsets subtype for included material layers."
+            "ReferenceExtent": "Extent of the extrusion of the elements body shape representation to which the IfcMaterialLayerSetUsage applies. It is used as the reference value for the upper OffsetValues[2] provided by the IfcMaterialLayerWithOffsets subtype for included material layers."
         },
         "description": "The IfcMaterialLayerSetUsage determines the usage of IfcMaterialLayerSet in terms of its location and orientation relative to the associated element geometry. The location of material layer set shall be compatible with the building element geometry (that is, material layers shall fit inside the element geometry). The rules to ensure the compatibility depend on the type of the building element.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcMaterialLayerSetUsage.htm"
@@ -4560,7 +4581,7 @@
         "attributes": {
             "CardinalPoint": "Index reference to a significant point in the section profile. Describes how the section is aligned relative to the (longitudinal) axis of the member it is associated with. This parametric specification of profile alignment can be provided redundantly to the explicit alignment defined by ForProfileSet.MaterialProfiles[*].Profile.",
             "ForProfileSet": "The IfcMaterialProfileSet set to which the usage is applied.",
-            "ReferenceExtent": "Extent of the extrusion of the elements body shape representation to which the IfcMaterialProfileSetUsage applies. It is used as the reference value for the upper OffsetValues[2] provided by the IfcMaterialProfileSetWithOffsets subtype for included material profiles."
+            "ReferenceExtent": "Extent of the extrusion of the elements body shape representation to which the IfcMaterialProfileSetUsage applies. It is used as the reference value for the upper OffsetValues[2] provided by the IfcMaterialProfileWithOffsets subtype for included material profiles."
         },
         "description": "IfcMaterialProfileSetUsage determines the usage of IfcMaterialProfileSet in terms of its location relative to the associated element geometry. The location of a material profile set shall be compatible with the building element geometry (that is, material profiles shall fit inside the element geometry). The rules to ensure the compatibility depend on the type of the building element. For building elements with shape representations which are based on extruded solids, this is accomplished by referring to the identical profile definition in the shape model as in the material profile set.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcMaterialProfileSetUsage.htm"
@@ -4822,7 +4843,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcMooringDevice.htm"
     },
     "IfcMooringDeviceType": {
-        "description": "The _IfcMooringDeviceType__ _  provides the type information for IfcMooringDevice  occurrences.\nA mooring device is an active or passive built element who's primary function is to participate in the mooring of a vessel, this could be in the form of a bollard used as an attachment point for lines or active equipment such as quick release hooks.\n",
+        "description": "The IfcMooringDeviceType  provides the type information for IfcMooringDevice  occurrences.\nA mooring device is an active or passive built element who's primary function is to participate in the mooring of a vessel, this could be in the form of a bollard used as an attachment point for lines or active equipment such as quick release hooks.\n",
         "predefined_types": {
             "BOLLARD": "a short, thick post on the deck of a ship or a quay side, to which ship's rope may be secured. not to be confused with traffic bollards.",
             "LINETENSIONER": "A mechanical device used to apply a tensioning load to mooring lines to improve vessel stability for port operations.",
@@ -4896,15 +4917,15 @@
     },
     "IfcObjectDefinition": {
         "attributes": {
-            "Decomposes": "References to the decomposition relationship being an aggregation. It determines that this object definition is a part within an unordered whole/part decomposition relationship. An object definitions can only be part of a single decomposition (to allow hierarchical strutures only).",
+            "Decomposes": "References to the decomposition relationship being an aggregation. It determines that this object definition is a part within an unordered whole/part decomposition relationship. An object definition can only be part of a single decomposition (to allow hierarchical structures only).",
             "HasAssignments": "Reference to the relationship objects, that assign (by an association relationship) other subtypes of IfcObject to this object instance. Examples are the association to products, processes, controls, resources or groups.",
-            "HasAssociations": "Reference to the relationship objects, that associates external references or other resource definitions to the object.. Examples are the association to library, documentation or classification.",
+            "HasAssociations": "Reference to the relationship objects, that associates external references or other resource definitions to the object. Examples are the association to library, documentation or classification.",
             "HasContext": "References to the context providing context information such as project unit or representation context. It should only be asserted for the uppermost non-spatial object.",
-            "IsDecomposedBy": "References to the decomposition relationship being an aggregation. It determines that this object definition is whole within an unordered whole/part decomposition relationship. An object definitions can be aggregated by several other objects (occurrences or parts).",
+            "IsDecomposedBy": "References to the decomposition relationship being an aggregation. It determines that this object definition is whole within an unordered whole/part decomposition relationship. An object definition can be aggregated by several other objects (occurrences or parts).",
             "IsNestedBy": "References to the decomposition relationship being a nesting. It determines that this object definition is the whole within an ordered whole/part decomposition relationship. An object or object type can be nested by several other objects (occurrences or types).",
-            "Nests": "References to the decomposition relationship being a nesting. It determines that this object definition is a part within an ordered whole/part decomposition relationship. An object occurrence or type can only be part of a single decomposition (to allow hierarchical strutures only)."
+            "Nests": "References to the decomposition relationship being a nesting. It determines that this object definition is a part within an ordered whole/part decomposition relationship. An object occurrence or type can only be part of a single decomposition (to allow hierarchical structures only)."
         },
-        "description": "An IfcObjectDefinition is the generalization of any semantically treated thing or process, either being a type or an occurrences. Object definitions can be named, using the inherited Name attribute, which should be a user recognizable label for the object occurrence. Further explanations to the object can be given using the inherited Description attribute. A context is a specific kind of object definition as it provides the project or library context in which object types and object occurrences are defined.",
+        "description": "An IfcObjectDefinition is the generalization of any semantically treated thing or process, either being a type or an occurrence. Object definitions can be named, using the inherited Name attribute, which should be a user recognizable label for the object occurrence. Further explanations to the object can be given using the inherited Description attribute. A context is a specific kind of object definition as it provides the project or library context in which object types and object occurrences are defined.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcObjectDefinition.htm"
     },
     "IfcObjectPlacement": {
@@ -4995,7 +5016,7 @@
         "description": "The opening element stands for opening, recess or chase, all reflecting voids. It represents a void within any element that has physical manifestation. Openings can be inserted into walls, slabs, beams, columns, or other elements.",
         "predefined_types": {
             "NOTDEFINED": "Undefined opening element.",
-            "OPENING": "An opening as subtraction feature that cuts through the element it voids. It thereby creates a hole. An opening in addiion have a particular meaning for either providing a void for doors or windows, or an opening to permit flow of air and passing of light.",
+            "OPENING": "An opening as subtraction feature that cuts through the element it voids. It thereby creates a hole. An opening in addition has a particular meaning for either providing a void for doors or windows, or an opening to permit flow of air and passing of light.",
             "RECESS": "An opening as subtraction feature that does not cut through the element it voids. It creates a niche or similar voiding pattern.",
             "USERDEFINED": "User-defined opening element."
         },
@@ -5092,7 +5113,7 @@
     "IfcPavement": {
         "description": "Type of built element in a road or other paved area to provide an even surface sustaining loads from vehicles or pedestrians, usually comprising several courses.\nNOTE Definition from ISO 6707-1: road, runway, or similar construction above the subgrade.\n",
         "predefined_types": {
-            "FLEXIBLE": "Flexible pavements, including less rigid pavements like rubber.",
+            "FLEXIBLE": "Pavement with a bituminous surfacing and with a base layer with or without a hydrocarbon binder.",
             "NOTDEFINED": "Undefined type.",
             "RIGID": "Pavement substantially constructed of cement concrete.",
             "USERDEFINED": "User-defined type."
@@ -5102,7 +5123,7 @@
     "IfcPavementType": {
         "description": "The IfcPavementType provides the type information for IfcPavement occurrences.\nA pavement is a type of built element in a road or other paved area to provide an even surface sustaining loads from vehicles or pedestrians, usually comprising several courses.\n",
         "predefined_types": {
-            "FLEXIBLE": "Flexible pavements, including less rigid pavements like rubber.",
+            "FLEXIBLE": "Pavement with a bituminous surfacing and with a base layer with or without a hydrocarbon binder.",
             "NOTDEFINED": "Undefined type.",
             "RIGID": "Pavement substantially constructed of cement concrete.",
             "USERDEFINED": "User-defined type."
@@ -5411,6 +5432,7 @@
     },
     "IfcPolygonalFaceSet": {
         "attributes": {
+            "Closed": "Indication whether the face set is a closed shell (TRUE) or an open shell (FALSE). If omitted no such information can be asserted.",
             "Faces": "The list of polygonal faces, with or without inner loops, that bound the faceted face set.",
             "PnIndex": "The list of integers defining the locations in the IfcCartesianPointList3D to obtain the point coordinates for the indices at the indexed polygonal faces. If the PnIndex is not provided the indices at the indexed polygonal faces point directly into the  IfcCartesianPointList3D."
         },
@@ -5487,7 +5509,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPreDefinedPropertySet.htm"
     },
     "IfcPreDefinedTextFont": {
-        "description": "The pre defined text font determines those qualified names which can be used for fonts that are in scope of the current data exchange specification (in contrary to externally defined text fonts). There are two choices:",
+        "description": "The pre defined text font determines those qualified names which can be used for fonts that are in scope of the current data exchange specification (in contrary to externally defined text fonts). There is one concrete subtype:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPreDefinedTextFont.htm"
     },
     "IfcPresentationItem": {
@@ -5511,7 +5533,7 @@
             "LayerOn": "A logical setting, TRUE indicates that the layer is set to 'On', FALSE that the layer is set to 'Off', UNKNOWN that such information is not available.",
             "LayerStyles": "Assignment of presentation styles to the layer to provide a default style for representation items."
         },
-        "description": "An IfcPresentationLayerAssignmentWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.",
+        "description": "An IfcPresentationLayerWithStyle extends the presentation layer assignment with capabilities to define visibility control, access control and common style information.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPresentationLayerWithStyle.htm"
     },
     "IfcPresentationStyle": {
@@ -5530,14 +5552,14 @@
             "CALIBRATION": "A procedure undertaken to calibrate an artifact.",
             "DIAGNOSTIC": "Diagnostic",
             "NOTDEFINED": "Undefined.",
-            "SHUTDOWN": "A procedure undertaken to shutdown the operation an artifact.",
-            "STARTUP": "A procedure undertaken to start up the operation an artifact.",
+            "SHUTDOWN": "A procedure undertaken to shutdown the operation of an artifact.",
+            "STARTUP": "A procedure undertaken to start up the operation of an artifact.",
             "USERDEFINED": "User defined."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProcedure.htm"
     },
     "IfcProcedureType": {
-        "description": "An IfcProcedureType defines a particular type of procedure that may be specified.",
+        "description": "> HISTORY  New entity in IFC4",
         "predefined_types": {
             "ADVICE_CAUTION": "A caution that should be taken note of as a procedure or when carrying out a procedure.",
             "ADVICE_NOTE": "Additional information or advice that should be taken note of as a procedure or when carrying out a procedure.",
@@ -5545,8 +5567,8 @@
             "CALIBRATION": "A procedure undertaken to calibrate an artifact.",
             "DIAGNOSTIC": "Diagnostic",
             "NOTDEFINED": "Undefined.",
-            "SHUTDOWN": "A procedure undertaken to shutdown the operation an artifact.",
-            "STARTUP": "A procedure undertaken to start up the operation an artifact.",
+            "SHUTDOWN": "A procedure undertaken to shutdown the operation of an artifact.",
+            "STARTUP": "A procedure undertaken to start up the operation of an artifact.",
             "USERDEFINED": "User defined."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProcedureType.htm"
@@ -5559,16 +5581,16 @@
             "LongDescription": "An extended description or narrative that may be provided.",
             "OperatesOn": "Set of relationships to other objects, e.g. products, processes, controls, resources or actors, that are operated on by the process."
         },
-        "description": "IfcProcess is defined as one individual activity or event, that is ordered in time, that has sequence relationships with other processes, which transforms input in output, and may connect to other other processes through input output relationships. An IfcProcess can be an activity (or task), or an event. It takes usually place in building construction with the intent of designing, costing, acquiring, constructing, or maintaining products or other and similar tasks or procedures. Figure 1 illustrates process relationships.",
+        "description": "IfcProcess is defined as one individual activity or event, that is ordered in time, that has sequence relationships with other processes, which transforms input in output, and may connect to other processes through input output relationships. An IfcProcess can be an activity (or task), or an event. It takes usually place in building construction with the intent of designing, costing, acquiring, constructing, or maintaining products or other and similar tasks or procedures. Figure 1 illustrates process relationships.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProcess.htm"
     },
     "IfcProduct": {
         "attributes": {
             "ObjectPlacement": "This establishes the object coordinate system and placement of the product in space. The placement can either be absolute (relative to the world coordinate system), relative (relative to the object placement of another product), or constrained (e.g. relative to grid axes, or to a linear positioning element). The type of placement is determined by the various subtypes of IfcObjectPlacement. An object placement must be provided if a representation is present.",
-            "PositionedRelativeTo": "",
+            "PositionedRelativeTo": "Reference to the IfcRelPositions relationship, which defines its relationship with a positioning element.",
             "ReferencedBy": "Reference to the IfcRelAssignsToProduct relationship, by which other products, processes, controls, resources or actors (as subtypes of IfcObjectDefinition) can be related to this product.",
-            "ReferencedInStructures": "",
-            "Representation": "Reference to the representations of the product, being either a representation (IfcProductRepresentation) or as a special case a shape representations (IfcProductDefinitionShape). The product definition shape provides for multiple geometric representations of the shape property of the object within the same object coordinate system, defined by the object placement."
+            "ReferencedInStructures": "Reference to the objectified relationship IfcRelReferencedInSpatialStructure may be used to relate a product to one or more spatial structure elements in addition to the one in which it is primarily contained.",
+            "Representation": "Reference to the representations of the product, being either a representation (IfcProductRepresentation) or as a special case of a shape representation (IfcProductDefinitionShape). The product definition shape provides for multiple geometric representations of the shape property of the object within the same object coordinate system, defined by the object placement."
         },
         "description": "The IfcProduct is an abstract representation of any object that relates to a geometric or spatial context. An IfcProduct occurs at a specific location in space if it has a geometric representation assigned. It can be placed relatively to other products, but ultimately relative to the project coordinate system. The ObjectPlacement attribute establishes the coordinate system in which all points and directions used by the geometric representation items under Representation are founded. The Representation is provided by an IfcProductDefinitionShape being either a geometric shape representation, or a topology representation (with or without underlying geometry of the topological items).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProduct.htm"
@@ -5607,7 +5629,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProfileProperties.htm"
     },
     "IfcProject": {
-        "description": "IfcProject indicates the undertaking of some design, engineering, construction, or maintenance activities leading towards a product. The project establishes the context for information to be exchanged or shared, and it may represent a construction project but does not have to. The IfcProject's main purpose in an exchange structure is to provide the root instance and the context for all other information items included.",
+        "description": "IfcProject establishes the context for information to be exchanged or shared, and it may represent a construction project but does not have to. The IfcProject's main purpose in an exchange structure is to provide the root instance and the context for all other information items included.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProject.htm"
     },
     "IfcProjectLibrary": {
@@ -5635,9 +5657,10 @@
         "attributes": {
             "MapProjection": "Name by which the map projection is identified.",
             "MapUnit": "Unit of the coordinate axes composing the map coordinate system.",
-            "MapZone": "Name by which the map zone, relating to the MapProjection, is identified."
+            "MapZone": "Name by which the map zone, relating to the MapProjection, is identified.",
+            "VerticalDatum": "Name by which the vertical datum is identified. The vertical datum is associated with the height axis of the coordinate reference system and indicates the reference plane and fundamental point defining the origin of a height system. It needs to be provided, if the Name identifier does not unambiguously define the vertical datum as well and if the coordinate reference system is a 3D reference system."
         },
-        "description": "IfcProjectedCRS is a coordinate reference system of the map to which the map translation of the local engineering coordinate system of the construction or facility engineering project relates. The MapProjection and MapZone attributes uniquely identify the projection to the underlying geographic coordinate reference system, provided that they are well-known in the receiving application. The projected coordinate reference system is assumed to be a 2D or 3D right-handed Cartesian coordinate system, the optional MapUnit attribute can be used determine the length unit used by the map.",
+        "description": "IfcProjectedCRS is a coordinate reference system (CRS) of the map to which the map translation of the local engineering coordinate system of the construction or facility engineering project relates. The projected coordinate reference system is assumed to be a 2D or 3D right-handed Cartesian coordinate system, the optional MapUnit attribute can be used to determine the length unit used by the map.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcProjectedCRS.htm"
     },
     "IfcProjectionElement": {
@@ -5682,7 +5705,7 @@
     "IfcPropertyDefinition": {
         "attributes": {
             "HasAssociations": "Reference to the relationship IfcRelAssociates and thus to those externally defined concepts, like classifications, documents, or library information, which are associated to the property definition.",
-            "HasContext": ""
+            "HasContext": "Reference to the relationship IfcRelDeclares and thus to the IfcProject or IfcProjectLibrary."
         },
         "description": "IfcPropertyDefinition defines the generalization of all characteristics (i.e. a grouping of individual properties), that may be assigned to objects. Currently, subtypes of IfcPropertyDefinition include property set occurrences, property set templates, and property templates.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPropertyDefinition.htm"
@@ -5747,7 +5770,7 @@
     },
     "IfcPropertySetTemplate": {
         "attributes": {
-            "ApplicableEntity": "The attribute optionally defines the data type of the applicable type or occurrence object, to which the assigned property set template can relate. If not present, no instruction is given to which type or occurrence object the property set template is applicable. The following conventions are used: * The IFC entity name of the applicable entity using the IFC naming convention, CamelCase with IFC prefix * It can be optionally followed by the predefined type after the separator \"/\" (forward slash), using upper case * If a performance history object of a particular distribution object is attributes by the property set template, then the entity name (and potentially amended by the predefined type) is expanded by adding '[PerformanceHistory]' * If one property set template is applicable to many type and/or occurrence objects, then those object names should be separate by comma \",\" forming a comma separated string.",
+            "ApplicableEntity": "The attribute optionally defines the data type of the applicable type or occurrence object, to which the assigned property set template can relate. If not present, no instruction is given to which type or occurrence object the property set template is applicable. The following conventions are used:",
             "Defines": "Relation to the property sets, via the objectified relationship IfcRelDefinesByTemplate, that, if given, utilize the definition template.",
             "HasPropertyTemplates": "Set of IfcPropertyTemplate's that are defined within the scope of the IfcPropertySetTemplate.",
             "TemplateType": "Property set type defining whether the property set is applicable to a type (subtypes of IfcTypeObject), to an occurrence (subtypes of IfcObject), or as a special case to a performance history."
@@ -5777,8 +5800,8 @@
     },
     "IfcPropertyTemplate": {
         "attributes": {
-            "PartOfComplexTemplate": "Reference to a complex property templates. It should only be provided, if the PropertyType of the referenced complex property template is set to COMPLEX.",
-            "PartOfPsetTemplate": "Reference to the IfcPropertySetTemplate that defines the scope for the IfcPropertyTemplate. A single IfcPropertyTemplate can be defined within the scope of zero, one or many IfcPropertySetTemplate'."
+            "PartOfComplexTemplate": "Reference to a complex property template. It should only be provided, if the PropertyType of the referenced complex property template is set to COMPLEX.",
+            "PartOfPsetTemplate": "Reference to the IfcPropertySetTemplate that defines the scope for the IfcPropertyTemplate. A single IfcPropertyTemplate can be defined within the scope of zero, one or many IfcPropertySetTemplate entities."
         },
         "description": "The IfcPropertyTemplate is an abstract supertype comprising the templates for all dynamically extensible properties, either as an IfcComplexPropertyTemplate, or an IfcSimplePropertyTemplate. These templates determine the structure of:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcPropertyTemplate.htm"
@@ -5968,7 +5991,7 @@
     "IfcRailing": {
         "description": "The railing is a frame assembly adjacent to human or vehicle circulation spaces and at some space boundaries where it is used in lieu of walls or to complement walls. Designed as an optional physical support, or to prevent injury or damage, either by falling or collision.",
         "predefined_types": {
-            "BALUSTRADE": "Similar to the definitions of a guardrail except the location is at the edge of a floor, rather then a stair or ramp. Examples are balustrates at roof-tops or balconies, or along a bridge or on top of a retaining wall.",
+            "BALUSTRADE": "Guardrail located at the edge of a floor, rather then a stair or ramp. Examples are balustrades at roof-tops or balconies, or along a bridge or on top of a retaining wall.",
             "FENCE": "NOTE Definition from ISO6707-1: non-load bearing vertical construction, usually lightweight, which bounds or subdivides an external area.",
             "GUARDRAIL": "A type of railing designed to guard human or vehicle occupants from falling off a stair, ramp or landing where there is a vertical drop at the edge of such floors/landings, or to provide restraint to an errant road vehicle, installed on the central reserve of or alongside a road.",
             "HANDRAIL": "A type of railing designed to serve as an optional structural support for loads applied by human occupants (at hand height). Generally located adjacent to ramps and stairs. Generally floor or wall mounted.",
@@ -5980,7 +6003,7 @@
     "IfcRailingType": {
         "description": "The building element type IfcRailingType defines commonly shared information for occurrences of railings. The set of shared information may include:",
         "predefined_types": {
-            "BALUSTRADE": "Similar to the definitions of a guardrail except the location is at the edge of a floor, rather then a stair or ramp. Examples are balustrates at roof-tops or balconies, or along a bridge or on top of a retaining wall.",
+            "BALUSTRADE": "Guardrail located at the edge of a floor, rather then a stair or ramp. Examples are balustrades at roof-tops or balconies, or along a bridge or on top of a retaining wall.",
             "FENCE": "NOTE Definition from ISO6707-1: non-load bearing vertical construction, usually lightweight, which bounds or subdivides an external area.",
             "GUARDRAIL": "A type of railing designed to guard human or vehicle occupants from falling off a stair, ramp or landing where there is a vertical drop at the edge of such floors/landings, or to provide restraint to an errant road vehicle, installed on the central reserve of or alongside a road.",
             "HANDRAIL": "A type of railing designed to serve as an optional structural support for loads applied by human occupants (at hand height). Generally located adjacent to ramps and stairs. Generally floor or wall mounted.",
@@ -6000,15 +6023,16 @@
     "IfcRailwayPart": {
         "description": "Part of a railway.\n",
         "predefined_types": {
-            "DILATATIONSUPERSTRUCTURE": "The dilatation superstructure is one specific type of the track structure. It does not contain any plain-track  or turnout panel.",
-            "LINESIDESTRUCTURE": "A spatial structure element that contains the elements of the railway that are not in or over the tracks, hence line-side.",
-            "LINESIDESTRUCTUREPART": "A railway line side structure part is a longitudinal decomposition of railway lineside structure in more managable volume for engineering purposes.",
+            "ABOVETRACK": "A spatial structure element that contains elements that are positioned above or over the track, for example catenary lines and suspension systems.",
+            "DILATIONTRACK": "",
+            "LINESIDE": "A spatial structure element that contains elements of the railway that are not in or over the tracks, hence line-side.",
+            "LINESIDEPART": "A spatial structure element to further divide a line-side part. It can be used to distinguish line-side parts into more manageable volumes, for engineering purposes.",
             "NOTDEFINED": "Undefined type.",
-            "PLAINTRACKSUPERSTRUCTURE": "The plain-track superstructure is one specific type of the track structure. It does not contain any turnout panel or dilatation panel.",
-            "SUPERSTRUCTURE": "A spatial structure element that contains elements that are positioned over the tracks, such as catenaries.",
-            "TRACKSTRUCTURE": "A spatial structure element that contains track-related elements.",
-            "TRACKSTRUCTUREPART": "A track structure part refers to a segment of a track system. It usually has one of the following functions: plain-track, turnout-track, dilatation-track.",
-            "TURNOUTSUPERSTRUCTURE": "The turnout superstructure is one specific type of the track structure. It does not contain any plain-track or dilatation panel.",
+            "PLAINTRACK": "A spatial structure element to further divide a track. It does do not contain any turnout panel or dilatation panel.",
+            "SUBSTRUCTURE": "A spatial structure element that contains elements that are positioned below the track, for example the earthwork platform, prepared subgrade and embankment. This can be above or below finished ground level.",
+            "TRACK": "A spatial structure element that contains track-related elements, for example rails and sleepers.",
+            "TRACKPART": "A spatial structure element to further divide a track, for purposes that do not fall into these categories: plain-track, turnout-track, dilatation-track.",
+            "TURNOUTTRACK": "A spatial structure element to further divide a track. It contains turnouts, and does not contain any plain track or dilatation panel.",
             "USERDEFINED": "User-defined type"
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailwayPart.htm"
@@ -6098,7 +6122,7 @@
             "XLength": "The length of the base measured along the placement X axis. It is provided by the inherited axis placement through SELF\\IfcCsgPrimitive3D.Position.P[1].",
             "YLength": "The length of the base measured along the placement Y axis. It is provided by the inherited axis placement through SELF\\IfcCsgPrimitive3D.Position.P[2]."
         },
-        "description": "The IfcRectangularPyramid is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a rectangular base and a point called apex as the top. The tapers from the base to the top. The axis from the center of the base to the apex is perpendicular to the base. The inherited Position attribute defines the IfcAxisPlacement3D and provides the location and orientation of the pyramid:",
+        "description": "The IfcRectangularPyramid is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a rectangular base and a point called apex as the top. The tapers from the base to the top. The axis from the center of the base to the apex is perpendicular to the base. The inherited Position attribute defines the IfcAxis2Placement3D and provides the location and orientation of the pyramid:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRectangularPyramid.htm"
     },
     "IfcRectangularTrimmedSurface": {
@@ -6142,16 +6166,18 @@
     "IfcReferent": {
         "description": "IfcReferent defines a position at a particular offset along an alignment curve.",
         "predefined_types": {
-            "BOUNDARY": "The referent represents where an administrative or maintenance boundary crosses the linear element being measured. This is typically the first time the boundary crosses the linear element. If the boundary runs along the linear element, it would be the point at which they first become collinear. The LRS should include specific rules about how boundaries are handled if this type of referent is permitted. If the linear element changes at the boundary as for a county route beginning at the county boundary, then the LRM is more correctly categorized as absolute.",
-            "INTERSECTION": "The referent is the location of an intersection specified by the referent name. The intersection location is typically taken as the location of the intersection of the reference lines of the streets comprising the intersection and is, therefore, not necessarily precise or deterministic. Physical markers can be installed to remedy this. The LRS should include specific rules about how intersection locations are determined if this type of referent is permitted.",
+            "BOUNDARY": "The referent represents where an administrative or maintenance boundary crosses the linear element being measured. This is typically the first time the boundary crosses the linear element. If the boundary runs along the linear element, it would be the point at which they first become collinear. The LRS (linear referencing system) should include specific rules about how boundaries are handled if this type of referent is permitted. If the linear element changes at the boundary as for a county route beginning at the county boundary, then the LRM (linear referencing method) is more correctly categorized as absolute.",
+            "INTERSECTION": "The referent is the location of an intersection specified by the referent name. The intersection location is typically taken as the location of the intersection of the reference lines of the streets comprising the intersection and is, therefore, not necessarily precise or deterministic. Physical markers can be installed to remedy this. The LRS (linear referencing system) should include specific rules about how intersection locations are determined if this type of referent is permitted.",
             "KILOPOINT": "Kilo point",
             "LANDMARK": "The referent is the location of a physical landmark visible in the field.",
             "MILEPOINT": "Mile point",
             "NOTDEFINED": "Undefined.",
-            "POSITION": "Used to fully describe a linearly referenced location given by the linear element being measured (the IfcAlignment into which the IfcReferent is nested), the method of measurement (Pset_LinearReferencingMethod) and a measure value specified with a distance expression (Pset_DistanceExpression). If a linear referencing method is specified for the position, it overrides any linear referencing method specified for the alignment.\u201d",
+            "POSITION": "Used to fully describe a linearly referenced location given by the linear element being measured (the IfcAlignment into which the IfcReferent is nested), the method of measurement (Pset_LinearReferencingMethod) and a measure value (Pset_Stationing). If a linear referencing method is specified for the position, it overrides any linear referencing method specified for the alignment.",
             "REFERENCEMARKER": "The reference marker is a notation referent, typically located in the right of way of the road, rail or other transportation system. Usually reference markers are initially spaced at a uniform distance along the linear element being measured, though subsequent re-alignments can result in uneven spacing between the markers.",
             "STATION": "Station",
-            "USERDEFINED": "User defined."
+            "SUPERELEVATIONEVENT": "A kind of event that specifies the superelevation (cross slope) at a specific location along a road alignment, and the type of transition from the previous location. The locations are specified using an IfcLinearPlacement measured along the alignment axis curve.",
+            "USERDEFINED": "User defined.",
+            "WIDTHEVENT": "A kind of event that specifies the width at a specific location along a road alignment, and the type of transition from the previous location. The locations are specified using an IfcLinearPlacement measured along the alignment axis curve. The element(s) that are affected by the width event is currently proposed to be specified by containing the event in a specific lateral breakdown element of the road spatial structure (e.g. a Lane or the entire carriageway)."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcReferent.htm"
     },
@@ -6186,7 +6212,7 @@
             "SteelGrade": "The nominal steel grade defined according to local standards.",
             "TotalCrossSectionArea": "The total effective cross-section area of the reinforcement of a specific steel grade."
         },
-        "description": "IfcReinforcementProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth.",
+        "description": "IfcReinforcementBarProperties defines the set of properties for a specific combination of reinforcement bar steel grade, bar type and effective depth.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcReinforcementBarProperties.htm"
     },
     "IfcReinforcementDefinitionProperties": {
@@ -6315,7 +6341,7 @@
             "RelatedObjects": "Related objects, which are assigned to a single object. The type of the single (or relating) object is defined in the subtypes of IfcRelAssigns.",
             "RelatedObjectsType": "Particular type of the assignment relationship. It can constrain the applicable object types, used within the role of RelatedObjects."
         },
-        "description": "The assignment relationship, IfcRelAssigns, is a generalization of \"link\" relationships among instances of IfcObject and its various 1^st^ level subtypes. A link denotes the specific association through which one object (the client) applies the services of other objects (the suppliers), or through which one object may navigate to other objects.",
+        "description": "The assignment relationship, IfcRelAssigns, is a generalization of \"link\" relationships among instances of IfcObject and its various 1<sup>st</sup> level subtypes. A link denotes the specific association through which one object (the client) applies the services of other objects (the suppliers), or through which one object may navigate to other objects.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelAssigns.htm"
     },
     "IfcRelAssignsToActor": {
@@ -6378,7 +6404,7 @@
     },
     "IfcRelAssociatesApproval": {
         "attributes": {
-            "RelatingApproval": "Reference to approval that is being applied using this relationship."
+            "RelatingApproval": "Reference to an approval that is being applied using this relationship."
         },
         "description": "The entity IfcRelAssociatesApproval is used to apply approval information defined by IfcApproval, in IfcApprovalResource schema, to subtypes of IfcRoot.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelAssociatesApproval.htm"
@@ -6392,8 +6418,8 @@
     },
     "IfcRelAssociatesConstraint": {
         "attributes": {
-            "Intent": "The intent of the constraint usage with regard to its related IfcConstraint and IfcObjects, IfcPropertyDefinitions or IfcRelationships. Typical values can be e.g. RATIONALE or EXPECTED PERFORMANCE.",
-            "RelatingConstraint": "Reference to constraint that is being applied using this relationship."
+            "Intent": "The intent of the constraint usage with regard to its related IfcConstraint and IfcObject, IfcPropertyDefinition or IfcRelationship entities. Typical values can be e.g. RATIONALE or EXPECTED PERFORMANCE.",
+            "RelatingConstraint": "Reference to a constraint that is being applied using this relationship."
         },
         "description": "The entity IfcRelAssociatesConstraint is used to apply constraint information defined by IfcConstraint, in the IfcConstraintResource schema, to subtypes of IfcRoot.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelAssociatesConstraint.htm"
@@ -6402,7 +6428,7 @@
         "attributes": {
             "RelatingDocument": "Document information or reference which is applied to the objects."
         },
-        "description": "The objectified relationship (IfcRelAssociatesDocument) handles the assignment of a document information (items of the select IfcDocumentSelect) to objects occurrences (subtypes of IfcObject) or object types (subtypes of IfcTypeObject).",
+        "description": "The objectified relationship (IfcRelAssociatesDocument) handles the assignment of document information (items of the select IfcDocumentSelect) to objects occurrences (subtypes of IfcObject) or object types (subtypes of IfcTypeObject).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelAssociatesDocument.htm"
     },
     "IfcRelAssociatesLibrary": {
@@ -6423,7 +6449,7 @@
         "attributes": {
             "RelatingProfileDef": "The relating profile."
         },
-        "description": "Associates Objects with a profile. In particular, may be used for indicating which SuperelevationEvent or WidthEvent has been used as basis for dimensioning a particular OpenCrossProfile.\n",
+        "description": "Associates Objects with a profile definition.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelAssociatesProfileDef.htm"
     },
     "IfcRelConnects": {
@@ -6519,7 +6545,7 @@
     },
     "IfcRelCoversSpaces": {
         "attributes": {
-            "RelatedCoverings": "Relationship to the set of coverings covering that cover surfaces of this space.",
+            "RelatedCoverings": "Relationship to the set of coverings that cover surfaces of this space.",
             "RelatingSpace": "Relationship to the space object that is covered."
         },
         "description": "The objectified relationship, IfcRelCoversSpace, relates a space object to one or many coverings, which faces (or is assigned to) the space.",
@@ -6546,7 +6572,7 @@
             "RelatedObjects": "Objects being part of an object occurrence decomposition, acting as the \"reflecting parts\" in the relationship.",
             "RelatingObject": "Object being part of an object type decomposition, acting as the \"declaring part\" in the relationship."
         },
-        "description": "The objectified relationship IfcRelDefinesByObject defines the relationship between an object taking part in an object type decomposition and an object occurrences taking part in an occurrence decomposition of that type.",
+        "description": "The objectified relationship IfcRelDefinesByObject defines the relationship between an object taking part in an object type decomposition and an object occurrence taking part in an occurrence decomposition of that type.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelDefinesByObject.htm"
     },
     "IfcRelDefinesByProperties": {
@@ -6575,7 +6601,7 @@
     },
     "IfcRelFillsElement": {
         "attributes": {
-            "RelatedBuildingElement": "Reference to ~~building~~ element that occupies fully or partially the associated opening.",
+            "RelatedBuildingElement": "Reference to element that occupies fully or partially the associated opening.",
             "RelatingOpeningElement": "Opening Element being filled by virtue of this relationship."
         },
         "description": "IfcRelFillsElement is an objectified relationship between an opening element and an element that fills (or partially fills) the opening element. It is an one-to-one relationship.",
@@ -6603,10 +6629,10 @@
     },
     "IfcRelNests": {
         "attributes": {
-            "RelatedObjects": "The object definitions, either non-product object occurrences or non-product object types, that are being nestes. They are defined as the parts in the ordered whole/part relationship -  i.e. there is an implied order among the parts expressed by the position within the list of RelatedObjects.",
-            "RelatingObject": "The object definition, either an non-product object type or a non-product object occurrence, that represents the nest. It is the whole within the whole/part relationship."
+            "RelatedObjects": "The object definitions, either object type or object occurrence, that are being nested. They are defined as the parts in the ordered whole/part relationship -  i.e. there is an implied order among the parts expressed by the position within the list of RelatedObjects.",
+            "RelatingObject": "The object definition, either an object type or a object occurrence, that represents the nest. It is the whole within the whole/part relationship."
         },
-        "description": "The nesting relationship IfcRelNests is a special type of the general composition/decomposition (or whole/part) relationship IfcRelDecomposes. The nesting relationship can be applied to all non physical subtypes of object and object types, namely processes, controls (like cost items), and resources. It can also be applied to physical subtypes of object and object types, namely elements having ports. The nesting implies an order among the nested parts.",
+        "description": "The nesting relationship IfcRelNests is a special type of the general composition/decomposition (or whole/part) relationship IfcRelDecomposes. The nesting relationship can be applied to all subtypes of object and object types. For example, processes, controls (like cost items), and resources. It can also be applied to alignment, nesting its different layouts; and to physical subtypes of object and object types, such as elements having ports. The nesting implies an order among the nested parts.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelNests.htm"
     },
     "IfcRelPositions": {
@@ -6614,7 +6640,7 @@
             "RelatedProducts": "Relatively positioned product.",
             "RelatingPositioningElement": "Positioning element defining the source of the relative position."
         },
-        "description": "An IfcRelPositions relationship defines the relationship that positions a product related to a positioning element..\n",
+        "description": "An IfcRelPositions relationship informs on the positioning dependency between a product and a positioning element.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelPositions.htm"
     },
     "IfcRelProjectsElement": {
@@ -6627,8 +6653,8 @@
     },
     "IfcRelReferencedInSpatialStructure": {
         "attributes": {
-            "RelatedElements": "",
-            "RelatingStructure": ""
+            "RelatedElements": "Set of objects, which are referenced within this level of the spatial structure hierarchy.",
+            "RelatingStructure": "Spatial structure element, within which the objects are referenced. An object can be referenced within multiple elements of the project spatial structure."
         },
         "description": "The objectified relationship, IfcRelReferencedInSpatialStructure is used to assign elements in addition to those levels of the project spatial structure, in which they are referenced, but not primarily contained. It is also used to connect a system to the relevant spatial element that it serves.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelReferencedInSpatialStructure.htm"
@@ -6638,8 +6664,8 @@
             "RelatedProcess": "Reference to the process, that is the successor.",
             "RelatingProcess": "Reference to the process, that is the predecessor.",
             "SequenceType": "The way in which the time lag applies to the sequence.",
-            "TimeLag": "Time duration of the sequence, it is the time lag between the     predecessor and the successor as specified by the     SequenceType.",
-            "UserDefinedSequenceType": "Allows for specification of user defined type of the sequence     beyond the enumeration values (START_START, START_FINISH,     FINISH_START, FINISH_FINISH) provided by SequenceType     attribute of type IfcSequenceEnum. When a value is     provided for attribute UserDefinedSequenceType in     parallel the attribute SequenceType shall have     enumeration value USERDEFINED."
+            "TimeLag": "Time duration of the sequence, it is the time lag between the predecessor and the successor as specified by the SequenceType.",
+            "UserDefinedSequenceType": "Allows for specification of user defined type of the sequence beyond the enumeration values (START_START, START_FINISH FINISH_START, FINISH_FINISH) provided by SequenceType attribute of type IfcSequenceEnum. When a value is provided for attribute UserDefinedSequenceType in parallel the attribute SequenceType shall have enumeration value USERDEFINED."
         },
         "description": "IfcRelSequence is a sequential relationship between processes where one process must occur before the other in time and where the timing of the relationship may be described as a type of sequence. The relating process (_IfcRelSequence.RelatingProcess_) is considered to be the predecessor in the relationship (has precedence) whilst the related process (_IfcRelSequence.RelatedProcess_) is the successor.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelSequence.htm"
@@ -6655,10 +6681,10 @@
     "IfcRelSpaceBoundary": {
         "attributes": {
             "ConnectionGeometry": "Physical representation of the space boundary. Provided as a curve or surface given within the LCS of the space.",
-            "InternalOrExternalBoundary": "Defines, whether the Space Boundary is internal (Internal), or external, i.e. adjacent to open space (that can be an partially enclosed space, such as terrace (External).",
-            "PhysicalOrVirtualBoundary": "Defines, whether the Space Boundary is physical (Physical) or virtual (Virtual).",
-            "RelatedBuildingElement": "Reference to ~~Building~~ Element, that defines the Space Boundaries.",
-            "RelatingSpace": "Reference to one spaces that is delimited by this boundary."
+            "InternalOrExternalBoundary": "Defines whether the Space Boundary is INTERNAL, or EXTERNAL, i.e. adjacent to open space that can be a partially enclosed space, such as terrace.",
+            "PhysicalOrVirtualBoundary": "Defines whether the Space Boundary is PHYISICAL or VIRTUAL.",
+            "RelatedBuildingElement": "Reference to the Element that defines the Space Boundaries.",
+            "RelatingSpace": "Reference to one space that is delimited by this boundary."
         },
         "description": "The space boundary defines the physical or virtual delimiter of a space by the relationship IfcRelSpaceBoundary to the surrounding elements.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelSpaceBoundary.htm"
@@ -6668,7 +6694,7 @@
             "InnerBoundaries": "Reference to the inner boundaries of the space boundary. Inner boundaries are defined by the space boundaries of openings, doors and windows.",
             "ParentBoundary": "Reference to the host, or parent, space boundary within which this inner boundary is defined."
         },
-        "description": "The 1st level space boundary defines the physical or virtual delimiter of a space by the relationship IfcRelSpaceBoundary1stLevel to the surrounding elements. 1st level space boundaries are characterizeda by:",
+        "description": "The 1st level space boundary defines the physical or virtual delimiter of a space by the relationship IfcRelSpaceBoundary1stLevel to the surrounding elements. 1st level space boundaries are characterized by:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelSpaceBoundary1stLevel.htm"
     },
     "IfcRelSpaceBoundary2ndLevel": {
@@ -6682,9 +6708,9 @@
     "IfcRelVoidsElement": {
         "attributes": {
             "RelatedOpeningElement": "Reference to the feature subtraction element which defines a void in the associated element.",
-            "RelatingBuildingElement": "Reference to element in which a void is created by associated feature subtraction element."
+            "RelatingBuildingElement": "Reference to the element in which a void is created by the associated feature subtraction element."
         },
-        "description": "IfcRelVoidsElement is an objectified relationship between a building element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a Boolean operation of subtraction between the geometric bodies of the element and the opening.",
+        "description": "IfcRelVoidsElement is an objectified relationship between a building element and one opening element that creates a void in the element. It is a one-to-one relationship. This relationship implies a boolean operation of subtraction between the geometric bodies of the element and the opening.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelVoidsElement.htm"
     },
     "IfcRelationship": {
@@ -6812,7 +6838,7 @@
             "BottomRadius": "The radius of the cone at the base.",
             "Height": "The distance between the base of the cone and the apex."
         },
-        "description": "The IfcRightCircularCone is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a circular base and a point called apex as the top. The tapers from the base to the top. The axis from the center of the circular base to the apex is perpendicular to the base. The inherited Position attribute defines the IfcAxisPlacement3D and provides the location and orientation of the cone:",
+        "description": "The IfcRightCircularCone is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a circular base and a point called apex as the top. The tapers from the base to the top. The axis from the center of the circular base to the apex is perpendicular to the base. The inherited Position attribute defines the IfcAxis2Placement3D and provides the location and orientation of the cone:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRightCircularCone.htm"
     },
     "IfcRightCircularCylinder": {
@@ -6820,8 +6846,17 @@
             "Height": "The distance between the planar circular faces of the cylinder.",
             "Radius": "The radius of the cylinder."
         },
-        "description": "The IfcRightCircularCylinder is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a circular base and top. The cylindrical surface between if formed by points at a fixed distance from the axis of the cylinder. The inherited Position attribute defines the IfcAxisPlacement3D and provides:",
+        "description": "The IfcRightCircularCylinder is a Construction Solid Geometry (CSG) 3D primitive. It is a solid with a circular base and top. The cylindrical surface between if formed by points at a fixed distance from the axis of the cylinder. The inherited Position attribute defines the IfcAxis2Placement3D and provides:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRightCircularCylinder.htm"
+    },
+    "IfcRigidOperation": {
+        "attributes": {
+            "FirstCoordinate": "The first coordinate of the translation. Can be a length measure in case of map coordinates or a plane angle measure in case of geographic reference systems.",
+            "Height": "Translation above (positive) or below (negative) the coordinate surface.",
+            "SecondCoordinate": "The second coordinate of the translation. Can be a length measure in case of map coordinates or a plane angle measure in case of geographic reference systems."
+        },
+        "description": "A rigid operation specifies an offset in the coordinate reference system. It does not specify any conversion or distortion. It is a coordinate operation that tells that the whole virtual model is translated in the same way. For example, using lengths to translate along x,y,z; or using angles for a 2D translation (e.g., lambda, phi), plus a change in height.",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRigidOperation.htm"
     },
     "IfcRoad": {
         "description": "A route built on land to allow travel from one location to another, including highways, streets, cycle and foot paths, but excluding railways. As a type of Facility, Road provides the basic element in the project structure hierarchy for the components of a road project (i.e. any undertaking such as design, construction or maintenance).",
@@ -7158,7 +7193,7 @@
             "AWNING": "A rooflike shelter of canvas or other material extending over a doorway, from the top of a window, over a deck, or similar, in order to provide protection, as from the sun.",
             "JALOUSIE": "A blind with adjustable horizontal slats for admitting light and air while excluding direct sun and rain.",
             "NOTDEFINED": "",
-            "SHUTTER": "A mechanical devices that limits the passage of light. Often used as a a solid or louvered movable cover for a window.",
+            "SHUTTER": "A mechanical device that limits the passage of light. Often used as a a solid or louvered movable cover for a window.",
             "USERDEFINED": ""
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcShadingDevice.htm"
@@ -7169,7 +7204,7 @@
             "AWNING": "A rooflike shelter of canvas or other material extending over a doorway, from the top of a window, over a deck, or similar, in order to provide protection, as from the sun.",
             "JALOUSIE": "A blind with adjustable horizontal slats for admitting light and air while excluding direct sun and rain.",
             "NOTDEFINED": "",
-            "SHUTTER": "A mechanical devices that limits the passage of light. Often used as a a solid or louvered movable cover for a window.",
+            "SHUTTER": "A mechanical device that limits the passage of light. Often used as a a solid or louvered movable cover for a window.",
             "USERDEFINED": ""
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcShadingDeviceType.htm"
@@ -7254,13 +7289,13 @@
     },
     "IfcSimplePropertyTemplate": {
         "attributes": {
-            "AccessState": "Information about the access state of the property. It determines whether a property be viewed and/or modified by any receiving application without specific knowledge of it.",
-            "Enumerators": "Name of the property enumeration, and list of all valid enumerators being selectable values, assigned to the definition of the property. This attribute shall only be provided, if the PropertyType is set to: * P_ENUMERATEDVALUE",
-            "Expression": "The expression used to store additional information for the property template depending on the PropertyType. It should the following definitions, if the PropertyType is set to: * P_TABLEVALUE: the expression that could be evaluated to define the correlation between the defining values and the defined values. * Q_LENGTH, Q_AREA, Q_VOLUME, Q_COUNT, Q_WEIGTH, Q_TIME: the formula to be used to calculate the quantity",
-            "PrimaryMeasureType": "Primary measure type assigned to the definition of the property. It should be provided, if the PropertyType is set to: * P_SINGLEVALUE: determining the measure type of IfcPropertySingleValue.NominalValue * P_ENUMERATEDVALUE: determining the measure type of IfcPropertyEnumeratedValue.EnumerationValues * P_BOUNDEDVALUE: determining the measure type of IfcPropertyBoundedValue.LowerBoundValue * P_LISTVALUE: determining the measure type of IfcPropertyListValue.ListValues * P_TABLEVALUE: determining the measure type of IfcPropertyTableValue.DefiningValues * P_REFERENCEVALUE: determining the measure type of IfcPropertyTableValue.PropertyReference",
-            "PrimaryUnit": "Primary unit assigned to the definition of the property. It should be provided, if the PropertyType is set to: * P_SINGLEVALUE: determining the IfcPropertySingleValue.Unit * P_ENUMERATEDVALUE: determining the IfcPropertyEnumeration.Unit * P_BOUNDEDVALUE: determining the IfcPropertyBoundedValue.Unit * P_LISTVALUE: determining the IfcPropertyListValue.Unit * P_TABLEVALUE: determining the IfcPropertyTableValue.DefiningUnit",
-            "SecondaryMeasureType": "Secondary measure type assigned to the definition of the property. It should be provided, if the PropertyType is set to: * P_BOUNDEDVALUE: determining the measure type of IfcPropertyBoundedValue.UpperBoundValue * P_TABLEVALUE: determining the measure type of IfcPropertyTableValue.DefinedValues",
-            "SecondaryUnit": "Secondary unit assigned to the definition of the property. It should be provided, if the PropertyType is set to: * P_TABLEVALUE: determining the IfcPropertyTableValue.DefinedUnit",
+            "AccessState": "Information about the access state of the property. It determines whether a property can be viewed and/or modified by any receiving application without specific knowledge of it.",
+            "Enumerators": "Name of the property enumeration, and list of all valid enumerators being selectable values, assigned to the definition of the property. This attribute shall only be provided, if the TemplateType is set to:",
+            "Expression": "The expression used to store additional information for the property template depending on the TemplateType. It should provide the following definitions, if the TemplateType is set to:",
+            "PrimaryMeasureType": "Primary measure type assigned to the definition of the property. It should be provided, if the TemplateType is set to:",
+            "PrimaryUnit": "Primary unit assigned to the definition of the property. It should be provided, if the TemplateType is set to:",
+            "SecondaryMeasureType": "Secondary measure type assigned to the definition of the property. It should be provided, if the TemplateType is set to:",
+            "SecondaryUnit": "Secondary unit assigned to the definition of the property. It should be provided, if the TemplateType is set to:",
             "TemplateType": "Property type defining whether the property template defines a property with a single value, a bounded value, a list value, a table value, an enumerated value, or a reference value. Or the quantity type defining whether the template defines a quantity with a length, area, volume, weight or time value."
         },
         "description": "The IfcSimplePropertyTemplate defines the template for all dynamically extensible properties, either the subtypes of IfcSimpleProperty, or the subtypes of IfcPhysicalSimpleQuantity. The individual property templates are interpreted according to their Name attribute and may have a predefined template type, property units, and property measure types. The correct interpretation of the attributes:",
@@ -7362,9 +7397,9 @@
         "description": "A space represents an area or volume bounded actually or theoretically. Spaces are areas or volumes that provide for certain functions within a building.",
         "predefined_types": {
             "BERTH": "A space dedicated to the berthing of vessels within a port or managed area",
-            "EXTERNAL": "",
+            "EXTERNAL": "A space outside of a facility.",
             "GFA": "Gross Floor Area - a specific kind of space for each building story that includes all net area and construction area (also the external envelop). Provision of such a specific space is often required by regulations.",
-            "INTERNAL": "",
+            "INTERNAL": "A space inside a facility.",
             "NOTDEFINED": "",
             "PARKING": "A space dedication for use as a parking spot for vehicles, including access, such as a parking aisle.",
             "SPACE": "Any space not falling into another category.",
@@ -7399,9 +7434,9 @@
         "description": "A space represents an area or volume bounded actually or theoretically. Spaces are areas or volumes that provide for certain functions within a building.",
         "predefined_types": {
             "BERTH": "A space dedicated to the berthing of vessels within a port or managed area",
-            "EXTERNAL": "",
+            "EXTERNAL": "A space outside of a facility.",
             "GFA": "Gross Floor Area - a specific kind of space for each building story that includes all net area and construction area (also the external envelop). Provision of such a specific space is often required by regulations.",
-            "INTERNAL": "",
+            "INTERNAL": "A space inside a facility.",
             "NOTDEFINED": "",
             "PARKING": "A space dedication for use as a parking spot for vehicles, including access, such as a parking aisle.",
             "SPACE": "Any space not falling into another category.",
@@ -7430,9 +7465,9 @@
     },
     "IfcSpatialStructureElement": {
         "attributes": {
-            "CompositionType": "Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element. If no CompositionType is asserted, the default value ''ELEMENT'' applies.\\X\\0D \\X\\0D"
+            "CompositionType": "Denotes, whether the predefined spatial structure element represents itself, or an aggregate (complex) or a part (part). The interpretation is given separately for each subtype of spatial structure element. If no CompositionType is asserted, the default value ''ELEMENT'' applies."
         },
-        "description": "A spatial structure element is the generalization of all spatial elements that might be used to define a spatial structure. That spatial structure is often used to provide a project structure to organize a building project.",
+        "description": "A spatial structure element is the generalization of all spatial elements that might be used to define a spatial structure. The spatial structure can be used to provide a spatial organization of a project.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSpatialStructureElement.htm"
     },
     "IfcSpatialStructureElementType": {
@@ -7451,7 +7486,7 @@
             "RESERVATION": "A spatial zone that marks some sort of reservation within the project extent.",
             "SECURITY": "The spatial zone is used to represent a zone for security planning and maintenance work.",
             "THERMAL": "The spatial zone is used to represent a thermal zone.",
-            "TRANSPORT": "",
+            "TRANSPORT": "The spatial zone is used to represent an area primarily dedicated to the movement of people or goods.",
             "USERDEFINED": "User defined type spatial zone.",
             "VENTILATION": "The spatial zone is used to represent a ventilation zone."
         },
@@ -7472,7 +7507,7 @@
             "RESERVATION": "A spatial zone that marks some sort of reservation within the project extent.",
             "SECURITY": "The spatial zone is used to represent a zone for security planning and maintenance work.",
             "THERMAL": "The spatial zone is used to represent a thermal zone.",
-            "TRANSPORT": "",
+            "TRANSPORT": "The spatial zone is used to represent an area primarily dedicated to the movement of people or goods.",
             "USERDEFINED": "User defined type spatial zone.",
             "VENTILATION": "The spatial zone is used to represent a ventilation zone."
         },
@@ -7482,14 +7517,14 @@
         "attributes": {
             "Radius": "The radius of the sphere."
         },
-        "description": "The IfcSphere is a Construction Solid Geometry (CSG) 3D primitive. It is a solid where all points at the surface have the same distance from the center point. The inherited Position attribute defines the IfcAxisPlacement3D and provides:",
+        "description": "The IfcSphere is a Construction Solid Geometry (CSG) 3D primitive. It is a solid where all points at the surface have the same distance from the center point. The inherited Position attribute defines the IfcAxis2Placement3D and provides:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSphere.htm"
     },
     "IfcSphericalSurface": {
         "attributes": {
             "Radius": "The radius of the sphere."
         },
-        "description": "The IfcSphericalSurface is a bounded elementary surface. The inherited Position attribute defines the IfcAxisPlacement3D and provides:",
+        "description": "The IfcSphericalSurface is a bounded elementary surface. The inherited Position attribute defines the IfcAxis2Placement3D and provides:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSphericalSurface.htm"
     },
     "IfcSpiral": {
@@ -7990,7 +8025,7 @@
     },
     "IfcSurfaceFeature": {
         "attributes": {
-            "AdheresToElement": "Reference to the IfcRelAdheresToElement relationship that uses this IfcSurfaceFeature to ahere or treat the surface of the IfcRelAdheresToElement.RelatingElement."
+            "AdheresToElement": "Reference to the IfcRelAdheresToElement relationship that uses this IfcSurfaceFeature to adhere or treat the surface of the IfcRelAdheresToElement.RelatingElement."
         },
         "description": "A surface feature is a modification at (onto, or into) of the surface of an element. Parts of the surface of the entire surface may be affected. The volume and mass of the element may be increased, remain unchanged, or be decreased by the surface feature, depending on manufacturing technology. However, any increase or decrease of volume is small compared to the total volume of the element.",
         "predefined_types": {
@@ -8083,7 +8118,7 @@
     },
     "IfcSurfaceStyleWithTextures": {
         "attributes": {
-            "Textures": "The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTexture defines a multi texture."
+            "Textures": "The textures applied to the surface. In case of more than one surface texture is included, the IfcSurfaceStyleWithTextures defines a multi texture."
         },
         "description": "The entity IfcSurfaceStyleWithTextures allows to include image textures in surface styles. These image textures can be applied repeating across the surface or mapped with a particular scale upon the surface.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSurfaceStyleWithTextures.htm"
@@ -8175,7 +8210,7 @@
     },
     "IfcSystem": {
         "attributes": {
-            "ServicesBuildings": "Reference to the ~~building~~ spatial structure via the objectified relationship IfcRelServicesBuildings, which is serviced by the system."
+            "ServicesBuildings": "Reference to the spatial structure via the objectified relationship IfcRelServicesBuildings, which is serviced by the system."
         },
         "description": "A system is an organized combination of related parts within an AEC product, composed for a common purpose or function or to provide a service. A system is essentially a functionally related aggregation of products. The grouping relationship to one or several instances of IfcProduct (the system members) is handled by IfcRelAssignsToGroup.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSystem.htm"
@@ -8279,8 +8314,8 @@
     },
     "IfcTask": {
         "attributes": {
-            "IsMilestone": "Identifies whether a task is a milestone task (=TRUE) or not     (= FALSE).",
-            "Priority": "A value that indicates the relative priority of the task (in     comparison to the priorities of other tasks).",
+            "IsMilestone": "Identifies whether a task is a milestone task (= TRUE) or not (= FALSE).",
+            "Priority": "A value that indicates the relative priority of the task (in comparison to the priorities of other tasks).",
             "Status": "Current status of the task.",
             "TaskTime": "Time related information for the task.",
             "WorkMethod": "The method of work used in carrying out a task."
@@ -8304,7 +8339,7 @@
             "OPERATION": "A procedure undertaken to start up the operation an artifact.",
             "REMOVAL": "Removal of an item from use and taking it from its place of use.",
             "RENOVATION": "Bringing something to an 'as-new' state.",
-            "SAFETY": "Tasks required to ensure safe use of the object. For example electrical \u2018lock-out' instructions.",
+            "SAFETY": "Tasks required to ensure safe use of the object. For example electrical 'lock-out' instructions.",
             "SHUTDOWN": "The set of tasks required for an orderly shut down without adverse impacts, typically applied to systems.",
             "STARTUP": "The set of tasks required to begin or restart operation without adverse impacts, typically applied to systems.",
             "TESTING": "The set of tasks required to evaluate the performance of an object, to ensure if something is installed and is operating within expected parameters.",
@@ -8366,7 +8401,7 @@
             "OPERATION": "A procedure undertaken to start up the operation an artifact.",
             "REMOVAL": "Removal of an item from use and taking it from its place of use.",
             "RENOVATION": "Bringing something to an 'as-new' state.",
-            "SAFETY": "Tasks required to ensure safe use of the object. For example electrical \u2018lock-out' instructions.",
+            "SAFETY": "Tasks required to ensure safe use of the object. For example electrical 'lock-out' instructions.",
             "SHUTDOWN": "The set of tasks required for an orderly shut down without adverse impacts, typically applied to systems.",
             "STARTUP": "The set of tasks required to begin or restart operation without adverse impacts, typically applied to systems.",
             "TESTING": "The set of tasks required to evaluate the performance of an object, to ensure if something is installed and is operating within expected parameters.",
@@ -8475,7 +8510,6 @@
     },
     "IfcTessellatedFaceSet": {
         "attributes": {
-            "Closed": "",
             "Coordinates": "An ordered list of Cartesian points used by the coordinate index defined at the subtypes of IfcTessellatedFaceSet.",
             "HasColours": "Reference to the indexed colour map providing the corresponding colour RGB values to the faces of the subtypes of IfcTessellatedFaceSet.",
             "HasTextures": "Reference to the indexed texture map providing the corresponding texture coordinates to the vertices bounding the faces of the subtypes of IfcTessellatedFaceSet."
@@ -8652,7 +8686,7 @@
             "MajorRadius": "The major radius of the torus.",
             "MinorRadius": "The minor radius of the torus."
         },
-        "description": "The IfcToroidalSurface is a bounded elementary surface. It is constructed by completely revolving a circle around an axis line. The inherited Position attribute defines the IfcAxisPlacement3D and provides:",
+        "description": "The IfcToroidalSurface is a bounded elementary surface. It is constructed by completely revolving a circle around an axis line. The inherited Position attribute defines the IfcAxis2Placement3D and provides:",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcToroidalSurface.htm"
     },
     "IfcTrackElement": {
@@ -8721,13 +8755,13 @@
         "description": "A transport element is a generalization of all transport related objects that move people, animals or goods within a Facility. The IfcTransportElement defines the occurrence of a transport element, that (if given), is expressed by the IfcTransportElementType.",
         "predefined_types": {
             "CRANEWAY": "A crane way system, normally including the crane rails, fasteners and the crane. It is primarily used to move heavy goods in a factory or other industry buildings.",
-            "ELEVATOR": "Elevator or lift being a transport device to move people of good vertically.",
+            "ELEVATOR": "Elevator or lift being a transport device to move people or goods vertically.",
             "ESCALATOR": "Escalator being a transport device to move people. It consists of individual linked steps that move up and down on tracks while keeping the threads horizontal.",
             "HAULINGGEAR": "A device used for hauling goods.",
             "LIFTINGGEAR": "A device used for lifting or lowering heavy goods. It may be manually operated or electrically or pneumatically driven.",
             "MOVINGWALKWAY": "Moving walkway being a transport device to move people horizontally or on an incline. It is a slow conveyor belt that transports people.",
-            "NOTDEFINED": "",
-            "USERDEFINED": ""
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcTransportElement.htm"
     },
@@ -8735,13 +8769,13 @@
         "description": "The element type IfcTransportElementType defines commonly shared information for occurrences of transport elements. The set of shared information may include:",
         "predefined_types": {
             "CRANEWAY": "A crane way system, normally including the crane rails, fasteners and the crane. It is primarily used to move heavy goods in a factory or other industry buildings.",
-            "ELEVATOR": "Elevator or lift being a transport device to move people of good vertically.",
+            "ELEVATOR": "Elevator or lift being a transport device to move people or goods vertically.",
             "ESCALATOR": "Escalator being a transport device to move people. It consists of individual linked steps that move up and down on tracks while keeping the threads horizontal.",
             "HAULINGGEAR": "A device used for hauling goods.",
             "LIFTINGGEAR": "A device used for lifting or lowering heavy goods. It may be manually operated or electrically or pneumatically driven.",
             "MOVINGWALKWAY": "Moving walkway being a transport device to move people horizontally or on an incline. It is a slow conveyor belt that transports people.",
-            "NOTDEFINED": "",
-            "USERDEFINED": ""
+            "NOTDEFINED": "Undefined type.",
+            "USERDEFINED": "User-defined type."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcTransportElementType.htm"
     },
@@ -8765,6 +8799,7 @@
     },
     "IfcTriangulatedFaceSet": {
         "attributes": {
+            "Closed": "Indication whether the face set is a closed shell (TRUE) or an open shell (FALSE). If omitted no such information can be asserted.",
             "CoordIndex": "Two-dimensional list for the indexed-based triangles, where * The first dimension represents the triangles (from 1 to N) * The second dimension has exactly three values representing the indices to three vertex points (from 1 to 3).",
             "Normals": "An ordered list of three directions for normals. It is a two-dimensional list of directions provided by three parameter values. * The first dimension corresponds to the vertex indices of the Coordindex * The second dimension has exactly three values, [1] the x-direction, [2] the y-direction and [3] the z-directions",
             "PnIndex": "The list of integers defining the locations in the IfcCartesianPointList3D to obtain the point coordinates for the indices withint the CoordIndex. If the PnIndex is not provided the indices point directly into the IfcCartesianPointList3D."
@@ -8810,9 +8845,9 @@
     },
     "IfcTypeObject": {
         "attributes": {
-            "ApplicableOccurrence": "The attribute optionally defines the data type of the occurrence object, to which the assigned type object can relate. If not present, no instruction is given to which occurrence object the type object is applicable. The following conventions are used: * The IFC entity name of the applicable occurrence using the IFC naming convention, CamelCase with IFC prefix * It can be optionally followed by the predefined type after the separator \"/\" (forward slash), using uppercase * If one type object is applicable to many occurrence objects, then those occurrence object names should be separate by comma \",\" forming a comma separated string.",
-            "HasPropertySets": "Set ~~list~~ of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.",
-            "Types": "Reference to the relationship IfcRelDefinedByType and thus to those occurrence objects, which are defined by this type."
+            "ApplicableOccurrence": "The attribute optionally defines the data type of the occurrence object, to which the assigned type object can relate. If not present, no instruction is given to which occurrence object the type object is applicable. The following conventions are used:",
+            "HasPropertySets": "Set of unique property sets, that are associated with the object type and are common to all object occurrences referring to this object type.",
+            "Types": "Reference to the relationship IfcRelDefinesByType and thus to those occurrence objects, which are defined by this type."
         },
         "description": "The object type defines the specific information about a type, being common to all occurrences of this type. It refers to the specific level of the well recognized _generic - specific - occurrence_ modeling paradigm. The IfcTypeObject gets assigned to the individual object instances (the occurrences) via the IfcRelDefinesByType relationship.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcTypeObject.htm"
@@ -8820,9 +8855,9 @@
     "IfcTypeProcess": {
         "attributes": {
             "Identification": "An identifying designation given to a process type.",
-            "LongDescription": "An long description, or text, describing the activity in detail.",
+            "LongDescription": "A long description, or text, describing the activity in detail.",
             "OperatesOn": "Set of relationships to other objects, e.g. products, processes, controls, resources or actors that are operated on by the process type.",
-            "ProcessType": "The type denotes a particular type that indicates the process further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute 'PredefinedType' is set to USERDEFINED."
+            "ProcessType": "The type denotes a particular type that indicates the process further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute PredefinedType is set to USERDEFINED."
         },
         "description": "IfcTypeProcess defines a specific (or type) definition of a process or activity without being assigned to a schedule or a time.\u00a0It is used to define a process or activity specification, that is, the specific process or activity information that is common to all occurrences that are defined for that process or activity type.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcTypeProcess.htm"
@@ -8839,9 +8874,9 @@
     "IfcTypeResource": {
         "attributes": {
             "Identification": "An identifying designation given to a resource type.",
-            "LongDescription": "An long description, or text, describing the resource in detail.",
+            "LongDescription": "A long description, or text, describing the resource in detail.",
             "ResourceOf": "Set of relationships to other objects, e.g. products, processes, controls, resources or actors to which this resource type is a resource.",
-            "ResourceType": "The type denotes a particular type that indicates the resource further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute 'PredefinedType' is set to USERDEFINED."
+            "ResourceType": "The type denotes a particular type that indicates the resource further. The use has to be established at the level of instantiable subtypes. In particular it holds the user defined type, if the enumeration of the attribute PredefinedType is set to USERDEFINED."
         },
         "description": "IfcTypeResource defines a specific (or type) definition of a resource.\u00a0It is used to define a resource specification (the specific resource, that is common to all occurrences that are defined for that resource) and could act as a resource template.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcTypeResource.htm"
@@ -8863,7 +8898,7 @@
         "attributes": {
             "Units": "Units to be included within a unit assignment."
         },
-        "description": "IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssigment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.",
+        "description": "IfcUnitAssignment indicates a set of units which may be assigned. Within an IfcUnitAssignment each unit definition shall be unique; that is, there shall be no redundant unit definitions for the same unit type such as length unit or area unit. For currencies, there shall be only a single IfcMonetaryUnit within an IfcUnitAssignment.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcUnitAssignment.htm"
     },
     "IfcUnitaryControlElement": {
@@ -8995,31 +9030,31 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcVector.htm"
     },
     "IfcVehicle": {
-        "description": "A Vehicle.\n",
+        "description": "Piece of equipment designed to transport people or cargo.\n",
         "predefined_types": {
             "CARGO": "A mobile transport element that represents a discrete unit of cargo managed by a facility.",
             "NOTDEFINED": "Undefined type.",
             "ROLLINGSTOCK": "Refers to railway vehicles, including both powered and unpowered vehicles, for example locomotives, railroad cars, coaches, private railroad cars and wagons.",
-            "USERDEFINED": "User-defined type",
-            "VEHICLE": "a generalisation of a vehicle that interacts with a facility (e.g. as a user/customer) or as a specified operational asset within the facility.",
+            "USERDEFINED": "User-defined type.",
+            "VEHICLE": "A generalisation of a vehicle that interacts with a facility (e.g. as a user/customer) or as a specified operational asset within the facility.",
             "VEHICLEAIR": "A specialisation of a vehicle that represents powered and unpowered flying vehicles, such as airplanes, helicopters, gliders etc.",
             "VEHICLEMARINE": "A specialisation of a vehicle that operates on water as a marine vessel.",
-            "VEHICLETRACKED": "A specialisation of a vehicle that operates on land tracked (Caterpillar) vehicle.",
+            "VEHICLETRACKED": "A specialisation of a vehicle that operates on land tracked (Caterpillar).",
             "VEHICLEWHEELED": "A specialisation of a vehicle that operates on land as a multi wheeled vehicle such as a car, lorry, forklift etc."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcVehicle.htm"
     },
     "IfcVehicleType": {
-        "description": "Type of Vehicle.\n",
+        "description": "Type of IfcVehicle.\n",
         "predefined_types": {
             "CARGO": "A mobile transport element that represents a discrete unit of cargo managed by a facility.",
             "NOTDEFINED": "Undefined type.",
             "ROLLINGSTOCK": "Refers to railway vehicles, including both powered and unpowered vehicles, for example locomotives, railroad cars, coaches, private railroad cars and wagons.",
-            "USERDEFINED": "User-defined type",
-            "VEHICLE": "a generalisation of a vehicle that interacts with a facility (e.g. as a user/customer) or as a specified operational asset within the facility.",
+            "USERDEFINED": "User-defined type.",
+            "VEHICLE": "A generalisation of a vehicle that interacts with a facility (e.g. as a user/customer) or as a specified operational asset within the facility.",
             "VEHICLEAIR": "A specialisation of a vehicle that represents powered and unpowered flying vehicles, such as airplanes, helicopters, gliders etc.",
             "VEHICLEMARINE": "A specialisation of a vehicle that operates on water as a marine vessel.",
-            "VEHICLETRACKED": "A specialisation of a vehicle that operates on land tracked (Caterpillar) vehicle.",
+            "VEHICLETRACKED": "A specialisation of a vehicle that operates on land tracked (Caterpillar).",
             "VEHICLEWHEELED": "A specialisation of a vehicle that operates on land as a multi wheeled vehicle such as a car, lorry, forklift etc."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcVehicleType.htm"
@@ -9045,19 +9080,14 @@
     "IfcVibrationDamper": {
         "description": "A vibration damper is a device used to minimize the effects of vibration in a structure by dissipating kinetic energy. The damper may be passive (elastic, frictional, inertia) or active (in a system using sensors and actuators).\n",
         "predefined_types": {
-            "BACKDRAFTDAMPER": "",
-            "BALANCINGDAMPER": "",
-            "BLASTDAMPER": "",
-            "CONTROLDAMPER": "",
-            "FIREDAMPER": "",
-            "FIRESMOKEDAMPER": "",
-            "FUMEHOODEXHAUST": "",
-            "GRAVITYDAMPER": "",
-            "GRAVITYRELIEFDAMPER": "",
+            "AXIAL_YIELD": "A displacement dependent type damper in which the resistance force generated is determined by the plastic strain amount utilizing the plastic deformation of the steel material. The axial yield type is a damper that yields energy by absorbing the steel material against deformation in the axial direction, that is, in the direction of expansion and contraction.",
+            "BENDING_YIELD": "A displacement dependent type damper in which the resistance force generated is determined by the plastic strain amount utilizing the plastic deformation of the steel material. The bending yield type is a damper, which yields steel material by bending.",
+            "FRICTION": "The friction type is a damper utilizing friction acting on the contact surface of a material.",
             "NOTDEFINED": "Undefined vibration damper type.",
-            "RELIEFDAMPER": "",
-            "SMOKEDAMPER": "",
-            "USERDEFINED": "User-defined vibration damper type."
+            "RUBBER": "The rubber mold is a damper that absorbs energy by utilizing deformation of laminated rubber. The difference between the seismic isolation bearing and the rubber type damper is whether or not to support the weight of the upper structures. The rubber damper does not transmit the weight of the upper structures to the sub structure.",
+            "SHEAR_YIELD": "A displacement dependent type damper in which the resistance force generated is determined by the plastic strain amount utilizing the plastic deformation of the steel material. The shear yield type is a damper, which causes the steel material to yield for deformation in the direction perpendicular to the member.",
+            "USERDEFINED": "User-defined vibration damper type.",
+            "VISCOUS": "The viscous type is a damper that absorbs energy by utilizing the resistance of a viscous body."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcVibrationDamper.htm"
     },
@@ -9100,11 +9130,11 @@
     "IfcVirtualElement": {
         "description": "A virtual element is a special element used to provide imaginary, placeholder, or provisional areas, volumes, and boundaries. Virtual elements are usually not displayed and do not have quantities, associated materials, and other measures.",
         "predefined_types": {
-            "BOUNDARY": "An imaginary boundary, such as between two adjacent spaces that are not separated by a physcial boundary.",
-            "CLEARANCE": "The virtual element denotes a clearance area or volume",
-            "NOTDEFINED": "",
+            "BOUNDARY": "An imaginary boundary, such as between two adjacent spaces that are not separated by a physical boundary.",
+            "CLEARANCE": "The virtual element denotes a clearance area or volume.",
+            "NOTDEFINED": "Undefined type.",
             "PROVISIONFORVOID": "The virtual element denotes a proposed provision for voids (an proposed opening not applied as void yet).",
-            "USERDEFINED": ""
+            "USERDEFINED": "User-defined type."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcVirtualElement.htm"
     },
@@ -9133,12 +9163,12 @@
     "IfcWall": {
         "description": "The wall represents a vertical construction that may bound or subdivide spaces. Wall are usually vertical, or nearly vertical, planar elements, often designed to bear structural loads. A wall is however\u00a0not required to be load bearing.",
         "predefined_types": {
-            "ELEMENTEDWALL": "A stud wall framed with studs and faced with sheetings, sidings, wallboard, or plasterwork. { .deprecated}",
+            "ELEMENTEDWALL": "A stud wall framed with studs and faced with sheetings, sidings, wallboard, or plasterwork.",
             "MOVABLE": "A movable wall that is either movable, such as folding wall or a sliding wall, or can be easily removed as a removable partitioning or mounting wall. Movable walls do normally not define space boundaries and often belong to the furnishing system.",
             "NOTDEFINED": "Undefined wall element.",
             "PARAPET": "A wall-like barrier to protect human or vehicle from falling, or to prevent the spread of fires. Often designed at the edge of balconies, terraces or roofs, or along edges of bridges.",
             "PARTITIONING": "A wall designed to partition spaces that often has a light-weight, sandwich-like construction (e.g. using gypsum board). Partitioning walls are normally non load bearing.",
-            "PLUMBINGWALL": "A pier, or enclosure, or encasement, normally used to enclose plumbing in sanitary rooms. Such walls often do not extent to the ceiling.",
+            "PLUMBINGWALL": "A pier, or enclosure, or encasement, normally used to enclose plumbing in sanitary rooms. Such walls often do not extend to the ceiling.",
             "POLYGONAL": "A polygonal wall, extruded vertically, where the wall thickness varies along the wall path.",
             "RETAININGWALL": "A supporting wall used to protect against soil layers behind. Special types of a retaining wall may be e.g. Gabion wall and Grib wall. Examples of retaining walls are wing wall, headwall, stem wall, pierwall and protecting wall.",
             "SHEAR": "A wall designed to withstand shear loads. Examples of shear wall are diaphragms inside a box girder, typically on a pier, to resist lateral forces and transfer them to the support.",
@@ -9156,12 +9186,12 @@
     "IfcWallType": {
         "description": "The element type IfcWallType defines commonly shared information for occurrences of walls. The set of shared information may include:",
         "predefined_types": {
-            "ELEMENTEDWALL": "A stud wall framed with studs and faced with sheetings, sidings, wallboard, or plasterwork. { .deprecated}",
+            "ELEMENTEDWALL": "A stud wall framed with studs and faced with sheetings, sidings, wallboard, or plasterwork.",
             "MOVABLE": "A movable wall that is either movable, such as folding wall or a sliding wall, or can be easily removed as a removable partitioning or mounting wall. Movable walls do normally not define space boundaries and often belong to the furnishing system.",
             "NOTDEFINED": "Undefined wall element.",
             "PARAPET": "A wall-like barrier to protect human or vehicle from falling, or to prevent the spread of fires. Often designed at the edge of balconies, terraces or roofs, or along edges of bridges.",
             "PARTITIONING": "A wall designed to partition spaces that often has a light-weight, sandwich-like construction (e.g. using gypsum board). Partitioning walls are normally non load bearing.",
-            "PLUMBINGWALL": "A pier, or enclosure, or encasement, normally used to enclose plumbing in sanitary rooms. Such walls often do not extent to the ceiling.",
+            "PLUMBINGWALL": "A pier, or enclosure, or encasement, normally used to enclose plumbing in sanitary rooms. Such walls often do not extend to the ceiling.",
             "POLYGONAL": "A polygonal wall, extruded vertically, where the wall thickness varies along the wall path.",
             "RETAININGWALL": "A supporting wall used to protect against soil layers behind. Special types of a retaining wall may be e.g. Gabion wall and Grib wall. Examples of retaining walls are wing wall, headwall, stem wall, pierwall and protecting wall.",
             "SHEAR": "A wall designed to withstand shear loads. Examples of shear wall are diaphragms inside a box girder, typically on a pier, to resist lateral forces and transfer them to the support.",
@@ -9202,10 +9232,18 @@
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWasteTerminalType.htm"
     },
+    "IfcWellKnownText": {
+        "attributes": {
+            "CoordinateReferenceSystem": "The IfcCoordinateReferenceSystem for which this the WKT definition is provided.",
+            "WellKnownText": "The WKT literal this entity encapsulates."
+        },
+        "description": "A Well Known Text (WKT) literal is a structured textual representation of the definition of a coordinate reference systems according to ISO 19125-1:2004 or ISO 19162:2019.",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWellKnownText.htm"
+    },
     "IfcWindow": {
         "attributes": {
-            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpening in which the window is inserted.",
-            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the window opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpening in which the window is inserted.",
+            "OverallHeight": "Overall measure of the height, it reflects the Z Dimension of a bounding box, enclosing the window opening. If omitted, the OverallHeight should be taken from the geometric representation of the IfcOpeningElement in which the window is inserted.",
+            "OverallWidth": "Overall measure of the width, it reflects the X Dimension of a bounding box, enclosing the window opening. If omitted, the OverallWidth should be taken from the geometric representation of the IfcOpeningElement in which the window is inserted.",
             "PartitioningType": "Type defining the general layout of the window in terms of the partitioning of panels.",
             "UserDefinedPartitioningType": "Designator for the user defined partitioning type, shall only be provided, if the value of PartitioningType is set to USERDEFINED."
         },
@@ -9221,16 +9259,16 @@
     },
     "IfcWindowLiningProperties": {
         "attributes": {
-            "FirstMullionOffset": "Offset of the mullion centerline, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.5 indicates that the mullion is positioned in the middle of the window.",
-            "FirstTransomOffset": "Offset of the transom centerline, measured along the z-axis of the window placement co-ordinate system. An offset value = 0.5 indicates that the transom is positioned in the middle of the window.",
+            "FirstMullionOffset": "Offset of the mullion centerline, measured along the x-axis of the window placement coordinate system. An offset value = 0.5 indicates that the mullion is positioned in the middle of the window.",
+            "FirstTransomOffset": "Offset of the transom centerline, measured along the z-axis of the window placement coordinate system. An offset value = 0.5 indicates that the transom is positioned in the middle of the window.",
             "LiningDepth": "Depth of the window lining (dimension measured perpendicular to window elevation plane).",
             "LiningOffset": "Offset of the window lining. The offset is given as distance along the y axis of the local placement (perpendicular to the window plane).",
             "LiningThickness": "Thickness of the window lining as explained in the figure above. If LiningThickness value is 0. (zero) it denotes a window without a lining (all other lining parameters shall be set to NIL in this case). If the LiningThickness is NIL it denotes that the value is not available.",
             "LiningToPanelOffsetX": "Offset between the lining and the window panel measured along the x-axis of the local placement. Should be smaller or equal to the LiningThickness.",
             "LiningToPanelOffsetY": "Offset between the lining and the window panel measured along the y-axis of the local placement. Should be smaller or equal to the IfcWindowPanelProperties.PanelThickness.",
             "MullionThickness": "Thickness of the mullion (vertical separator of window panels within a window), measured parallel to the window elevation plane. The mullion is part of the lining and the mullion depth is assumed to be identical to the lining depth. If the MullionThickness is set to zero (and the MullionOffset set to a positive length), then the window is divided horizontally without a physical divider.",
-            "SecondMullionOffset": "Offset of the mullion centerline for the second mullion, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second mullion is positioned at two/third of the window.",
-            "SecondTransomOffset": "Offset of the transom centerline for the second transom, measured along the x-axis of the window placement co-ordinate system. An offset value = 0.666 indicates that the second transom is positioned at two/third of the window.",
+            "SecondMullionOffset": "Offset of the mullion centerline for the second mullion, measured along the x-axis of the window placement coordinate system. An offset value = 0.666 indicates that the second mullion is positioned at two/third of the window.",
+            "SecondTransomOffset": "Offset of the transom centerline for the second transom, measured along the x-axis of the window placement coordinate system. An offset value = 0.666 indicates that the second transom is positioned at two/third of the window.",
             "ShapeAspectStyle": "Optional link to a shape aspect definition, which points to the part of the geometric representation of the window style, which is used to represent the lining.",
             "TransomThickness": "Thickness of the transom (horizontal separator of window panels within a window), measured parallel to the window elevation plane. The transom is part of the lining and the transom depth is assumed to be identical to the lining depth. If the TransomThickness is set to zero (and the TransomOffset set to a positive length), then the window is divided vertically without a physical divider."
         },
@@ -9266,8 +9304,8 @@
     },
     "IfcWorkCalendar": {
         "attributes": {
-            "ExceptionTimes": "Set of times periods that define exceptions (non-working     times) for the given working times including the base     calendar, if provided.",
-            "WorkingTimes": "Set of times periods that are regarded as an initial set-up     of working times. Exception times can then further restrict     these working times."
+            "ExceptionTimes": "Set of times periods that define exceptions (non-working times) for the given working times including the base calendar, if provided.",
+            "WorkingTimes": "Set of times periods that are regarded as an initial set-up of working times. Exception times can then further restrict these working times."
         },
         "description": "An IfcWorkCalendar defines working and non-working time periods for tasks and resources. It enables to define both specific time periods, such as from 7:00 till 12:00 on 25th August 2009, as well as repetitive time periods based on frequently used recurrence patterns, such as each Monday from 7:00 till 12:00 between 1st March 2009 and 31st December 2009.",
         "predefined_types": {
@@ -9306,10 +9344,10 @@
     "IfcWorkSchedule": {
         "description": "An IfcWorkSchedule represents a task schedule of a work plan, which in turn can contain a set of schedules for different purposes.",
         "predefined_types": {
-            "ACTUAL": "A control in which actual items undertaken are indicated.",
-            "BASELINE": "A control that is a baseline from which changes that are made later can be recognized.",
+            "ACTUAL": "A process in which actual items undertaken are indicated.",
+            "BASELINE": "A process that is a baseline from which changes that are made later can be recognized.",
             "NOTDEFINED": "Undefined.",
-            "PLANNED": "A control showing planned items.",
+            "PLANNED": "A process showing planned items.",
             "USERDEFINED": "User defined."
         },
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWorkSchedule.htm"

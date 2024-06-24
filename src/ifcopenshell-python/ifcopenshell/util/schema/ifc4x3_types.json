@@ -127,10 +127,6 @@
         "description": "This enumeration defines the different predefined types of beams that can further specify an IfcBeam or IfcBeamType.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBeamTypeEnum.htm"
     },
-    "IfcBearingTypeDisplacementEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBearingTypeDisplacementEnum.htm"
-    },
     "IfcBearingTypeEnum": {
         "description": "Enumeration of Bearing Types.\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBearingTypeEnum.htm"
@@ -172,7 +168,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBridgePartTypeEnum.htm"
     },
     "IfcBridgeTypeEnum": {
-        "description": "",
+        "description": "Definitions from ISO 6707\n",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcBridgeTypeEnum.htm"
     },
     "IfcBuildingElementPartTypeEnum": {
@@ -376,7 +372,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCurveOnSurface.htm"
     },
     "IfcCurveOrEdgeCurve": {
-        "description": "IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve and subtypes) within a geometric model, or a curve with associated geometry and coordinates (_Ifc__EdgeCurve_) within a topological model.",
+        "description": "IfcCurveOrEdgeCurve provides the option to either select a geometric curve (IfcCurve and subtypes) within a geometric model, or a curve with associated geometry and coordinates (IfcEdgeCurve) within a topological model.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcCurveOrEdgeCurve.htm"
     },
     "IfcCurveStyleFontSelect": {
@@ -471,20 +467,12 @@
         "description": "This enumeration defines the basic ways to describe the location of a door panel within a door lining.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorPanelPositionEnum.htm"
     },
-    "IfcDoorStyleConstructionEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorStyleConstructionEnum.htm"
-    },
-    "IfcDoorStyleOperationEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorStyleOperationEnum.htm"
-    },
     "IfcDoorTypeEnum": {
         "description": "This enumeration defines the different predefined types of an IfcDoor or IfcDoorType object.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeEnum.htm"
     },
     "IfcDoorTypeOperationEnum": {
-        "description": "This enumeration defines the basic ways to describe how an IfcDoor or IfcDoorType operate, as shown in Figure 1. It combines the partitioning of the access barrier into single or multiple panels and the operation types of those panels.",
+        "description": "This enumeration defines the basic ways to describe how an IfcDoor or IfcDoorType operate, as shown in the figures below. It combines the partitioning of the access barrier into single or multiple panels and the operation types of those panels.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcDoorTypeOperationEnum.htm"
     },
     "IfcDoseEquivalentMeasure": {
@@ -779,6 +767,10 @@
         "description": "The IfcJunctionBoxTypeEnum defines different types of junction boxes.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcJunctionBoxTypeEnum.htm"
     },
+    "IfcKerbTypeEnum": {
+        "description": "The predefined type container that collects kerb types together into the implemented enumeration.\n",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcKerbTypeEnum.htm"
+    },
     "IfcKinematicViscosityMeasure": {
         "description": "IfcKinematicViscosityMeasure is a measure of the viscous resistance of a medium to a moving body.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcKinematicViscosityMeasure.htm"
@@ -1019,10 +1011,6 @@
         "description": "IfcObjectReferenceSelect is a select type, that holds a list of resource level entities that can be used as property values for an IfcPropertyReferenceValue being a property within an IfcPropertySet.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcObjectReferenceSelect.htm"
     },
-    "IfcObjectTypeEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcObjectTypeEnum.htm"
-    },
     "IfcObjectiveEnum": {
         "description": "IfcObjectiveEnum is an enumeration used to determine the objective for which purpose the constraint needs to be satisfied.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcObjectiveEnum.htm"
@@ -1212,7 +1200,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRampFlightTypeEnum.htm"
     },
     "IfcRampTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights, as shown in Figure 1. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings.",
+        "description": "This enumeration defines the basic configuration of the ramp type in terms of the number and shape of ramp flights. The type also distinguished turns by landings. In addition the subdivision of the straight and changing direction ramps is included. The ramp configurations are given for ramps without and with one and two landings.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRampTypeEnum.htm"
     },
     "IfcRatioMeasure": {
@@ -1276,7 +1264,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoleEnum.htm"
     },
     "IfcRoofTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the roof in terms of the different roof shapes, as illustrated in Figure 1.",
+        "description": "This enumeration defines the basic configuration of the roof in terms of the different roof shapes.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRoofTypeEnum.htm"
     },
     "IfcRotationalFrequencyMeasure": {
@@ -1408,11 +1396,11 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSpaceTypeEnum.htm"
     },
     "IfcSpatialReferenceSelect": {
-        "description": "IfcSpatialReferenceSelect\u00a0provides the option to either select a group occurrence, IfcGroup (and all relevant subtypes), or a product occurrence, IfcProduct. for referencing to a spatial element",
+        "description": "IfcSpatialReferenceSelect\u00a0provides the option to either select a group occurrence, IfcGroup (and all relevant subtypes), or a product occurrence, IfcProduct, for referencing to a spatial element.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSpatialReferenceSelect.htm"
     },
     "IfcSpatialZoneTypeEnum": {
-        "description": "This enumeration defines the range of different types of spatial zones that can further specify an IfcSpatialZoneTypeEnum.",
+        "description": "This enumeration defines the range of different types of spatial zones that can further specify an IfcSpatialZone.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSpatialZoneTypeEnum.htm"
     },
     "IfcSpecificHeatCapacityMeasure": {
@@ -1440,12 +1428,16 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairFlightTypeEnum.htm"
     },
     "IfcStairTypeEnum": {
-        "description": "This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings, as illustrated in Figure 1. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings.",
+        "description": "This enumeration defines the basic configuration of the stair type in terms of the number of stair flights and the number of landings. The type also distinguished turns by windings or by landings. In addition the subdivision of the straight and changing direction stairs is included. The stair configurations are given for stairs without and with one, two or three landings.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStairTypeEnum.htm"
     },
     "IfcStateEnum": {
         "description": "The IfcStateEnum enumeration identifies the state or accessibility of the object (for example, read/write, locked).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStateEnum.htm"
+    },
+    "IfcStrippedOptional": {
+        "description": "IfcStrippedOptional is a type never to be instantiated in population models, but serves a purpose for compatibility of exchanged models.",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcStrippedOptional.htm"
     },
     "IfcStructuralActivityAssignmentSelect": {
         "description": "This type definition shall be used to distinguish between a reference to an instance either of IfcStructuralItem or IfcElement. The IfcStructuralActivityAssignmentSelect type is referenced by the entity IfcRelConnectsStructuralActivity which defines the connection between activities (IfcStructuralActivity) and the loaded element.",
@@ -1492,7 +1484,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSwitchingDeviceTypeEnum.htm"
     },
     "IfcSystemFurnitureElementTypeEnum": {
-        "description": "IfcSystemFurnitureTypeEnum defines the types of system furniture from which the type required can be selected.",
+        "description": "IfcSystemFurnitureElementTypeEnum defines the types of system furniture from which the type required can be selected.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcSystemFurnitureElementTypeEnum.htm"
     },
     "IfcTankTypeEnum": {
@@ -1564,7 +1556,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcThermalConductivityMeasure.htm"
     },
     "IfcThermalExpansionCoefficientMeasure": {
-        "description": "IfcThermalExpansionCoeffientMeasure is a measure of the thermal expansion coefficient of a material, which expresses its elongation (as a ratio) per temperature difference. It is usually measured in 1/K. A positive elongation per (positive) rise of temperature is expressed by a positive value.",
+        "description": "IfcThermalExpansionCoefficientMeasure is a measure of the thermal expansion coefficient of a material, which expresses its elongation (as a ratio) per temperature difference. It is usually measured in 1/K. A positive elongation per (positive) rise of temperature is expressed by a positive value.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcThermalExpansionCoefficientMeasure.htm"
     },
     "IfcThermalResistanceMeasure": {
@@ -1719,6 +1711,10 @@
         "description": "The IfcWasteTerminalTypeEnum defines the range of different types of waste terminal that can be specified.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWasteTerminalTypeEnum.htm"
     },
+    "IfcWellKnownTextLiteral": {
+        "description": "A Well Known Text (WKT) literal is a structured textual representation of the definition of a coordinate reference systems according to ISO 19125-1:2004 or ISO 19162:2019.",
+        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWellKnownTextLiteral.htm"
+    },
     "IfcWindowPanelOperationEnum": {
         "description": "This enumeration defines the basic ways to describe how window panels operate, as shown in Figure 2.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelOperationEnum.htm"
@@ -1727,20 +1723,12 @@
         "description": "This enumeration defines the basic configuration of the window type in terms of the location of window panels. The window configurations are given for windows with one, two or three panels (including fixed panels) as shown in Figure 1. It corresponds to the OperationType of the IfcWindowType definition, which references the IfcWindowPanelProperties.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowPanelPositionEnum.htm"
     },
-    "IfcWindowStyleConstructionEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowStyleConstructionEnum.htm"
-    },
-    "IfcWindowStyleOperationEnum": {
-        "description": "",
-        "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowStyleOperationEnum.htm"
-    },
     "IfcWindowTypeEnum": {
         "description": "This enumeration defines the different predefined types of windows that can further specify an IfcWindow or IfcWindowType.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypeEnum.htm"
     },
     "IfcWindowTypePartitioningEnum": {
-        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window as shown in Figure 1. The window configurations are given for windows with one, two or three panels (including fixed panels).",
+        "description": "This enumeration defines the basic configuration of the window type in terms of the number of window panels and the subdivision of the total window. The window configurations are given for windows with one, two or three panels (including fixed panels).",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWindowTypePartitioningEnum.htm"
     },
     "IfcWorkCalendarTypeEnum": {
@@ -1752,7 +1740,7 @@
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWorkPlanTypeEnum.htm"
     },
     "IfcWorkScheduleTypeEnum": {
-        "description": "An IfcWorkScheduleTypeEnum is an enumeration data type that specifies the types of work schedule from which the relevant control can be selected.",
+        "description": "An IfcWorkScheduleTypeEnum is an enumeration data type that specifies the types of work schedule from which the relevant process can be selected.",
         "spec_url": "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcWorkScheduleTypeEnum.htm"
     }
 }
