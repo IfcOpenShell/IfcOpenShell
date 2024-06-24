@@ -3,6 +3,7 @@ import re
 import ast
 import collections
 import ifcopenshell
+from logging import Logger
 from dataclasses import dataclass
 from codegen import indent
 
@@ -62,7 +63,7 @@ def fix_type(v):
     return v
 
 
-def run(f, logger):
+def run(f: ifcopenshell.file, logger: Logger) -> None:
     from _pytest import assertion
 
     if hasattr(logger, "set_instance"):

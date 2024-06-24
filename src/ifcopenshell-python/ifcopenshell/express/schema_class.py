@@ -17,12 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import operator
 import re
 
 import nodes
 import codegen
 import templates
+import mapping
 
 from collections import defaultdict
 
@@ -363,7 +365,7 @@ const std::string strings[] = {%s};
 
 
 class SchemaClass(codegen.Base):
-    def __init__(self, mapping, code=EarlyBoundCodeWriter):
+    def __init__(self, mapping: mapping.Mapping, code=EarlyBoundCodeWriter):
         class UnmetDependenciesException(Exception):
             pass
 
