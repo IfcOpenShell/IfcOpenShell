@@ -21,8 +21,7 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.style.data import StylesData
-from bl_ui.properties_material import MaterialButtonsPanel
+from blenderbim.bim.module.style.data import StylesData, BlenderMaterialStyleData
 
 
 class BIM_PT_styles(Panel):
@@ -67,8 +66,6 @@ class BIM_PT_styles(Panel):
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
             op = row.operator("bim.assign_style_to_selected", text="", icon="BRUSH_DATA")
             op.style_id = style.ifc_definition_id
-            op = row.operator("bim.unlink_style", text="", icon="UNLINKED")
-            op.style = style.ifc_definition_id
             op = row.operator("bim.enable_editing_style", text="", icon="GREASEPENCIL")
             op.style = style.ifc_definition_id
             row.operator("bim.remove_style", text="", icon="X").style = style.ifc_definition_id
@@ -291,3 +288,43 @@ class BIM_UL_styles(UIList):
                     row2.label(text="", icon="LIGHT_POINT")
                 elif style.name == "IfcExternallyDefinedSurfaceStyle":
                     row2.label(text="", icon="APPEND_BLEND")
+
+
+class BIM_PT_style(Panel):
+    bl_label = "Style"
+    bl_idname = "BIM_PT_style"
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "material"
+
+    @classmethod
+    def poll(cls, context):
+        return bool(tool.Ifc.get() and context.material.BIMMaterialProperties.ifc_style_id)
+
+    def draw(self, context):
+        # NOTE: this UI is needed only to indicate whether blender material is linked to IFC
+        # and shouldn't be overloaded with any other features (they should be added to the general Styles UI).
+
+        if not BlenderMaterialStyleData.is_loaded:
+            BlenderMaterialStyleData.load()
+
+        material = context.material
+        style_id = material.BIMMaterialProperties.ifc_style_id
+        row = self.layout.row(align=True)
+
+        if style_id and not BlenderMaterialStyleData.data["is_linked_to_style"]:
+            row.label(text="Material has linked IFC from a different project.")
+            op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
+            op.blender_material = material.name
+            return
+        else:
+            row.label(text="Material is linked to an IFC style.")
+            op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
+            op.blender_material = material.name
+
+        row = self.layout.row(align=True)
+        row.label(text="IFC Style ID:")
+        row.label(text=str(style_id))
+        row = self.layout.row(align=True)
+        row.label(text="IFC Style Name:")
+        row.label(text=BlenderMaterialStyleData.data["linked_style_name"])

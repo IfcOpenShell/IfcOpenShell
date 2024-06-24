@@ -52,6 +52,7 @@ classes = (
     prop.BIMStyleProperties,
     ui.BIM_PT_styles,
     ui.BIM_UL_styles,
+    ui.BIM_PT_style,
 )
 
 
