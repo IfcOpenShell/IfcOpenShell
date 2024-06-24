@@ -100,6 +100,14 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 
 %ignore ifcopenshell::geometry::taxonomy::item::print;
 
+%typemap(out) boost::variant< ifcopenshell::geometry::taxonomy::point3::ptr,double > {
+	if ($1.which() == 0) {
+		return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geometry::taxonomy::point3>(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t, 0 | SWIG_POINTER_OWN);
+	} else {
+		return PyFloat_FromDouble(boost::get<double>($1));
+	}
+}
+
 
 %typemap(in) ifcopenshell::geometry::taxonomy::item::ptr {
 	// @this is really annoying, but apparently inheritance
@@ -197,6 +205,7 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 %include "../serializers/GltfSerializer.h"
 
 %template(material_vector) std::vector<ifcopenshell::geometry::taxonomy::style::ptr>;
+%template(edge_vector) std::vector<ifcopenshell::geometry::taxonomy::edge::ptr>;
 
 %extend ifcopenshell::geometry::taxonomy::style {
 	size_t instance_id() const {
@@ -210,6 +219,47 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 		return ent->data().id();
 	}
 }
+
+%extend ifcopenshell::geometry::taxonomy::point3 {
+	PyObject* coords_() const {
+		auto result = PyTuple_New(3);
+		for (int i = 0; i < 3; ++i) {
+			PyTuple_SET_ITEM(result, i, PyFloat_FromDouble($self->ccomponents().data()[i]));
+		}
+		return result;
+	}
+
+	%pythoncode %{
+		coords = property(coords_)
+	%}
+}
+
+%extend ifcopenshell::geometry::taxonomy::direction3 {
+	// @todo refactor in macro
+	PyObject* coords_() const {
+		auto result = PyTuple_New(3);
+		for (int i = 0; i < 3; ++i) {
+			PyTuple_SET_ITEM(result, i, PyFloat_FromDouble($self->ccomponents().data()[i]));
+		}
+		return result;
+	}
+
+	%pythoncode %{
+		coords = property(coords_)
+	%}
+}
+
+
+%extend ifcopenshell::geometry::taxonomy::loop {
+	std::vector<ifcopenshell::geometry::taxonomy::edge::ptr> children_() const {
+		return $self->children;
+	}
+
+	%pythoncode %{
+		children = property(children_)
+	%}
+}
+
 
 %extend ifcopenshell::geometry::Settings {
 	void set_(const std::string& name, bool val) {
