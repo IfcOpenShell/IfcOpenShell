@@ -50,7 +50,7 @@ def get_element_types(ifc_file):
 
 def get_elements(ifc_file):
     elements = set()
-    for element_type in ifcopenshell.util.fm.get_fmhem_types(ifc_file):
+    for element_type in get_element_types(ifc_file):
         elements.update(ifcopenshell.util.element.get_types(element_type))
     return elements
 
