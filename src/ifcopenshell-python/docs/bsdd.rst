@@ -30,6 +30,13 @@ More reading:
 1. `Swagger API docs <https://bs-dd-api-prototype.azurewebsites.net/swagger/index.html>`_
 2. `bSDD Github Repository <https://github.com/buildingSMART/bSDD>`_
 
+PyPI
+----
+
+.. code-block::
+
+    pip install bsdd
+
 Examples
 --------
 

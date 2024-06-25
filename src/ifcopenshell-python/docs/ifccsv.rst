@@ -43,10 +43,46 @@ you make in the spreadsheet or table will also be made in the IFC.
 
 There are different methods of installation, depending on your situation.
 
-1. **Source installation** is recommended for developers wanting to use the
-   latest code as a library or a CLI utility.
+1. **PyPI** is recommended for developers using Pip.
 2. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a
    graphical interface.
+3. **Source installation** is recommended for developers wanting to use the
+   latest code as a library or a CLI utility.
+
+PyPI
+----
+
+.. code-block::
+
+    pip install ifccsv
+
+Using the BlenderBIM Add-on
+---------------------------
+
+The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
+Other than providing a graphical IFC authoring platform, it also comes with
+IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
+need to install Python first, and you also can compare your IfcOpenShell
+scripting to what you see with a visual model viewer, or use a graphical
+interface to access the IfcOpenShell utilities.
+
+1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
+   installation documentation
+   <https://docs.blenderbim.org/users/installation.html>`_.
+
+2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
+   Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**
+   panel.
+
+3. Browse to your IFC file.
+
+4. Type in a filter query, such as ``IfcDoor``.
+
+5. Optionally add attributes you'd like to export.
+
+6. Press **Export IFC to CSV**
+
+TODO: add pictures and make this clearer for non-developers.
 
 Source installation
 -------------------
@@ -140,31 +176,3 @@ Here is a minimal example of how to use IfcCSV as a library:
     # You can also import changes from a CSV
     ifc_csv.Import(model, "input.csv")
     model.write("/path/to/updated_model.ifc")
-
-Using the BlenderBIM Add-on
----------------------------
-
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
-Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
-need to install Python first, and you also can compare your IfcOpenShell
-scripting to what you see with a visual model viewer, or use a graphical
-interface to access the IfcOpenShell utilities.
-
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
-   installation documentation
-   <https://docs.blenderbim.org/users/installation.html>`_.
-
-2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
-   Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**
-   panel.
-
-3. Browse to your IFC file.
-
-4. Type in a filter query, such as ``IfcDoor``.
-
-5. Optionally add attributes you'd like to export.
-
-6. Press **Export IFC to CSV**
-
-TODO: add pictures and make this clearer for non-developers.
