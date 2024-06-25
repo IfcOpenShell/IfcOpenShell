@@ -214,6 +214,12 @@ class AssignClass(bpy.types.Operator, Operator):
 class UnlinkObject(bpy.types.Operator):
     bl_idname = "bim.unlink_object"
     bl_label = "Unlink Object"
+    bl_description = (
+        "Unlink Blender object from it's linked IFC element.\n\n"
+        "You can either remove element the blender object is linked to from IFC or keep it. "
+        "Note that keeping the unlinked element in IFC might lead to unpredictable issues "
+        "and should be used only by advanced users"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty(name="Object Name")
     should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
