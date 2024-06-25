@@ -443,8 +443,6 @@ class BIMObjectProperties(PropertyGroup):
 
 class BIMMaterialProperties(PropertyGroup):
     is_external: BoolProperty(name="Has External Definition")
-    location: StringProperty(name="Location")
-    identification: StringProperty(name="Identification")
     name: StringProperty(name="Name")
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     # In Blender, a material object can map to an IFC material, IFC surface style, or both
