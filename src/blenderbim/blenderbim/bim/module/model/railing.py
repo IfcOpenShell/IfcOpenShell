@@ -108,7 +108,7 @@ def update_railing_modifier_ifc_data(context):
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
         # hacky way to ensure tha ifc representation won't get tessellated at project save
-        IfcStore.edited_objs.discard(obj)
+        tool.Ifc.finish_edit(obj)
 
     elif props.railing_type == "FRAMELESS_PANEL":
         tool.Ifc.edit(obj)
