@@ -99,7 +99,7 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         "Unlink Blender material from it's linked IFC style.\n\n"
         "You can either remove style the material is linked to from IFC or keep it. "
-        "Note that keeping the unlinked style in IFC might lead to unpredictable issues"
+        "Note that keeping the unlinked style in IFC might lead to unpredictable issues "
         "and should be used only by advanced users"
     )
     bl_options = {"REGISTER", "UNDO"}
