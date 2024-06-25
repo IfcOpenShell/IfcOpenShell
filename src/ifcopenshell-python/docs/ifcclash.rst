@@ -5,11 +5,17 @@ IfcClash is both a CLI utility and library that lets you perform clash detection
 on one or more IFC models. Clashes are defined in terms of clash sets with
 filters using the IFC query syntax.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcclash
+
 Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Install hppfcl <https://github.com/humanoid-path-planner/hpp-fcl>`_
 3. Optionally `install bcf <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/bcf>`_ (needed for BCF reports of results)
 4. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcclash>`_.
 5. ``cd /path/to/IfcOpenShell/src/ifcclash``
@@ -67,7 +73,7 @@ defined with data sources.
             "b": [
                 {
                     "file": "/path/to/two.ifc",
-                    "selector": ".IfcWall",
+                    "selector": "IfcWall",
                     "mode": "i"
                 }
             ]

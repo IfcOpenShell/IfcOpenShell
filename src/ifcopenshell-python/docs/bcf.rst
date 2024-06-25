@@ -29,6 +29,13 @@ The upstream documentation by buildingSMART for BCF is available here:
 The IfcOpenShell **BCF** library supports BCF-XML version 2.1 and 3.0, and
 BCF-API 3.0.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install bcf-client
+
 BCF-XML
 -------
 
