@@ -799,52 +799,6 @@ class BIM_OT_open_webbrowser(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectExternalMaterialDir(bpy.types.Operator):
-    bl_idname = "bim.select_external_material_dir"
-    bl_label = "Select Material File"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        context.active_object.active_material.BIMMaterialProperties.location = self.filepath
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class FetchExternalMaterial(bpy.types.Operator):
-    bl_idname = "bim.fetch_external_material"
-    bl_label = "Fetch External Material"
-
-    def execute(self, context):
-        # TODO: this is dead code, awaiting reimplementation. See #1222.
-        location = context.active_object.active_material.BIMMaterialProperties.location
-        if location[-6:] != ".mpass":
-            return {"FINISHED"}
-        if not os.path.isabs(location):
-            location = os.path.join(context.scene.BIMProperties.data_dir, location)
-        with open(location) as f:
-            self.material_pass = json.load(f)
-        if context.scene.render.engine == "BLENDER_EEVEE" and "eevee" in self.material_pass:
-            self.fetch_eevee_or_cycles("eevee", context)
-        elif context.scene.render.engine == "CYCLES" and "cycles" in self.material_pass:
-            self.fetch_eevee_or_cycles("cycles", context)
-        return {"FINISHED"}
-
-    def fetch_eevee_or_cycles(self, name, context):
-        identification = context.active_object.active_material.BIMMaterialProperties.identification
-        uri = self.material_pass[name]["uri"]
-        if not os.path.isabs(uri):
-            uri = os.path.join(context.scene.BIMProperties.data_dir, uri)
-        bpy.ops.wm.link(filename=identification, directory=os.path.join(uri, "Material"))
-        for material in bpy.data.materials:
-            if material.name == identification and material.library:
-                context.active_object.material_slots[0].material = material
-                return
-
-
 class FetchObjectPassport(bpy.types.Operator):
     bl_idname = "bim.fetch_object_passport"
     bl_label = "Fetch Object Passport"
