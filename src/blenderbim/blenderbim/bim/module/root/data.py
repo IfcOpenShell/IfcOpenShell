@@ -23,6 +23,7 @@ import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from typing import Union
 
 
 def refresh():
@@ -30,6 +31,7 @@ def refresh():
 
 
 class IfcClassData:
+    element: Union[ifcopenshell.entity_instance, None] = None
     data = {}
     is_loaded = False
 
@@ -41,6 +43,7 @@ class IfcClassData:
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
         cls.data["contexts"] = cls.contexts()
+
         cls.data["has_entity"] = cls.has_entity()
         cls.data["name"] = cls.name()
         cls.data["has_inherited_predefined_type"] = cls.has_inherited_predefined_type()
@@ -147,15 +150,27 @@ class IfcClassData:
         return results
 
     @classmethod
-    def has_entity(cls):
-        try:
-            return tool.Ifc.get_entity(bpy.context.active_object)
-        except:
-            pass
+    def has_entity(cls) -> Union[ifcopenshell.entity_instance, None]:
+        obj = bpy.context.active_object
+        cls.element = None
+        if not obj:
+            return
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        # Double check
+        linked_obj = tool.Ifc.get_object(element)
+        if linked_obj != obj:
+            return
+
+        cls.element = element
+        return cls.element
 
     @classmethod
-    def name(cls):
-        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+    def name(cls) -> Union[str, None]:
+        element = cls.element
         if not element:
             return
         name = element.is_a()
@@ -165,24 +180,24 @@ class IfcClassData:
         return name
 
     @classmethod
-    def has_inherited_predefined_type(cls):
-        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+    def has_inherited_predefined_type(cls) -> bool:
+        element = cls.element
         if not element:
-            return
+            return False
         if element_type := ifcopenshell.util.element.get_type(element):
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
             return ifcopenshell.util.element.get_predefined_type(element_type) not in ("NOTDEFINED", None)
         return False
 
     @classmethod
-    def ifc_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+    def ifc_class(cls) -> Union[str, None]:
+        element = cls.element
         if element:
             return element.is_a()
 
     @classmethod
-    def can_reassign_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.view_layer.objects.active)
+    def can_reassign_class(cls) -> bool:
+        element = cls.element
         if element:
             if element.is_a("IfcOpeningElement") or element.is_a("IfcOpeningStandardCase"):
                 return False
@@ -191,3 +206,4 @@ class IfcClassData:
             for product in cls.ifc_products():
                 if element.is_a(product[0]):
                     return True
+        return False
