@@ -93,8 +93,8 @@ class Misc(blenderbim.core.tool.Misc):
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     @classmethod
-    def mark_object_as_edited(cls, obj):
-        IfcStore.edited_objs.add(obj)
+    def mark_object_as_edited(cls, obj: bpy.types.Object) -> None:
+        tool.Ifc.edit(obj)
 
     @classmethod
     def split_objects_with_cutter(

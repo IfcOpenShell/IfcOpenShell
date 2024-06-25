@@ -238,8 +238,7 @@ class UnlinkObject(bpy.types.Operator):
         for obj in objects:
             was_active_object = obj == context.active_object
 
-            if obj in IfcStore.edited_objs:
-                IfcStore.edited_objs.remove(obj)
+            tool.Ifc.finish_edit(obj)
 
             element = tool.Ifc.get_entity(obj)
             if element and self.should_delete:

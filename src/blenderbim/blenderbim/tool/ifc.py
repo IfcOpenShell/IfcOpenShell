@@ -165,14 +165,16 @@ class Ifc(blenderbim.core.tool.Ifc):
 
     @classmethod
     def edit(cls, obj: bpy.types.Object) -> None:
+        """Mark object as edited."""
         IfcStore.edited_objs.add(obj)
 
     @classmethod
     def finish_edit(cls, obj: bpy.types.Object) -> None:
-        try:
-            IfcStore.edited_objs.remove(obj)
-        except:
-            pass
+        """Unmark object as edited.
+
+        Method is safe to use on an object that wasn't marked as edited before.
+        """
+        IfcStore.edited_objs.discard(obj)
 
     @classmethod
     def resolve_uri(cls, uri):

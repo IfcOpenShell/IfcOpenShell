@@ -324,7 +324,7 @@ class UpdateRepresentation(bpy.types.Operator, Operator):
             if not obj.data:
                 continue
             self.update_obj_mesh_representation(context, obj)
-            IfcStore.edited_objs.discard(obj)
+            tool.Ifc.finish_edit(obj)
         return {"FINISHED"}
 
     def update_obj_mesh_representation(self, context, obj):
