@@ -109,6 +109,10 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
+        """Get linked IFC style based on material's BIMMaterialProperties.ifc_style_id.
+
+        Return None if material is not linked to IFC or it's linked to non-existent element.
+        """
         if obj.BIMMaterialProperties.ifc_style_id:
             try:
                 return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)

@@ -20,6 +20,7 @@ import os
 import bpy
 import numpy as np
 import ifcopenshell.api
+import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.bim.handler
@@ -75,21 +76,25 @@ class Ifc(blenderbim.core.tool.Ifc):
         return True
 
     @classmethod
-    def schema(cls):
+    def schema(cls) -> ifcopenshell_wrapper.schema_definition:
         return IfcStore.get_schema()
 
     @classmethod
-    def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> ifcopenshell.entity_instance:
+    def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> Union[ifcopenshell.entity_instance, None]:
+        """Get linked IFC entity based on obj's BIMObjectProperties.ifc_definition_id.
+
+        Return None if object is not linked to IFC or it's linked to non-existent element.
+        """
         ifc = IfcStore.get_file()
         props = getattr(obj, "BIMObjectProperties", None)
         if ifc and props and props.ifc_definition_id:
             try:
-                return IfcStore.get_file().by_id(props.ifc_definition_id)
-            except:
+                return ifc.by_id(props.ifc_definition_id)
+            except RuntimeError:
                 pass
 
     @classmethod
-    def get_entity_by_id(cls, entity_id) -> Union[ifcopenshell.entity_instance, None]:
+    def get_entity_by_id(cls, entity_id: int) -> Union[ifcopenshell.entity_instance, None]:
         """useful to check whether entity_id is still exists in IFC"""
         ifc_file = tool.Ifc.get()
         try:
