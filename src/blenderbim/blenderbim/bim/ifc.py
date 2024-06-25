@@ -358,7 +358,8 @@ class IfcStore:
     def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
         if isinstance(obj, bpy.types.Material):
             obj.BIMMaterialProperties.ifc_style_id = 0
-        obj.BIMObjectProperties.ifc_definition_id = 0
+        else:
+            obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod
     def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
