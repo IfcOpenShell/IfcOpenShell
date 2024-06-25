@@ -27,8 +27,6 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif()
 
-project(IfcOpenShell VERSION 0.8.0)
-
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
 cmake_policy(SET CMP0078 OLD)
@@ -82,6 +80,17 @@ option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate ge
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
+
+if (VERSION_OVERRIDE)
+    file(READ "../VERSION" "RELEASE_VERSION_")
+    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+    message(STATUS "Detected version '${RELEASE_VERSION}'")
+else()
+    set(RELEASE_VERSION "0.8.0")
+endif()
+
+project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 if(MINIMAL_BUILD)
     message(STATUS "Setting options for minimal build")
@@ -1097,22 +1106,26 @@ if(ADD_COMMIT_SHA)
     find_package(Git)
 
     if(GIT_FOUND)
-        message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
-            OUTPUT_VARIABLE git_branches
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        string(REPLACE "\n" ";" git_branch_list "${git_branches}")
+        if (VERSION_OVERRIDE)
+            set (git_branch ${RELEASE_VERSION})
+        else()
+            message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
+                OUTPUT_VARIABLE git_branches
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 
-        foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		    string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
-		    string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
-            if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
-                string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
-                list(GET git_branch_candidate_2_list -1 git_branch)
-            endif()
-        endforeach()
+            foreach(git_branch_candidate IN ITEMS ${git_branch_list})
+		        string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+		        string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
+                if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
+                    string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
+                    list(GET git_branch_candidate_2_list -1 git_branch)
+                endif()
+            endforeach()
+        endif()
 
         execute_process(
             COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
