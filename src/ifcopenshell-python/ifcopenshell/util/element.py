@@ -23,6 +23,17 @@ from typing import Any, Callable, Optional, Union, Literal, overload
 from collections import namedtuple
 
 
+MATERIAL_TYPE = Literal[
+    "IfcMaterial",
+    "IfcMaterialConstituentSet",
+    "IfcMaterialLayerSet",
+    "IfcMaterialLayerSetUsage",
+    "IfcMaterialProfileSet",
+    "IfcMaterialProfileSetUsage",
+    "IfcMaterialList",
+]
+
+
 def get_pset(
     element: ifcopenshell.entity_instance,
     name: str,

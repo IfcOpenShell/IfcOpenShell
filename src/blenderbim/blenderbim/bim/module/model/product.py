@@ -515,6 +515,22 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
 
 def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     elements = settings["products"]
+    material = settings.get("material")
+    if material:
+        assigned_material = settings["material"]
+    else:
+        material_type: ifcopenshell.util.element.MATERIAL_TYPE = settings["type"]
+        element = elements[0]
+        if material_type == "IfcMaterial":
+            assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+            assert assigned_material  # Type checker.
+        # 1) Material usages just inherit the style from the type material, so can't override it.
+        # 2) If type is Set and no material argument were provided, then Set was just created
+        # and not yet have any IfcMaterials.
+        elif material_type.endswith("Usage") or material_type.endswith("Set"):
+            return
+        elif material_type == "IfcMaterialList":
+            assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
 
     for element in elements[:]:
         if element.is_a("IfcElementType"):

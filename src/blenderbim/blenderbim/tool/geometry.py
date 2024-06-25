@@ -526,6 +526,10 @@ class Geometry(blenderbim.core.tool.Geometry):
             return False
         own_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
         if own_material:
+            # Material usages just inherit the style from the type material, so can't override it.
+            if own_material.is_a("IfcMaterialUsageDefinition"):
+                return False
+            own_material = ifcopenshell.util.element.get_materials(element, should_inherit=False)[0]
             inherited_style = cls.get_inherited_material_style(element)
             style = tool.Material.get_style(own_material) if own_material else None
             if inherited_style != style:
