@@ -137,6 +137,24 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
             core.remove_style(tool.Ifc, tool.Style, style)
         else:
             tool.Ifc.unlink(element=style)
+
+        # Ensure there won't be any style sync on project save:
+        # bim.update_representation would create new IfcSurfaceStyle
+        # for unlinked blender material.
+        updated_meshes = set()
+        for obj in bpy.data.objects:
+            mesh = obj.data
+            if not isinstance(mesh, bpy.types.Mesh):
+                continue
+            if not mesh.BIMMeshProperties.ifc_definition_id:
+                continue
+            if mesh in updated_meshes:
+                continue
+            if not mesh.materials.get(material.name):
+                continue
+            tool.Geometry.record_object_materials(obj)
+            updated_meshes.add(mesh)
+
         return {"FINISHED"}
 
 
