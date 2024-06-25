@@ -317,7 +317,9 @@ class tree(ifcopenshell_wrapper.tree):
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
 
-def create_shape(settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None) -> ShapeElementType:
+def create_shape(
+    settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None
+) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation]:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
@@ -326,26 +328,33 @@ def create_shape(settings: settings, inst: entity_instance, repr: Optional[entit
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
 
-    To create a representation for IfcTypeProduct you need to provide use `create_shape(settings, representation)`
-    (representation is provided as `inst` argument).
+    :return:
+        - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType
+        - `inst` is IfcRepresentation and `repr` is None -> ShapeType
+        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation
+        - `inst` is IfcTypeProduct and `repr` is None -> None
+        - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
+        (for IfcTypeProducts provide just IfcRepresentation as `inst`).
 
-    example:
+    Example:
 
-    settings = ifcopenshell.geom.settings()
-    settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+    .. code:: python
 
-    ifc_file = ifcopenshell.open(file_path)
-    products = ifc_file.by_type("IfcProduct")
+        settings = ifcopenshell.geom.settings()
+        settings.set(settings.USE_PYTHON_OPENCASCADE, True)
 
-    for i, product in enumerate(products):
-        if product.Representation is not None:
-            try:
-                created_shape = geom.create_shape(settings, inst=product)
-                shape = created_shape.geometry # see #1124
-                shape_gpXYZ = shape.Location().Transformation().TranslationPart() # These are methods of the TopoDS_Shape class from pythonOCC
-                print(shape_gpXYZ.X(), shape_gpXYZ.Y(), shape_gpXYZ.Z()) # These are methods of the gpXYZ class from pythonOCC
-            except:
-                print("Shape creation failed")
+        ifc_file = ifcopenshell.open(file_path)
+        products = ifc_file.by_type("IfcProduct")
+
+        for i, product in enumerate(products):
+            if product.Representation is not None:
+                try:
+                    created_shape = geom.create_shape(settings, inst=product)
+                    shape = created_shape.geometry # see #1124
+                    shape_gpXYZ = shape.Location().Transformation().TranslationPart() # These are methods of the TopoDS_Shape class from pythonOCC
+                    print(shape_gpXYZ.X(), shape_gpXYZ.Y(), shape_gpXYZ.Z()) # These are methods of the gpXYZ class from pythonOCC
+                except:
+                    print("Shape creation failed")
     """
     return wrap_shape_creation(
         settings,
