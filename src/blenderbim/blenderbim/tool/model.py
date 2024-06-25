@@ -1268,7 +1268,6 @@ class Model(blenderbim.core.tool.Model):
         after material assignment or material unassignment.
         """
 
-        style_object = None
         if assigned_material:
             # NOTE: currently only IfcMaterials are supported
             # for anyone else we just switch representation.
@@ -1340,7 +1339,7 @@ class Model(blenderbim.core.tool.Model):
         occurrences = [
             e
             for e in ifcopenshell.util.element.get_types(element_type)
-            if not ifcopenshell.util.element.get_material(e, should_inherit=False)
+            if not tool.Geometry.has_material_style_override(e)
         ]
         return occurrences
 

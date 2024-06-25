@@ -27,7 +27,7 @@ from typing import Optional, Union
 def assign_material(
     file: ifcopenshell.file,
     products: list[ifcopenshell.entity_instance],
-    type: str = "IfcMaterial",
+    type: ifcopenshell.util.element.MATERIAL_TYPE = "IfcMaterial",
     material: Optional[ifcopenshell.entity_instance] = None,
 ) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance], None]:
     """Assigns a material to the list of products
