@@ -576,6 +576,7 @@ if "freetype" in targets:
         download_url = "https://github.com/freetype/freetype",
         download_name = "freetype2",
         download_tool=download_tool_git,
+        revision="VER-2-11-1"
     )
 
 if USE_OCCT and "occ" in targets:
