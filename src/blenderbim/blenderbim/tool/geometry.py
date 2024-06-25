@@ -406,6 +406,10 @@ class Geometry(blenderbim.core.tool.Geometry):
         return "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
     @classmethod
+    def get_material_checksum(cls, obj: bpy.types.Object) -> str:
+        return str([s.id() for s in cls.get_styles(obj) if s])
+
+    @classmethod
     def get_mesh_checksum(cls, mesh: Union[bpy.types.Mesh, bpy.types.Curve]) -> str:
         data_bytes = b""
         if isinstance(mesh, bpy.types.Mesh):
@@ -659,7 +663,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def record_object_materials(cls, obj: bpy.types.Object) -> None:
-        obj.data.BIMMeshProperties.material_checksum = str([s.id() for s in cls.get_styles(obj) if s])
+        obj.data.BIMMeshProperties.material_checksum = cls.get_material_checksum(obj)
 
     @classmethod
     def record_object_position(cls, obj: bpy.types.Object) -> None:
