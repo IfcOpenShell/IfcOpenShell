@@ -830,7 +830,8 @@ cmake_args = [
     "-DJSON_INCLUDE_DIR="              f"{DEPS_DIR}/install/json",
     "-DEIGEN_DIR="                     f"{DEPS_DIR}/install/eigen-3.3.9",
     "-DBoost_NO_BOOST_CMAKE="          "On",
-    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off")
+    "-DADD_COMMIT_SHA="              +("On" if ADD_COMMIT_SHA else "Off"),
+    "-DVERSION_OVERRIDE="            +("On" if ADD_COMMIT_SHA else "Off")
 ]
 
 if "wasm" in flags:
