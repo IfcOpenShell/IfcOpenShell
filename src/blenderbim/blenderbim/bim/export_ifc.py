@@ -118,8 +118,8 @@ class IfcExporter:
                 continue
             try:
                 if isinstance(obj, bpy.types.Material):
-                    if tool.Ifc.has_changed_shading(obj):
-                        blenderbim.core.style.update_style_colours(tool.Ifc, tool.Style, obj=obj)
+                    # TODO: do we add materials to edited_objs?
+                    continue
                 else:
                     element = tool.Ifc.get_entity(obj)
                     if element:

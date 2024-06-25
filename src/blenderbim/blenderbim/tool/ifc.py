@@ -52,11 +52,6 @@ class Ifc(blenderbim.core.tool.Ifc):
             return IfcStore.get_file().schema
 
     @classmethod
-    def has_changed_shading(cls, obj: bpy.types.Material) -> bool:
-        checksum = obj.BIMMaterialProperties.shading_checksum
-        return checksum != repr(np.array(obj.diffuse_color).tobytes())
-
-    @classmethod
     def is_edited(cls, obj: bpy.types.Object) -> bool:
         return list(obj.scale) != [1.0, 1.0, 1.0] or obj in IfcStore.edited_objs
 
@@ -157,7 +152,6 @@ class Ifc(blenderbim.core.tool.Ifc):
                 IfcStore.id_map[style.id()] = obj
 
             blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
-            blenderbim.bim.handler.subscribe_to(obj, "diffuse_color", blenderbim.bim.handler.color_callback)
 
     @classmethod
     def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:

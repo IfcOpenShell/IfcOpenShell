@@ -84,11 +84,6 @@ def name_callback(obj, data):
     refresh_ui_data()
 
 
-def color_callback(obj, data):
-    if obj.BIMMaterialProperties.ifc_style_id:
-        tool.Ifc.edit(obj)
-
-
 def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()

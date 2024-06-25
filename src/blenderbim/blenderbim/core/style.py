@@ -103,8 +103,6 @@ def update_style_colours(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Materi
         else:
             ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
 
-    style.record_shading(obj)
-
 
 def update_style_textures(
     ifc: tool.Ifc, style: tool.Style, obj: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
