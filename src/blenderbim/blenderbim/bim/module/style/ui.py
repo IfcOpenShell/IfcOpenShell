@@ -293,13 +293,13 @@ class BIM_UL_styles(UIList):
 class BIM_PT_style(Panel):
     bl_label = "Style"
     bl_idname = "BIM_PT_style"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
     bl_context = "material"
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and context.material.BIMMaterialProperties.ifc_style_id)
+        return bool(tool.Ifc.get() and (material := context.material) and material.BIMMaterialProperties.ifc_style_id)
 
     def draw(self, context):
         # NOTE: this UI is needed only to indicate whether blender material is linked to IFC
