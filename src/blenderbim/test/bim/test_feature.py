@@ -172,7 +172,6 @@ def i_add_a_new_collection_item(collection):
 def the_material_name_colour_is_set_to_colour(name, colour):
     obj = the_material_name_exists(name)
     obj.diffuse_color = [float(c) for c in colour.split(",")]
-    blenderbim.bim.handler.color_callback(obj, None)
 
 
 @given("I add an array modifier")

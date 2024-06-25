@@ -287,7 +287,6 @@ def update_shading_style(self, context):
             switch_shading(blender_material, self.active_style_type)
     elif self.active_style_type == "Shading":
         switch_shading(blender_material, self.active_style_type)
-    tool.Style.record_shading(blender_material)
 
 
 class BIMStyleProperties(PropertyGroup):

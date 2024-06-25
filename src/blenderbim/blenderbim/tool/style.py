@@ -527,10 +527,6 @@ class Style(blenderbim.core.tool.Style):
         return bpy.context.scene.BIMStylesProperties.is_editing
 
     @classmethod
-    def record_shading(cls, obj: bpy.types.Material) -> None:
-        obj.BIMMaterialProperties.shading_checksum = repr(np.array(obj.diffuse_color).tobytes())
-
-    @classmethod
     def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)

@@ -85,7 +85,6 @@ class TestUpdateStyleColours:
         ifc.run("style.add_surface_textures", material="obj").should_be_called().will_return("textures")
         ifc.run("style.edit_surface_style", style="texture_style", attributes={"Textures": "textures"}).should_be_called().will_return("textures")
 
-        style.record_shading("obj").should_be_called()
         subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_adding_a_rendering_style_if_not_available(self, ifc, style):
@@ -107,7 +106,6 @@ class TestUpdateStyleColours:
             attributes={"Textures": "textures"},
         ).should_be_called()
 
-        style.record_shading("obj").should_be_called()
         subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
     def test_updating_shading_style_as_a_fallback_if_available(self, ifc, style):
@@ -116,7 +114,6 @@ class TestUpdateStyleColours:
         style.get_surface_shading_style("obj").should_be_called().will_return("style")
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
         ifc.run("style.edit_surface_style", style="style", attributes="attributes").should_be_called()
-        style.record_shading("obj").should_be_called()
         subject.update_style_colours(ifc, style, obj="obj")
 
     def test_adding_a_shading_style_as_a_fallback_if_not_available(self, ifc, style):
@@ -127,7 +124,6 @@ class TestUpdateStyleColours:
         ifc.run(
             "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleShading", attributes="attributes"
         ).should_be_called()
-        style.record_shading("obj").should_be_called()
         subject.update_style_colours(ifc, style, obj="obj")
 
 
