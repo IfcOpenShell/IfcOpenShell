@@ -16,11 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bmesh
 import shapely
+import shapely.ops
 import ifcopenshell
+import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
+import ifcopenshell.util.type
+import ifcopenshell.util.unit
 import blenderbim.core.type
 import blenderbim.core.tool
 import blenderbim.core.root
@@ -31,12 +39,14 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional
+from typing import Generator, Optional, Union, Literal, Any
 
 
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
-    def can_contain(cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object) -> bool:
+    def can_contain(
+        cls, structure_obj: Union[bpy.types.Object, None], element_obj: Union[bpy.types.Object, None]
+    ) -> bool:
         structure = tool.Ifc.get_entity(structure_obj)
         element = tool.Ifc.get_entity(element_obj)
         if not structure or not element:
@@ -54,7 +64,9 @@ class Spatial(blenderbim.core.tool.Spatial):
         return True
 
     @classmethod
-    def can_reference(cls, structure: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance) -> bool:
+    def can_reference(
+        cls, structure: Union[ifcopenshell.entity_instance, None], element: Union[ifcopenshell.entity_instance, None]
+    ) -> bool:
         if not structure or not element:
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -68,39 +80,39 @@ class Spatial(blenderbim.core.tool.Spatial):
         return True
 
     @classmethod
-    def disable_editing(cls, obj):
+    def disable_editing(cls, obj: bpy.types.Object) -> None:
         obj.BIMObjectSpatialProperties.is_editing = False
 
     @classmethod
-    def duplicate_object_and_data(cls, obj):
+    def duplicate_object_and_data(cls, obj: bpy.types.Object) -> bpy.types.Object:
         new_obj = obj.copy()
         if obj.data:
             new_obj.data = obj.data.copy()
         return new_obj
 
     @classmethod
-    def enable_editing(cls, obj):
+    def enable_editing(cls, obj: bpy.types.Object) -> None:
         obj.BIMObjectSpatialProperties.is_editing = True
         obj.BIMObjectSpatialProperties.relating_container_object = None
 
     @classmethod
-    def get_container(cls, element):
+    def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_decomposed_elements(cls, container):
+    def get_decomposed_elements(cls, container: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.element.get_decomposition(container)
 
     @classmethod
-    def get_object_matrix(cls, obj):
+    def get_object_matrix(cls, obj: bpy.types.Object) -> Matrix:
         return obj.matrix_world
 
     @classmethod
-    def get_relative_object_matrix(cls, target_obj, relative_to_obj):
+    def get_relative_object_matrix(cls, target_obj: bpy.types.Object, relative_to_obj: bpy.types.Object) -> Matrix:
         return relative_to_obj.matrix_world.inverted() @ target_obj.matrix_world
 
     @classmethod
-    def import_containers(cls, parent=None):
+    def import_containers(cls, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
         props = bpy.context.scene.BIMSpatialProperties
         props.containers.clear()
 
@@ -125,30 +137,33 @@ class Spatial(blenderbim.core.tool.Spatial):
                 new.ifc_definition_id = element.id()
 
     @classmethod
-    def run_root_copy_class(cls, obj=None):
+    def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         return blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
-    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None):
+    def run_spatial_assign_container(
+        cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object
+    ) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.core.spatial.assign_container(
             tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
         )
 
     @classmethod
-    def run_spatial_import_spatial_decomposition(cls):
+    def run_spatial_import_spatial_decomposition(cls) -> None:
         return blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
 
     @classmethod
-    def select_object(cls, obj):
-        obj.select_set(True)
+    def select_object(cls, obj: bpy.types.Object) -> None:
+        tool.Blender.select_object(obj)
 
     @classmethod
-    def set_active_object(cls, obj):
-        bpy.context.view_layer.objects.active = obj
-        cls.select_object(obj)
+    def set_active_object(cls, obj: bpy.types.Object) -> None:
+        tool.Blender.set_active_object(obj)
 
     @classmethod
-    def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix):
+    def set_relative_object_matrix(
+        cls, target_obj: bpy.types.Object, relative_to_obj: bpy.types.Object, matrix: Matrix
+    ) -> None:
         target_obj.matrix_world = relative_to_obj.matrix_world @ matrix
 
     @classmethod
@@ -162,8 +177,10 @@ class Spatial(blenderbim.core.tool.Spatial):
                 obj.select_set(True)
 
     @classmethod
-    def filter_products(cls, products, action):
-        objects = [tool.Ifc.get_object(product) for product in products if tool.Ifc.get_object(product)]
+    def filter_products(
+        cls, products: list[ifcopenshell.entity_instance], action: Literal["select", "isolate", "unhide", "hide"]
+    ) -> None:
+        objects = [obj for product in products if (obj := tool.Ifc.get_object(product))]
         if action == "select":
             [obj.select_set(True) for obj in objects]
         elif action == "isolate":
@@ -179,12 +196,11 @@ class Spatial(blenderbim.core.tool.Spatial):
             [obj.hide_set(True) for obj in objects if bpy.context.view_layer.objects.get(obj.name)]
 
     @classmethod
-    def deselect_objects(cls):
+    def deselect_objects(cls) -> None:
         [obj.select_set(False) for obj in bpy.context.selected_objects]
-        # bpy.ops.object.select_all(action='DESELECT')
 
     @classmethod
-    def show_scene_objects(cls):
+    def show_scene_objects(cls) -> None:
         [
             obj.hide_set(False)
             for obj in bpy.data.scenes["Scene"].objects
@@ -206,12 +222,11 @@ class Spatial(blenderbim.core.tool.Spatial):
                 yield entity
 
     @classmethod
-    def copy_xy(cls, src_obj, destination_obj):
-        z = src_obj.location[2]
-        src_obj.location = (destination_obj.location[0], destination_obj.location[1], z)
+    def copy_xy(cls, src_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:
+        src_obj.location.xy = destination_obj.location.xy
 
     @classmethod
-    def load_contained_elements(cls):
+    def load_contained_elements(cls) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         props.elements.clear()
         if not (container := props.active_container):
@@ -245,7 +260,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         props.total_elements = total_elements
 
     @classmethod
-    def import_spatial_decomposition(cls):
+    def import_spatial_decomposition(cls) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         previous_container_index = props.active_container_index
         props.containers.clear()
@@ -254,7 +269,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         props.active_container_index = min(previous_container_index, len(props.containers) - 1)
 
     @classmethod
-    def import_spatial_element(cls, element, level_index):
+    def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
         if not element.is_a("IfcProject") and not tool.Root.is_spatial_element(element):
             return
         props = bpy.context.scene.BIMSpatialDecompositionProperties
@@ -275,7 +290,7 @@ class Spatial(blenderbim.core.tool.Spatial):
                 cls.import_spatial_element(child, level_index + 1)
 
     @classmethod
-    def edit_container_attributes(cls, entity):
+    def edit_container_attributes(cls, entity: ifcopenshell.entity_instance) -> None:
         # TODO
         obj = tool.Ifc.get_object(entity)
         blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
@@ -284,25 +299,25 @@ class Spatial(blenderbim.core.tool.Spatial):
             cls.edit_container_name(entity, name)
 
     @classmethod
-    def edit_container_name(cls, container, name):
+    def edit_container_name(cls, container: ifcopenshell.entity_instance, name: str) -> None:
         tool.Ifc.run("attribute.edit_attributes", product=container, attributes={"Name": name})
 
     @classmethod
-    def get_active_container(cls):
+    def get_active_container(cls) -> Union[ifcopenshell.entity_instance, None]:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         if props.active_container_index < len(props.containers):
             container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
             return container
 
     @classmethod
-    def contract_container(cls, container):
+    def contract_container(cls, container: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.append(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
     @classmethod
-    def expand_container(cls, container):
+    def expand_container(cls, container: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
@@ -311,14 +326,14 @@ class Spatial(blenderbim.core.tool.Spatial):
     # HERE STARTS SPATIAL TOOL
 
     @classmethod
-    def is_bounding_class(cls, visible_element):
+    def is_bounding_class(cls, visible_element: ifcopenshell.entity_instance) -> bool:
         for ifc_class in ["IfcWall", "IfcColumn", "IfcMember", "IfcVirtualElement", "IfcPlate"]:
             if visible_element.is_a(ifc_class):
                 return True
         return False
 
     @classmethod
-    def get_space_polygon_from_context_visible_objects(cls, x, y):
+    def get_space_polygon_from_context_visible_objects(cls, x: float, y: float) -> Union[shapely.Polygon, None]:
         boundary_lines = cls.get_boundary_lines_from_context_visible_objects()
         unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
         closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
@@ -329,7 +344,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return space_polygon
 
     @classmethod
-    def debug_shape(cls, foo):
+    def debug_shape(cls, foo: shapely.Polygon) -> None:
         coords = [(p[0], p[1], 0) for p in foo.exterior.coords]
         mesh = bpy.data.meshes.new(name="NewMesh")
         bm = bmesh.new()
@@ -344,7 +359,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         bpy.context.view_layer.update()
 
     @classmethod
-    def debug_line(cls, start, end):
+    def debug_line(cls, start: Vector, end: Vector) -> None:
         coords = [start, end]
         mesh = bpy.data.meshes.new(name="NewMesh")
         bm = bmesh.new()
@@ -359,7 +374,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         bpy.context.view_layer.update()
 
     @classmethod
-    def get_boundary_lines_from_context_visible_objects(cls):
+    def get_boundary_lines_from_context_visible_objects(cls) -> list[shapely.LineString]:
         calculation_rl = bpy.context.scene.BIMModelProperties.rl3
         container = tool.Root.get_default_container()
         container_obj = tool.Ifc.get_object(container)
@@ -419,14 +434,14 @@ class Spatial(blenderbim.core.tool.Spatial):
         return boundary_lines
 
     @classmethod
-    def get_gross_mesh_from_element(cls, visible_element):
+    def get_gross_mesh_from_element(cls, visible_element: ifcopenshell.entity_instance) -> bpy.types.Mesh:
         gross_settings = ifcopenshell.geom.settings()
         gross_settings.set("disable-opening-subtractions", True)
         new_mesh = cls.create_mesh_from_shape(ifcopenshell.geom.create_shape(gross_settings, visible_element))
         return new_mesh
 
     @classmethod
-    def create_mesh_from_shape(cls, shape):
+    def create_mesh_from_shape(cls, shape: ifcopenshell.geom.ShapeElementType) -> bpy.types.Mesh:
         geometry = shape.geometry
         mesh = bpy.data.meshes.new("tmp")
         verts = geometry.verts
@@ -450,7 +465,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return mesh
 
     @classmethod
-    def get_x_y_z_h_mat_from_active_obj(cls, active_obj):
+    def get_x_y_z_h_mat_from_active_obj(cls, active_obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
         mat = active_obj.matrix_world
         local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
@@ -462,7 +477,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return x, y, z, h, mat
 
     @classmethod
-    def get_x_y_z_h_mat_from_cursor(cls):
+    def get_x_y_z_h_mat_from_cursor(cls) -> tuple[float, float, float, float, Matrix]:
         x, y, z = bpy.context.scene.cursor.location.xyz
         if container := tool.Root.get_default_container():
             if container_obj := tool.Ifc.get_object(container):
@@ -472,7 +487,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return x, y, z, h, mat
 
     @classmethod
-    def get_union_shape_from_selected_objects(cls):
+    def get_union_shape_from_selected_objects(cls) -> Polygon:
         selected_objects = bpy.context.selected_objects
         boundary_elements = cls.get_boundary_elements(selected_objects)
         polys = cls.get_polygons(boundary_elements)
@@ -482,7 +497,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return union
 
     @classmethod
-    def get_boundary_elements(cls, selected_objects):
+    def get_boundary_elements(cls, selected_objects: list[bpy.types.Object]) -> list[ifcopenshell.entity_instance]:
         boundary_elements = []
         for obj in selected_objects:
             subelement = tool.Ifc.get_entity(obj)
@@ -491,7 +506,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return boundary_elements
 
     @classmethod
-    def get_polygons(cls, boundary_elements):
+    def get_polygons(cls, boundary_elements: list[ifcopenshell.entity_instance]) -> list[Polygon]:
         polys = []
         for boundary_element in boundary_elements:
             obj = tool.Ifc.get_object(boundary_element)
@@ -507,7 +522,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return polys
 
     @classmethod
-    def get_obj_base_points(cls, obj):
+    def get_obj_base_points(cls, obj: bpy.types.Object) -> dict[str, tuple[float, float]]:
         x_values = [(obj.matrix_world @ Vector(v)).x for v in obj.bound_box]
         y_values = [(obj.matrix_world @ Vector(v)).y for v in obj.bound_box]
         return {
@@ -518,7 +533,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         }
 
     @classmethod
-    def get_converted_tolerance(cls, tolerance):
+    def get_converted_tolerance(cls, tolerance: float) -> float:
         model = tool.Ifc.get()
         project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
         prefix = getattr(project_unit, "Prefix", None)
@@ -532,7 +547,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         )
 
     @classmethod
-    def get_purged_inner_holes_poly(cls, union_geom, min_area):
+    def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
         interiors_list = []
 
         if union_geom.geom_type == "MultiPolygon":
@@ -552,7 +567,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return new_poly
 
     @classmethod
-    def get_poly_valid_interior_list(cls, poly, min_area, interiors_list):
+    def get_poly_valid_interior_list(cls, poly: Polygon, min_area: float, interiors_list: list[shapely.LinearRing]):
         for interior in poly.interiors:
             p = Polygon(interior)
             if p.area >= min_area:
@@ -560,14 +575,14 @@ class Spatial(blenderbim.core.tool.Spatial):
         return interiors_list
 
     @classmethod
-    def get_buffered_poly_from_linear_ring(cls, linear_ring):
+    def get_buffered_poly_from_linear_ring(cls, linear_ring: shapely.LinearRing) -> Polygon:
         poly = Polygon(linear_ring)
         converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
         poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
         return poly
 
     @classmethod
-    def get_bmesh_from_polygon(cls, poly, h):
+    def get_bmesh_from_polygon(cls, poly: Polygon, h: float) -> bmesh.types.BMesh:
         mat = Matrix()
         bm = bmesh.new()
         bm.verts.index_update()
@@ -596,25 +611,25 @@ class Spatial(blenderbim.core.tool.Spatial):
         return bm
 
     @classmethod
-    def get_named_obj_from_bmesh(cls, name, bmesh):
+    def get_named_obj_from_bmesh(cls, name: str, bmesh: bmesh.types.BMesh) -> bpy.types.Object:
         mesh = cls.get_named_mesh_from_bmesh(name, bmesh)
         obj = cls.get_named_obj_from_mesh(name, mesh)
         return obj
 
     @classmethod
-    def get_named_obj_from_mesh(cls, name, mesh):
+    def get_named_obj_from_mesh(cls, name: str, mesh: bpy.types.Mesh) -> bpy.types.Object:
         obj = bpy.data.objects.new(name, mesh)
         return obj
 
     @classmethod
-    def get_named_mesh_from_bmesh(cls, name, bmesh):
+    def get_named_mesh_from_bmesh(cls, name: str, bmesh: bmesh.types.BMesh) -> bpy.types.Mesh:
         mesh = bpy.data.meshes.new(name=name)
         bmesh.to_mesh(mesh)
         bmesh.free()
         return mesh
 
     @classmethod
-    def get_transformed_mesh_from_local_to_global(cls, mesh):
+    def get_transformed_mesh_from_local_to_global(cls, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
         active_obj = cls.get_active_obj()
         mat = active_obj.matrix_world
         mesh.transform(mat.inverted())
@@ -622,7 +637,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         return mesh
 
     @classmethod
-    def edit_active_space_obj_from_mesh(cls, mesh):
+    def edit_active_space_obj_from_mesh(cls, mesh: bpy.types.Mesh) -> None:
         active_obj = bpy.context.active_object
         mesh.name = active_obj.data.name
         mesh.BIMMeshProperties.ifc_definition_id = active_obj.data.BIMMeshProperties.ifc_definition_id
@@ -630,7 +645,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         tool.Ifc.edit(active_obj)
 
     @classmethod
-    def set_obj_origin_to_bboxcenter(cls, obj):
+    def set_obj_origin_to_bboxcenter(cls, obj: bpy.types.Object) -> None:
         mat = obj.matrix_world
         inverted = mat.inverted()
         local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
@@ -646,7 +661,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         obj.location = newLoc
 
     @classmethod
-    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj):
+    def set_obj_origin_to_bboxcenter_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
         mat = obj.matrix_world
         inverted = mat.inverted()
         local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
@@ -664,7 +679,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         obj.location = newLoc
 
     @classmethod
-    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj):
+    def set_obj_origin_to_cursor_position_and_zero_elevation(cls, obj: bpy.types.Object) -> None:
         mat = obj.matrix_world
         inverted = mat.inverted()
 
@@ -681,59 +696,57 @@ class Spatial(blenderbim.core.tool.Spatial):
         obj.location = newLoc
 
     @classmethod
-    def get_selected_objects(cls):
+    def get_selected_objects(cls) -> list[bpy.types.Object]:
         return bpy.context.selected_objects
 
     @classmethod
-    def get_active_obj(cls):
+    def get_active_obj(cls) -> Union[bpy.types.Object, None]:
         return bpy.context.active_object
 
     @classmethod
-    def get_active_obj_z(cls):
-        x, y, z = bpy.context.active_object.matrix_world.translation.xyz
-        return z
+    def get_active_obj_z(cls) -> float:
+        return bpy.context.active_object.matrix_world.translation.z
 
     @classmethod
-    def get_active_obj_height(cls):
+    def get_active_obj_height(cls) -> float:
         height = bpy.context.active_object.dimensions.z
         return height
 
     @classmethod
-    def get_relating_type_id(cls):
+    def get_relating_type_id(cls) -> int:
         props = bpy.context.scene.BIMModelProperties
         relating_type_id = props.relating_type_id
         return relating_type_id
 
     @classmethod
-    def translate_obj_to_z_location(cls, obj, z):
+    def translate_obj_to_z_location(cls, obj: bpy.types.Object, z: float) -> None:
         if z != 0:
             obj.location = obj.location + Vector((0, 0, z))
 
     @classmethod
-    def get_2d_vertices_from_obj(cls, obj):
+    def get_2d_vertices_from_obj(cls, obj: bpy.types.Object) -> list[tuple]:
         points = []
         vectors = [v.co for v in obj.data.vertices.values()]
         for vector in vectors:
-            point = (vector[0], vector[1])
-            points.append(point)
+            points.append(vector.xy)
 
-        points.append((vectors[0][0], vectors[0][1]))
+        points.append(vectors[0].xy)
         return points
 
     @classmethod
-    def get_scaled_2d_vertices(cls, points):
+    def get_scaled_2d_vertices(cls, points: list[Vector]) -> list[tuple[float, float]]:
         model = tool.Ifc.get()
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(model)
-        for i in range(len(points)):
-            a = list(points[i])
-            a[0] /= unit_scale
-            a[1] /= unit_scale
-            points[i] = tuple(a)
-
-        return points
+        _points = []
+        for p in points:
+            _p = list(p)
+            _p[0] /= unit_scale
+            _p[1] /= unit_scale
+            _points.append(_p)
+        return _points
 
     @classmethod
-    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices):
+    def assign_swept_area_outer_curve_from_2d_vertices(cls, obj: bpy.types.Object, vertices: list[Vector]) -> None:
         body = cls.get_body_representation(obj)
         model = tool.Ifc.get()
         extrusion = tool.Model.get_extrusion(body)
@@ -747,16 +760,16 @@ class Spatial(blenderbim.core.tool.Spatial):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_area)
 
     @classmethod
-    def get_body_representation(cls, obj):
+    def get_body_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = tool.Ifc.get_entity(obj)
         return ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
     @classmethod
-    def assign_ifcspace_class_to_obj(cls, obj):
+    def assign_ifcspace_class_to_obj(cls, obj: bpy.types.Object) -> None:
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class="IfcSpace")
 
     @classmethod
-    def assign_type_to_obj(cls, obj):
+    def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
         relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
@@ -766,11 +779,17 @@ class Spatial(blenderbim.core.tool.Spatial):
         tool.Ifc.run("type.assign_type", related_objects=[element], relating_type=relating_type)
 
     @classmethod
-    def assign_relating_type_to_element(cls, ifc, Type, element, relating_type):
-        blenderbim.core.type.assign_type(ifc, Type, element=element, type=relating_type)
+    def assign_relating_type_to_element(
+        cls,
+        ifc: tool.Ifc,
+        type: tool.Type,
+        element: ifcopenshell.entity_instance,
+        relating_type: ifcopenshell.entity_instance,
+    ) -> None:
+        blenderbim.core.type.assign_type(ifc, type, element=element, type=relating_type)
 
     @classmethod
-    def regen_obj_representation(cls, obj, body):
+    def regen_obj_representation(cls, obj: bpy.types.Object, body: ifcopenshell.entity_instance) -> None:
         blenderbim.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -782,7 +801,7 @@ class Spatial(blenderbim.core.tool.Spatial):
         )
 
     @classmethod
-    def toggle_spaces_visibility_wired_and_textured(cls, spaces):
+    def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
         first_obj = tool.Ifc.get_object(spaces[0])
         if bpy.data.objects[first_obj.name].display_type == "TEXTURED":
             for space in spaces:
@@ -799,7 +818,7 @@ class Spatial(blenderbim.core.tool.Spatial):
             return
 
     @classmethod
-    def toggle_hide_spaces(cls, spaces):
+    def toggle_hide_spaces(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
         first_obj = tool.Ifc.get_object(spaces[0])
         if first_obj.hide_get() == False:
             for space in spaces:
@@ -813,7 +832,7 @@ class Spatial(blenderbim.core.tool.Spatial):
                 obj.hide_set(False)
 
     @classmethod
-    def set_default_container(cls, container):
+    def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
         project_collection = project.BIMObjectProperties.collection

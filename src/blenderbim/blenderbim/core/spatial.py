@@ -54,6 +54,7 @@ def assign_container(
 ) -> Union[ifcopenshell.entity_instance, None]:
     if not spatial.can_contain(structure_obj, element_obj):
         return
+    assert element_obj and structure_obj  # Type checker.
     rel = ifc.run(
         "spatial.assign_container",
         products=[ifc.get_entity(element_obj)],
@@ -64,25 +65,31 @@ def assign_container(
     return rel
 
 
-def enable_editing_container(spatial, obj=None):
+def enable_editing_container(spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     spatial.enable_editing(obj)
     spatial.import_containers()
 
 
-def disable_editing_container(spatial, obj=None):
+def disable_editing_container(spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     spatial.disable_editing(obj)
 
 
-def change_spatial_level(spatial, parent=None):
+def change_spatial_level(spatial: tool.Spatial, parent: Union[ifcopenshell.entity_instance, None] = None) -> None:
     spatial.import_containers(parent=parent)
 
 
-def remove_container(ifc, collector, obj=None):
+def remove_container(ifc: tool.Ifc, collector: tool.Collector, obj: bpy.types.Object) -> None:
     ifc.run("spatial.unassign_container", products=[ifc.get_entity(obj)])
     collector.assign(obj)
 
 
-def copy_to_container(ifc, collector, spatial, obj=None, containers=None):
+def copy_to_container(
+    ifc: tool.Ifc,
+    collector: tool.Collector,
+    spatial: tool.Spatial,
+    obj: bpy.types.Object,
+    containers: list[ifcopenshell.entity_instance],
+) -> list[ifcopenshell.entity_instance]:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -102,54 +109,56 @@ def copy_to_container(ifc, collector, spatial, obj=None, containers=None):
     return result_objs
 
 
-def select_container(ifc, spatial, obj=None):
+def select_container(ifc: tool.Ifc, spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     element = ifc.get_entity(obj)
     if not element:
         return
     spatial.set_active_object(ifc.get_object(spatial.get_container(element)))
 
 
-def select_similar_container(ifc, spatial, obj=None):
+def select_similar_container(ifc: tool.Ifc, spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     element = ifc.get_entity(obj)
     if element:
         spatial.select_products(spatial.get_decomposed_elements(spatial.get_container(element)))
 
 
-def select_product(spatial, product):
+def select_product(spatial: tool.Spatial, product: ifcopenshell.entity_instance) -> None:
     spatial.select_products([product])
 
 
-def import_spatial_decomposition(spatial):
+def import_spatial_decomposition(spatial: tool.Spatial) -> None:
     spatial.import_spatial_decomposition()
 
 
-def edit_container_attributes(spatial, entity=None):
+def edit_container_attributes(spatial: tool.Spatial, entity: ifcopenshell.entity_instance) -> None:
     spatial.edit_container_attributes(entity)
     spatial.import_spatial_decomposition()
 
 
-def contract_container(spatial, container=None):
+def contract_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
     spatial.contract_container(container)
     spatial.import_spatial_decomposition()
 
 
-def expand_container(spatial, container=None):
+def expand_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
     spatial.expand_container(container)
     spatial.import_spatial_decomposition()
 
 
-def delete_container(ifc, spatial, geometry, container=None):
+def delete_container(
+    ifc: tool.Ifc, spatial: tool.Spatial, geometry: tool.Geometry, container: ifcopenshell.entity_instance
+) -> None:
     geometry.delete_ifc_object(ifc.get_object(container))
     spatial.import_spatial_decomposition()
 
 
-def select_decomposed_elements(spatial):
+def select_decomposed_elements(spatial: tool.Spatial) -> None:
     container = spatial.get_active_container()
     if container:
         spatial.select_products(spatial.get_decomposed_elements(container))
 
 
-def generate_space(ifc, model, root, spatial, type):
+def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -201,7 +210,7 @@ def generate_space(ifc, model, root, spatial, type):
     spatial.import_spatial_decomposition()
 
 
-def generate_spaces_from_walls(ifc, spatial, collector):
+def generate_spaces_from_walls(ifc: tool.Ifc, spatial: tool.Spatial, collector: tool.Collector) -> None:
     z = spatial.get_active_obj_z()
     h = spatial.get_active_obj_height()
 
@@ -221,7 +230,7 @@ def generate_spaces_from_walls(ifc, spatial, collector):
         spatial.assign_ifcspace_class_to_obj(obj)
 
 
-def toggle_space_visibility(ifc, spatial):
+def toggle_space_visibility(ifc: tool.Ifc, spatial: tool.Spatial) -> None:
     model = ifc.get()
     spaces = model.by_type("IfcSpace")
     if not spaces:
@@ -229,7 +238,7 @@ def toggle_space_visibility(ifc, spatial):
     spatial.toggle_spaces_visibility_wired_and_textured(spaces)
 
 
-def toggle_hide_spaces(ifc, spatial):
+def toggle_hide_spaces(ifc: tool.Ifc, spatial: tool.Spatial) -> None:
     model = ifc.get()
     spaces = model.by_type("IfcSpace")
     if not spaces:
@@ -237,7 +246,7 @@ def toggle_hide_spaces(ifc, spatial):
     spatial.toggle_hide_spaces(spaces)
 
 
-def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance):
+def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
     spatial.set_default_container(container)
 
 

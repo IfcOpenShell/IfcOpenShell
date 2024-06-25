@@ -167,7 +167,7 @@ class IfcStore:
             IfcStore.file = ifcopenshell.open(path)
 
     @staticmethod
-    def get_schema():
+    def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:
         if IfcStore.file is None:
             IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
                 bpy.context.scene.BIMProjectProperties.export_schema
