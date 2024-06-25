@@ -217,6 +217,7 @@ class UnlinkObject(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty(name="Object Name")
     should_delete: bpy.props.BoolProperty(name="Delete IFC Element", default=True)
+    skip_invoke: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def execute(self, context):
         return IfcStore.execute_ifc_operator(self, context)
@@ -286,6 +287,8 @@ class UnlinkObject(bpy.types.Operator):
         row.prop(self, "should_delete")
 
     def invoke(self, context, event):
+        if self.skip_invoke:
+            return self.execute(context)
         return context.window_manager.invoke_props_dialog(self)
 
 

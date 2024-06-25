@@ -47,7 +47,9 @@ class BIM_PT_class(Panel):
             if not IfcClassData.data["has_entity"]:
                 row = self.layout.row(align=True)
                 row.label(text="IFC Element Not Found")
-                row.operator("bim.unlink_object", icon="UNLINKED", text="")
+                op = row.operator("bim.unlink_object", icon="UNLINKED", text="")
+                op.should_delete = False
+                op.skip_invoke = True
                 return
             if props.is_reassigning_class:
                 row = self.layout.row(align=True)
