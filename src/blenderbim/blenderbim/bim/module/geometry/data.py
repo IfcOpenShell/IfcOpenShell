@@ -62,7 +62,10 @@ class RepresentationsData:
     def load(cls):
         cls.data = {"representations": cls.representations()}
         cls.data["contexts"] = cls.contexts()
+
+        # Only after cls.representations().
         cls.data["shape_aspects"] = cls.shape_aspects()
+
         cls.is_loaded = True
 
     @classmethod
@@ -118,7 +121,11 @@ class RepresentationsData:
         return results
 
     @classmethod
-    def shape_aspects(cls):
+    def shape_aspects(cls) -> list[tuple[str, str, str]]:
+        """Get list of current's representation shape aspects for prop's enum_items."""
+        # Ignore objects without representations, e.g. IfcRelSpaceBoundary.
+        if not cls.data["representations"]:
+            return []
         obj = bpy.context.active_object
         if not obj.data:
             return []
