@@ -51,7 +51,7 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def delete_object(cls, obj: bpy.types.Material) -> None:
-        bpy.data.materials.remove(obj)
+        tool.Blender.remove_data_block(obj)
 
     @classmethod
     def disable_editing(cls) -> None:
