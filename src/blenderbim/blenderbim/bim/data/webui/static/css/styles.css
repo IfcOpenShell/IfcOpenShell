@@ -1,3 +1,7 @@
+:root {
+    color-scheme: dark;
+}
+
 body {
     background-color: #252525;
     color: #e0e0e0;
@@ -44,7 +48,7 @@ nav ul {
     margin-left: 1px;
     display: flex;
     flex-grow: 1;
-    justify-content: left;
+    justify-content: center;
 }
 
 nav ul li {
