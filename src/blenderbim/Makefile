@@ -112,13 +112,11 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip
 	cd dist/working && unzip v0.8.0.zip
-	# IfcOpenBot sometimes lags behind, so we hotfix the Python utilities
-	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/util/
-	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell/api/
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell/util dist/blenderbim/libs/site/packages/ifcopenshell/
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell/api dist/blenderbim/libs/site/packages/ifcopenshell/
-	cp dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell/*.py dist/blenderbim/libs/site/packages/ifcopenshell/
-	cp dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell/express/rule_executor.py dist/blenderbim/libs/site/packages/ifcopenshell/express/
+	# IfcOpenBot sometimes lags behind, so we only use its binaries
+	mv dist/blenderbim/libs/site/packages/ifcopenshell/*ifcopenshell_wrapper* dist/working/
+	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell
+	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell dist/blenderbim/libs/site/packages/
+	mv dist/working/*ifcopenshell_wrapper* dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
 	cp -r dist/working/IfcOpenShell-0.8.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
