@@ -36,7 +36,12 @@ class WebNamespace(socketio.AsyncNamespace):
         print(f"Web client disconnected: {sid}")
 
     async def on_web_operator(self, sid, data):
-        await sio.emit("web_operator", data["operator"], namespace="/blender", room=data["blenderId"])
+        await sio.emit(
+            "web_operator",
+            data["operator"],
+            namespace="/blender",
+            room=data["blenderId"],
+        )
 
 
 # Blender namespace
@@ -68,6 +73,11 @@ class BlenderNamespace(socketio.AsyncNamespace):
         blender_messages[sid]["csv_data"] = data
         await sio.emit("csv_data", {"blenderId": sid, "data": data}, namespace="/web")
 
+    async def on_gantt_data(self, sid, data):
+        print(f"Gant Chart data from Blender client {sid}")
+        blender_messages[sid]["gantt_data"] = data
+        await sio.emit("gantt_data", {"blenderId": sid, "data": data}, namespace="/web")
+
 
 # Attach namespaces
 sio.register_namespace(WebNamespace("/web"))
@@ -82,7 +92,15 @@ async def index(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
+async def gantt(request):
+    with open("templates/gantt.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port})
+    return web.Response(text=html_content, content_type="text/html")
+
+
 app.router.add_get("/", index)
+app.router.add_get("/gantt", gantt)
 app.router.add_static("/static/", path="./static", name="static")
 
 
