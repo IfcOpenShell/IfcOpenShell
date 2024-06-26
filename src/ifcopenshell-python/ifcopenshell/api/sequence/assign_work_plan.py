@@ -20,8 +20,7 @@ import ifcopenshell
 import ifcopenshell.api
 
 
-# TODO: rename to assign_work_plan for consistency
-def assign_workplan(
+def assign_work_plan(
     file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance, work_plan: ifcopenshell.entity_instance
 ) -> ifcopenshell.entity_instance:
     """Assigns a work schedule to a work plan
@@ -48,7 +47,7 @@ def assign_workplan(
         schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
 
         # ... you can assign the work plan afterwards.
-        ifcopenshell.api.run("sequence.assign_workplan", work_schedule=schedule, work_plan=work_plan)
+        ifcopenshell.api.run("sequence.assign_work_plan", work_schedule=schedule, work_plan=work_plan)
     """
     settings = {"work_schedule": work_schedule, "work_plan": work_plan}
 

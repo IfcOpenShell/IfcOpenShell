@@ -36,7 +36,7 @@ class TestRemoveWorkSchedule(test.bootstrap.IFC4):
         work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
 
         work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
-        ifcopenshell.api.sequence.assign_workplan(self.file, work_schedule, work_plan)
+        ifcopenshell.api.sequence.assign_work_plan(self.file, work_schedule, work_plan)
 
         work_schedule1 = ifcopenshell.api.sequence.add_work_schedule(self.file)
         rel = self.file.create_entity("IfcRelDefinesByObject")

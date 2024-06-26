@@ -35,7 +35,7 @@ from .assign_process import assign_process
 from .assign_product import assign_product
 from .assign_recurrence_pattern import assign_recurrence_pattern
 from .assign_sequence import assign_sequence
-from .assign_workplan import assign_workplan
+from .assign_work_plan import assign_work_plan
 from .calculate_task_duration import calculate_task_duration
 from .cascade_schedule import cascade_schedule
 from .create_baseline import create_baseline
@@ -81,7 +81,7 @@ __all__ = [
     "assign_product",
     "assign_recurrence_pattern",
     "assign_sequence",
-    "assign_workplan",
+    "assign_work_plan",
     "calculate_task_duration",
     "cascade_schedule",
     "create_baseline",
