@@ -110,7 +110,7 @@ class TestGetObjectMaterialsWithoutStyles(NewFile):
         material1 = bpy.data.materials.new("Material")
         material2 = bpy.data.materials.new("Material")
         material3 = bpy.data.materials.new("Material")
-        material3.BIMMaterialProperties.ifc_style_id = 1
+        material3.BIMStyleProperties.ifc_definition_id = 1
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.data.materials.append(material1)
         obj.data.materials.append(material2)
@@ -237,7 +237,7 @@ class TestImportRepresentation(NewFile):
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         material = bpy.data.materials.new("Material")
-        material.BIMMaterialProperties.ifc_style_id = 101
+        material.BIMStyleProperties.ifc_definition_id = 101
         element = ifc.by_type("IfcWall")[0]
         tool.Ifc.link(element, obj)
         representation = element.Representation.Representations[0]
@@ -343,7 +343,7 @@ class TestRecordObjectMaterials(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcSurfaceStyle()
         material = bpy.data.materials.new("Material")
-        material.BIMMaterialProperties.ifc_style_id = style.id()
+        material.BIMStyleProperties.ifc_definition_id = style.id()
         obj.data.materials.append(material)
         subject.record_object_materials(obj)
         assert obj.data.BIMMeshProperties.material_checksum == str([style.id()])

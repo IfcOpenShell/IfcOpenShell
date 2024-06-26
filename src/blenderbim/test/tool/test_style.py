@@ -125,12 +125,12 @@ class TestGetStyle(NewFile):
         tool.Ifc.set(ifcopenshell.file())
         style = tool.Ifc.get().createIfcSurfaceStyle()
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.BIMStyleProperties.ifc_definition_id = style.id()
         assert subject.get_style(obj) == style
 
     def test_getting_nothing_for_a_broken_link_style(self):
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = 1
+        obj.BIMStyleProperties.ifc_definition_id = 1
         assert subject.get_style(obj) == None
 
 
@@ -322,7 +322,7 @@ class TestGetSurfaceRenderingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.BIMStyleProperties.ifc_definition_id = style.id()
         assert subject.get_surface_rendering_style(obj) == style_item
 
 
@@ -361,7 +361,7 @@ class TestGetSurfaceShadingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleShading()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.BIMStyleProperties.ifc_definition_id = style.id()
         assert subject.get_surface_shading_style(obj) == style_item
 
     def test_do_not_get_rendering_styles(self):
@@ -369,7 +369,7 @@ class TestGetSurfaceShadingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.BIMStyleProperties.ifc_definition_id = style.id()
         assert subject.get_surface_shading_style(obj) is None
 
 
@@ -379,7 +379,7 @@ class TestGetSurfaceTextureStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleWithTextures()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMMaterialProperties.ifc_style_id = style.id()
+        obj.BIMStyleProperties.ifc_definition_id = style.id()
         assert subject.get_surface_texture_style(obj) == style_item
 
 

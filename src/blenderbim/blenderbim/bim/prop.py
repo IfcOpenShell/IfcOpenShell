@@ -441,12 +441,6 @@ class BIMObjectProperties(PropertyGroup):
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
 
-class BIMMaterialProperties(PropertyGroup):
-    # In Blender, a material object can map to an IFC material, IFC surface style, or both
-    ifc_style_id: IntProperty(name="IFC Style ID")
-    shading_checksum: StringProperty(name="Shading Checksum")
-
-
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")

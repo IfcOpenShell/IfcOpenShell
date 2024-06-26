@@ -576,14 +576,14 @@ def the_material_name_is_not_an_ifc_material(name):
 @then(parsers.parse('the material "{name}" is an IFC style'))
 def the_material_name_is_an_ifc_style(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
     assert ifc_definition_id != 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC style'))
 def the_material_name_is_not_an_ifc_style(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+    ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
     assert ifc_definition_id == 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 

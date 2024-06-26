@@ -866,9 +866,9 @@ class TestAddReferenceImage(NewFile):
 
         material = obj.active_material
         assert material.name == "image"
-        assert material.BIMMaterialProperties.ifc_style_id != 0
+        assert material.BIMStyleProperties.ifc_definition_id != 0
 
-        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        style = ifc_file.by_id(material.BIMStyleProperties.ifc_definition_id)
         styled_items = set(tool.Style.get_styled_items(style))
         representation_items = set(tool.Geometry.get_active_representation(obj).Items)
         assert styled_items == representation_items

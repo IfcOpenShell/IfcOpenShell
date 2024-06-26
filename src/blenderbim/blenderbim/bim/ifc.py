@@ -219,7 +219,7 @@ class IfcStore:
             IfcStore.commit_link_element(data)
             return
         else:  # bpy.types.Material
-            ifc_definition_id = obj.BIMMaterialProperties.ifc_style_id
+            ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
             try:
                 element = IfcStore.get_file().by_id(ifc_definition_id)
             except RuntimeError:
@@ -248,7 +248,7 @@ class IfcStore:
             IfcStore.guid_map[element.GlobalId] = obj
 
         if element.is_a("IfcSurfaceStyle"):
-            obj.BIMMaterialProperties.ifc_style_id = element.id()
+            obj.BIMStyleProperties.ifc_definition_id = element.id()
         else:
             obj.BIMObjectProperties.ifc_definition_id = element.id()
 
@@ -358,8 +358,8 @@ class IfcStore:
     @staticmethod
     def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
         if isinstance(obj, bpy.types.Material):
-            obj.BIMMaterialProperties.ifc_style_id = 0
-        else:
+            obj.BIMStyleProperties.ifc_definition_id = 0
+        else:  # bpy.types.Object
             obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod

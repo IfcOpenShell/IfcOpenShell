@@ -131,7 +131,6 @@ classes = [
     prop.GlobalId,
     prop.BIMObjectProperties,
     prop.BIMCollectionProperties,
-    prop.BIMMaterialProperties,
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
@@ -224,7 +223,6 @@ def register():
     bpy.types.Screen.BIMTabProperties = bpy.props.PointerProperty(type=prop.BIMTabProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
     bpy.types.Object.BIMObjectProperties = bpy.props.PointerProperty(type=prop.BIMObjectProperties)
-    bpy.types.Material.BIMMaterialProperties = bpy.props.PointerProperty(type=prop.BIMMaterialProperties)
     bpy.types.Mesh.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Curve.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
     bpy.types.Camera.BIMMeshProperties = bpy.props.PointerProperty(type=prop.BIMMeshProperties)
@@ -283,7 +281,6 @@ def unregister():
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
-    del bpy.types.Material.BIMMaterialProperties
     del bpy.types.Mesh.BIMMeshProperties
     del bpy.types.Curve.BIMMeshProperties
     del bpy.types.Camera.BIMMeshProperties
