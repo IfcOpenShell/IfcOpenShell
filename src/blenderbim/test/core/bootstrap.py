@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys
 import json
 import pytest
 import blenderbim.core.tool
@@ -293,4 +294,15 @@ class Prophecy:
                 raise Exception(f"Called {count}: {prediction}")
         else:
             if prediction["call"] not in self.calls:
-                raise Exception(f"{self.subject} was not called with {prediction['call']['name']}: {prediction}")
+                error_msg = f"{self.subject} was not called with {prediction['call']['name']}:\n - {prediction}"
+
+                # Print all unprocessed calls if pytest was started in verbose mode.
+                if "-v" in sys.argv or "-vv" in sys.argv:
+                    if not self.calls:
+                        error_msg += "\nNo unprocessed calls."
+                    else:
+                        error_msg += "\nUnprocessed calls:"
+                        for call in self.calls:
+                            error_msg += f"\n - {call}"
+
+                raise Exception(error_msg)
