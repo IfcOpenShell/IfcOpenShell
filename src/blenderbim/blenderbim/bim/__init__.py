@@ -283,7 +283,6 @@ def unregister():
     del bpy.types.Scene.BIMProperties
     del bpy.types.Collection.BIMCollectionProperties
     del bpy.types.Object.BIMObjectProperties
-    del bpy.types.Material.BIMObjectProperties
     del bpy.types.Material.BIMMaterialProperties
     del bpy.types.Mesh.BIMMeshProperties
     del bpy.types.Curve.BIMMeshProperties

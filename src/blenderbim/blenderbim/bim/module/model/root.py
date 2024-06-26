@@ -35,16 +35,10 @@ def sync_name(usecase_path, ifc_file, settings):
         return
     if isinstance(obj, bpy.types.Object):
         new_name = "{}/{}".format(element.is_a(), settings["attributes"]["Name"] or "Unnamed")
+        collection = obj.BIMObjectProperties.collection
+        if collection:
+            collection.name = new_name
     elif isinstance(obj, bpy.types.Material):
         new_name = settings["attributes"]["Name"] or "Unnamed"
-        material = tool.Ifc.get_entity(obj)
-        if material and material != element:
-            material.Name = new_name
-        style = tool.Style.get_style(obj)
-        if style and style != element:
-            style.Name = new_name
-    collection = obj.BIMObjectProperties.collection
-    if collection:
-        collection.name = new_name
     obj.name = new_name
     blenderbim.bim.handler.refresh_ui_data()
