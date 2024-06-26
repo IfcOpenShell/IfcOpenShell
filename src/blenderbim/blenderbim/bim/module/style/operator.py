@@ -165,13 +165,7 @@ class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty(default=0)
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
-        style = tool.Ifc.get().by_id(self.style)
-        props.is_editing_style = style.id()
-        props.is_editing_class = "IfcSurfaceStyle"
-        attributes = props.attributes
-        attributes.clear()
-        blenderbim.bim.helper.import_attributes2(style, attributes)
+        core.enable_editing_style(tool.Style, tool.Ifc.get().by_id(self.style))
 
 
 class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -180,16 +174,7 @@ class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Disable Editing Style"
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
-
-        style = tool.Ifc.get().by_id(props.is_editing_style)
-        material = tool.Ifc.get_object(style)
-        tool.Style.reload_material_from_ifc(material)
-        props.is_editing_style = 0
-
-        # restore selected style type
-        material = tool.Ifc.get_object(style)
-        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
+        core.disable_editing_style(tool.Style)
 
 
 class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -198,12 +183,7 @@ class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
-        style = tool.Ifc.get().by_id(props.is_editing_style)
-        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
-        ifcopenshell.api.run("style.edit_presentation_style", tool.Ifc.get(), style=style, attributes=attributes)
-        props.is_editing_style = 0
-        core.load_styles(tool.Style, style_type=props.style_type)
+        core.edit_style(tool.Ifc, tool.Style)
 
 
 class UpdateCurrentStyle(bpy.types.Operator):
