@@ -644,11 +644,8 @@ def get_opening_area(
 
             bl_opening_obj = bpy.data.objects.new("MyObject", mesh)
 
-            opening_type = (
-                ifc_opening_element.PredefinedType
-                if ifc_opening_element.PredefinedType is not None
-                else get_opening_type(bl_opening_obj, obj)
-            )
+            if not (opening_type := ifcopenshell.util.element.get_predefined_type(ifc_opening_element)):
+                opening_type = get_opening_type(bl_opening_obj, obj)
 
             if ignore_recesses and opening_type == "RECESS":
                 continue
