@@ -1230,8 +1230,6 @@ class IfcImporter:
         blender_material.use_fake_user = True
 
         self.link_element(style, blender_material)
-
-        blender_material.BIMStyleProperties.ifc_definition_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
 
         style_elements = tool.Style.get_style_elements(blender_material)
