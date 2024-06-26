@@ -2,116 +2,65 @@
 IFC modeling
 ============
 
-Understanding IFC
-=================
+This chapter covers the essential aspects of working with Industry Foundation Classes (IFC) in BlenderBIM. It is divided into five main sections:
 
-Industry Foundation Classes (IFC) is an open, international standard for Building Information Modeling (BIM) data.
-It provides a standardized way to describe, exchange, and share information about building and construction industry data.
+.. only:: builder_html and (not singlehtml)
 
-IFC Schema
-----------
+   .. container:: toc-cards
 
-The IFC schema defines a comprehensive set of consistent data representations of building information for exchange between AEC software applications.
-It covers various aspects of buildings throughout their lifecycle, from conception to demolition.
+      .. container:: card
 
-Basic Spatial Objects
----------------------
+         :doc:`understanding_ifc`
+            An introduction to IFC standards, schemas, and concepts.
+            This section explains the structure of IFC data, key spatial objects, and the role of organizations
+            like buildingSMART in maintaining IFC standards. It also covers IfcOpenShell and the broader ecosystem
+            of open standards in the AEC industry.
 
-IFC organizes building information in a hierarchical structure:
 
-- IfcProject
-- IfcSite
-- IfcBuilding
-- IfcBuildingStorey
-- IfcSpace
+      .. container:: card
 
-buildingSMART and Standards
----------------------------
+         :doc:`importing_viewing_models`
+            A guide on how to import existing IFC models into BlenderBIM and navigate them effectively.
+            This section includes techniques for inspecting and querying IFC data within the BlenderBIM environment.
 
-buildingSMART International (bSI) is the organization responsible for developing and maintaining the IFC standard.
-They also develop other related standards like BCF (BIM Collaboration Format) and bSDD (buildingSMART Data Dictionary).
 
-IfcOpenShell
-------------
+      .. container:: card
 
-IfcOpenShell is the open-source software library used by BlenderBIM to read, write, and manipulate IFC files.
-It provides the core functionality for working with IFC data.
+         :doc:`starting_new_project`
+            Instructions on creating and setting up a new IFC project from scratch in BlenderBIM.
+            This covers initial project setup, including advanced options for more complex projects.
 
-Interoperability and Other Standards
-------------------------------------
+      .. container:: card
 
-IFC is part of a broader ecosystem of open standards in the AEC industry. Other relevant standards include:
+         :doc:`basic_modeling/index`
+          An exploration of fundamental IFC modeling techniques, including:
+              - Creating walls
+              - Adding doors and windows
+              - Modeling slabs and roofs
+              - Defining rooms and spaces
 
-- COBie (Construction Operations Building Information Exchange)
-- CityGML (City Geography Markup Language)
-- gbXML (Green Building XML)
+      .. container:: card
 
-The use of open standards like IFC ensures interoperability between different software tools
-and preserves data integrity throughout the building lifecycle.
+         :doc:`advanced_modeling/index`
+            A deep dive into more complex modeling techniques for experienced users, including:
+              - Creating custom parametric wall types
+              - Modeling furniture and fixtures
+              - Working with structural elements
+              - Designing multi-story buildings
+              - Modeling complex structures
 
-Importing and Viewing IFC Models
-================================
 
-[Content about importing and viewing IFC models]
+.. container:: global-index-toc
 
-Inspecting and Querying Models
-==============================
+   .. toctree::
+      :hidden:
+      :caption: IFC Modeling
+      :maxdepth: 2
 
-[Content about inspecting and querying IFC models]
+      understanding_ifc
+      importing_viewing_models
+      starting_new_project
+      basic_modeling/index
+      advanced_modeling/index
 
-Starting a New IFC Project
-==========================
-
-[Content about starting a new IFC project, including advanced options]
-
-Basic Modeling Techniques
-=========================
-
-Creating Walls
---------------
-
-[Content about creating walls]
-
-Adding Doors and Windows
-------------------------
-
-[Content about adding doors and windows]
-
-Modeling Slabs and Roofs
-------------------------
-
-[Content about modeling slabs and roofs]
-
-Defining Rooms and Spaces
--------------------------
-
-[Content about defining rooms and spaces]
-
-Advanced Modeling Techniques
-============================
-
-Custom Parametric Wall Types
-----------------------------
-
-[Content about creating custom parametric wall types]
-
-Modeling Furniture and Fixtures
--------------------------------
-
-[Content about modeling furniture and fixtures]
-
-Structural Elements
--------------------
-
-[Content about modeling structural elements]
-
-Multi-Story Buildings
----------------------
-
-[Content about modeling multi-story buildings]
-
-Complex Structures
-------------------
-
-[Content about modeling complex structures]
 
