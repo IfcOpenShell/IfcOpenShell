@@ -26,6 +26,13 @@ to spreadsheets and other machine readable formats, such as ODS, XLSX, CSV,
 Pandas, XML, and JSON. These formats may then be easily read, audited, or
 imported into technologies that cannot work with IFC natively.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcfm
+
 Supported data standards
 ------------------------
 
