@@ -331,6 +331,8 @@ def create_shape(
     :return:
         - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType
         - `inst` is IfcRepresentation and `repr` is None -> ShapeType
+        - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType
+        - `inst` is IfcProfileDef and `repr` is None -> ShapeType
         - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation
         - `inst` is IfcTypeProduct and `repr` is None -> None
         - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
