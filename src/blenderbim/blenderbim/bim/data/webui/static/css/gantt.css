@@ -1,0 +1,309 @@
+:root {
+    color-scheme: dark;
+}
+
+body {
+    background-color: #252525;
+    color: #e0e0e0;
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+#container {
+    margin-top: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-bottom: 20px;
+}
+
+h3 {
+    margin-top: 0;
+}
+
+nav {
+    background-color: #121212;
+    padding: 1em 0;
+    display: flex;
+    align-items: center;
+    position: relative;
+}
+
+nav .logo {
+    margin-left: 40px;
+    height: 40px;
+    /* Adjust height as needed */
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    margin-left: 1px;
+    display: flex;
+    flex-grow: 1;
+    justify-content: center;
+}
+
+nav ul li {
+    margin-right: 50px;
+}
+
+nav ul li a {
+    text-decoration: none;
+    color: #fff;
+    font-size: 1.2em;
+}
+
+nav ul li a:hover,
+nav ul li a.active {
+    color: #3fb449;
+}
+
+nav .bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #25682a;
+}
+
+
+/* ------------ Overwriting JSGantt CSS rules for Dark Mode ------------ */
+
+div.gantt {
+    background-color: #252525;
+    color: #c7c7c7;
+}
+
+.gantt table {
+    border-color: #464444;
+    ;
+}
+
+.gantt td {
+    border-color: #464444;
+    ;
+}
+
+/* Headings and cell defaults */
+.gmajorheading,
+.gminorheading,
+.gminorheadingwkend,
+.gtaskcell,
+.gtaskcellcurrent,
+.gtaskcellwkend,
+.gname,
+.ggroupitem {
+    background-color: #252525;
+    border-color: #464444;
+    ;
+}
+
+.gtaskheading,
+.gname,
+.gtaskname,
+.gres,
+.gdur,
+.gcomp,
+.gstartdate,
+.gplanstartdate,
+.gplanenddate,
+.gcost,
+.gchartlbl,
+.gcontainercol,
+.genddate {
+    background-color: #252525;
+    color: #c7c7c7;
+    border-color: #464444;
+    ;
+}
+
+.gtaskname>div,
+.gtaskeditable>div {
+    background: #252525;
+    color: #c7c7c7;
+}
+
+.gtaskbarcontainer.gplan {
+    background: #252525;
+    border-color: #464444;
+}
+
+.gtaskname div,
+.gtaskheading div {
+    background-color: #252525;
+    color: #c7c7c7;
+}
+
+/* Task bar colors */
+.gtaskblue {
+    background: rgb(58, 132, 195);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(58, 132, 195, 1) 0%, rgba(65, 154, 214, 1) 20%, rgba(75, 184, 240, 1) 40%, rgba(58, 139, 194, 1) 70%, rgba(38, 85, 139, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#4bb8f0', endColorstr='#3a84c3', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskred {
+    background: rgb(196, 58, 58);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(196, 58, 58, 1) 0%, rgba(211, 65, 65, 1) 20%, rgba(239, 76, 76, 1) 40%, rgba(196, 58, 58, 1) 70%, rgba(135, 37, 37, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ef4c4c', endColorstr='#c43a3a', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskgreen {
+    background: rgb(80, 193, 58);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(80, 193, 58, 1) 0%, rgba(88, 209, 64, 1) 20%, rgba(102, 237, 75, 1) 40%, rgba(80, 193, 58, 1) 70%, rgba(53, 132, 37, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#66ED4B', endColorstr='#50c13a', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskyellow {
+    background: rgb(247, 228, 56);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(247, 228, 56, 1) 0%, rgba(239, 239, 55, 1) 20%, rgba(255, 255, 58, 1) 40%, rgba(242, 236, 55, 1) 70%, rgba(241, 218, 54, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffff3a', endColorstr='#f7e438', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskpurple {
+    background: rgb(193, 58, 193);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(193, 58, 193, 1) 0%, rgba(211, 65, 211, 1) 20%, rgba(239, 76, 239, 1) 40%, rgba(193, 58, 193, 1) 70%, rgba(137, 38, 137, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ef4cef', endColorstr='#892689', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskpink {
+    background: rgb(249, 177, 245);
+    /* Old browsers */
+    background: linear-gradient(to bottom, rgba(249, 177, 245, 1) 0%, rgba(247, 192, 243, 1) 20%, rgba(247, 202, 244, 1) 40%, rgba(249, 192, 246, 1) 70%, rgba(252, 174, 247, 1) 100%);
+    /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f7caf4', endColorstr='#fcaef7', GradientType=0);
+    /* IE6-9 */
+    border-color: #252525;
+}
+
+.gtaskbluecomplete,
+.gtaskredcomplete,
+.gtaskgreencomplete,
+.gtaskyellowcomplete,
+.gtaskpurplecomplete,
+.gtaskpinkcomplete {
+    background-color: #252525;
+    border-color: #464444;
+    ;
+}
+
+.gchartgrid {
+    background-color: #252525;
+}
+
+.glistgrid,
+.glistlbl {
+    background-color: #252525;
+    border-color: #464444;
+    ;
+}
+
+/* .gTaskInfo {
+    background-color: #2e2e2e;
+    color: #c7c7c7;
+    border-color: #c7c7c7;;
+} */
+
+/* Dark mode scrollbar */
+.frame::-webkit-scrollbar-thumb {
+    background-color: #252525;
+}
+
+.frame::-webkit-scrollbar-track {
+    background-color: #252525;
+}
+
+/* Highlight row */
+.gitemhighlight td {
+    background-color: #3a3a3a;
+    color: #ffffff;
+}
+
+/* Differentiate Group, Milestone and Ordinary task items (applied to row) */
+.ggroupitem {
+    background-color: #252525;
+    font-weight: bold;
+    border-color: #464444;
+}
+
+.gmileitem,
+.glineitem {
+    background-color: #252525;
+}
+
+/* Task bar caption text styles */
+.gmilecaption,
+.ggroupcaption,
+.gcaption {
+    color: #ffffff;
+}
+
+/* Task complete %age bar */
+.gtaskcomplete {
+    background-color: #777777;
+}
+
+/* Milestones */
+.gmdtop {
+    border-bottom: 5px solid #ffffff;
+}
+
+.gmdbottom {
+    border-top: 5px solid #ffffff;
+}
+
+.gfoldercollapse {
+    color: #c7c7c7;
+    cursor: pointer;
+    font-weight: bold;
+
+    font-size: 12px;
+    font-family: Courier, "Courier New", monospace;
+}
+
+/* Form label and selected highlighting */
+.gformlabel {
+    background-color: #2e2e2e;
+    color: #c7c7c7;
+    border: #4a4a4a 1px solid;
+}
+
+span.gformlabel:hover {
+    background-color: #3a3a3a;
+    border-color: #565656;
+}
+
+span.gselected {
+    background-color: #565656;
+    border-color: #777777;
+    color: #ffffff;
+}
+
+.gantt-inputtable input {
+    background-color: #3b3b3b;
+    border-top: 1px solid #4a4a4a;
+    border-left: 1px solid #4a4a4a;
+    border-right: none;
+    border-bottom: none;
+    color: #c7c7c7;
+}
