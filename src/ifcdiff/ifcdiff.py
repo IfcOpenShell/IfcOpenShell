@@ -37,6 +37,9 @@ from deepdiff import DeepDiff
 from ordered_set import OrderedSet
 
 
+__version__ = version = "0.0.0"
+
+
 class IfcDiff:
     """Main IfcDiff application
 
