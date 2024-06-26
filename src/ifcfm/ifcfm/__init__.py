@@ -41,6 +41,8 @@ try:
 except:
     pass  # No Pandas support
 
+__version__ = version = "0.0.0"
+
 
 class Parser:
     def __init__(self, preset="basic"):
