@@ -512,12 +512,10 @@ def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_in
 
 
 def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-    """Gets element shape aspects
+    """Get element's shape aspects.
 
-    :param element: The element to get the shape aspects of.
-    :type element: ifcopenshell.entity_instance
+    :param element: IfcProduct or IfcTypeProduct.
     :return: The associated shape aspects of the element.
-    :rtype: list[ifcopenshell.entity_instance]
 
     Example:
 

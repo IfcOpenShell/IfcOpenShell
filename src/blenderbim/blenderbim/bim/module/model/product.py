@@ -40,7 +40,7 @@ from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 from . import prop
 import json
-from typing import Any, Union, Optional
+from typing import Any, Union, Optional, assert_never
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
@@ -524,13 +524,17 @@ def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, set
         if material_type == "IfcMaterial":
             assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
             assert assigned_material  # Type checker.
-        # 1) Material usages just inherit the style from the type material, so can't override it.
-        # 2) If type is Set and no material argument were provided, then Set was just created
+        # Material usages just inherit the style from the type material, so can't override it.
+        elif material_type in ("IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"):
+            return
+        # If type is Set and no material argument were provided, then Set was just created
         # and not yet have any IfcMaterials.
-        elif material_type.endswith("Usage") or material_type.endswith("Set"):
+        elif material_type in ("IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"):
             return
         elif material_type == "IfcMaterialList":
             assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
+        else:
+            assert_never(material_type)
 
     for element in elements[:]:
         if element.is_a("IfcElementType"):
