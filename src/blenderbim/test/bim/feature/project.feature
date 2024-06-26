@@ -35,7 +35,7 @@ Scenario: Append library element
     And I press "bim.change_library_element(element_name='IfcSlabType')"
     And I press "bim.append_library_element(definition=242, prop_index=0)"
     Then the object "IfcSlabType/Slab" is an "IfcSlabType"
-    And the object "IfcSlabType/Slab" is in the collection "Types"
+    And the object "IfcSlabType/Slab" is in the collection "IfcTypeProduct"
 
 Scenario: Append library element - append two elements sharing a material
     Given an empty IFC project
@@ -47,9 +47,9 @@ Scenario: Append library element - append two elements sharing a material
     And I press "bim.change_library_element(element_name='IfcWallType')"
     And I press "bim.append_library_element(definition=291, prop_index=0)"
     Then the object "IfcSlabType/Slab" is an "IfcSlabType"
-    And the object "IfcSlabType/Slab" is in the collection "Types"
+    And the object "IfcSlabType/Slab" is in the collection "IfcTypeProduct"
     And the object "IfcWallType/Wall" is an "IfcWallType"
-    And the object "IfcWallType/Wall" is in the collection "Types"
+    And the object "IfcWallType/Wall" is in the collection "IfcTypeProduct"
     And the object "IfcSlabType/Slab" has the material "SurfaceStyle"
     And the object "IfcWallType/Wall" has the material "SurfaceStyle"
 
@@ -70,8 +70,8 @@ Scenario: Load project
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/Ground Floor" is in the collection "IfcBuildingStorey/Ground Floor"
     And the object "IfcBuildingStorey/Level 1" is in the collection "IfcBuildingStorey/Level 1"
-    And the object "IfcElementAssembly/Empty" is in the collection "IfcElementAssembly/Empty"
-    And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Empty"
+    And the object "IfcElementAssembly/Empty" is in the collection "IfcBuildingStorey/Level 1"
+    And the object "IfcBeam/Beam" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
     And "scene.BIMProjectProperties.is_loading" is "False"
@@ -91,8 +91,7 @@ Scenario: Load project - advanced mode
 Scenario: Load project elements - load all project elements
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "NONE"
+    When I set "scene.BIMProjectProperties.filter_mode" to "NONE"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
     And the object "IfcSite/My Site" is an "IfcSite"
@@ -107,8 +106,8 @@ Scenario: Load project elements - load all project elements
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/Ground Floor" is in the collection "IfcBuildingStorey/Ground Floor"
     And the object "IfcBuildingStorey/Level 1" is in the collection "IfcBuildingStorey/Level 1"
-    And the object "IfcElementAssembly/Empty" is in the collection "IfcElementAssembly/Empty"
-    And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Empty"
+    And the object "IfcElementAssembly/Empty" is in the collection "IfcBuildingStorey/Level 1"
+    And the object "IfcBeam/Beam" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcSlab/Slab" has data which is an IFC representation
@@ -121,8 +120,7 @@ Scenario: Load project elements - load all project elements
 Scenario: Load project elements - load objects filtered by decomposition
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "DECOMPOSITION"
+    When I set "scene.BIMProjectProperties.filter_mode" to "DECOMPOSITION"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     Then "scene.BIMProjectProperties.filter_categories['IfcSite/My Site'].total_elements" is "0"
     Then "scene.BIMProjectProperties.filter_categories['IfcBuilding/My Building'].total_elements" is "0"
@@ -141,16 +139,15 @@ Scenario: Load project elements - load objects filtered by decomposition
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/Level 1" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
-    And the object "IfcElementAssembly/Empty" is in the collection "IfcElementAssembly/Empty"
-    And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Empty"
+    And the object "IfcElementAssembly/Empty" is in the collection "IfcBuildingStorey/Level 1"
+    And the object "IfcBeam/Beam" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcBuildingStorey/Ground Floor" does not exist
     And the object "IfcSlab/Slab" does not exist
 
 Scenario: Load project elements - load objects filtered by IFC class
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+    When I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     Then "scene.BIMProjectProperties.filter_categories['IfcWall'].total_elements" is "1"
     And "scene.BIMProjectProperties.filter_categories['IfcSlab'].total_elements" is "1"
@@ -173,8 +170,7 @@ Scenario: Load project elements - load objects filtered by IFC class
 Scenario: Load project elements - load objects filtered by whitelist
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "WHITELIST"
+    When I set "scene.BIMProjectProperties.filter_mode" to "WHITELIST"
     And I set "scene.BIMProjectProperties.filter_query" to "IfcSlab"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
@@ -193,8 +189,7 @@ Scenario: Load project elements - load objects filtered by whitelist
 Scenario: Load project elements - load objects filtered by blacklist
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "BLACKLIST"
+    When I set "scene.BIMProjectProperties.filter_mode" to "BLACKLIST"
     And I set "scene.BIMProjectProperties.filter_query" to "IfcSlab"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
@@ -209,16 +204,15 @@ Scenario: Load project elements - load objects filtered by blacklist
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/Level 1" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcWall/Wall" is in the collection "IfcBuildingStorey/Level 1"
-    And the object "IfcElementAssembly/Empty" is in the collection "IfcElementAssembly/Empty"
-    And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Empty"
+    And the object "IfcElementAssembly/Empty" is in the collection "IfcBuildingStorey/Level 1"
+    And the object "IfcBeam/Beam" is in the collection "IfcBuildingStorey/Level 1"
     And the object "IfcBuildingStorey/Ground Floor" does not exist
     And the object "IfcSlab/Slab" does not exist
 
 Scenario: Load project elements - load no objects due to filter
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
+    When I set "scene.BIMProjectProperties.filter_mode" to "IFC_CLASS"
     And I set "scene.BIMProjectProperties.should_filter_spatial_elements" to "True"
     And I press "bim.load_project_elements"
     Then the object "IfcProject/My Project" is an "IfcProject"
@@ -229,70 +223,25 @@ Scenario: Load project elements - load no objects due to filter
     And the object "IfcSlab/Slab" does not exist
     And the object "IfcWall/Wall" does not exist
 
-Scenario: Load project elements - load with the decomposition collection mode
-    Given an empty Blender session
-    And I press "bim.load_project(filepath='{cwd}/test/files/decomposition.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "NONE"
-    And I press "bim.load_project_elements"
-    Then the object "IfcProject/My Project" is an "IfcProject"
-    And the object "IfcSite/My Site" is an "IfcSite"
-    And the object "IfcBuilding/My Building" is an "IfcBuilding"
-    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
-    And the object "IfcSpace/Space" is an "IfcSpace"
-    And the object "IfcElementAssembly/Assembly" is an "IfcElementAssembly"
-    And the object "IfcBeam/Beam" is an "IfcBeam"
-    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
-    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
-    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
-    And the object "IfcSpace/Space" is in the collection "IfcSpace/Space"
-    And the object "IfcElementAssembly/Assembly" is in the collection "IfcElementAssembly/Assembly"
-    And the object "IfcBeam/Beam" is in the collection "IfcElementAssembly/Assembly"
-    And the collection "IfcSite/My Site" is in the collection "IfcProject/My Project"
-    And the collection "IfcBuilding/My Building" is in the collection "IfcSite/My Site"
-    And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcBuilding/My Building"
-    And the collection "IfcSpace/Space" is in the collection "IfcBuildingStorey/My Storey"
-    And the collection "IfcElementAssembly/Assembly" is in the collection "IfcSpace/Space"
-    And "scene.BIMProjectProperties.is_loading" is "False"
-
-Scenario: Load project elements - load with the spatial decomposition collection mode
-    Given an empty Blender session
-    And I press "bim.load_project(filepath='{cwd}/test/files/decomposition.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.collection_mode" to "SPATIAL_DECOMPOSITION"
-    And I set "scene.BIMProjectProperties.filter_mode" to "NONE"
-    And I press "bim.load_project_elements"
-    Then the object "IfcProject/My Project" is an "IfcProject"
-    And the object "IfcSite/My Site" is an "IfcSite"
-    And the object "IfcBuilding/My Building" is an "IfcBuilding"
-    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
-    And the object "IfcSpace/Space" is an "IfcSpace"
-    And the object "IfcElementAssembly/Assembly" is an "IfcElementAssembly"
-    And the object "IfcBeam/Beam" is an "IfcBeam"
-    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
-    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
-    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
-    And the object "IfcSpace/Space" is in the collection "IfcSpace/Space"
-    And the object "IfcElementAssembly/Assembly" is in the collection "IfcSpace/Space"
-    And the object "IfcBeam/Beam" is in the collection "IfcSpace/Space"
-    And the collection "IfcSite/My Site" is in the collection "IfcProject/My Project"
-    And the collection "IfcBuilding/My Building" is in the collection "IfcSite/My Site"
-    And the collection "IfcBuildingStorey/My Storey" is in the collection "IfcBuilding/My Building"
-    And the collection "IfcSpace/Space" is in the collection "IfcBuildingStorey/My Storey"
-    And "scene.BIMProjectProperties.is_loading" is "False"
-
 Scenario: Load project elements - manual offset of object placements
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.false_origin" to "268388500, 5774506000, 21900"
+    When I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "268388500, 5774506000, 21900"
     And I press "bim.load_project_elements"
     Then the object "IfcPlate/1780 x 270 PRECAST WALL" is at "0,0,0"
 
 Scenario: Load project elements - manual offset of cartesian points
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation-coords.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.false_origin" to "1990711,5971553,22700"
+    When I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "1990711,5971553,22700"
     And I press "bim.load_project_elements"
-    Then the object "IfcBuildingElementProxy/NAME" is at "0,0,0"
+    Then the object "IfcBuildingElementProxy/NAME" has a vertex at "0,0,0"
+    And the object "IfcBuildingElementProxy/NAME" has a vertex at "-1,0,0"
+    And the object "IfcBuildingElementProxy/NAME" has a vertex at "0,.5,0"
+    And the object "IfcBuildingElementProxy/NAME" has a vertex at "-1,.5,0"
+    And the object "IfcBuildingElementProxy/NAME" has a vertex at "-1,.5,2.2"
 
 Scenario: Load project elements - auto offset of object placements
     Given an empty Blender session
@@ -438,16 +387,6 @@ Scenario: Export IFC - with moved grid axis location synchronised
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
 
-Scenario: Export IFC - with changed spatial container synchronised
-    Given an empty Blender session
-    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
-    When the object "IfcSlab/Slab" is placed in the collection "IfcBuildingStorey/Level 1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Level 1"
-
 Scenario: Export IFC - with changed object scale synchronised
     Given an empty IFC project
     And I add a cube
@@ -461,21 +400,6 @@ Scenario: Export IFC - with changed object scale synchronised
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcWall/Cube" dimensions are "4,4,4"
-
-Scenario: Export IFC - with changed style colour synchronised
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I add a material
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
-    When the material "Material" colour is set to "1,0,0,1"
-    And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
-    And an empty Blender session is started
-    And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
-    Then the material "Material" colour is "1,0,0,1"
 
 Scenario: Export IFC - with changed style element synchronised
     Given an empty IFC project
