@@ -217,7 +217,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 							auto& p1 = boost::get<taxonomy::point3::ptr>(e1->start);
 							auto& p2 = boost::get<taxonomy::point3::ptr>(e2->start);
 
-							auto p3 = lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset;
+							auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
 							points.push_back(taxonomy::make<taxonomy::point3>(p3));
 						}
 						if (!points.empty()) {
