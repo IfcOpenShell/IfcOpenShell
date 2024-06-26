@@ -90,12 +90,11 @@ class ConvertToBlender(bpy.types.Operator):
     def execute(self, context):
         for obj in bpy.data.objects:
             if obj.type in {"MESH", "EMPTY"}:
-                obj.BIMObjectProperties.ifc_definition_id = 0
+                tool.Ifc.unlink(obj=obj)
                 if obj.data:
                     obj.data.BIMMeshProperties.ifc_definition_id = 0
         for material in bpy.data.materials:
-            material.BIMObjectProperties.ifc_definition_id = 0
-            material.BIMMaterialProperties.ifc_style_id = 0
+            tool.Ifc.unlink(obj=material)
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
