@@ -265,9 +265,10 @@ class Blender:
                         continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
-                    results[element][name][quantity] = unit_converter.convert(
-                        formula_function(obj), Blender.functions[formula].measure
-                    )
+                    if (value := formula_function(obj)) is not None:
+                        results[element][name][quantity] = unit_converter.convert(
+                            value, Blender.functions[formula].measure
+                        )
 
 
 calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
