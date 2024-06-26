@@ -43,30 +43,32 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
         with:
-          python-version: '3.10.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          python-version: '3.11.7' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
       - run: echo ${{ env.DATE }}
 
-      - name: Check in published releases if we should do a choco release
+      - name: Check in release tags if we should do a choco release
         id: do_choco
         run: |
-          echo "::set-output name=choco_release::$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --do_choco_release?)"
+          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
+          echo "::set-output name=choco_release::$(python3 check_release_needed.py)"
 
       - name: Fill chocolatey scripts on win with latest blender python
         if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
         run: |
+          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
           yesterday_non_iso="$(date  --date='yesterday' +'%y%m%d' | tr -d '\n')" &&
           target_os=${{ matrix.config.short_name }} &&
-          latest_blender_python_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_python_version_maj_min?) &&
+          latest_blender_python_version_maj_min=$(python3 check_repo_infos.py --latest_blender_python_version_maj_min?) &&
           echo "latest_blender_python_version_maj_min?: $latest_blender_python_version_maj_min" &&
           pyver=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --pyver?) &&
-          export latest_blender_version_maj_min=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min?) &&
-          export latest_blender_version_maj_min_pat=$(python3 /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/check_repo_infos.py --latest_blender_release_maj_min_pat?) &&
+          export latest_blender_version_maj_min=$(python3 check_repo_infos.py --latest_blender_release_maj_min?) &&
+          export latest_blender_version_maj_min_pat=$(python3 check_repo_infos.py --latest_blender_release_maj_min_pat?) &&
           echo   latest_blender_version_maj_min_pat?: $latest_blender_version_maj_min_pat &&
           export blenderbim_build_version="${{ env.major }}.${{ env.minor }}.$yesterday_non_iso" &&
-          export url_blenderbim_py310_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$yesterday_non_iso/blenderbim-$yesterday_non_iso-$pyver-$target_os.zip" &&
-          wget $url_blenderbim_py310_win_zip --no-verbose &&
-          export sha256sum_blenderbim_py310_win_zip=$( sha256sum blenderbim-$yesterday_non_iso-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
+          export url_blenderbim_py3x_win_zip="https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-$yesterday_non_iso/$target_release_tag-$pyver-$target_os.zip" &&
+          wget $url_blenderbim_py3x_win_zip --no-verbose &&
+          export sha256sum_blenderbim_py310_win_zip=$( sha256sum $target_release_tag-$pyver-$target_os.zip  --tag | cut -d ' ' -f 4  | tr -d '\n') &&
           echo   sha256sum_blenderbim_py310_win_zip: $sha256sum_blenderbim_py310_win_zip &&
           python3 choco/blenderbim/fill_dynamic_parameters.py &&
           echo __build choco with mono &&
@@ -89,4 +91,3 @@ jobs:
         if: ${{steps.do_choco.outputs.choco_release}} != 'do_choco_release'
         run: |
           echo "no releases found today ${{ env.DATE }}, therefore choco packaging is skipped."
-
