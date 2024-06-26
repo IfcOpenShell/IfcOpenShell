@@ -54,12 +54,8 @@ class Style(blenderbim.core.tool.Style):
         bpy.data.materials.remove(obj)
 
     @classmethod
-    def disable_editing(cls, obj: bpy.types.Material) -> None:
-        obj.BIMStyleProperties.is_editing = False
-
-    @classmethod
-    def disable_editing_external_style(cls, obj: bpy.types.Material) -> None:
-        obj.BIMStyleProperties.is_editing_external_style = False
+    def disable_editing(cls) -> None:
+        bpy.context.scene.BIMStylesProperties.is_editing_style = 0
 
     @classmethod
     def disable_editing_styles(cls) -> None:
@@ -72,24 +68,19 @@ class Style(blenderbim.core.tool.Style):
         return new_style
 
     @classmethod
-    def enable_editing(cls, obj: bpy.types.Material) -> None:
-        obj.BIMStyleProperties.is_editing = True
-
-    @classmethod
-    def enable_editing_external_style(cls, obj: bpy.types.Material) -> None:
-        obj.BIMStyleProperties.is_editing_external_style = True
+    def enable_editing(cls, style: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing_style = style.id()
+        props.is_editing_class = "IfcSurfaceStyle"
 
     @classmethod
     def enable_editing_styles(cls) -> None:
         bpy.context.scene.BIMStylesProperties.is_editing = True
 
     @classmethod
-    def export_surface_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.attributes)
-
-    @classmethod
-    def export_external_style_attributes(cls, obj: bpy.types.Material) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(obj.BIMStyleProperties.external_style_attributes)
+    def export_surface_attributes(cls) -> dict[str, Any]:
+        props = bpy.context.scene.BIMStylesProperties
+        return blenderbim.bim.helper.export_attributes(props.attributes)
 
     @classmethod
     def get_active_style_type(cls) -> str:
@@ -106,6 +97,14 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def get_name(cls, obj: bpy.types.Material) -> str:
         return obj.name
+
+    @classmethod
+    def get_currently_edited_material(cls) -> bpy.types.Material:
+        props = bpy.context.scene.BIMStylesProperties
+        style = tool.Ifc.get().by_id(props.is_editing_style)
+        obj = tool.Ifc.get_object(style)
+        assert isinstance(obj, bpy.types.Material)
+        return obj
 
     @classmethod
     def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
@@ -506,14 +505,8 @@ class Style(blenderbim.core.tool.Style):
             new.total_elements = len(ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style))
 
     @classmethod
-    def import_surface_attributes(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Material) -> None:
-        attributes = obj.BIMStyleProperties.attributes
-        attributes.clear()
-        blenderbim.bim.helper.import_attributes2(style, attributes)
-
-    @classmethod
-    def import_external_style_attributes(cls, style: ifcopenshell.entity_instance, obj: bpy.types.Material) -> None:
-        attributes = obj.BIMStyleProperties.external_style_attributes
+    def import_surface_attributes(cls, style: ifcopenshell.entity_instance) -> None:
+        attributes = bpy.context.scene.BIMStylesProperties.attributes
         attributes.clear()
         blenderbim.bim.helper.import_attributes2(style, attributes)
 

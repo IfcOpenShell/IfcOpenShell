@@ -291,12 +291,6 @@ def update_shading_style(self, context):
 
 class BIMStyleProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
-    # TODO: remove, as attributes already moved to styles ui
-    attributes: CollectionProperty(name="Attributes", type=Attribute)
-    is_editing: BoolProperty(name="Is Editing")
-    external_style_attributes: CollectionProperty(name="External Style Attributes", type=Attribute)
-    is_editing_external_style: BoolProperty(name="Is Editing External Style")
-
     active_style_type: EnumProperty(
         name="Active Style Type",
         description="Update current blender material to match style type",

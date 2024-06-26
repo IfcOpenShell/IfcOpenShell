@@ -58,9 +58,7 @@ def update_external_style(
     ifc.run("style.edit_surface_style", style=external_style, attributes=attributes)
 
 
-def remove_style(
-    ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance
-) -> None:
+def remove_style(ifc: tool.Ifc, style_tool: tool.Style, style: ifcopenshell.entity_instance) -> None:
     obj = ifc.get_object(style)
     ifc.unlink(element=style)
     ifc.run("style.remove_style", style=style)
@@ -130,19 +128,26 @@ def unlink_style(ifc: tool.Ifc, style: ifcopenshell.entity_instance) -> None:
     ifc.unlink(element=style)
 
 
-def enable_editing_style(style: tool.Style, obj: bpy.types.Material) -> None:
-    style.enable_editing(obj)
-    style.import_surface_attributes(style.get_style(obj), obj)
+def enable_editing_style(style: tool.Style, style_: ifcopenshell.entity_instance) -> None:
+    style.enable_editing(style_)
+    style.import_surface_attributes(style_)
 
 
-def disable_editing_style(style: tool.Style, obj: bpy.types.Material) -> None:
-    style.disable_editing(obj)
+def disable_editing_style(style: tool.Style) -> None:
+    obj = style.get_currently_edited_material()
+    # TODO: is reloading twice necessary?
+    style.reload_material_from_ifc(obj)
+    style.disable_editing()
+    style.reload_material_from_ifc(obj)
 
 
-def edit_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> None:
-    attributes = style.export_surface_attributes(obj)
-    ifc.run("style.edit_presentation_style", style=style.get_style(obj), attributes=attributes)
-    style.disable_editing(obj)
+def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
+    obj = style.get_currently_edited_material()
+    style_ = style.get_style(obj)
+    attributes = style.export_surface_attributes()
+    ifc.run("style.edit_presentation_style", style=style_, attributes=attributes)
+    style.disable_editing()
+    load_styles(style, style.get_active_style_type())
 
 
 def load_styles(style: tool.Style, style_type: str) -> None:
