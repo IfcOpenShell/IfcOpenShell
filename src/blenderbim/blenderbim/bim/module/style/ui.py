@@ -299,7 +299,7 @@ class BIM_PT_style(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and (material := context.material) and material.BIMMaterialProperties.ifc_style_id)
+        return bool(tool.Ifc.get() and (material := context.material) and material.BIMStyleProperties.ifc_definition_id)
 
     def draw(self, context):
         # NOTE: this UI is needed only to indicate whether blender material is linked to IFC
@@ -309,7 +309,7 @@ class BIM_PT_style(Panel):
             BlenderMaterialStyleData.load()
 
         material = context.material
-        style_id = material.BIMMaterialProperties.ifc_style_id
+        style_id = material.BIMStyleProperties.ifc_definition_id
         row = self.layout.row(align=True)
 
         if style_id and not BlenderMaterialStyleData.data["is_linked_to_style"]:

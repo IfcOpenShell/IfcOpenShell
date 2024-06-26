@@ -2750,7 +2750,7 @@ class AddReferenceImage(bpy.types.Operator, Operator):
         obj.material_slots[0].material = material
         bpy.ops.bim.add_style()
 
-        style = ifc_file.by_id(material.BIMMaterialProperties.ifc_style_id)
+        style = ifc_file.by_id(material.BIMStyleProperties.ifc_definition_id)
         tool.Style.assign_style_to_object(style, obj)
 
         # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because

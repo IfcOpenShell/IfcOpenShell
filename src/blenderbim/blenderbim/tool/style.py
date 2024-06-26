@@ -109,13 +109,13 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        """Get linked IFC style based on material's BIMMaterialProperties.ifc_style_id.
+        """Get linked IFC style based on material's BIMStyleProperties.ifc_definition_id.
 
         Return None if material is not linked to IFC or it's linked to non-existent element.
         """
-        if obj.BIMMaterialProperties.ifc_style_id:
+        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
             try:
-                return tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
+                return tool.Ifc.get().by_id(ifc_definition_id)
             except:
                 return
 
@@ -124,9 +124,9 @@ class Style(blenderbim.core.tool.Style):
         cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
     ) -> dict[str, ifcopenshell.entity_instance]:
         if isinstance(blender_material_or_style, bpy.types.Material):
-            if not blender_material_or_style.BIMMaterialProperties.ifc_style_id:
+            if not (ifc_definition_id := blender_material_or_style.BIMStyleProperties.ifc_definition_id):
                 return {}
-            style = tool.Ifc.get().by_id(blender_material_or_style.BIMMaterialProperties.ifc_style_id)
+            style = tool.Ifc.get().by_id(ifc_definition_id)
         else:
             style = blender_material_or_style
         style_elements = {}
@@ -443,16 +443,16 @@ class Style(blenderbim.core.tool.Style):
 
     @classmethod
     def get_surface_shading_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if obj.BIMMaterialProperties.ifc_style_id:
-            style = tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
+        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
+            style = tool.Ifc.get().by_id(ifc_definition_id)
             items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
             if items:
                 return items[0]
 
     @classmethod
     def get_surface_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if obj.BIMMaterialProperties.ifc_style_id:
-            style = tool.Ifc.get().by_id(obj.BIMMaterialProperties.ifc_style_id)
+        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
+            style = tool.Ifc.get().by_id(ifc_definition_id)
             items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures")]
             if items:
                 return items[0]

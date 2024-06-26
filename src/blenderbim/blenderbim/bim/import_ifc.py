@@ -77,8 +77,8 @@ class MaterialCreator:
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
-            if material.BIMMaterialProperties.ifc_style_id:
-                self.styles[material.BIMMaterialProperties.ifc_style_id] = material
+            if ifc_definition_id := material.BIMStyleProperties.ifc_definition_id:
+                self.styles[ifc_definition_id] = material
 
     def get_ifc_coordinate(self, material: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         """Get IfcTextureCoordinate"""
@@ -1231,7 +1231,7 @@ class IfcImporter:
 
         self.link_element(style, blender_material)
 
-        blender_material.BIMMaterialProperties.ifc_style_id = style.id()
+        blender_material.BIMStyleProperties.ifc_definition_id = style.id()
         self.material_creator.styles[style.id()] = blender_material
 
         style_elements = tool.Style.get_style_elements(blender_material)

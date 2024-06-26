@@ -448,7 +448,7 @@ class Geometry(blenderbim.core.tool.Geometry):
     @classmethod
     def get_object_materials_without_styles(cls, obj: bpy.types.Object) -> list[bpy.types.Material]:
         return [
-            s.material for s in obj.material_slots if s.material and not s.material.BIMMaterialProperties.ifc_style_id
+            s.material for s in obj.material_slots if s.material and not s.material.BIMStyleProperties.ifc_definition_id
         ]
 
     @classmethod

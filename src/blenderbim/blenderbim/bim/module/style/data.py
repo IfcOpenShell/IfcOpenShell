@@ -98,8 +98,8 @@ class BlenderMaterialStyleData:
         material = obj.active_material
         if not material:
             return False
-        props = material.BIMMaterialProperties
-        style_id = props.ifc_style_id
+        props = material.BIMStyleProperties
+        style_id = props.ifc_definition_id
         style = tool.Ifc.get_entity_by_id(style_id)
         if not style:
             return False

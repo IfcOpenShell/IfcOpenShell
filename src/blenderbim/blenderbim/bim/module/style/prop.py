@@ -74,7 +74,7 @@ STYLE_TYPES = [
 
 def update_shading_styles(self, context):
     for mat in bpy.data.materials:
-        if mat.BIMMaterialProperties.ifc_style_id == 0:
+        if mat.BIMStyleProperties.ifc_definition_id == 0:
             continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
@@ -290,6 +290,7 @@ def update_shading_style(self, context):
 
 
 class BIMStyleProperties(PropertyGroup):
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     # TODO: remove, as attributes already moved to styles ui
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     is_editing: BoolProperty(name="Is Editing")

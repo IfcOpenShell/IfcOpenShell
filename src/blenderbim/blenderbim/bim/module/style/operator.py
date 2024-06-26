@@ -118,7 +118,7 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
         # Don't check blender_material and style_id as this operator is only called from UI.
         assert isinstance(self.blender_material, str)  # Type checker.
         material = bpy.data.materials[self.blender_material]
-        style_id = material.BIMMaterialProperties.ifc_style_id
+        style_id = material.BIMStyleProperties.ifc_definition_id
         style = tool.Ifc.get_entity_by_id(style_id)
 
         # Material is linked to a style from a different project.
@@ -235,7 +235,7 @@ class UpdateCurrentStyle(bpy.types.Operator):
 
         for obj in context.selected_objects:
             for mat in obj.data.materials:
-                if mat and mat.BIMMaterialProperties.ifc_style_id != 0:
+                if mat and mat.BIMStyleProperties.ifc_definition_id != 0:
                     mat.BIMStyleProperties.active_style_type = current_style_type
         return {"FINISHED"}
 
@@ -902,7 +902,7 @@ class SaveUVToStyle(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
 
         # find active style item
-        style_id = material.BIMMaterialProperties.ifc_style_id
+        style_id = material.BIMStyleProperties.ifc_definition_id
         style = ifc_file.by_id(style_id)
 
         def get_active_representation_items():
