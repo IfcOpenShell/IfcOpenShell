@@ -158,23 +158,25 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingStyle(bpy.types.Operator):
     bl_idname = "bim.enable_editing_style"
     bl_label = "Enable Editing Style"
     bl_options = {"REGISTER", "UNDO"}
     style: bpy.props.IntProperty(default=0)
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_style(tool.Style, tool.Ifc.get().by_id(self.style))
+        return {"FINISHED"}
 
 
-class DisableEditingStyle(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingStyle(bpy.types.Operator):
     bl_idname = "bim.disable_editing_style"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Style"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_style(tool.Style)
+        return {"FINISHED"}
 
 
 class EditStyle(bpy.types.Operator, tool.Ifc.Operator):
