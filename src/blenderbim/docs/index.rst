@@ -69,6 +69,16 @@ Sections
 
       .. container:: card
 
+         :doc:`/users/structural_analysis/index`
+            Structural analysis capabilities in BlenderBIM.
+
+      .. container:: card
+
+         :doc:`/users/costing_and_scheduling/index`
+            Cost estimation and project scheduling features.
+
+      .. container:: card
+
          :doc:`/users/advanced/index`
             Advanced topics and large-scale modeling.
 
@@ -97,6 +107,8 @@ Sections
       users/modeling/interface
       users/modeling/ifc_modeling
       users/drawing/index
+      users/structural_analysis/index
+      users/costing_and_scheduling/index
       users/advanced/index
       users/tutorials/index
       users/user_interface
