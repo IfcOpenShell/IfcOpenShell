@@ -630,7 +630,7 @@ typedef item const* ptr;
 				void print(std::ostream& o, int indent = 0) const;
 			};
 
-			struct trimmed_curve : public item {
+			struct trimmed_curve : public geom_item {
 				DECLARE_PTR(trimmed_curve)
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
