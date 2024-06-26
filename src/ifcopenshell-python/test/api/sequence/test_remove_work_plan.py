@@ -35,7 +35,7 @@ class TestRemoveWorkPlan(test.bootstrap.IFC4):
         self.file.create_entity("IfcProject")
         work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
-        ifcopenshell.api.sequence.assign_workplan(self.file, work_schedule, work_plan)
+        ifcopenshell.api.sequence.assign_work_plan(self.file, work_schedule, work_plan)
         ifcopenshell.api.sequence.remove_work_plan(self.file, work_plan=work_plan)
         assert len(self.file.by_type("IfcWorkPlan")) == 0
         assert declared_objects(self.file) == set()
