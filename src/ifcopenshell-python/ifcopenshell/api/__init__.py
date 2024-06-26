@@ -51,22 +51,6 @@ pre_listeners: dict[str, dict] = {}
 post_listeners: dict[str, dict] = {}
 
 
-def batching_argument_deprecation(
-    usecase_path: str, settings: dict, prev_argument: str, new_argument: str, replace_usecase: Optional[str] = None
-) -> tuple[str, dict]:
-    if replace_usecase is not None:
-        print(f"WARNING. `{usecase_path}` api method is deprecated and should be replaced with `{replace_usecase}`.")
-
-    if prev_argument in settings:
-        print(
-            f"WARNING. `{prev_argument}` argument is deprecated for API method "
-            f'"{usecase_path}" and should be replaced with `{new_argument}`.'
-        )
-        settings = settings | {new_argument: [settings[prev_argument]]}
-        settings.pop(prev_argument)
-    return (replace_usecase or usecase_path, settings)
-
-
 def renamed_arguments_deprecation(
     usecase_path: str, settings: dict, arguments_remapped: dict[str, str]
 ) -> tuple[str, dict]:
@@ -81,87 +65,11 @@ def renamed_arguments_deprecation(
     return (usecase_path, settings)
 
 
-ARGUMENTS_DEPRECATION = {
-    "spatial.assign_container": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "spatial.unassign_container": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "group.unassign_group": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
-    "aggregate.assign_object": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
-    "aggregate.unassign_object": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "layer.assign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
-    "layer.unassign_layer": partial(batching_argument_deprecation, prev_argument="item", new_argument="items"),
-    "spatial.remove_container": partial(
-        batching_argument_deprecation,
-        prev_argument="product",
-        new_argument="products",
-        replace_usecase="spatial.unassign_container",
-    ),
-    "nest.assign_object": partial(
-        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
-    ),
-    "nest.unassign_object": partial(
-        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
-    ),
-    "type.assign_type": partial(
-        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
-    ),
-    "type.unassign_type": partial(
-        batching_argument_deprecation, prev_argument="related_object", new_argument="related_objects"
-    ),
-    "system.assign_system": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
-    "system.unassign_system": partial(batching_argument_deprecation, prev_argument="product", new_argument="products"),
-    "material.assign_material": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "material.unassign_material": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "classification.add_reference": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "classification.remove_reference": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "library.assign_reference": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "library.unassign_reference": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "document.assign_document": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "document.unassign_document": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "spatial.reference_structure": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "spatial.dereference_structure": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "constraint.assign_constraint": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "constraint.unassign_constraint": partial(
-        batching_argument_deprecation, prev_argument="product", new_argument="products"
-    ),
-    "project.assign_declaration": partial(
-        batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
-    ),
-    "project.unassign_declaration": partial(
-        batching_argument_deprecation, prev_argument="definition", new_argument="definitions"
-    ),
-    "group.add_group": partial(
-        renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
-    ),
-    "layer.add_layer": partial(renamed_arguments_deprecation, arguments_remapped={"Name": "name"}),
-}
+# Example item:
+# "group.add_group": partial(
+#     renamed_arguments_deprecation, arguments_remapped={"Name": "name", "Description": "description"}
+# ),
+ARGUMENTS_DEPRECATION: dict[str, Callable[[str, dict[str, Any]], tuple[str, dict[str, Any]]]] = {}
 
 
 CACHED_USECASE_CLASSES: dict[str, Callable] = {}
