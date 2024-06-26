@@ -21,51 +21,47 @@ from test.core.bootstrap import ifc, material, style, spatial
 
 
 class TestAddStyle:
-    def test_it_adds_a_style_with_rendering_attributes(self, ifc, style):
+    def add_style_common(self, ifc, style):
         style.get_name("obj").should_be_called().will_return("name")
-        ifc.run("style.add_style", name="name").should_be_called().will_return("style")
-        ifc.link("style", "obj").should_be_called()
+        ifc.run("style.add_style", name="name").should_be_called().will_return("element")
+        ifc.link("element", "obj").should_be_called()
+
+    def test_it_adds_a_style_with_rendering_attributes(self, ifc, style):
+        self.add_style_common(ifc, style)
 
         style.can_support_rendering_style("obj").should_be_called().will_return(True)
         style.get_surface_rendering_attributes("obj").should_be_called().will_return("attributes")
         ifc.run(
-            "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
+            "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleRendering", attributes="attributes"
         ).should_be_called()
 
-        ifc.get_entity("obj").should_be_called().will_return(None)
-        assert subject.add_style(ifc, style, obj="obj") == "style"
+        assert subject.add_style(ifc, style, obj="obj") == "element"
 
-    def test_adding_a_style_linked_to_a_material(self, ifc, style):
-        style.get_name("obj").should_be_called().will_return("name")
-        ifc.run("style.add_style", name="name").should_be_called().will_return("style")
-        ifc.link("style", "obj").should_be_called()
+    def test_it_adds_a_style_with_shading_attributes(self, ifc, style):
+        self.add_style_common(ifc, style)
 
         style.can_support_rendering_style("obj").should_be_called().will_return(False)
         style.get_surface_shading_attributes("obj").should_be_called().will_return("attributes")
         ifc.run(
-            "style.add_surface_style", style="style", ifc_class="IfcSurfaceStyleShading", attributes="attributes"
+            "style.add_surface_style", style="element", ifc_class="IfcSurfaceStyleShading", attributes="attributes"
         ).should_be_called()
-
-        ifc.get_entity("obj").should_be_called().will_return("material")
-        style.get_context("obj").should_be_called().will_return("context")
-        ifc.run("style.assign_material_style", material="material", style="style", context="context").should_be_called()
-        assert subject.add_style(ifc, style, obj="obj") == "style"
+        assert subject.add_style(ifc, style, obj="obj") == "element"
 
 
 class TestRemoveStyle:
-    def test_removing_a_style(self, ifc, style):
+    def remove_a_style_common(self, ifc, style):
         ifc.get_object("style").should_be_called().will_return("obj")
         ifc.unlink(element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
         style.delete_object("obj").should_be_called()
+
+    def test_removing_a_style(self, ifc, style):
+        self.remove_a_style_common(ifc, style)
         style.is_editing_styles().should_be_called().will_return(False)
         subject.remove_style(ifc, style, style="style")
 
     def test_removing_a_style_and_reloading_imported_styles(self, ifc, style):
-        ifc.get_object("style").should_be_called().will_return("obj")
-        ifc.unlink(element="style").should_be_called()
-        ifc.run("style.remove_style", style="style").should_be_called()
-        style.delete_object("obj").should_be_called()
+        self.remove_a_style_common(ifc, style)
         style.is_editing_styles().should_be_called().will_return(True)
         style.get_active_style_type().should_be_called().will_return("style_type")
         style.import_presentation_styles("style_type").should_be_called()
@@ -83,7 +79,9 @@ class TestUpdateStyleColours:
         ifc.run("style.edit_surface_style", style="rendering_style", attributes="attributes").should_be_called()
 
         ifc.run("style.add_surface_textures", material="obj").should_be_called().will_return("textures")
-        ifc.run("style.edit_surface_style", style="texture_style", attributes={"Textures": "textures"}).should_be_called().will_return("textures")
+        ifc.run(
+            "style.edit_surface_style", style="texture_style", attributes={"Textures": "textures"}
+        ).should_be_called().will_return("textures")
 
         subject.update_style_colours(ifc, style, obj="obj", verbose="verbose")
 
@@ -176,33 +174,41 @@ class TestUpdateStyleTextures:
 
 
 class TestUnlinkStyle:
-    def test_run(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("style")
-        ifc.unlink(obj="obj", element="style").should_be_called()
-        subject.unlink_style(ifc, style, obj="obj")
+    def test_run(self, ifc):
+        ifc.unlink(element="style").should_be_called()
+        subject.unlink_style(ifc, style="style")
 
 
 class TestEnableEditingStyle:
     def test_run(self, style):
-        style.enable_editing("obj").should_be_called()
-        style.get_style("obj").should_be_called().will_return("style")
-        style.import_surface_attributes("style", "obj").should_be_called()
-        subject.enable_editing_style(style, obj="obj")
+        style.enable_editing("style_element").should_be_called()
+        style.import_surface_attributes("style_element").should_be_called()
+        subject.enable_editing_style(style, style="style_element")
 
 
 class TestDisableEditingStyle:
     def test_run(self, style):
-        style.disable_editing("obj").should_be_called()
-        subject.disable_editing_style(style, obj="obj")
+        style.get_currently_edited_material().should_be_called().will_return("obj")
+        style.reload_material_from_ifc("obj").should_be_called()
+        style.disable_editing().should_be_called()
+        style.reload_material_from_ifc("obj").should_be_called()
+        subject.disable_editing_style(style)
 
 
 class TestEditStyle:
     def test_run(self, ifc, style):
-        style.get_style("obj").should_be_called().will_return("style")
-        style.export_surface_attributes("obj").should_be_called().will_return("attributes")
-        ifc.run("style.edit_presentation_style", style="style", attributes="attributes").should_be_called()
-        style.disable_editing("obj").should_be_called()
-        subject.edit_style(ifc, style, obj="obj")
+        style.get_currently_edited_material().should_be_called().will_return("obj")
+        style.get_style("obj").should_be_called().will_return("style_element")
+        style.export_surface_attributes().should_be_called().will_return("attributes")
+        ifc.run("style.edit_presentation_style", style="style_element", attributes="attributes").should_be_called()
+        style.disable_editing().should_be_called()
+        style.get_active_style_type().should_be_called().will_return("style_type")
+
+        # Calling core.load_styles.
+        style.import_presentation_styles("style_type").should_be_called()
+        style.enable_editing_styles().should_be_called()
+
+        subject.edit_style(ifc, style)
 
 
 class TestLoadStyles:

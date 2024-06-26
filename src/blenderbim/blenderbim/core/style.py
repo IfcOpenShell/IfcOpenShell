@@ -34,13 +34,10 @@ def add_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material) -> ifco
     else:
         attributes = style.get_surface_shading_attributes(obj)
         ifc.run("style.add_surface_style", style=element, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
-
-    material = ifc.get_entity(obj)
-    if material:
-        ifc.run("style.assign_material_style", material=material, style=element, context=style.get_context())
     return element
 
 
+# TODO: outdated.
 def add_external_style(ifc: tool.Ifc, style: tool.Style, obj: bpy.types.Material, attributes: dict[str, Any]) -> None:
     element = style.get_style(obj)
     ifc.run(
@@ -124,13 +121,14 @@ def update_style_textures(
         ifc.run("style.remove_surface_style", style=texture_style)
 
 
+# TODO: outdated.
 def unlink_style(ifc: tool.Ifc, style: ifcopenshell.entity_instance) -> None:
     ifc.unlink(element=style)
 
 
-def enable_editing_style(style: tool.Style, style_: ifcopenshell.entity_instance) -> None:
-    style.enable_editing(style_)
-    style.import_surface_attributes(style_)
+def enable_editing_style(style_tool: tool.Style, style: ifcopenshell.entity_instance) -> None:
+    style_tool.enable_editing(style)
+    style_tool.import_surface_attributes(style)
 
 
 def disable_editing_style(style: tool.Style) -> None:
@@ -143,9 +141,9 @@ def disable_editing_style(style: tool.Style) -> None:
 
 def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
     obj = style.get_currently_edited_material()
-    style_ = style.get_style(obj)
+    style_element = style.get_style(obj)
     attributes = style.export_surface_attributes()
-    ifc.run("style.edit_presentation_style", style=style_, attributes=attributes)
+    ifc.run("style.edit_presentation_style", style=style_element, attributes=attributes)
     style.disable_editing()
     load_styles(style, style.get_active_style_type())
 
