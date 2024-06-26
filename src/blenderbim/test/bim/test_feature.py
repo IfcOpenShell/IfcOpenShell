@@ -411,10 +411,10 @@ def the_collection_name_is_unselectable(name: str) -> None:
 @then(parsers.parse('the collection "{name}" exists in viewlayer'))
 def the_collection_exists_in_viewlayer(name: str) -> bpy.types.LayerCollection:
     col = the_collection_name_exists(name)
-    layer = tool.Blender.get_layer_collection(col)
-    if not layer:
+    results = tool.Blender.get_layer_collections_mapping([col])
+    if not (layer_collection := results.get(col, None)):
         assert False, f'The collection "{name}" is not present in the current viewlayer'
-    return layer
+    return layer_collection
 
 
 @then(parsers.parse('the collection "{name}" exclude status is "{exclude}"'))
@@ -762,6 +762,19 @@ def the_object_name_is_at_location(name, location):
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
     ).length < 0.1, f"Object is at {obj_location}"
+
+
+@then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
+def the_object_name_has_a_vertex_at_location(name, location):
+    obj = the_object_name_exists(name)
+    is_pass = False
+    target = Vector([float(co) for co in location.split(",")])
+    verts = []
+    for v in obj.data.vertices:
+        verts.append((obj.matrix_world @ v.co))
+        if (verts[-1] - target).length < 0.001:
+            is_pass = True
+    assert is_pass, f"No verts found at {location}: {verts}"
 
 
 @then(parsers.parse('the object "{name}" has no scale'))
