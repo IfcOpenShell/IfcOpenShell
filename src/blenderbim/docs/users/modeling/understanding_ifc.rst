@@ -11,16 +11,6 @@ IFC Schema
 The IFC schema defines a comprehensive set of consistent data representations of building information for exchange between AEC software applications.
 It covers various aspects of buildings throughout their lifecycle, from conception to demolition.
 
-Basic Spatial Objects
----------------------
-
-IFC organizes building information in a hierarchical structure:
-
-- IfcProject
-- IfcSite
-- IfcBuilding
-- IfcBuildingStorey
-- IfcSpace
 
 buildingSMART and Standards
 ---------------------------
@@ -45,3 +35,40 @@ IFC is part of a broader ecosystem of open standards in the AEC industry. Other 
 
 The use of open standards like IFC ensures interoperability between different software tools
 and preserves data integrity throughout the building lifecycle.
+
+
+Key Concepts
+============
+
+This section provides an overview of key IFC concepts and how they're implemented in BlenderBIM.
+
+
+.. only:: builder_html and (not singlehtml)
+
+   .. container:: toc-cards
+
+      .. container:: card
+
+         :doc:`ifc_concepts/spatial_objects`
+            Basic spatial objects.
+
+      .. container:: card
+
+         :doc:`ifc_concepts/classification_and_types`
+            IFC classification hierarchy and the concept of types and occurrences.
+
+      .. container:: card
+
+         :doc:`ifc_concepts/geometry_and_representations`
+            Understanding IFC geometry, representations, and parametric materials.
+
+.. container:: global-index-toc
+
+   .. toctree::
+      :hidden:
+      :caption: Understanding IFC
+      :maxdepth: 2
+
+      ifc_concepts/spatial_objects
+      ifc_concepts/classification_and_types
+      ifc_concepts/geometry_and_representations
