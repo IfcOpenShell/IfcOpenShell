@@ -25,7 +25,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional
+from typing import Union, Any, Optional, Literal, assert_never
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -42,6 +42,8 @@ STYLE_PROPS_MAP = {
     "specular_highlight": "SpecularHighlight",
     "specular_colour": "SpecularColour",
 }
+
+STYLE_TYPES = Literal["Shading", "External"]
 
 
 class Style(blenderbim.core.tool.Style):
@@ -626,3 +628,31 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def reload_material_from_ifc(cls, blender_material: bpy.types.Material) -> None:
         blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type
+
+    @classmethod
+    def switch_shading(cls, blender_material: bpy.types.Material, style_type: STYLE_TYPES) -> None:
+        if style_type == "External":
+            try:
+                bpy.ops.bim.activate_external_style(material_name=blender_material.name)
+            except RuntimeError as error:
+                if str(error).startswith("Error: Error loading external style for "):
+                    return
+                raise error
+        elif style_type == "Shading":
+            style_elements = tool.Style.get_style_elements(blender_material)
+            rendering_style = None
+            texture_style = None
+
+            for surface_style in style_elements.values():
+                if surface_style.is_a() == "IfcSurfaceStyleShading":
+                    tool.Loader.create_surface_style_shading(blender_material, surface_style)
+                elif surface_style.is_a("IfcSurfaceStyleRendering"):
+                    rendering_style = surface_style
+                    tool.Loader.create_surface_style_rendering(blender_material, surface_style)
+                elif surface_style.is_a("IfcSurfaceStyleWithTextures"):
+                    texture_style = surface_style
+
+            if rendering_style and texture_style:
+                tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
+        else:
+            assert_never(style_type)

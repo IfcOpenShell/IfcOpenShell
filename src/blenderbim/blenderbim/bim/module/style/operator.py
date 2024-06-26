@@ -25,7 +25,6 @@ import blenderbim.core.style as core
 import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
-from blenderbim.bim.module.style.prop import switch_shading
 from pathlib import Path
 from mathutils import Vector
 
@@ -665,12 +664,12 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         active_style_type = material.BIMStyleProperties.active_style_type
         if self.ifc_class == "IfcExternallyDefinedSurfaceStyle" and active_style_type != "External":
             if tool.Style.has_blender_external_style(style_elements):
-                switch_shading(material, "External")
+                tool.Style.switch_shading(material, "External")
         elif (
             self.ifc_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering", "IfcSurfaceStyleWithTextures")
             and active_style_type != "Shading"
         ):
-            switch_shading(material, "Shading")
+            tool.Style.switch_shading(material, "Shading")
 
 
 class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
