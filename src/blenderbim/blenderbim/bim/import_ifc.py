@@ -241,8 +241,8 @@ class IfcImporter:
         self.profile_code("Create elements")
         self.create_generic_elements(self.annotations)
         self.profile_code("Create annotations")
-        self.create_grids()
-        self.profile_code("Create grids")
+        self.create_positioning_elements()
+        self.profile_code("Create positioning elements")
         self.create_spatial_elements()
         self.profile_code("Create spatial elements")
         self.create_structural_items()
@@ -506,11 +506,25 @@ class IfcImporter:
             if not props.has_blender_offset:
                 tool.Loader.guess_false_origin(self.file)
 
+    def create_positioning_elements(self):
+        self.create_grids()
+        self.create_alignments()
+
+    def create_alignments(self):
+        if not self.ifc_import_settings.should_load_geometry:
+            return
+        if self.file.schema in ("IFC2X3", "IFC4"):
+            return
+        self.create_generic_elements(set(self.file.by_type("IfcLinearPositioningElement")))
+        self.create_generic_elements(set(self.file.by_type("IfcReferent")))
+        # Loading IfcLinearElement for test purposes for now only.
+        # In the future we will make it lazy loaded and toggleable with a special UI.
+        self.create_generic_elements(set(self.file.by_type("IfcLinearElement")))
+
     def create_grids(self):
         if not self.ifc_import_settings.should_load_geometry:
             return
-        grids = self.file.by_type("IfcGrid")
-        for grid in grids:
+        for grid in self.file.by_type("IfcGrid"):
             shape = None
             if not grid.UAxes or not grid.VAxes:
                 # Revit can create invalid grids
