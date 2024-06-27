@@ -70,7 +70,7 @@ CLI Manual
 
     $ IfcConvert -h
 
-    IfcOpenShell IfcConvert v0.7.0-dc67287d (OCC 7.5.3)
+    IfcOpenShell IfcConvert v0.8.0-dc67287d (OCC 7.5.3)
     Usage: IfcConvert [options] <input.ifc> [<output>]
 
     Converts (the geometry in) an IFC file into one of the following formats:

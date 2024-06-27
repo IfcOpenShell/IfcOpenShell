@@ -13,7 +13,7 @@ documentation.
 
 All documentation is written in ReStructured Text and is available in the
 `IfcOpenShell docs directory
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/docs>`_.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/docs>`_.
 You can press the edit button on the top right on any documentation page to
 quickly edit their content.
 
@@ -46,5 +46,5 @@ You will now have a local webserver running hosting the documentation.
    
    It may take some time to generate the API documentation. You can edit the
    `list of autoapi directories
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/ifcopenshell-python/docs/conf.py#L69>`_
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/ifcopenshell-python/docs/conf.py#L69>`_
    to make this faster

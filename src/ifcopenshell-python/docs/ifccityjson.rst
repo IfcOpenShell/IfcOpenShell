@@ -15,7 +15,7 @@ Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifccityjson>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifccityjson>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifccityjson``
 4. ``pip install .``
 

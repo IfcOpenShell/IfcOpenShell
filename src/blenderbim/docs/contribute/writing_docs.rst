@@ -11,7 +11,7 @@ Writing technical documentation
 
 All documentation is written in ReStructured Text and is available in the
 `BlenderBIM Add-on docs directory
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/docs>`_.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/docs>`_.
 You can press the edit button on the top right on any documentation page to
 quickly edit their content.
 

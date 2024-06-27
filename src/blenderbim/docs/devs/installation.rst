@@ -138,8 +138,9 @@ For Linux or Mac:
     cd $BLENDER_ADDON_PATH/bim/schema
     wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
-Or, if you're on Windows, you can use the batch script below. 
-Before running it follow the instructions descibed after `rem` tags.
+Or, if you're on Windows, you can use the batch script below. You need to run
+it as an administrator. Before running it follow the instructions descibed
+in the `rem` tags.
 
 .. code-block:: bat
 
@@ -213,7 +214,7 @@ Blender for the changes to take effect.
 The downside with this approach is that if a new dependency is added, or a
 compiled dependency version requirement has changed, or the build system
 changes, you'll need to fix your setup manually. But this is relatively rare.
-Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.7.0/src/blenderbim/Makefile>`__, is one quick way to see if a dependency has changed.  
+Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/blenderbim/Makefile>`__, is one quick way to see if a dependency has changed.  
 
 .. seealso::
 
@@ -253,7 +254,7 @@ structure:
     __init__.py
 
 This corresponds to the structure found in the source code `here
-<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/blenderbim>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/blenderbim>`__.
 
 The BlenderBIM Add-on is complex, and requires many dependencies, including
 Python modules, binaries, and static assets. When packaged for users, these
@@ -262,7 +263,7 @@ dependencies are bundled with the add-on for convenience.
 If you choose to install the BlenderBIM Add-on and use your own system
 dependencies, the source of truth for how dependencies are bundled are found in
 the `Makefile
-<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/src/blenderbim/Makefile>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/src/blenderbim/Makefile>`__.
 
 Required Python modules to be stored in ``libs/site/packages/`` are:
 ::
@@ -304,7 +305,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
 Notes:
 
 1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcbimtester/patch>`__.
+2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcbimtester/patch>`__.
 3. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
 
 Required static assets are:
