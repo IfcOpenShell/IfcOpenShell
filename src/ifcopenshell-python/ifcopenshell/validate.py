@@ -543,7 +543,8 @@ if __name__ == "__main__":
                     else:
                         return str(x)
 
-            print("\n".join(json.dumps(x, default=conv) for x in logger.statements))
+            for x in logger.statements:
+                print(json.dumps(x, default=conv))
 
         if handler:
             logger.removeHandler(handler)
