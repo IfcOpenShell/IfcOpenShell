@@ -28,8 +28,8 @@ IFC uses the concept of "Types" and "Occurrences":
 If a type has geometry associated with it, all its occurrences must have the same geometry (similar to instancing or cloning in other applications).
 However, if a type has no material or geometry, it doesn't impact the geometry of its occurrences.
 
-Geometry and Representations
-----------------------------
+Representations
+---------------
 
 In IFC, unlike traditional 3D modeling:
 
