@@ -62,6 +62,11 @@ This section provides an overview of key IFC concepts and how they're implemente
          :doc:`ifc_concepts/geometry_and_representations`
             Understanding IFC geometry, representations, and parametric materials.
 
+      .. container:: card
+
+         :doc:`ifc_concepts/working_with_representations`
+            Representations in BlenderBIM.
+
 .. container:: global-index-toc
 
    .. toctree::
@@ -72,3 +77,4 @@ This section provides an overview of key IFC concepts and how they're implemente
       ifc_concepts/spatial_objects
       ifc_concepts/classification_and_types
       ifc_concepts/geometry_and_representations
+      ifc_concepts/working_with_representations
