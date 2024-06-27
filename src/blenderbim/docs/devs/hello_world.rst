@@ -47,7 +47,7 @@ need to :ref:`use Git to collaborate <submitting-code-to-git>`.
 .. container:: blockbutton
 
     `Download Source
-    <https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.7.0.zip>`__
+    <https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip>`__
 
 BIM authoring is a really big topic. As a result, the BlenderBIM Add-on code is
 separated into modules. Each module focuses on a particular topic of BIM. Most
@@ -62,8 +62,8 @@ minimise the overlap between modules, so that developers can work on a single
 portion of the code with relative certainty that their actions will not affects
 other developers.
 
-- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/blenderbim/blenderbim/bim/module>`__
-- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/api>`__
+- `BlenderBIM Add-on modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/blenderbim/blenderbim/bim/module>`__
+- `IFC modules <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/ifcopenshell/api>`__
 
 The BlenderBIM Add-on comes with a secret **demo module** which is basically a
 hello world coding tutorial which teaches you about all the moving parts. It's
@@ -287,9 +287,9 @@ authoring capabilities.
 
 The code for IfcOpenShell's various systems can be found here:
 
-- `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell>`__
-- `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/util>`__
-- `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/ifcopenshell/api>`__
+- `ifcopenshell (core) <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/ifcopenshell>`__
+- `ifcopenshell.util <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/ifcopenshell/util>`__
+- `ifcopenshell.api <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/ifcopenshell/api>`__
 
 .. _submitting-code-to-git:
 

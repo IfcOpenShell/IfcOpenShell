@@ -127,15 +127,15 @@ Gateways, etc.
    <https://github.com/ifcopenshell/ifcopenshell>`_.
 
 2. Replace the sample Lambda function code in the `example_handler
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/example_handler/__init__.py>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/example_handler/__init__.py>`__
    directory with your own code.
 
 3. Update the import path in the Dockerfile's `CMD instruction
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/Dockerfile#L40>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/Dockerfile#L40>`__
    to match your Lambda function's handler function.
 
 4. Edit the `requirements.txt
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/requirements.txt>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/requirements.txt>`__
    file and add any additional dependencies required by your Lambda function.
 
 5. Build the Docker image:

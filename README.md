@@ -30,7 +30,7 @@ For more information, see:
 | Service                                         | Status                                                                                                                                       |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Anaconda Daily Build                            | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/ifcopenshell/ifcopenshell)](https://anaconda.org/ifcopenshell/ifcopenshell)        |
-| Anaconda v0.7.0 Stable                          | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/ifcopenshell)](https://anaconda.org/conda-forge/ifcopenshell)          |
+| Anaconda v0.8.0 Stable                          | [![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/ifcopenshell)](https://anaconda.org/conda-forge/ifcopenshell)          |
 | PyPi Daily Build                                | [![PyPi Badge](https://img.shields.io/pypi/v/ifcopenshell)](https://pypi.org/project/ifcopenshell/)                                          |
 | ArchLinux AUR Package Stable                    | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell)](https://aur.archlinux.org/packages/ifcopenshell)                             |
 | ArchLinux AUR Package git                       | [![AUR Badge](https://img.shields.io/aur/version/ifcopenshell-git)](https://aur.archlinux.org/packages/ifcopenshell-git)                     |

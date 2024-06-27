@@ -88,7 +88,7 @@ Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifccsv>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifccsv>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifccsv``
 
 Depending on which formats you want to edit, you will need to install more

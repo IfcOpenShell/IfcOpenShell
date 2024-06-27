@@ -45,7 +45,7 @@ Example:
 
     import ifcopenshell
 
-    print(ifcopenshell.version) # v0.7.0-1b1fd1e6
+    print(ifcopenshell.version)
 
     model = ifcopenshell.open("/path/to/model.ifc")
     walls = model.by_type("IfcWall")

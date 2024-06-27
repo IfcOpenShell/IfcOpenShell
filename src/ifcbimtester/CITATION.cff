@@ -10,7 +10,7 @@ type: software
 authors:
   - name: "IfcOpenShell contributors"authors:
 repository-code: >-
-  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcbimtester
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcbimtester
 url: 'https://docs.ifcopenshell.org/bimtester.html'
 abstract: Wrapper for Gherkin based unit testing for IFC models
 keywords:

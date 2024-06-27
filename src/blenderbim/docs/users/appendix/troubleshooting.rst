@@ -66,7 +66,7 @@ can `report a bug <https://github.com/ifcopenshell/ifcopenshell/issues>`_ or
 3. **I am on Ubuntu and get an error similar to "ImportError:
    /lib/x86_64-linux-gnu/libm.so.6: version GLIBC_2.29 not found"**
 
-   Our latest package which uses IfcOpenShell v0.7.0 is built using Ubuntu 20 LTS.
+   Our latest package which uses IfcOpenShell v0.8.0 is built using Ubuntu 20 LTS.
    If you have an older Ubuntu version, you can either upgrade to 19.10 or above,
    or you'll need to compile IfcOpenShell yourself.
 

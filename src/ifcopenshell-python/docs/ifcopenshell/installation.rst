@@ -260,7 +260,7 @@ C++ Build Tools <http://landinghub.visualstudio.com/visual-cpp-build-tools>`__).
 
     For more information on configuring a Windows compilation see the `Windows
     Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/win/readme.md>`__.
+    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
 
 Compiling on Windows (MSYS2 + MinGW)
 ------------------------------------
@@ -292,7 +292,7 @@ This is for users of `MSYS2 <https://msys2.github.io/>`__ and `MinGW
 
     For more information on configuring a Windows compilation see the `Windows
     Readme
-    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/win/readme.md>`__.
+    <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/win/readme.md>`__.
 
 Packaged installation
 ---------------------

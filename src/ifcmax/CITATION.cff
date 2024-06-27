@@ -10,7 +10,7 @@ type: software
 authors:
   - name: IfcOpenShell contributors
 repository-code: >-
-  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcmax
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcmax
 abstract: Historic extension for IFC support in 3DS Max
 keywords:
   - 3DS Max

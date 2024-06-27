@@ -12,7 +12,7 @@
     <projectUrl>https://github.com/IfcOpenShell/IfcOpenShell</projectUrl>
     <iconUrl>https://rawcdn.githack.com/IfcOpenShell/IfcOpenShell/c6ee1d1679d1298de0d7447ff108c22709c68e54/choco/blenderbim/blenderbim.png</iconUrl>
     <!-- <copyright>Year Software Vendor</copyright> -->
-    <licenseUrl>https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/COPYING</licenseUrl>
+    <licenseUrl>https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/COPYING</licenseUrl>
     <requireLicenseAcceptance>true</requireLicenseAcceptance>
     <projectSourceUrl>https://github.com/IfcOpenShell/IfcOpenShell</projectSourceUrl>
     <docsUrl>https://docs.blenderbim.org/</docsUrl>
