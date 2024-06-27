@@ -46,6 +46,7 @@ class Patcher:
     def patch(self):
         self.file_patched = ifcopenshell.file(schema=self.schema)
         migrator = ifcopenshell.util.schema.Migrator()
+        migrator.preprocess(self.file, self.file_patched)
         for element in self.file:
             new_element = migrator.migrate(element, self.file_patched)
             print("Migrating", element)
