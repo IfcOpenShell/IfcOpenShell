@@ -7,10 +7,11 @@ from typing import get_args
 
 
 class TestGeomSettings:
-    def test_run(self):
+    def test_settings(self):
         settings = ifcopenshell.geom.settings()
         assert set(get_args(ifcopenshell.geom.SETTING)) == set(settings.setting_names())
 
+        assert "use-python-opencascade" in settings.setting_names()
         assert settings.get(settings.USE_PYTHON_OPENCASCADE) is False
         assert settings.get("use-python-opencascade") is False
         assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
@@ -26,6 +27,18 @@ class TestGeomSettings:
             with pytest.raises(AttributeError):
                 settings.set(settings.USE_PYTHON_OPENCASCADE, True)
             assert "USE_PYTHON_OPENCASCADE = False" in repr(settings)
+
+    def test_serializer_settings(self):
+        settings = ifcopenshell.geom.serializer_settings()
+        assert set(get_args(ifcopenshell.geom.SERIALIZER_SETTING)) == set(settings.setting_names())
+
+        # Only for settings.
+        assert "use-python-opencascade" not in settings.setting_names()
+        with pytest.raises(AttributeError):
+            settings.get(settings.USE_PYTHON_OPENCASCADE)
+        with pytest.raises(RuntimeError):
+            settings.get("use-python-opencascade")
+        assert "USE_PYTHON_OPENCASCADE" not in repr(settings)
 
 
 class TestAssignObject:

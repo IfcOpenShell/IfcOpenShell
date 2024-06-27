@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import os
 import sys
 import operator
@@ -27,7 +28,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload
 
 T = TypeVar("T")
 ShapeElementType = Union[
@@ -95,6 +96,16 @@ SETTING = Literal[
     "piecewise-step-param",
     "use-python-opencascade",
 ]
+SERIALIZER_SETTING = Literal[
+    "use-element-names",
+    "use-element-guids",
+    "use-element-step-ids",
+    "use-material-names",
+    "use-element-types",
+    "y-up",
+    "ecef",
+    "digits",
+]
 
 
 class missing_setting:
@@ -108,8 +119,6 @@ class settings_mixin:
     to provide an additional setting to enable pythonOCC
     when available
     """
-
-    use_python_opencascade = False
 
     def __init__(self, **kwargs):
         super(settings_mixin, self).__init__()
@@ -127,13 +136,17 @@ class settings_mixin:
         return "%s(%s)" % (type(self).__name__, ", ".join(map(fmt_pair, self.setting_names())))
 
     @staticmethod
-    def name(k: str) -> SETTING:
+    def name(k: str) -> Union[SETTING, SERIALIZER_SETTING]:
         return k.lower().replace("_", "-")
 
     @staticmethod
-    def rname(k: SETTING) -> str:
+    def rname(k: Union[SETTING, SERIALIZER_SETTING]) -> str:
         return k.upper().replace("-", "_")
 
+    @overload
+    def set(self: settings, k: SETTING, v: Any) -> None: ...
+    @overload
+    def set(self: serializer_settings, k: SERIALIZER_SETTING, v: Any) -> None: ...
     def set(self, k: SETTING, v: Any) -> None:
         """
         Set value of the setting named `k` to `v`.
@@ -141,7 +154,7 @@ class settings_mixin:
         :raises RuntimeError: If there is no setting with name `k`.
         """
         k = self.name(k)
-        if k == "use-python-opencascade":
+        if isinstance(self, settings) and k == "use-python-opencascade":
             if not has_occ:
                 raise AttributeError("Python OpenCASCADE is not installed")
             if v:
@@ -151,21 +164,36 @@ class settings_mixin:
         else:
             self.set_(self.name(k), v)
 
-    def get(self, k: SETTING) -> Any:
+    @overload
+    def get(self: settings, k: SETTING) -> Any: ...
+    @overload
+    def get(self: serializer_settings, k: SERIALIZER_SETTING) -> Any: ...
+    def get(self, k: str) -> Any:
         """
         Return value of the setting named `k`.
 
         :raises RuntimeError: If there is no setting with name `k`.
         """
         k = self.name(k)
-        if k == "use-python-opencascade":
+        if isinstance(self, settings) and k == "use-python-opencascade":
             return self.use_python_opencascade
         return self.get_(k)
 
-    def setting_names(self) -> tuple[SETTING, ...]:
-        return super().setting_names() + ("use-python-opencascade",)
+    @overload
+    def setting_names(self: settings) -> tuple[SETTING, ...]: ...
+    @overload
+    def setting_names(self: serializer_settings) -> tuple[SERIALIZER_SETTING, ...]: ...
+    def setting_names(self) -> tuple[str, ...]:
+        setting_names = super().setting_names()
+        if isinstance(self, settings):
+            setting_names += ("use-python-opencascade",)
+        return setting_names
 
-    def __getattr__(self, k: str) -> SETTING:
+    @overload
+    def __getattr__(self: settings, k: str) -> SETTING: ...
+    @overload
+    def __getattr__(self: serializer_settings, k: str) -> SERIALIZER_SETTING: ...
+    def __getattr__(self, k: str) -> str:
         # Swig wrapper will try to access "this",
         # ensure we won't accidentally call any c-extension methods
         # like .setting_names() until wrapper is not completely initialized.
@@ -183,7 +211,7 @@ class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSetting
 
 
 class settings(settings_mixin, ifcopenshell_wrapper.Settings):
-    pass
+    use_python_opencascade = False
 
 
 class iterator(ifcopenshell_wrapper.Iterator):
