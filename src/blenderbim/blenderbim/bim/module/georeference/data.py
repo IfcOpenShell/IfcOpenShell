@@ -48,6 +48,8 @@ class GeoreferenceData:
 
     @classmethod
     def coordinate_operation_class(cls):
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return []
         declaration = tool.Ifc.schema().declaration_by_name("IfcCoordinateOperation")
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]

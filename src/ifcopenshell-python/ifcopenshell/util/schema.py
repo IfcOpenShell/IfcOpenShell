@@ -223,6 +223,21 @@ class Migrator:
             "User": None,
         }
 
+    def preprocess(self, old_file, new_file):
+        if old_file.schema == "IFC4" and new_file.schema == "IFC4X3":
+            # In IFC4 -> IFC4X3, IfcPresentationStyleAssignment is deprecated
+            to_delete = set()
+            for assignment in old_file.by_type("IfcPresentationStyleAssignment"):
+                for styled_item in old_file.get_inverse(assignment):
+                    if not styled_item.is_a("IfcStyledItem"):
+                        continue
+                    styled_item.Styles = [
+                        s for s in styled_item.Styles if s.is_a("IfcPresentationStyle")
+                    ] + list(assignment.Styles)
+                to_delete.add(assignment)
+            for element in to_delete:
+                old_file.remove(element)
+
     def migrate(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
