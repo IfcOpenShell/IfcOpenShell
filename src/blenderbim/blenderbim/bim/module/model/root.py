@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.file
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any
 
 
@@ -38,6 +38,7 @@ def sync_name(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str
     obj = tool.Ifc.get_object(element)
     if not obj:
         return
+    obj: IFC_CONNECTED_TYPE
     if isinstance(obj, bpy.types.Object):
         new_name = "{}/{}".format(element.is_a(), settings["attributes"]["Name"] or "Unnamed")
         collection = obj.BIMObjectProperties.collection

@@ -22,10 +22,13 @@ import ifcopenshell.api
 from typing import Literal
 
 
+ACTOR_TYPE = Literal["IfcActor", "IfcOccupant"]
+
+
 def add_actor(
     file: ifcopenshell.file,
     actor: ifcopenshell.entity_instance,
-    ifc_class: Literal["IfcActor", "IfcOccupant"] = "IfcActor",
+    ifc_class: ACTOR_TYPE = "IfcActor",
 ) -> ifcopenshell.entity_instance:
     """Adds a new actor
 

@@ -16,10 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Literal
+
+
+ADDRESS_TYPE = Literal["IfcPostalAddress", "IfcTelecomAddress"]
 
 
 def add_address(
-    file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, ifc_class: str = "IfcPostalAddress"
+    file: ifcopenshell.file, assigned_object: ifcopenshell.entity_instance, ifc_class: ADDRESS_TYPE = "IfcPostalAddress"
 ) -> ifcopenshell.entity_instance:
     """Add a new telecom or postal address to an organisation or person
 
