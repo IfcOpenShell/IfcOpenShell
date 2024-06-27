@@ -81,6 +81,7 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
   const ganttTitle = $("<h3></h3>")
     .attr("id", "title-" + blenderId)
     .text(filename)
+    .addClass("no-print")
     .css("margin-bottom", "10px");
 
   const ganttDiv = $("<div></div>")
@@ -119,6 +120,37 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
   }
   g.setEditable(true);
   g.Draw();
+
+  let printButton = $("<button>", {
+    id: "print-schedule",
+    html: "Print",
+    class: "no-print",
+  });
+
+  printButton.on("click", function () {
+    g.setEditable(false);
+    g.setTotalHeight("");
+    g.Draw();
+    var values = "297,210".split(",");
+    let css =
+      "@media print {\n" +
+      "    @page {\n" +
+      "        size: " +
+      values[0] +
+      "mm " +
+      values[1] +
+      "mm;\n" +
+      "    }\n" +
+      "    /* Make all text black */\n" +
+      "    body, p, span, h1, h2, h3, h4, h5, h6, div, a, li, td, th, * {\n" +
+      "        color: black !important;\n" +
+      "    }\n" +
+      "}";
+    g.printChart(values[0], values[1], css);
+    g.setTotalHeight(900);
+    g.Draw();
+  });
+  ganttContainer.append(printButton);
 }
 
 // Function to update gantt and filename
