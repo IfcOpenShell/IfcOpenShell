@@ -41,7 +41,7 @@
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": null,
-                    "Length": "net_get_z",
+                    "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": null,
@@ -97,7 +97,7 @@
                 "Qto_CableCarrierSegmentBaseQuantities": {
                     "CrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "net_get_max_xyz",
                     "OuterSurfaceArea": null
                 }
             },
@@ -110,7 +110,7 @@
                 "Qto_CableSegmentBaseQuantities": {
                     "CrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "net_get_max_xyz",
                     "OuterSurfaceArea": null
                 }
             },
@@ -121,7 +121,7 @@
             },
             "IfcChimney": {
                 "Qto_ChimneyBaseQuantities": {
-                    "Length": null
+                    "Length": "net_get_max_xyz"
                 }
             },
             "IfcCoil": {
@@ -135,7 +135,7 @@
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": null,
-                    "Length": "net_get_z",
+                    "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": null,
@@ -236,7 +236,7 @@
                 "Qto_DuctSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "net_get_max_xyz",
                     "NetCrossSectionArea": null,
                     "OuterSurfaceArea": null
                 }
@@ -318,9 +318,9 @@
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
                     "GrossWeight": null,
-                    "Height": null,
-                    "Length": null,
-                    "NetVolume": null,
+                    "Height": "net_get_z",
+                    "Length": "net_get_max_xy",
+                    "NetVolume": "net_get_volume",
                     "NetWeight": null,
                     "OuterSurfaceArea": null,
                     "Width": null
@@ -369,7 +369,7 @@
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
                     "GrossWeight": null,
-                    "Length": "net_get_z",
+                    "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
                     "NetWeight": null,
@@ -401,7 +401,7 @@
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "net_get_z",
                     "NetVolume": null,
                     "NetWeight": null,
                     "OuterSurfaceArea": null
@@ -421,7 +421,7 @@
                 "Qto_PipeSegmentBaseQuantities": {
                     "GrossCrossSectionArea": null,
                     "GrossWeight": null,
-                    "Length": null,
+                    "Length": "net_get_max_xyz",
                     "NetCrossSectionArea": null,
                     "NetWeight": null,
                     "OuterSurfaceArea": null
