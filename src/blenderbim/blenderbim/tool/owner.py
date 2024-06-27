@@ -19,13 +19,14 @@
 import bpy
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import blenderbim.bim.helper
 import ifcopenshell
-from typing import Union
+from typing import Union, Any
 
 
 class Owner(blenderbim.core.tool.Owner):
     @classmethod
-    def set_user(cls, user):
+    def set_user(cls, user: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_user_id = user.id()
 
     @classmethod
@@ -38,15 +39,15 @@ class Owner(blenderbim.core.tool.Owner):
                 return users[0]
 
     @classmethod
-    def clear_user(cls):
+    def clear_user(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_user_id = 0
 
     @classmethod
-    def set_address(cls, address):
+    def set_address(cls, address: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_address_id = address.id()
 
     @classmethod
-    def import_address_attributes(cls):
+    def import_address_attributes(cls) -> None:
         props = bpy.context.scene.BIMOwnerProperties
         props.address_attributes.clear()
         props.address_lines.clear()
@@ -77,15 +78,15 @@ class Owner(blenderbim.core.tool.Owner):
         blenderbim.bim.helper.import_attributes(address.is_a(), props.address_attributes, address.get_info(), callback)
 
     @classmethod
-    def clear_address(cls):
+    def clear_address(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_address_id = 0
 
     @classmethod
-    def get_address(cls):
+    def get_address(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_address_id)
 
     @classmethod
-    def export_address_attributes(cls):
+    def export_address_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
         attributes = blenderbim.bim.helper.export_attributes(props.address_attributes)
         if cls.get_address().is_a("IfcPostalAddress"):
@@ -98,7 +99,7 @@ class Owner(blenderbim.core.tool.Owner):
         return attributes
 
     @classmethod
-    def add_address_attribute(cls, name):
+    def add_address_attribute(cls, name: str) -> None:
         props = bpy.context.scene.BIMOwnerProperties
         if name == "AddressLines":
             props.address_lines.add()
@@ -112,7 +113,7 @@ class Owner(blenderbim.core.tool.Owner):
             props.messaging_ids.add()
 
     @classmethod
-    def remove_address_attribute(cls, name, id):
+    def remove_address_attribute(cls, name: str, id: int) -> None:
         props = bpy.context.scene.BIMOwnerProperties
         if name == "AddressLines":
             props.address_lines.remove(id)
@@ -126,11 +127,11 @@ class Owner(blenderbim.core.tool.Owner):
             props.messaging_ids.remove(id)
 
     @classmethod
-    def set_organisation(cls, organisation):
+    def set_organisation(cls, organisation: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_organisation_id = organisation.id()
 
     @classmethod
-    def import_organisation_attributes(cls):
+    def import_organisation_attributes(cls) -> None:
         organisation = tool.Ifc.get().by_id(bpy.context.scene.BIMOwnerProperties.active_organisation_id)
         props = bpy.context.scene.BIMOwnerProperties
         props.organisation_attributes.clear()
@@ -140,25 +141,25 @@ class Owner(blenderbim.core.tool.Owner):
         )
 
     @classmethod
-    def clear_organisation(cls):
+    def clear_organisation(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_organisation_id = 0
 
     @classmethod
-    def export_organisation_attributes(cls):
+    def export_organisation_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
         attributes = blenderbim.bim.helper.export_attributes(props.organisation_attributes)
         return attributes
 
     @classmethod
-    def get_organisation(cls):
+    def get_organisation(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_organisation_id)
 
     @classmethod
-    def set_person(cls, person):
+    def set_person(cls, person: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_person_id = person.id()
 
     @classmethod
-    def import_person_attributes(cls):
+    def import_person_attributes(cls) -> None:
         person = tool.Ifc.get().by_id(bpy.context.scene.BIMOwnerProperties.active_person_id)
         props = bpy.context.scene.BIMOwnerProperties
         props.person_attributes.clear()
@@ -180,11 +181,11 @@ class Owner(blenderbim.core.tool.Owner):
         blenderbim.bim.helper.import_attributes("IfcPerson", props.person_attributes, person.get_info(), callback)
 
     @classmethod
-    def clear_person(cls):
+    def clear_person(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_person_id = 0
 
     @classmethod
-    def export_person_attributes(cls):
+    def export_person_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
         attributes = blenderbim.bim.helper.export_attributes(props.person_attributes)
         attributes["MiddleNames"] = [v.name for v in props.middle_names] if props.middle_names else None
@@ -193,11 +194,11 @@ class Owner(blenderbim.core.tool.Owner):
         return attributes
 
     @classmethod
-    def get_person(cls):
+    def get_person(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_person_id)
 
     @classmethod
-    def add_person_attribute(cls, name):
+    def add_person_attribute(cls, name: str) -> None:
         if name == "MiddleNames":
             bpy.context.scene.BIMOwnerProperties.middle_names.add()
         elif name == "PrefixTitles":
@@ -206,7 +207,7 @@ class Owner(blenderbim.core.tool.Owner):
             bpy.context.scene.BIMOwnerProperties.suffix_titles.add()
 
     @classmethod
-    def remove_person_attribute(cls, name, id):
+    def remove_person_attribute(cls, name: str, id: int) -> None:
         if name == "MiddleNames":
             bpy.context.scene.BIMOwnerProperties.middle_names.remove(id)
         elif name == "PrefixTitles":
@@ -215,48 +216,48 @@ class Owner(blenderbim.core.tool.Owner):
             bpy.context.scene.BIMOwnerProperties.suffix_titles.remove(id)
 
     @classmethod
-    def set_role(cls, role):
+    def set_role(cls, role: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_role_id = role.id()
 
     @classmethod
-    def import_role_attributes(cls):
+    def import_role_attributes(cls) -> None:
         role = cls.get_role()
         props = bpy.context.scene.BIMOwnerProperties
         props.role_attributes.clear()
         blenderbim.bim.helper.import_attributes("IfcActorRole", props.role_attributes, role.get_info())
 
     @classmethod
-    def clear_role(cls):
+    def clear_role(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_role_id = 0
 
     @classmethod
-    def get_role(cls):
+    def get_role(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_role_id)
 
     @classmethod
-    def export_role_attributes(cls):
+    def export_role_attributes(cls) -> dict[str, Any]:
         return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMOwnerProperties.role_attributes)
 
     @classmethod
-    def set_actor(cls, actor):
+    def set_actor(cls, actor: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMOwnerProperties.active_actor_id = actor.id()
 
     @classmethod
-    def import_actor_attributes(cls, actor):
+    def import_actor_attributes(cls, actor: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMOwnerProperties
         props.actor_attributes.clear()
         blenderbim.bim.helper.import_attributes2(actor, props.actor_attributes)
 
     @classmethod
-    def clear_actor(cls):
+    def clear_actor(cls) -> None:
         bpy.context.scene.BIMOwnerProperties.active_actor_id = 0
 
     @classmethod
-    def export_actor_attributes(cls):
+    def export_actor_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMOwnerProperties
         attributes = blenderbim.bim.helper.export_attributes(props.actor_attributes)
         return attributes
 
     @classmethod
-    def get_actor(cls):
+    def get_actor(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc().get().by_id(bpy.context.scene.BIMOwnerProperties.active_actor_id)
