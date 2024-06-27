@@ -48,3 +48,4 @@ Complex Structures
       :maxdepth: 2
 
       material_assignment
+      parametric_geometry
