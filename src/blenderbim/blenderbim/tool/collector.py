@@ -45,6 +45,14 @@ class Collector(blenderbim.core.tool.Collector):
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_to_collection_safe(obj, collection)
+        elif element.is_a("IfcLinearPositioningElement"):
+            collection = cls._create_project_child_collection("IfcLinearPositioningElement")
+            collection.hide_viewport = False
+            cls.link_to_collection_safe(obj, collection)
+        elif element.is_a("IfcReferent"):
+            collection = cls._create_project_child_collection("IfcReferent")
+            collection.hide_viewport = False
+            cls.link_to_collection_safe(obj, collection)
         elif tool.Ifc.get_schema() == "IFC2X3" and element.is_a("IfcSpatialStructureElement"):
             if collection := cls._create_own_collection(obj):
                 cls.link_to_collection_safe(obj, collection)
@@ -77,6 +85,7 @@ class Collector(blenderbim.core.tool.Collector):
                                     cls.link_to_collection_safe(obj, drawing_obj.BIMObjectProperties.collection)
         else:
             collection = cls._create_project_child_collection("Unsorted")
+            collection.hide_viewport = False
             cls.link_to_collection_safe(obj, collection)
 
     @classmethod
