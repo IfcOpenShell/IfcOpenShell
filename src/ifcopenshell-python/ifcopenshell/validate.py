@@ -39,7 +39,7 @@ import functools
 
 from collections import namedtuple
 from typing import Union, Iterator, Any, Optional
-from logging import Logger
+from logging import Logger, Handler
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper
@@ -502,6 +502,14 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         ifcopenshell.express.rule_executor.run(f, logger)
 
 
+class LogDetectionHandler(Handler):
+    message_logged = False
+
+    def emit(self, record):
+        if not self.message_logged:
+            self.message_logged = True
+
+
 if __name__ == "__main__":
     import sys
     import logging
@@ -510,10 +518,13 @@ if __name__ == "__main__":
     flags = set(x for x in sys.argv[1:] if x.startswith("--"))
 
     for fn in filenames:
+        handler = None
         if "--json" in flags:
             logger = json_logger()
         else:
             logger = logging.getLogger("validate")
+            handler = LogDetectionHandler()
+            logger.addHandler(handler)
             logger.setLevel(logging.DEBUG)
 
         print("Validating", fn, file=sys.stderr)
@@ -533,3 +544,12 @@ if __name__ == "__main__":
                         return str(x)
 
             print("\n".join(json.dumps(x, default=conv) for x in logger.statements))
+
+        if handler:
+            logger.removeHandler(handler)
+            invalid_ifc = handler.message_logged
+        else:  # json_logger.
+            invalid_ifc = bool(logger.statements)
+
+        if not invalid_ifc:
+            print("No validation issues found.")
