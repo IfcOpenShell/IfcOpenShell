@@ -130,115 +130,6 @@ typedef item const* ptr;
 				uint32_t identity() const { return identity_; }
 			};
 
-			struct implicit_item : public item {
-				DECLARE_PTR(implicit_item)
-				using item::item;
-
-				virtual item::ptr evaluate() const = 0;
-			};
-
-			struct piecewise_function : public implicit_item {
-            DECLARE_PTR(piecewise_function)
-
-				using spans = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
-
-            piecewise_function(const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), settings_(settings), spans_(s){};
-            piecewise_function(const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
-					implicit_item(instance), settings_(settings)
-				{
-                for (auto& pwf : pwfs) {
-                    spans_.insert(spans_.end(), pwf->spans_.begin(), pwf->spans_.end());
-                }
-				};
-            piecewise_function(piecewise_function&&) = default;
-            piecewise_function(const piecewise_function&) = default;
-
-				const ifcopenshell::geometry::Settings* settings_ = nullptr;
-
-				bool is_empty() const { return spans_.empty(); }
-
-				double length() const {
-					if (!length_.has_value()) {
-						length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s.first; });
-					}
-               return *length_;
-            }
-
-				void print(std::ostream& o, int = 0) const;
-
-				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
-				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
-
-				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
-					return boost::hash<decltype(v)>{}(v);
-				}
-
-				item::ptr evaluate() const override;
-            std::pair<item::ptr,std::vector<double>> evaluate2() const;
-
-            /// @brief evaluates the piecewise function between ustart and uend
-            /// @param ustart starting location - taken as 0.0 if before start
-            /// @param uend ending location - taken as length if beyond end
-            /// @param nsteps number of steps to evaluate
-            /// @return taxonomy::loop::ptr
-            item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
-
-            /// @brief evaluates the piecewise function between ustart and uend
-            /// @param ustart starting location - taken as 0.0 if before start
-            /// @param uend ending location - taken as length if beyond end
-            /// @param nsteps number of steps to evaluate
-            /// @return taxonomy::loop::ptr and vector of u values
-            std::pair<item::ptr, std::vector<double>> evaluate2(double ustart, double uend, unsigned nsteps) const;
-
-				/// @brief evaluates the piecewise function at u
-				/// @param u u is constrained to be between 0 and length
-				/// @return 4x4 placement matrix
-				Eigen::Matrix4d evaluate(double u) const;
-
-            private:
-               std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
-               spans spans_;
-               mutable double current_span_start_ = 0;
-				   mutable double current_span_end_ = 0;
-				   mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
-               mutable boost::optional<double> length_;
-			};
-
-#ifdef TAXONOMY_USE_SHARED_PTR
-			typedef std::shared_ptr<item> ptr;
-			typedef std::shared_ptr<const item> const_ptr;
-			template<typename T, typename... Args>
-			std::shared_ptr<T> make(Args&&... args) {
-				return std::make_shared<T>(std::forward<Args>(args)...);
-			}
-#endif
-#ifdef TAXONOMY_USE_UNIQUE_PTR
-			typedef std::uniqe_ptr<item> ptr;
-			typedef std::uniqe_ptr<const item> ptr;
-			template<typename T, typename... Args>
-			std::uniqe_ptr<T> make(Args&&... args) {
-				return new T(std::forward<Args>(args)...));
-			}
-#endif
-#ifdef TAXONOMY_USE_NAKED_PTR
-			typedef item* ptr;
-			typedef item const* ptr;
-			template<typename T, typename... Args>
-			T* make(Args&&... args) {
-				return new T(std::forward<Args>(args)...));
-			}
-#endif
-
-			bool less(item::const_ptr, item::const_ptr);
-
-			struct less_functor {
-				bool operator()(item::const_ptr a, item::const_ptr b) const {
-					return less(a, b);
-				}
-			};
-
 			namespace {
 
 				template <typename T>
@@ -299,8 +190,7 @@ typedef item const* ptr;
 				const T& ccomponents() const {
 					if (this->components_) {
 						return *this->components_;
-					}
-					else {
+					} else {
 						return eigen_defaults<T>();
 					}
 				}
@@ -321,11 +211,11 @@ typedef item const* ptr;
 					boost::hash_combine(h, std::hash<size_t>{}(T::ColsAtCompileTime));
 					if (components_) {
 						for (int i = 0; i < components_->size(); ++i) {
-							auto elem = *(components_->data() + (size_t) i);
+							auto elem = *(components_->data() + (size_t)i);
 							boost::hash_combine(h, std::hash<typename T::Scalar>()(elem));
 						}
 					}
-					return (uint32_t) h;
+					return (uint32_t)h;
 				}
 			};
 
@@ -447,9 +337,118 @@ typedef item const* ptr;
 				style::ptr surface_style;
 				matrix4::ptr matrix;
 
-				geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance), surface_style(nullptr) {}
-				geom_item(const IfcUtil::IfcBaseClass* instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
+				geom_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : item(instance), surface_style(nullptr) {}
+				geom_item(const IfcUtil::IfcBaseInterface* instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
 				geom_item(matrix4::ptr m) : surface_style(nullptr), matrix(m) {}
+			};
+
+			struct implicit_item : public geom_item {
+				DECLARE_PTR(implicit_item)
+				using geom_item::geom_item;
+
+				virtual item::ptr evaluate() const = 0;
+			};
+
+			struct piecewise_function : public implicit_item {
+            DECLARE_PTR(piecewise_function)
+
+				using spans = std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>>;
+
+            piecewise_function(const spans& s, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), settings_(settings), spans_(s){};
+            piecewise_function(const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings = nullptr, const IfcUtil::IfcBaseInterface* instance = nullptr) : 
+					implicit_item(instance), settings_(settings)
+				{
+                for (auto& pwf : pwfs) {
+                    spans_.insert(spans_.end(), pwf->spans_.begin(), pwf->spans_.end());
+                }
+				};
+            piecewise_function(piecewise_function&&) = default;
+            piecewise_function(const piecewise_function&) = default;
+
+				const ifcopenshell::geometry::Settings* settings_ = nullptr;
+
+				bool is_empty() const { return spans_.empty(); }
+
+				double length() const {
+					if (!length_.has_value()) {
+						length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s.first; });
+					}
+               return *length_;
+            }
+
+				void print(std::ostream& o, int = 0) const;
+
+				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
+				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
+
+				virtual size_t calc_hash() const {
+					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
+					return boost::hash<decltype(v)>{}(v);
+				}
+
+				item::ptr evaluate() const override;
+            std::pair<item::ptr,std::vector<double>> evaluate2() const;
+
+            /// @brief evaluates the piecewise function between ustart and uend
+            /// @param ustart starting location - taken as 0.0 if before start
+            /// @param uend ending location - taken as length if beyond end
+            /// @param nsteps number of steps to evaluate
+            /// @return taxonomy::loop::ptr
+            item::ptr evaluate(double ustart, double uend, unsigned nsteps) const;
+
+            /// @brief evaluates the piecewise function between ustart and uend
+            /// @param ustart starting location - taken as 0.0 if before start
+            /// @param uend ending location - taken as length if beyond end
+            /// @param nsteps number of steps to evaluate
+            /// @return taxonomy::loop::ptr and vector of u values
+            std::pair<item::ptr, std::vector<double>> evaluate2(double ustart, double uend, unsigned nsteps) const;
+
+				/// @brief evaluates the piecewise function at u
+				/// @param u u is constrained to be between 0 and length
+				/// @return 4x4 placement matrix
+				Eigen::Matrix4d evaluate(double u) const;
+
+            private:
+               std::tuple<double, double, const std::function<Eigen::Matrix4d(double u)>*> get_span(double u) const;
+               spans spans_;
+               mutable double current_span_start_ = 0;
+				   mutable double current_span_end_ = 0;
+				   mutable const std::function<Eigen::Matrix4d(double u)>* current_span_fn_ = nullptr;
+               mutable boost::optional<double> length_;
+			};
+
+#ifdef TAXONOMY_USE_SHARED_PTR
+			typedef std::shared_ptr<item> ptr;
+			typedef std::shared_ptr<const item> const_ptr;
+			template<typename T, typename... Args>
+			std::shared_ptr<T> make(Args&&... args) {
+				return std::make_shared<T>(std::forward<Args>(args)...);
+			}
+#endif
+#ifdef TAXONOMY_USE_UNIQUE_PTR
+			typedef std::uniqe_ptr<item> ptr;
+			typedef std::uniqe_ptr<const item> ptr;
+			template<typename T, typename... Args>
+			std::uniqe_ptr<T> make(Args&&... args) {
+				return new T(std::forward<Args>(args)...));
+			}
+#endif
+#ifdef TAXONOMY_USE_NAKED_PTR
+			typedef item* ptr;
+			typedef item const* ptr;
+			template<typename T, typename... Args>
+			T* make(Args&&... args) {
+				return new T(std::forward<Args>(args)...));
+			}
+#endif
+
+			bool less(item::const_ptr, item::const_ptr);
+
+			struct less_functor {
+				bool operator()(item::const_ptr a, item::const_ptr b) const {
+					return less(a, b);
+				}
 			};
 
 			// @todo make 4d for easier multiplication
