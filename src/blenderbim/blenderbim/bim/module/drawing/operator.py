@@ -2352,6 +2352,32 @@ class RemoveTextLiteral(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OrderTextLiteralUp(bpy.types.Operator):
+    bl_idname = "bim.order_text_literal_up"
+    bl_label = "Move Text Literal Up"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        obj.BIMTextProperties.literals.move(self.literal_prop_id, self.literal_prop_id - 1)
+        return {"FINISHED"}
+
+
+class OrderTextLiteralDown(bpy.types.Operator):
+    bl_idname = "bim.order_text_literal_down"
+    bl_label = "Move Text Literal Down"
+    bl_options = {"REGISTER", "UNDO"}
+
+    literal_prop_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        obj = context.active_object
+        obj.BIMTextProperties.literals.move(self.literal_prop_id, self.literal_prop_id + 1)
+        return {"FINISHED"}
+
+
 class AssignSelectedObjectAsProduct(bpy.types.Operator):
     bl_idname = "bim.assign_selected_as_product"
     bl_label = "Assign Selected Object As Product"

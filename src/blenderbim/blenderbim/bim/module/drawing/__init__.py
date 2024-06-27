@@ -71,6 +71,8 @@ classes = (
     operator.OpenReference,
     operator.OpenSchedule,
     operator.OpenSheet,
+    operator.OrderTextLiteralDown,
+    operator.OrderTextLiteralUp,
     operator.ReloadDrawingStyles,
     operator.RemoveDrawing,
     operator.RemoveDrawingFromSheet,
