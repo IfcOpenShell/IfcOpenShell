@@ -3,6 +3,20 @@
 const connectedClients = {};
 let socket;
 
+// print options
+const pageSizes = [
+  { value: "210,297", text: "A4 Portrait" },
+  { value: "297,210", text: "A4 Landscape" },
+  { value: "297,420", text: "A3 Portrait" },
+  { value: "420,297", text: "A3 Landscape" },
+  { value: "420,594", text: "A2 Portrait" },
+  { value: "594,420", text: "A2 Landscape" },
+  { value: "594,841", text: "A1 Portrait" },
+  { value: "841,594", text: "A1 Landscape" },
+  { value: "841,1189", text: "A0 Portrait" },
+  { value: "1189,841", text: "A0 Landscape" },
+];
+
 // Document ready function
 $(document).ready(function () {
   connectSocket();
@@ -122,16 +136,40 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
   g.Draw();
 
   let printButton = $("<button>", {
-    id: "print-schedule",
+    id: "print-btn-" + blenderId,
     html: "Print",
     class: "no-print",
   });
 
+  let printOptions = $("<select>", {
+    id: "print-options-" + blenderId,
+    class: "no-print",
+  });
+
+  $.each(pageSizes, function (index, size) {
+    printOptions.append(
+      $("<option>", {
+        value: size.value,
+        text: size.text,
+      })
+    );
+  });
+
   printButton.on("click", function () {
+    // make it only the corresponding gantt chart is printed
+    $(".gantt-chart").removeClass("no-print");
+    $(".gantt-chart")
+      .not("#gantt-" + blenderId)
+      .addClass("your-css-class");
+
+    var values = $("#print-options-" + blenderId)
+      .val()
+      .split(",");
+
     g.setEditable(false);
     g.setTotalHeight("");
     g.Draw();
-    var values = "297,210".split(",");
+
     let css =
       "@media print {\n" +
       "    @page {\n" +
@@ -150,6 +188,7 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
     g.setTotalHeight(900);
     g.Draw();
   });
+  ganttContainer.append(printOptions);
   ganttContainer.append(printButton);
 }
 
