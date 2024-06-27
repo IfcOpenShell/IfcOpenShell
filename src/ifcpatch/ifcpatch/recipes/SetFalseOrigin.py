@@ -73,17 +73,20 @@ class Patcher:
 
     def patch(self):
         SetWorldCoordinateSystem.Patcher(self.src, self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
-        map_conversion = {
+        coordinate_operation = {
             "Eastings": self.e,
             "Northings": self.n,
             "OrthogonalHeight": self.h,
         }
         if self.gn_angle:
             a, o = ifcopenshell.util.geolocation.angle2xaxis(self.gn_angle)
-            map_conversion.update({"XAxisAbscissa": a, "XAxisOrdinate": o})
-        ifcopenshell.api.georeference.add_georeferencing(self.file)
+            coordinate_operation.update({"XAxisAbscissa": a, "XAxisOrdinate": o})
+        ifc_class = "IfcMapConversionScaled"
+        if self.file.schema in ("IFC4", "IFC2X3"):
+            ifc_class = "IfcMapConversion"
+        ifcopenshell.api.georeference.add_georeferencing(self.file, ifc_class=ifc_class)
         ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, projected_crs={"Name": self.name}, map_conversion=map_conversion
+            self.file, projected_crs={"Name": self.name}, coordinate_operation=coordinate_operation
         )
         OffsetObjectPlacements.Patcher(
             self.src,
