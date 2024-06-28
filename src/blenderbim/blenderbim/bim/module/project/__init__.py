@@ -58,7 +58,6 @@ classes = (
     operator.UnassignLibraryDeclaration,
     operator.UnlinkIfc,
     operator.UnloadLink,
-    operator.UnloadProject,
     workspace.ExploreHotkey,
     prop.LibraryElement,
     prop.FilterCategory,

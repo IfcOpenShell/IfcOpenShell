@@ -703,19 +703,6 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         IFCFileSelector.draw(self, context)
 
 
-class UnloadProject(bpy.types.Operator):
-    bl_idname = "bim.unload_project"
-    bl_label = "Unload Project"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Unload the IFC project"
-
-    def execute(self, context):
-        IfcStore.purge()
-        context.scene.BIMProperties.ifc_file = ""
-        context.scene.BIMProjectProperties.is_loading = False
-        return {"FINISHED"}
-
-
 class RevertProject(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.revert_project"
     bl_label = "Revert IFC Project"
