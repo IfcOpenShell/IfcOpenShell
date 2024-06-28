@@ -161,7 +161,6 @@ class BIM_PT_project(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.load_project_elements")
-        row.operator("bim.unload_project", text="", icon="CANCEL")
 
     def draw_editing_buttons(self, context, row):
         pprops = context.scene.BIMProjectProperties
