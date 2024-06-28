@@ -49,7 +49,7 @@ class MaterialCreator:
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
-    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> None:
+    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: OBJECT_DATA_TYPE) -> None:
         self.mesh = mesh
         # as ifcopenshell triangulates the mesh, we need to merge it to quads again
         self.obj = obj
@@ -58,6 +58,10 @@ class MaterialCreator:
         ):
             return
         if not self.mesh or self.mesh.name in self.parsed_meshes:
+            return
+
+        # We don't support curve styles yet.
+        if isinstance(mesh, bpy.types.Curve):
             return
 
         # mesh["ios_materials"] can contain:
@@ -188,7 +192,7 @@ class IfcImporter:
         self.element_types: set[ifcopenshell.entity_instance] = set()
         self.spatial_elements: set[ifcopenshell.entity_instance] = set()
         self.type_products = {}
-        self.meshes = {}
+        self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
         self.unit_scale = 1
@@ -885,6 +889,7 @@ class IfcImporter:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
+            assert mesh  # Type checker.
             self.material_creator.create(element, obj, mesh)
         elif mesh:
             self.set_matrix_world(
