@@ -52,15 +52,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCompositeCurve* inst) {
 		else if (segment->as<IfcSchema::IfcCompositeCurveSegment>()) {
 			auto crv = map(segment->as<IfcSchema::IfcCompositeCurveSegment>()->ParentCurve());
 			if (crv) {
+				if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
+					crv->reverse();
+				}
 				if (crv->kind() == taxonomy::EDGE) {
 					auto ecrv = taxonomy::cast<taxonomy::edge>(crv);
-					ecrv->curve_sense.reset(segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense());
 					loop->children.push_back(ecrv);
 				}
 				else if (crv->kind() == taxonomy::LOOP) {
-					if (!segment->as<IfcSchema::IfcCompositeCurveSegment>()->SameSense()) {
-						crv->reverse();
-					}
 					for (auto& s : taxonomy::cast<taxonomy::loop>(crv)->children) {
 						loop->children.push_back(s);
 					}

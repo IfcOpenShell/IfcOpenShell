@@ -44,7 +44,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTrimmedCurve* inst) {
 	bool has_flts[2] = {false,false};
 	bool has_pnts[2] = {false,false};
 	
-	tc->orientation = inst->SenseAgreement();
+	tc->curve_sense = inst->SenseAgreement();
 
 	for (auto it = trims1->begin(); it != trims1->end(); it ++) {
 		auto i = *it;

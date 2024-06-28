@@ -140,25 +140,36 @@ namespace {
 				const bool reversed = !e->orientation.get_value_or(true);
 				const bool is_conic = e_basis->kind() == taxonomy::ELLIPSE || e_basis->kind() == taxonomy::CIRCLE;
 
-				if (!e->curve_sense) {
-					curve->Reverse();
+				auto e_start = e->start;
+				auto e_end = e->end;
+
+				if (!e->curve_sense.get_value_or(true)) {
+					std::swap(e_start, e_end);
 				}
 
 				// @todo, copy over logic from previous IfcTrimmedCurve handling
-				if (e->start.which() == 0) {
-					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->start));
-					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
+				if (e_start.which() == 0) {
+					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_start));
+					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_end));
 
 					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
 				} else {
-					auto v1 = boost::get<double>(e->start);
-					auto v2 = boost::get<double>(e->end);
+					auto v1 = boost::get<double>(e_start);
+					auto v2 = boost::get<double>(e_end);
 
 					if (is_conic && ALMOST_THE_SAME(fmod(v2 - v1, M_PI*2.), 0.)) {
 						E = BRepBuilderAPI_MakeEdge(curve).Edge();
 					} else {
 						E = BRepBuilderAPI_MakeEdge(curve, v1, v2).Edge();
 					}
+				}
+
+				// When SenseAgreement == .F. the vertices above have been reversed to
+				// comply with the direction of conical curves. The ordering of the
+				// vertices then still needs to be reversed in order to have begin and
+				// end vertex consistent with IFC.
+				if (!e->curve_sense.get_value_or(true)) {
+					E.Reverse();
 				}
 
 				if (reversed) {
@@ -234,10 +245,6 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 		auto o_str = o.str();
 		std::wcout << o_str.c_str() << std::endl;
 #endif
-
-		if (!segment->curve_sense.get_value_or(true)) {
-			segment_wire.Reverse();
-		}
 
 		ShapeFix_ShapeTolerance FTol;
 		FTol.SetTolerance(segment_wire, precision_, TopAbs_WIRE);
