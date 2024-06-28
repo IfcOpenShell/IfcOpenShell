@@ -365,3 +365,16 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::loop::ptr loop, IfcGeom::Co
 	));
 	return true;
 }
+
+bool OpenCascadeKernel::convert_impl(const taxonomy::edge::ptr edge, IfcGeom::ConversionResults& results) {
+	edge->print(std::cout);
+
+	TopoDS_Wire shape = boost::get<TopoDS_Wire>(convert_curve(this, edge));
+
+	results.emplace_back(ConversionResult(
+		edge->instance->data().id(),
+		new OpenCascadeShape(shape),
+		edge->surface_style
+	));
+	return true;
+}
