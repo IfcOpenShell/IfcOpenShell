@@ -1126,7 +1126,6 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
                 location_diff = new_obj.location - base_obj_location
                 new_obj.location = context.scene.cursor.location + location_diff
 
-
         if len(context.selected_objects) != 1:
             return {"FINISHED"}
 
@@ -1654,6 +1653,8 @@ class OverrideModeSetObject(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
+        if not context.active_object:
+            return {"FINISHED"}
         for obj in self.edited_objs:
             if self.should_save:
                 bpy.ops.bim.update_representation(obj=obj.name, ifc_representation_class="")
@@ -1685,6 +1686,8 @@ class OverrideModeSetObject(bpy.types.Operator):
         return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
 
     def _invoke(self, context, event):
+        if not context.active_object:
+            return {"FINISHED"}
         self.is_valid = True
 
         bpy.ops.object.mode_set(mode="EDIT", toggle=True)
