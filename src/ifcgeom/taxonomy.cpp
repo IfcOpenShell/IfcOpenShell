@@ -616,7 +616,7 @@ void ifcopenshell::geometry::taxonomy::offset_curve::print(std::ostream& o, int 
 }
 
 void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
-	o << std::string(indent, ' ') << "trimmed_curve";
+	o << std::string(indent, ' ') << kind_to_string(kind());
 	if (!this->orientation.get_value_or(true)) {
 		o << " [R]";
 	} else {
@@ -643,7 +643,7 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 	}
 
 	if (this->instance) {
-		o << std::string(indent, ' ') << this->instance->data().toString() << std::endl;
+		o << std::string(indent + 4, ' ') << this->instance->data().toString() << std::endl;
 	}
 }
 
