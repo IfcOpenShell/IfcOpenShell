@@ -87,17 +87,20 @@ might define units:
 
 .. code-block:: python
 
+    import ifcopenshell.api.root
+    import ifcopenshell.api.unit
+
     # You need a project before you can assign units.
-    run("root.create_entity", model, ifc_class="IfcProject")
+    ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
 
     # Let's say we want coordinates to be in millimeters.
-    length = run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-    run("unit.assign_unit", model, units=[length])
+    length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
+    ifcopenshell.api.unit.assign_unit(model, units=[length])
 
     # Alternatively, you may specify without any arguments to automatically
     # create millimeters, square meters, and cubic meters as a convenience for
     # testing purposes. Sorry imperial folks, we prioritise metric here.
-    run("unit.assign_unit", model)
+    ifcopenshell.api.unit.assign_unit(model)
 
 
 Object placements
@@ -155,9 +158,11 @@ Here's how we might do the same operation with Python code:
 .. code-block:: python
 
     import numpy
+    import ifcopenshell.api.root
+    import ifcopenshell.api.geometry
 
     # Create a wall. Our wall currently has no object placement or representations.
-    wall = run("root.create_entity", model, ifc_class="IfcWall")
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
     # Create a 4x4 identity matrix. This matrix is at the origin with no rotation.
     matrix = numpy.eye(4)
@@ -172,7 +177,7 @@ Here's how we might do the same operation with Python code:
 
     # Set our wall's Object Placement using our matrix.
     # `is_si=True` states that we are using SI units instead of project units.
-    run("geometry.edit_object_placement", model, product=wall, matrix=matrix, is_si=True)
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall, matrix=matrix, is_si=True)
 
 Representation contexts
 -----------------------
@@ -220,48 +225,50 @@ MODEL_VIEW **Representation Context**.
 
 .. code-block:: python
 
+    import ifcopenshell.api.context
+
     # If we plan to store 3D geometry in our IFC model, we have to setup
     # a "Model" context.
-    model3d = run("context.add_context", model, context_type="Model")
+    model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
 
     # And/Or, if we plan to store 2D geometry, we need a "Plan" context
-    plan = run("context.add_context", model, context_type="Plan")
+    plan = ifcopenshell.api.context.add_context(model, context_type="Plan")
 
     # Now we setup the subcontexts with each of the geometric "purposes"
     # we plan to store in our model. "Body" is by far the most important
     # and common context, as most IFC models are assumed to be viewable
     # in 3D.
-    body = run("context.add_context", model,
+    body = ifcopenshell.api.context.add_context(model,
         context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
     # The 3D Axis subcontext is important if any "axis-based" parametric
     # geometry is going to be created. For example, a beam, or column
     # may be drawn using a single 3D axis line, and for this we need an
     # Axis subcontext.
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent=model3d)
 
     # It's also important to have a 2D Axis subcontext for things like
     # walls and claddings which can be drawn using a 2D axis line.
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan)
 
     # The 3D Box subcontext is useful for clash detection or shape
     # analysis, or even lazy-loading of large models.
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model3d)
 
     # A 2D annotation subcontext for plan views are important for door
     # swings, window cuts, and symbols for equipment like GPOs, fire
     # extinguishers, and so on.
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan)
 
     # You may also create 2D annotation subcontexts for sections and
     # elevation views.
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent=plan)
-    run("context.add_context", model,
+    ifcopenshell.api.context.add_context(model,
         context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=plan)
 
 Representations
@@ -284,28 +291,34 @@ general pattern in code:
 
 .. code-block:: python
 
+    import ifcopenshell.api.root
+    import ifcopenshell.api.unit
+    import ifcopenshell.api.context
+    import ifcopenshell.api.project
+    import ifcopenshell.api.geometry
+
     # Let's create a new project using millimeters with a single furniture element at the origin.
-    model = run("project.create_file")
-    run("root.create_entity", model, ifc_class="IfcProject")
-    run("unit.assign_unit", model)
+    model = ifcopenshell.api.project.create_file
+    ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+    ifcopenshell.api.unit.assign_unit(model)
 
     # We want our representation to be the 3D body of the element.
     # This representation context is only created once per project.
     # You must reuse the same body context every time you create a new representation.
-    model3d = run("context.add_context", model, context_type="Model")
-    body = run("context.add_context", model,
+    model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+    body = ifcopenshell.api.context.add_context(model,
         context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
     # Create our element with an object placement.
-    element = run("root.create_entity", model, ifc_class="IfcFurniture")
-    run("geometry.edit_object_placement", model, product=element)
+    element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
+    ifcopenshell.api.geometry.edit_object_placement(model, product=element)
 
     # Let's create our representation!
     # See below sections for examples on how to create representations.
     representation = ...
 
     # Assign our new body representation back to our element
-    run("geometry.assign_representation", model, product=element, representation=representation)
+    ifcopenshell.api.geometry.assign_representation(model, product=element, representation=representation)
 
 
 Mesh representations
@@ -329,7 +342,7 @@ In IFC, meshes may be stored as **Faceted BReps**, **Tessellations**, or
     # Note how they are nested lists. Each nested list represents a "mesh". There may be multiple meshes.
     vertices = [[(0.,0.,0.), (0.,2.,0.), (2.,2.,0.), (2.,0.,0.), (1.,1.,1.)]]
     faces = [[(0,1,2,3), (0,4,1), (1,4,2), (2,4,3), (3,4,0)]]
-    representation = run("geometry.add_mesh_representation", model, context=body, vertices=vertices, faces=faces)
+    representation = ifcopenshell.api.geometry.add_mesh_representation(model, context=body, vertices=vertices, faces=faces)
 
 .. image:: images/mesh-representation.png
 
@@ -349,7 +362,7 @@ ends, cladding, and other uniformly thick blocks that extend along an imaginary
 .. code-block:: python
 
     # A wall-like representation, 5 meters long, 3 meters high, and 200mm thick
-    representation = run("geometry.add_wall_representation", model,
+    representation = ifcopenshell.api.geometry.add_wall_representation(model,
         context=body, length=5, height=3, thickness=0.2)
 
 .. image:: images/wall-representation.png
@@ -363,7 +376,7 @@ rotation as appropriate. This can be done using the API:
 .. code-block:: python
 
     # A wall-like representation starting and ending at a particular 2D point
-    representation = run("geometry.create_2pt_wall", model,
+    representation = ifcopenshell.api.geometry.create_2pt_wall(model,
         element=element, context=body, p1=(1., 1.), p2=(3., 2.), elevation=0, height=3, thickness=0.2)
 
 .. image:: images/wall-2pt-representation.png
@@ -465,7 +478,7 @@ Placement** to place the element on its side.
 .. code-block:: python
 
     # A profile-based representation, 1 meter long
-    representation = run("geometry.add_profile_representation", model, context=body, profile=profile, depth=1)
+    representation = ifcopenshell.api.geometry.add_profile_representation(model, context=body, profile=profile, depth=1)
 
 .. image:: images/profile-representation.png
 
@@ -633,22 +646,22 @@ efficient and implies that the type is interchangable (e.g. for maintenance).
 .. code-block:: python
 
     # Create our element type. Types do not have an object placement.
-    element_type = run("root.create_entity", model, ifc_class="IfcFurnitureType")
+    element_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurnitureType")
 
     # Let's create our representation!
     # See above sections for examples on how to create representations.
     representation = ...
 
     # Assign our representation to the element type.
-    run("geometry.assign_representation", model, product=element_type, representation=representation)
+    ifcopenshell.api.geometry.assign_representation(model, product=element_type, representation=representation)
 
     # Create our element occurrence with an object placement.
-    element = run("root.create_entity", model, ifc_class="IfcFurniture")
-    run("geometry.edit_object_placement", model, product=element)
+    element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
+    ifcopenshell.api.geometry.edit_object_placement(model, product=element)
 
     # Assign our furniture occurrence to the type.
     # That's it! The representation will automatically be mapped!
-    run("type.assign_type", model, related_objects=[element], relating_type=element_type)
+    ifcopenshell.api.type.assign_type(model, related_objects=[element], relating_type=element_type)
 
 Material layer sets
 -------------------
@@ -667,42 +680,42 @@ responsibility to make sure the geometry is correct.
 .. code-block:: python
 
     # Let's imagine a wall type called WAL01 using a material layer set.
-    wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
+    wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name="WAL01")
 
     # First, let's create a material set. This will later be assigned to our wall type element.
-    material_set = ifcopenshell.api.run("material.add_material_set", model,
+    material_set = ifcopenshell.api.material.add_material_set(model,
         name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
     # Let's create a few materials.
-    gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-    steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+    gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+    steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
     # Create 3 layers for a steel studded plasterboard wall.
-    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
-    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
-    layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-    ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+    layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+    ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
+    layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+    ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 92})
+    layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+    ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
 
     # Great! Let's assign our material set to our wall type.
-    ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
+    ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
 
     # Now, let's create a wall at the origin.
-    wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-    ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
 
     # The wall is a WAL01 wall type. The material layer set is inherited.
-    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
+    ifcopenshell.api.type.assign_type(model, related_objects=[wall], relating_type=wall_type)
 
     # It's now our responsibility to create a compatible representation.
     # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
     body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
-    representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+    representation = ifcopenshell.api.geometry.add_wall_representation(model,
         context=body, length=5, height=3, thickness=0.118)
 
     # Assign our new body geometry back to our wall
-    ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=representation)
+    ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
 
 Material profile sets
 ---------------------
@@ -721,14 +734,14 @@ responsibility to make sure the geometry is correct.
 .. code-block:: python
 
     # Let's imagine we have a steel I-beam type called B1.
-    beam_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeamType", name="B1")
+    beam_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBeamType", name="B1")
 
     # First, let's create a material set. This will later be assigned to our beam type element.
-    material_set = ifcopenshell.api.run("material.add_material_set", model,
+    material_set = ifcopenshell.api.material.add_material_set(model,
         name="B1", set_type="IfcMaterialProfileSet")
 
     # Create a steel material.
-    steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+    steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
     # Create an I-beam profile curve. Notice how we use standardised steel profile names.
     hea100 = model.create_entity(
@@ -739,22 +752,22 @@ responsibility to make sure the geometry is correct.
     # Define that steel material and cross section as a single profile item. If
     # this were a composite beam, we might add multiple profile items instead,
     # but this is rarely the case in most construction.
-    ifcopenshell.api.run("material.add_profile", model, profile_set=material_set, material=steel, profile=hea100)
+    ifcopenshell.api.material.add_profile(model, profile_set=material_set, material=steel, profile=hea100)
 
     # Great! Let's assign our material set to our beam type.
-    ifcopenshell.api.run("material.assign_material", model, products=[beam_type], material=material_set)
+    ifcopenshell.api.material.assign_material(model, products=[beam_type], material=material_set)
 
     # Now, let's create a beam at the origin.
-    beam = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeam")
-    ifcopenshell.api.run("geometry.edit_object_placement", model, product=beam)
+    beam = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBeam")
+    ifcopenshell.api.geometry.edit_object_placement(model, product=beam)
 
     # The beam is a B1 beam type. The material profile set is inherited.
-    ifcopenshell.api.run("type.assign_type", model, related_objects=[beam], relating_type=beam_type)
+    ifcopenshell.api.type.assign_type(model, related_objects=[beam], relating_type=beam_type)
 
     # It's now our responsibility to create a compatible representation.
     # Notice how we reuse our profile instead of creating a new profile.
     body = ifcopenshell.util.representation.get_context(model, "Model", "Body", "MODEL_VIEW")
-    representation = run("geometry.add_profile_representation", model, context=body, profile=hea100, depth=1)
+    representation = geometry.add_profile_representation(model, context=body, profile=hea100, depth=1)
 
     # Assign our new body geometry back to our beam
-    ifcopenshell.api.run("geometry.assign_representation", model, product=beam, representation=representation)
+    ifcopenshell.api.geometry.assign_representation(model, product=beam, representation=representation)
