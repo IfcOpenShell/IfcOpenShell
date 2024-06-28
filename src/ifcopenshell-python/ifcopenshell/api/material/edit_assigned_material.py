@@ -36,8 +36,8 @@ def edit_assigned_material(file: ifcopenshell.file, element: ifcopenshell.entity
 
     .. code:: python
 
-        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
-        ifcopenshell.api.run("material.edit_assigned_material", model,
+        concrete = ifcopenshell.api.material.add_material(model, name="CON01", category="concrete")
+        ifcopenshell.api.material.edit_assigned_material(model,
             element=concrete, attributes={"Description": "40MPA concrete with broom finish"})
     """
     settings = {"element": element, "attributes": attributes}

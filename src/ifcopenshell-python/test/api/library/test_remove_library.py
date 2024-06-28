@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
 
 
 class TestRemoveLibrary(test.bootstrap.IFC4):
     def test_removing_a_library(self):
         library = self.file.createIfcLibraryInformation()
-        ifcopenshell.api.run("library.remove_library", self.file, library=library)
+        ifcopenshell.api.library.remove_library(self.file, library=library)
         assert len(self.file.by_type("IfcLibraryInformation")) == 0
 
     def test_removing_a_library_and_all_references(self):
@@ -38,7 +38,7 @@ class TestRemoveLibrary(test.bootstrap.IFC4):
 
         self.file.createIfcRelAssociatesLibrary(GlobalId="foo", RelatingLibrary=library)
         self.file.createIfcRelAssociatesLibrary(GlobalId="bar", RelatingLibrary=reference1)
-        ifcopenshell.api.run("library.remove_library", self.file, library=library)
+        ifcopenshell.api.library.remove_library(self.file, library=library)
         assert len(self.file.by_type("IfcLibraryReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
 

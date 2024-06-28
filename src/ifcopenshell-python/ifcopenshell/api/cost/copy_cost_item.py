@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 from typing import Union
 
@@ -85,12 +85,9 @@ class Usecase:
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_cost_items
-                    ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=new_cost_items)
-                    ifcopenshell.api.run(
-                        "nest.assign_object",
-                        self.file,
-                        related_objects=new_cost_items,
-                        relating_object=to_element,
+                    ifcopenshell.api.nest.unassign_object(self.file, related_objects=new_cost_items)
+                    ifcopenshell.api.nest.assign_object(
+                        self.file, related_objects=new_cost_items, relating_object=to_element
                     )
             # elif inverse.is_a("IfcRelAssignsToProduct"):
             #     continue

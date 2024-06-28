@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 from typing import Any
 
@@ -41,8 +41,8 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
 
     .. code:: python
 
-        element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-        ifcopenshell.api.run("attribute.edit_attributes", model,
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        ifcopenshell.api.attribute.edit_attributes(model,
             product=element, attributes={"Name": "Waldo"})
     """
     settings = {"product": product, "attributes": attributes or {}}
@@ -66,4 +66,4 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
             elif settings["product"].ObjectType and settings["product"].PredefinedType != "USERDEFINED":
                 settings["product"].PredefinedType = "USERDEFINED"
     if hasattr(settings["product"], "OwnerHistory"):
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": settings["product"]})

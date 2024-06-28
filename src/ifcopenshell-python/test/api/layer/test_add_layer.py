@@ -17,16 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.layer
 
 
 class TestAddLayer(test.bootstrap.IFC4):
     def test_add_layer_no_arguments(self):
-        layer = ifcopenshell.api.run("layer.add_layer", self.file)
+        layer = ifcopenshell.api.layer.add_layer(self.file)
         assert layer.Name == "Unnamed"
 
     def test_assign_additional_items(self):
-        layer = ifcopenshell.api.run("layer.add_layer", self.file, name="Name")
+        layer = ifcopenshell.api.layer.add_layer(self.file, name="Name")
         assert layer.Name == "Name"
 
 

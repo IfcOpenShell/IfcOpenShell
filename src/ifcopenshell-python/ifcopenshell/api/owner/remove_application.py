@@ -33,8 +33,8 @@ def remove_application(file: ifcopenshell.file, application: ifcopenshell.entity
 
     .. code:: python
 
-        application = ifcopenshell.api.run("owner.add_application", model)
-        ifcopenshell.api.run("owner.remove_address", model, application=application)
+        application = ifcopenshell.api.owner.add_application(model)
+        ifcopenshell.api.owner.remove_address(model, application=application)
     """
     settings = {"application": application}
 

@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.control
+import ifcopenshell.api.project
 import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 
@@ -38,16 +39,15 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model, name="5 Day Week")
 
         # And remove it immediately
-        ifcopenshell.api.run("sequence.remove_work_calendar", model, work_calendar=calendar)
+        ifcopenshell.api.sequence.remove_work_calendar(model, work_calendar=calendar)
     """
     settings = {"work_calendar": work_calendar}
 
     # TODO: do a deep purge
-    ifcopenshell.api.run(
-        "project.unassign_declaration",
+    ifcopenshell.api.project.unassign_declaration(
         file,
         definitions=[settings["work_calendar"]],
         relating_context=file.by_type("IfcContext")[0],
@@ -55,8 +55,7 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
     if settings["work_calendar"].Controls:
         for rel in settings["work_calendar"].Controls:
             for related_object in rel.RelatedObjects:
-                ifcopenshell.api.run(
-                    "control.unassign_control",
+                ifcopenshell.api.control.unassign_control(
                     file,
                     relating_control=settings["work_calendar"],
                     related_object=related_object,

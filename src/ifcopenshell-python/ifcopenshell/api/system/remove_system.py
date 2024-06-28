@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
@@ -36,10 +36,10 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
 
         # Delete it.
-        ifcopenshell.api.run("system.remove_system", model, system=system)
+        ifcopenshell.api.system.remove_system(model, system=system)
     """
     settings = {"system": system}
 
@@ -49,8 +49,7 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
         except:
             continue
         if inverse.is_a("IfcRelDefinesByProperties"):
-            ifcopenshell.api.run(
-                "pset.remove_pset",
+            ifcopenshell.api.pset.remove_pset(
                 file,
                 product=settings["system"],
                 pset=inverse.RelatingPropertyDefinition,

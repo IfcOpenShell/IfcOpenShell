@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Union
 
@@ -42,8 +42,8 @@ def assign_group(
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
-        ifcopenshell.api.run("group.assign_group", model,
+        group = ifcopenshell.api.group.add_group(model, name="Furniture")
+        ifcopenshell.api.group.assign_group(model,
             products=model.by_type("IfcFurniture"), group=group)
     """
     settings = {
@@ -59,7 +59,7 @@ def assign_group(
             "IfcRelAssignsToGroup",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": settings["products"],
                 "RelatingGroup": settings["group"],
             }
@@ -70,5 +70,5 @@ def assign_group(
     if products.issubset(related_objects):
         return rel
     rel.RelatedObjects = list(related_objects | products)
-    ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+    ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     return rel

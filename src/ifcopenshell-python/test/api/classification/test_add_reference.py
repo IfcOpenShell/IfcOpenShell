@@ -18,7 +18,8 @@
 
 import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.classification
 import ifcopenshell.util.classification
 
 
@@ -26,12 +27,11 @@ class TestAddReference(test.bootstrap.IFC4):
     def test_adding_a_reference(self):
         is_ifc2x3 = self.file.schema == "IFC2X3"
 
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        result = ifcopenshell.api.classification.add_classification(self.file, classification="Name")
+        ifcopenshell.api.classification.add_reference(
             self.file,
             products=[element, element2],
             identification="X",
@@ -64,12 +64,11 @@ class TestAddReference(test.bootstrap.IFC4):
         classification = library.createIfcClassification(Name="Name")
         reference = library.createIfcClassificationReference(Identification="1", ReferencedSource=classification)
 
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        result = ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        result = ifcopenshell.api.classification.add_classification(self.file, classification=classification)
+        ifcopenshell.api.classification.add_reference(
             self.file,
             products=[element, element2],
             reference=reference,
@@ -94,16 +93,15 @@ class TestAddReference(test.bootstrap.IFC4):
         assert len(rel.RelatedObjects) == 2
 
     def test_adding_a_reference_to_a_resource_and_to_a_root(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         element = self.file.createIfcMaterial()
         element2 = self.file.createIfcCostValue()
-        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        result = ifcopenshell.api.classification.add_classification(self.file, classification="Name")
 
         if self.file.schema == "IFC2X3":
             with pytest.raises(TypeError):
-                ifcopenshell.api.run(
-                    "classification.add_reference",
+                ifcopenshell.api.classification.add_reference(
                     self.file,
                     products=[element, element2, element3],
                     identification="X",
@@ -112,8 +110,7 @@ class TestAddReference(test.bootstrap.IFC4):
                 )
             return
         else:
-            ifcopenshell.api.run(
-                "classification.add_reference",
+            ifcopenshell.api.classification.add_reference(
                 self.file,
                 products=[element, element2, element3],
                 identification="X",

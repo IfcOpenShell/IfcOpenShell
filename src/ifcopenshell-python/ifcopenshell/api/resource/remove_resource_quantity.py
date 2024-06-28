@@ -27,19 +27,19 @@ def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.ent
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        labour = ifcopenshell.api.run("resource.add_resource", model,
+        labour = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        ifcopenshell.api.run("resource.add_resource_quantity", model,
+        ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Let's say we only want to store the resource but no quantities,
         # let's clean up our mess and remove the quantity.
-        ifcopenshell.api.run("resource.remove_resource_quantity", model, resource=labour)
+        ifcopenshell.api.resource.remove_resource_quantity(model, resource=labour)
     """
     settings = {"resource": resource}
 

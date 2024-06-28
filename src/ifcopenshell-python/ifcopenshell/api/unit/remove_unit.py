@@ -36,10 +36,10 @@ def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> 
     .. code:: python
 
         # What?
-        unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="HANDFULS")
+        unit = ifcopenshell.api.unit.add_context_dependent_unit(model, name="HANDFULS")
 
         # Yeah maybe not.
-        ifcopenshell.api.run("unit.remove_unit", model, unit=unit)
+        ifcopenshell.api.unit.remove_unit(model, unit=unit)
     """
     settings = {"unit": unit}
 

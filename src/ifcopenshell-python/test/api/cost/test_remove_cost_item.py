@@ -17,31 +17,31 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.cost
 
 
 class TestRemoveCostItem(test.bootstrap.IFC4):
     def test_remove_a_cost_item(self):
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="Foo", predefined_type="BUDGET")
-        item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
-        ifcopenshell.api.run("cost.remove_cost_item", self.file, cost_item=item1)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo", predefined_type="BUDGET")
+        item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
+        ifcopenshell.api.cost.remove_cost_item(self.file, cost_item=item1)
         assert not self.file.by_type("IfcCostItem")
         assert not self.file.by_type("IfcRelAssignsToControl")
 
     def test_remove_a_sub_cost_item(self):
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="Foo", predefined_type="BUDGET")
-        item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
-        item2 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=item1)
-        ifcopenshell.api.run("cost.remove_cost_item", self.file, cost_item=item2)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo", predefined_type="BUDGET")
+        item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
+        item2 = ifcopenshell.api.cost.add_cost_item(self.file, cost_item=item1)
+        ifcopenshell.api.cost.remove_cost_item(self.file, cost_item=item2)
         assert self.file.by_type("IfcCostItem") == [item1]
         assert self.file.by_type("IfcRelAssignsToControl")
         assert not self.file.by_type("IfcRelNests")
 
     def test_remove_a_parent_cost_item(self):
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="Foo", predefined_type="BUDGET")
-        item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
-        item2 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=item1)
-        ifcopenshell.api.run("cost.remove_cost_item", self.file, cost_item=item1)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo", predefined_type="BUDGET")
+        item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
+        item2 = ifcopenshell.api.cost.add_cost_item(self.file, cost_item=item1)
+        ifcopenshell.api.cost.remove_cost_item(self.file, cost_item=item1)
         assert not self.file.by_type("IfcCostItem")
         assert not self.file.by_type("IfcRelAssignsToControl")
         assert not self.file.by_type("IfcRelNests")

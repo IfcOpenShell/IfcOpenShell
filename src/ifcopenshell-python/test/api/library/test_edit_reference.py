@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
 
 
 class TestEditReference(test.bootstrap.IFC4):
@@ -31,8 +31,7 @@ class TestEditReference(test.bootstrap.IFC4):
         if self.file.schema != "IFC2X3":
             attributes["Description"] = "Description"
             attributes["Language"] = "Language"
-        ifcopenshell.api.run(
-            "library.edit_reference",
+        ifcopenshell.api.library.edit_reference(
             self.file,
             reference=reference,
             attributes=attributes,

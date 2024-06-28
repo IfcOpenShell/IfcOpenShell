@@ -54,11 +54,11 @@ def add_list_item(
         # and a glass glazing panel. Notice we are assigning to the type
         # only, as all occurrences of that type will automatically inherit
         # the material.
-        window_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWindowType")
+        window_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWindowType")
 
         # First, let's create a list. This will later be assigned to our
         # window element.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialList")
 
         # Let's create a few materials, it's important to also give them
@@ -66,19 +66,19 @@ def add_list_item(
         # like "show me everything made out of aluminium / concrete / steel
         # / glass / etc". The IFC specification states a list of categories
         # you can use.
-        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
-        glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+        aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
+        glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
 
         # Now let's use those materials as two items in our list.
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=aluminium)
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=glass)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=aluminium)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=glass)
 
         # Great! Let's assign our material set to our window type.
         # We're technically not done here, we might want to add geometry to
         # our window too, but to keep this example simple, geometry is
         # optional and it is enough to say that this window is made out of
         # aluminium and glass.
-        ifcopenshell.api.run("material.assign_material", model, products=[window_type], material=material_set)
+        ifcopenshell.api.material.assign_material(model, products=[window_type], material=material_set)
     """
     settings = {"material_list": material_list, "material": material}
 

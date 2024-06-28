@@ -17,27 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.pset
+import ifcopenshell.api.system
 
 
 class TestRemoveSystem(test.bootstrap.IFC4):
     def test_removing_a_system(self):
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
+        system = ifcopenshell.api.system.add_system(self.file, ifc_class="IfcSystem")
+        ifcopenshell.api.system.remove_system(self.file, system=system)
         assert len(self.file.by_type("IfcSystem")) == 0
 
     def test_removing_orphaned_group_relationships(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowTerminal")
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        ifcopenshell.api.run("system.assign_system", self.file, products=[element], system=system)
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowTerminal")
+        system = ifcopenshell.api.system.add_system(self.file, ifc_class="IfcSystem")
+        ifcopenshell.api.system.assign_system(self.file, products=[element], system=system)
+        ifcopenshell.api.system.remove_system(self.file, system=system)
         assert not self.file.by_type("IfcRelAssignsToGroup")
 
     def test_removing_orphaned_property_relationships(self):
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=system, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
-        ifcopenshell.api.run("system.remove_system", self.file, system=system)
+        system = ifcopenshell.api.system.add_system(self.file, ifc_class="IfcSystem")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=system, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": "Bar"})
+        ifcopenshell.api.system.remove_system(self.file, system=system)
         assert not self.file.by_type("IfcRelDefinesByProperties")
         assert not self.file.by_type("IfcPropertySet")
         assert not self.file.by_type("IfcPropertySingleValue")

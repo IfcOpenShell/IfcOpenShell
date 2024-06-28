@@ -41,6 +41,6 @@ def add_layer(file: ifcopenshell.file, name: str = "Unnamed") -> ifcopenshell.en
 
     Example:
 
-        ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL-FULL-DIMS-N")
+        ifcopenshell.api.layer.add_layer(model, name="AI-WALL-FULL-DIMS-N")
     """
     return file.create_entity("IfcPresentationLayerAssignment", Name=name)

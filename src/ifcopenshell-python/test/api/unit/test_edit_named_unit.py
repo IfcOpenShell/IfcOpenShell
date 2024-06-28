@@ -17,15 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.unit
 
 
 class TestEditNamedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_edit_context_dependent_unit(self):
         unit = self.file.createIfcContextDependentUnit()
         unit.Dimensions = self.file.createIfcDimensionalExponents()
-        ifcopenshell.api.run(
-            "unit.edit_named_unit",
+        ifcopenshell.api.unit.edit_named_unit(
             self.file,
             unit=unit,
             attributes={"Dimensions": (1, 2, 3, 4, 5, 6, 7), "UnitType": "LENGTHUNIT", "Name": "Name"},
@@ -36,8 +35,7 @@ class TestEditNamedUnitIFC2X3(test.bootstrap.IFC2X3):
 
     def test_edit_si_unit(self):
         unit = self.file.createIfcSIUnit()
-        ifcopenshell.api.run(
-            "unit.edit_named_unit",
+        ifcopenshell.api.unit.edit_named_unit(
             self.file,
             unit=unit,
             attributes={"UnitType": "LENGTHUNIT", "Prefix": "MILLI", "Name": "METRE"},
@@ -49,8 +47,7 @@ class TestEditNamedUnitIFC2X3(test.bootstrap.IFC2X3):
     def test_edit_conversion_based_unit(self):
         unit = self.file.createIfcConversionBasedUnit()
         unit.Dimensions = self.file.createIfcDimensionalExponents()
-        ifcopenshell.api.run(
-            "unit.edit_named_unit",
+        ifcopenshell.api.unit.edit_named_unit(
             self.file,
             unit=unit,
             attributes={"Dimensions": (1, 2, 3, 4, 5, 6, 7), "UnitType": "LENGTHUNIT", "Name": "Name"},
@@ -64,8 +61,7 @@ class TestEditNamedUnitIFC4(test.bootstrap.IFC4, TestEditNamedUnitIFC2X3):
     def test_edit_conversion_based_unit_with_offset(self):
         unit = self.file.createIfcConversionBasedUnitWithOffset()
         unit.Dimensions = self.file.createIfcDimensionalExponents()
-        ifcopenshell.api.run(
-            "unit.edit_named_unit",
+        ifcopenshell.api.unit.edit_named_unit(
             self.file,
             unit=unit,
             attributes={

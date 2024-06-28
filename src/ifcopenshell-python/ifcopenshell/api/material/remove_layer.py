@@ -34,25 +34,25 @@ def remove_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance) -
     .. code:: python
 
         # Create a material set for steel stud partition walls.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialConstituentSet")
 
-        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Now let's use those materials as three layers in our set, such
         # that the steel studs are sandwiched by the gypsum. Let's imagine
         # we're setting the layer thickness in millimeters.
-        layer1 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer1, attributes={"LayerThickness": 13})
-        layer2 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer2, attributes={"LayerThickness": 92})
-        layer3 = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer3, attributes={"LayerThickness": 13})
+        layer1 = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer1, attributes={"LayerThickness": 13})
+        layer2 = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        ifcopenshell.api.material.edit_layer(model, layer=layer2, attributes={"LayerThickness": 92})
+        layer3 = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer3, attributes={"LayerThickness": 13})
 
         # Let's remove the last layer, such that the wall might be clad only
         # one one side such as to line a services riser.
-        ifcopenshell.api.run("material.remove_layer", model, layer=layer3)
+        ifcopenshell.api.material.remove_layer(model, layer=layer3)
     """
     settings = {"layer": layer}
 

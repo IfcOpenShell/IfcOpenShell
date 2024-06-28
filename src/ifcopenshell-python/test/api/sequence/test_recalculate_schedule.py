@@ -19,7 +19,8 @@
 import pytest
 import datetime
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 
 
 # NOTE: sequence module features relies on entities introduced in IFC4
@@ -28,8 +29,8 @@ import ifcopenshell.api
 class TestRecalculateSchedule(test.bootstrap.IFC4):
     def test_doing_nothing_if_the_task_has_no_time(self):
         self._add_work_schedule()
-        task = ifcopenshell.api.run("sequence.add_task", self.file)
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        task = ifcopenshell.api.sequence.add_task(self.file)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime is None
 
     def test_catching_cyclic_relationships(self):
@@ -44,12 +45,12 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         with pytest.raises(RecursionError):
             self._create_sequence(task3, task2, "FINISH_START")
         with pytest.raises(RecursionError):
-            ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+            ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
 
     def test_recalculating_for_a_single_task(self):
         self._add_work_schedule()
         task = self._create_task("P1D")
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -65,7 +66,7 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task = self._create_task("P1D")
         task2 = self._create_task("P2D")
         self._create_sequence(task, task2, "FINISH_START")
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -92,8 +93,8 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task3 = self._create_task("P3D")
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task, task3, "FINISH_START", lag="P1D")
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -129,8 +130,8 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task3 = self._create_task("P0D")
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task, task3, "FINISH_START", lag="P1D")
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -166,8 +167,8 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task3 = self._create_task("P0D")
         self._create_sequence(task, task2, "FINISH_START")
         self._create_sequence(task2, task3, "FINISH_START")
-        ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=task)
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.cascade_schedule(self.file, task=task)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -201,7 +202,7 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task = self._create_task("P1D")
         task2 = self._create_task("P2D")
         self._create_sequence(task, task2, "FINISH_FINISH")
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -226,7 +227,7 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task = self._create_task("P1D")
         task2 = self._create_task("P2D")
         self._create_sequence(task, task2, "START_START")
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -251,7 +252,7 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         task = self._create_task("P1D")
         task2 = self._create_task("P2D")
         self._create_sequence(task, task2, "START_FINISH")
-        ifcopenshell.api.run("sequence.recalculate_schedule", self.file, work_schedule=self.work_schedule)
+        ifcopenshell.api.sequence.recalculate_schedule(self.file, work_schedule=self.work_schedule)
         assert task.TaskTime.ScheduleStart == "2000-01-01T09:00:00"
         assert task.TaskTime.ScheduleFinish == "2000-01-01T17:00:00"
         assert task.TaskTime.EarlyStart == "2000-01-01T09:00:00"
@@ -272,16 +273,15 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         assert task2.TaskTime.IsCritical is True
 
     def _add_work_schedule(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        self.work_schedule = ifcopenshell.api.run("sequence.add_work_schedule", self.file)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        self.work_schedule = ifcopenshell.api.sequence.add_work_schedule(self.file)
 
     def _create_task(self, duration):
-        task = ifcopenshell.api.run("sequence.add_task", self.file, work_schedule=self.work_schedule)
+        task = ifcopenshell.api.sequence.add_task(self.file, work_schedule=self.work_schedule)
         if duration == "P0D":
             task.IsMilestone = True
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task)
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task)
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": duration},
@@ -289,13 +289,11 @@ class TestRecalculateSchedule(test.bootstrap.IFC4):
         return task
 
     def _create_sequence(self, predecessor, successor, relationship, lag=None):
-        rel = ifcopenshell.api.run(
-            "sequence.assign_sequence", self.file, relating_process=predecessor, related_process=successor
+        rel = ifcopenshell.api.sequence.assign_sequence(
+            self.file, relating_process=predecessor, related_process=successor
         )
-        ifcopenshell.api.run(
-            "sequence.edit_sequence", self.file, rel_sequence=rel, attributes={"SequenceType": relationship}
-        )
+        ifcopenshell.api.sequence.edit_sequence(self.file, rel_sequence=rel, attributes={"SequenceType": relationship})
         if lag:
-            ifcopenshell.api.run(
-                "sequence.assign_lag_time", self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
+            ifcopenshell.api.sequence.assign_lag_time(
+                self.file, rel_sequence=rel, lag_value=lag, duration_type="WORKTIME"
             )

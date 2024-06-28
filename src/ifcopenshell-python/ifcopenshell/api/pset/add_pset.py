@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -72,15 +72,15 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
     .. code:: python
 
         # Let's imagine we have a new wall type.
-        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
 
         # Note that this only creates and assigns an empty property set. We
         # still need to add properties into the property set. Having blank
         # property sets are invalid.
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
 
         # Add a fire rating property standardised by buildingSMART.
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "2HR"})
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "2HR"})
     """
     settings = {"product": product, "name": name}
 
@@ -93,7 +93,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
             "IfcPropertySet",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "Name": settings["name"],
             }
         )
@@ -101,7 +101,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
             "IfcRelDefinesByProperties",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["product"]],
                 "RelatingPropertyDefinition": pset,
             }
@@ -116,7 +116,7 @@ def add_pset(file: ifcopenshell.file, product: ifcopenshell.entity_instance, nam
             "IfcPropertySet",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "Name": settings["name"],
             }
         )

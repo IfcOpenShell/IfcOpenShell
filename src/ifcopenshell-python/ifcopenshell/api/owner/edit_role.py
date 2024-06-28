@@ -36,14 +36,14 @@ def edit_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance, attri
 
     .. code:: python
 
-        person = ifcopenshell.api.run("owner.add_person", model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
 
         # By default, the role is an architect
-        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=person)
+        role = ifcopenshell.api.owner.add_role(model, assigned_object=person)
 
         # But Bob is not an architect
-        ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "CONSTRUCTIONMANAGER"})
+        ifcopenshell.api.owner.edit_role(model, role=role, attributes={"Role": "CONSTRUCTIONMANAGER"})
     """
     settings = {"role": role, "attributes": attributes}
 

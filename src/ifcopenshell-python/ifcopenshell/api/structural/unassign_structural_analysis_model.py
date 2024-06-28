@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -48,7 +48,7 @@ def unassign_structural_analysis_model(
     related_objects.remove(settings["product"])
     if len(related_objects):
         rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     else:
         history = rel.OwnerHistory
         file.remove(rel)

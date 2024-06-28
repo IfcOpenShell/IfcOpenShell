@@ -17,22 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.cost
 import ifcopenshell.util.element
 
 
 class TestAddCostItem(test.bootstrap.IFC4):
     def test_add_a_cost_item(self):
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="Foo")
-        item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo")
+        item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
         assert item1.is_a("IfcCostItem")
         assert item1.HasAssignments[0].is_a("IfcRelAssignsToControl")
         assert item1.HasAssignments[0].RelatingControl == schedule
 
     def test_add_a_sub_cost_item(self):
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file, name="Foo")
-        item1 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
-        item2 = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_item=item1)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="Foo")
+        item1 = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
+        item2 = ifcopenshell.api.cost.add_cost_item(self.file, cost_item=item1)
         assert item2.is_a("IfcCostItem")
         assert ifcopenshell.util.element.get_nest(item2) == item1
 

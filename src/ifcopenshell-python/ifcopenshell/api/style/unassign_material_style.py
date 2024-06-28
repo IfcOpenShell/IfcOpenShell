@@ -18,7 +18,7 @@
 
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.element
 
 
@@ -48,7 +48,7 @@ def unassign_material_style(
 
     .. code:: python
 
-        ifcopenshell.api.run("style.unassign_material_style", model, material=concrete, style=style, context=body)
+        ifcopenshell.api.style.unassign_material_style(model, material=concrete, style=style, context=body)
     """
     settings = {
         "material": material,
@@ -100,9 +100,6 @@ def unassign_material_style(
             continue
 
         for rep in shape_aspect.ShapeRepresentations:
-            ifcopenshell.api.run(
-                "style.unassign_representation_styles",
-                file,
-                shape_representation=rep,
-                styles=[settings["style"]],
+            ifcopenshell.api.style.unassign_representation_styles(
+                file, shape_representation=rep, styles=[settings["style"]]
             )

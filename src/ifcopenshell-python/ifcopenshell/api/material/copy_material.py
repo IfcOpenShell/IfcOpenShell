@@ -41,10 +41,10 @@ def copy_material(file: ifcopenshell.file, material: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
+        concrete = ifcopenshell.api.material.add_material(model, name="CON01", category="concrete")
 
         # Let's duplicate the concrete material
-        concrete_copy = ifcopenshell.api.run("material.copy_material", model, material=concrete)
+        concrete_copy = ifcopenshell.api.material.copy_material(model, material=concrete)
     """
     if material.is_a("IfcMaterial"):
         return _copy_material_with_inverses(file, material)

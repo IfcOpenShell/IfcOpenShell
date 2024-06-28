@@ -43,11 +43,11 @@ def create_file(version: str = "IFC4") -> ifcopenshell.file:
     .. code:: python
 
         # Start a new model.
-        model = ifcopenshell.api.run("project.create_file")
+        model = ifcopenshell.api.project.create_file()
 
         # It's currently a blank model, so typically the first thing we do
         # is create a project in it.
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="Test")
 
         # ... and off we go!
     """

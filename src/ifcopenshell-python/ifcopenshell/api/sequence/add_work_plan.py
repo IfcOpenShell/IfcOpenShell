@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.project
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.date
 from datetime import datetime, time
@@ -55,10 +56,10 @@ def add_work_plan(
     .. code:: python
 
         # This will hold all our construction schedules
-        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # This is one of our schedules in our work plan.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
     """
     settings = {
@@ -67,8 +68,7 @@ def add_work_plan(
         "start_time": start_time or datetime.now(),
     }
 
-    work_plan = ifcopenshell.api.run(
-        "root.create_entity",
+    work_plan = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkPlan",
         predefined_type=settings["predefined_type"],
@@ -81,8 +81,7 @@ def add_work_plan(
     work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcDateTime")
 
     context = file.by_type("IfcContext")[0]
-    ifcopenshell.api.run(
-        "project.assign_declaration",
+    ifcopenshell.api.project.assign_declaration(
         file,
         definitions=[work_plan],
         relating_context=context,

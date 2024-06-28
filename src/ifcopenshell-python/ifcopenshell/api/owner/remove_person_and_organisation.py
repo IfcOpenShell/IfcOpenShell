@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
 
 
 def remove_person_and_organisation(
@@ -36,15 +36,15 @@ def remove_person_and_organisation(
 
     .. code:: python
 
-        person = ifcopenshell.api.run("owner.add_person", model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
 
-        user = ifcopenshell.api.run("owner.add_person_and_organisation", model,
+        user = ifcopenshell.api.owner.add_person_and_organisation(model,
             person=person, organisation=organisation)
 
-        ifcopenshell.api.run("owner.remove_person_and_organisation", model, person_and_organisation=user)
+        ifcopenshell.api.owner.remove_person_and_organisation(model, person_and_organisation=user)
     """
     settings = {"person_and_organisation": person_and_organisation}
 
@@ -53,7 +53,7 @@ def remove_person_and_organisation(
             if inverse.Editors == (settings["person_and_organisation"],):
                 inverse.Editors = None
         elif inverse.is_a("IfcActor"):
-            ifcopenshell.api.run("root.remove_product", file, product=inverse)
+            ifcopenshell.api.root.remove_product(file, product=inverse)
         elif inverse.is_a("IfcResourceLevelRelationship"):
             if inverse.RelatedResourceObjects == (settings["person_and_organisation"],):
                 file.remove(inverse)

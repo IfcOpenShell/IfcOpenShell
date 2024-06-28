@@ -16,45 +16,43 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.element
 
 
 class TestReferenceStructure(test.bootstrap.IFC4):
     def test_referencing_a_structure(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.reference_structure(
+            self.file, products=[subelement, subelement2], relating_structure=element
         )
         assert ifcopenshell.util.element.get_structure_referenced_elements(element) == {subelement, subelement2}
 
     def test_doing_nothing_if_the_structure_is_already_referenced(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.reference_structure(
+            self.file, products=[subelement, subelement2], relating_structure=element
         )
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, products=[subelement, subelement2], relating_structure=element
+        ifcopenshell.api.spatial.reference_structure(
+            self.file, products=[subelement, subelement2], relating_structure=element
         )
         assert len([e for e in self.file]) == total_elements
 
     def test_that_old_relationships_are_updated_if_they_still_contain_elements(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        subelement1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, products=[subelement1], relating_structure=element
-        )
-        subelement2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        subelement3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "spatial.reference_structure", self.file, products=[subelement2, subelement3], relating_structure=element
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        subelement1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.reference_structure(self.file, products=[subelement1], relating_structure=element)
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        subelement3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.reference_structure(
+            self.file, products=[subelement2, subelement3], relating_structure=element
         )
         rel = subelement1.ReferencedInStructures[0]
         assert len(rel.RelatedElements) == 3

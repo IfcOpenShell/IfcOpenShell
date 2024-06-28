@@ -36,10 +36,10 @@ def edit_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance, a
 
     .. code:: python
 
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
-        metric = ifcopenshell.api.run("constraint.add_metric", model,
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        metric = ifcopenshell.api.constraint.add_metric(model,
             objective=objective)
-        ifcopenshell.api.run("constraint.edit_metric", model,
+        ifcopenshell.api.constraint.edit_metric(model,
             metric=metric, attributes={"ConstraintGrade": "HARD"})
     """
     settings = {"metric": metric, "attributes": attributes or {}}

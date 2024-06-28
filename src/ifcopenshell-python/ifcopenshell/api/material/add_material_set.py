@@ -76,11 +76,11 @@ def add_material_set(
         # gypsum with steel studs inside. Notice we are assigning to
         # the type only, as all occurrences of that type will automatically
         # inherit the material.
-        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name="WAL01")
 
         # First, let's create a material set. This will later be assigned
         # to our wall type element.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
         # Let's create a few materials, it's important to also give them
@@ -88,21 +88,21 @@ def add_material_set(
         # like "show me everything made out of aluminium / concrete / steel
         # / glass / etc". The IFC specification states a list of categories
         # you can use.
-        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Now let's use those materials as three layers in our set, such
         # that the steel studs are sandwiched by the gypsum. Let's imagine
         # we're setting the layer thickness in millimeters.
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 92})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
 
         # Great! Let's assign our material set to our wall type.
-        ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
+        ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
     """
     settings = {"name": name or "Unnamed", "set_type": set_type or "IfcMaterialConstituentSet"}
 

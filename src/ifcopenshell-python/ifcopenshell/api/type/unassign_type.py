@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -38,17 +38,17 @@ def unassign_type(file: ifcopenshell.file, related_objects: list[ifcopenshell.en
 
         # A furniture type. This would correlate to a particular model in a
         # manufacturer's catalogue. Like an Ikea sofa :)
-        furniture_type = ifcopenshell.api.run("root.create_entity", model,
+        furniture_type = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcFurnitureType", name="FUN01")
 
         # An individual occurrence of a that sofa.
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
 
         # Assign the furniture to the furniture type.
-        ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
+        ifcopenshell.api.type.assign_type(model, related_objects=[furniture], relating_type=furniture_type)
 
         # Change our mind. Maybe it's a different type?
-        ifcopenshell.api.run("type.unassign_type", model, related_objects=[furniture])
+        ifcopenshell.api.type.unassign_type(model, related_objects=[furniture])
     """
     settings = {"related_objects": related_objects}
 
@@ -67,7 +67,7 @@ def unassign_type(file: ifcopenshell.file, related_objects: list[ifcopenshell.en
         related_objects = set(rel.RelatedObjects) - related_objects
         if related_objects:
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

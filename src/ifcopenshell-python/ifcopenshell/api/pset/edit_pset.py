@@ -90,10 +90,10 @@ def edit_pset(
     .. code:: python
 
         # Let's imagine we have a new wall type.
-        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
 
         # This is a standard buildingSMART property set.
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
 
         # In this scenario, we don't specify any pset_template because it is
         # part of the built-in buildingSMART templates, and so the
@@ -101,47 +101,47 @@ def edit_pset(
         # transmittance value will automatically be an
         # IfcThermalTransmittanceMeasure. Neither of these properties exist
         # yet, so they will be created.
-        ifcopenshell.api.run("pset.edit_pset", model,
+        ifcopenshell.api.pset.edit_pset(model,
             pset=pset, properties={"FireRating": "2HR", "ThermalTransmittance": 42.3})
 
         # We can edit existing properties. In this case, "FireRating" is
         # edited from "2HR" to "1HR". Combustible is new, and will be added.
         # The existing "ThermalTransmittance" property will be left
         # unchanged.
-        ifcopenshell.api.run("pset.edit_pset", model,
+        ifcopenshell.api.pset.edit_pset(model,
             pset=pset, properties={"FireRating": "1HR", "Combustible": False})
 
         # Setting to None will change the value but not delete the property.
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"Combustible": None})
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"Combustible": None})
 
         # If you actually want to delete the property, enable purging.
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset,
+        ifcopenshell.api.pset.edit_pset(model, pset=pset,
             properties={"Combustible": None}, should_purge=True)
 
         # What if we wanted to manage our own properties? Let's create our
         # own "Company Standard" property set templates. Notice how we
         # prefix our property set with "Foo_", if our company name was "Foo"
         # this would make sense.
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Foo_bar")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="Foo_bar")
 
         # Let's imagine we want all model authors to specify two properties,
         # one being a length measurement and another being a boolean.
-        prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+        prop1 = ifcopenshell.api.pset_template.add_prop_template(model,
             pset_template=template, name="DemoA", primary_measure_type="IfcLengthMeasure")
-        prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model,
+        prop2 = ifcopenshell.api.pset_template.add_prop_template(model,
             pset_template=template, name="DemoB", primary_measure_type="IfcBoolean")
 
         # Now we can use our property set template to add our properties,
         # and the data types will always match our template.
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", model,
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(model,
             pset=pset, properties={"DemoA": 42.3, "DemoB": True}, pset_template=template)
 
         # Here's a third scenario where we want to add arbitrary properties
         # that are not standardised by anything, not even our own custom
         # templates.
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Custom_Pset")
-        ifcopenshell.api.run("pset.edit_pset", model,
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Custom_Pset")
+        ifcopenshell.api.pset.edit_pset(model,
             pset=pset, properties={
                 # Basic Python data types are mapped to a sensible default
                 "SomeLabel": "Foo",
@@ -152,7 +152,7 @@ def edit_pset(
 
         # Editing existing properties will retain their current data types
         # if possible. So this will still be a length measure.
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"ExplicitLength": 12.3})
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"ExplicitLength": 12.3})
     """
     usecase = Usecase()
     usecase.file = file

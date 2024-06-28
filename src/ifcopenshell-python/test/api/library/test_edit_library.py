@@ -18,7 +18,7 @@
 
 import test.bootstrap
 import datetime
-import ifcopenshell.api
+import ifcopenshell.api.library
 import ifcopenshell.util.date
 
 
@@ -35,8 +35,7 @@ class TestEditLibrary(test.bootstrap.IFC4):
             attributes["Location"] = "Location"
             attributes["Description"] = "Description"
 
-        ifcopenshell.api.run(
-            "library.edit_library",
+        ifcopenshell.api.library.edit_library(
             self.file,
             library=library,
             attributes=attributes,

@@ -37,16 +37,16 @@ def edit_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance, att
     .. code:: python
 
         # Setup an organisation with a single role
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
-        ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+        role = ifcopenshell.api.owner.add_role(model, assigned_object=organisation)
+        ifcopenshell.api.owner.edit_role(model, role=role, attributes={"Role": "ARCHITECT"})
 
         # Assign that organisation to a newly created actor
-        actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+        actor = ifcopenshell.api.owner.add_actor(model, actor=organisation)
 
         # Edit the description of the attribute.
-        ifcopenshell.api.run("actor.edit_actor", model,
+        ifcopenshell.api.actor.edit_actor(model,
             actor=actor, attributes={"Description": "Responsible for buildings A, B, and C."})
     """
     settings = {"actor": actor, "attributes": attributes}

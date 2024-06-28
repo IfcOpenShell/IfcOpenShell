@@ -44,11 +44,11 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
         # Both of these are identical, and indicate that:
         # - If project north is up the page, true north is in the top left
         # - The building is therefore facing north east
-        ifcopenshell.api.run("georeference.edit_true_north", model, true_north=30)
-        ifcopenshell.api.run("georeference.edit_true_north", model, true_north=(-0.5, 0.8660254))
+        ifcopenshell.api.georeference.edit_true_north(model, true_north=30)
+        ifcopenshell.api.georeference.edit_true_north(model, true_north=(-0.5, 0.8660254))
 
         # This unsets true north
-        ifcopenshell.api.run("georeference.edit_true_north", model, true_north=None)
+        ifcopenshell.api.georeference.edit_true_north(model, true_north=None)
     """
     if isinstance(true_north, (float, int)):
         x, y = ifcopenshell.util.geolocation.angle2yaxis(true_north)

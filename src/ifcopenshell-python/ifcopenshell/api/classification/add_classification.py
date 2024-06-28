@@ -70,13 +70,13 @@ def add_classification(
     .. code:: python
 
         # Option 1: adding a custom clasification from scratch
-        ifcopenshell.api.run("classification.add_classification", model,
+        ifcopenshell.api.classification.add_classification(model,
             classification="MyCustomClassification")
 
         # Option 2: adding a popular classification from a library
         library = ifcopenshell.open("/path/to/Uniclass.ifc")
         classification = library.by_type("IfcClassification")[0]
-        ifcopenshell.api.run("classification.add_classification", model,
+        ifcopenshell.api.classification.add_classification(model,
             classification=classification)
     """
     usecase = Usecase()

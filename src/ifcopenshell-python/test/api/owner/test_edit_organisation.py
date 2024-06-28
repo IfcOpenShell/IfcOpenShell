@@ -17,14 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestEditOrganisation(test.bootstrap.IFC4):
     def test_editing_a_organisation(self):
         organisation = self.file.createIfcOrganization()
-        ifcopenshell.api.run(
-            "owner.edit_organisation",
+        ifcopenshell.api.owner.edit_organisation(
             self.file,
             organisation=organisation,
             attributes={

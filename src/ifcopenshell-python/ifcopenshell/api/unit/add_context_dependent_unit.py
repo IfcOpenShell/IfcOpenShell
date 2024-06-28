@@ -55,7 +55,7 @@ def add_context_dependent_unit(
     .. code:: python
 
         # Boxes of things
-        ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
+        ifcopenshell.api.unit.add_context_dependent_unit(model, name="BOXES")
     """
     settings = {"unit_type": unit_type, "name": name, "dimensions": dimensions}
 

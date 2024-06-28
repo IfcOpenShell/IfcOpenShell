@@ -33,17 +33,17 @@ def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_ins
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
 
         # Create a simple shading colour and transparency.
-        shading = ifcopenshell.api.run("style.add_surface_style", model,
+        shading = ifcopenshell.api.style.add_surface_style(model,
             style=style, ifc_class="IfcSurfaceStyleShading", attributes={
                 "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
                 "Transparency": 0., # 0 is opaque, 1 is transparent
             })
 
         # Remove the shading item
-        ifcopenshell.api.run("style.remove_surface_style", model, style=shading)
+        ifcopenshell.api.style.remove_surface_style(model, style=shading)
     """
 
     to_delete = set()

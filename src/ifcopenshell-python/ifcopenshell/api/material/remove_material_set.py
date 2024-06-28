@@ -38,21 +38,21 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
     .. code:: python
 
         # Create a material set
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
         # Create some materials
-        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Add some layers
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
 
         # Completely delete the set and all layers. The gypsum and steel
         # material still exist, though.
-        ifcopenshell.api.run("material.remove_material_set", model, material=material_set)
+        ifcopenshell.api.material.remove_material_set(model, material=material_set)
     """
 
     settings = {"material": material}

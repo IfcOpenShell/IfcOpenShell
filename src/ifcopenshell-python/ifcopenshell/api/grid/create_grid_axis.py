@@ -68,10 +68,10 @@ def create_grid_axis(
     Example:
 
         # A pretty standard rectangular grid, with only two axes.
-        grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
-        axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+        grid = ifcopenshell.api.root.create_entity(model, ifc_class="IfcGrid")
+        axis_a = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="A", uvw_axes="UAxes", grid=grid)
-        axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+        axis_1 = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="1", uvw_axes="VAxes", grid=grid)
     """
 

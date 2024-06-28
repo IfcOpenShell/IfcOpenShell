@@ -71,16 +71,16 @@ def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_i
         # its own fully branded application. In this case, let's use the
         # default application which is prepopulated with "IfcOpenShell" as
         # the name and version.
-        application = ifcopenshell.api.run("owner.add_application", model)
+        application = ifcopenshell.api.owner.add_application(model)
 
         # Let's imagine we run this as an automated QA process in an
         # architectural firm. However, the results must be signed off by the
         # registered architect who is liable for the project.
-        person = ifcopenshell.api.run("owner.add_person", model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="LPARTEE", family_name="Partee", given_name="Leeable")
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        user = ifcopenshell.api.run("owner.add_person_and_organisation", model,
+        user = ifcopenshell.api.owner.add_person_and_organisation(model,
             person=person, organisation=organisation)
 
         # Let's configure our owner settings to hardcode always returning
@@ -94,8 +94,8 @@ def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_i
         # create_owner_history at all. This is already automatically handled
         # by the API when necessary. Under the hood, the API is actually
         # running this code on the IfcSpace element:
-        # element.OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", model)
-        space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
+        # element.OwnerHistory = ifcopenshell.api.owner.create_owner_history(model)
+        space = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSpace")
     """
     settings = {}
 

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -39,12 +39,12 @@ def unassign_group(
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, name="Furniture")
+        group = ifcopenshell.api.group.add_group(model, name="Furniture")
         furniture = model.by_type("IfcFurniture")
-        ifcopenshell.api.run("group.assign_group", model, products=furniture, group=group)
+        ifcopenshell.api.group.assign_group(model, products=furniture, group=group)
 
         bad_furniture = furniture[0]
-        ifcopenshell.api.run("group.unassign_group", model, products=[bad_furniture], group=group)
+        ifcopenshell.api.group.unassign_group(model, products=[bad_furniture], group=group)
     """
     settings = {
         "products": products,
@@ -59,7 +59,7 @@ def unassign_group(
     related_objects -= products
     if related_objects:
         rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     else:
         history = rel.OwnerHistory
         file.remove(rel)

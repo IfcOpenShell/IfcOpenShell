@@ -73,15 +73,15 @@ def add_prop_template(
     .. code:: python
 
         # Create a simple template that may be applied to all types
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Here's one example property
-        ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+        ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template,
             name="HighVoltage", description="Whether there is a risk of high voltage.",
             primary_measure_type="IfcBoolean")
 
         # Here's another
-        ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+        ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template,
             name="ChemicalType", description="The class of chemical spillage.",
             primary_measure_type="IfcLabel")
     """

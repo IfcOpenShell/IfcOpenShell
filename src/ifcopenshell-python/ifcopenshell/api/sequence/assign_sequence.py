@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.sequence
 import ifcopenshell.guid
 
 
@@ -64,41 +65,41 @@ def assign_sequence(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's imagine a root construction task
-        construction = ifcopenshell.api.run("sequence.add_task", model,
+        construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
 
         # Let's imagine we're doing a typically formwork, reinforcement,
         # pour sequence. Let's start with the formwork. It'll take us 2
         # days.
-        formwork = ifcopenshell.api.run("sequence.add_task", model,
+        formwork = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Formwork", identification="C.1")
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=formwork)
-        ifcopenshell.api.run("sequence.edit_task_time", model,
+        time = ifcopenshell.api.sequence.add_task_time(model, task=formwork)
+        ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
 
         # Now let's do the reinforcement. It'll take us another 2 days.
-        reinforcement = ifcopenshell.api.run("sequence.add_task", model,
+        reinforcement = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Reinforcement", identification="C.2")
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=reinforcement)
-        ifcopenshell.api.run("sequence.edit_task_time", model,
+        time = ifcopenshell.api.sequence.add_task_time(model, task=reinforcement)
+        ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
 
         # Now the pour it It'll only take 1 day.
-        pour = ifcopenshell.api.run("sequence.add_task", model,
+        pour = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Reinforcement", identification="C.3")
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=pour)
-        ifcopenshell.api.run("sequence.edit_task_time", model,
+        time = ifcopenshell.api.sequence.add_task_time(model, task=pour)
+        ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P1D"})
 
         # Now let's say the formwork must finish before the reinforcement
         # can start, and the reinforcement must finish before the pour can
         # start. This is a typical finish to start relationship (FS).
-        ifcopenshell.api.run("sequence.assign_sequence", model,
+        ifcopenshell.api.sequence.assign_sequence(model,
             relating_process=formwork, related_process=reinforcement)
-        ifcopenshell.api.run("sequence.assign_sequence", model,
+        ifcopenshell.api.sequence.assign_sequence(model,
             relating_process=reinforcement, related_process=pour)
 
         # Notice how we set all the scheduled start dates arbitrarily at
@@ -106,7 +107,7 @@ def assign_sequence(
         # automatically cascade the dates, starting from any task. This will
         # update the reinforcement date to be 2000-01-03 and the pour date
         # to be 2000-01-05.
-        ifcopenshell.api.run("sequence.cascade_schedule", model, task=formwork)
+        ifcopenshell.api.sequence.cascade_schedule(model, task=formwork)
     """
     settings = {
         "relating_process": relating_process,
@@ -121,11 +122,11 @@ def assign_sequence(
         "IfcRelSequence",
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "RelatingProcess": settings["relating_process"],
             "RelatedProcess": settings["related_process"],
             "SequenceType": settings["sequence_type"],
         }
     )
-    ifcopenshell.api.run("sequence.cascade_schedule", file, task=settings["relating_process"])
+    ifcopenshell.api.sequence.cascade_schedule(file, task=settings["relating_process"])
     return rel

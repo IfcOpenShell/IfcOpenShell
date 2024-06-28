@@ -42,16 +42,16 @@ def edit_work_time(
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # If we don't specify any recurring time periods in our work time,
         # we need to specify a start and end date of the work time. It
         # starts at 0:00 on the start date and 24:00 at the end date.
-        ifcopenshell.api.run("sequence.edit_work_time", model,
+        ifcopenshell.api.sequence.edit_work_time(model,
             work_time=work_time, attributes={"StartDate": "2000-01-01", "FinishDate": "2000-01-02"})
     """
     settings = {"work_time": work_time, "attributes": attributes}

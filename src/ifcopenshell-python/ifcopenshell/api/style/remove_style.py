@@ -15,7 +15,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
-import ifcopenshell.api
+
+import ifcopenshell.api.style
 import ifcopenshell.util.element
 
 
@@ -34,10 +35,10 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
 
         # Not anymore!
-        ifcopenshell.api.run("style.remove_style", model, style=style)
+        ifcopenshell.api.style.remove_style(model, style=style)
     """
     usecase = Usecase()
     usecase.file = file
@@ -49,7 +50,7 @@ class Usecase:
     def execute(self):
         self.purge_styled_items(self.settings["style"])
         for style in self.settings["style"].Styles or []:
-            ifcopenshell.api.run("style.remove_surface_style", self.file, style=style)
+            ifcopenshell.api.style.remove_surface_style(self.file, style=style)
         self.file.remove(self.settings["style"])
 
     def purge_styled_items(self, style):

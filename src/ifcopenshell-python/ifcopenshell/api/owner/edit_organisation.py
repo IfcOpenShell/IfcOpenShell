@@ -36,9 +36,9 @@ def edit_organisation(file: ifcopenshell.file, organisation: ifcopenshell.entity
 
     .. code:: python
 
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects With Ballpens")
-        ifcopenshell.api.run("owner.edit_organisation", model, organisation=organisation,
+        ifcopenshell.api.owner.edit_organisation(model, organisation=organisation,
             attributes={"name": "Architects Without Ballpens"})
     """
     settings = {"organisation": organisation, "attributes": attributes}

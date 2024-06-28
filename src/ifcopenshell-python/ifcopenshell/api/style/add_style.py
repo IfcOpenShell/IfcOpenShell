@@ -56,7 +56,7 @@ def add_style(
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
     """
 
     kwargs = {"Name": name}

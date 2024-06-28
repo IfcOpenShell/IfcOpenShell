@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -46,15 +46,15 @@ def unassign_object(file: ifcopenshell.file, products: list[ifcopenshell.entity_
 
     .. code:: python
 
-        element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-        subelement1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-        subelement2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement1], relating_object=element)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement2], relating_object=element)
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        subelement1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
+        subelement2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
+        ifcopenshell.api.aggregate.assign_object(model, products=[subelement1], relating_object=element)
+        ifcopenshell.api.aggregate.assign_object(model, products=[subelement2], relating_object=element)
         # nothing is returned
-        ifcopenshell.api.run("aggregate.unassign_object", model, products=[subelement1])
+        ifcopenshell.api.aggregate.unassign_object(model, products=[subelement1])
         # nothing is returned, relationship is removed
-        ifcopenshell.api.run("aggregate.unassign_object", model, products=[subelement2])
+        ifcopenshell.api.aggregate.unassign_object(model, products=[subelement2])
     """
     settings = {"products": products}
 
@@ -69,7 +69,7 @@ def unassign_object(file: ifcopenshell.file, products: list[ifcopenshell.entity_
         related_objects = set(rel.RelatedObjects) - products
         if related_objects:
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

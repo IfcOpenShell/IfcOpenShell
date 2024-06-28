@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.project
 from typing import Union
 
 
@@ -29,14 +30,13 @@ class TestUnassignDeclaration(test.bootstrap.IFC4):
             return rel.RelatingContext
 
     def test_unassigning_a_definition(self):
-        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element_type, element_type2], relating_context=library
+        library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.project.assign_declaration(
+            self.file, definitions=[element_type, element_type2], relating_context=library
         )
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
+        ifcopenshell.api.project.unassign_declaration(
             self.file,
             definitions=[element_type, element_type2],
             relating_context=library,
@@ -45,11 +45,10 @@ class TestUnassignDeclaration(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelDeclares")) == 0
 
     def test_doing_nothing_if_there_was_no_declaration(self):
-        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
+        library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.project.unassign_declaration(
             self.file,
             definitions=[element_type, element_type2],
             relating_context=library,
@@ -58,23 +57,21 @@ class TestUnassignDeclaration(test.bootstrap.IFC4):
         assert self.get_context(element_type2) == None
 
     def test_updating_the_rel_when_a_reference_is_removed_with_multipled_elements(self):
-        library = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProjectLibrary")
-        element_type1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        element_type3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element_type1], relating_context=library
+        library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary")
+        element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element_type3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.project.assign_declaration(
+            self.file, definitions=[element_type1], relating_context=library
         )
         rel = self.file.by_type("IfcRelDeclares")[0]
 
-        ifcopenshell.api.run(
-            "project.assign_declaration",
+        ifcopenshell.api.project.assign_declaration(
             self.file,
             definitions=[element_type2, element_type3],
             relating_context=library,
         )
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
+        ifcopenshell.api.project.unassign_declaration(
             self.file,
             definitions=[element_type1, element_type2],
             relating_context=library,

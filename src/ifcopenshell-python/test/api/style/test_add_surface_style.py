@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.style
 
 
 class TestAddSurfaceStyle(test.bootstrap.IFC4):
@@ -27,8 +26,7 @@ class TestAddSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        result = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleShading",
@@ -47,8 +45,7 @@ class TestAddSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        result = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
@@ -67,15 +64,13 @@ class TestAddSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        ifcopenshell.api.run(
-            "style.add_surface_style",
+        ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
             attributes=attrs,
         )
-        result = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",
@@ -89,15 +84,13 @@ class TestAddSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        result1 = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result1 = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleShading",
             attributes=attrs,
         )
-        result2 = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result2 = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleWithTextures",
@@ -112,15 +105,13 @@ class TestAddSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Name": "", "Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        ifcopenshell.api.run(
-            "style.add_surface_style",
+        ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleShading",
             attributes=attrs,
         )
-        result = ifcopenshell.api.run(
-            "style.add_surface_style",
+        result = ifcopenshell.api.style.add_surface_style(
             self.file,
             style=style,
             ifc_class="IfcSurfaceStyleRendering",

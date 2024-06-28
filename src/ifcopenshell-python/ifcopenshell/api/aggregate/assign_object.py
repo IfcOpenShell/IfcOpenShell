@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.spatial
+import ifcopenshell.api.geometry
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -74,15 +76,15 @@ def assign_object(
 
     .. code:: python
 
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-        subelement = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        subelement = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
 
         # The project contains a site (note that project aggregation is a special case in IFC)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[element], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(model, products=[element], relating_object=project)
 
         # The site has a building
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[subelement], relating_object=element)
+        ifcopenshell.api.aggregate.assign_object(model, products=[subelement], relating_object=element)
     """
     settings = {
         "products": products,
@@ -123,14 +125,14 @@ def assign_object(
     # can be either only aggregated or only contained at the same time
     # some product might not be able to have a container
     possibly_contained_products = [p for p in products_without_aggregates if hasattr(p, "ContainedInStructure")]
-    ifcopenshell.api.run("spatial.unassign_container", file, products=possibly_contained_products)
+    ifcopenshell.api.spatial.unassign_container(file, products=possibly_contained_products)
 
     # unassign elements from previous aggregates
     for decomposes in previous_aggregates_rels:
         related_objects = set(decomposes.RelatedObjects) - products
         if related_objects:
             decomposes.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": decomposes})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": decomposes})
         else:
             history = decomposes.OwnerHistory
             file.remove(decomposes)
@@ -140,13 +142,13 @@ def assign_object(
     # assign elements to a new aggregate
     if is_decomposed_by:
         is_decomposed_by.RelatedObjects = list(set(is_decomposed_by.RelatedObjects) | products)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": is_decomposed_by})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": is_decomposed_by})
     else:
         is_decomposed_by = file.create_entity(
             "IfcRelAggregates",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": list(products),
                 "RelatingObject": relating_object,
             }
@@ -156,8 +158,7 @@ def assign_object(
     for product in products_to_change:
         placement = getattr(product, "ObjectPlacement", None)
         if placement and placement.is_a("IfcLocalPlacement"):
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement",
+            ifcopenshell.api.geometry.edit_object_placement(
                 file,
                 product=product,
                 matrix=ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),

@@ -54,7 +54,7 @@ def add_application(
 
     .. code:: python
 
-        application = ifcopenshell.api.run("owner.add_application", model)
+        application = ifcopenshell.api.owner.add_application(model)
     """
     usecase = Usecase()
     usecase.file = file

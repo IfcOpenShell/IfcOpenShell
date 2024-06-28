@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.layer
 
 
 class TestUnassignLayer(test.bootstrap.IFC4):
@@ -25,8 +25,8 @@ class TestUnassignLayer(test.bootstrap.IFC4):
         items = [self.file.createIfcExtrudedAreaSolid() for i in range(3)]
         layer = self.file.createIfcPresentationLayerAssignment()
 
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=items, layer=layer)
-        ifcopenshell.api.run("layer.unassign_layer", self.file, items=items[2:], layer=layer)
+        ifcopenshell.api.layer.assign_layer(self.file, items=items, layer=layer)
+        ifcopenshell.api.layer.unassign_layer(self.file, items=items[2:], layer=layer)
         assert len(layer.AssignedItems) == 2
         assert set(layer.AssignedItems) == set(items[:2])
 
@@ -34,8 +34,8 @@ class TestUnassignLayer(test.bootstrap.IFC4):
         items = [self.file.createIfcExtrudedAreaSolid() for i in range(3)]
         layer = self.file.createIfcPresentationLayerAssignment()
 
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=items, layer=layer)
-        ifcopenshell.api.run("layer.unassign_layer", self.file, items=items, layer=layer)
+        ifcopenshell.api.layer.assign_layer(self.file, items=items, layer=layer)
+        ifcopenshell.api.layer.unassign_layer(self.file, items=items, layer=layer)
         assert not self.file.by_type("IfcPresentationLayerAssignment")
 
 

@@ -38,7 +38,7 @@ def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcope
 
     .. code:: python
 
-        circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+        circle = ifcopenshell.api.profile.add_parameterized_profile(model,
             ifc_class="IfcCircleProfileDef")
         circle.Radius = 1.
     """

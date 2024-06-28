@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.geometry
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -63,44 +64,44 @@ def add_opening(
 
         # A bit of preparation, let's create some geometric contexts since
         # we want to create some geometry for our wall and opening.
-        model3d = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", model,
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # Create a wall
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's use the "3D Body" representation we created earlier to add a
         # new wall-like body geometry, 5 meters long, 3 meters high, and
         # 200mm thick
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
             context=body, length=5, height=3, thickness=0.2)
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=wall, representation=representation)
 
         # Place our wall at the origin
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
 
         # Create an opening, such as for a service penetration with fire and
         # acoustic requirements.
-        opening = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcOpeningElement")
+        opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
 
         # Let's create an opening representation of a 950mm x 2100mm door.
         # Notice how the thickness is greater than the wall thickness, this
         # helps resolve floating point resolution errors in 3D.
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
             context=body, length=.95, height=2.1, thickness=0.4)
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=opening, representation=representation)
 
         # Let's shift our door 1 meter along the wall and 100mm along the
         # wall, to create a nice overlap for the opening boolean.
         matrix = np.identity(4)
         matrix[:,3] = [1, -.1, 0, 0]
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=opening, matrix=matrix)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=opening, matrix=matrix)
 
         # The opening will now void the wall.
-        ifcopenshell.api.run("void.add_opening", model, opening=opening, element=wall)
+        ifcopenshell.api.void.add_opening(model, opening=opening, element=wall)
     """
     settings = {"opening": opening, "element": element}
 
@@ -118,7 +119,7 @@ def add_opening(
         "IfcRelVoidsElement",
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "RelatingBuildingElement": settings["element"],
             "RelatedOpeningElement": settings["opening"],
         }
@@ -126,8 +127,7 @@ def add_opening(
 
     placement = getattr(settings["opening"], "ObjectPlacement", None)
     if placement and placement.is_a("IfcLocalPlacement"):
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement",
+        ifcopenshell.api.geometry.edit_object_placement(
             file,
             product=settings["opening"],
             matrix=ifcopenshell.util.placement.get_local_placement(settings["opening"].ObjectPlacement),

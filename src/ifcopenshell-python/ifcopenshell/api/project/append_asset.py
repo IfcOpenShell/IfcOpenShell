@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.type
+import ifcopenshell.api.project
+import ifcopenshell.api.context
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 from typing import Optional, Any, Union
@@ -63,37 +65,37 @@ def append_asset(
     .. code:: python
 
         # Programmatically generate a library. You could do this visually too.
-        library = ifcopenshell.api.run("project.create_file")
-        root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
-        context = ifcopenshell.api.run("root.create_entity", library,
+        library = ifcopenshell.api.project.create_file()
+        root = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject", name="Demo Library")
+        context = ifcopenshell.api.root.create_entity(library,
             ifc_class="IfcProjectLibrary", name="Demo Library")
-        ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
+        ifcopenshell.api.project.assign_declaration(library, definitions=[context], relating_context=root)
 
         # Assign units for our example library
-        unit = ifcopenshell.api.run("unit.add_si_unit", library,
+        unit = ifcopenshell.api.unit.add_si_unit(library,
             unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
+        ifcopenshell.api.unit.assign_unit(library, units=[unit])
 
         # Let's create a single asset of a 200mm thick concrete wall
-        wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
-        concrete = ifcopenshell.api.run("material.add_material", usecase.file, name="CON", category="concrete")
-        rel = ifcopenshell.api.run("material.assign_material", library,
+        wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType", name="WAL01")
+        concrete = ifcopenshell.api.material.add_material(usecase.file, name="CON", category="concrete")
+        rel = ifcopenshell.api.material.assign_material(library,
             products=[wall_type], type="IfcMaterialLayerSet")
-        layer = ifcopenshell.api.run("material.add_layer", library,
+        layer = ifcopenshell.api.material.add_layer(library,
             layer_set=rel.RelatingMaterial, material=concrete)
         layer.Name = "Structure"
         layer.LayerThickness = 200
 
         # Mark our wall type as a reusable asset in our library.
-        ifcopenshell.api.run("project.assign_declaration", library,
+        ifcopenshell.api.project.assign_declaration(library,
             definitions=[wall_type], relating_context=context)
 
         # Let's imagine we're starting a new project
-        model = ifcopenshell.api.run("project.create_file")
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="Test")
+        model = ifcopenshell.api.project.create_file()
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="Test")
 
         # Now we can easily append our wall type from our libary
-        wall_type = ifcopenshell.api.run("project.append_asset", model, library=library, element=wall_type)
+        wall_type = ifcopenshell.api.project.append_asset(model, library=library, element=wall_type)
 
     Example of adding multiple assets and avoiding duplicated inverses:
 
@@ -106,8 +108,7 @@ def append_asset(
         reuse_identities = dict()
 
         for element in ifcopenshell.util.selector.filter_elements(model, "IfcWindow"):
-            ifcopenshell.api.run(
-                "project.append_asset",
+            ifcopenshell.api.project.append_asset(
                 model, library=library,
                 element=wall_type
                 reuse_identities=reuse_identities
@@ -208,15 +209,13 @@ class Usecase:
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
             ifcopenshell.api.owner.settings.factory_reset()
-            new_type = ifcopenshell.api.run(
-                "project.append_asset",
+            new_type = ifcopenshell.api.project.append_asset(
                 self.file,
                 library=self.settings["library"],
                 element=element_type,
                 reuse_identities=self.reuse_identities,
             )
-            ifcopenshell.api.run(
-                "type.assign_type",
+            ifcopenshell.api.type.assign_type(
                 self.file,
                 should_run_listeners=False,
                 related_objects=[element],
@@ -357,16 +356,14 @@ class Usecase:
             parent = self.get_equivalent_existing_context(added_context.ParentContext)
             if not parent:
                 parent = self.create_equivalent_context(added_context.ParentContext)
-            return ifcopenshell.api.run(
-                "context.add_context",
+            return ifcopenshell.api.context.add_context(
                 self.file,
                 parent=parent,
                 context_type=added_context.ContextType,
                 context_identifier=added_context.ContextIdentifier,
                 target_view=added_context.TargetView,
             )
-        return ifcopenshell.api.run(
-            "context.add_context",
+        return ifcopenshell.api.context.add_context(
             self.file,
             context_type=added_context.ContextType,
             context_identifier=added_context.ContextIdentifier,

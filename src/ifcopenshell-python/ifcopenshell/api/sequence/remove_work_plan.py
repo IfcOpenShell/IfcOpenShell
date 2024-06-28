@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.project
 import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
@@ -38,15 +38,14 @@ def remove_work_plan(file: ifcopenshell.file, work_plan: ifcopenshell.entity_ins
     .. code:: python
 
         # This will hold all our construction schedules
-        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # And remove it immediately
-        ifcopenshell.api.run("sequence.remove_work_plan", model, work_plan=work_plan)
+        ifcopenshell.api.sequence.remove_work_plan(model, work_plan=work_plan)
     """
     settings = {"work_plan": work_plan}
 
-    ifcopenshell.api.run(
-        "project.unassign_declaration",
+    ifcopenshell.api.project.unassign_declaration(
         file,
         definitions=[settings["work_plan"]],
         relating_context=file.by_type("IfcContext")[0],

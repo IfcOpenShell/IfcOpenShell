@@ -38,8 +38,8 @@ def edit_cost_schedule(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        ifcopenshell.api.run("cost.edit_cost_schedule", model,
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        ifcopenshell.api.cost.edit_cost_schedule(model,
             cost_schedule=schedule, attributes={"Name": "Foo"})
     """
 

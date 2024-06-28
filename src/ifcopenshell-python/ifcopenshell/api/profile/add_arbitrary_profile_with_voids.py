@@ -56,7 +56,7 @@ def add_arbitrary_profile_with_voids(
     .. code:: python
 
         # A 400mm by 400mm square with a 200mm by 200mm hole in it.
-        square_with_hole = ifcopenshell.api.run("profile.add_arbitrary_profile_with_voids", model,
+        square_with_hole = ifcopenshell.api.profile.add_arbitrary_profile_with_voids(model,
             outer_profile=[(0., 0.), (.4, 0.), (.4, .4), (0., .4), (0., 0.)],
             inner_profiles=[[(0.1, 0.1), (0.3, 0.1), (0.3, 0.3), (0.1, 0.3), (0.1, 0.1)]],
             name="SK01 Hole Profile")

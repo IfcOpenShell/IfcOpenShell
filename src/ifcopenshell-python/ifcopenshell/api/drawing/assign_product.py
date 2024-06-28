@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -57,9 +57,9 @@ def assign_product(
 
     .. code:: python
 
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-        annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
-        ifcopenshell.api.run("drawing.assign_product", model,
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
+        annotation = ifcopenshell.api.root.create_entity(model, ifc_class="IfcAnnotation")
+        ifcopenshell.api.drawing.assign_product(model,
             relating_product=furniture, related_object=annotation)
     """
     settings = {
@@ -99,13 +99,13 @@ def assign_product(
         related_objects = list(referenced_by.RelatedObjects)
         related_objects.append(settings["related_object"])
         referenced_by.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": referenced_by})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": referenced_by})
     else:
         referenced_by = file.create_entity(
             "IfcRelAssignsToProduct",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingProduct": settings["relating_product"],
             },

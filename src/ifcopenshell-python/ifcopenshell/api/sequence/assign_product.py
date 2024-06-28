@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -54,18 +54,18 @@ def assign_product(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's create a construction task. Note that the predefined type is
         # important to distinguish types of tasks.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Build wall", identification="A", predefined_type="CONSTRUCTION")
 
         # Let's say we have a wall somewhere.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's construct that wall!
-        ifcopenshell.api.run("sequence.assign_product", model, relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.assign_product(model, relating_product=wall, related_object=task)
     """
     settings = {
         "relating_product": relating_product,
@@ -85,13 +85,13 @@ def assign_product(
         related_objects = list(referenced_by.RelatedObjects)
         related_objects.append(settings["related_object"])
         referenced_by.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": referenced_by})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": referenced_by})
     else:
         referenced_by = file.create_entity(
             "IfcRelAssignsToProduct",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingProduct": settings["relating_product"],
             }

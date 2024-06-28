@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
 
 
 def add_structural_member_connection(
@@ -44,7 +44,7 @@ def add_structural_member_connection(
     for connection in settings["related_structural_connection"].ConnectsStructuralMembers or []:
         if connection.RelatingStructuralMember == settings["relating_structural_member"]:
             return connection
-    rel = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcRelConnectsStructuralMember")
+    rel = ifcopenshell.api.root.create_entity(file, ifc_class="IfcRelConnectsStructuralMember")
     rel.RelatingStructuralMember = settings["relating_structural_member"]
     rel.RelatedStructuralConnection = settings["related_structural_connection"]
     return rel

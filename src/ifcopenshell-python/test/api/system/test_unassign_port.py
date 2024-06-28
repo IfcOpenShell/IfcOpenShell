@@ -17,16 +17,17 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 
 
 class TestAssignPort(test.bootstrap.IFC4):
     def test_assigning_a_port_once_only(self):
         port = self.file.createIfcDistributionPort()
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        ifcopenshell.api.run("system.assign_port", self.file, element=element, port=port)
-        ifcopenshell.api.run("system.unassign_port", self.file, element=element, port=port)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.system.assign_port(self.file, element=element, port=port)
+        ifcopenshell.api.system.unassign_port(self.file, element=element, port=port)
         assert ifcopenshell.util.system.get_ports(element) == []
 
 

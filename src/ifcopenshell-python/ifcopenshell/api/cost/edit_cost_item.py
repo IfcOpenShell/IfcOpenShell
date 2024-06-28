@@ -38,9 +38,9 @@ def edit_cost_item(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-        ifcopenshell.api.run("cost.edit_cost_item", model, cost_item=item, attributes={"Name": "Foo"})
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
+        ifcopenshell.api.cost.edit_cost_item(model, cost_item=item, attributes={"Name": "Foo"})
     """
     settings = {"cost_item": cost_item, "attributes": attributes or {}}
 

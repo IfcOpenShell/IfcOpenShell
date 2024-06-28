@@ -17,18 +17,18 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.group
 import ifcopenshell.util.element
 
 
 class TestAddGroup(test.bootstrap.IFC4):
     def test_add_group_no_arguments(self):
-        group = ifcopenshell.api.run("group.add_group", self.file)
+        group = ifcopenshell.api.group.add_group(self.file)
         assert group.Name == "Unnamed"
         assert group.Description == None
 
     def test_add_group(self):
-        group = ifcopenshell.api.run("group.add_group", self.file, name="Name", description="Description")
+        group = ifcopenshell.api.group.add_group(self.file, name="Name", description="Description")
         assert group.Name == "Name"
         assert group.Description == "Description"
 

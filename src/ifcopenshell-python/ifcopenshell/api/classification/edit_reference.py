@@ -40,7 +40,7 @@ def edit_reference(
 
         reference = model.by_type("IfcClassification")[0]
         # Change the name of the reference to "Foo"
-        ifcopenshell.api.run("classification.edit_reference", model,
+        ifcopenshell.api.classification.edit_reference(model,
             reference=reference, attributes={"Name": "Foo"})
     """
     settings = {"reference": reference, "attributes": attributes or {}}

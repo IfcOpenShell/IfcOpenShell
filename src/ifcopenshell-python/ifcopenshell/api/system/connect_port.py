@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Optional
@@ -75,28 +75,28 @@ def connect_port(
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
 
         # Create a duct and a 90 degree bend fitting
-        duct = ifcopenshell.api.run("root.create_entity", model,
+        duct = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
-        fitting = ifcopenshell.api.run("root.create_entity", model,
+        fitting = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcDuctFitting", predefined_type="BEND")
 
         # The duct and fitting is part of the system
-        ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
-        ifcopenshell.api.run("system.assign_system", model, products=[fitting], system=system)
+        ifcopenshell.api.system.assign_system(model, products=[duct], system=system)
+        ifcopenshell.api.system.assign_system(model, products=[fitting], system=system)
 
         # Create 2 ports, one for either end of both the duct and fitting.
-        duct_port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-        duct_port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
-        fitting_port1 = ifcopenshell.api.run("system.add_port", model, element=fitting)
-        fitting_port2 = ifcopenshell.api.run("system.add_port", model, element=fitting)
+        duct_port1 = ifcopenshell.api.system.add_port(model, element=duct)
+        duct_port2 = ifcopenshell.api.system.add_port(model, element=duct)
+        fitting_port1 = ifcopenshell.api.system.add_port(model, element=fitting)
+        fitting_port2 = ifcopenshell.api.system.add_port(model, element=fitting)
 
         # Connect the duct and fitting together. At this point, we have not
         # yet determined the direction of the flow, so we leave direction as
         # NOTDEFINED.
-        ifcopenshell.api.run("system.connect_port", model, port1=duct_port2, port2=fitting_port1)
+        ifcopenshell.api.system.connect_port(model, port1=duct_port2, port2=fitting_port1)
     """
     usecase = Usecase()
     usecase.file = file
@@ -180,7 +180,7 @@ class Usecase:
         self.file.create_entity(
             "IfcRelConnectsPorts",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
             RelatingPort=self.settings["port1"],
             RelatedPort=self.settings["port2"],
         )
@@ -192,7 +192,7 @@ class Usecase:
         self.file.create_entity(
             "IfcRelConnectsPorts",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
             RelatingPort=self.settings["port2"],
             RelatedPort=self.settings["port1"],
         )

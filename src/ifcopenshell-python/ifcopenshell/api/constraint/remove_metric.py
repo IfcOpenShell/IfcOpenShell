@@ -33,10 +33,10 @@ def remove_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance)
 
     .. code:: python
 
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
-        metric = ifcopenshell.api.run("constraint.add_metric", model,
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        metric = ifcopenshell.api.constraint.add_metric(model,
             objective=objective)
-        ifcopenshell.api.run("constraint.remove_metric", model,
+        ifcopenshell.api.constraint.remove_metric(model,
             metric=metric)
     """
     usecase = Usecase()

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union
@@ -55,31 +55,31 @@ def assign_declaration(
     .. code:: python
 
         # Programmatically generate a library. You could do this visually too.
-        library = ifcopenshell.api.run("project.create_file")
-        root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
-        context = ifcopenshell.api.run("root.create_entity", library,
+        library = ifcopenshell.api.project.create_file()
+        root = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject", name="Demo Library")
+        context = ifcopenshell.api.root.create_entity(library,
             ifc_class="IfcProjectLibrary", name="Demo Library")
 
         # It's necessary to say our library is part of our project.
-        ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
+        ifcopenshell.api.project.assign_declaration(library, definitions=[context], relating_context=root)
 
         # Assign units for our example library
-        unit = ifcopenshell.api.run("unit.add_si_unit", library,
+        unit = ifcopenshell.api.unit.add_si_unit(library,
             unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", library, units=[unit])
+        ifcopenshell.api.unit.assign_unit(library, units=[unit])
 
         # Let's create a single asset of a 200mm thick concrete wall
-        wall_type = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcWallType", name="WAL01")
-        concrete = ifcopenshell.api.run("material.add_material", file, name="CON", category="concrete")
-        rel = ifcopenshell.api.run("material.assign_material", library,
+        wall_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType", name="WAL01")
+        concrete = ifcopenshell.api.material.add_material(file, name="CON", category="concrete")
+        rel = ifcopenshell.api.material.assign_material(library,
             products=[wall_type], type="IfcMaterialLayerSet")
-        layer = ifcopenshell.api.run("material.add_layer", library,
+        layer = ifcopenshell.api.material.add_layer(library,
             layer_set=rel.RelatingMaterial, material=concrete)
         layer.Name = "Structure"
         layer.LayerThickness = 200
 
         # Mark our wall type as a reusable asset in our library.
-        ifcopenshell.api.run("project.assign_declaration", library,
+        ifcopenshell.api.project.assign_declaration(library,
             definitions=[wall_type], relating_context=context)
 
         # All done, just for fun let's save our asset library to disk for later use.
@@ -123,7 +123,7 @@ def assign_declaration(
         related_definitions = set(has_context.RelatedDefinitions) - set(objects_with_contexts)
         if related_definitions:
             has_context.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": has_context})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": has_context})
         else:
             history = has_context.OwnerHistory
             file.remove(has_context)
@@ -133,13 +133,13 @@ def assign_declaration(
     declares = next(iter(all_declares), None)
     if declares:
         declares.RelatedDefinitions = list(set(declares.RelatedDefinitions) | set(objects_to_change))
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": declares})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": declares})
     else:
         declares = file.create_entity(
             "IfcRelDeclares",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedDefinitions": list(objects_to_change),
                 "RelatingContext": relating_context,
             },

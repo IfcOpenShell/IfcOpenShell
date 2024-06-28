@@ -17,18 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestAddAddress(test.bootstrap.IFC4):
     def test_adding_to_a_person(self):
         person = self.file.createIfcPerson()
-        postal = ifcopenshell.api.run(
-            "owner.add_address", self.file, assigned_object=person, ifc_class="IfcPostalAddress"
-        )
-        telecom = ifcopenshell.api.run(
-            "owner.add_address", self.file, assigned_object=person, ifc_class="IfcTelecomAddress"
-        )
+        postal = ifcopenshell.api.owner.add_address(self.file, assigned_object=person, ifc_class="IfcPostalAddress")
+        telecom = ifcopenshell.api.owner.add_address(self.file, assigned_object=person, ifc_class="IfcTelecomAddress")
         assert postal.is_a("IfcPostalAddress")
         assert telecom.is_a("IfcTelecomAddress")
         assert postal.Purpose == telecom.Purpose == "OFFICE"
@@ -37,11 +33,11 @@ class TestAddAddress(test.bootstrap.IFC4):
 
     def test_adding_to_a_organisation(self):
         organisation = self.file.createIfcOrganization()
-        postal = ifcopenshell.api.run(
-            "owner.add_address", self.file, assigned_object=organisation, ifc_class="IfcPostalAddress"
+        postal = ifcopenshell.api.owner.add_address(
+            self.file, assigned_object=organisation, ifc_class="IfcPostalAddress"
         )
-        telecom = ifcopenshell.api.run(
-            "owner.add_address", self.file, assigned_object=organisation, ifc_class="IfcTelecomAddress"
+        telecom = ifcopenshell.api.owner.add_address(
+            self.file, assigned_object=organisation, ifc_class="IfcTelecomAddress"
         )
         assert postal.is_a("IfcPostalAddress")
         assert telecom.is_a("IfcTelecomAddress")

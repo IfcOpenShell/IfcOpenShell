@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union
@@ -55,15 +55,15 @@ def assign_document(
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        ifcopenshell.api.run("document.edit_information", model,
+        document = ifcopenshell.api.document.add_information(model)
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
-        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+        reference = ifcopenshell.api.document.add_reference(model, information=document)
 
         # Let's imagine storey represents an IfcBuildingStorey for the ground floor
-        ifcopenshell.api.run("document.assign_document", model, products=[storey], document=reference)
+        ifcopenshell.api.document.assign_document(model, products=[storey], document=reference)
     """
     settings = {
         "products": products,
@@ -96,12 +96,12 @@ def assign_document(
         return file.create_entity(
             "IfcRelAssociatesDocument",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
             RelatedObjects=list(products),
             RelatingDocument=settings["document"],
         )
 
     related_objects = set(rel.RelatedObjects) | products
     rel.RelatedObjects = list(related_objects)
-    ifcopenshell.api.run("owner.update_owner_history", file, element=rel)
+    ifcopenshell.api.owner.update_owner_history(file, element=rel)
     return rel

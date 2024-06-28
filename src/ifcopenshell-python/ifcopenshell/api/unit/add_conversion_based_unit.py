@@ -53,11 +53,11 @@ def add_conversion_based_unit(
     .. code:: python
 
         # Some common imperial measurements
-        length = ifcopenshell.api.run("unit.add_conversion_based_unit", model, name="inch")
-        area = ifcopenshell.api.run("unit.add_conversion_based_unit", model, name="square foot")
+        length = ifcopenshell.api.unit.add_conversion_based_unit(model, name="inch")
+        area = ifcopenshell.api.unit.add_conversion_based_unit(model, name="square foot")
 
         # Make it our default units, if we are doing an imperial building
-        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        ifcopenshell.api.unit.assign_unit(model, units=[length, area])
     """
     settings = {"name": name, "conversion_offset": conversion_offset}
 

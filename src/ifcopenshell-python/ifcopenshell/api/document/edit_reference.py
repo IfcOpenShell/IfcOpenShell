@@ -40,13 +40,13 @@ def edit_reference(
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        ifcopenshell.api.run("document.edit_information", model,
+        document = ifcopenshell.api.document.add_information(model)
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
-        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
-        ifcopenshell.api.run("document.edit_reference", model,
+        reference = ifcopenshell.api.document.add_reference(model, information=document)
+        ifcopenshell.api.document.edit_reference(model,
             reference=reference, attributes={"Identification": "2.1.15"})
     """
     settings = {"reference": reference, "attributes": attributes}

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 from typing import Any
 
 
@@ -42,24 +42,24 @@ def edit_sequence(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's imagine a root construction task
-        construction = ifcopenshell.api.run("sequence.add_task", model,
+        construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
 
         # Let's imagine we're building 2 zones, one after another.
-        zone1 = ifcopenshell.api.run("sequence.add_task", model,
+        zone1 = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Zone 1", identification="C.1")
-        zone2 = ifcopenshell.api.run("sequence.add_task", model,
+        zone2 = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Zone 2", identification="C.2")
 
         # Zone 1 finishes, then zone 2 starts.
-        sequence = ifcopenshell.api.run("sequence.assign_sequence", model,
+        sequence = ifcopenshell.api.sequence.assign_sequence(model,
             relating_process=zone1, related_process=zone2)
 
         # What if they both started at the same time?
-        ifcopenshell.api.run("sequence.edit_sequence", model,
+        ifcopenshell.api.sequence.edit_sequence(model,
             rel_sequence=sequence, attributes={"SequenceType": "START_START"})
     """
     settings = {"rel_sequence": rel_sequence, "attributes": attributes}
@@ -67,8 +67,4 @@ def edit_sequence(
     for name, value in settings["attributes"].items():
         setattr(settings["rel_sequence"], name, value)
     if "SequenceType" in settings["attributes"].keys():
-        ifcopenshell.api.run(
-            "sequence.cascade_schedule",
-            file,
-            task=settings["rel_sequence"].RelatedProcess,
-        )
+        ifcopenshell.api.sequence.cascade_schedule(file, task=settings["rel_sequence"].RelatedProcess)

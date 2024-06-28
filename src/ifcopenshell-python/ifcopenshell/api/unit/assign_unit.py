@@ -51,20 +51,20 @@ def assign_unit(
     .. code:: python
 
         # You need a project before you can assign units.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
 
         # Millimeters and square meters
-        length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-        area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+        length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(model, unit_type="AREAUNIT")
 
         # Make it our default units, if we are doing a metric building
-        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        ifcopenshell.api.unit.assign_unit(model, units=[length, area])
 
         # Alternatively, you may specify without any arguments to
         # automatically create millimeters, square meters, and cubic meters
         # as a convenience for testing purposes. Sorry imperial folks, we
         # prioritise metric here.
-        ifcopenshell.api.run("unit.assign_unit", model)
+        ifcopenshell.api.unit.assign_unit(model)
     """
     usecase = Usecase()
     usecase.file = file

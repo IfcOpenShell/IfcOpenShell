@@ -19,7 +19,8 @@
 RUN_FROM_DEV_REPO = False
 
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import ifcopenshell.api
+import ifcopenshell.api.unit
+import ifcopenshell.api.project
 import ifcopenshell.guid
 import ifcopenshell.util.attribute
 import glob
@@ -123,7 +124,7 @@ class PsetTemplatesGenerator:
 
     def parse_psets_data(self, schema_name, pset_data_glob, project_name, ifc_output_path):
         schema_name = schema_name.upper()
-        self.ifc_file = ifcopenshell.api.run("project.create_file", version=schema_name)
+        self.ifc_file = ifcopenshell.api.project.create_file(version=schema_name)
         self.units = dict()
         schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
 
@@ -268,13 +269,13 @@ class PsetTemplatesGenerator:
 
         unit_entity = None
         if unit_type in self.ifc_derived_unit_enum:
-            # TODO: define derived units if there will be someday api like `ifcopenshell.api.run("unit.add_derived_unit", ...)`
+            # TODO: define derived units if there will be someday api like `ifcopenshell.api.unit.add_derived_unit(...)`
             # since creating IfcDerivedUnit is more complex and requiring settting up elements it consists of
             # and related IfcNamedUnits
-            # unit_entity = ifcopenshell.api.run("unit.add_derived_unit", self.ifc_file, unit_type=unit_type)
+            # unit_entity = ifcopenshell.api.unit.add_derived_unit(self.ifc_file, unit_type=unit_type)
             pass
         elif unit_type in self.ifc_unit_enum:
-            unit_entity = ifcopenshell.api.run("unit.add_si_unit", self.ifc_file, unit_type=unit_type)
+            unit_entity = ifcopenshell.api.unit.add_si_unit(self.ifc_file, unit_type=unit_type)
         elif unit_type == "IFCMONETARYUNIT":
             self.ifc_entity("IFCMONETARYUNIT", Currency="")
         else:

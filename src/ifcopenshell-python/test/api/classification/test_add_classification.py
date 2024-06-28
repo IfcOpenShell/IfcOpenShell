@@ -17,20 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.classification
 
 
 class TestAddClassification(test.bootstrap.IFC4):
     def test_adding_a_classification(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.classification.add_classification(self.file, classification="Name")
         assert self.file.by_type("IfcClassification")[0].Name == "Name"
 
     def test_adding_a_classification_from_a_library(self):
         library = ifcopenshell.file()
         classification = library.createIfcClassification(Name="Name")
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.classification.add_classification(self.file, classification=classification)
         assert self.file.by_type("IfcClassification")[0].Name == "Name"
 
 

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Union
 
@@ -47,9 +47,8 @@ def assign_flow_control(
 
         flow_element = model.createIfcFlowSegment()
         flow_control = model.createIfcController()
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control", model,
-            related_flow_control=flow_control, relating_flow_element=flow_element
+        relation = ifcopenshell.api.system.assign_flow_control(
+            model, related_flow_control=flow_control, relating_flow_element=flow_element
         )
     """
     settings = {
@@ -73,14 +72,14 @@ def assign_flow_control(
         related_flow_controls = set(assignment.RelatedControlElements)
         related_flow_controls.add(settings["related_flow_control"])
         assignment.RelatedControlElements = list(related_flow_controls)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": assignment})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": assignment})
         return assignment
 
     assignment = file.create_entity(
         "IfcRelFlowControlElements",
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "RelatedControlElements": [settings["related_flow_control"]],
             "RelatingFlowElement": settings["relating_flow_element"],
         },

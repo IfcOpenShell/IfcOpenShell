@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.project
 
 
 def add_work_calendar(
@@ -50,46 +51,44 @@ def add_work_calendar(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Add a root task to represent the construction tasks.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model, name="5 Day Week")
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # We create a weekly recurrence
-        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
             parent=work_time, recurrence_type="WEEKLY")
 
         # State that we work from weekdays 1 to 5 (i.e. Monday to Friday), 9am to 5pm
-        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+        ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
-        ifcopenshell.api.run("sequence.add_time_period", model,
+        ifcopenshell.api.sequence.add_time_period(model,
             recurrence_pattern=pattern, start_time="09:00", end_time="17:00")
 
         # We associate the calendar with the construction root task. All
         # subtasks underneath the construction work task will also inherit
         # this calendar by default (though you can override them).
-        ifcopenshell.api.run("control.assign_control", model, relating_control=calendar, related_object=task)
+        ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_object=task)
     """
     settings = {"name": name, "predefined_type": predefined_type}
 
-    work_calendar = ifcopenshell.api.run(
-        "root.create_entity",
+    work_calendar = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkCalendar",
         predefined_type=settings["predefined_type"],
         name=settings["name"],
     )
     context = file.by_type("IfcContext")[0]
-    ifcopenshell.api.run(
-        "project.assign_declaration",
+    ifcopenshell.api.project.assign_declaration(
         file,
         definitions=[work_calendar],
         relating_context=context,

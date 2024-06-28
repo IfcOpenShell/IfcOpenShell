@@ -49,7 +49,7 @@ def add_structural_boundary_condition(
 
     .. code:: python
 
-        ifcopenshell.api.run("structural.add_structural_boundary_condition", model, connection=connection)
+        ifcopenshell.api.structural.add_structural_boundary_condition(model, connection=connection)
     """
     settings = {"name": name, "connection": connection, "ifc_class": ifc_class}
 

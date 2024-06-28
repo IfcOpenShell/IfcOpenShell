@@ -17,13 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestAddPerson(test.bootstrap.IFC4):
     def test_adding_a_person(self):
-        person = ifcopenshell.api.run(
-            "owner.add_person",
+        person = ifcopenshell.api.owner.add_person(
             self.file,
             identification="Identification",
             family_name="FamilyName",

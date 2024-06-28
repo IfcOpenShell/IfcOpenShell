@@ -33,7 +33,7 @@ def remove_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance) -
 
     .. code:: python
 
-        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
-        ifcopenshell.api.run("layer.remove_layer", model, layer=layer)
+        layer = ifcopenshell.api.layer.add_layer(model, name="AI-WALL")
+        ifcopenshell.api.layer.remove_layer(model, layer=layer)
     """
     file.remove(layer)

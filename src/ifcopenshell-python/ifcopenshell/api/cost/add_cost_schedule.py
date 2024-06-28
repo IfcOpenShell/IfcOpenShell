@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.date
 from datetime import datetime
 from typing import Optional
@@ -51,14 +51,13 @@ def add_cost_schedule(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
         # Now that we have a cost schedule, we may add cost items to it
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
     """
     settings = {"name": name, "predefined_type": predefined_type}
 
-    cost_schedule = ifcopenshell.api.run(
-        "root.create_entity",
+    cost_schedule = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcCostSchedule",
         predefined_type=settings["predefined_type"],

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -39,17 +39,17 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
 
     .. code:: python
 
-        concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
+        concrete = ifcopenshell.api.material.add_material(model, name="CON01", category="concrete")
 
         # Let's imagine a concrete bench made out of concrete.
-        bench_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
-        ifcopenshell.api.run("material.assign_material", model,
+        bench_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurnitureType")
+        ifcopenshell.api.material.assign_material(model,
             products=[bench_type], type="IfcMaterial", material=concrete)
 
         # Let's change our mind and remove the concrete assignment. The
         # concrete material still exists, but the bench is no longer made
         # out of concrete now.
-        ifcopenshell.api.run("material.unassign_material", model, products=[bench_type])
+        ifcopenshell.api.material.unassign_material(model, products=[bench_type])
     """
     usecase = Usecase()
     usecase.file = file
@@ -127,4 +127,4 @@ class Usecase:
                         ifcopenshell.util.element.remove_deep2(self.file, history)
                     continue
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})

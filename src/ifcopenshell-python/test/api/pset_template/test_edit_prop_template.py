@@ -17,42 +17,38 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.pset_template
 
 
 class TestEditPropTemplate(test.bootstrap.IFC4):
     def test_editing_a_simple_template(self):
-        template = ifcopenshell.api.run("pset_template.add_pset_template", self.file, name="ABC_RiskFactors")
-        prop = ifcopenshell.api.run("pset_template.add_prop_template", self.file, pset_template=template)
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template",
+        template = ifcopenshell.api.pset_template.add_pset_template(self.file, name="ABC_RiskFactors")
+        prop = ifcopenshell.api.pset_template.add_prop_template(self.file, pset_template=template)
+        ifcopenshell.api.pset_template.edit_prop_template(
             self.file,
             prop_template=prop,
             attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLabel"},
         )
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template", self.file, prop_template=prop, attributes={"Name": "DemoB"}
+        ifcopenshell.api.pset_template.edit_prop_template(
+            self.file, prop_template=prop, attributes={"Name": "DemoB"}
         )
         assert prop.Name == "DemoB"
 
     def test_editing_an_enumeration(self):
-        template = ifcopenshell.api.run("pset_template.add_pset_template", self.file, name="ABC_RiskFactors")
-        prop = ifcopenshell.api.run("pset_template.add_prop_template", self.file, pset_template=template)
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template",
+        template = ifcopenshell.api.pset_template.add_pset_template(self.file, name="ABC_RiskFactors")
+        prop = ifcopenshell.api.pset_template.add_prop_template(self.file, pset_template=template)
+        ifcopenshell.api.pset_template.edit_prop_template(
             self.file,
             prop_template=prop,
             attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLabel"},
         )
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template",
+        ifcopenshell.api.pset_template.edit_prop_template(
             self.file,
             prop_template=prop,
             attributes={"Enumerators": ["FOO", "BAR"]},
         )
         assert prop.Enumerators.EnumerationValues == tuple(self.file.createIfcLabel(v) for v in ("FOO", "BAR"))
-        ifcopenshell.api.run(
-            "pset_template.edit_prop_template",
+        ifcopenshell.api.pset_template.edit_prop_template(
             self.file,
             prop_template=prop,
             attributes={"Name": "DemoC", "Enumerators": ["BAZ", "BAR"]},

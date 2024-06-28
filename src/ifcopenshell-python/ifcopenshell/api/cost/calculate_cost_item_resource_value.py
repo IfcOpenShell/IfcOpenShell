@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.resource
 
@@ -49,44 +49,44 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
     .. code:: python
 
         # First, we need a cost schedule and item
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # Let's imagine we have our own formworking crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # ... and they need concrete
-        concrete = ifcopenshell.api.run("resource.add_resource", model,
+        concrete = ifcopenshell.api.resource.add_resource(model,
             ifc_class="IfcConstructionMaterialResource", parent_resource=crew)
-        ifcopenshell.api.run("control.assign_control", model,
+        ifcopenshell.api.control.assign_control(model,
             relating_control=item, related_object=concrete)
         # ... which has a unit price of 42.0 per m3
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=concrete)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=concrete)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 42.0})
         # ... and a volume of 200m3
-        quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
+        quantity = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=concrete, ifc_class="IfcQuantityVolume")
-        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+        ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=quantity, "attributes": {"VolumeValue": 200.0})
 
         # Let's say they also need some equipment
-        equipment = ifcopenshell.api.run("resource.add_resource", model,
+        equipment = ifcopenshell.api.resource.add_resource(model,
             ifc_class="IfcConstructionEquipmentResource", parent_resource=crew)
-        ifcopenshell.api.run("control.assign_control", model,
+        ifcopenshell.api.control.assign_control(model,
             relating_control=item, related_object=equipment)
         # ... with a fixed price of 50,000
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=concrete)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=concrete)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 42.0})
 
         # (42 * 200) + 50000 = 58400 is our calculated cost
-        ifcopenshell.api.run("cost.calculate_cost_item_resource_value", model, cost_item=item)
+        ifcopenshell.api.cost.calculate_cost_item_resource_value(model, cost_item=item)
     """
     settings = {"cost_item": cost_item}
 
     for cost_value in settings["cost_item"].CostValues or []:
-        ifcopenshell.api.run("cost.remove_cost_value", file, parent=settings["cost_item"], cost_value=cost_value)
+        ifcopenshell.api.cost.remove_cost_value(file, parent=settings["cost_item"], cost_value=cost_value)
 
     resources = []
     for rel in settings["cost_item"].Controls or []:
@@ -112,6 +112,6 @@ def calculate_cost_item_resource_value(file: ifcopenshell.file, cost_item: ifcop
             quantity = quantity / 8  # Assume 8 hour working day - TODO implement resource calendar
         quantity = round(quantity, 2)
         formula = "{}*{}".format(cost, quantity)
-        cost_value = ifcopenshell.api.run("cost.add_cost_value", file, parent=settings["cost_item"])
+        cost_value = ifcopenshell.api.cost.add_cost_value(file, parent=settings["cost_item"])
         cost_value.Name = resource.Name
-        ifcopenshell.api.run("cost.edit_cost_value_formula", file, cost_value=cost_value, formula=formula)
+        ifcopenshell.api.cost.edit_cost_value_formula(file, cost_value=cost_value, formula=formula)

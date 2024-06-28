@@ -33,12 +33,12 @@ def remove_address(file: ifcopenshell.file, address: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        organisation = ifcopenshell.api.run("owner.add_organisation", model)
-        address = ifcopenshell.api.run("owner.add_address", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model)
+        address = ifcopenshell.api.owner.add_address(model,
             assigned_object=organisation, ifc_class="IfcPostalAddress")
 
         # Change our mind and delete it
-        ifcopenshell.api.run("owner.remove_address", model, address=address)
+        ifcopenshell.api.owner.remove_address(model, address=address)
     """
     settings = {"address": address}
 

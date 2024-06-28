@@ -18,7 +18,9 @@
 
 import ifcopenshell
 import ifcopenshell.guid
-import ifcopenshell.api
+import ifcopenshell.api.nest
+import ifcopenshell.api.owner
+import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 import ifcopenshell.util.sequence
 
@@ -83,9 +85,8 @@ class Usecase:
                     inverse = ifcopenshell.util.element.copy(self.file, inverse)
                     inverse.RelatingObject = to_element
                     inverse.RelatedObjects = new_tasks
-                    ifcopenshell.api.run("nest.unassign_object", self.file, related_objects=new_tasks)
-                    ifcopenshell.api.run(
-                        "nest.assign_object",
+                    ifcopenshell.api.nest.unassign_object(self.file, related_objects=new_tasks)
+                    ifcopenshell.api.nest.assign_object(
                         self.file,
                         related_objects=new_tasks,
                         relating_object=to_element,
@@ -133,15 +134,13 @@ class Usecase:
                     else:  # thus the relating process is not part of the duplicated tasks
                         relating_process = inverse.RelatingProcess
                     if relating_process and related_process:
-                        rel = ifcopenshell.api.run(
-                            "sequence.assign_sequence",
+                        rel = ifcopenshell.api.sequence.assign_sequence(
                             self.file,
                             relating_process=relating_process,
                             related_process=related_process,
                         )
                         if inverse.TimeLag:
-                            ifcopenshell.api.run(
-                                "sequence.assign_lag_time",
+                            ifcopenshell.api.sequence.assign_lag_time(
                                 self.file,
                                 rel_sequence=rel,
                                 lag_value=(
@@ -160,13 +159,13 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": referenced_by})
+            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": referenced_by})
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [related_object],
                     "RelatingObject": relating_object,
                 }

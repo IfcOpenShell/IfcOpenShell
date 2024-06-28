@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.structural
 import ifcopenshell.util.element
 
 
@@ -34,8 +34,7 @@ def remove_structural_connection_condition(file: ifcopenshell.file, relation: if
     settings = {"relation": relation}
 
     if settings["relation"].AppliedCondition:
-        ifcopenshell.api.run(
-            "structural.remove_structural_boundary_condition",
+        ifcopenshell.api.structural.remove_structural_boundary_condition(
             file,
             connection=settings["relation"].RelatedStructuralConnection,
         )

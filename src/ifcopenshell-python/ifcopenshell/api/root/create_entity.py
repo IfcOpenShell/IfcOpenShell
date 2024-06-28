@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Optional
 
@@ -58,16 +58,16 @@ def create_entity(
     .. code:: python
 
         # We have a project.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
 
         # We have a building.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
 
         # We have a wall.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # We have a wall type.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
     """
     usecase = Usecase()
     usecase.file = file
@@ -85,7 +85,7 @@ class Usecase:
             self.settings["ifc_class"],
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
             }
         )
         element.Name = self.settings["name"] or None

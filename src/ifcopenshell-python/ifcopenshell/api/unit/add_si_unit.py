@@ -52,11 +52,11 @@ def add_si_unit(
     .. code:: python
 
         # Millimeters and square meters
-        length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-        area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+        length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(model, unit_type="AREAUNIT")
 
         # Make it our default units, if we are doing a metric building
-        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        ifcopenshell.api.unit.assign_unit(model, units=[length, area])
     """
     settings = {"unit_type": unit_type, "prefix": prefix}
 

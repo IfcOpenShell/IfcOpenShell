@@ -16,10 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.placement
 
 
@@ -30,10 +28,10 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         wall = self.file.createIfcWall(
             Representation=self.file.createIfcProductDefinitionShape(Representations=[representation, representation2])
         )
-        ifcopenshell.api.run("geometry.unassign_representation", self.file, product=wall, representation=representation)
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=representation)
         assert representation not in wall.Representation.Representations
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", self.file, product=wall, representation=representation2
+        ifcopenshell.api.geometry.unassign_representation(
+            self.file, product=wall, representation=representation2
         )
         assert not wall.Representation
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
@@ -44,8 +42,8 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         origin = self.file.createIfcAxis2Placement3D()
         repmap = self.file.createIfcRepresentationMap(MappedRepresentation=representation, MappingOrigin=origin)
         walltype = self.file.createIfcWallType(RepresentationMaps=[repmap])
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", self.file, product=walltype, representation=representation
+        ifcopenshell.api.geometry.unassign_representation(
+            self.file, product=walltype, representation=representation
         )
         assert not walltype.RepresentationMaps
         assert len(self.file.by_type("IfcAxis2Placement3D")) == 0
@@ -61,8 +59,8 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         rep = self.file.createIfcShapeRepresentation(Items=[mapped_item])
         prodrep = self.file.createIfcProductDefinitionShape(Representations=[rep])
         wall = self.file.createIfcWall(Representation=prodrep)
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", self.file, product=walltype, representation=representation
+        ifcopenshell.api.geometry.unassign_representation(
+            self.file, product=walltype, representation=representation
         )
         assert not walltype.RepresentationMaps
         assert len(self.file.by_type("IfcAxis2Placement3D")) == 0

@@ -17,13 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.unit
 
 
 class TestAddContextDependentUnit(test.bootstrap.IFC4):
     def test_run(self):
-        unit = ifcopenshell.api.run(
-            "unit.add_context_dependent_unit",
+        unit = ifcopenshell.api.unit.add_context_dependent_unit(
             self.file,
             unit_type="LENGTHUNIT",
             name="foobar",

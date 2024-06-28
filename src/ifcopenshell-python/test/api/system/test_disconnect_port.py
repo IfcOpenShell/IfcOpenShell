@@ -17,16 +17,16 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 
 
 class TestDisconnectPort(test.bootstrap.IFC4):
     def test_disconnecting_a_port(self):
-        port = ifcopenshell.api.run("system.add_port", self.file)
-        port2 = ifcopenshell.api.run("system.add_port", self.file)
-        ifcopenshell.api.run("system.connect_port", self.file, port1=port, port2=port2, direction="NOTDEFINED")
-        ifcopenshell.api.run("system.disconnect_port", self.file, port=port)
+        port = ifcopenshell.api.system.add_port(self.file)
+        port2 = ifcopenshell.api.system.add_port(self.file)
+        ifcopenshell.api.system.connect_port(self.file, port1=port, port2=port2, direction="NOTDEFINED")
+        ifcopenshell.api.system.disconnect_port(self.file, port=port)
         assert port.FlowDirection == None
         assert port2.FlowDirection == None
         assert len(self.file.by_type("IfcRelConnectsPorts")) == 0

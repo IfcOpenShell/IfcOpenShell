@@ -18,7 +18,7 @@
 
 import datetime
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 
 
 # NOTE: IfcWorkTime was introduced in IFC4
@@ -34,7 +34,7 @@ class TestEditWorkTime(test.bootstrap.IFC4):
             "Start": datetime.datetime(2020, 1, 1),
             "Finish": datetime.datetime(2020, 2, 1),
         }
-        ifcopenshell.api.run("sequence.edit_work_time", self.file, work_time=work_time, attributes=attributes)
+        ifcopenshell.api.sequence.edit_work_time(self.file, work_time=work_time, attributes=attributes)
         assert work_time.Name == attributes["Name"]
         assert work_time.DataOrigin == attributes["DataOrigin"]
         assert work_time.UserDefinedDataOrigin == attributes["UserDefinedDataOrigin"]
@@ -55,7 +55,7 @@ class TestEditWorkTimeIFC4X3(test.bootstrap.IFC4X3):
             "StartDate": datetime.datetime(2020, 1, 1),
             "FinishDate": datetime.datetime(2020, 2, 1),
         }
-        ifcopenshell.api.run("sequence.edit_work_time", self.file, work_time=work_time, attributes=attributes)
+        ifcopenshell.api.sequence.edit_work_time(self.file, work_time=work_time, attributes=attributes)
         assert work_time.Name == attributes["Name"]
         assert work_time.DataOrigin == attributes["DataOrigin"]
         assert work_time.UserDefinedDataOrigin == attributes["UserDefinedDataOrigin"]

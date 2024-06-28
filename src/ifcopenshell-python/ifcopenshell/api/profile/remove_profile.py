@@ -32,10 +32,10 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
+        circle = ifcopenshell.api.profile.add_parameterized_profile(model,
             ifc_class="IfcCircleProfileDef")
         circle = 1.
-        ifcopenshell.api.run("profile.remove_profile", model, profile=circle)
+        ifcopenshell.api.profile.remove_profile(model, profile=circle)
     """
     settings = {"profile": profile}
 

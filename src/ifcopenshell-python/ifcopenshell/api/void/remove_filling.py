@@ -37,20 +37,20 @@ def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instanc
     .. code:: python
 
         # Create a wall
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Create an opening, such as for a service penetration with fire and
         # acoustic requirements.
-        opening = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcOpeningElement")
+        opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
 
         # Create a door
-        door = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcDoor")
+        door = ifcopenshell.api.root.create_entity(model, ifc_class="IfcDoor")
 
         # The door will now fill the opening.
-        ifcopenshell.api.run("void.add_filling", model, opening=opening, element=door)
+        ifcopenshell.api.void.add_filling(model, opening=opening, element=door)
 
         # Not anymore!
-        ifcopenshell.api.run("void.remove_filling", model, element=door)
+        ifcopenshell.api.void.remove_filling(model, element=door)
     """
     settings = {"element": element}
 

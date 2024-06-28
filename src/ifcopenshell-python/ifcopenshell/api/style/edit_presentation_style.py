@@ -39,10 +39,10 @@ def edit_presentation_style(
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
 
         # Change the name of the style to "Foo"
-        ifcopenshell.api.run("style.edit_presentation_style", model, style=style, attributes={"Name": "Foo"})
+        ifcopenshell.api.style.edit_presentation_style(model, style=style, attributes={"Name": "Foo"})
     """
     settings = {"style": style, "attributes": attributes or {}}
 

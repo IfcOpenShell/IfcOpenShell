@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 
 
@@ -36,19 +37,19 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+        model = ifcopenshell.api.context.add_context(model, context_type="Model")
         # Revit had a bug where they incorrectly called the body representation a "Facetation"
-        body = ifcopenshell.api.run("context.add_context", model,
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
         )
 
         # Let's just get rid of it completely
-        ifcopenshell.api.run("context.remove_context", model, context=body)
+        ifcopenshell.api.context.remove_context(model, context=body)
     """
     settings = {"context": context}
 
     for subcontext in settings["context"].HasSubContexts:
-        ifcopenshell.api.run("context.remove_context", file, context=subcontext)
+        ifcopenshell.api.context.remove_context(file, context=subcontext)
 
     if getattr(settings["context"], "ParentContext", None):
         new = settings["context"].ParentContext
@@ -63,4 +64,4 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
         representations_in_context = settings["context"].RepresentationsInContext
         file.remove(settings["context"])
         for element in representations_in_context:
-            ifcopenshell.api.run("geometry.remove_representation", file, representation=element)
+            ifcopenshell.api.geometry.remove_representation(file, representation=element)

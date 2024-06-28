@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 
 
@@ -39,10 +39,10 @@ def remove_opening(file: ifcopenshell.file, opening: ifcopenshell.entity_instanc
         # Create an oprhaned opening. Note that an orphaned opening is
         # invalid, as an opening can only exist when voiding another
         # element.
-        opening = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcOpeningElement")
+        opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
 
         # Remove it. This brings us back to a valid model.
-        ifcopenshell.api.run("void.remove_opening", model, opening=opening)
+        ifcopenshell.api.void.remove_opening(model, opening=opening)
     """
     settings = {"opening": opening}
 
@@ -57,4 +57,4 @@ def remove_opening(file: ifcopenshell.file, opening: ifcopenshell.entity_instanc
             file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-    ifcopenshell.api.run("root.remove_product", file, product=settings["opening"])
+    ifcopenshell.api.root.remove_product(file, product=settings["opening"])

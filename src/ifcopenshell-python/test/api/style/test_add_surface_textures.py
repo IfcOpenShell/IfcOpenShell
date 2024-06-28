@@ -18,7 +18,7 @@
 
 import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.style
 
 
 # TODO: add ifc2x3 tests after add_surface_textures will support ifc2x3
@@ -51,7 +51,7 @@ class TestAddSurfaceTexture(test.bootstrap.IFC4):
     def test_add_surface_textures_from_data(self):
         texture_data = self.get_default_texture_data()
 
-        textures = ifcopenshell.api.run("style.add_surface_textures", self.file, textures=texture_data)
+        textures = ifcopenshell.api.style.add_surface_textures(self.file, textures=texture_data)
         assert len(list(self.file)) == len(texture_data)
 
         for texture, data in zip(textures, texture_data):
@@ -64,7 +64,7 @@ class TestAddSurfaceTexture(test.bootstrap.IFC4):
         texture_data[2]["uv_mode"] = "UV"
         texture_data[3]["uv_mode"] = None
 
-        textures = ifcopenshell.api.run("style.add_surface_textures", self.file, textures=texture_data)
+        textures = ifcopenshell.api.style.add_surface_textures(self.file, textures=texture_data)
         for texture, data in zip(textures, texture_data):
             self.compare_texture_to_data(texture, data)
 
@@ -77,6 +77,6 @@ class TestAddSurfaceTexture(test.bootstrap.IFC4):
         texture_data[3]["uv_mode"] = None
 
         uv_maps = [self.file.create_entity("IfcTextureCoordinateGenerator", Maps=[], Mode="COORD") for i in range(5)]
-        textures = ifcopenshell.api.run("style.add_surface_textures", self.file, textures=texture_data, uv_maps=uv_maps)
+        textures = ifcopenshell.api.style.add_surface_textures(self.file, textures=texture_data, uv_maps=uv_maps)
         for texture, data in zip(textures, texture_data):
             self.compare_texture_to_data(texture, data, uv_maps)

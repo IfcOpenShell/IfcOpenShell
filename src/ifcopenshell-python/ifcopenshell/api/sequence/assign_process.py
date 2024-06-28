@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -78,18 +78,18 @@ def assign_process(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's create a construction task. Note that the predefined type is
         # important to distinguish types of tasks.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Demolish existing", identification="A", predefined_type="DEMOLITION")
 
         # Let's say we have a wall somewhere.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's demolish that wall!
-        ifcopenshell.api.run("sequence.assign_process", model, relating_process=task, related_object=wall)
+        ifcopenshell.api.sequence.assign_process(model, relating_process=task, related_object=wall)
     """
     settings = {
         "relating_process": relating_process,
@@ -109,13 +109,13 @@ def assign_process(
         related_objects = list(operates_on.RelatedObjects)
         related_objects.append(settings["related_object"])
         operates_on.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": operates_on})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": operates_on})
     else:
         operates_on = file.create_entity(
             "IfcRelAssignsToProcess",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingProcess": settings["relating_process"],
             }

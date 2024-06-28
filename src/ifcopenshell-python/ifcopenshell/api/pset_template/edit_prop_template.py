@@ -38,13 +38,13 @@ def edit_prop_template(
 
     .. code:: python
 
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Here's a property with just default values.
-        prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template)
+        prop = ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template)
 
         # Let's edit it to give the actual values we need.
-        ifcopenshell.api.run("pset_template.edit_prop_template", model,
+        ifcopenshell.api.pset_template.edit_prop_template(model,
             prop_template=prop, attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLengthMeasure"})
     """
     if enum_values := attributes.get("Enumerators", None):

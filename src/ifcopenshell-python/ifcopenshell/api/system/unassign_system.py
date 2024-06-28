@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.group
 import ifcopenshell.util.element
 
 
@@ -40,21 +40,21 @@ def unassign_system(
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
 
         # Create a duct
-        duct = ifcopenshell.api.run("root.create_entity", model,
+        duct = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
         # This duct is part of the system
-        ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
+        ifcopenshell.api.system.assign_system(model, products=[duct], system=system)
 
         # Not anymore!
-        ifcopenshell.api.run("system.unassign_system", model, products=[duct], system=system)
+        ifcopenshell.api.system.unassign_system(model, products=[duct], system=system)
     """
     settings = {
         "products": products,
         "system": system,
     }
 
-    ifcopenshell.api.run("group.unassign_group", file, products=settings["products"], group=settings["system"])
+    ifcopenshell.api.group.unassign_group(file, products=settings["products"], group=settings["system"])

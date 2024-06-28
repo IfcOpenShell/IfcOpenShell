@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.system
 
 
 class TestAddSystem(test.bootstrap.IFC4):
     def test_adding_a_system(self):
-        system = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcSystem")
-        system2 = ifcopenshell.api.run("system.add_system", self.file, ifc_class="IfcDistributionSystem")
+        system = ifcopenshell.api.system.add_system(self.file, ifc_class="IfcSystem")
+        system2 = ifcopenshell.api.system.add_system(self.file, ifc_class="IfcDistributionSystem")
         assert system.is_a("IfcSystem")
         if self.file.schema == "IFC2X3":
             assert system2.is_a("IfcSystem")

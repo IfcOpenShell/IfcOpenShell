@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.api.owner
 from typing import Optional
 
 
@@ -44,14 +45,14 @@ def add_information(
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
+        document = ifcopenshell.api.document.add_information(model)
         # A document typically has a unique drawing or document name (which
         # follows a coding system depending on the project), as well as a
         # title.  This should match what is shown on the titleblock or title
         # page of the document. At a minimum you'd also want to specify a
         # URI location. The location may be on local, or on a CDE, or any
         # other platform.
-        ifcopenshell.api.run("document.edit_information", model,
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
@@ -64,7 +65,7 @@ def add_information(
         file.create_entity(
             "IfcRelAssociatesDocument",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
             RelatingDocument=information,
             RelatedObjects=[parent],
         )

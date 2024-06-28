@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.pset
 from typing import Optional, Any
 
 
@@ -52,12 +53,12 @@ def edit_georeferencing(
 
     .. code:: python
 
-        ifcopenshell.api.run("georeference.add_georeferencing", model)
+        ifcopenshell.api.georeference.add_georeferencing(model)
         # This is the simplest scenario, a defined CRS (GDA2020 / MGA Zone
         # 56, typically used in Sydney, Australia) but with no local
         # coordinates. This is only recommended for horizontal construction
         # projects, not for vertical construction (such as buildings).
-        ifcopenshell.api.run("georeference.edit_georeferencing", model,
+        ifcopenshell.api.georeference.edit_georeferencing(model,
             projected_crs={"Name": "EPSG:7856"})
 
         # For buildings, it is almost always recommended to specify map
@@ -65,7 +66,7 @@ def edit_georeferencing(
         # north. See the diagram in the BlenderBIM Add-on Georeferencing
         # documentation for correct calculation of the X Axis Abcissa and
         # Ordinate.
-        ifcopenshell.api.run("georeference.edit_georeferencing", model,
+        ifcopenshell.api.georeference.edit_georeferencing(model,
             projected_crs={"Name": "EPSG:7856"},
             coordinate_operation={
                 "Eastings": 335087.17, # The architect nominates a false origin

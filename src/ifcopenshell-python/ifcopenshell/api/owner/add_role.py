@@ -42,9 +42,9 @@ def add_role(file: ifcopenshell.file, assigned_object: ifcopenshell.entity_insta
 
     .. code:: python
 
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+        ifcopenshell.api.owner.add_role(model, assigned_object=organisation, role="ARCHITECT")
     """
     settings = {"assigned_object": assigned_object, "role": role}
 

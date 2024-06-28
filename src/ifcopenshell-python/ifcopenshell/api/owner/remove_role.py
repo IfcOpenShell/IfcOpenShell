@@ -33,12 +33,12 @@ def remove_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance) -> 
 
     .. code:: python
 
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+        role = ifcopenshell.api.owner.add_role(model, assigned_object=organisation, role="ARCHITECT")
 
         # After running this, the organisation will have no role again
-        ifcopenshell.api.run("owner.remove_role", model, role=role)
+        ifcopenshell.api.owner.remove_role(model, role=role)
     """
     settings = {"role": role}
 

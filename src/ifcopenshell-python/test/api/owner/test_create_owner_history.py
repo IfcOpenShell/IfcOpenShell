@@ -26,14 +26,14 @@ import ifcopenshell.api.owner.settings
 class TestCreateOwnerHistory(test.bootstrap.IFC4):
     def test_creating_nothing_if_no_user_or_application_is_available(self):
         if self.file.schema != "IFC2X3":
-            history = ifcopenshell.api.run("owner.create_owner_history", self.file)
+            history = ifcopenshell.api.owner.create_owner_history(self.file)
             assert history is None
         else:
             ifcopenshell.api.owner.settings.factory_reset()
             # create new file as bootstrap is creating users in ifc2x3 by default
             file = ifcopenshell.file(schema="IFC2X3")
             with pytest.raises(Exception) as e:
-                ifcopenshell.api.run("owner.create_owner_history", file)
+                ifcopenshell.api.owner.create_owner_history(file)
             assert "Please create a user to continue" in str(e.value)
             ifcopenshell.api.owner.settings.restore()
 
@@ -44,7 +44,7 @@ class TestCreateOwnerHistory(test.bootstrap.IFC4):
         application = self.file.createIfcApplication()
         ifcopenshell.api.owner.settings.get_user = lambda x: user
         ifcopenshell.api.owner.settings.get_application = lambda x: application
-        history = ifcopenshell.api.run("owner.create_owner_history", self.file)
+        history = ifcopenshell.api.owner.create_owner_history(self.file)
         ifcopenshell.api.owner.settings.restore()
 
         assert history.is_a("IfcOwnerHistory")

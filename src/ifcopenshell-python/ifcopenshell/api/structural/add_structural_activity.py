@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
 from typing import Literal
 
 
@@ -65,8 +65,7 @@ def add_structural_activity(
         "structural_member": structural_member,
     }
 
-    activity = ifcopenshell.api.run(
-        "root.create_entity",
+    activity = ifcopenshell.api.root.create_entity(
         file,
         ifc_class=settings["ifc_class"],
         predefined_type=settings["predefined_type"],
@@ -74,7 +73,7 @@ def add_structural_activity(
     activity.AppliedLoad = settings["applied_load"]
     activity.GlobalOrLocal = settings["global_or_local"]
 
-    rel = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcRelConnectsStructuralActivity")
+    rel = ifcopenshell.api.root.create_entity(file, ifc_class="IfcRelConnectsStructuralActivity")
     rel.RelatingElement = settings["structural_member"]
     rel.RelatedStructuralActivity = activity
     return activity

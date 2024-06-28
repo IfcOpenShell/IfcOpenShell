@@ -37,11 +37,11 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
     .. code:: python
 
         # First, let's create a material set.
-        material_set = ifcopenshell.api.run("material.add_profile_set", model,
+        material_set = ifcopenshell.api.material.add_profile_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
@@ -51,17 +51,17 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
         )
 
         # Define that steel material and cross section as a single profile item.
-        ifcopenshell.api.run("material.add_profile", model,
+        ifcopenshell.api.material.add_profile(model,
             profile_set=material_set, material=steel, profile=hea100)
 
         # Imagine a welded square along the length of the profile.
-        welded_square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
+        welded_square = ifcopenshell.api.profile.add_arbitrary_profile(model,
             profile=[(.0025, .0025), (.0325, .0025), (.0325, -.0025), (.0025, -.0025), (.0025, .0025)])
-        weld_profile = ifcopenshell.api.run("material.add_profile", model,
+        weld_profile = ifcopenshell.api.material.add_profile(model,
             profile_set=material_set, material=steel, profile=welded_square)
 
         # Let's remove our welded square.
-        ifcopenshell.api.run("material.remove_profile", model, profile=weld_profile)
+        ifcopenshell.api.material.remove_profile(model, profile=weld_profile)
     """
 
     settings = {"profile": profile}

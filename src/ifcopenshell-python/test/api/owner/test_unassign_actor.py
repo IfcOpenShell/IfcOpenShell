@@ -17,15 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestUnassignActor(test.bootstrap.IFC4):
     def test_unassigning_an_actor(self):
         wall = self.file.createIfcWall()
         actor = self.file.createIfcActor()
-        ifcopenshell.api.run("owner.assign_actor", self.file, relating_actor=actor, related_object=wall)
-        ifcopenshell.api.run("owner.unassign_actor", self.file, relating_actor=actor, related_object=wall)
+        ifcopenshell.api.owner.assign_actor(self.file, relating_actor=actor, related_object=wall)
+        ifcopenshell.api.owner.unassign_actor(self.file, relating_actor=actor, related_object=wall)
         assert len(self.file.by_type("IfcRelAssignsToActor")) == 0
 
 

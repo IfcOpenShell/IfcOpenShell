@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -69,7 +69,7 @@ class Usecase:
             related_objects -= products
             if related_objects:
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
                 continue
 
             history = rel.OwnerHistory

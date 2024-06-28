@@ -37,10 +37,10 @@ def edit_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instanc
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Change the name of the resource to "Zone A Crew"
-        ifcopenshell.api.run("resource.edit_resource", model, resource=resource, attributes={"Name": "Foo"})
+        ifcopenshell.api.resource.edit_resource(model, resource=resource, attributes={"Name": "Foo"})
     """
     settings = {"resource": resource, "attributes": attributes}
 

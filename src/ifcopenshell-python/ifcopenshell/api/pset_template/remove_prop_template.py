@@ -35,14 +35,14 @@ def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.en
 
     .. code:: python
 
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Here's two propertes with just default values.
-        prop1 = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template)
-        prop2 = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template)
+        prop1 = ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template)
+        prop2 = ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template)
 
         # Let's remove the second one.
-        ifcopenshell.api.run("pset_template.remove_prop_template", model, prop_template=prop2)
+        ifcopenshell.api.pset_template.remove_prop_template(model, prop_template=prop2)
     """
     settings = {"prop_template": prop_template}
 

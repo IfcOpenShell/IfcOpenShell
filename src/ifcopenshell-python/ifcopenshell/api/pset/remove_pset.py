@@ -39,11 +39,11 @@ def remove_pset(
     .. code:: python
 
         # Let's imagine we have a new wall type with a property set.
-        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType")
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
 
         # Remove it!
-        ifcopenshell.api.run("pset.remove_pset", model, product=wall_type, pset=pset)
+        ifcopenshell.api.pset.remove_pset(model, product=wall_type, pset=pset)
     """
     settings = {"product": product, "pset": pset}
 

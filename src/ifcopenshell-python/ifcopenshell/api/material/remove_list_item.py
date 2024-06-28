@@ -41,18 +41,18 @@ def remove_list_item(
     .. code:: python
 
         # Create a material list for aluminium windows.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialMaterialList")
 
-        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
-        glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+        aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
+        glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
 
         # Now let's use those materials as two items in our list.
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=aluminium)
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=glass)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=aluminium)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=glass)
 
         # Let's remove the glass
-        ifcopenshell.api.run("material.remove_list_item", model, material_list=material_set, material_index=1)
+        ifcopenshell.api.material.remove_list_item(model, material_list=material_set, material_index=1)
     """
     settings = {"material_list": material_list, "material_index": material_index}
 

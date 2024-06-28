@@ -17,56 +17,55 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.geometry
 
 
 class TestDisconnectPath(test.bootstrap.IFC4):
     def test_disconnecting_a_path(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("geometry.connect_path", self.file, relating_element=wall1, related_element=wall2)
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, relating_element=wall1, related_element=wall2)
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.connect_path(self.file, relating_element=wall1, related_element=wall2)
+        ifcopenshell.api.geometry.disconnect_path(self.file, relating_element=wall1, related_element=wall2)
         assert not self.file.by_type("IfcRelConnectsPathElements")
 
     def test_disconnecting_by_connection_type(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run(
-            "geometry.connect_path",
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.connect_path(
             self.file,
             relating_element=wall1,
             related_element=wall2,
             relating_connection="ATSTART",
             related_connection="ATEND",
         )
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(self.file, element=wall1, connection_type="ATEND")
         assert self.file.by_type("IfcRelConnectsPathElements")
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall1, connection_type="ATSTART")
+        ifcopenshell.api.geometry.disconnect_path(self.file, element=wall1, connection_type="ATSTART")
         assert not self.file.by_type("IfcRelConnectsPathElements")
-        ifcopenshell.api.run(
-            "geometry.connect_path",
+        ifcopenshell.api.geometry.connect_path(
             self.file,
             relating_element=wall1,
             related_element=wall2,
             relating_connection="ATSTART",
             related_connection="ATEND",
         )
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, element=wall2, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(self.file, element=wall2, connection_type="ATEND")
         assert not self.file.by_type("IfcRelConnectsPathElements")
 
     def test_doing_nothing_if_there_is_no_connection(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, relating_element=wall1, related_element=wall2)
+        ifcopenshell.api.geometry.disconnect_path(self.file, relating_element=wall1, related_element=wall2)
         assert len([e for e in self.file]) == total_elements
 
     def test_that_order_matters(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("geometry.connect_path", self.file, relating_element=wall1, related_element=wall2)
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.connect_path(self.file, relating_element=wall1, related_element=wall2)
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.run("geometry.disconnect_path", self.file, relating_element=wall2, related_element=wall1)
+        ifcopenshell.api.geometry.disconnect_path(self.file, relating_element=wall2, related_element=wall1)
         assert len([e for e in self.file]) == total_elements
 
 

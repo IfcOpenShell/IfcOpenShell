@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union
@@ -46,19 +46,19 @@ def assign_reference(
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
 
         # Let's create a reference to a single AHU in our Brickschema dataset
-        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-        ifcopenshell.api.run("library.edit_reference", model,
+        reference = ifcopenshell.api.library.add_reference(model, library=library)
+        ifcopenshell.api.library.edit_reference(model,
             reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
 
         # Let's assume we have an AHU in our model.
-        ahu = ifcopenshell.api.run("root.create_entity", model,
+        ahu = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
         # And now assign the IFC model's AHU with its Brickschema counterpart
-        ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
+        ifcopenshell.api.library.assign_reference(model, reference=reference, products=[ahu])
     """
     settings = {
         "products": products,
@@ -86,12 +86,12 @@ def assign_reference(
         return file.create_entity(
             "IfcRelAssociatesLibrary",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
             RelatedObjects=list(products),
             RelatingLibrary=settings["reference"],
         )
 
     related_objects = set(rel.RelatedObjects) | products
     rel.RelatedObjects = list(related_objects)
-    ifcopenshell.api.run("owner.update_owner_history", file, element=rel)
+    ifcopenshell.api.owner.update_owner_history(file, element=rel)
     return rel

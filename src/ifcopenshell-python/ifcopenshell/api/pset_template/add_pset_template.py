@@ -90,12 +90,12 @@ def add_pset_template(
     .. code:: python
 
         # Create a simple template that may be applied to all types
-        ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Note that we aren't finished yet. Our property set template
         # doesn't have any properties in it. Let's add a minimum of one
         # property.
-        ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+        ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template,
             name="HighVoltage", description="Whether there is a risk of high voltage.",
             primary_measure_type="IfcBoolean")
     """

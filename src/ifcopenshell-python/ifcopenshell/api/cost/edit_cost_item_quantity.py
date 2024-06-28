@@ -38,16 +38,16 @@ def edit_cost_item_quantity(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # This cost item will have a unit cost of 5 and a volume of 3
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 5.0})
-        quantity = ifcopenshell.api.run("cost.add_cost_item_quantity", model,
+        quantity = ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityVolume")
-        ifcopenshell.api.run("cost.edit_cost_item_quantity", model,
+        ifcopenshell.api.cost.edit_cost_item_quantity(model,
             physical_quantity=quantity, "attributes": {"VolumeValue": 3.0})
     """
     settings = {"physical_quantity": physical_quantity, "attributes": attributes or {}}

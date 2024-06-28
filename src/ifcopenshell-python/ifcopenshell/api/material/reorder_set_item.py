@@ -42,19 +42,19 @@ def reorder_set_item(
 
     .. code:: python
 
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialList")
 
-        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
-        glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+        aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
+        glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
 
         # Now let's use those materials as two items in our list.
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=aluminium)
-        ifcopenshell.api.run("material.add_list_item", model, material_list=material_set, material=glass)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=aluminium)
+        ifcopenshell.api.material.add_list_item(model, material_list=material_set, material=glass)
 
         # Switch the order around, this has no meaning for a list, so this
         # is just for fun.
-        ifcopenshell.api.run("material.reorder_set_item", model,
+        ifcopenshell.api.material.reorder_set_item(model,
             material_set=material_set, old_index=0, new_index=1)
     """
     settings = {"material_set": material_set, "old_index": old_index, "new_index": new_index}

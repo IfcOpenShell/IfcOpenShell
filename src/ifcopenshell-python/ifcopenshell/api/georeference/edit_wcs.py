@@ -58,7 +58,7 @@ def edit_wcs(
     .. code:: python
 
         # This is the simplest scenario, resetting the WCS to 0,0,0 with no rotation (recommended)
-        ifcopenshell.api.run("georeference.edit_wcs", model)
+        ifcopenshell.api.georeference.edit_wcs(model)
     """
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
     if np.isclose(rotation, 0):

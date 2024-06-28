@@ -48,17 +48,17 @@ def create_axis_curve(
     .. code:: python
 
         # A pretty standard rectangular grid, with only two axes.
-        grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
-        axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+        grid = ifcopenshell.api.root.create_entity(model, ifc_class="IfcGrid")
+        axis_a = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="A", uvw_axes="UAxes", grid=grid)
-        axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+        axis_1 = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="1", uvw_axes="VAxes", grid=grid)
 
         # Assume you have these Blender objects in your active Blender session
         obj1 = bpy.data.objects.get("AxisA")
         obj2 = bpy.data.objects.get("Axis1")
-        ifcopenshell.api.run("grid.create_axis_curve", model, axis_curve=obj1, grid_axis=axis_a)
-        ifcopenshell.api.run("grid.create_axis_curve", model, axis_curve=obj2, grid_axis=axis_1)
+        ifcopenshell.api.grid.create_axis_curve(model, axis_curve=obj1, grid_axis=axis_a)
+        ifcopenshell.api.grid.create_axis_curve(model, axis_curve=obj2, grid_axis=axis_1)
     """
     usecase = Usecase()
     usecase.file = file

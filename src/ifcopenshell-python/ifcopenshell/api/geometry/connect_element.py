@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Optional
@@ -59,7 +59,7 @@ def connect_element(
 
     return file.createIfcRelConnectsElements(
         ifcopenshell.guid.new(),
-        OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", file),
+        OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
         Description=settings["description"],
         RelatingElement=settings["relating_element"],
         RelatedElement=settings["related_element"],

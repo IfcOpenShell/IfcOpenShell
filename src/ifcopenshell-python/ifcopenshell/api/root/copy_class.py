@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.system
+import ifcopenshell.api.geometry
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -60,10 +62,10 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
     .. code:: python
 
         # We have a wall
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # And now we have two
-        wall_copy = ifcopenshell.api.run("root.copy_class", model, product=wall)
+        wall_copy = ifcopenshell.api.root.copy_class(model, product=wall)
     """
     usecase = Usecase()
     usecase.file = file
@@ -104,7 +106,7 @@ class Usecase:
                     ports = [inverse.RelatingPort]
                 if not ports:
                     continue
-                new_ports = [ifcopenshell.api.run("root.copy_class", self.file, product=p) for p in ports]
+                new_ports = [ifcopenshell.api.root.copy_class(self.file, product=p) for p in ports]
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
 
                 if inverse.is_a("IfcRelNests"):
@@ -115,11 +117,10 @@ class Usecase:
                     inverse.RelatingPort = new_ports[0]
 
                 for port in new_ports:
-                    ifcopenshell.api.run("system.unassign_port", self.file, element=from_element, port=port)
-                    ifcopenshell.api.run("system.disconnect_port", self.file, port=port)
+                    ifcopenshell.api.system.unassign_port(self.file, element=from_element, port=port)
+                    ifcopenshell.api.system.disconnect_port(self.file, port=port)
                     matrix = ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement)
-                    ifcopenshell.api.run(
-                        "geometry.edit_object_placement",
+                    ifcopenshell.api.geometry.edit_object_placement(
                         self.file,
                         product=port,
                         matrix=matrix,
@@ -136,7 +137,7 @@ class Usecase:
                 opening = inverse.RelatedOpeningElement
                 # We don't copy filled openings, since there is no guarantee the filling is also copied
                 if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:
-                    new_opening = ifcopenshell.api.run("root.copy_class", self.file, product=opening)
+                    new_opening = ifcopenshell.api.root.copy_class(self.file, product=opening)
                     new_opening.VoidsElements[0].RelatingBuildingElement = to_element
                     if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
                         if to_element.ObjectPlacement:

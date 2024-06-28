@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -41,23 +41,23 @@ def unassign_resource(
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some a tower crane to our crew.
-        crane = ifcopenshell.api.run("resource.add_resource", model,
+        crane = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcConstructionEquipmentResource", name="Tower Crane 01")
 
         # Our tower crane will be placed via this physical product.
-        product = ifcopenshell.api.run("root.create_entity", model,
+        product = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcBuildingElementProxy", predefined_type="CRANE")
 
         # Let's assign our crane to the resource. The crane now represents
         # the resource.
-        ifcopenshell.api.run("resource.assign_resource", model,
+        ifcopenshell.api.resource.assign_resource(model,
             relating_resource=crane, related_object=product)
 
         # Undo it.
-        ifcopenshell.api.run("resource.unassign_resource", model,
+        ifcopenshell.api.resource.unassign_resource(model,
             relating_resource=crane, related_object=product)
     """
     settings = {
@@ -77,4 +77,4 @@ def unassign_resource(
         related_objects = list(rel.RelatedObjects)
         related_objects.remove(settings["related_object"])
         rel.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

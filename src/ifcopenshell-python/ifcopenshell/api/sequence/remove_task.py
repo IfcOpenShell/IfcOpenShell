@@ -17,8 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.api.nest
+import ifcopenshell.api.project
 import ifcopenshell.api.sequence
 import ifcopenshell.util.element
 
@@ -40,26 +41,25 @@ def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> 
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Add a root task to represent the design milestones, and major
         # project phases.
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Milestones", identification="A")
-        design = ifcopenshell.api.run("sequence.add_task", model,
+        design = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Design", identification="B")
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
 
         # Ah, let's delete the design section, who needs it anyway we'll
         # just fix it on site.
-        ifcopenshell.api.run("sequence.remove_task", model, task=design)
+        ifcopenshell.api.sequence.remove_task(model, task=design)
     """
     settings = {"task": task}
 
     # TODO: do a deep purge
-    ifcopenshell.api.run(
-        "project.unassign_declaration",
+    ifcopenshell.api.project.unassign_declaration(
         file,
         definitions=[settings["task"]],
         relating_context=file.by_type("IfcContext")[0],
@@ -75,7 +75,7 @@ def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> 
         # Use batching for optimization.
         ifcopenshell.api.nest.unassign_object(file, subtasks)
         for task_ in subtasks:
-            ifcopenshell.api.run("sequence.remove_task", file, task=task_)
+            ifcopenshell.api.sequence.remove_task(file, task=task_)
     if settings["task"].Nests:
         ifcopenshell.api.nest.unassign_object(file, [settings["task"]])
 
@@ -96,8 +96,7 @@ def remove_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> 
                 related_objects.remove(settings["task"])
                 inverse.RelatedObjects = related_objects
         elif inverse.is_a("IfcRelDefinesByProperties"):
-            ifcopenshell.api.run(
-                "pset.remove_pset",
+            ifcopenshell.api.pset.remove_pset(
                 file,
                 product=settings["task"],
                 pset=inverse.RelatingPropertyDefinition,
