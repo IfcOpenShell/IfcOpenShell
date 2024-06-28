@@ -178,17 +178,23 @@ Copy an entity instance is possible in different ways, depending on the task.
 
 .. code-block:: python
 
-    wall_copy_class = ifcopenshell.api.run("root.copy_class", model, product = wall)
+    import ifcopenshell.api.root
+
+    wall_copy_class = ifcopenshell.api.root.copy_class(model, product = wall)
 
 This is high level and makes sensible assumptions about copying things like properties and quantities. It does not copy the element's representation, however.
 
 .. code-block:: python
+
+    import ifcopenshell.util.element
 
     wall_shallow_copy = ifcopenshell.util.element.copy(model, wall)
 
 This is for shallow copies.  That is, associated things like the element's type, materials, and properties are not copied.  The new element, however, has the same representation and placement as the original.
 
 .. code-block:: python
+
+    import ifcopenshell.util.element
 
     wall_deepgraph_copy = ifcopenshell.util.element.copy_deep(model, wall, exclude = None)
 
@@ -209,50 +215,55 @@ Create a simple model from scratch
 
 .. code-block:: python
 
-    import ifcopenshell
-    from ifcopenshell.api import run
+    import ifcopenshell.api.root
+    import ifcopenshell.api.unit
+    import ifcopenshell.api.context
+    import ifcopenshell.api.project
+    import ifcopenshell.api.spatial
+    import ifcopenshell.api.geometry
+    import ifcopenshell.api.aggregate
 
     # Create a blank model
-    model = ifcopenshell.file()
+    model = ifcopenshell.api.project.create_file()
 
     # All projects must have one IFC Project element
-    project = run("root.create_entity", model, ifc_class="IfcProject", name="My Project")
+    project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="My Project")
 
     # Geometry is optional in IFC, but because we want to use geometry in this example, let's define units
     # Assigning without arguments defaults to metric units
-    run("unit.assign_unit", model)
+    ifcopenshell.api.unit.assign_unit(model)
 
     # Let's create a modeling geometry context, so we can store 3D geometry (note: IFC supports 2D too!)
-    context = run("context.add_context", model, context_type="Model")
+    context = ifcopenshell.api.context.add_context(model, context_type="Model")
 
     # In particular, in this example we want to store the 3D "body" geometry of objects, i.e. the body shape
-    body = run("context.add_context", model, context_type="Model",
+    body = ifcopenshell.api.context.add_context(model, context_type="Model",
         context_identifier="Body", target_view="MODEL_VIEW", parent=context)
 
     # Create a site, building, and storey. Many hierarchies are possible.
-    site = run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
-    building = run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
-    storey = run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
+    site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite", name="My Site")
+    building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding", name="Building A")
+    storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
     # Since the site is our top level location, assign it to the project
     # Then place our building on the site, and our storey in the building
-    run("aggregate.assign_object", model, relating_object=project, products=[site])
-    run("aggregate.assign_object", model, relating_object=site, products=[building])
-    run("aggregate.assign_object", model, relating_object=building, products=[storey])
+    ifcopenshell.api.aggregate.assign_object(model, relating_object=project, products=[site])
+    ifcopenshell.api.aggregate.assign_object(model, relating_object=site, products=[building])
+    ifcopenshell.api.aggregate.assign_object(model, relating_object=building, products=[storey])
 
     # Let's create a new wall
-    wall = run("root.create_entity", model, ifc_class="IfcWall")
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
     # Give our wall a local origin at (0, 0, 0)
-    run("geometry.edit_object_placement", model, product=wall)
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
 
     # Add a new wall-like body geometry, 5 meters long, 3 meters high, and 200mm thick
-    representation = run("geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=0.2)
+    representation = ifcopenshell.api.geometry.add_wall_representation(model, context=body, length=5, height=3, thickness=0.2)
     # Assign our new body geometry back to our wall
-    run("geometry.assign_representation", model, product=wall, representation=representation)
+    ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
 
     # Place our wall in the ground floor
-    run("spatial.assign_container", model, relating_structure=storey, product=wall)
+    ifcopenshell.api.spatial.assign_container(model, relating_structure=storey, product=wall)
 
     # Write out to a file
     model.write("/home/dion/model.ifc")
@@ -268,27 +279,26 @@ Create a work schedule constructing a building floor by floor
 .. code-block:: python
 
     import datetime
-    import ifcopenshell
-    from ifcopenshell.api import run
+    import ifcopenshell.api.sequence
     from ifcopenshell.util.element import get_decomposition
     from ifcopenshell.util.placement import get_storey_elevation
 
     # Define a convenience function to add a task chained to a predecessor
     def add_task(model, name, predecessor, work_schedule):
         # Add a construction task
-        task = run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=work_schedule, name=name, predefined_type="CONSTRUCTION")
 
         # Give it a time
-        task_time = run("sequence.add_task_time", model, task=task)
+        task_time = ifcopenshell.api.sequence.add_task_time(model, task=task)
 
         # Arbitrarily set the task's scheduled time duration to be 1 week
-        run("sequence.edit_task_time", model, task_time=task_time,
+        ifcopenshell.api.sequence.edit_task_time(model, task_time=task_time,
             attributes={"ScheduleStart": datetime.date(2000, 1, 1), "ScheduleDuration": "P1W"})
 
         # If a predecessor exists, create a finish to start relationship
         if predecessor:
-            run("sequence.assign_sequence", model, relating_process=predecessor, related_process=task)
+            ifcopenshell.api.sequence.assign_sequence(model, relating_process=predecessor, related_process=task)
 
         return task
 
@@ -296,7 +306,7 @@ Create a work schedule constructing a building floor by floor
     model = ifcopenshell.open("/path/to/existing/model.ifc")
 
     # Create a new construction schedule
-    schedule = run("sequence.add_work_schedule", model, name="Construction")
+    schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction")
 
     # Let's imagine a starting task for site establishment.
     task = add_task(model, "Site establishment", None, schedule)
@@ -313,16 +323,16 @@ Create a work schedule constructing a building floor by floor
 
         # Assign all the products in that storey to the task as construction outputs.
         for product in get_decomposition(storey):
-            run("sequence.assign_product", model, relating_product=product, related_object=task)
+            ifcopenshell.api.sequence.assign_product(model, relating_product=product, related_object=task)
 
     # Ask the computer to calculate all the dates for us from the start task.
     # For example, if the first task started on the 1st of January and took a
     # week, the next task will start on the 8th of January. This saves us
     # manually doing date calculations.
-    run("sequence.cascade_schedule", model, task=start_task)
+    ifcopenshell.api.sequence.cascade_schedule(model, task=start_task)
 
     # Calculate the critical path and floats.
-    run("sequence.recalculate_schedule", model, work_schedule=schedule)
+    ifcopenshell.api.sequence.recalculate_schedule(model, work_schedule=schedule)
 
     # Write out to a file
     model.write("/home/dion/model.ifc")
