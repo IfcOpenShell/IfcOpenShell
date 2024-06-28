@@ -31,7 +31,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
 
 	// @todo immutable for caching?
 	// @todo allow for multiple levels of matrix?
-	auto shapes = taxonomy::cast<taxonomy::geom_item>(map(rmap->MappedRepresentation()));
+	auto shapes = taxonomy::dcast<taxonomy::collection>(map(rmap->MappedRepresentation()));
 	if (shapes == nullptr) {
 		return shapes;
 	}
