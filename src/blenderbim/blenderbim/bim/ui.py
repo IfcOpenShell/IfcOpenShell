@@ -35,15 +35,22 @@ import blenderbim.bim
 import blenderbim.tool as tool
 from blenderbim.bim.helper import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
+from typing import Optional
 
 
 class IFCFileSelector:
-    def is_existing_ifc_file(self, filepath=None):
+    filepath: str
+
+    def is_existing_ifc_file(self, filepath: Optional[str] = None) -> bool:
+        """Check if file path exists and if it's an IFC file.
+
+        If `filepath` is not provided, will use filepath property from the current operator.
+        """
         if filepath is None:
             filepath = self.filepath
         return os.path.exists(filepath) and "ifc" in os.path.splitext(filepath)[1].lower()
 
-    def get_filepath(self):
+    def get_filepath(self) -> str:
         """get filepath taking into account relative paths"""
         if self.use_relative_path:
             filepath = os.path.relpath(self.filepath, bpy.path.abspath("//"))
