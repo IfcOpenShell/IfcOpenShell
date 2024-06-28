@@ -71,7 +71,6 @@ private:
 	std::map<std::string, std::string> meshes_;
 
 	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&);
-	pxr::GfVec3f rotation_degrees_from_matrix(const double*) const;
 public:
 	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&);
 	virtual ~USDSerializer();
