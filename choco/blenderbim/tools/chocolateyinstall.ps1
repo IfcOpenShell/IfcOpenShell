@@ -1,7 +1,7 @@
 ﻿$ErrorActionPreference = 'Stop'
 
-$url64          = 'url_blenderbim_py310_win_zip'
-$checksum64     = 'sha256sum_blenderbim_py310_win_zip'
+$url64          = 'url_blenderbim_py3x_win_zip'
+$checksum64     = 'sha256sum_blenderbim_py3x_win_zip'
 $checksumType64 = 'sha256'
 
 $appDataUserDir  = [System.Environment]::GetEnvironmentVariable('appdata')

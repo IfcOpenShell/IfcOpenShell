@@ -17,8 +17,8 @@ topics = {
     "install": {
         "path": HERE_DIR / "tools" / "chocolateyinstall.ps1",
         "env_vars": {
-            "url_blenderbim_py310_win_zip",
-            "sha256sum_blenderbim_py310_win_zip",
+            "url_blenderbim_py3x_win_zip",
+            "sha256sum_blenderbim_py3x_win_zip",
             "latest_blender_version_maj_min",
         },
     },
