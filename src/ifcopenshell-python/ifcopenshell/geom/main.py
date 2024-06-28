@@ -107,6 +107,12 @@ SERIALIZER_SETTING = Literal[
     "digits",
 ]
 
+# NOTE: hybrid-cgal-simple-opencascade is added just as an example
+# It's possible to use any hybrid combination by the format below:
+# "hybrid-library1-library2".
+# List is updated from AbstractKernel.cpp.
+GEOMETRY_LIBRARY = Literal["cgal", "cgal-simple", "opencascade", "hybrid-cgal-simple-opencascade"]
+
 
 class missing_setting:
     def __repr__(self):
@@ -222,7 +228,7 @@ class iterator(ifcopenshell_wrapper.Iterator):
         num_threads: int = 1,
         include: Optional[Union[list[entity_instance], list[str]]] = None,
         exclude: Optional[Union[list[entity_instance], list[str]]] = None,
-        geometry_library: str = "opencascade",
+        geometry_library: GEOMETRY_LIBRARY = "opencascade",
     ):
         self.settings = settings
         if isinstance(file_or_filename, file):
@@ -411,7 +417,7 @@ def iterate(
     exclude=None,
     with_progress=False,
     cache=None,
-    geometry_library: str = "opencascade",
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ):
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
