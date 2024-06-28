@@ -37,7 +37,7 @@ def add_profile_representation(
     # or by dictionaries of arguments for `Clipping.parse`
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
     placement_zx_axes: tuple[Union[VECTOR_3D, None], Union[VECTOR_3D, None]] = (None, None),
-) -> None:
+) -> ifcopenshell.entity_instance:
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {

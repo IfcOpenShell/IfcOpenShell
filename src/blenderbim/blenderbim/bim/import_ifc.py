@@ -519,7 +519,7 @@ class IfcImporter:
         self.create_generic_elements(set(self.file.by_type("IfcReferent")))
         # Loading IfcLinearElement for test purposes for now only.
         # In the future we will make it lazy loaded and toggleable with a special UI.
-        self.create_generic_elements(set(self.file.by_type("IfcLinearElement")))
+        # self.create_generic_elements(set(self.file.by_type("IfcLinearElement")))
 
     def create_grids(self):
         if not self.ifc_import_settings.should_load_geometry:
