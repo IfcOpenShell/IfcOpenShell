@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bmesh
 import json
@@ -1132,3 +1133,14 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def clear_recent_ifc_projects(cls) -> None:
         cls.write_recent_ifc_projects([])
+
+    @classmethod
+    def get_blender_addon_package_name(cls) -> str:
+        if bpy.app.version >= (4, 2, 0):
+            return blenderbim.BLENDER_PACKAGE_NAME
+        return "blenderbim"
+
+    @classmethod
+    def get_addon_preferences(cls) -> blenderbim.bim.ui.BIM_ADDON_preferences:
+        blender_package_name = cls.get_blender_addon_package_name()
+        return bpy.context.preferences.addons[blender_package_name].preferences

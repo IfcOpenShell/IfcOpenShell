@@ -89,7 +89,7 @@ class SystemDecorator:
         self.draw_batch("TRIS", vertices_coords, faces_color, face_indices)
 
     def __call__(self, context, get_custom_bmesh=None, draw_faces=False, exit_edit_mode_callback=None):
-        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
         special_elements_color = self.addon_prefs.decorator_color_special

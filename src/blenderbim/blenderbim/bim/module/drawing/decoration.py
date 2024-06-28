@@ -335,7 +335,7 @@ class BaseDecorator:
         """`verts` should be in winspace with `(0,0,0)` in the screen left bottom corner, not in the center"""
         region = context.region
         if not color:
-            color = context.preferences.addons["blenderbim"].preferences.decorations_colour
+            color = tool.Blender.get_addon_preferences().decorations_colour
 
         self.line_shader.bind()
         # POLYLINE_UNIFORM_COLOR specific uniforms
@@ -404,7 +404,7 @@ class BaseDecorator:
 
         font_id = self.font_id
 
-        color = context.preferences.addons["blenderbim"].preferences.decorations_colour
+        color = tool.Blender.get_addon_preferences().decorations_colour
 
         ang = -Vector((1, 0)).angle_signed(text_dir)
         cos = math.cos(ang)
@@ -812,7 +812,7 @@ class AngleDecorator(BaseDecorator):
         arcs_color = None
         edges_color = UNSPECIAL_ELEMENT_COLOR
         if context.active_object == obj and obj.data.is_editmode:
-            arcs_color = context.preferences.addons["blenderbim"].preferences.decorator_color_special
+            arcs_color = tool.Blender.get_addon_preferences().decorator_color_special
             edges_color = None
 
         self.draw_lines(
@@ -1093,7 +1093,7 @@ class HiddenDecorator(BaseDecorator):
         else:
             verts, idxs = self.get_mesh_geom(obj)
         winspace_verts = worldspace_to_winspace(verts, context)
-        color = [i for i in context.preferences.addons["blenderbim"].preferences.decorations_colour]
+        color = [i for i in tool.Blender.get_addon_preferences().decorations_colour]
         color[3] = 0.5
         self.draw_lines(context, obj, winspace_verts, idxs, color)
 
@@ -1409,7 +1409,7 @@ class GridDecorator(BaseDecorator):
             # stem with gaps for circles
             add_verts_sequence([v0 + gap, v1 - gap], start_i, **out_kwargs)
 
-        color = [i for i in context.preferences.addons["blenderbim"].preferences.decorations_colour]
+        color = [i for i in tool.Blender.get_addon_preferences().decorations_colour]
         color[3] = 0.5
         self.draw_lines(context, obj, output_verts, output_edges, color)
         self.draw_labels(context, obj, verts)
@@ -1591,7 +1591,7 @@ class CutDecorator:
         cls.installed = None
 
     def __call__(self, context):
-        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
 
         all_vertices = []

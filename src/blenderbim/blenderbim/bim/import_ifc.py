@@ -538,7 +538,7 @@ class IfcImporter:
                 shape = tool.Loader.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             grid_placement = self.get_element_matrix(grid)
-            if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
+            if tool.Blender.get_addon_preferences().lock_grids_on_import:
                 grid_obj.lock_location = (True, True, True)
                 grid_obj.lock_rotation = (True, True, True)
             self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
@@ -551,7 +551,7 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(f"IfcGridAxis/{axis.AxisTag}", mesh)
-            if bpy.context.preferences.addons["blenderbim"].preferences.lock_grids_on_import:
+            if tool.Blender.get_addon_preferences().lock_grids_on_import:
                 obj.lock_location = (True, True, True)
                 obj.lock_rotation = (True, True, True)
             self.link_element(axis, obj)
@@ -620,7 +620,7 @@ class IfcImporter:
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
-        if bpy.context.preferences.addons["blenderbim"].preferences.spatial_elements_unselectable:
+        if tool.Blender.get_addon_preferences().spatial_elements_unselectable:
             self.create_generic_elements(self.spatial_elements, unselectable=True)
         else:
             self.create_generic_elements(self.spatial_elements, unselectable=False)

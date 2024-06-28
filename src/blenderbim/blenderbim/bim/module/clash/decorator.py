@@ -55,7 +55,7 @@ class ClashDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
-        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
         special_elements_color = self.addon_prefs.decorator_color_special
@@ -75,7 +75,7 @@ class ClashDecorator:
             blf.draw(font_id, text)  # Set your text here
 
     def draw_geometry(self, context):
-        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
+        self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
         special_elements_color = self.addon_prefs.decorator_color_special

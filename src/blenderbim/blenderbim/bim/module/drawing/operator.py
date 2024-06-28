@@ -279,7 +279,7 @@ class CreateDrawing(bpy.types.Operator):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
             tool.Drawing.open_with_user_command(
-                context.preferences.addons["blenderbim"].preferences.svg_command, svg_path
+                tool.Blender.get_addon_preferences().svg_command, svg_path
             )
 
         if self.print_all:
@@ -1374,8 +1374,8 @@ class CreateSheets(bpy.types.Operator, Operator):
                 ),
             )
 
-        svg2pdf_command = context.preferences.addons["blenderbim"].preferences.svg2pdf_command
-        svg2dxf_command = context.preferences.addons["blenderbim"].preferences.svg2dxf_command
+        svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
+        svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
 
         if svg2pdf_command:
             # With great power comes great responsibility. Example:
@@ -1393,9 +1393,9 @@ class CreateSheets(bpy.types.Operator, Operator):
                 subprocess.run([replacements.get(c, c) for c in command])
 
         if svg2pdf_command:
-            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.pdf_command, pdf)
+            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().pdf_command, pdf)
         else:
-            tool.Drawing.open_with_user_command(context.preferences.addons["blenderbim"].preferences.svg_command, svg)
+            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg)
 
 
 class SelectAllDrawings(bpy.types.Operator):
@@ -1463,7 +1463,7 @@ class OpenDrawing(bpy.types.Operator):
 
         for drawing_uri in drawing_uris:
             tool.Drawing.open_with_user_command(
-                context.preferences.addons["blenderbim"].preferences.svg_command, drawing_uri
+                tool.Blender.get_addon_preferences().svg_command, drawing_uri
             )
         return {"FINISHED"}
 
