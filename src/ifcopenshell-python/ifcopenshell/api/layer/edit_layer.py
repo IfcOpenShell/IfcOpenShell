@@ -36,8 +36,8 @@ def edit_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance, att
 
     .. code:: python
 
-        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
-        ifcopenshell.api.run("layer.edit_layer", model,
+        layer = ifcopenshell.api.layer.add_layer(model, name="AI-WALL")
+        ifcopenshell.api.layer.edit_layer(model,
             layer=layer, attributes={"Description": "All walls, based on the AIA standard."})
     """
     settings = {"layer": layer, "attributes": attributes}

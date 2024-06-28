@@ -36,7 +36,7 @@ def add_objective(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
     .. code:: python
 
         # Create a new objective for code compliance requirements
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
+        objective = ifcopenshell.api.constraint.add_objective(model)
         objective.ConstraintGrade = "ADVISORY"
         objective.ObjectiveQualifier = "CODECOMPLIANCE"
         # Note: the objective right now is purely qualitative and for

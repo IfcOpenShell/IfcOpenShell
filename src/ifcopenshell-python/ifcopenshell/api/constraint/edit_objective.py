@@ -38,8 +38,8 @@ def edit_objective(
 
     .. code:: python
 
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
-        ifcopenshell.api.run("constraint.edit_objective", model,
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        ifcopenshell.api.constraint.edit_objective(model,
             objective=objective, attributes={"ConstraintGrade": "HARD"})
     """
     settings = {"objective": objective, "attributes": attributes or {}}

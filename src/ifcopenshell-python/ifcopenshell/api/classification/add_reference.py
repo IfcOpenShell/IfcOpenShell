@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
@@ -105,20 +105,20 @@ def add_reference(
 
         # Option 1: adding and assigning a new reference from scratch
         wall_type = model.by_type("IfcWallType")[0]
-        classification = ifcopenshell.api.run("classification.add_classification",
+        classification = ifcopenshell.api.classification.add_classification(
             model, classification="MyCustomClassification")
-        ifcopenshell.api.run("classification.add_reference", model,
+        ifcopenshell.api.classification.add_reference(model,
             products=[wall_type], classification=classification,
             identification="W_01", name="Interior Walls")
 
         # Option 2: adding a popular classification from a library
         library = ifcopenshell.open("/path/to/Uniclass.ifc")
         lib_classification = library.by_type("IfcClassification")[0]
-        classification = ifcopenshell.api.run("classification.add_classification",
+        classification = ifcopenshell.api.classification.add_classification(
             model, classification=lib_classification)
         reference = [r for r in library.by_type("IfcClassificationReference")
             if r.Identification == "XYZ"][0]
-        ifcopenshell.api.run("classification.add_reference", model,
+        ifcopenshell.api.classification.add_reference(model,
             products=[wall_type], classification=classification,
             reference=reference)
     """
@@ -235,11 +235,11 @@ class Usecase:
             if root_rel:
                 related_objects = set(root_rel.RelatedObjects) | self.rooted_products
                 root_rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": root_rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": root_rel})
             else:
                 self.file.create_entity(
                     "IfcRelAssociatesClassification",
-                    OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
                     GlobalId=ifcopenshell.guid.new(),
                     RelatedObjects=list(self.rooted_products),
                     RelatingClassification=reference,

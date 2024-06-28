@@ -17,94 +17,95 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.util.element
 
 
 class TestRemovePset(test.bootstrap.IFC4):
     def test_removing_pset(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 1
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
         assert len(self.file.by_type("IfcPropertySet")) == 0
 
     def test_removing_material_psets(self):
         element = self.file.createIfcMaterial()
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
         assert len(element.HasProperties) == 1
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(element.HasProperties) == 0
         assert len(self.file.by_type("IfcMaterialProperties")) == 0
 
     def test_removing_profile_psets(self):
         element = self.file.createIfcProfileDef()
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
         assert len(element.HasProperties) == 1
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(element.HasProperties) == 0
         assert len(self.file.by_type("IfcMaterialProperties")) == 0
 
     def test_only_unassigning_if_pset_is_used_by_other_elements(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
         rel = self.file.by_type("IfcRelDefinesByProperties")[0]
         rel.RelatedObjects = [element, element2]
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 1
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert ifcopenshell.util.element.get_psets(element) == {}
         assert "Foo_Bar" in ifcopenshell.util.element.get_psets(element2)
 
     def test_removing_a_pset_with_properties(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": "Bar"})
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
         assert len(self.file.by_type("IfcPropertySet")) == 0
         assert len(self.file.by_type("IfcPropertySingleValue")) == 0
 
     def test_removing_a_qto_with_quantities(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"Foo": 42})
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=qto)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"Foo": 42})
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=qto)
         assert len(self.file.by_type("IfcRelDefinesByProperties")) == 0
         assert len(self.file.by_type("IfcQuantitySet")) == 0
         assert len(self.file.by_type("IfcPhysicalSimpleQuantity")) == 0
 
     def test_removing_a_pset_with_shared_properties(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Foo_Bar")
-        pset2 = ifcopenshell.api.run("pset.add_pset", self.file, product=element2, name="Foo_Bar")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Foo": "Bar"})
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Foo_Bar")
+        pset2 = ifcopenshell.api.pset.add_pset(self.file, product=element2, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Foo": "Bar"})
         pset2.HasProperties = pset.HasProperties
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert pset2.HasProperties
 
     def test_removing_a_pset_with_enumeration(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": ["NEW"]})
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["NEW"]})
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(self.file.by_type("IfcPropertyEnumeration")) == 0
 
     def test_removing_a_pset_with_shared_enumeration(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Status": ["NEW"]})
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ["NEW"]})
 
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        pset2 = ifcopenshell.api.run("pset.add_pset", self.file, product=element2, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset2, properties={"Status": ["NEW"]})
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        pset2 = ifcopenshell.api.pset.add_pset(self.file, product=element2, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset2, properties={"Status": ["NEW"]})
 
         enumeration1 = pset.HasProperties[0].EnumerationReference
         enumeration2 = pset2.HasProperties[0].EnumerationReference
         pset2.HasProperties[0].EnumerationReference = enumeration1
         self.file.remove(enumeration2)
 
-        ifcopenshell.api.run("pset.remove_pset", self.file, product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(self.file, product=element, pset=pset)
         assert len(self.file.by_type("IfcPropertyEnumeration")) == 1

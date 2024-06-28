@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Union
 
@@ -54,22 +54,22 @@ def assign_control(
     .. code:: python
 
         # One common usecase is to assign a calendar to a task
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model)
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model)
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule)
 
         # All subtasks will inherit this calendar, so assigning a single
         # calendar to the root task effectively defines a "default" calendar
-        ifcopenshell.api.run("control.assign_control", model,
+        ifcopenshell.api.control.assign_control(model,
             relating_control=calendar, related_object=task)
 
         # Another common example might be relating a cost item and a product
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        cost_item = ifcopenshell.api.run("cost.add_cost_item", model,
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        cost_item = ifcopenshell.api.cost.add_cost_item(model,
             cost_schedule=schedule)
-        ifcopenshell.api.run("control.assign_control", model,
+        ifcopenshell.api.control.assign_control(model,
             relating_control=cost_item, related_object=wall)
     """
     settings = {
@@ -92,13 +92,13 @@ def assign_control(
         related_objects = set(controls.RelatedObjects)
         related_objects.add(settings["related_object"])
         controls.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": controls})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": controls})
     else:
         controls = file.create_entity(
             "IfcRelAssignsToControl",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingControl": settings["relating_control"],
             },

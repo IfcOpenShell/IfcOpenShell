@@ -20,6 +20,7 @@ from __future__ import annotations
 import collections.abc
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
+import ifcopenshell.api.geometry
 from ifcopenshell.api.geometry.add_window_representation import create_ifc_window
 from mathutils import Vector
 from math import cos, radians

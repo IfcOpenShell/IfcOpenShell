@@ -46,22 +46,22 @@ def edit_layer(
 
         # Let's create two materials typically used for steel stud partition
         # walls with gypsum lining.
-        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Create a material layer set to contain our layers.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
         # Now let's use those materials as three layers in our set, such
         # that the steel studs are sandwiched by the gypsum. Let's imagine
         # we're setting the layer thickness in millimeters.
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 92})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": 13})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 92})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
     """
     settings = {"layer": layer, "attributes": attributes or {}, "material": material}
 

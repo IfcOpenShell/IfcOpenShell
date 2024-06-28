@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.project
+import ifcopenshell.api.sequence
 import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
@@ -37,33 +38,26 @@ def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
     .. code:: python
 
         # This will hold all our construction schedules
-        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # Let's imagine this is one of our schedules in our work plan.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
 
         # And remove it immediately
-        ifcopenshell.api.run("sequence.remove_work_schedule", model, work_schedule=schedule)
+        ifcopenshell.api.sequence.remove_work_schedule(model, work_schedule=schedule)
     """
     settings = {"work_schedule": work_schedule}
 
     # TODO: do a deep purge
-    ifcopenshell.api.run(
-        "project.unassign_declaration",
-        file,
-        definitions=[settings["work_schedule"]],
-        relating_context=file.by_type("IfcContext")[0],
+    ifcopenshell.api.project.unassign_declaration(
+        file, definitions=[settings["work_schedule"]], relating_context=file.by_type("IfcContext")[0]
     )
 
     if settings["work_schedule"].Declares:
         for rel in settings["work_schedule"].Declares:
             for work_schedule in rel.RelatedObjects:
-                ifcopenshell.api.run(
-                    "sequence.remove_work_schedule",
-                    file,
-                    work_schedule=work_schedule,
-                )
+                ifcopenshell.api.sequence.remove_work_schedule(file, work_schedule=work_schedule)
 
     # Unassign from work plans.
     if settings["work_schedule"].Decomposes:
@@ -82,7 +76,7 @@ def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
                 inverse.RelatedObjects = related_objects
         elif inverse.is_a("IfcRelAssignsToControl"):
             [
-                ifcopenshell.api.run("sequence.remove_task", file, task=related_object)
+                ifcopenshell.api.sequence.remove_task(file, task=related_object)
                 for related_object in inverse.RelatedObjects
                 if related_object.is_a("IfcTask")
             ]

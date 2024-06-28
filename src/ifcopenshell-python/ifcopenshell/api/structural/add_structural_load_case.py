@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
 
 
 def add_structural_load_case(
@@ -37,8 +37,7 @@ def add_structural_load_case(
     :rtype: ifcopenshell.entity_instance
     """
 
-    load_case = ifcopenshell.api.run(
-        "root.create_entity",
+    load_case = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcStructuralLoadCase",
         predefined_type="LOAD_CASE",

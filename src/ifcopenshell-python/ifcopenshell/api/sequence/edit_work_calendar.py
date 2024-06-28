@@ -39,10 +39,10 @@ def edit_work_calendar(
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model, name="5 Day Week")
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model, name="5 Day Week")
 
         # Let's give it a description
-        ifcopenshell.api.run("sequence.edit_work_calendar", model,
+        ifcopenshell.api.sequence.edit_work_calendar(model,
             work_calendar=calendar, attributes={"Description": "Monday to Friday 8 hour days"})
     """
     settings = {"work_calendar": work_calendar, "attributes": attributes}

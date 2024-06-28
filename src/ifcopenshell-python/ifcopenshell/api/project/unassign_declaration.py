@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -44,16 +44,16 @@ def unassign_declaration(
     .. code:: python
 
         # Programmatically generate a library. You could do this visually too.
-        library = ifcopenshell.api.run("project.create_file")
-        root = ifcopenshell.api.run("root.create_entity", library, ifc_class="IfcProject", name="Demo Library")
-        context = ifcopenshell.api.run("root.create_entity", library,
+        library = ifcopenshell.api.project.create_file()
+        root = ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject", name="Demo Library")
+        context = ifcopenshell.api.root.create_entity(library,
             ifc_class="IfcProjectLibrary", name="Demo Library")
 
         # It's necessary to say our library is part of our project.
-        ifcopenshell.api.run("project.assign_declaration", library, definitions=[context], relating_context=root)
+        ifcopenshell.api.project.assign_declaration(library, definitions=[context], relating_context=root)
 
         # Remove the library from our project
-        ifcopenshell.api.run("project.unassign_declaration", library, definitions=[context], relating_context=root)
+        ifcopenshell.api.project.unassign_declaration(library, definitions=[context], relating_context=root)
     """
     settings = {
         "definitions": definitions,
@@ -67,7 +67,7 @@ def unassign_declaration(
         related_definitions = set(rel.RelatedDefinitions) - definitions
         if related_definitions:
             rel.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

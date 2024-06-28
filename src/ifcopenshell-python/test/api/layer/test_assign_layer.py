@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.layer
 
 
 class TestAssignLayer(test.bootstrap.IFC4):
@@ -25,7 +25,7 @@ class TestAssignLayer(test.bootstrap.IFC4):
         items = [self.file.createIfcExtrudedAreaSolid() for i in range(2)]
         layer = self.file.createIfcPresentationLayerAssignment()
 
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=items, layer=layer)
+        ifcopenshell.api.layer.assign_layer(self.file, items=items, layer=layer)
         assert len(layer.AssignedItems) == 2
         assert set(layer.AssignedItems) == set(items)
 
@@ -33,8 +33,8 @@ class TestAssignLayer(test.bootstrap.IFC4):
         items = [self.file.createIfcExtrudedAreaSolid() for i in range(4)]
         layer = self.file.createIfcPresentationLayerAssignment()
 
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=items[:2], layer=layer)
-        ifcopenshell.api.run("layer.assign_layer", self.file, items=items[2:], layer=layer)
+        ifcopenshell.api.layer.assign_layer(self.file, items=items[:2], layer=layer)
+        ifcopenshell.api.layer.assign_layer(self.file, items=items[2:], layer=layer)
         assert len(layer.AssignedItems) == 4
         assert set(layer.AssignedItems) == set(items)
 

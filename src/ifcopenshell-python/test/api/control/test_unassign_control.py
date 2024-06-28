@@ -17,28 +17,29 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.control
 
 
 class TestUnassignControl(test.bootstrap.IFC4):
     def test_run(self):
         wall = self.file.createIfcWall()
-        control = ifcopenshell.api.run("cost.add_cost_schedule", self.file)
+        control = ifcopenshell.api.cost.add_cost_schedule(self.file)
 
         # assign and unassign
-        relation = ifcopenshell.api.run(
-            "control.assign_control", self.file, relating_control=control, related_object=wall
+        relation = ifcopenshell.api.control.assign_control(
+            self.file, relating_control=control, related_object=wall
         )
-        ifcopenshell.api.run("control.unassign_control", self.file, relating_control=control, related_object=wall)
+        ifcopenshell.api.control.unassign_control(self.file, relating_control=control, related_object=wall)
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 0
 
         # 1 control 2 related objects
         wall1 = self.file.createIfcWall()
-        relation = ifcopenshell.api.run(
-            "control.assign_control", self.file, relating_control=control, related_object=wall
+        relation = ifcopenshell.api.control.assign_control(
+            self.file, relating_control=control, related_object=wall
         )
-        ifcopenshell.api.run("control.assign_control", self.file, relating_control=control, related_object=wall1)
-        ifcopenshell.api.run("control.unassign_control", self.file, relating_control=control, related_object=wall1)
+        ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall1)
+        ifcopenshell.api.control.unassign_control(self.file, relating_control=control, related_object=wall1)
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatedObjects == (wall,)
 

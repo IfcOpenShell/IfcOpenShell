@@ -17,23 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import numpy as np
 
 
 class TestAddBoolean(test.bootstrap.IFC4):
     def test_returning_ifc_boolean_clipping_result(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        body = ifcopenshell.api.run(
-            "context.add_context",
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
             self.file,
             context_type="Model",
             context_identifier="Body",
             target_view="MODEL_VIEW",
             parent=model,
         )
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
 
         profile = self.file.create_entity(
             "IfcIShapeProfileDef",
@@ -45,12 +46,10 @@ class TestAddBoolean(test.bootstrap.IFC4):
             FlangeThickness=8,
             FilletRadius=12,
         )
-        rep = ifcopenshell.api.run(
-            "geometry.add_profile_representation", self.file, context=body, profile=profile, depth=5
-        )
-        ifcopenshell.api.run("geometry.assign_representation", self.file, product=wall, representation=rep)
+        rep = ifcopenshell.api.geometry.add_profile_representation(self.file, context=body, profile=profile, depth=5)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
 
-        ifcopenshell.api.run("geometry.add_boolean", self.file, representation=rep, matrix=np.eye(4))
+        ifcopenshell.api.geometry.add_boolean(self.file, representation=rep, matrix=np.eye(4))
         assert rep.Items[0].is_a() == "IfcBooleanClippingResult"
         assert rep.RepresentationType == "Clipping"
 

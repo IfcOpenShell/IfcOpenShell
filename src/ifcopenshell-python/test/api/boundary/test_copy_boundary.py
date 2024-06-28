@@ -17,21 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.boundary
 
 
 class TestCopyBoundary(test.bootstrap.IFC4):
     def test_run(self):
-        boundary = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelSpaceBoundary")
-        boundary2 = ifcopenshell.api.run("boundary.copy_boundary", self.file, boundary=boundary)
+        boundary = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelSpaceBoundary")
+        boundary2 = ifcopenshell.api.boundary.copy_boundary(self.file, boundary=boundary)
         assert boundary2.is_a("IfcRelSpaceBoundary")
         assert boundary2.GlobalId != boundary.GlobalId
 
     def test_copying_connection_geometry(self):
         geometry = self.file.createIfcConnectionSurfaceGeometry()
-        boundary = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelSpaceBoundary")
+        boundary = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelSpaceBoundary")
         boundary.ConnectionGeometry = geometry
-        boundary2 = ifcopenshell.api.run("boundary.copy_boundary", self.file, boundary=boundary)
+        boundary2 = ifcopenshell.api.boundary.copy_boundary(self.file, boundary=boundary)
         assert boundary2.ConnectionGeometry.is_a("IfcConnectionSurfaceGeometry")
         assert boundary2.ConnectionGeometry != boundary.ConnectionGeometry
 

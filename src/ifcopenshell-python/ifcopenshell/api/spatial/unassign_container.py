@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -33,26 +33,26 @@ def unassign_container(file: ifcopenshell.file, products: list[ifcopenshell.enti
 
     .. code:: python
 
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
-        site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-        building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-        storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
 
         # The project contains a site (note that project aggregation is a special case in IFC)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(model, products=[site], relating_object=project)
 
         # The site has a building, the building has a storey, and the storey has a space
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
+        ifcopenshell.api.aggregate.assign_object(model, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(model, products=[storey], relating_object=building)
 
         # Create a wall
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # The wall is in the storey
-        ifcopenshell.api.run("spatial.assign_container", model, products=[wall], relating_structure=storey)
+        ifcopenshell.api.spatial.assign_container(model, products=[wall], relating_structure=storey)
 
         # Not anymore!
-        ifcopenshell.api.run("spatial.unassign_container", model, products=[wall])
+        ifcopenshell.api.spatial.unassign_container(model, products=[wall])
     """
     settings = {
         "products": products,
@@ -65,7 +65,7 @@ def unassign_container(file: ifcopenshell.file, products: list[ifcopenshell.enti
         related_elements = set(rel.RelatedElements) - products
         if related_elements:
             rel.RelatedElements = list(related_elements)
-            ifcopenshell.api.run("owner.update_owner_history", file, element=rel)
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

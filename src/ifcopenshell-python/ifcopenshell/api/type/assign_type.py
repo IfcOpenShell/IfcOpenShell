@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.type
+import ifcopenshell.api.owner
+import ifcopenshell.api.material
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union, Iterable
@@ -109,24 +111,24 @@ def assign_type(
 
         # A furniture type. This would correlate to a particular model in a
         # manufacturer's catalogue. Like an Ikea sofa :)
-        furniture_type = ifcopenshell.api.run("root.create_entity", model,
+        furniture_type = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcFurnitureType", name="FUN01")
 
         # An individual occurrence of a that sofa.
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
 
         # Assign the furniture to the furniture type.  If the furniture_type
         # had a representation, the furniture occurrence will also now have
         # the exact same representation. This is highly efficient as you
         # don't need to define the representation for every occurrence.
-        ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
+        ifcopenshell.api.type.assign_type(model, related_objects=[furniture], relating_type=furniture_type)
 
         # Let's imagine a parametric material layer set
-        wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name="WAL01")
+        wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name="WAL01")
 
         # First, let's create a material set. This will later be assigned
         # to our wall type element.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="GYP-ST-GYP", set_type="IfcMaterialLayerSet")
 
         # Let's create a few materials, it's important to also give them
@@ -134,44 +136,44 @@ def assign_type(
         # like "show me everything made out of aluminium / concrete / steel
         # / glass / etc". The IFC specification states a list of categories
         # you can use.
-        gypsum = ifcopenshell.api.run("material.add_material", model, name="PB01", category="gypsum")
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        gypsum = ifcopenshell.api.material.add_material(model, name="PB01", category="gypsum")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Now let's use those materials as three layers in our set, such
         # that the steel studs are sandwiched by the gypsum. Let's imagine
         # we're setting the layer thickness in millimeters.
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": .013})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=steel)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": .092})
-        layer = ifcopenshell.api.run("material.add_layer", model, layer_set=material_set, material=gypsum)
-        ifcopenshell.api.run("material.edit_layer", model, layer=layer, attributes={"LayerThickness": .013})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": .013})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=steel)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": .092})
+        layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
+        ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": .013})
 
         # Great! Let's assign our material set to our wall type.
-        ifcopenshell.api.run("material.assign_material", model, products=[wall_type], material=material_set)
+        ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
 
         # Now, let's create a wall.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # The wall is a WAL01 wall type.
-        ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
+        ifcopenshell.api.type.assign_type(model, related_objects=[wall], relating_type=wall_type)
 
         # A bit of preparation, let's create some geometric contexts since
         # we want to create some geometry for our wall.
-        model3d = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", model,
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # Notice how our thickness of 0.118 must equal .013 + .092 + .013 from our type
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
             context=body, length=5, height=3, thickness=0.118)
 
         # Assign our new body geometry back to our wall
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=wall, representation=representation)
 
         # Place our wall at the origin
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
     """
     usecase = Usecase()
     usecase.file = file
@@ -230,7 +232,7 @@ class Usecase:
             cur_related_objects = set(is_typed_by.RelatedObjects) - related_objects
             if cur_related_objects:
                 is_typed_by.RelatedObjects = list(cur_related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": is_typed_by})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": is_typed_by})
             else:
                 history = is_typed_by.OwnerHistory
                 self.file.remove(is_typed_by)
@@ -240,23 +242,20 @@ class Usecase:
         # assign objects to a new type
         if types:
             types.RelatedObjects = list(set(types.RelatedObjects) | related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": types})
+            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": types})
         else:
             types = self.file.create_entity(
                 "IfcRelDefinesByType",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": list(related_objects),
-                    "RelatingType": relating_type,
-                },
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
+                RelatedObjects=list(related_objects),
+                RelatingType=relating_type,
             )
 
         if self.settings["should_map_representations"]:
             if getattr(relating_type, "RepresentationMaps", None):
                 for related_object in objects_to_change:
-                    ifcopenshell.api.run(
-                        "type.map_type_representations",
+                    ifcopenshell.api.type.map_type_representations(
                         self.file,
                         related_object=related_object,
                         relating_type=relating_type,
@@ -270,8 +269,7 @@ class Usecase:
             return
         ifc_class = type_material.is_a()
         if ifc_class in ("IfcMaterialLayerSet", "IfcMaterialProfileSet"):
-            ifcopenshell.api.run(
-                "material.assign_material",
+            ifcopenshell.api.material.assign_material(
                 self.file,
                 products=related_objects,
                 type=f"{ifc_class}Usage",

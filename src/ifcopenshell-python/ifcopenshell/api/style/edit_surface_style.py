@@ -47,14 +47,14 @@ def edit_surface_style(
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
 
         # Create a blank rendering style.
-        rendering = ifcopenshell.api.run("style.add_surface_style", model,
+        rendering = ifcopenshell.api.style.add_surface_style(model,
             style=style, ifc_class="IfcSurfaceStyleRendering")
 
         # Edit the attributes of the rendering style.
-        ifcopenshell.api.run("style.edit_surface_style", model,
+        ifcopenshell.api.style.edit_surface_style(model,
             style=rendering, attributes={
                 # A surface colour and transparency is still supplied for
                 # viewport display only. This will supersede the shading

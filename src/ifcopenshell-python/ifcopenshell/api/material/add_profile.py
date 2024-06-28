@@ -61,15 +61,15 @@ def add_profile(
         # Let's imagine we have a steel I-beam. Notice we are assigning to
         # the type only, as all occurrences of that type will automatically
         # inherit the material.
-        beam_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBeamType", name="B1")
+        beam_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBeamType", name="B1")
 
         # First, let's create a material set. This will later be assigned
         # to our beam type element.
-        material_set = ifcopenshell.api.run("material.add_profile_set", model,
+        material_set = ifcopenshell.api.material.add_profile_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.
-        steel = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        steel = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
@@ -81,11 +81,11 @@ def add_profile(
         # Define that steel material and cross section as a single profile
         # item. If this were a composite beam, we might add multiple profile
         # items instead, but this is rarely the case in most construction.
-        ifcopenshell.api.run("material.add_profile", model,
+        ifcopenshell.api.material.add_profile(model,
             profile_set=material_set, material=steel, profile=hea100)
 
         # Great! Let's assign our material set to our beam type.
-        ifcopenshell.api.run("material.assign_material", model, products=[beam_type], material=material_set)
+        ifcopenshell.api.material.assign_material(model, products=[beam_type], material=material_set)
     """
     settings = {"profile_set": profile_set, "material": material, "profile": profile}
 

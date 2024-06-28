@@ -43,6 +43,6 @@ def add_structural_load(
     .. code:: python
 
         # Create a simple linear load
-        ifcopenshell.api.run("structural.add_structural_load", model)
+        ifcopenshell.api.structural.add_structural_load(model)
     """
     return file.create_entity(ifc_class, Name=name)

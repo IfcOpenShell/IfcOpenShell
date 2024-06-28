@@ -17,22 +17,24 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.root
+import ifcopenshell.api.control
 
 
 class TestAddCostItemQuantity(test.bootstrap.IFC4):
     def test_run(self):
         schema = ifcopenshell.schema_by_name(self.file.schema)
         quantity_types = [t.name() for t in schema.declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()]
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", self.file)
-        item = ifcopenshell.api.run("cost.add_cost_item", self.file, cost_schedule=schedule)
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("control.assign_control", self.file, relating_control=item, related_object=wall)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(self.file)
+        item = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=schedule)
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.control.assign_control(self.file, relating_control=item, related_object=wall)
 
         quantities = []
         for quantity_type in quantity_types:
-            quantity = ifcopenshell.api.run(
-                "cost.add_cost_item_quantity", self.file, cost_item=item, ifc_class=quantity_type
+            quantity = ifcopenshell.api.cost.add_cost_item_quantity(
+                self.file, cost_item=item, ifc_class=quantity_type
             )
             assert quantity.is_a(quantity_type)
             assert quantity.Name == "Unnamed"

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.style
 from typing import Any, Optional, Literal
 
 
@@ -99,17 +99,17 @@ def add_surface_style(
     .. code:: python
 
         # Create a new surface style
-        style = ifcopenshell.api.run("style.add_style", model)
+        style = ifcopenshell.api.style.add_style(model)
 
         # Create a simple shading colour and transparency.
-        ifcopenshell.api.run("style.add_surface_style", model,
+        ifcopenshell.api.style.add_surface_style(model,
             style=style, ifc_class="IfcSurfaceStyleShading", attributes={
                 "SurfaceColour": { "Name": None, "Red": 1.0, "Green": 0.8, "Blue": 0.8 },
                 "Transparency": 0., # 0 is opaque, 1 is transparent
             })
 
         # Alternatively, create a rendering style.
-        ifcopenshell.api.run("style.add_surface_style", model,
+        ifcopenshell.api.style.add_surface_style(model,
             style=style, ifc_class="IfcSurfaceStyleRendering", attributes={
                 # A surface colour and transparency is still supplied for
                 # viewport display only. This will supersede the shading
@@ -130,7 +130,7 @@ def add_surface_style(
     settings = {"style": style, "ifc_class": ifc_class, "attributes": attributes or {}}
 
     style_item = file.create_entity(settings["ifc_class"])
-    ifcopenshell.api.run("style.edit_surface_style", file, style=style_item, attributes=settings["attributes"])
+    ifcopenshell.api.style.edit_surface_style(file, style=style_item, attributes=settings["attributes"])
     styles = list(settings["style"].Styles or [])
 
     select_class = settings["ifc_class"]
@@ -138,7 +138,7 @@ def add_surface_style(
         select_class = "IfcSurfaceStyleShading"
     duplicate_items = [s for s in styles if s.is_a(select_class)]
     for duplicate_item in duplicate_items:
-        ifcopenshell.api.run("style.remove_surface_style", file, style=duplicate_item)
+        ifcopenshell.api.style.remove_surface_style(file, style=duplicate_item)
 
     styles = list(settings["style"].Styles or [])
     styles.append(style_item)

@@ -17,20 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.boundary
 
 
 class TestRemoveBoundary(test.bootstrap.IFC4):
     def test_run(self):
-        boundary = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelSpaceBoundary")
-        ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=boundary)
+        boundary = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelSpaceBoundary")
+        ifcopenshell.api.boundary.remove_boundary(self.file, boundary=boundary)
         assert not self.file.by_type("IfcRelSpaceBoundary")
 
     def test_removing_connection_geometry(self):
         geometry = self.file.createIfcConnectionSurfaceGeometry()
-        boundary = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcRelSpaceBoundary")
+        boundary = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelSpaceBoundary")
         boundary.ConnectionGeometry = geometry
-        ifcopenshell.api.run("boundary.remove_boundary", self.file, boundary=boundary)
+        ifcopenshell.api.boundary.remove_boundary(self.file, boundary=boundary)
         assert not self.file.by_type("IfcRelSpaceBoundary")
         assert not self.file.by_type("IfcConnectionSurfaceGeometry")
 

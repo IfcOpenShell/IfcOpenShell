@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.system
 
 
 class TestAssignFlowControl(test.bootstrap.IFC4):
@@ -26,8 +26,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
         flow_control = self.file.create_entity("IfcDistributionControlElement")
 
         # simple assignment
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        relation = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
@@ -37,8 +36,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
         assert relation.RelatedControlElements == (flow_control,)
 
         # trying to establish existing relationship
-        relation0 = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        relation0 = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
@@ -47,8 +45,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
 
         # assigning same control to another object
         flow_element1 = self.file.createIfcFlowSegment()
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        relation = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element1,
@@ -57,8 +54,7 @@ class TestAssignFlowControl(test.bootstrap.IFC4):
 
         # assigning another control to the same object
         flow_control1 = self.file.create_entity("IfcDistributionControlElement")
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        relation = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control1,
             relating_flow_element=flow_element,

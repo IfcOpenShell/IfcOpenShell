@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -42,15 +42,15 @@ def unassign_port(
     .. code:: python
 
         # Create a duct
-        duct = ifcopenshell.api.run("root.create_entity", model,
+        duct = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
         # Create 2 ports, one for either end.
-        port1 = ifcopenshell.api.run("system.add_port", model, element=duct)
-        port2 = ifcopenshell.api.run("system.add_port", model, element=duct)
+        port1 = ifcopenshell.api.system.add_port(model, element=duct)
+        port2 = ifcopenshell.api.system.add_port(model, element=duct)
 
         # Unassign one port for some weird reason.
-        ifcopenshell.api.run("system.unassign_port", model, element=duct, port=port1)
+        ifcopenshell.api.system.unassign_port(model, element=duct, port=port1)
     """
     usecase = Usecase()
     usecase.file = file
@@ -77,7 +77,7 @@ class Usecase:
                 related_objects = set(rel.RelatedObjects) or set()
                 related_objects.remove(self.settings["port"])
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
 
     def execute_ifc2x3(self):
         for rel in self.settings["element"].HasPorts or []:

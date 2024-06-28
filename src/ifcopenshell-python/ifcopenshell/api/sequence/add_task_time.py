@@ -40,25 +40,25 @@ def add_task_time(
     .. code:: python
 
         # Let's imagine we are creating a construction schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Create a portion of a work breakdown structure.
-        construction = ifcopenshell.api.run("sequence.add_task", model,
+        construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
-        superstructure = ifcopenshell.api.run("sequence.add_task", model,
+        superstructure = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Superstructure", identification="C3")
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             parent_task=superstructure, name="Ground Floor FRP", identification="C3.1")
 
         # Add time data. Note that time data is blank by default.
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=task)
+        time = ifcopenshell.api.sequence.add_task_time(model, task=task)
 
         # Let's say our task starts on the first of January when everybody
         # is still drunk from the new years celebration, and lasts for 2
         # days. Note we don't need to specify the end date, as that is
         # derived from the start plus the duration. In this simple example,
         # no calendar has been specified, so we are working 24/7. Yikes!
-        ifcopenshell.api.run("sequence.edit_task_time", model,
+        ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
     """
     settings = {"task": task, "is_recurring": is_recurring}

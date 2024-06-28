@@ -66,45 +66,45 @@ def edit_qto(
     .. code:: python
 
         # Let's imagine we have a new wall type.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # This is a standard buildingSMART property set.
-        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Qto_WallBaseQuantities")
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Qto_WallBaseQuantities")
 
         # In this scenario, we don't specify any pset_template because it is
         # part of the built-in buildingSMART templates, and so the Length
         # will automatically be an IfcLengthMeasure, and the NetVolume will
         # automatically be an IfcVolumeMeasure. Neither of these properties
         # exist yet, so they will be created.
-        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"Length": 12, "NetVolume": 7.2})
 
         # Setting to None will delete the quantity.
-        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"Length": None})
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"Length": None})
 
         # What if we wanted to manage our own properties? Let's create our
         # own "Company Standard" property set templates. Notice how we
         # prefix our property set with "Foo_", if our company name was "Foo"
         # this would make sense. In this example, we say that our template
         # only applies to walls and is for quantities.
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model,
+        template = ifcopenshell.api.pset_template.add_pset_template(model,
             name="Foo_Wall", template_type="QTO_OCCURRENCEDRIVEN", applicable_entity="IfcWall")
 
         # Let's imagine we want all model authors to specify a length
         # measurement for the portion of a wall that is overhanging.
-        prop = ifcopenshell.api.run("pset_template.add_prop_template", model, pset_template=template,
+        prop = ifcopenshell.api.pset_template.add_prop_template(model, pset_template=template,
             name="OverhangLength", template_type="Q_LENGTH", primary_measure_type="IfcLengthMeasure")
 
         # Now we can use our property set template to add our properties,
         # and the data types will always match our template.
-        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Foo_Wall")
-        ifcopenshell.api.run("pset.edit_qto", model,
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Foo_Wall")
+        ifcopenshell.api.pset.edit_qto(model,
             qto=qto, properties={"OverhangLength": 42.3}, pset_template=template)
 
         # Here's a third scenario where we want to add arbitrary quantities
         # that are not standardised by anything, not even our own custom
         # templates.
-        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall, name="Custom_Qto")
-        ifcopenshell.api.run("pset.edit_qto", model,
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall, name="Custom_Qto")
+        ifcopenshell.api.pset.edit_qto(model,
             qto=qto, properties={
                 "SomeLength": model.createIfcLengthMeasure(42.3),
                 "SomeArea": model.createIfcAreaMeasure(21.0)
@@ -112,7 +112,7 @@ def edit_qto(
 
         # Editing existing quantities will retain their current data types
         # if possible. So this will still be a length measure.
-        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"SomeLength": 12.3})
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"SomeLength": 12.3})
     """
     usecase = Usecase()
     usecase.file = file

@@ -18,7 +18,7 @@
 
 import numpy as np
 import numpy.typing as npt
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -77,7 +77,7 @@ class Usecase:
         new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
 
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
 
         for settings in children_settings:
             self.settings = settings

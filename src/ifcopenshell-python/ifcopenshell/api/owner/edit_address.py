@@ -37,16 +37,16 @@ def edit_address(file: ifcopenshell.file, address: ifcopenshell.entity_instance,
     .. code:: python
 
         # A snail mail address
-        postal = ifcopenshell.api.run("owner.add_address", model,
+        postal = ifcopenshell.api.owner.add_address(model,
             assigned_object=organisation, ifc_class="IfcPostalAddress")
-        ifcopenshell.api.run("owner.edit_address", model, address=postal,
+        ifcopenshell.api.owner.edit_address(model, address=postal,
             attributes={"Purpose": "OFFICE", "AddressLines": ["42 Wallaby Way"],
             "Town": "Sydney", "Region": "NSW", "PostalCode": "2000"})
 
         # A phone or internet address
-        telecom = ifcopenshell.api.run("owner.add_address", model,
+        telecom = ifcopenshell.api.owner.add_address(model,
             assigned_object=organisation, ifc_class="IfcTelecomAddress")
-        ifcopenshell.api.run("owner.edit_address", model, address=telecom,
+        ifcopenshell.api.owner.edit_address(model, address=telecom,
             attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
             "ElectronicMailAddresses": ["bobthebuilder@example.com"],
             "WWWHomePageURL": "https://thinkmoult.com"})

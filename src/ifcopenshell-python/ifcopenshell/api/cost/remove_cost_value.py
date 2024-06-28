@@ -38,15 +38,15 @@ def remove_cost_value(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # This cost item will have a unit cost of 5 and a volume of 3
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 5.0})
 
-        ifcopenshell.api.run("cost.remove_cost_value", model, parent=item, cost_value=value)
+        ifcopenshell.api.cost.remove_cost_value(model, parent=item, cost_value=value)
     """
     settings = {"parent": parent, "cost_value": cost_value}
 

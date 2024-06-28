@@ -37,14 +37,14 @@ def edit_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance,
 
     .. code:: python
 
-        model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+        model = ifcopenshell.api.context.add_context(model, context_type="Model")
         # Revit had a bug where they incorrectly called the body representation a "Facetation"
-        body = ifcopenshell.api.run("context.add_context", model,
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
         )
 
         # Let's fix it!
-        ifcopenshell.api.run("context.edit_context", model,
+        ifcopenshell.api.context.edit_context(model,
             context=body, attributes={"ContextIdentifier": "Body"})
     """
     settings = {"context": context, "attributes": attributes}

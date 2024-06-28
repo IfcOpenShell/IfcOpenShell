@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -54,24 +54,24 @@ def assign_actor(
     .. code:: python
 
         # We need to procure and install 2 of this particular pump type in our facility.
-        pump_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcPumpType")
+        pump_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcPumpType")
 
         # Define who the manufacturer is
-        manufacturer = ifcopenshell.api.run("owner.add_organisation", model,
+        manufacturer = ifcopenshell.api.owner.add_organisation(model,
             identification="PWP", name="Pumps With Power")
-        ifcopenshell.api.run("owner.add_role", model, assigned_object=manufacturer, role="MANUFACTURER")
+        ifcopenshell.api.owner.add_role(model, assigned_object=manufacturer, role="MANUFACTURER")
 
         # To help our facility manager, it's nice to provide contact details
         # of the manufacturer so they know how to call when the pump breaks.
-        telecom = ifcopenshell.api.run("owner.add_address", model,
+        telecom = ifcopenshell.api.owner.add_address(model,
             assigned_object=organisation, ifc_class="IfcTelecomAddress")
-        ifcopenshell.api.run("owner.edit_address", model, address=telecom,
+        ifcopenshell.api.owner.edit_address(model, address=telecom,
             attributes={"Purpose": "OFFICE", "TelephoneNumbers": ["+61432466949"],
             "ElectronicMailAddresses": ["contact@example.com"],
             "WWWHomePageURL": "https://example.com"})
 
         # Make the manufacturer responsible for that pump type.
-        ifcopenshell.api.run("owner.assign_actor", model,
+        ifcopenshell.api.owner.assign_actor(model,
             relating_actor=manufacturer, related_object=pump_type)
     """
     settings = {
@@ -93,13 +93,13 @@ def assign_actor(
         related_objects = list(rel.RelatedObjects)
         related_objects.append(settings["related_object"])
         rel.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     else:
         rel = file.create_entity(
             "IfcRelAssignsToActor",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["related_object"]],
                 "RelatingActor": settings["relating_actor"],
             }

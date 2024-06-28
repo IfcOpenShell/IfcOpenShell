@@ -18,7 +18,7 @@
 
 import datetime
 import networkx as nx
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
 
@@ -184,8 +184,7 @@ class Usecase:
             task = self.file.by_id(ifc_definition_id)
             if not task.TaskTime:
                 continue
-            ifcopenshell.api.run(
-                "sequence.edit_task_time",
+            ifcopenshell.api.sequence.edit_task_time(
                 self.file,
                 task_time=task.TaskTime,
                 attributes={

@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import math
-import ifcopenshell.api
+import ifcopenshell.api.resource
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.element
@@ -62,9 +61,5 @@ def calculate_resource_work(file: ifcopenshell.file, resource: ifcopenshell.enti
     if not amount_worked:
         return
     if not resource.Usage:
-        ifcopenshell.api.run(
-            "resource.add_resource_time",
-            file,
-            resource=resource,
-        )
+        ifcopenshell.api.resource.add_resource_time(file, resource=resource)
     resource.Usage.ScheduleWork = amount_worked

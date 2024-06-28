@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 
 
@@ -64,8 +64,7 @@ class Usecase:
             self.settings["p1"][1] = self.convert_unit_to_si(self.settings["p1"][1])
             self.settings["elevation"] = self.convert_unit_to_si(self.settings["elevation"])
 
-        representation = ifcopenshell.api.run(
-            "geometry.add_wall_representation",
+        representation = ifcopenshell.api.geometry.add_wall_representation(
             self.file,
             context=self.settings["context"],
             length=length,
@@ -82,9 +81,7 @@ class Usecase:
                 [0, 0, 0, 1],
             ]
         )
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement", self.file, product=self.settings["element"], matrix=matrix
-        )
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=self.settings["element"], matrix=matrix)
         return representation
 
     def convert_unit_to_si(self, co):

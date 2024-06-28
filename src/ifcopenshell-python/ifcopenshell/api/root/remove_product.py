@@ -16,7 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.type
+import ifcopenshell.api.grid
+import ifcopenshell.api.void
+import ifcopenshell.api.root
+import ifcopenshell.api.pset
+import ifcopenshell.api.boundary
+import ifcopenshell.api.material
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 
 
@@ -50,10 +57,10 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
     .. code:: python
 
         # We have a wall.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # No we don't.
-        ifcopenshell.api.run("root.remove_product", model, product=wall)
+        ifcopenshell.api.root.remove_product(model, product=wall)
     """
     settings = {"product": product}
 
@@ -79,26 +86,19 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
         for pset in psets:
             if file.get_total_inverses(pset) != 1:
                 continue
-            ifcopenshell.api.run(
-                "pset.remove_pset",
-                file,
-                product=settings["product"],
-                pset=pset,
-            )
+            ifcopenshell.api.pset.remove_pset(file, product=settings["product"], pset=pset)
 
     for representation in representations:
-        ifcopenshell.api.run(
-            "geometry.unassign_representation",
-            file,
-            **{"product": settings["product"], "representation": representation}
+        ifcopenshell.api.geometry.unassign_representation(
+            file, product=settings["product"], representation=representation
         )
-        ifcopenshell.api.run("geometry.remove_representation", file, **{"representation": representation})
+        ifcopenshell.api.geometry.remove_representation(file, **{"representation": representation})
     for opening in getattr(settings["product"], "HasOpenings", []) or []:
-        ifcopenshell.api.run("void.remove_opening", file, opening=opening.RelatedOpeningElement)
+        ifcopenshell.api.void.remove_opening(file, opening=opening.RelatedOpeningElement)
 
     if settings["product"].is_a("IfcGrid"):
         for axis in settings["product"].UAxes + settings["product"].VAxes + (settings["product"].WAxes or ()):
-            ifcopenshell.api.run("grid.remove_grid_axis", file, axis=axis)
+            ifcopenshell.api.grid.remove_grid_axis(file, axis=axis)
 
     def element_exists(element_id):
         try:
@@ -114,21 +114,18 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
         except:
             continue
         if inverse.is_a("IfcRelDefinesByProperties"):
-            ifcopenshell.api.run(
-                "pset.remove_pset",
-                file,
-                product=settings["product"],
-                pset=inverse.RelatingPropertyDefinition,
+            ifcopenshell.api.pset.remove_pset(
+                file, product=settings["product"], pset=inverse.RelatingPropertyDefinition
             )
         elif inverse.is_a("IfcRelAssociatesMaterial"):
-            ifcopenshell.api.run("material.unassign_material", file, products=[settings["product"]])
+            ifcopenshell.api.material.unassign_material(file, products=[settings["product"]])
         elif inverse.is_a("IfcRelDefinesByType"):
             if inverse.RelatingType == settings["product"]:
-                ifcopenshell.api.run("type.unassign_type", file, related_objects=inverse.RelatedObjects)
+                ifcopenshell.api.type.unassign_type(file, related_objects=inverse.RelatedObjects)
             else:
-                ifcopenshell.api.run("type.unassign_type", file, related_objects=[settings["product"]])
+                ifcopenshell.api.type.unassign_type(file, related_objects=[settings["product"]])
         elif inverse.is_a("IfcRelSpaceBoundary"):
-            ifcopenshell.api.run("boundary.remove_boundary", file, boundary=inverse)
+            ifcopenshell.api.boundary.remove_boundary(file, boundary=inverse)
         elif inverse.is_a("IfcRelFillsElement"):
             history = inverse.OwnerHistory
             file.remove(inverse)
@@ -149,7 +146,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 inverse_id = inverse.id()
                 for subelement in inverse.RelatedObjects:
                     if subelement.is_a("IfcDistributionPort"):
-                        ifcopenshell.api.run("root.remove_product", file, product=subelement)
+                        ifcopenshell.api.root.remove_product(file, product=subelement)
                 # IfcRelNests could have been already deleted after removing one of the products
                 if element_exists(inverse_id):
                     history = inverse.OwnerHistory
@@ -185,7 +182,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsPortToElement"):
             if inverse.RelatedElement == settings["product"]:
-                ifcopenshell.api.run("root.remove_product", file, product=inverse.RelatingPort)
+                ifcopenshell.api.root.remove_product(file, product=inverse.RelatingPort)
             elif inverse.RelatingPort == settings["product"]:
                 history = inverse.OwnerHistory
                 file.remove(inverse)

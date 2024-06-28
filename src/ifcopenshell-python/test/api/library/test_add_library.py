@@ -17,12 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
 
 
 class TestAddLibrary(test.bootstrap.IFC4):
     def test_adding_a_library(self):
-        library = ifcopenshell.api.run("library.add_library", self.file, name="Name")
+        library = ifcopenshell.api.library.add_library(self.file, name="Name")
         assert library.is_a("IfcLibraryInformation")
         assert library.Name == "Name"
 

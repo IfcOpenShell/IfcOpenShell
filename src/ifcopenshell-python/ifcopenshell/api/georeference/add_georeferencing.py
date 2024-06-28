@@ -42,7 +42,7 @@ def add_georeferencing(file: ifcopenshell.file, ifc_class: str = "IfcMapConversi
 
     .. code:: python
 
-        ifcopenshell.api.run("georeference.add_georeferencing", model)
+        ifcopenshell.api.georeference.add_georeferencing(model)
     """
     if file.schema == "IFC2X3":
         if not (project := file.by_type("IfcProject")):

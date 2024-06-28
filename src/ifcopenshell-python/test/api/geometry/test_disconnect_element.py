@@ -17,22 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.geometry
 
 
 class TestDisconnectElement(test.bootstrap.IFC4):
     def test_disconnecting_an_element(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("geometry.connect_element", self.file, relating_element=wall1, related_element=wall2)
-        ifcopenshell.api.run("geometry.disconnect_element", self.file, relating_element=wall1, related_element=wall2)
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.connect_element(self.file, relating_element=wall1, related_element=wall2)
+        ifcopenshell.api.geometry.disconnect_element(self.file, relating_element=wall1, related_element=wall2)
         assert not self.file.by_type("IfcRelConnectsElements")
 
     def test_order_does_not_matter(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("geometry.connect_element", self.file, relating_element=wall1, related_element=wall2)
-        ifcopenshell.api.run("geometry.disconnect_element", self.file, relating_element=wall2, related_element=wall1)
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.geometry.connect_element(self.file, relating_element=wall1, related_element=wall2)
+        ifcopenshell.api.geometry.disconnect_element(self.file, relating_element=wall2, related_element=wall1)
         assert not self.file.by_type("IfcRelConnectsElements")
 
 

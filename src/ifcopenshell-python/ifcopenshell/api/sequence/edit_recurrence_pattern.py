@@ -41,18 +41,18 @@ def edit_recurrence_pattern(
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # We create a weekly recurrence
-        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
             parent=work_time, recurrence_type="WEEKLY")
 
         # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
-        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+        ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
     """
     settings = {

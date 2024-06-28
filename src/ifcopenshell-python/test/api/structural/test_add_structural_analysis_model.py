@@ -16,15 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.structural
 
 
 class TestAddStructuralAnalysisModel(test.bootstrap.IFC4):
     def test_adding_a_structural_analysis_model(self):
-        subject = ifcopenshell.api.run("structural.add_structural_analysis_model", self.file)
+        subject = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
         models = self.file.by_type("IfcStructuralAnalysisModel")
         assert subject == models[0]
         assert subject.is_a("IfcStructuralAnalysisModel")

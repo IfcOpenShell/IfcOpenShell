@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
 
 
 def add_structural_analysis_model(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
@@ -37,8 +37,8 @@ def add_structural_analysis_model(file: ifcopenshell.file) -> ifcopenshell.entit
     .. code:: python
 
         # Create a fresh blank structural analysis
-        analysis = ifcopenshell.api.run("structural.add_structural_analysis_model", model)
+        analysis = ifcopenshell.api.structural.add_structural_analysis_model(model)
     """
-    return ifcopenshell.api.run(
-        "root.create_entity", file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
+    return ifcopenshell.api.root.create_entity(
+        file, ifc_class="IfcStructuralAnalysisModel", predefined_type="LOADING_3D"
     )

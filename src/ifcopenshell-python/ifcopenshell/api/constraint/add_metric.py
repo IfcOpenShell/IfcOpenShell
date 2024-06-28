@@ -36,8 +36,8 @@ def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance)
 
     .. code:: python
 
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
-        metric = ifcopenshell.api.run("constraint.add_metric", model,
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        metric = ifcopenshell.api.constraint.add_metric(model,
             objective=objective)
     """
     settings = {

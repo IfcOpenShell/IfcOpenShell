@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Union
 
@@ -77,14 +77,14 @@ class Usecase:
         if rel:
             related_objects = set(rel.RelatedObjects) | products_to_assign
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
             return rel
 
         return self.file.create_entity(
             "IfcRelAssociatesConstraint",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                 "RelatingConstraint": self.constraint,
                 "RelatedObjects": list(products_to_assign),
             }

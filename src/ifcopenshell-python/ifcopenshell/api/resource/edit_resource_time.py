@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import datetime
 import ifcopenshell
+import ifcopenshell.api.sequence
 from typing import Any
 
 
@@ -41,23 +41,23 @@ def edit_resource_time(
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        labour = ifcopenshell.api.run("resource.add_resource", model,
+        labour = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        ifcopenshell.api.run("resource.add_resource_quantity", model,
+        ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the unit time used in hours
-        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+        ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=time, attributes={"TimeValue": 8.0})
 
         # Let's imagine we've used the resource for 2 days.
-        time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
-        ifcopenshell.api.run("resource.edit_resource_time", model,
+        time = ifcopenshell.api.resource.add_resource_time(model, resource=labour)
+        ifcopenshell.api.resource.edit_resource_time(model,
             resource_time=time, attributes={"ScheduleWork": "P16H"})
     """
     usecase = Usecase()
@@ -94,7 +94,7 @@ class Usecase:
             ):
                 task = ifcopenshell.util.resource.get_task_assignments(self.resource)
                 if task:
-                    ifcopenshell.api.run("sequence.calculate_task_duration", self.file, task=task)
+                    ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
 
     def get_resource(self):
         return [e for e in self.file.get_inverse(self.settings["resource_time"]) if e.is_a("IfcResource")][0]

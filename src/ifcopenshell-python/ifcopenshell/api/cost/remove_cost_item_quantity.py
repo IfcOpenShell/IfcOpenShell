@@ -38,12 +38,12 @@ def remove_cost_item_quantity(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-        quantity = ifcopenshell.api.run("cost.add_cost_item_quantity", model,
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
+        quantity = ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityVolume")
         # Let's change our mind and delete it
-        ifcopenshell.api.run("cost.remove_cost_item", model,
+        ifcopenshell.api.cost.remove_cost_item(model,
             cost_item=item, physical_quantity=quantity)
     """
     settings = {"cost_item": cost_item, "physical_quantity": physical_quantity}

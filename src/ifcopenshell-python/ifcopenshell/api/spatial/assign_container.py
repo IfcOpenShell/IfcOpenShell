@@ -18,7 +18,9 @@
 
 import ifcopenshell
 import ifcopenshell.guid
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.api.geometry
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 from typing import Union
@@ -79,27 +81,27 @@ def assign_container(
 
     .. code:: python
 
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
-        site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-        building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-        storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
-        space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
+        space = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSpace")
 
         # The project contains a site (note that project aggregation is a special case in IFC)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(model, products=[site], relating_object=project)
 
         # The site has a building, the building has a storey, and the storey has a space
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[space], relating_object=storey)
+        ifcopenshell.api.aggregate.assign_object(model, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(model, products=[storey], relating_object=building)
+        ifcopenshell.api.aggregate.assign_object(model, products=[space], relating_object=storey)
 
         # Create a wall and furniture
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
 
         # The wall is in the storey, and the furniture is in the space
-        ifcopenshell.api.run("spatial.assign_container", model, products=[wall], relating_structure=storey)
-        ifcopenshell.api.run("spatial.assign_container", model, products=[furniture], relating_structure=space)
+        ifcopenshell.api.spatial.assign_container(model, products=[wall], relating_structure=storey)
+        ifcopenshell.api.spatial.assign_container(model, products=[furniture], relating_structure=space)
     """
     settings = {
         "products": products,
@@ -138,14 +140,14 @@ def assign_container(
         return structure_rel
 
     # can be either only aggregated or only contained at the same time
-    ifcopenshell.api.run("aggregate.unassign_object", file, products=products_without_containers)
+    ifcopenshell.api.aggregate.unassign_object(file, products=products_without_containers)
 
     # unassign elements from previous containers
     for rel in previous_containers_rels:
         related_elements = set(rel.RelatedElements) - products
         if related_elements:
             rel.RelatedElements = list(related_elements)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)
@@ -155,13 +157,13 @@ def assign_container(
     # assign elements to a new container
     if structure_rel:
         structure_rel.RelatedElements = list(set(structure_rel.RelatedElements) | products)
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": structure_rel})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": structure_rel})
     else:
         structure_rel = file.create_entity(
             "IfcRelContainedInSpatialStructure",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedElements": list(products),
                 "RelatingStructure": settings["relating_structure"],
             }
@@ -171,8 +173,7 @@ def assign_container(
     for product in products_to_change:
         placement = getattr(product, "ObjectPlacement", None)
         if placement and placement.is_a("IfcLocalPlacement"):
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement",
+            ifcopenshell.api.geometry.edit_object_placement(
                 file,
                 product=product,
                 matrix=ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement),

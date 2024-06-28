@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.owner
 
 
 def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance) -> None:
@@ -36,18 +37,18 @@ def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance)
 
     .. code:: python
 
-        ifcopenshell.api.run("owner.add_person", model,
+        ifcopenshell.api.owner.add_person(model,
             identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
-        ifcopenshell.api.run("owner.remove_person", model, person=person)
+        ifcopenshell.api.owner.remove_person(model, person=person)
     """
     settings = {"person": person}
 
     for role in settings["person"].Roles or []:
         if len(file.get_inverse(role)) == 1:
-            ifcopenshell.api.run("owner.remove_role", file, role=role)
+            ifcopenshell.api.owner.remove_role(file, role=role)
     for address in settings["person"].Addresses or []:
         if len(file.get_inverse(address)) == 1:
-            ifcopenshell.api.run("owner.remove_address", file, address=address)
+            ifcopenshell.api.owner.remove_address(file, address=address)
     for inverse in file.get_inverse(settings["person"]):
         if inverse.is_a("IfcWorkControl"):
             if inverse.Creators == (settings["person"],):
@@ -56,14 +57,14 @@ def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance)
             if inverse.ResponsiblePersons == (settings["person"],):
                 # in IFC2X3 ResponsiblePersons is not optional and without it IfcInventory is not valid
                 if file.schema == "IFC2X3":
-                    ifcopenshell.api.run("root.remove_product", file, product=inverse)
+                    ifcopenshell.api.root.remove_product(file, product=inverse)
         elif inverse.is_a("IfcDocumentInformation"):
             if inverse.Editors == (settings["person"],):
                 inverse.Editors = None
         elif inverse.is_a("IfcPersonAndOrganization"):
-            ifcopenshell.api.run("owner.remove_person_and_organisation", file, person_and_organisation=inverse)
+            ifcopenshell.api.owner.remove_person_and_organisation(file, person_and_organisation=inverse)
         elif inverse.is_a("IfcActor"):
-            ifcopenshell.api.run("root.remove_product", file, product=inverse)
+            ifcopenshell.api.root.remove_product(file, product=inverse)
         elif inverse.is_a("IfcResourceLevelRelationship"):
             if inverse.RelatedResourceObjects == (settings["person"],):
                 file.remove(inverse)

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -46,7 +46,7 @@ def assign_structural_analysis_model(
             "IfcRelAssignsToGroup",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [settings["product"]],
                 "RelatingGroup": settings["structural_analysis_model"],
             }
@@ -55,5 +55,5 @@ def assign_structural_analysis_model(
     related_objects = set(rel.RelatedObjects) or set()
     related_objects.add(settings["product"])
     rel.RelatedObjects = list(related_objects)
-    ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+    ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     return rel

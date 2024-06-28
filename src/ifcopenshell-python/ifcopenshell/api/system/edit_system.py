@@ -37,10 +37,10 @@ def edit_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance, a
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
 
         # Change the name of the system to "HW" for Hot Water
-        ifcopenshell.api.run("system.edit_system", model, system=system, attributes={"Name": "HW"})
+        ifcopenshell.api.system.edit_system(model, system=system, attributes={"Name": "HW"})
     """
 
     settings = {"system": system, "attributes": attributes or {}}

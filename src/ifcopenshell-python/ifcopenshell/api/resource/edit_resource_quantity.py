@@ -39,18 +39,18 @@ def edit_resource_quantity(
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        labour = ifcopenshell.api.run("resource.add_resource", model,
+        labour = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        ifcopenshell.api.run("resource.add_resource_quantity", model,
+        ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the time used in hours
-        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+        ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=time, attributes={"TimeValue": 8.0})
     """
     settings = {

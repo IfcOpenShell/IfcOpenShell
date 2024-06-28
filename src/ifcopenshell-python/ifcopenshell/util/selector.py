@@ -19,7 +19,8 @@
 import re
 import lark
 import numpy as np
-import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.api.geometry
 import ifcopenshell.util
 import ifcopenshell.util.attribute
 import ifcopenshell.util.fm
@@ -522,9 +523,7 @@ def set_element_value(
                 return
 
             matrix[coord_i][3] = new_value
-            ifcopenshell.api.run(
-                "geometry.edit_object_placement", ifc_file, product=element, matrix=matrix, is_si=False
-            )
+            ifcopenshell.api.geometry.edit_object_placement(ifc_file, product=element, matrix=matrix, is_si=False)
             return
         elif isinstance(element, ifcopenshell.entity_instance):
             if key == "Name" and element.is_a("IfcMaterialLayerSet"):
@@ -584,9 +583,9 @@ def set_element_value(
 
                     if value and not result and len(keys) == i + 2:  # The next key is the prop name
                         if "qto" in key.lower() or "quantity" in key.lower() or "quantities" in key.lower():
-                            pset = ifcopenshell.api.run("pset.add_qto", ifc_file, product=element, name=key)
+                            pset = ifcopenshell.api.pset.add_qto(ifc_file, product=element, name=key)
                         else:
-                            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=key)
+                            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=key)
                         result = {"id": pset.id()}
 
                 element = result
@@ -596,16 +595,16 @@ def set_element_value(
                 for prop, prop_value in element.items():
                     if key.match(prop):
                         if pset.is_a("IfcPropertySet") and prop_value != value:
-                            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop: value})
+                            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={prop: value})
                         elif pset.is_a("IfcElementQuantity") and prop_value != float(value):
-                            ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={prop: float(value)})
+                            ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={prop: float(value)})
             elif pset.is_a("IfcPropertySet") and element.get(key, None) != value:
-                ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={key: value})
+                ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={key: value})
             elif pset.is_a("IfcElementQuantity"):
                 try:
                     value = float(value)
                     if element.get(key, None) != value:
-                        ifcopenshell.api.run("pset.edit_qto", ifc_file, qto=pset, properties={key: value})
+                        ifcopenshell.api.pset.edit_qto(ifc_file, qto=pset, properties={key: value})
                 except:
                     pass
             return

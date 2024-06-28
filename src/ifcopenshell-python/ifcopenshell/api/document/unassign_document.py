@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -41,18 +41,18 @@ def unassign_document(
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        ifcopenshell.api.run("document.edit_information", model,
+        document = ifcopenshell.api.document.add_information(model)
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
-        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+        reference = ifcopenshell.api.document.add_reference(model, information=document)
 
         # Let's imagine storey represents an IfcBuildingStorey for the ground floor
-        ifcopenshell.api.run("document.assign_document", model, products=[storey], document=reference)
+        ifcopenshell.api.document.assign_document(model, products=[storey], document=reference)
 
         # Now let's change our mind and remove the association
-        ifcopenshell.api.run("document.unassign_document", model, products=[storey], document=reference)
+        ifcopenshell.api.document.unassign_document(model, products=[storey], document=reference)
     """
     settings = {
         "products": products,
@@ -77,7 +77,7 @@ def unassign_document(
         related_objects = set(rel.RelatedObjects) - products
         if related_objects:
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

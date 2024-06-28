@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -64,17 +64,17 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
     .. code:: python
 
         # Let's imagine we have a new wall.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Note that this only creates and assigns an empty quantity set. We
         # still need to add quantities into the property set. Having blank
         # quantity sets are invalid.
-        qto = ifcopenshell.api.run("pset.add_qto", model, product=wall_type, name="Qto_WallBaseQuantities")
+        qto = ifcopenshell.api.pset.add_qto(model, product=wall_type, name="Qto_WallBaseQuantities")
 
         # Add a side area property standardised by buildingSMART. This
         # allows quantity take-off to occur, even though no geometry has
         # even been modelled!
-        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"NetSideArea": 4.2})
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"NetSideArea": 4.2})
     """
     usecase = Usecase()
     usecase.file = file
@@ -97,7 +97,7 @@ class Usecase:
                 "IfcRelDefinesByProperties",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
+                    "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
                     "RelatedObjects": [self.settings["product"]],
                     "RelatingPropertyDefinition": qto,
                 }
@@ -117,6 +117,6 @@ class Usecase:
         return self.file.create_entity(
             "IfcElementQuantity",
             GlobalId=ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
+            OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
             Name=self.settings["name"],
         )

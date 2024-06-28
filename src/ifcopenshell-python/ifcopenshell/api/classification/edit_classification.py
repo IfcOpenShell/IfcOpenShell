@@ -40,7 +40,7 @@ def edit_classification(
 
         classification = model.by_type("IfcClassification")[0]
         # Change the name of the classification system to "Foo"
-        ifcopenshell.api.run("classification.edit_classification", model,
+        ifcopenshell.api.classification.edit_classification(model,
             classification=classification, attributes={"Name": "Foo"})
     """
     settings = {"classification": classification, "attributes": attributes or {}}

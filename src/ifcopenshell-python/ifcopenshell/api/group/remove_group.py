@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
@@ -36,8 +36,8 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
 
     .. code:: python
 
-        group = ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
-        ifcopenshell.api.run("group.remove_group", model, group=group)
+        group = ifcopenshell.api.group.add_group(model, name="Unit 1A")
+        ifcopenshell.api.group.remove_group(model, group=group)
     """
     settings = {"group": group}
 
@@ -47,8 +47,7 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
         except:
             continue
         if inverse.is_a("IfcRelDefinesByProperties"):
-            ifcopenshell.api.run(
-                "pset.remove_pset",
+            ifcopenshell.api.pset.remove_pset(
                 file,
                 product=settings["group"],
                 pset=inverse.RelatingPropertyDefinition,

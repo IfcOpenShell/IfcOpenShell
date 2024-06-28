@@ -18,7 +18,7 @@
 
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.document
 import ifcopenshell.util.element
 
 
@@ -37,9 +37,9 @@ def remove_information(file: ifcopenshell.file, information: ifcopenshell.entity
     .. code:: python
 
         # Add a document
-        document = ifcopenshell.api.run("document.add_information", model)
+        document = ifcopenshell.api.document.add_information(model)
         # ... and remove it!
-        ifcopenshell.api.run("document.remove_information", model, information=document)
+        ifcopenshell.api.document.remove_information(model, information=document)
     """
 
     if file.schema == "IFC2X3":
@@ -48,11 +48,11 @@ def remove_information(file: ifcopenshell.file, information: ifcopenshell.entity
         references = information.HasDocumentReferences
 
     for reference in references:
-        ifcopenshell.api.run("document.remove_reference", file, reference=reference)
+        ifcopenshell.api.document.remove_reference(file, reference=reference)
 
     for rel in information.IsPointer or []:
         for info in rel.RelatedDocuments:
-            ifcopenshell.api.run("document.remove_information", file, information=info)
+            ifcopenshell.api.document.remove_information(file, information=info)
 
     for rel in information.IsPointedTo or []:
         if rel.RelatedDocuments == (information,):

@@ -47,7 +47,7 @@ def add_arbitrary_profile(
 
         # A 10mm by 100mm rectangle, such that might be used as a wooden
         # skirting board or kick plate.
-        square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
+        square = ifcopenshell.api.profile.add_arbitrary_profile(model,
             profile=[(0., 0.), (.01, 0.), (.01, .1), (0., .1), (0., 0.)],
             name="SK01 Profile")
     """

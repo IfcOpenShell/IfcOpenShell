@@ -51,13 +51,13 @@ def update_owner_history(
         # create_owner_history at all. This is already automatically handled
         # by the API when necessary. Under the hood, the API is actually
         # running this code on the IfcSpace element:
-        # element.OwnerHistory = ifcopenshell.api.run("owner.create_owner_history", model)
-        space = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSpace")
+        # element.OwnerHistory = ifcopenshell.api.owner.create_owner_history(model)
+        space = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSpace")
 
         # Any edits we make will have ownership tracking automatically
         # applied. There is no need to run any owner.update_owner_history
         # API calls either.
-        ifcopenshell.api.run("attribute.edit_attributes", model, product=space, attributes={"Name": "Lobby"})
+        ifcopenshell.api.attribute.edit_attributes(model, product=space, attributes={"Name": "Lobby"})
     """
     settings = {"element": element}
 
@@ -74,7 +74,7 @@ def update_owner_history(
     # 1 IfcRoot IfcOwnerHistory
     owner_history = element[1]
     if not owner_history:
-        owner_history = ifcopenshell.api.run("owner.create_owner_history", file)
+        owner_history = ifcopenshell.api.owner.create_owner_history(file)
         element[1] = owner_history
         return owner_history
 

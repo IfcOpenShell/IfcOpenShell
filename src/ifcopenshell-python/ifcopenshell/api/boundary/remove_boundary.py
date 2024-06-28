@@ -35,10 +35,10 @@ def remove_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_insta
 
         # A boring boundary with no geometry. Note that this boundary is
         # invalid and does not relate to any space or building element.
-        boundary = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcRelSpaceBoundary")
+        boundary = ifcopenshell.api.root.create_entity(model, ifc_class="IfcRelSpaceBoundary")
 
         # Let's remove it!
-        ifcopenshell.api.run("boundary.remove_boundary", model, boundary=boundary)
+        ifcopenshell.api.boundary.remove_boundary(model, boundary=boundary)
     """
     settings = {"boundary": boundary}
 

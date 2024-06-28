@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -48,12 +48,12 @@ def remove_reference(
     .. code:: python
 
         wall_type = model.by_type("IfcWallType")[0]
-        classification = ifcopenshell.api.run("classification.add_classification",
+        classification = ifcopenshell.api.classification.add_classification(
             model, classification="MyCustomClassification")
-        reference = ifcopenshell.api.run("classification.add_reference", model,
+        reference = ifcopenshell.api.classification.add_reference(model,
             products=[wall_type], classification=classification,
             identification="W_01", name="Interior Walls")
-        ifcopenshell.api.run("classification.remove_reference", model,
+        ifcopenshell.api.classification.remove_reference(model,
             reference=reference, products=[wall_type])
     """
     settings = {"reference": reference, "products": products}
@@ -93,7 +93,7 @@ def remove_reference(
             related_objects = set(rel.RelatedObjects) - rooted_products
             if related_objects:
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
             else:
                 history = rel.OwnerHistory
                 file.remove(rel)

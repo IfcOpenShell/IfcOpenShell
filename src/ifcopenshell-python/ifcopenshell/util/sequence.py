@@ -500,18 +500,18 @@ def get_related_products(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's create a construction task. Note that the predefined type is
         # important to distinguish types of tasks.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Build wall", identification="A", predefined_type="CONSTRUCTION")
 
         # Let's say we have a wall somewhere.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's construct that wall!
-        ifcopenshell.api.run("sequence.assign_product", relating_product=wall, related_object=task)
+        ifcopenshell.api.sequence.assign_product(relating_product=wall, related_object=task)
 
         # This will give us a set with that wall in it.
         products = ifcopenshell.util.sequence.get_related_products(related_object=task)

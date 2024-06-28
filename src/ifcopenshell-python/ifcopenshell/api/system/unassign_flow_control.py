@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -43,13 +43,12 @@ def unassign_flow_control(
         # assign control to the flow element
         flow_element = file.createIfcFlowSegment()
         flow_control = file.createIfcController()
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control", file,
-            relating_control=flow_control, related_object=flow_element
+        relation = ifcopenshell.api.system.assign_flow_control(
+            file, relating_control=flow_control, related_object=flow_element
         )
 
         # und unassign it
-        ifcopenshell.api.run("system.unassign_flow_control", file,
+        ifcopenshell.api.system.unassign_flow_control(file,
             relating_control=flow_control, related_object=flow_element
         )
     """
@@ -73,4 +72,4 @@ def unassign_flow_control(
     related_flow_controls = list(assignment.RelatedControlElements)
     related_flow_controls.remove(settings["related_flow_control"])
     assignment.RelatedControlElements = related_flow_controls
-    ifcopenshell.api.run("owner.update_owner_history", file, **{"element": assignment})
+    ifcopenshell.api.owner.update_owner_history(file, **{"element": assignment})

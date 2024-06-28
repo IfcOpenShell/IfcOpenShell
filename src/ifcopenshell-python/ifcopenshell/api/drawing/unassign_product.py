@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -45,13 +45,13 @@ def unassign_product(
 
     .. code:: python
 
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-        annotation = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcAnnotation")
-        ifcopenshell.api.run("drawing.assign_product", model,
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
+        annotation = ifcopenshell.api.root.create_entity(model, ifc_class="IfcAnnotation")
+        ifcopenshell.api.drawing.assign_product(model,
             relating_product=furniture, related_object=annotation)
 
         # Let's change our mind and remove the relationship
-        ifcopenshell.api.run("drawing.unassign_product", model,
+        ifcopenshell.api.drawing.unassign_product(model,
             relating_product=furniture, related_object=annotation)
     """
     settings = {
@@ -71,4 +71,4 @@ def unassign_product(
         related_objects = list(rel.RelatedObjects)
         related_objects.remove(settings["related_object"])
         rel.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(file, element=rel)

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.cost
 import ifcopenshell.util.element
 
 
@@ -37,9 +37,9 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-        ifcopenshell.api.run("cost.remove_cost_item", model, cost_item=item)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
+        ifcopenshell.api.cost.remove_cost_item(model, cost_item=item)
     """
     settings = {"cost_item": cost_item}
 
@@ -48,7 +48,7 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
         if inverse.is_a("IfcRelNests"):
             if inverse.RelatingObject == settings["cost_item"]:
                 for related_object in inverse.RelatedObjects:
-                    ifcopenshell.api.run("cost.remove_cost_item", file, cost_item=related_object)
+                    ifcopenshell.api.cost.remove_cost_item(file, cost_item=related_object)
             elif inverse.RelatedObjects == (settings["cost_item"],):
                 history = inverse.OwnerHistory
                 file.remove(inverse)

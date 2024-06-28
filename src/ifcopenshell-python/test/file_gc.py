@@ -4,7 +4,11 @@ import weakref
 import itertools
 import ifcopenshell
 import ifcopenshell.guid
-import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.api.owner
+import ifcopenshell.api.project
+import ifcopenshell.api.material
+import ifcopenshell.api.attribute
 import ifcopenshell.template
 
 
@@ -25,37 +29,30 @@ def test_file_gc(args):
 
     if do_run_api:
         if api == 0:
-            ifcopenshell.api.run(
-                "attribute.edit_attributes",
+            ifcopenshell.api.attribute.edit_attributes(
                 f,
                 product=inst,
                 attributes={"FamilyName": "Bimson"},
             )
         elif api == 1:
-            ifcopenshell.api.run(
-                "pset.add_pset", f, product=inst, name="ePSet_MapConversion"
-            )
+            ifcopenshell.api.pset.add_pset(f, product=inst, name="ePSet_MapConversion")
         elif api == 2:
             pset = f.create_entity(
                 "IfcPropertySet",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run(
-                        "owner.create_owner_history", f
-                    ),
+                    "OwnerHistory": ifcopenshell.api.owner.create_owner_history(f),
                     "Name": "ePSet_MapConversion",
-                }
+                },
             )
             f.create_entity(
                 "IfcRelDefinesByProperties",
                 **{
                     "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run(
-                        "owner.create_owner_history", f
-                    ),
+                    "OwnerHistory": ifcopenshell.api.owner.create_owner_history(f),
                     "RelatedObjects": [inst],
                     "RelatingPropertyDefinition": pset,
-                }
+                },
             )
             del pset
 
@@ -78,8 +75,8 @@ def test_file_gc(args):
 
 
 def test_bug_2517():
-    fixtures = os.path.join(os.path.dirname(__file__), 'fixtures')
-    model = ifcopenshell.open(f'{fixtures}/bug_2517_test2.ifc')
+    fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
+    model = ifcopenshell.open(f"{fixtures}/bug_2517_test2.ifc")
     library = ifcopenshell.open(f"{fixtures}/bug_2517_lib.ifc")
     result = model.add(library.by_type("IfcClassification")[0])
     model.create_entity(
@@ -91,23 +88,19 @@ def test_bug_2517():
 
 
 def test_bug_2486_a():
-    run = ifcopenshell.api.run
+    file = ifcopenshell.api.project.create_file()
 
-    file = run("project.create_file")
-
-    mymaterial = run("material.add_material", file)
-    pset = run("pset.add_pset", file, product=mymaterial)
-    run(
-        "pset.edit_pset",
+    mymaterial = ifcopenshell.api.material.add_material(file)
+    pset = ifcopenshell.api.pset.add_pset(file, product=mymaterial)
+    ifcopenshell.api.pset.edit_pset(
         file,
         pset=pset,
         properties={"foo": "bar"},
     )
 
-    another_file = run("project.create_file")
+    another_file = ifcopenshell.api.project.create_file()
 
-    run(
-        "project.append_asset",
+    ifcopenshell.api.project.append_asset(
         another_file,
         library=file,
         element=mymaterial,

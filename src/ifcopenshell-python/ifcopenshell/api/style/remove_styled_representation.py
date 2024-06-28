@@ -34,7 +34,7 @@ def remove_styled_representation(file: ifcopenshell.file, representation: ifcope
     .. code:: python
 
         # Remove a styled representation
-        ifcopenshell.api.run("style.remove_styled_representation", model, representation=representation)
+        ifcopenshell.api.style.remove_styled_representation(model, representation=representation)
     """
     settings = {"representation": representation}
 

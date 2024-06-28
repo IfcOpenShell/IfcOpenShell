@@ -17,15 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 
 
 class TestEditQto(test.bootstrap.IFC4):
     def test_editing_a_blank_buildingsmart_templated_qto(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Qto_WallBaseQuantities")
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={"Length": 1, "NetSideArea": 2, "NetVolume": 3},
@@ -42,15 +42,14 @@ class TestEditQto(test.bootstrap.IFC4):
         assert pset.Quantities[2].VolumeValue == 3
 
     def test_editing_an_existing_buildingsmart_templated_pset(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Qto_WallBaseQuantities")
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={"Length": 1, "NetSideArea": 2, "NetVolume": 3},
         )
-        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"Length": 42, "NetSideArea": None})
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"Length": 42, "NetSideArea": None})
         qto = element.IsDefinedBy[0].RelatingPropertyDefinition
 
         assert qto.Quantities[0].Name == "Length"
@@ -62,24 +61,23 @@ class TestEditQto(test.bootstrap.IFC4):
         assert len(qto.Quantities) == 2
 
     def test_not_adding_a_property_if_it_is_none(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Qto_WallBaseQuantities")
-        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, properties={"Length": None})
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Qto_WallBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, properties={"Length": None})
         qto = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert len(qto.Quantities) == 0
 
     def test_editing_a_qto_name(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="foo")
-        ifcopenshell.api.run("pset.edit_qto", self.file, qto=qto, name="bar")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="foo")
+        ifcopenshell.api.pset.edit_qto(self.file, qto=qto, name="bar")
         qto = element.IsDefinedBy[0].RelatingPropertyDefinition
         assert qto.Name == "bar"
 
     def test_adding_quantities_without_a_template_with_autodetected_and_manual_data_types(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Foo_Bar")
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={
@@ -112,18 +110,16 @@ class TestEditQto(test.bootstrap.IFC4):
         assert qto.Quantities[5].WeightValue == 7
 
     def test_editing_quantities_with_autodetected_existing_types(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Foo_Bar")
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={
                 "MyLength": self.file.createIfcLengthMeasure(12),
             },
         )
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={
@@ -135,18 +131,16 @@ class TestEditQto(test.bootstrap.IFC4):
         assert qto.Quantities[0].LengthValue == 34
 
     def test_editing_properties_with_an_explicit_type(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        qto = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name="Foo_Bar")
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        qto = ifcopenshell.api.pset.add_qto(self.file, product=element, name="Foo_Bar")
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={
                 "MyLength": self.file.createIfcLengthMeasure(12),
             },
         )
-        ifcopenshell.api.run(
-            "pset.edit_qto",
+        ifcopenshell.api.pset.edit_qto(
             self.file,
             qto=qto,
             properties={

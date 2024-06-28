@@ -18,21 +18,21 @@
 
 import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.style
 
 
 class TestRemoveStyle(test.bootstrap.IFC4):
     def test_removing_a_style(self):
         shading = self.file.createIfcSurfaceStyleShading()
         style = self.file.createIfcSurfaceStyle(Styles=[shading])
-        ifcopenshell.api.run("style.remove_style", self.file, style=style)
+        ifcopenshell.api.style.remove_style(self.file, style=style)
         assert len(list(self.file)) == 0
 
     def test_removing_any_styled_items_referencing_the_style(self):
         shading = self.file.createIfcSurfaceStyleShading()
         style = self.file.createIfcSurfaceStyle(Styles=[shading])
         styled_item = self.file.createIfcStyledItem(Styles=[style])
-        ifcopenshell.api.run("style.remove_style", self.file, style=style)
+        ifcopenshell.api.style.remove_style(self.file, style=style)
         assert len(list(self.file)) == 0
 
 

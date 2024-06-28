@@ -121,63 +121,63 @@ def add_context(
 
         # If we plan to store 3D geometry in our IFC model, we have to setup
         # a "Model" context.
-        model3d = ifcopenshell.api.run("context.add_context", model, context_type="Model")
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
 
         # And/Or, if we plan to store 2D geometry, we need a "Plan" context
-        plan = ifcopenshell.api.run("context.add_context", model, context_type="Plan")
+        plan = ifcopenshell.api.context.add_context(model, context_type="Plan")
 
         # Now we setup the subcontexts with each of the geometric "purposes"
         # we plan to store in our model. "Body" is by far the most important
         # and common context, as most IFC models are assumed to be viewable
         # in 3D.
-        body = ifcopenshell.api.run("context.add_context", model,
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # The 3D Axis subcontext is important if any "axis-based" parametric
         # geometry is going to be created. For example, a beam, or column
         # may be drawn using a single 3D axis line, and for this we need an
         # Axis subcontext.
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Axis", target_view="GRAPH_VIEW", parent=model3d)
 
         # The 3D Box subcontext is useful for clash detection or shape
         # analysis, or even lazy-loading of large models.
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Box", target_view="MODEL_VIEW", parent=model3d)
 
         # It's also important to have a 2D Axis subcontext for things like
         # walls and claddings which can be drawn using a 2D axis line.
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan)
 
         # A 2D annotation subcontext for plan views are important for door
         # swings, window cuts, and symbols for equipment like GPOs, fire
         # extinguishers, and so on.
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan)
 
         # You may also create 2D annotation subcontexts for sections and
         # elevation views.
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Plan", context_identifier="Annotation", target_view="SECTION_VIEW", parent=plan)
-        ifcopenshell.api.run("context.add_context", model,
+        ifcopenshell.api.context.add_context(model,
             context_type="Plan", context_identifier="Annotation", target_view="ELEVATION_VIEW", parent=plan)
 
         # Let's create a new wall. The wall does not have any geometry yet.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's use the "3D Body" representation we created earlier to add a
         # new wall-like body geometry, 5 meters long, 3 meters high, and
         # 200mm thick
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
             context=body, length=5, height=3, thickness=0.2)
 
         # Assign our new body geometry back to our wall
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=wall, representation=representation)
 
         # Place our wall at the origin
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
     """
     usecase = Usecase()
     usecase.file = file

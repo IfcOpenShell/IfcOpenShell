@@ -38,8 +38,8 @@ def edit_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance,
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-        ifcopenshell.api.run("library.edit_library", model, library=library,
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
+        ifcopenshell.api.library.edit_library(model, library=library,
             attributes={"Description": "A Brickschema TTL including only mechanical distribution systems."})
     """
 

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.resource
 import ifcopenshell.util.element
 
 
@@ -29,10 +29,10 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Fire our crew
-        ifcopenshell.api.run("resource.remove_resource", model, resource=crew)
+        ifcopenshell.api.resource.remove_resource(model, resource=crew)
     """
     settings = {"resource": resource}
 
@@ -41,11 +41,7 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
         if inverse.is_a("IfcRelNests"):
             if inverse.RelatingObject == settings["resource"]:
                 for related_object in inverse.RelatedObjects:
-                    ifcopenshell.api.run(
-                        "resource.remove_resource",
-                        file,
-                        resource=related_object,
-                    )
+                    ifcopenshell.api.resource.remove_resource(file, resource=related_object)
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
@@ -63,11 +59,8 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
         elif inverse.is_a("IfcRelAssignsToResource"):
             if inverse.RelatingResource == settings["resource"]:
                 for related_object in inverse.RelatedObjects:
-                    ifcopenshell.api.run(
-                        "resource.unassign_resource",
-                        file,
-                        related_object=related_object,
-                        resource=settings["resource"],
+                    ifcopenshell.api.resource.unassign_resource(
+                        file, related_object=related_object, relating_resource=settings["resource"]
                     )
             elif inverse.RelatedObjects == tuple(settings["resource"]):
                 history = inverse.OwnerHistory
@@ -78,11 +71,7 @@ def remove_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_insta
     if usage := getattr(settings["resource"], "Usage", None):
         file.remove(usage)
     if settings["resource"].BaseQuantity:
-        ifcopenshell.api.run(
-            "resource.remove_resource_quantity",
-            file,
-            resource=settings["resource"],
-        )
+        ifcopenshell.api.resource.remove_resource_quantity(file, resource=settings["resource"])
     history = settings["resource"].OwnerHistory
     file.remove(settings["resource"])
     if history:

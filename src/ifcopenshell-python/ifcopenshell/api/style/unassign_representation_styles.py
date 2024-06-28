@@ -49,7 +49,7 @@ def unassign_representation_styles(
 
     .. code:: python
 
-        ifcopenshell.api.run("style.unassign_representation_styles", model,
+        ifcopenshell.api.style.unassign_representation_styles(model,
             shape_representation=representation, styles=[style])
     """
     usecase = Usecase()

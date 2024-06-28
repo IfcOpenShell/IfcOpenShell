@@ -76,36 +76,36 @@ def assign_recurrence_pattern(
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # We create a weekly recurrence
-        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
             parent=work_time, recurrence_type="WEEKLY")
 
         # State that we work from weekdays 1 to 5 (i.e. Monday to Friday)
-        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+        ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
 
         # Let's imagine we are creating a maintenance schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Equipment Maintenance")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Equipment Maintenance")
 
         # Now let's imagine we have a task to maintain the chillers
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Chiller maintenance")
 
         # Because it is a maintenance task, we must schedule a recurring time
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=task, is_recurring=True)
+        time = ifcopenshell.api.sequence.add_task_time(model, task=task, is_recurring=True)
 
         # We create a monthly recurrence
-        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
             parent=work_time, recurrence_type="MONTHLY_BY_DAY_OF_MONTH")
 
         # Specifically, the maintenance task must occur every 6 months
-        ifcopenshell.api.run("sequence.edit_recurrence_pattern", model,
+        ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"DayComponent": [1], "Interval": 6})
     """
     settings = {"parent": parent, "recurrence_type": recurrence_type}

@@ -18,7 +18,7 @@
 
 import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.style
 
 
 class TestEditSurfaceStyle(test.bootstrap.IFC4):
@@ -28,8 +28,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         attrs = {"SurfaceColour": {"Red": 1, "Green": 1, "Blue": 1}}
         if self.file.schema != "IFC2X3":
             attrs["Transparency"] = 0.5
-        ifcopenshell.api.run(
-            "style.edit_surface_style",
+        ifcopenshell.api.style.edit_surface_style(
             self.file,
             style=style,
             attributes=attrs,
@@ -48,8 +47,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             "SpecularColour",
         ]:
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 self.file,
                 style=style,
                 attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
@@ -67,8 +65,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             colour = self.file.createIfcColourRgb(None, 0, 0, 0)
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, colour)
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 self.file,
                 style=style,
                 attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
@@ -87,7 +84,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             colour_id = colour.id()
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, colour)
-            ifcopenshell.api.run("style.edit_surface_style", self.file, style=style, attributes={attribute: 0.5})
+            ifcopenshell.api.style.edit_surface_style(self.file, style=style, attributes={attribute: 0.5})
             with pytest.raises(RuntimeError):
                 self.file.by_id(colour_id)
             assert getattr(style, attribute).wrappedValue == 0.5
@@ -102,7 +99,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         ]:
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, self.file.createIfcNormalisedRatioMeasure(0.5))
-            ifcopenshell.api.run("style.edit_surface_style", self.file, style=style, attributes={attribute: 0.4})
+            ifcopenshell.api.style.edit_surface_style(self.file, style=style, attributes={attribute: 0.4})
             assert getattr(style, attribute).wrappedValue == 0.4
 
     def test_editing_an_existing_factor_to_a_colour(self):
@@ -115,8 +112,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
         ]:
             style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
             setattr(style, attribute, self.file.createIfcNormalisedRatioMeasure(0.5))
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 self.file,
                 style=style,
                 attributes={attribute: {"Red": 1, "Green": 1, "Blue": 1}},
@@ -125,8 +121,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
 
     def test_editing_a_specular_highlight_as_an_exponent(self):
         style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
-        ifcopenshell.api.run(
-            "style.edit_surface_style",
+        ifcopenshell.api.style.edit_surface_style(
             self.file,
             style=style,
             attributes={"SpecularHighlight": {"IfcSpecularExponent": 2}},
@@ -136,8 +131,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
 
     def test_editing_a_specular_highlight_as_a_roughness(self):
         style = self.file.createIfcSurfaceStyleRendering(self.file.createIfcColourRgb(None, 0, 0, 0))
-        ifcopenshell.api.run(
-            "style.edit_surface_style",
+        ifcopenshell.api.style.edit_surface_style(
             self.file,
             style=style,
             attributes={"SpecularHighlight": {"IfcSpecularRoughness": 0.5}},
@@ -148,9 +142,8 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
     def test_editing_texture_style(self):
         style = self.file.createIfcSurfaceStyleWithTextures()
         textures = ({"Mode": "DIFFUSE", "RepeatS": True, "RepeatT": True, "URLReference": "diffuse.jpg"},)
-        textures = ifcopenshell.api.run("style.add_surface_textures", self.file, textures=textures)
-        ifcopenshell.api.run(
-            "style.edit_surface_style",
+        textures = ifcopenshell.api.style.add_surface_textures(self.file, textures=textures)
+        ifcopenshell.api.style.edit_surface_style(
             self.file,
             style=style,
             attributes={"Textures": textures},
@@ -166,8 +159,7 @@ class TestEditSurfaceStyle(test.bootstrap.IFC4):
             "ReflectanceColour",
         )
         attributes = {a: {"Red": 1, "Green": 1, "Blue": 1} for a in attributes}
-        ifcopenshell.api.run(
-            "style.edit_surface_style",
+        ifcopenshell.api.style.edit_surface_style(
             self.file,
             style=style,
             attributes=attributes,

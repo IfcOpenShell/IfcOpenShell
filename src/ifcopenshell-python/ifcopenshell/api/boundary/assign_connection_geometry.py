@@ -74,7 +74,7 @@ def assign_connection_geometry(
 
     .. code:: python
 
-        ifcopenshell.api.run("boundary.assign_connection_geometry", model,
+        ifcopenshell.api.boundary.assign_connection_geometry(model,
             rel_space_boundary=element,
             outer_boundary=[(0., 0.), (1., 0.), (1., 1.), (0., 1.)],
             location=[0., 0., 0.], axis=[1., 0., 0.], ref_direction=[0., 0., 1.],

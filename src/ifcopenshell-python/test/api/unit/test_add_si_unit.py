@@ -17,12 +17,12 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.unit
 
 
 class TestAddSIUnit(test.bootstrap.IFC4):
     def test_run(self):
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
         assert unit.UnitType == "LENGTHUNIT"
         assert unit.Name == "METRE"
         assert unit.Prefix == "MILLI"

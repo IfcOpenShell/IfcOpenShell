@@ -37,18 +37,18 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # We create a weekly recurrence
-        pattern = ifcopenshell.api.run("sequence.assign_recurrence_pattern", model,
+        pattern = ifcopenshell.api.sequence.assign_recurrence_pattern(model,
             parent=work_time, recurrence_type="WEEKLY")
 
         # Change our mind, let's just maintain it whenever we feel like it.
-        ifcopenshell.api.run("sequence.unassign_recurrence_pattern", recurrence_pattern=pattern)
+        ifcopenshell.api.sequence.unassign_recurrence_pattern(recurrence_pattern=pattern)
     """
     settings = {"recurrence_pattern": recurrence_pattern}
 

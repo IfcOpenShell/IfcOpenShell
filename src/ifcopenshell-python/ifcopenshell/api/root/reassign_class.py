@@ -61,10 +61,10 @@ def reassign_class(
     .. code:: python
 
         # We have a wall.
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Oh, did I say wall? I meant slab.
-        slab = ifcopenshell.api.run("root.reassign_class", model, product=wall, ifc_class="IfcSlab")
+        slab = ifcopenshell.api.root.reassign_class(model, product=wall, ifc_class="IfcSlab")
 
         # Warning: this will crash since wall doesn't exist any more.
         print(wall) # Kaboom.

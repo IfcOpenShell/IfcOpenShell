@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.nest
+import ifcopenshell.api.project
 from typing import Optional
 
 
@@ -69,10 +71,10 @@ def add_resource(
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        ifcopenshell.api.run("resource.add_resource", model, parent_resource=crew, ifc_class="IfcLaborResource")
+        ifcopenshell.api.resource.add_resource(model, parent_resource=crew, ifc_class="IfcLaborResource")
     """
     settings = {
         "parent_resource": parent_resource,
@@ -81,8 +83,7 @@ def add_resource(
         "predefined_type": predefined_type,
     }
 
-    resource = ifcopenshell.api.run(
-        "root.create_entity",
+    resource = ifcopenshell.api.root.create_entity(
         file,
         ifc_class=settings["ifc_class"],
         predefined_type=settings["predefined_type"],
@@ -91,18 +92,10 @@ def add_resource(
     # TODO: this is an ambiguity by buildingSMART: Can we nest an IfcCrewResource under an IfcCrewResource ?
     # https://forums.buildingsmart.org/t/what-are-allowed-to-be-root-level-construction-resources/3550
     if settings["parent_resource"]:
-        ifcopenshell.api.run(
-            "nest.assign_object",
-            file,
-            related_objects=[resource],
-            relating_object=settings["parent_resource"],
+        ifcopenshell.api.nest.assign_object(
+            file, related_objects=[resource], relating_object=settings["parent_resource"]
         )
     elif file.schema != "IFC2X3":
         context = file.by_type("IfcContext")[0]
-        ifcopenshell.api.run(
-            "project.assign_declaration",
-            file,
-            definitions=[resource],
-            relating_context=context,
-        )
+        ifcopenshell.api.project.assign_declaration(file, definitions=[resource], relating_context=context)
     return resource

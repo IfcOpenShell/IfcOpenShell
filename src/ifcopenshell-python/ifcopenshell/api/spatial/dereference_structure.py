@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -40,33 +40,33 @@ def dereference_structure(
 
     .. code:: python
 
-        project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
-        site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite")
-        building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding")
-        storey1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
-        storey2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
-        storey3 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey")
+        project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
+        site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite")
+        building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding")
+        storey1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
+        storey2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
+        storey3 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey")
 
         # The project contains a site (note that project aggregation is a special case in IFC)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[site], relating_object=project)
+        ifcopenshell.api.aggregate.assign_object(model, products=[site], relating_object=project)
 
         # The site has a building, the building has a storey, and the storey has a space
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[storey], relating_object=building)
-        ifcopenshell.api.run("aggregate.assign_object", model, products=[space], relating_object=storey)
+        ifcopenshell.api.aggregate.assign_object(model, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(model, products=[storey], relating_object=building)
+        ifcopenshell.api.aggregate.assign_object(model, products=[space], relating_object=storey)
 
         # Create a column, this column spans 3 storeys
-        column = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+        column = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # The column is contained in the lowermost storey
-        ifcopenshell.api.run("spatial.assign_container", model, products=[column], relating_structure=storey1)
+        ifcopenshell.api.spatial.assign_container(model, products=[column], relating_structure=storey1)
 
         # And referenced in the others
-        ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey2)
-        ifcopenshell.api.run("spatial.reference_structure", model, products=[column], relating_structure=storey3)
+        ifcopenshell.api.spatial.reference_structure(model, products=[column], relating_structure=storey2)
+        ifcopenshell.api.spatial.reference_structure(model, products=[column], relating_structure=storey3)
 
         # Actually, it only goes up to storey 2.
-        ifcopenshell.api.run("spatial.dereference_structure", model, products=[column], relating_structure=storey3)
+        ifcopenshell.api.spatial.dereference_structure(model, products=[column], relating_structure=storey3)
     """
     settings = {"products": products, "relating_structure": relating_structure}
 
@@ -78,7 +78,7 @@ def dereference_structure(
         related_elements = related_elements - products
         if related_elements:
             rel.RelatedElements = list(related_elements)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

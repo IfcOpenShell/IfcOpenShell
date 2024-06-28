@@ -41,7 +41,7 @@ def add_organisation(
 
     .. code:: python
 
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
     """
     settings = {"identification": identification, "name": name}

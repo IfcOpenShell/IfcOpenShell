@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -39,15 +39,15 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
 
     .. code:: python
 
-        task = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcTasks")
-        subtask1 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcTask")
-        subtask2 = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcTask")
-        ifcopenshell.api.run("nest.assign_object", model, related_objects=[subtask1], relating_object=task)
-        ifcopenshell.api.run("nest.assign_object", model, related_objects=[subtask2], relating_object=task)
+        task = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTasks")
+        subtask1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
+        subtask2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcTask")
+        ifcopenshell.api.nest.assign_object(model, related_objects=[subtask1], relating_object=task)
+        ifcopenshell.api.nest.assign_object(model, related_objects=[subtask2], relating_object=task)
         # nothing is returned
-        rel = ifcopenshell.api.run("nest.unassign_object", model, related_objects=[subtask1])
+        rel = ifcopenshell.api.nest.unassign_object(model, related_objects=[subtask1])
         # nothing is returned, relationship is removed
-        ifcopenshell.api.run("nest.unassign_object", model, related_objects=[subtask2])
+        ifcopenshell.api.nest.unassign_object(model, related_objects=[subtask2])
     """
 
     # NOTE: maintain .RelatedObjects order as it has meaning in IFC
@@ -66,7 +66,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
         cur_related_objects = [o for o in rel.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             rel.RelatedObjects = cur_related_objects
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

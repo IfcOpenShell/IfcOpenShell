@@ -51,12 +51,12 @@ def edit_profile(
     .. code:: python
 
         # Let's create a material set to store our profiles.
-        material_set = ifcopenshell.api.run("material.add_profile_set", model,
+        material_set = ifcopenshell.api.material.add_profile_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a couple steel materials.
-        steel1 = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
-        steel2 = ifcopenshell.api.run("material.add_material", model, name="ST01", category="steel")
+        steel1 = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
+        steel2 = ifcopenshell.api.material.add_material(model, name="ST01", category="steel")
 
         # Create some I-shaped profiles. Notice how we name our profiles based
         # on standardised steel profile names.
@@ -72,12 +72,12 @@ def edit_profile(
         # Define that steel material and cross section as a single profile
         # item. If this were a composite beam, we might add multiple profile
         # items instead, but this is rarely the case in most construction.
-        profile_item = ifcopenshell.api.run("material.add_profile", model,
+        profile_item = ifcopenshell.api.material.add_profile(model,
             profile_set=material_set, material=steel1, profile=hea100)
 
         # Edit our profile item to use a HEA200 profile instead made out of
         # another type of steel.
-        ifcopenshell.api.run("material.edit_profile", model,
+        ifcopenshell.api.material.edit_profile(model,
             profile=profile_item, profile_def=hea200, material=steel2)
     """
     settings = {

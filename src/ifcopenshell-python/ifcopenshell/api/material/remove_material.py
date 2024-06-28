@@ -38,10 +38,10 @@ def remove_material(file: ifcopenshell.file, material: ifcopenshell.entity_insta
     .. code:: python
 
         # Create a material
-        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
+        aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
 
         # ... and remove it
-        ifcopenshell.api.run("material.remove_material", model, material=aluminium)
+        ifcopenshell.api.material.remove_material(model, material=aluminium)
     """
     settings = {"material": material}
 

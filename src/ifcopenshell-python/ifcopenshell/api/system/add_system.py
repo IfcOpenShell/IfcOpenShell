@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 
 
@@ -43,7 +43,7 @@ def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
     """
     settings = {"ifc_class": ifc_class}
 
@@ -56,7 +56,7 @@ def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"
         ifc_class,
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "Name": "Unnamed",
         }
     )

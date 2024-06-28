@@ -58,6 +58,6 @@ def add_library(file: ifcopenshell.file, name: str) -> ifcopenshell.entity_insta
 
     .. code:: python
 
-        ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        ifcopenshell.api.library.add_library(model, name="Brickschema")
     """
     return file.create_entity("IfcLibraryInformation", Name=name)

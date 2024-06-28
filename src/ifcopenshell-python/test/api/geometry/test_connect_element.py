@@ -17,15 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.geometry
 
 
 class TestConnectElement(test.bootstrap.IFC4):
     def test_connecting_an_element(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run(
-            "geometry.connect_element",
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        rel = ifcopenshell.api.geometry.connect_element(
             self.file,
             relating_element=wall1,
             related_element=wall2,
@@ -37,10 +37,9 @@ class TestConnectElement(test.bootstrap.IFC4):
         assert rel.Description == "FOOBAR"
 
     def test_reconnecting_an_element_changes_the_description(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run(
-            "geometry.connect_element",
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        rel = ifcopenshell.api.geometry.connect_element(
             self.file,
             relating_element=wall1,
             related_element=wall2,
@@ -52,8 +51,7 @@ class TestConnectElement(test.bootstrap.IFC4):
         assert rel.Description == "FOOBAR"
 
         total_elements = len([e for e in self.file])
-        rel = ifcopenshell.api.run(
-            "geometry.connect_element",
+        rel = ifcopenshell.api.geometry.connect_element(
             self.file,
             relating_element=wall1,
             related_element=wall2,
@@ -63,10 +61,9 @@ class TestConnectElement(test.bootstrap.IFC4):
         assert rel.Description == "FOOBAZ"
 
     def test_reconnecting_and_changing_the_order(self):
-        wall1 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        wall2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run(
-            "geometry.connect_element",
+        wall1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        wall2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        rel = ifcopenshell.api.geometry.connect_element(
             self.file,
             relating_element=wall1,
             related_element=wall2,
@@ -75,9 +72,7 @@ class TestConnectElement(test.bootstrap.IFC4):
         assert rel.RelatingElement == wall1
         assert rel.RelatedElement == wall2
 
-        total_elements = len([e for e in self.file])
-        rel = ifcopenshell.api.run(
-            "geometry.connect_element",
+        rel = ifcopenshell.api.geometry.connect_element(
             self.file,
             relating_element=wall2,
             related_element=wall1,

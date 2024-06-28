@@ -32,17 +32,17 @@ def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.ent
     .. code:: python
 
         # You need a project before you can assign units.
-        ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject")
 
         # Millimeters and square meters
-        length = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="LENGTHUNIT", prefix="MILLI")
-        area = ifcopenshell.api.run("unit.add_si_unit", model, unit_type="AREAUNIT")
+        length = ifcopenshell.api.unit.add_si_unit(model, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(model, unit_type="AREAUNIT")
 
         # Make it our default units, if we are doing a metric building
-        ifcopenshell.api.run("unit.assign_unit", model, units=[length, area])
+        ifcopenshell.api.unit.assign_unit(model, units=[length, area])
 
         # Actually, we don't need areas.
-        ifcopenshell.api.run("unit.unassign_unit", model, units=[area])
+        ifcopenshell.api.unit.unassign_unit(model, units=[area])
     """
     settings = {"units": units}
 

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.group
 import ifcopenshell.util.system
 
 
@@ -43,14 +43,14 @@ def assign_system(
     .. code:: python
 
         # A completely empty distribution system
-        system = ifcopenshell.api.run("system.add_system", model)
+        system = ifcopenshell.api.system.add_system(model)
 
         # Create a duct
-        duct = ifcopenshell.api.run("root.create_entity", model,
+        duct = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcDuctSegment", predefined_type="RIGIDSEGMENT")
 
         # This duct is part of the system
-        ifcopenshell.api.run("system.assign_system", model, products=[duct], system=system)
+        ifcopenshell.api.system.assign_system(model, products=[duct], system=system)
     """
     settings = {
         "products": products,
@@ -63,5 +63,4 @@ def assign_system(
     if not all(ifcopenshell.util.system.is_assignable(failed_product := product, system) for product in products):
         raise TypeError(f"You cannot assign an {failed_product.is_a()} to an {system.is_a()}")
 
-    rel = ifcopenshell.api.run("group.assign_group", file, products=products, group=system)
-    return rel
+    return ifcopenshell.api.group.assign_group(file, products=products, group=system)

@@ -17,15 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.document
 
 
 class TestRemoveReference(test.bootstrap.IFC4):
     def test_removing_reference(self):
         project = self.file.createIfcProject()
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        reference = ifcopenshell.api.run("document.add_reference", self.file, information=information)
-        ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        reference = ifcopenshell.api.document.add_reference(self.file, information=information)
+        ifcopenshell.api.document.remove_reference(self.file, reference=reference)
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcDocumentInformation")) == 1
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 1
@@ -33,11 +33,11 @@ class TestRemoveReference(test.bootstrap.IFC4):
     def test_removing_a_reference_assigned_to_an_object(self):
         project = self.file.createIfcProject()
         wall = self.file.createIfcWall()
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        reference = ifcopenshell.api.run("document.add_reference", self.file, information=information)
-        ifcopenshell.api.run("document.assign_document", self.file, products=[wall], document=reference)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        reference = ifcopenshell.api.document.add_reference(self.file, information=information)
+        ifcopenshell.api.document.assign_document(self.file, products=[wall], document=reference)
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 2
-        ifcopenshell.api.run("document.remove_reference", self.file, reference=reference)
+        ifcopenshell.api.document.remove_reference(self.file, reference=reference)
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcDocumentInformation")) == 1
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 1

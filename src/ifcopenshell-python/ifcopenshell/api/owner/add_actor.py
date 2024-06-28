@@ -18,7 +18,7 @@
 
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
 from typing import Literal
 
 
@@ -60,15 +60,15 @@ def add_actor(
     .. code:: python
 
         # Setup an organisation with a single role
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation, role="ARCHITECT")
+        role = ifcopenshell.api.owner.add_role(model, assigned_object=organisation, role="ARCHITECT")
 
         # Assign that organisation to a newly created actor
-        actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+        actor = ifcopenshell.api.owner.add_actor(model, actor=organisation)
     """
     settings = {"actor": actor, "ifc_class": ifc_class or "IfcActor"}
 
-    actor = ifcopenshell.api.run("root.create_entity", file, ifc_class=settings["ifc_class"])
+    actor = ifcopenshell.api.root.create_entity(file, ifc_class=settings["ifc_class"])
     actor.TheActor = settings["actor"]
     return actor

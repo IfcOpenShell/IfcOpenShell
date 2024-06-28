@@ -35,10 +35,10 @@ def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.en
     .. code:: python
 
         # Create a template.
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="ABC_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="ABC_RiskFactors")
 
         # Let's remove the template.
-        ifcopenshell.api.run("pset_template.remove_pset_template", model, pset_template=template)
+        ifcopenshell.api.pset_template.remove_pset_template(model, pset_template=template)
     """
     settings = {"pset_template": pset_template}
 

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 from typing import Union
@@ -92,11 +92,11 @@ def assign_object(
     .. code:: python
 
         # Faucets are designed to attach onto a sink through a predrilled hole.
-        sink = ifcopenshell.api.run("root.create_entity", model,
+        sink = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcSanitaryTerminal", predefined_type="SINK")
-        faucet = ifcopenshell.api.run("root.create_entity", model,
+        faucet = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcValve", predefined_type="FAUCET")
-        ifcopenshell.api.run("nest.assign_object", model, related_objects=[faucet], relating_object=sink)
+        ifcopenshell.api.nest.assign_object(model, related_objects=[faucet], relating_object=sink)
     """
     settings = {"related_objects": related_objects, "relating_object": relating_object}
 
@@ -146,7 +146,7 @@ def assign_object(
         cur_related_objects = [o for o in nests.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             nests.RelatedObjects = list(cur_related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": nests})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": nests})
         else:
             history = nests.OwnerHistory
             file.remove(nests)
@@ -160,13 +160,13 @@ def assign_object(
         is_nested_by.RelatedObjects = cur_related_objects + [
             o for o in related_objects if o not in cur_related_objects_set
         ]
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": is_nested_by})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": is_nested_by})
     else:
         is_nested_by = file.create_entity(
             "IfcRelNests",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": related_objects,
                 "RelatingObject": relating_object,
             }

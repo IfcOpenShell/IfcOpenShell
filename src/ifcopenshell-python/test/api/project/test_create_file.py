@@ -17,14 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.project
 
 
 class TestCreateFile(test.bootstrap.IFC4):
     def test_run(self):
-        ifc = ifcopenshell.api.run("project.create_file")
+        ifc = ifcopenshell.api.project.create_file()
         assert ifc.schema == "IFC4"
-        ifc = ifcopenshell.api.run("project.create_file", version="IFC2X3")
+        ifc = ifcopenshell.api.project.create_file(version="IFC2X3")
         assert ifc.schema == "IFC2X3"
         assert ifc.wrapped_data.header.file_name.name == "/dev/null"
         assert ifc.wrapped_data.header.file_name.time_stamp

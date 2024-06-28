@@ -31,9 +31,9 @@ def remove_georeferencing(file: ifcopenshell.file) -> None:
 
     Example:
 
-        ifcopenshell.api.run("georeference.add_georeferencing", model)
+        ifcopenshell.api.georeference.add_georeferencing(model)
         # Let's change our mind
-        ifcopenshell.api.run("georeference.remove_georeferencing", model)
+        ifcopenshell.api.georeference.remove_georeferencing(model)
     """
     if file.schema == "IFC2X3":
         project = file.by_type("IfcProject")[0]

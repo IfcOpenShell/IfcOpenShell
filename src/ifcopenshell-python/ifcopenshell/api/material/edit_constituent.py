@@ -44,25 +44,25 @@ def edit_constituent(
     .. code:: python
 
         # Let's add two materials
-        aluminium1 = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
-        aluminium2 = ifcopenshell.api.run("material.add_material", model, name="AL02", category="aluminium")
-        glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+        aluminium1 = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
+        aluminium2 = ifcopenshell.api.material.add_material(model, name="AL02", category="aluminium")
+        glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
 
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialConstituentSet")
 
         # Set up two constituents, one for the frame and the other for the glazing.
-        framing = ifcopenshell.api.run("material.add_constituent", model,
+        framing = ifcopenshell.api.material.add_constituent(model,
             constituent_set=material_set, material=aluminium1)
-        glazing = ifcopenshell.api.run("material.add_constituent", model,
+        glazing = ifcopenshell.api.material.add_constituent(model,
             constituent_set=material_set, material=glass)
 
         # Let's make sure this constituent refers to the framing of the
         # window and uses the second aluminium material instead.
-        ifcopenshell.api.run("material.edit_constituent", model,
+        ifcopenshell.api.material.edit_constituent(model,
             constituent=framing, attributes={"Name": "Framing"}, material=aluminium2)
 
-        ifcopenshell.api.run("material.edit_constituent", model,
+        ifcopenshell.api.material.edit_constituent(model,
             constituent=constituent, attributes={"Name": "Glazing"})
     """
     settings = {"constituent": constituent, "attributes": attributes or {}, "material": material}

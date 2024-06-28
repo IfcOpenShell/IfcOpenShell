@@ -40,14 +40,14 @@ def edit_work_schedule(
     .. code:: python
 
         # This will hold all our construction schedules
-        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # Let's imagine this is one of our schedules in our work plan.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
 
         # Let's give it a description
-        ifcopenshell.api.run("sequence.edit_work_schedule", model,
+        ifcopenshell.api.sequence.edit_work_schedule(model,
             work_schedule=work_schedule, attributes={"Description": "3 crane design option"})
     """
     settings = {"work_schedule": work_schedule, "attributes": attributes}

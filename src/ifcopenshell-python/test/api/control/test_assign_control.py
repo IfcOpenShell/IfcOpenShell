@@ -17,32 +17,33 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.control
 
 
 class TestAssignControl(test.bootstrap.IFC4):
     def test_run(self):
         wall = self.file.createIfcWall()
-        control = ifcopenshell.api.run("cost.add_cost_schedule", self.file)
+        control = ifcopenshell.api.cost.add_cost_schedule(self.file)
 
         # simple assignment
-        relation = ifcopenshell.api.run(
-            "control.assign_control", self.file, relating_control=control, related_object=wall
+        relation = ifcopenshell.api.control.assign_control(
+            self.file, relating_control=control, related_object=wall
         )
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1
         assert relation.RelatingControl == control
         assert relation.RelatedObjects == (wall,)
 
         # trying to establish existing relationship
-        relation = ifcopenshell.api.run(
-            "control.assign_control", self.file, relating_control=control, related_object=wall
+        relation = ifcopenshell.api.control.assign_control(
+            self.file, relating_control=control, related_object=wall
         )
         assert relation is None
 
         # assigning same control to another object
         wall1 = self.file.createIfcWall()
-        relation = ifcopenshell.api.run(
-            "control.assign_control", self.file, relating_control=control, related_object=wall1
+        relation = ifcopenshell.api.control.assign_control(
+            self.file, relating_control=control, related_object=wall1
         )
         assert relation is not None
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1

@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.control
 from typing import Any
 
 
@@ -63,26 +64,26 @@ def assign_cost_item_quantity(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # Let's imagine a unit cost of 5.0 per unit volume
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 5.0})
 
-        slab = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSlab")
+        slab = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSlab")
         # Usually the quantity would be automatically calculated via a
         # graphical authoring application but let's assign a manual quantity
         # for now.
-        qto = ifcopenshell.api.run("pset.add_qto", model, product=slab, name="Qto_SlabBaseQuantities")
-        ifcopenshell.api.run("pset.edit_qto", model, qto=qto, properties={"NetVolume": 42.0})
+        qto = ifcopenshell.api.pset.add_qto(model, product=slab, name="Qto_SlabBaseQuantities")
+        ifcopenshell.api.pset.edit_qto(model, qto=qto, properties={"NetVolume": 42.0})
 
         # Now let's parametrically link the slab's quantity to the cost
         # item. If the slab is edited in the future and 42.0 changes, then
         # the updated value will also automatically be applied to the cost
         # item.
-        ifcopenshell.api.run("cost.assign_cost_item_quantity", model,
+        ifcopenshell.api.cost.assign_cost_item_quantity(model,
             cost_item=item, products=[slab], prop_name="NetVolume")
     """
     usecase = Usecase()
@@ -119,8 +120,7 @@ class Usecase:
     def assign_cost_control(
         self, related_object: ifcopenshell.entity_instance, cost_item: ifcopenshell.entity_instance
     ) -> ifcopenshell.entity_instance:
-        return ifcopenshell.api.run(
-            "control.assign_control",
+        return ifcopenshell.api.control.assign_control(
             self.file,
             related_object=related_object,
             relating_control=cost_item,
@@ -142,8 +142,7 @@ class Usecase:
         # This is a bold assumption
         # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
         if not self.settings["cost_item"].CostQuantities:
-            ifcopenshell.api.run(
-                "cost.add_cost_item_quantity",
+            ifcopenshell.api.cost.add_cost_item_quantity(
                 self.file,
                 cost_item=self.settings["cost_item"],
                 ifc_class="IfcQuantityCount",

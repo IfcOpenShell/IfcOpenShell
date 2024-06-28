@@ -37,23 +37,23 @@ def add_resource_time(file: ifcopenshell.file, resource: ifcopenshell.entity_ins
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        labour = ifcopenshell.api.run("resource.add_resource", model,
+        labour = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
+        quantity = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the unit time used in hours
-        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+        ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=quantity, attributes={"TimeValue": 8.0})
 
         # Let's imagine we've used the resource for 2 days.
-        time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
-        ifcopenshell.api.run("resource.edit_resource_time", model,
+        time = ifcopenshell.api.resource.add_resource_time(model, resource=labour)
+        ifcopenshell.api.resource.edit_resource_time(model,
             resource_time=time, attributes={"ScheduleWork": "PT16H"})
     """
     resource_time = file.create_entity("IfcResourceTime")

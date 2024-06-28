@@ -43,11 +43,11 @@ def add_reference(file: ifcopenshell.file, library: ifcopenshell.entity_instance
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
 
         # Let's create a reference to a single AHU in our Brickschema dataset
-        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-        ifcopenshell.api.run("library.edit_reference", model,
+        reference = ifcopenshell.api.library.add_reference(model, library=library)
+        ifcopenshell.api.library.edit_reference(model,
             reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
     """
     settings = {

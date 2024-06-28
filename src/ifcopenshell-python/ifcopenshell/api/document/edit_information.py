@@ -40,8 +40,8 @@ def edit_information(
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        ifcopenshell.api.run("document.edit_information", model,
+        document = ifcopenshell.api.document.add_information(model)
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})

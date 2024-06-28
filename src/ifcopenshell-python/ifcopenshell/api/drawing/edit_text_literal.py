@@ -39,7 +39,7 @@ def edit_text_literal(
     .. code:: python
 
         text = model.createIfcTextLiteral()
-        ifcopenshell.api.run("drawing.edit_text_literal", model,
+        ifcopenshell.api.drawing.edit_text_literal(model,
             text_literal=text, attributes={"Literal": "MY ANNOTATION"})
     """
     settings = {"text_literal": text_literal, "attributes": attributes or {}}

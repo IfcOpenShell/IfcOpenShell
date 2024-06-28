@@ -34,9 +34,9 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
-        ifcopenshell.api.run("document.remove_reference", model, reference=reference)
+        document = ifcopenshell.api.document.add_information(model)
+        reference = ifcopenshell.api.document.add_reference(model, information=document)
+        ifcopenshell.api.document.remove_reference(model, reference=reference)
     """
 
     if file.schema == "IFC2X3":

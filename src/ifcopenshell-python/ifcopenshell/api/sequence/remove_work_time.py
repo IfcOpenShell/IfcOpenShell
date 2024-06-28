@@ -32,14 +32,14 @@ def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_ins
     .. code:: python
 
         # Let's create a new calendar.
-        calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
         # Let's start defining the times that we work during the week.
-        work_time = ifcopenshell.api.run("sequence.add_work_time", model,
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
             work_calendar=calendar, time_type="WorkingTimes")
 
         # And remove it immediately
-        ifcopenshell.api.run("sequence.remove_work_time", model, work_time=work_time)
+        ifcopenshell.api.sequence.remove_work_time(model, work_time=work_time)
     """
 
     # Currently in API recurrence patterns are created during assignment

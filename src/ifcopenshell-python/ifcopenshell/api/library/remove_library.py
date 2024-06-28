@@ -35,8 +35,8 @@ def remove_library(file: ifcopenshell.file, library: ifcopenshell.entity_instanc
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-        ifcopenshell.api.run("library.remove_library", model, library=library)
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
+        ifcopenshell.api.library.remove_library(model, library=library)
     """
 
     if file.schema != "IFC2X3":

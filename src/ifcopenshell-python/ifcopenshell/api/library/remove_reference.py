@@ -35,10 +35,10 @@ def remove_reference(file: ifcopenshell.file, reference: ifcopenshell.entity_ins
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
-        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
+        reference = ifcopenshell.api.library.add_reference(model, library=library)
         # Let's change our mind and remove it.
-        ifcopenshell.api.run("library.remove_reference", model, reference=reference)
+        ifcopenshell.api.library.remove_reference(model, reference=reference)
     """
     if file.schema != "IFC2X3":
         rels = reference.LibraryRefForObjects

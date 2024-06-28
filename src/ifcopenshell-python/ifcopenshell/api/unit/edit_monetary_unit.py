@@ -38,10 +38,10 @@ def edit_monetary_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instan
 
         # If you do all your cost plans in Zimbabwean dollars then nobody
         # knows how accurate the numbers are.
-        zwl = ifcopenshell.api.run("unit.add_monetary_unit", model, currency="ZWL")
+        zwl = ifcopenshell.api.unit.add_monetary_unit(model, currency="ZWL")
 
         # Ah who are we kidding
-        ifcopenshell.api.run("unit.edit_monetary_unit", model, unit=zwl, attributes={"Currency": "USD"})
+        ifcopenshell.api.unit.edit_monetary_unit(model, unit=zwl, attributes={"Currency": "USD"})
     """
     settings = {"unit": unit, "attributes": attributes or {}}
 

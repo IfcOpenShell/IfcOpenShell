@@ -40,10 +40,10 @@ def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance,
     .. code:: python
 
         # Boxes of things
-        unit = ifcopenshell.api.run("unit.add_context_dependent_unit", model, name="BOXES")
+        unit = ifcopenshell.api.unit.add_context_dependent_unit(model, name="BOXES")
 
         # Uh, crates? Boxes? Whatever.
-        ifcopenshell.api.run("unit.edit_named_unit", model, unit=unit, attibutes={"Name": "CRATES"})
+        ifcopenshell.api.unit.edit_named_unit(model, unit=unit, attibutes={"Name": "CRATES"})
     """
     settings = {"unit": unit, "attributes": attributes or {}}
 

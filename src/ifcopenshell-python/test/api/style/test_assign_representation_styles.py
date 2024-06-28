@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import test.bootstrap
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.style
 
 
 class TestAssignRepresentationStyles(test.bootstrap.IFC4):
     def test_run(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         product_shape = self.file.createIfcProductDefinitionShape()
         element.Representation = product_shape
 
@@ -33,29 +33,29 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         representation.Items = [item]
 
         style = self.file.createIfcSurfaceStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles", self.file, styles=[style], shape_representation=representation
+        ifcopenshell.api.style.assign_representation_styles(
+            self.file, styles=[style], shape_representation=representation
         )
         assert item.StyledByItem[0].Styles == (style,)
 
         # reusing existing styled item for different style type
         style2 = self.file.createIfcFillAreaStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles", self.file, styles=[style2], shape_representation=representation
+        ifcopenshell.api.style.assign_representation_styles(
+            self.file, styles=[style2], shape_representation=representation
         )
         assert item.StyledByItem[0].Styles == (style, style2)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
         # replacing existing style of the same type
         style3 = self.file.createIfcSurfaceStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles", self.file, styles=[style3], shape_representation=representation
+        ifcopenshell.api.style.assign_representation_styles(
+            self.file, styles=[style3], shape_representation=representation
         )
         assert item.StyledByItem[0].Styles == (style2, style3)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
     def test_assign_using_style_assignment(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         product_shape = self.file.createIfcProductDefinitionShape()
         element.Representation = product_shape
 
@@ -64,8 +64,7 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         representation.Items = [item]
 
         style = self.file.createIfcSurfaceStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
+        ifcopenshell.api.style.assign_representation_styles(
             self.file,
             styles=[style],
             shape_representation=representation,
@@ -78,8 +77,7 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
 
         # reusing existing styled item for different style type
         style2 = self.file.createIfcFillAreaStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
+        ifcopenshell.api.style.assign_representation_styles(
             self.file,
             styles=[style2],
             shape_representation=representation,
@@ -93,8 +91,7 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
 
         # replacing existing style of the same type
         style3 = self.file.createIfcSurfaceStyle()
-        ifcopenshell.api.run(
-            "style.assign_representation_styles",
+        ifcopenshell.api.style.assign_representation_styles(
             self.file,
             styles=[style3],
             shape_representation=representation,

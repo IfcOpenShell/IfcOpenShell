@@ -17,45 +17,45 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.document
 
 
 class TestRemoveInformation(test.bootstrap.IFC4):
     def test_remove_information(self):
         self.file.createIfcProject()
-        element = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        ifcopenshell.api.run("document.remove_information", self.file, information=element)
+        element = ifcopenshell.api.document.add_information(self.file, parent=None)
+        ifcopenshell.api.document.remove_information(self.file, information=element)
         assert len(self.file.by_type("IfcDocumentInformation")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0
 
     def test_removing_all_references_of_an_information(self):
         self.file.createIfcProject()
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        ifcopenshell.api.run("document.add_reference", self.file, information=information)
-        ifcopenshell.api.run("document.remove_information", self.file, information=information)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        ifcopenshell.api.document.add_reference(self.file, information=information)
+        ifcopenshell.api.document.remove_information(self.file, information=information)
         assert len(self.file.by_type("IfcDocumentInformation")) == 0
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0
 
         # test removing relationship to another information if it was the only relating element
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        information1 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
-        information2 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        information1 = ifcopenshell.api.document.add_information(self.file, parent=information)
+        information2 = ifcopenshell.api.document.add_information(self.file, parent=information)
 
-        ifcopenshell.api.run("document.remove_information", self.file, information=information1)
+        ifcopenshell.api.document.remove_information(self.file, information=information1)
         assert len(self.file.by_type("IfcDocumentInformation")) == 2
         assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 1
 
-        ifcopenshell.api.run("document.remove_information", self.file, information=information2)
+        ifcopenshell.api.document.remove_information(self.file, information=information2)
         assert len(self.file.by_type("IfcDocumentInformation")) == 1
         assert len(self.file.by_type("IfcDocumentInformationRelationship")) == 0
 
     def test_removing_all_subdocuments_and_their_references_too(self):
         self.file.createIfcProject()
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        information2 = ifcopenshell.api.run("document.add_information", self.file, parent=information)
-        ifcopenshell.api.run("document.add_reference", self.file, information=information2)
-        ifcopenshell.api.run("document.remove_information", self.file, information=information)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        information2 = ifcopenshell.api.document.add_information(self.file, parent=information)
+        ifcopenshell.api.document.add_reference(self.file, information=information2)
+        ifcopenshell.api.document.remove_information(self.file, information=information)
         assert len(self.file.by_type("IfcDocumentInformation")) == 0
         assert len(self.file.by_type("IfcDocumentReference")) == 0
         assert len(self.file.by_type("IfcRelAssociatesDocument")) == 0

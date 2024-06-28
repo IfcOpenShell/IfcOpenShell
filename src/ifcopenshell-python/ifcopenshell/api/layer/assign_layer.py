@@ -46,24 +46,24 @@ def assign_layer(
 
         # Remember, all geometry needs to specify the context it is part of first.
         # See ifcopenshell.api.context.add_context for details.
-        model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", model,
+        model = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
         )
 
-        wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-        representation = ifcopenshell.api.run("geometry.add_wall_representation", model,
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        representation = ifcopenshell.api.geometry.add_wall_representation(model,
             context=body, length=5, height=3, thickness=0.2)
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=wall, representation=representation)
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=wall)
 
         # Now let's create a layer that contains walls
-        layer = ifcopenshell.api.run("layer.add_layer", model, name="AI-WALL")
+        layer = ifcopenshell.api.layer.add_layer(model, name="AI-WALL")
 
         # And assign our wall representation item (in this example, there is
         # only one item) to the layer.
-        ifcopenshell.api.run("layer.assign_layer", model, items=[representation.Items[0]], layer=layer)
+        ifcopenshell.api.layer.assign_layer(model, items=[representation.Items[0]], layer=layer)
     """
     settings = {
         "items": items,

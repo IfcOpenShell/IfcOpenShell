@@ -40,12 +40,12 @@ def add_person_and_organisation(
 
     .. code:: python
 
-        person = ifcopenshell.api.run("owner.add_person", model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="lecorbycorbycorb", family_name="Curbosiar", given_name="Le")
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
 
-        ifcopenshell.api.run("owner.add_person_and_organisation", model,
+        ifcopenshell.api.owner.add_person_and_organisation(model,
             person=person, organisation=organisation)
     """
     settings = {"person": person, "organisation": organisation}

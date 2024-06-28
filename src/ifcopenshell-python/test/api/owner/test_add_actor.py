@@ -17,19 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestAddActor(test.bootstrap.IFC4):
     def test_adding_an_actor(self):
         person = self.file.createIfcPerson()
-        actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcActor", actor=person)
+        actor = ifcopenshell.api.owner.add_actor(self.file, ifc_class="IfcActor", actor=person)
         assert actor.is_a() == "IfcActor"
         assert actor.TheActor == person
 
     def test_adding_an_occupant(self):
         person = self.file.createIfcPerson()
-        actor = ifcopenshell.api.run("owner.add_actor", self.file, ifc_class="IfcOccupant", actor=person)
+        actor = ifcopenshell.api.owner.add_actor(self.file, ifc_class="IfcOccupant", actor=person)
         assert actor.is_a() == "IfcOccupant"
         assert actor.TheActor == person
 

@@ -39,10 +39,10 @@ def edit_pset_template(
     .. code:: python
 
         # Whoops! We named it with a buildingSMART reserved "Pset_" prefix!
-        template = ifcopenshell.api.run("pset_template.add_pset_template", model, name="Pset_RiskFactors")
+        template = ifcopenshell.api.pset_template.add_pset_template(model, name="Pset_RiskFactors")
 
         # Let's fix it to prefix with our company code instead.
-        ifcopenshell.api.run("pset_template.edit_pset_template", model,
+        ifcopenshell.api.pset_template.edit_pset_template(model,
             pset_template=template, attributes={"Name": "ABC_RiskFactors"})
     """
     settings = {"pset_template": pset_template, "attributes": attributes}

@@ -22,7 +22,7 @@ from typing import Iterable, Any, Union, Literal, Optional
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
-import ifcopenshell.api
+import ifcopenshell.api.unit
 
 prefixes = {
     "EXA": 1e18,
@@ -815,7 +815,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
 
     old_length = next(u for u in unit_assignment.Units if getattr(u, "UnitType", None) == "LENGTHUNIT")
     if si_unit:
-        new_length = ifcopenshell.api.run("unit.add_si_unit", file_patched, unit_type="LENGTHUNIT", prefix=prefix)
+        new_length = ifcopenshell.api.unit.add_si_unit(file_patched, unit_type="LENGTHUNIT", prefix=prefix)
     else:
         target_units = target_units.lower()
         if imperial_types.get(target_units) != "LENGTHUNIT":
@@ -823,7 +823,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
                 f'Couldn\'t identify target units "{target_units}". '
                 'The method supports singular unit names like "CENTIMETER", "METER", "FOOT", etc.'
             )
-        new_length = ifcopenshell.api.run("unit.add_conversion_based_unit", file_patched, name=target_units)
+        new_length = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=target_units)
 
     # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
     def convert_value(value):

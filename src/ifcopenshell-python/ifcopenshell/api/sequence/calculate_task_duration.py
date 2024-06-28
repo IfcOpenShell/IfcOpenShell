@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import math
-import ifcopenshell.api
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 
@@ -44,41 +44,41 @@ def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_i
     .. code:: python
 
         # Add our own crew
-        crew = ifcopenshell.api.run("resource.add_resource", model, ifc_class="IfcCrewResource")
+        crew = ifcopenshell.api.resource.add_resource(model, ifc_class="IfcCrewResource")
 
         # Add some labour to our crew.
-        labour = ifcopenshell.api.run("resource.add_resource", model,
+        labour = ifcopenshell.api.resource.add_resource(model,
             parent_resource=crew, ifc_class="IfcLaborResource")
 
         # Labour resource is quantified in terms of time.
-        quantity = ifcopenshell.api.run("resource.add_resource_quantity", model,
+        quantity = ifcopenshell.api.resource.add_resource_quantity(model,
             resource=labour, ifc_class="IfcQuantityTime")
 
         # Store the unit time used in hours
-        ifcopenshell.api.run("resource.edit_resource_quantity", model,
+        ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=quantity, attributes={"TimeValue": 8.0})
 
         # Let's imagine we've used the resource for 10 days with a
         # utilisation of 200%.
-        time = ifcopenshell.api.run("resource.add_resource_time", model, resource=labour)
-        ifcopenshell.api.run("resource.edit_resource_time", model,
+        time = ifcopenshell.api.resource.add_resource_time(model, resource=labour)
+        ifcopenshell.api.resource.edit_resource_time(model,
             resource_time=time, attributes={"ScheduleWork": "PT80H", "ScheduleUsage": 2})
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Let's create a construction task. Note that the predefined type is
         # important to distinguish types of tasks.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Foundations", identification="A")
 
         # Assign our resource to the task.
-        ifcopenshell.api.run("sequence.assign_process", model, relating_process=task, related_object=labour)
+        ifcopenshell.api.sequence.assign_process(model, relating_process=task, related_object=labour)
 
         # Now we can calculate the task duration based on the resource. This
         # will set task.TaskTime.ScheduleDuration to be P5D.
-        ifcopenshell.api.run("sequence.calculate_task_duration", model, task=task)
+        ifcopenshell.api.sequence.calculate_task_duration(model, task=task)
     """
     usecase = Usecase()
     usecase.file = file
@@ -142,5 +142,5 @@ class Usecase:
 
     def set_task_duration(self, duration):
         if not self.settings["task"].TaskTime:
-            ifcopenshell.api.run("sequence.add_task_time", self.file, task=self.settings["task"])
+            ifcopenshell.api.sequence.add_task_time(self.file, task=self.settings["task"])
         self.settings["task"].TaskTime.ScheduleDuration = f"P{duration}D"

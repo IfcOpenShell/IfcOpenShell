@@ -34,22 +34,22 @@ def remove_constituent(file: ifcopenshell.file, constituent: ifcopenshell.entity
     .. code:: python
 
         # Create a material set for windows made out of aluminium and glass.
-        material_set = ifcopenshell.api.run("material.add_material_set", model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="Window", set_type="IfcMaterialConstituentSet")
 
-        aluminium = ifcopenshell.api.run("material.add_material", model, name="AL01", category="aluminium")
-        glass = ifcopenshell.api.run("material.add_material", model, name="GLZ01", category="glass")
+        aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
+        glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
 
         # Now let's use those materials as two constituents in our set.
-        framing = ifcopenshell.api.run("material.add_constituent", model,
+        framing = ifcopenshell.api.material.add_constituent(model,
             constituent_set=material_set, material=aluminium)
-        glazing = ifcopenshell.api.run("material.add_constituent", model,
+        glazing = ifcopenshell.api.material.add_constituent(model,
             constituent_set=material_set, material=glass)
 
         # Let's remove the glass constituent. Note that we should not remove
         # the framing, at this would mean there are no constituents which is
         # invalid.
-        ifcopenshell.api.run("material.remove_constituent", model, constituent=glazing)
+        ifcopenshell.api.material.remove_constituent(model, constituent=glazing)
     """
     settings = {"constituent": constituent}
 

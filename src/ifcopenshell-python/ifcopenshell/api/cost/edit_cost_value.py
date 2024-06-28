@@ -41,12 +41,12 @@ def edit_cost_value(
 
     .. code:: python
 
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
 
         # This cost item will have a total cost of 42
-        value = ifcopenshell.api.run("cost.add_cost_value", model, parent=item)
-        ifcopenshell.api.run("cost.edit_cost_value", model, cost_value=value,
+        value = ifcopenshell.api.cost.add_cost_value(model, parent=item)
+        ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 42.0})
     """
     settings = {"cost_value": cost_value, "attributes": attributes or {}}

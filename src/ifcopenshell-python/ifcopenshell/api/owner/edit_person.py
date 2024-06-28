@@ -36,9 +36,9 @@ def edit_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance, a
 
     .. code:: python
 
-        person = ifcopenshell.api.run("owner.add_person", model,
+        person = ifcopenshell.api.owner.add_person(model,
             identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
-        ifcopenshell.api.run("owner.edit_person", model, person=person,
+        ifcopenshell.api.owner.edit_person(model, person=person,
             attributes={"MiddleNames": ["The"], "FamilyName": "Builder"})
     """
     settings = {"person": person, "attributes": attributes}

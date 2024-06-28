@@ -37,8 +37,8 @@ def remove_constraint(file: ifcopenshell.file, constraint: ifcopenshell.entity_i
 
     .. code:: python
 
-        objective = ifcopenshell.api.run("constraint.add_objective", model)
-        ifcopenshell.api.run("constraint.remove_constraint", model,
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        ifcopenshell.api.constraint.remove_constraint(model,
             constraint=objective)
     """
     settings = {"constraint": constraint}

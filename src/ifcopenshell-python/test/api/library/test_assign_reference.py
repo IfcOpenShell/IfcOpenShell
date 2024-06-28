@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
 
 
 class TestAssignReference(test.bootstrap.IFC4):
@@ -26,17 +26,17 @@ class TestAssignReference(test.bootstrap.IFC4):
         product = self.file.createIfcWall()
         product2 = self.file.createIfcWall()
         product3 = self.file.createIfcWall()
-        ifcopenshell.api.run("library.assign_reference", self.file, products=[product], reference=reference)
+        ifcopenshell.api.library.assign_reference(self.file, products=[product], reference=reference)
         rel = self.file.by_type("IfcRelAssociatesLibrary")[0]
         assert rel.RelatedObjects == (product,)
-        ifcopenshell.api.run("library.assign_reference", self.file, products=[product2, product3], reference=reference)
+        ifcopenshell.api.library.assign_reference(self.file, products=[product2, product3], reference=reference)
         assert set(rel.RelatedObjects) == set((product, product2, product3))
 
     def test_not_assigning_twice(self):
         reference = self.file.createIfcLibraryReference()
         product = self.file.createIfcWall()
-        ifcopenshell.api.run("library.assign_reference", self.file, products=[product], reference=reference)
-        ifcopenshell.api.run("library.assign_reference", self.file, products=[product], reference=reference)
+        ifcopenshell.api.library.assign_reference(self.file, products=[product], reference=reference)
+        ifcopenshell.api.library.assign_reference(self.file, products=[product], reference=reference)
         rel = self.file.by_type("IfcRelAssociatesLibrary")[0]
         assert rel.RelatedObjects == (product,)
 

@@ -33,16 +33,16 @@ def remove_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance) -
     .. code:: python
 
         # Setup an organisation with a single role
-        organisation = ifcopenshell.api.run("owner.add_organisation", model,
+        organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
-        role = ifcopenshell.api.run("owner.add_role", model, assigned_object=organisation)
-        ifcopenshell.api.run("owner.edit_role", model, role=role, attributes={"Role": "ARCHITECT"})
+        role = ifcopenshell.api.owner.add_role(model, assigned_object=organisation)
+        ifcopenshell.api.owner.edit_role(model, role=role, attributes={"Role": "ARCHITECT"})
 
         # Assign that organisation to a newly created actor
-        actor = ifcopenshell.api.run("owner.add_actor", model, actor=organisation)
+        actor = ifcopenshell.api.owner.add_actor(model, actor=organisation)
 
         # Actually we need ballpens on this project
-        ifcopenshell.api.run("owner.remove_actor", model, actor=actor)
+        ifcopenshell.api.owner.remove_actor(model, actor=actor)
     """
     settings = {"actor": actor}
 

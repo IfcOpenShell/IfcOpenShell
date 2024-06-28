@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.project
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.owner.settings
 import ifcopenshell.util.date
 from datetime import time
@@ -60,19 +62,19 @@ def add_work_schedule(
     .. code:: python
 
         # This will hold all our construction schedules
-        work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
         # Let's imagine this is one of our schedules in our work plan.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
 
         # Add a root task to represent the design milestones, and major
         # project phases.
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Milestones", identification="A")
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Design", identification="B")
-        construction = ifcopenshell.api.run("sequence.add_task", model,
+        construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
     """
     settings = {
@@ -83,8 +85,7 @@ def add_work_schedule(
         "work_plan": work_plan,
     }
 
-    work_schedule = ifcopenshell.api.run(
-        "root.create_entity",
+    work_schedule = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkSchedule",
         predefined_type=settings["predefined_type"],
@@ -104,8 +105,7 @@ def add_work_schedule(
     if settings["object_type"]:
         work_schedule.ObjectType = settings["object_type"]
     if settings["work_plan"]:
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             file,
             **{
                 "products": [work_schedule],
@@ -116,8 +116,7 @@ def add_work_schedule(
         # TODO: this is an ambiguity by buildingSMART
         # See https://forums.buildingsmart.org/t/is-the-ifcworkschedule-project-declaration-mutually-exclusive-to-aggregation-within-a-relating-ifcworkplan/3510
         context = file.by_type("IfcContext")[0]
-        ifcopenshell.api.run(
-            "project.assign_declaration",
+        ifcopenshell.api.project.assign_declaration(
             file,
             definitions=[work_schedule],
             relating_context=context,

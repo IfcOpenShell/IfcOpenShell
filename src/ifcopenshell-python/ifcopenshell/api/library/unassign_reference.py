@@ -18,7 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 def unassign_reference(
@@ -41,22 +41,22 @@ def unassign_reference(
 
     .. code:: python
 
-        library = ifcopenshell.api.run("library.add_library", model, name="Brickschema")
+        library = ifcopenshell.api.library.add_library(model, name="Brickschema")
 
         # Let's create a reference to a single AHU in our Brickschema dataset
-        reference = ifcopenshell.api.run("library.add_reference", model, library=library)
-        ifcopenshell.api.run("library.edit_reference", model,
+        reference = ifcopenshell.api.library.add_reference(model, library=library)
+        ifcopenshell.api.library.edit_reference(model,
             reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
 
         # Let's assume we have an AHU in our model.
-        ahu = ifcopenshell.api.run("root.create_entity", model,
+        ahu = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcUnitaryEquipment", predefined_type="AIRHANDLER")
 
         # And now assign the IFC model's AHU with its Brickschema counterpart
-        ifcopenshell.api.run("library.assign_reference", model, reference=reference, products=[ahu])
+        ifcopenshell.api.library.assign_reference(model, reference=reference, products=[ahu])
 
         # Let's change our mind and unassign it.
-        ifcopenshell.api.run("library.unassign_reference", model, reference=reference, products=[ahu])
+        ifcopenshell.api.library.unassign_reference(model, reference=reference, products=[ahu])
     """
 
     settings = {"reference": reference, "products": products}
@@ -78,7 +78,7 @@ def unassign_reference(
         related_objects = set(rel.RelatedObjects) - products
         if related_objects:
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.run("owner.update_owner_history", file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory
             file.remove(rel)

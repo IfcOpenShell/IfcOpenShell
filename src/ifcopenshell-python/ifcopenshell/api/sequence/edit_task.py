@@ -38,15 +38,15 @@ def edit_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance, attri
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Add a root task to represent the design milestones, and major
         # project phases.
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Milestones", identification="A")
 
         # Change the identification
-        ifcopenshell.api.run("sequence.edit_task", model, task=task, attributes={"Identification": "M"})
+        ifcopenshell.api.sequence.edit_task(model, task=task, attributes={"Identification": "M"})
     """
     settings = {"task": task, "attributes": attributes or {}}
 

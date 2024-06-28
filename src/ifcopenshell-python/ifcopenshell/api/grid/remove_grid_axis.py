@@ -30,18 +30,18 @@ def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance
     Example:
 
         # A pretty standard rectangular grid, with only two axes.
-        grid = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcGrid")
-        axis_a = ifcopenshell.api.run("grid.create_grid_axis", model,
+        grid = ifcopenshell.api.root.create_entity(model, ifc_class="IfcGrid")
+        axis_a = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="A", uvw_axes="UAxes", grid=grid)
-        axis_1 = ifcopenshell.api.run("grid.create_grid_axis", model,
+        axis_1 = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="1", uvw_axes="VAxes", grid=grid)
 
         # Let's create a third so we can remove it later
-        axis_2 = ifcopenshell.api.run("grid.create_grid_axis", model,
+        axis_2 = ifcopenshell.api.grid.create_grid_axis(model,
             axis_tag="2", uvw_axes="VAxes", grid=grid)
 
         # Let's remove it!
-        ifcopenshell.api.run("grid.remove_grid_axis", model, axis=axis_2)
+        ifcopenshell.api.grid.remove_grid_axis(model, axis=axis_2)
     """
     axis_curve = axis.AxisCurve
     if len(file.get_inverse(axis_curve)) == 1:

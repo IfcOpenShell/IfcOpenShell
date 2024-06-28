@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 
 
@@ -45,29 +45,29 @@ def map_type_representations(
 
         # A furniture type. This would correlate to a particular model in a
         # manufacturer's catalogue. Like an Ikea sofa :)
-        furniture_type = ifcopenshell.api.run("root.create_entity", model,
+        furniture_type = ifcopenshell.api.root.create_entity(model,
             ifc_class="IfcFurnitureType", name="FUN01")
 
         # An individual occurrence of a that sofa.
-        furniture = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
+        furniture = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
 
         # Place our furniture at the origin
-        ifcopenshell.api.run("geometry.edit_object_placement", model, product=furniture)
+        ifcopenshell.api.geometry.edit_object_placement(model, product=furniture)
 
         # Assign the furniture to the furniture type. Right now, the
         # furniture type has no representation, so the furniture may also
         # have no representation, or any arbitrary representation that may
         # vary from occurrence to occurrence.
-        ifcopenshell.api.run("type.assign_type", model, related_objects=[furniture], relating_type=furniture_type)
+        ifcopenshell.api.type.assign_type(model, related_objects=[furniture], relating_type=furniture_type)
 
         # A bit of preparation, let's create some geometric contexts since
         # we want to create some geometry for our furniture type.
-        model3d = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", model,
+        model3d = ifcopenshell.api.context.add_context(model, context_type="Model")
+        body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
         # Let's create a mesh representation of an arbitrary 2m cube.
-        representation = ifcopenshell.api.run("geometry.add_sverchok_representation", model, context=body,
+        representation = ifcopenshell.api.geometry.add_sverchok_representation(model, context=body,
             vertices=[[(-1.0, -1.0, 0.0), (-1.0, -1.0, 2.0), (-1.0, 1.0, 0.0), (-1.0, 1.0, 2.0),
                 (1.0, -1.0, 0.0), (1.0, -1.0, 2.0), (1.0, 1.0, 0.0), (1.0, 1.0, 2.0)]],
             faces=[[[0, 1, 3, 2], [2, 3, 7, 6], [6, 7, 5, 4], [4, 5, 1, 0], [2, 6, 4, 0], [7, 3, 1, 5]]])
@@ -75,13 +75,13 @@ def map_type_representations(
         # Assign our new body geometry back to our furniture type. In this
         # case, since we use the API, all occurrences automatically get the
         # representation mapped, so there is nothing more we need to do.
-        ifcopenshell.api.run("geometry.assign_representation", model,
+        ifcopenshell.api.geometry.assign_representation(model,
             product=furniture_type, representation=representation)
 
         # However, if you were doing some sort of manual IFC patching, like
         # assigning furniture_type.RepresentationMaps directly, then you
         # might make this call:
-        # ifcopenshell.api.run("type.map_type_representations", model,
+        # ifcopenshell.api.type.map_type_representations(model,
         #     related_object=furniture, relating_type=furniture_type)
     """
     settings = {
@@ -95,18 +95,16 @@ def map_type_representations(
     if settings["related_object"].Representation:
         representations = settings["related_object"].Representation.Representations
     for representation in representations:
-        ifcopenshell.api.run(
-            "geometry.unassign_representation",
+        ifcopenshell.api.geometry.unassign_representation(
             file,
             product=settings["related_object"],
             representation=representation,
         )
-        ifcopenshell.api.run("geometry.remove_representation", file, **{"representation": representation})
+        ifcopenshell.api.geometry.remove_representation(file, **{"representation": representation})
     for representation_map in settings["relating_type"].RepresentationMaps:
         representation = representation_map.MappedRepresentation
-        mapped_representation = ifcopenshell.api.run("geometry.map_representation", file, representation=representation)
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        mapped_representation = ifcopenshell.api.geometry.map_representation(file, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(
             file,
             product=settings["related_object"],
             representation=mapped_representation,

@@ -46,8 +46,8 @@ def add_reference(file: ifcopenshell.file, information: ifcopenshell.entity_inst
 
     .. code:: python
 
-        document = ifcopenshell.api.run("document.add_information", model)
-        ifcopenshell.api.run("document.edit_information", model,
+        document = ifcopenshell.api.document.add_information(model)
+        ifcopenshell.api.document.edit_information(model,
             information=document,
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
@@ -55,12 +55,12 @@ def add_reference(file: ifcopenshell.file, information: ifcopenshell.entity_inst
         # In this case, we don't specify any more information, and so the
         # reference is for the entire document, as opposed to a single page or
         # chapter or section.
-        reference = ifcopenshell.api.run("document.add_reference", model, information=document)
+        reference = ifcopenshell.api.document.add_reference(model, information=document)
 
         # Alternatively, we can specify a single section, such as by a
         # subheading code.
-        reference2 = ifcopenshell.api.run("document.add_reference", model, information=document)
-        ifcopenshell.api.run("document.edit_reference", model,
+        reference2 = ifcopenshell.api.document.add_reference(model, information=document)
+        ifcopenshell.api.document.edit_reference(model,
             reference=reference2, attributes={"Identification": "2.1.15"})
     """
     settings = {"information": information}

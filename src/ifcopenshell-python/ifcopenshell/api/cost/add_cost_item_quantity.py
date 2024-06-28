@@ -65,15 +65,15 @@ def add_cost_item_quantity(
 
     .. code:: python
 
-        chair = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurniture")
-        schedule = ifcopenshell.api.run("cost.add_cost_schedule", model)
-        item = ifcopenshell.api.run("cost.add_cost_item", model, cost_schedule=schedule)
-        ifcopenshell.api.run("control.assign_control", model,
+        chair = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurniture")
+        schedule = ifcopenshell.api.cost.add_cost_schedule(model)
+        item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
+        ifcopenshell.api.control.assign_control(model,
             relating_control=item, related_object=chair)
 
         # Let's assume we want to count the amount of chairs to calculate our cost item
         # Because this is an IfcQuantityCount the count will be automatically set to "1" chair
-        ifcopenshell.api.run("cost.add_cost_item_quantity", model,
+        ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityCount")
     """
     settings = {"cost_item": cost_item, "ifc_class": ifc_class}

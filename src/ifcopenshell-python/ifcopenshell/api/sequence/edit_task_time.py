@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import ifcopenshell.api.sequence
+import ifcopenshell.api.resource
 import ifcopenshell.util.constraint
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
@@ -46,15 +48,15 @@ def edit_task_time(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Create a task to do formwork
-        task = ifcopenshell.api.run("sequence.add_task", model,
+        task = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Formwork", identification="A")
 
         # Let's say it takes 2 days and starts on the 1st of January, 2000
-        time = ifcopenshell.api.run("sequence.add_task_time", model, task=formwork)
-        ifcopenshell.api.run("sequence.edit_task_time", model,
+        time = ifcopenshell.api.sequence.add_task_time(model, task=formwork)
+        ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
     """
     usecase = Usecase()
@@ -117,7 +119,7 @@ class Usecase:
             or "ScheduleFinish" in self.settings["attributes"].keys()
             or "ScheduleDuration" in self.settings["attributes"].keys()
         ):
-            ifcopenshell.api.run("sequence.cascade_schedule", self.file, task=self.task)
+            ifcopenshell.api.sequence.cascade_schedule(self.file, task=self.task)
         if self.settings["task_time"].ScheduleDuration:
             self.handle_resource_calculation()
 
@@ -152,7 +154,7 @@ class Usecase:
         resources = ifcopenshell.util.sequence.get_task_resources(self.task, is_deep=False)
         for resource in resources:
             if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleWork"):
-                ifcopenshell.api.run("resource.calculate_resource_usage", self.file, resource=resource)
+                ifcopenshell.api.resource.calculate_resource_usage(self.file, resource=resource)
             # TODO: If the duration changes, this implies the productivity rate must change to accomModate the new Schedule Work to be calculated.
             # elif ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleUsage"):
-            #     ifcopenshell.api.run("resource.calculate_resource_work", self.file, resource=resource)
+            #     ifcopenshell.api.resource.calculate_resource_work(self.file, resource=resource)

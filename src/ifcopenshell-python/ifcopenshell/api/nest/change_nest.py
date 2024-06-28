@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.nest
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
 
 
@@ -32,15 +33,10 @@ def change_nest(
     related_objects.remove(item)
     if related_objects:
         nests.RelatedObjects = related_objects
-        ifcopenshell.api.run("owner.update_owner_history", file, **{"element": nests})
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": nests})
     else:
         history = nests.OwnerHistory
         file.remove(nests)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    ifcopenshell.api.run(
-        "nest.assign_object",
-        file,
-        related_objects=[item],
-        relating_object=new_parent,
-    )
+    ifcopenshell.api.nest.assign_object(file, related_objects=[item], relating_object=new_parent)

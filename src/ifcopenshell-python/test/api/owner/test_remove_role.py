@@ -17,34 +17,34 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestRemoveRoleIFC2X3(test.bootstrap.IFC2X3):
     def test_removing_a_role(self):
         role = self.file.createIfcActorRole()
-        ifcopenshell.api.run("owner.remove_role", self.file, role=role)
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert len(self.file.by_type("IfcActorRole")) == 0
 
     def test_ensuring_organisation_cardinality_is_valid(self):
         role = self.file.createIfcActorRole()
         organisation = self.file.createIfcOrganization()
         organisation.Roles = [role]
-        ifcopenshell.api.run("owner.remove_role", self.file, role=role)
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert organisation.Roles is None
 
     def test_ensuring_person_cardinality_is_valid(self):
         role = self.file.createIfcActorRole()
         person = self.file.createIfcPerson()
         person.Roles = [role]
-        ifcopenshell.api.run("owner.remove_role", self.file, role=role)
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert person.Roles is None
 
     def test_ensuring_person_and_organisation_cardinality_is_valid(self):
         role = self.file.createIfcActorRole()
         person_and_organisation = self.file.createIfcPersonAndOrganization()
         person_and_organisation.Roles = [role]
-        ifcopenshell.api.run("owner.remove_role", self.file, role=role)
+        ifcopenshell.api.owner.remove_role(self.file, role=role)
         assert person_and_organisation.Roles is None
 
 
@@ -52,17 +52,17 @@ class TestRemoveRoleIFC4(test.bootstrap.IFC4, TestRemoveRoleIFC2X3):
     def test_deleting_resource_approval_relationships(self):
         organisation = self.file.create_entity("IfcOrganization")
         self.file.create_entity("IfcResourceApprovalRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
+        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
         assert len(self.file.by_type("IfcResourceApprovalRelationship")) == 0
 
     def test_deleting_resource_constraint_relationships(self):
         organisation = self.file.create_entity("IfcOrganization")
         self.file.create_entity("IfcResourceConstraintRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
+        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
         assert len(self.file.by_type("IfcResourceConstraintRelationship")) == 0
 
     def test_deleting_external_reference_relationships(self):
         organisation = self.file.create_entity("IfcOrganization")
         self.file.create_entity("IfcExternalReferenceRelationship", RelatedResourceObjects=[organisation])
-        ifcopenshell.api.run("owner.remove_organisation", self.file, organisation=organisation)
+        ifcopenshell.api.owner.remove_organisation(self.file, organisation=organisation)
         assert len(self.file.by_type("IfcExternalReferenceRelationship")) == 0

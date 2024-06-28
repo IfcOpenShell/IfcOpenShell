@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.guid
 from typing import Optional
 
@@ -46,7 +46,7 @@ def add_group(
 
     .. code:: python
 
-        ifcopenshell.api.run("group.add_group", model, name="Unit 1A")
+        ifcopenshell.api.group.add_group(model, name="Unit 1A")
     """
     settings = {
         "name": name or "Unnamed",
@@ -57,7 +57,7 @@ def add_group(
         "IfcGroup",
         **{
             "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
             "Name": settings["name"],
             "Description": settings["description"],
         }

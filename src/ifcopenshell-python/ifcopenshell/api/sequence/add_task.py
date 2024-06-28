@@ -16,7 +16,9 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.nest
+import ifcopenshell.api.owner
 import ifcopenshell
 import ifcopenshell.guid
 from typing import Optional
@@ -91,50 +93,50 @@ def add_task(
 
         # Let's imagine we are creating a construction schedule. All tasks
         # need to be part of a work schedule.
-        schedule = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Construction Schedule A")
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model, name="Construction Schedule A")
 
         # Add a root task to represent the design milestones, and major
         # project phases.
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Milestones", identification="A")
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Design", identification="B")
-        construction = ifcopenshell.api.run("sequence.add_task", model,
+        construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
 
         # Let's start creating our work breakdown structure.
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Early Works", identification="C1")
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Substructure", identification="C2")
-        superstructure = ifcopenshell.api.run("sequence.add_task", model,
+        superstructure = ifcopenshell.api.sequence.add_task(model,
             parent_task=construction, name="Superstructure", identification="C3")
 
         # Notice how the leaf task is the actual activity
-        ifcopenshell.api.run("sequence.add_task", model,
+        ifcopenshell.api.sequence.add_task(model,
             parent_task=superstructure, name="Ground Floor FRP", identification="C3.1")
 
         # Let's imagine we are digitising an operations and maintenance
         # manual for the mechanical discipline.
-        maintenance = ifcopenshell.api.run("sequence.add_work_schedule", model, name="Mechanical Maintenance")
+        maintenance = ifcopenshell.api.sequence.add_work_schedule(model, name="Mechanical Maintenance")
 
         # Imagine we have to clean the condenser coils for a chiller every
         # month. Like the schedule above, to keep things simple we won't
         # show scheduling times and calendars. This root task represents the
         # overall maintenance task.
-        cleaning = ifcopenshell.api.run("sequence.add_task", model,
+        cleaning = ifcopenshell.api.sequence.add_task(model,
             work_schedule=maintenance, name="Condenser coil cleaning")
 
         # These subtasks represent the punch list of maintenance tasks.
-        ifcopenshell.api.run("sequence.add_task", model, parent_task=cleaning, identification="1",
+        ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="1",
             description="Prior to work, wear safety shoes, gloves, and goggles.")
-        ifcopenshell.api.run("sequence.add_task", model, parent_task=cleaning, identification="2",
+        ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="2",
             description="Prepare jet pump, screwdriver, hose clamp, and control panel door key.")
-        ifcopenshell.api.run("sequence.add_task", model, parent_task=cleaning, identification="3",
+        ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="3",
             description="Switch OFF the chiller unit.")
-        ifcopenshell.api.run("sequence.add_task", model, parent_task=cleaning, identification="3",
+        ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="3",
             description="Open the isolator switch.")
-        ifcopenshell.api.run("sequence.add_task", model, parent_task=cleaning, identification="3",
+        ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="3",
             description="Setup the water pressure by tapping to a water supply and connecting to a ...")
     """
     settings = {
@@ -146,12 +148,8 @@ def add_task(
         "predefined_type": predefined_type,
     }
 
-    task = ifcopenshell.api.run(
-        "root.create_entity",
-        file,
-        ifc_class="IfcTask",
-        name=settings["name"],
-        predefined_type=settings["predefined_type"],
+    task = ifcopenshell.api.root.create_entity(
+        file, ifc_class="IfcTask", name=settings["name"], predefined_type=settings["predefined_type"]
     )
     if settings["description"]:
         task.Description = settings["description"]
@@ -163,14 +161,13 @@ def add_task(
             "IfcRelAssignsToControl",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", file),
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [task],
                 "RelatingControl": settings["work_schedule"],
             }
         )
     elif settings["parent_task"]:
-        rel = ifcopenshell.api.run(
-            "nest.assign_object",
+        rel = ifcopenshell.api.nest.assign_object(
             file,
             related_objects=[task],
             relating_object=settings["parent_task"],

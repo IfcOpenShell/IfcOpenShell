@@ -17,14 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.owner
 
 
 class TestEditAddress(test.bootstrap.IFC4):
     def test_editing_a_postal_address(self):
         address = self.file.createIfcPostalAddress()
-        ifcopenshell.api.run(
-            "owner.edit_address",
+        ifcopenshell.api.owner.edit_address(
             self.file,
             address=address,
             attributes={
@@ -66,8 +65,7 @@ class TestEditAddress(test.bootstrap.IFC4):
         if self.file.schema != "IFC2X3":
             attributes["MessagingIDs"] = ["Messaging", "IDs"]
 
-        ifcopenshell.api.run(
-            "owner.edit_address",
+        ifcopenshell.api.owner.edit_address(
             self.file,
             address=address,
             attributes=attributes,
