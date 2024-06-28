@@ -403,7 +403,16 @@ def consume_iterator(it, with_progress=False):
                 break
 
 
-def iterate(settings, file_or_filename, num_threads=1, include=None, exclude=None, with_progress=False, cache=None, geometry_library: str = "opencascade"):
+def iterate(
+    settings,
+    file_or_filename,
+    num_threads=1,
+    include=None,
+    exclude=None,
+    with_progress=False,
+    cache=None,
+    geometry_library: str = "opencascade",
+):
     it = iterator(settings, file_or_filename, num_threads, include, exclude, geometry_library)
     if cache:
         hdf5_cache = serializers.hdf5(cache, settings)
