@@ -560,9 +560,10 @@ typedef item const* ptr;
 				}
 			};
 
-			struct ellipse : public circle {
+			struct ellipse : public curve {
 				DECLARE_PTR(ellipse)
 
+				double radius;
 				double radius2;
 
 				virtual ellipse* clone_() const { return new ellipse(*this); }
