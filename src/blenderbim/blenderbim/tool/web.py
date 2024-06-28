@@ -141,19 +141,28 @@ class Web(blenderbim.core.tool.Web):
             return None  # unregister timer if not connected
 
         while not web_operator_queue.empty():
-            operator_data = web_operator_queue.get_nowait()
-            if not operator_data:
+            operator = web_operator_queue.get_nowait()
+            if not operator:
                 continue
-
-            if operator_data["type"] == "selection":
-                bpy.ops.object.select_all(action="DESELECT")
-                guid = operator_data["GlobalId"]
-                ele = tool.Ifc.get().by_guid(guid)
-                obj = tool.Ifc.get_object(ele)
-                bpy.context.view_layer.objects.active = obj
-                obj.select_set(True)
-
+            if operator["sourcePage"] == "csv":
+                cls.handle_csv_operator(operator["operator"])
+            elif operator["sourcePage"] == "gantt":
+                cls.handle_gantt_operator(operator["operator"])
         return 1.0
+
+    @classmethod
+    def handle_csv_operator(cls, operator_data):
+        if operator_data["type"] == "selection":
+            bpy.ops.object.select_all(action="DESELECT")
+            guid = operator_data["globalId"]
+            ele = tool.Ifc.get().by_guid(guid)
+            obj = tool.Ifc.get_object(ele)
+            bpy.context.view_layer.objects.active = obj
+            obj.select_set(True)
+
+    @classmethod
+    def handle_gantt_operator(cls, operator_data):
+        pass
 
     @classmethod
     def open_web_browser(cls, port):
@@ -162,9 +171,7 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     async def sio_connect(cls, url):
         await sio.connect(url, transports=["websocket"], namespaces="/blender")
-
-        # TODO: register event handlers to handle incoming messages
-        sio.on("web_operator", cls.sio_handle_web_operator, namespace="/blender")
+        sio.on("web_operator", cls.sio_listen_web_operator, namespace="/blender")
 
     @classmethod
     async def sio_disconnect(cls):
@@ -175,7 +182,7 @@ class Web(blenderbim.core.tool.Web):
         await sio.emit(event, data, namespace=namespace)
 
     @classmethod
-    async def sio_handle_web_operator(cls, data):
+    async def sio_listen_web_operator(cls, data):
         try:
             web_operator_queue.put_nowait(data)
         except queue.Full:
