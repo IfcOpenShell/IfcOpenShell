@@ -155,6 +155,8 @@ namespace IfcGeom {
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
 
+		std::array<std::chrono::high_resolution_clock::time_point, 4> time_points;
+
 		/// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
@@ -165,10 +167,13 @@ namespace IfcGeom {
 		boost::optional<bool> initialization_outcome_;
 
 		bool initialize() {
+			using std::chrono::high_resolution_clock;
+			
 			if (initialization_outcome_) {
 				return *initialization_outcome_;
 			}
 
+			time_points[0] = high_resolution_clock::now();
 			converter_ = new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_);
 			std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
 			if (num_threads_ != 1) {
@@ -176,6 +181,7 @@ namespace IfcGeom {
 				converter_->mapping()->use_caching() = false;
 			}
 			converter_->mapping()->get_representations(reps, filters_);
+			time_points[1] = high_resolution_clock::now();
 
 			for (auto& task : reps) {
 				geometry_conversion_result res;
@@ -194,6 +200,8 @@ namespace IfcGeom {
 			for (auto& r : tasks_) {
 				num_products += r.products.size();
 			}
+
+			time_points[2] = high_resolution_clock::now();
 
 			/*
 			// What to do, map representation and product individually?
@@ -569,6 +577,24 @@ namespace IfcGeom {
 			}
 		}
 
+		void log_timepoints() const {
+			using std::chrono::high_resolution_clock;
+			using std::chrono::duration;
+			using namespace std::string_literals;
+
+			std::array<std::string, 3> labels = {
+				"Initializing mapping"s,
+				"Performing mapping"s,
+				"Geometry interpretation"s
+			};
+
+			for (auto it = time_points.begin() + 1; it != time_points.end(); ++it) {
+				auto jt = it - 1;
+				duration<double, std::milli> ms_double = (*it) - (*jt);
+				Logger::Notice(labels[std::distance(time_points.begin(), jt)] + " took " + std::to_string(ms_double.count()) + "ms");
+			}
+		}
+
 	public:
 		/// Returns what would be the product for the next shape representation
 		/// @todo Double-check and test the impl.
@@ -587,8 +613,12 @@ namespace IfcGeom {
 		/// Moves to the next shape representation, create its geometry, and returns the associated product.
 		/// Use get() to retrieve the created geometry.
 		const IfcUtil::IfcBaseClass* next() {
+			using std::chrono::high_resolution_clock;
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
+					Logger::SetProduct(boost::none);
+					time_points[3] = high_resolution_clock::now();
+					log_timepoints();
 					return nullptr;
 				}
 
@@ -602,6 +632,8 @@ namespace IfcGeom {
 				if (task_result_iterator_ == --all_processed_elements_.end()) {
 					if (!create()) {
 						Logger::SetProduct(boost::none);
+						time_points[3] = high_resolution_clock::now();
+						log_timepoints();
 						return nullptr;
 					}
 				}
