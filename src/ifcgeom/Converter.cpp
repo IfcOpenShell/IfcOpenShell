@@ -389,7 +389,9 @@ IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::I
 	IfcGeom::ConversionResults results;
 	if (geom_item) {
 		std::clock_t geom_start = std::clock();
-		kernel_->convert(geom_item, results);
+		if (!kernel_->convert(geom_item, results)) {
+			throw std::runtime_error("Failed to convert item");
+		}
 		std::clock_t geom_end = std::clock();
 		total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
 		total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;
