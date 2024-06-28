@@ -55,6 +55,8 @@ double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_
         return fabs(clothoid->ClothoidConstant()*sqrt(PI))*param_value;
     } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
         return circ->Radius() * param_value;
+    } else if (auto circ = crv->as<IfcSchema::IfcPolynomialCurve>()) {
+        return param_value;
     } else {
         throw std::runtime_error("Unsupported curve measure type");
     }
