@@ -1308,7 +1308,11 @@ class IfcImporter:
             ):
                 return representation.Items[0].MappingTarget
 
-    def create_curve(self, element: ifcopenshell.entity_instance, shape) -> bpy.types.Curve:
+    def create_curve(
+        self,
+        element: ifcopenshell.entity_instance,
+        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+    ) -> bpy.types.Curve:
         if hasattr(shape, "geometry"):
             geometry = shape.geometry
         else:
