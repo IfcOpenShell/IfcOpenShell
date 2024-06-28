@@ -844,7 +844,12 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// https://github.com/IfcOpenShell/IfcOpenShell/issues/1649
 					instance->declaration().is(Schema::IfcProfileDef::Class())
 				) {
-					IfcGeom::ConversionResults shapes = kernel.convert(instance);
+					IfcGeom::ConversionResults shapes;
+					try {
+						shapes = kernel.convert(instance);
+					} catch (...) {
+						throw IfcParse::IfcException("Failed to process shape");
+					}
 
 					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->data().id()), shapes);
 					try {
