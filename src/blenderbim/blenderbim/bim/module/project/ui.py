@@ -102,8 +102,6 @@ class BIM_PT_project(Panel):
                 self.draw_loaded_project_ui(context)
             else:
                 self.draw_unsaved_project_ui(context)
-        else:
-            self.draw_project_setup_ui(context)
 
     def draw_advanced_loading_ui(self, context):
         pprops = context.scene.BIMProjectProperties
@@ -243,7 +241,20 @@ class BIM_PT_project(Panel):
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
         row.operator("bim.unload_project", text="", icon="CANCEL")
 
-    def draw_project_setup_ui(self, context):
+
+class BIM_PT_new_project_wizard(Panel):
+    bl_label = "New Project Wizard"
+    bl_idname = "BIM_PT_new_project_wizard"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"HIDE_HEADER"}
+    bl_parent_id = "BIM_PT_tab_new_project_wizard"
+
+    def draw(self, context):
+        self.layout.use_property_decorate = False
+        self.layout.use_property_split = True
+
         props = context.scene.BIMProperties
         pprops = context.scene.BIMProjectProperties
         prop_with_search(self.layout, pprops, "export_schema")

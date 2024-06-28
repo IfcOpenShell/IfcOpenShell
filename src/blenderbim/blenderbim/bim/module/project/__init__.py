@@ -65,6 +65,7 @@ classes = (
     prop.BIMProjectProperties,
     ui.BIM_MT_new_project,
     ui.BIM_MT_project,
+    ui.BIM_PT_new_project_wizard,
     ui.BIM_PT_project,
     ui.BIM_PT_project_library,
     ui.BIM_PT_links,

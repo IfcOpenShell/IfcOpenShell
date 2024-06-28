@@ -427,6 +427,28 @@ class BIM_PT_tabs(Panel):
         tab_entry.enabled = enabled
 
 
+class BIM_PT_tab_new_project_wizard(Panel):
+    bl_label = "New Project Wizard"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.is_tab(context, "PROJECT"):
+            return False
+        props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
+        if pprops.is_loading:
+            return False
+        elif tool.Ifc.get() or props.ifc_file:
+            return False
+        return True
+
+    def draw(self, context):
+        pass
+
+
 class BIM_PT_tab_project_info(Panel):
     bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
@@ -435,7 +457,15 @@ class BIM_PT_tab_project_info(Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Blender.is_tab(context, "PROJECT")
+        if not tool.Blender.is_tab(context, "PROJECT"):
+            return False
+        props = context.scene.BIMProperties
+        pprops = context.scene.BIMProjectProperties
+        if pprops.is_loading:
+            return True
+        elif tool.Ifc.get() or props.ifc_file:
+            return True
+        return False
 
     def draw(self, context):
         pass

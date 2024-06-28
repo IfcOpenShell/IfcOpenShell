@@ -141,6 +141,7 @@ classes = [
     # Tabs panel
     ui.BIM_PT_tabs,
     # Project overview
+    ui.BIM_PT_tab_new_project_wizard,
     ui.BIM_PT_tab_project_info,
     ui.BIM_PT_tab_spatial_decomposition,
     ui.BIM_PT_tab_project_setup,
