@@ -352,7 +352,10 @@ class tree(ifcopenshell_wrapper.tree):
 
 
 def create_shape(
-    settings: settings, inst: entity_instance, repr: Optional[entity_instance] = None
+    settings: settings,
+    inst: entity_instance,
+    repr: Optional[entity_instance] = None,
+    geometry_library: GEOMETRY_LIBRARY = "opencascade",
 ) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation]:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
@@ -394,7 +397,9 @@ def create_shape(
     """
     return wrap_shape_creation(
         settings,
-        ifcopenshell_wrapper.create_shape(settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None),
+        ifcopenshell_wrapper.create_shape(
+            settings, inst.wrapped_data, repr.wrapped_data if repr is not None else None, geometry_library
+        ),
     )
 
 
