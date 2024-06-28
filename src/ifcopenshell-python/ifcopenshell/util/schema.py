@@ -223,20 +223,34 @@ class Migrator:
             "User": None,
         }
 
-    def preprocess(self, old_file, new_file):
+    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file):
+        self.attribute_overrides = {}
+        to_delete = set()
+
+        if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
+            # IfcCalendarDate is deprecated in IFC4
+            for element in old_file.by_type("IfcCalendarDate"):
+                for inverse, attribute_index in old_file.get_inverse(
+                    element, allow_duplicate=True, with_attribute_indices=True
+                ):
+                    self.attribute_overrides.setdefault(inverse.id(), {})[
+                        attribute_index
+                    ] = f"{element[2]}-{element[1]}-{element[0]}"
+                to_delete.add(element)
+
         if old_file.schema == "IFC4" and new_file.schema == "IFC4X3":
-            # In IFC4 -> IFC4X3, IfcPresentationStyleAssignment is deprecated
-            to_delete = set()
+            # IfcPresentationStyleAssignment is deprecated
             for assignment in old_file.by_type("IfcPresentationStyleAssignment"):
                 for styled_item in old_file.get_inverse(assignment):
                     if not styled_item.is_a("IfcStyledItem"):
                         continue
-                    styled_item.Styles = [
-                        s for s in styled_item.Styles if s.is_a("IfcPresentationStyle")
-                    ] + list(assignment.Styles)
+                    styled_item.Styles = [s for s in styled_item.Styles if s.is_a("IfcPresentationStyle")] + list(
+                        assignment.Styles
+                    )
                 to_delete.add(assignment)
-            for element in to_delete:
-                old_file.remove(element)
+
+        for element in to_delete:
+            old_file.remove(element)
 
     def migrate(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
@@ -273,6 +287,8 @@ class Migrator:
         return new_element
 
     def migrate_attributes(self, element, new_file, new_element, new_element_schema):
+        for attribute_index, value in self.attribute_overrides.get(element.id(), {}).items():
+            new_element[attribute_index] = value
         for i, attribute in enumerate(new_element_schema.all_attributes()):
             if new_element_schema.derived()[i]:
                 continue
