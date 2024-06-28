@@ -167,10 +167,11 @@ function addTableElement(blenderId, csvData, filename) {
     var tableId = row.getTable().element.id.substr(6);
 
     const msg = {
+      sourcePage: "csv",
       blenderId: tableId,
       operator: {
         type: "selection",
-        GlobalId: index,
+        globalId: index,
       },
     };
     socket.emit("web_operator", msg);

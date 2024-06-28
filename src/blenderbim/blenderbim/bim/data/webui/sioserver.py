@@ -38,7 +38,7 @@ class WebNamespace(socketio.AsyncNamespace):
     async def on_web_operator(self, sid, data):
         await sio.emit(
             "web_operator",
-            data["operator"],
+            data,
             namespace="/blender",
             room=data["blenderId"],
         )
