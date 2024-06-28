@@ -169,7 +169,6 @@ class Clash:
 @interface
 class Collector:
     def assign(cls, obj): pass
-    def sync(cls, obj): pass
 
 
 @interface

@@ -27,10 +27,10 @@ import sys
 IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
+    import addon_utils
 import platform
 import traceback
 import webbrowser
-import addon_utils
 from collections import deque
 
 bl_info = {
