@@ -57,6 +57,18 @@ class NewIfc:
         bpy.ops.bim.create_project()
 
 
+class NewIfc4X3:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        IfcStore.purge()
+        bpy.ops.wm.read_homefile(app_template="")
+        bpy.data.batch_remove(bpy.data.objects)
+        bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
+        blenderbim.bim.handler.load_post(None)
+        bpy.context.scene.BIMProjectProperties.export_schema = "IFC4X3_ADD2"
+        bpy.ops.bim.create_project()
+
+
 def scenario(function):
     def subfunction(self):
         run(function(self))
