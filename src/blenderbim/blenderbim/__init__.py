@@ -33,6 +33,8 @@ import traceback
 import webbrowser
 from collections import deque
 
+# NOTE: bl_info is superseded by blender_manifest.toml
+# if addon is installed as an extension (Blender 4.2+)
 bl_info = {
     "name": "BlenderBIM",
     "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
@@ -92,7 +94,6 @@ if IN_BLENDER:
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
 
     try:
-        import blenderbim.bim
         import ifcopenshell.api
 
         def log_api(usecase_path, ifc_file, settings):
@@ -107,9 +108,21 @@ if IN_BLENDER:
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
+            global BLENDER_PACKAGE_NAME, __name__, __package__
+            BLENDER_PACKAGE_NAME = __name__
+            if bpy.app.version >= (4, 2, 0):
+                sys.modules["blenderbim"] = sys.modules[__name__]
+                __name__ = "blenderbim"
+                # Only renaming __name__ is actually required to make imports work.
+                # We renaming __package__ just for consistency.
+                __package__ = "blenderbim"
+            import blenderbim.bim
+
             blenderbim.bim.register()
 
         def unregister():
+            import blenderbim.bim
+
             blenderbim.bim.unregister()
 
     except:

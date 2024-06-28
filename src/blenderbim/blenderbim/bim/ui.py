@@ -191,7 +191,7 @@ class BIM_UL_topics(bpy.types.UIList):
 
 
 class BIM_ADDON_preferences(bpy.types.AddonPreferences):
-    bl_idname = "blenderbim"
+    bl_idname = tool.Blender.get_blender_addon_package_name()
     svg2pdf_command: StringProperty(name="SVG to PDF Command", description='E.g. [["inkscape", "svg", "-o", pdf]]')
     svg2dxf_command: StringProperty(
         name="SVG to DXF Command",
