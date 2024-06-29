@@ -126,6 +126,10 @@ class Blender(blenderbim.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
+    def get_active_object(cls) -> bpy.types.Object:
+        return bpy.context.view_layer.objects.active
+
+    @classmethod
     def get_selected_objects(cls) -> set[bpy.types.Object]:
         if bpy.context.selected_objects:
             if active_obj := bpy.context.active_object:
