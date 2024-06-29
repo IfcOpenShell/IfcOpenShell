@@ -246,7 +246,10 @@ function editValue(list, task, event, cell, column) {
   console.log("cell:", cell);
   console.log("column:", column);
 
-  const blenderId = task.getGantt()["vDiv"].id.split("-")[1];
+  const ganttId = task.getGantt()["vDiv"].id;
+  const index = ganttId.indexOf("-") + 1;
+  const blenderId = ganttId.substring(index);
+  console.log("blenderId:", blenderId);
 
   // update data object reprsenting the task
   const dataObj = task.getDataObject();
