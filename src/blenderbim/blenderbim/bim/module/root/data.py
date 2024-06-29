@@ -151,7 +151,7 @@ class IfcClassData:
 
     @classmethod
     def has_entity(cls) -> Union[ifcopenshell.entity_instance, None]:
-        obj = bpy.context.active_object
+        obj = tool.Blender.get_active_object()
         cls.element = None
         if not obj:
             return

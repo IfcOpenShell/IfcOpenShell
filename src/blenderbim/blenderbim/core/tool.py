@@ -77,6 +77,7 @@ class Blender:
     def apply_bmesh(cls, mesh, bm, obj=None): pass
     def bmesh_join(cls, bm_a, bm_b, callback=None): pass
     def create_ifc_object(cls, ifc_class: str, name: Optional[str] = None, data=None): pass
+    def get_active_object(cls): pass
     def get_bmesh_for_mesh(cls, mesh, clean=False): pass
     def get_default_selection_keypmap(cls): pass
     def get_name(cls, ifc_class, name): pass

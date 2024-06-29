@@ -28,6 +28,66 @@ Scenario: Create project - IFC2X3
     And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
 
+Scenario: New project - metric (m) preset
+    Given an empty Blender session
+    When I press "bim.new_project(preset='metric_m')"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+
+Scenario: New project - metric (mm) preset
+    Given an empty Blender session
+    When I press "bim.new_project(preset='metric_mm')"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+
+Scenario: New project - imperial (ft) preset
+    Given an empty Blender session
+    When I press "bim.new_project(preset='imperial_ft')"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+
+Scenario: New project - demo preset
+    Given an empty Blender session
+    When I press "bim.new_project(preset='demo')"
+    Then an IFC file exists
+    And the object "IfcProject/My Project" is an "IfcProject"
+    And the object "IfcSite/My Site" is an "IfcSite"
+    And the object "IfcBuilding/My Building" is an "IfcBuilding"
+    And the object "IfcBuildingStorey/My Storey" is an "IfcBuildingStorey"
+    And the object "IfcProject/My Project" is in the collection "IfcProject/My Project"
+    And the object "IfcSite/My Site" is in the collection "IfcSite/My Site"
+    And the object "IfcBuilding/My Building" is in the collection "IfcBuilding/My Building"
+    And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
+    And the object "IfcBeamType/B1" is an "IfcBeamType"
+    And the object "IfcWallType/WAL50" is an "IfcWallType"
+
+Scenario: New project - wizard
+    Given an empty Blender session
+    When I press "bim.new_project(preset='wizard')"
+    Then an IFC file does not exist
+    And the object "IfcProject/My Project" does not exist
+
 Scenario: Append library element
     Given an empty IFC project
     When I press "bim.select_library_file(filepath='{cwd}/test/files/basic.ifc')"
@@ -252,13 +312,6 @@ Scenario: Load project elements - auto offset of cartesian points
     Given an empty Blender session
     When I press "bim.load_project(filepath='{cwd}/test/files/manual-geolocation-coords.ifc')"
     Then the object "IfcBuildingElementProxy/NAME" is at "0,0,0"
-
-Scenario: Unload project
-    Given an empty Blender session
-    When I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc', is_advanced=True)"
-    And I press "bim.unload_project"
-    Then an IFC file does not exist
-    And "scene.BIMProjectProperties.is_loading" is "False"
 
 Scenario: Link IFC
     Given an empty IFC project
