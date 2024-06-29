@@ -24,7 +24,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepath: str):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, filepath: Union[str, ifcopenshell.file]):
         """Merge two IFC models into one
 
         Note that other than combining the two IfcProject elements into one, no
@@ -37,7 +37,6 @@ class Patcher:
         :param filepath: The filepath of the second IFC model to merge into the
             first. The first model is already specified as the input to
             IfcPatch.
-        :type filepath: str
 
         Example:
 
@@ -51,8 +50,11 @@ class Patcher:
         self.filepath = filepath
 
     def patch(self):
-        source = ifcopenshell.open(self.filepath)
-        # make sure models units will match
+        if isinstance(self.filepath, ifcopenshell.file):
+            source = self.filepath
+        else:
+            source = ifcopenshell.open(self.filepath)
+
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(source):
             source = ifcopenshell.util.unit.convert_file_length_units(source, main_unit)
 
