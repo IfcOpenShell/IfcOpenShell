@@ -96,8 +96,8 @@ namespace IfcGeom {
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation& transformation() const { return _transformation; }
         const IfcUtil::IfcBaseEntity* product() const { return product_; }
-		const std::vector<const IfcGeom::Element*> parents() const { return _parents; }
-		void SetParents(std::vector<const IfcGeom::Element*> newparents) { _parents = newparents; }
+		const std::vector<const IfcGeom::Element*>& parents() const { return _parents; }
+		void SetParents(std::vector<const IfcGeom::Element*>& newparents) { _parents = newparents; }
 
 		Element(const ifcopenshell::geometry::Settings& settings, int id, int parent_id, const std::string& name, const std::string& type,
             const std::string& guid, const std::string& context, const ifcopenshell::geometry::taxonomy::matrix4::ptr& trsf, const IfcUtil::IfcBaseEntity* product)

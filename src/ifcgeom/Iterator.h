@@ -712,20 +712,26 @@ namespace IfcGeom {
 			IfcUtil::IfcBaseEntity* ifc_product = 0;
 
 			try {
-				IfcUtil::IfcBaseEntity* ifc_entity = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
-				instance_type = ifc_entity->declaration().name();
+				ifc_product = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
+				instance_type = ifc_product->declaration().name();
 
-				if (ifc_entity->declaration().is("IfcRoot")) {
-					product_guid = (std::string) *ifc_entity->get("GlobalId");
-					product_name = ifc_entity->get_value<std::string>("Name", "");
+				if (ifc_product->declaration().is("IfcRoot")) {
+					product_guid = (std::string) *ifc_product->get("GlobalId");
+					product_name = ifc_product->get_value<std::string>("Name", "");
 				}
 
-				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_entity);
+				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
 				if (parent_object) {
 					parent_id = parent_object->data().id();
 				}
 
-				m4 = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(converter_->mapping()->map(ifc_product))->matrix;
+				// fails in case of IfcProject
+				auto mapped = converter_->mapping()->map(ifc_product);
+				auto casted = mapped ? ifcopenshell::geometry::taxonomy::dcast<ifcopenshell::geometry::taxonomy::geom_item>(mapped) : nullptr;
+
+				if (casted) {
+					m4 = casted->matrix;
+				}
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 			}
