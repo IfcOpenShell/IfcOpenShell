@@ -118,7 +118,9 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server terminated successfully")
 
     @classmethod
-    def send_webui_data(cls, extra_data=None, event="data", namespace="/blender", use_web_data=True):
+    def send_webui_data(
+        cls, extra_data=None, extra_data_key="data", event="data", namespace="/blender", use_web_data=True
+    ):
         global ws_thread
         data = {}
 
@@ -128,7 +130,7 @@ class Web(blenderbim.core.tool.Web):
             data = WebData.data
 
         if extra_data is not None:
-            data["data"] = extra_data
+            data[extra_data_key] = extra_data
 
         if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
             ws_thread.run_coro(cls.sio_send(data, event, namespace))
