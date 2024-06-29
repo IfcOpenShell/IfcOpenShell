@@ -514,6 +514,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
 
 
 def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
+    return  # TODO ensure this now works with the new approach of styles
     elements = settings["products"]
     material = settings.get("material")
     if material:
@@ -544,6 +545,7 @@ def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, set
 
 
 def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
+    return  # TODO ensure this now works with the new approach of styles
     elements = settings["products"]
 
     # unassign_material could be called when product is about to get removed
