@@ -88,7 +88,7 @@ function handleGanttData(data) {
 }
 
 // Function to add a new gantt with data and filename
-function addGanttElement(blenderId, tasks, WorkSched, filename) {
+function addGanttElement(blenderId, tasks, workSched, filename) {
   const ganttContainer = $("<div></div>")
     .addClass("gantt-container")
     .attr("id", "container-" + blenderId);
@@ -143,9 +143,7 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
       additional_category: editValue,
     },
   });
-  for (var i = 0; i < tasks.length; i++) {
-    g.AddTaskItemObject(tasks[i]);
-  }
+  JSGantt.addJSONTask(g, tasks);
   g.setEditable(true);
   g.Draw();
 
@@ -209,12 +207,10 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
 }
 
 // Function to update gantt and filename
-function updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename) {
+function updateGanttElement(blenderId, tasks, workSched, filename) {
   let g = connectedClients[blenderId]["gantt"];
   g.ClearTasks();
-  for (var i = 0; i < ganttTasks.length; i++) {
-    g.AddTaskItemObject(ganttTasks[i]);
-  }
+  JSGantt.addJSONTask(g, tasks);
   g.Draw();
 }
 
