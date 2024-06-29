@@ -71,6 +71,13 @@ private:
 	std::map<std::string, std::string> meshes_;
 
 	std::vector<pxr::UsdShadeMaterial> createMaterials(const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>&);
+	template <typename T>
+	T writeNode(const IfcGeom::Element*, const IfcGeom::Element* = nullptr);
+	std::vector<std::pair<IfcGeom::Element const*, IfcGeom::Element const*>> parents_;
+
+	std::set<int> written_;
+	std::map<int, std::string> paths_;
+	std::map<int, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
 public:
 	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&);
 	virtual ~USDSerializer();
