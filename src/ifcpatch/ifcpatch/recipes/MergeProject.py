@@ -90,11 +90,18 @@ class Patcher:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if equivalent_existing_context:
                 for inverse in self.file.get_inverse(added_context):
+                    if self.file.schema != "IFC2X3":
+                        if inverse.is_a("IfcCoordinateOperation"):
+                            to_delete.add(inverse.id())
+                            continue
                     ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-                to_delete.add(added_context)
+                to_delete.add(added_context.id())
 
-        for added_context in to_delete:
-            ifcopenshell.util.element.remove_deep2(self.file, added_context)
+        for element_id in to_delete:
+            try:
+                ifcopenshell.util.element.remove_deep2(self.file, self.file.by_id(element_id))
+            except:
+                pass
 
     def get_equivalent_existing_context(
         self, added_context: ifcopenshell.entity_instance

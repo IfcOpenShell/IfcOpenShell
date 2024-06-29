@@ -33,9 +33,11 @@ class TestMergeProject(test.bootstrap.IFC4):
         if ifc_file is None:
             ifc_file = ifcopenshell.file(schema=self.file.schema)
 
-        project = ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcProject")
+        ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcProject")
         unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix=prefix)
         ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
+        model = ifcopenshell.api.context.add_context(ifc_file, "Model")
+        ifcopenshell.api.context.add_context(ifc_file, "Model", "Body", "MODEL_VIEW", parent=model)
 
         matrix = np.eye(4)
         matrix[:, 3] = (1, 2, 3, 1)
@@ -50,6 +52,7 @@ class TestMergeProject(test.bootstrap.IFC4):
         second_file.write(temp_path)
         output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [str(temp_path)]})
 
+        assert self.file == output
         assert len(output.by_type("IfcWall")) == 2
         wall1, wall2 = output.by_type("IfcWall")
 
@@ -61,6 +64,22 @@ class TestMergeProject(test.bootstrap.IFC4):
         matrix[:, 3] = (1, 2, 3, 1)
         assert to_tuple(placement1) == to_tuple(placement2) == to_tuple(matrix)
 
+    def test_reusing_geometric_contexts(self):
+        self.file = self.setup_project(self.file)
+        second_file = self.setup_project()
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
+        assert len(output.by_type("IfcGeometricRepresentationContext")) == 2
+
+    def test_using_the_georeferencing_of_the_original_project(self):
+        if self.file.schema == "IFC2X3":
+            return
+        self.file = self.setup_project(self.file)
+        second_file = self.setup_project()
+        ifcopenshell.api.georeference.add_georeferencing(self.file)
+        ifcopenshell.api.georeference.add_georeferencing(second_file)
+        output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
+        assert len(output.by_type("IfcProjectedCRS")) == 1
+        assert len(output.by_type("IfcMapConversion")) == 1
 
 class TestMergeProjectIFC2X3(test.bootstrap.IFC2X3, TestMergeProject):
     pass
