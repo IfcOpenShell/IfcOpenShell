@@ -69,7 +69,7 @@ function handleGanttData(data) {
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
       connectedClients[blenderId] = {
-        shown: false,
+        shown: true,
         work_sched: ganttTasks,
         task_json: ganttWorkSched,
       };
@@ -79,7 +79,7 @@ function handleGanttData(data) {
     }
   } else {
     connectedClients[blenderId] = {
-      shown: false,
+      shown: true,
       work_sched: ganttTasks,
       task_json: ganttWorkSched,
     };
@@ -149,6 +149,8 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
   g.setEditable(true);
   g.Draw();
 
+  connectedClients[blenderId]["gantt"] = g;
+
   let printButton = $("<button>", {
     id: "print-btn-" + blenderId,
     html: "Print",
@@ -207,7 +209,14 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
 }
 
 // Function to update gantt and filename
-function updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename) {}
+function updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename) {
+  let g = connectedClients[blenderId]["gantt"];
+  g.ClearTasks();
+  for (var i = 0; i < ganttTasks.length; i++) {
+    g.AddTaskItemObject(ganttTasks[i]);
+  }
+  g.Draw();
+}
 
 // Function to remove gantt element
 function removeGanttElement(blenderId) {
@@ -232,6 +241,7 @@ function generateTooltip(task) {
   `;
 }
 
+// Event handlers for editing gantt table data
 function editValue(list, task, event, cell, column) {
   console.log("editValue function called with the following parameters:");
   console.log("list:", list);
