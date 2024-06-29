@@ -40,7 +40,7 @@ function handleBlenderDisconnect(blenderId) {
 // Function to handle 'csv_data' event
 function handleCsvData(data) {
   const blenderId = data["blenderId"];
-  const csvData = data["data"]["data"];
+  const csvData = data["data"]["csv_data"];
   const filename = data["data"]["IFC_File"];
   console.log(data);
 
