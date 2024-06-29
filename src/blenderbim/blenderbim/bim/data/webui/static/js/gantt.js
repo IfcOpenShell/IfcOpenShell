@@ -126,8 +126,21 @@ function addGanttElement(blenderId, tasks, WorkSched, filename) {
       resourceUsage: { title: "Resource Usage" },
     },
     vUseToolTip: true, // Disable tooltips.
-    // vTooltipTemplate: createTooltip,
+    vTooltipTemplate: generateTooltip,
     vTotalHeight: 900,
+
+    vEventsChange: {
+      taskname: editValue, // if you need to use the this scope, do: editValue.bind(this)
+      res: editValue,
+      dur: editValue,
+      comp: editValue,
+      start: editValue,
+      end: editValue,
+      planstart: editValue,
+      planend: editValue,
+      cost: editValue,
+      additional_category: editValue,
+    },
   });
   for (var i = 0; i < tasks.length; i++) {
     g.AddTaskItemObject(tasks[i]);
@@ -198,4 +211,49 @@ function updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename) {}
 // Function to remove gantt element
 function removeGanttElement(blenderId) {
   $("#container-" + blenderId).remove();
+}
+
+// Utility function to create a tooltip for the gantt chars
+function generateTooltip(task) {
+  var dataObject = task.getDataObject();
+  var numberResources = dataObject.resourceUsage
+    ? dataObject.resourceUsage
+    : "NULL";
+  return `
+  <dl>
+      <dt>Name:</dt><dd>{{pName}}</dd>
+      <dt>Start:</dt><dd>{{pStart}}</dd>
+      <dt>End:</dt><dd>{{pEnd}}</dd>
+      <dt>Duration:</dt><dd>${dataObject.ifcduration}</dd>
+      <dt>Number of Resources:</dt><dd>${numberResources}</dd>
+      <dt>Resources:</dt><dd>{{pRes}}</dd>
+  </dl>
+  `;
+}
+
+function editValue(list, task, event, cell, column) {
+  console.log("editValue function called with the following parameters:");
+  console.log("list:", list);
+  console.log("task:", task);
+  console.log("event:", event);
+  console.log("cell:", cell);
+  console.log("column:", column);
+
+  const blenderId = task.getGantt()["vDiv"].id.split("-")[1];
+
+  // update data object reprsenting the task
+  const dataObj = task.getDataObject();
+  dataObj[column] = event.target.value;
+  task.setDataObject(dataObj);
+
+  const msg = {
+    sourcePage: "gantt",
+    blenderId: blenderId,
+    operator: {
+      type: "editTask",
+      column: column,
+      value: event.target.value,
+    },
+  };
+  // socket.emit("web_operator", msg);
 }
