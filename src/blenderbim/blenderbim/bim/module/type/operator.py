@@ -310,7 +310,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
-                material = self.add_default_material()
+                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
             rel = ifcopenshell.api.run(
                 "material.assign_material", ifc_file, products=[element], type="IfcMaterialLayerSet"
             )
@@ -344,7 +344,7 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
-                material = self.add_default_material()
+                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
             if template == "PROFILESET":
                 named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
                 if named_profiles:
@@ -494,13 +494,6 @@ class AddType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
         props.type_class = props.type_class
         return {"FINISHED"}
-
-    def add_default_material(self):
-        material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
-        blender_material = bpy.data.materials.new(material.Name)
-        tool.Ifc.link(material, blender_material)
-        blender_material.use_fake_user = True
-        return material
 
 
 class RemoveType(bpy.types.Operator, tool.Ifc.Operator):

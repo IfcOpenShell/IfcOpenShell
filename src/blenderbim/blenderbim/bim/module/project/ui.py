@@ -264,7 +264,6 @@ class BIM_PT_project(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
-        row.operator("bim.unload_project", text="", icon="CANCEL")
 
 
 class BIM_PT_new_project_wizard(Panel):
