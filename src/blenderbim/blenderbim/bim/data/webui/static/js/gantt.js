@@ -58,12 +58,13 @@ function handleBlenderDisconnect(blenderId) {
 // Function to handle 'gantt_data' event
 function handleGanttData(data) {
   const blenderId = data["blenderId"];
-  const ganttTasks = data["data"]["tasks"];
-  // const ganttWorkSched = data["data"]["schedule"];
-  const ganttWorkSched = {};
-  const filename = data["data"]["IFC_File"];
+
   console.log(data);
-  console.log(ganttTasks);
+
+  const filename = data["data"]["IFC_File"];
+  const ganttTasks = data["data"]["gantt_data"]["tasks"];
+  // const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
+  const ganttWorkSched = {};
 
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
