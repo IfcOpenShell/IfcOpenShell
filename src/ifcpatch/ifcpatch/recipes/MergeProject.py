@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy as np
 import ifcopenshell
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.geolocation
+from ifcpatch.recipes.SetFalseOrigin import Patcher as SetFalseOrigin
 from typing import Union
 from logging import Logger
 
@@ -51,12 +54,25 @@ class Patcher:
 
     def patch(self):
         if isinstance(self.filepath, ifcopenshell.file):
-            source = self.filepath
+            other = self.filepath
         else:
-            source = ifcopenshell.open(self.filepath)
+            other = ifcopenshell.open(self.filepath)
 
-        if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(source):
-            source = ifcopenshell.util.unit.convert_file_length_units(source, main_unit)
+        if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
+            other = ifcopenshell.util.unit.convert_file_length_units(other, main_unit)
+
+        existing_enh = np.array(
+            ifcopenshell.util.geolocation.auto_xyz2enh(self.file, 0, 0, 0, should_return_in_map_units=False)
+        )
+        other_enh = np.array(
+            ifcopenshell.util.geolocation.auto_xyz2enh(other, 0, 0, 0, should_return_in_map_units=False)
+        )
+
+        if not np.allclose(existing_enh, other_enh):
+            x, y, z = ifcopenshell.util.geolocation.auto_enh2xyz(other, *existing_enh, is_specified_in_map_units=False)
+            e, n, h = existing_enh
+            # For now don't handle rotation because my brain is going to explode
+            SetFalseOrigin("", other, self.logger, name="", x=x, y=y, z=z, e=e, n=n, h=h).patch()
 
         self.existing_contexts: list[ifcopenshell.entity_instance] = self.file.by_type(
             "IfcGeometricRepresentationContext"
@@ -64,13 +80,13 @@ class Patcher:
         self.added_contexts: set[ifcopenshell.entity_instance] = set()
 
         original_project = self.file.by_type("IfcProject")[0]
-        merged_project = self.file.add(source.by_type("IfcProject")[0])
+        merged_project = self.file.add(other.by_type("IfcProject")[0])
 
-        for element in source.by_type("IfcGeometricRepresentationContext"):
+        for element in other.by_type("IfcGeometricRepresentationContext"):
             new = self.file.add(element)
             self.added_contexts.add(new)
 
-        for element in source:
+        for element in other:
             self.file.add(element)
 
         for inverse in self.file.get_inverse(merged_project):
