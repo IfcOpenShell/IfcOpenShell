@@ -32,6 +32,7 @@ import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
+import blenderbim.core.model as core
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees
@@ -80,14 +81,12 @@ class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         if self.join_type in ("L", "V"):
-            if len(selected_objs) != 2:
-                self.report({"ERROR"}, f"It requires 2 selected objects to do join of type {self.join_type}")
+            try:
+                core.join_wall_LV(tool.Blender, joiner, join_type=self.join_type)
+            except core.RequireTwoObjectsError:
+                join_type_name = {"L": "butt", "V": "mitre"}[self.join_type]
+                self.report({"ERROR"}, f"Please select 2 objects to do a {join_type_name} joint")
                 return {"CANCELLED"}
-            another_selected_object = next(o for o in selected_objs if o != context.active_object)
-            if self.join_type == "L":
-                joiner.join_L(another_selected_object, context.active_object)
-            elif self.join_type == "V":
-                joiner.join_V(another_selected_object, context.active_object)
             return {"FINISHED"}
 
         if self.join_type == "T":

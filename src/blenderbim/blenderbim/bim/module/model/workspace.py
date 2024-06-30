@@ -21,11 +21,11 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.unit
 import blenderbim.tool as tool
-import blenderbim.bim.module.type.prop as type_prop
+import blenderbim.core.model
+from blenderbim.bim.module.model.wall import DumbWallJoiner
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
 from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.drawing.data import DecoratorData
 from blenderbim.bim.module.system.data import PortData
 from blenderbim.bim.module.model.prop import get_ifc_class
 
@@ -781,7 +781,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            bpy.ops.bim.join_wall(join_type="L")
+            try:
+                blenderbim.core.model.join_wall_LV(tool.Blender, DumbWallJoiner(), join_type="L")
+            except blenderbim.core.model.RequireTwoObjectsError:
+                self.report({"ERROR"}, "Please select 2 objects to do a butt joint")
+                return {"CANCELLED"}
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="L")
 
@@ -806,7 +810,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            bpy.ops.bim.join_wall(join_type="V")
+            try:
+                blenderbim.core.model.join_wall_LV(tool.Blender, DumbWallJoiner(), join_type="V")
+            except blenderbim.core.model.RequireTwoObjectsError:
+                self.report({"ERROR"}, "Please select 2 objects to do a mitre joint")
+                return {"CANCELLED"}
         elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
