@@ -742,7 +742,6 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
             if tool.Ifc.is_moved(obj):
                 blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             openings = tool.Model.load_openings(
-                element,
                 [
                     r.RelatedOpeningElement
                     for r in element.HasOpenings

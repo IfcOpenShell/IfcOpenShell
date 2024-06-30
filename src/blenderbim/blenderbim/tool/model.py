@@ -445,10 +445,9 @@ class Model(blenderbim.core.tool.Model):
         cls.edges[-1] = (len(cls.vertices) - 1, 0)  # Close the loop
 
     @classmethod
-    def load_openings(cls, element, openings):
+    def load_openings(cls, openings):
         if not openings:
             return []
-        obj = tool.Ifc.get_object(element)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()

@@ -535,7 +535,7 @@ class Model:
     def import_profile(cls, profile, obj=None, position=None): pass
     def import_curve(cls, obj, position, curve): pass
     def import_rectangle(cls, obj, position, profile): pass
-    def load_openings(cls, element, openings): pass
+    def load_openings(cls, openings): pass
     def clear_scene_openings(cls): pass
     def get_material_layer_parameters(cls, element): pass
     def get_manual_booleans(cls, element): pass
