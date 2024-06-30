@@ -367,17 +367,22 @@ class DumbWallAligner:
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallJoiner().flip(self.wall)
-            bpy.context.view_layer.update()
+            element = tool.Ifc.get_entity(self.wall)
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                DumbWallJoiner().flip(self.wall)
+                bpy.context.view_layer.update()
+                snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
+            else:
+                snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+        else:
+            snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
 
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[3])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[7])
 
-        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
-        offset = snap_point - self.wall.matrix_world.translation
-
         point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
 
+        offset = snap_point - self.wall.matrix_world.translation
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
@@ -385,17 +390,22 @@ class DumbWallAligner:
         self.align_rotation()
 
         if self.is_rotation_flipped():
-            DumbWallJoiner().flip(self.wall)
-            bpy.context.view_layer.update()
+            element = tool.Ifc.get_entity(self.wall)
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                DumbWallJoiner().flip(self.wall)
+                bpy.context.view_layer.update()
+                snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
+            else:
+                snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[3])
+        else:
+            snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
 
         start = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[0])
         end = self.reference_wall.matrix_world @ Vector(self.reference_wall.bound_box[4])
 
-        snap_point = self.wall.matrix_world @ Vector(self.wall.bound_box[0])
-        offset = snap_point - self.wall.matrix_world.translation
-
         point, _ = mathutils.geometry.intersect_point_line(snap_point, start, end)
 
+        offset = snap_point - self.wall.matrix_world.translation
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
@@ -842,7 +852,7 @@ class DumbWallJoiner:
             blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
         element1 = tool.Ifc.get_entity(wall1)
-        if not element1:
+        if not element1 or tool.Model.get_usage_type(element1) != "LAYER2":
             return
 
         for rel in element1.ConnectedTo:
