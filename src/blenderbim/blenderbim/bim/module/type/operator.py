@@ -158,11 +158,6 @@ class SelectType(bpy.types.Operator):
             selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
         
         last_relating_type_obj = None
-        types_collection_in_view_layer = self.find_collection_in_ifcproject(context, collection_name = "Types")
-        types_collection_in_view_layer.hide_viewport = False
-        types_collection = bpy.data.collections.get("Types")
-        for type_obj in types_collection.objects:
-            type_obj.hide_set(True)
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
             relating_type = ifcopenshell.util.element.get_type(element)
