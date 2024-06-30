@@ -8,6 +8,16 @@ Project Info
    .. |location| image:: /images/location-scene.svg
    .. |>| image:: /images/location-breadcrumb.svg
 
+
+.. warning::
+  
+  It's recommended to avoid using the "Unload IFC project" button,
+  as it may promote the misconception that the .blend file can continue without the IFC data.
+  Always start a new Blender session for a clean project start.
+
+  The Unload IFC project button will be removed in future versions.
+
+
 Overview
 --------
 

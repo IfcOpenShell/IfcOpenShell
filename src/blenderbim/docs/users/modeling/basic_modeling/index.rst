@@ -15,8 +15,8 @@ Fundamental techniques for IFC modeling.
 
       .. container:: card
 
-         :doc:`adding_doors_windows`
-            Techniques for adding and customizing doors and windows.
+         :doc:`openings/index`
+            Techniques for adding and customizing doors, windows and other openings.
 
       .. container:: card
 
@@ -36,7 +36,7 @@ Fundamental techniques for IFC modeling.
       :maxdepth: 1
 
       creating_walls
-      adding_doors_windows
+      openings/index
       modeling_slabs_roofs
       defining_rooms_spaces
 

@@ -2,7 +2,8 @@
 Project 0: Designing a Room
 ===========================
 
-In this introductory project, you'll learn the basics of using BlenderBIM to design a simple room. By the end of this tutorial, you'll have created a basic 3D model and a 2D floor plan drawing.
+In this introductory project, you'll learn the basics of using BlenderBIM to design a simple room.
+By the end of this tutorial, you'll have created a basic 3D model and a 2D floor plan drawing.
 
 Prerequisites
 =============
@@ -25,23 +26,93 @@ Tutorial Steps
 1. Setting Up the Project
 -------------------------
 
-1. Open Blender and switch to the BlenderBIM workspace
-2. Set up the project settings (units, scale, etc.)
-3. Create a new IFC project
+.. figure:: images/project0.png
+  :width: 100%
+  :alt: Setup the `project0` project.
+
+  Setup the `project0` project.
+
+1. Open Blender and switch to the BlenderBIM workspace.
+2. Create a new IFC project. Use Metric.
+3. Save it as `project0.ifc` file.
+4. (optional) Save the `project0.blend` file.
+
+.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
 
 2. Creating Walls
 -----------------
 
-1. Use the "Create Wall" tool to draw the room's perimeter
-2. Adjust wall heights and thicknesses
-3. Add interior walls if needed
+.. figure:: images/project0-walls.png
+   :alt: Creating Walls in BlenderBIM
+   :width: 100%
+
+   Creating Walls in BlenderBIM
+
+1. Use the "Create Wall" tool to draw the room's perimeter of a room 6m by 3m. Use mitre join.
+2. Add an interior wall across the room in the middle. Use butt join.
+3. Adjust walls height to be 2.8m.
+4. Set the thicknesses of 0.2m for the exterior walls.
+5. Set the thickness of 0.1m  for the partition wall.
+6. Use a Measure tool to ensure proper dimensions.
+   The interior lenghts of the walls should be 2.8m, 2.7m and 2.6m.
+
+.. note:: Refer to :doc:`/users/modeling/basic_modeling/creating_walls` for step-by-step guidance on wall creation.
+
+If you still struggling, here's what you should get:
+
+.. container:: blockbutton
+
+  `Download project0-walls.ifc <files/project0-walls.ifc>`__
+
 
 3. Adding Openings
 ------------------
 
-1. Create a door opening using the "Add Opening" tool
-2. Add a window opening
-3. Adjust opening dimensions and positions
+.. figure:: images/project0-openings.png
+   :alt: Adding Openings in BlenderBIM
+   :width: 100%
+
+   Adding Openings in BlenderBIM
+
+1. Create two door openings:
+
+   - Use the "Create Door" tool for each door
+   - Set the width to 0.9m and height to 2.1m for both doors
+   - Position the front door 0.1m from the corner on one of the 3m walls
+   - Position the back door at the center of the 3m wall
+
+2. Add two window openings beside the front door:
+
+   - Use the "Create Window" tool to create a window beside the front door
+   - Set the width to 1m and height to 1m
+   - Position the window 0.1m to the side of the front door
+
+3. Adjust the sill height for the windows:
+
+   - Set the sill height to 1m from the floor level
+
+4. Create an arch opening in the interior partition wall:
+
+   - Use the "Create Door" tool to create a door in the partition wall
+   - Use a dedicated DoorType for this opening that we'll discard
+   - Set the width to 1.2m and height to 2.4m
+   - Position it in the center of the partition wall
+   - Click on the "eye" icon near "Add Void" to display the void
+   - Remove the Door and the Door type in the outliner
+   - Click checkbox near "Add Void".
+
+5. Use the Measure tool to verify the positions and dimensions of all openings.
+
+6. Ensure that the openings do not intersect with corners or other openings.
+
+.. note:: Refer to :doc:`/users/modeling/basic_modeling/openings/index` for detailed instructions
+   on creating and modifying openings, including how to create openings without fillings.
+
+If you're having difficulties, you can download the sample file:
+
+.. container:: blockbutton
+
+  `Download project0-openings.ifc <files/project0-openings.ifc>`__
 
 4. Creating the Floor Slab
 --------------------------
