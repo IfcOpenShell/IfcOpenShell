@@ -20,6 +20,7 @@ import os
 import bpy
 import traceback
 import webbrowser
+import numpy as np
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim
@@ -669,6 +670,16 @@ def prop_is_roughly_value(prop, value):
         print(f"bpy.context.{prop}")
         actual_value = round(eval(f"bpy.context.{prop}"), 5)
         assert False, f"Value is {actual_value}"
+
+
+@then(parsers.parse('the object "{name}" has a cartesian point offset of "{offset}"'))
+def the_object_name_has_a_cartesian_point_offset_of_offset(name, offset):
+    offset = replace_variables(offset)
+    obj = the_object_name_exists(name)
+    assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT" 
+    obj_offset = np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+    offset = np.array(tuple(map(float, offset.split(","))))
+    assert np.allclose(obj_offset, offset)
 
 
 @then(parsers.parse('the object "{name}" has the material "{material}"'))

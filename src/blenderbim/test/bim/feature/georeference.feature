@@ -52,12 +52,6 @@ Scenario: Get cursor location
     When I press "bim.get_cursor_location"
     Then nothing happens
 
-Scenario: Set cursor location
-    Given an empty IFC project
-    When I set "scene.BIMGeoreferenceProperties.coordinate_output" to "0,0,0"
-    And I press "bim.set_cursor_location"
-    Then nothing happens
-
 Scenario: Set IFC true north
     Given an empty IFC project
     When I press "bim.set_ifc_true_north"
@@ -71,12 +65,12 @@ Scenario: Set Blender true north
 
 Scenario: Convert local to global
     Given an empty IFC project
-    When I set "scene.BIMGeoreferenceProperties.coordinate_input" to "0,0,0"
+    When I set "scene.BIMGeoreferenceProperties.local_coordinates" to "0,0,0"
     And I press "bim.convert_local_to_global"
-    Then "scene.BIMGeoreferenceProperties.coordinate_output" is "0.0,0.0,0.0"
+    Then "scene.BIMGeoreferenceProperties.map_coordinates" is "0.0,0.0,0.0"
 
 Scenario: Convert global to local
     Given an empty IFC project
-    When I set "scene.BIMGeoreferenceProperties.coordinate_input" to "0,0,0"
+    When I set "scene.BIMGeoreferenceProperties.map_coordinates" to "0,0,0"
     And I press "bim.convert_global_to_local"
-    Then "scene.BIMGeoreferenceProperties.coordinate_output" is "0.0,0.0,0.0"
+    Then "scene.BIMGeoreferenceProperties.local_coordinates" is "0.0,0.0,0.0"
