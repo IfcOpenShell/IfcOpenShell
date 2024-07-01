@@ -191,6 +191,7 @@ class Csv2Ifc:
                 self.file,
                 related_process=task_2,
                 relating_process=task_1,
+                sequence_type = rel_type,
             )
             if rel_type:
                 ifcopenshell.api.run(
