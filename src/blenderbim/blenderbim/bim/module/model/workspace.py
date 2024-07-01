@@ -405,12 +405,8 @@ class BimToolUI:
             # NOTE: should be above "active_representation_type" = "SweptSolid" check
             # because it could be a SweptSolid too
             row = cls.layout.row(align=True)
-            row.label(text="", icon=f"EVENT_TAB")
+            row.label(text="", icon="EVENT_TAB")
             row.operator("bim.enable_editing_railing_path", text="Edit Railing Path")
-
-        elif AuthoringData.data["active_representation_type"] == "SweptSolid":
-            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
-                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
 
         elif AuthoringData.data["active_class"] in (
             "IfcWindow",
@@ -428,12 +424,16 @@ class BimToolUI:
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_fill.__doc__)
             add_layout_hotkey_operator(cls.layout, "Flip", "S_F", "")
 
+        elif AuthoringData.data["active_representation_type"] == "SweptSolid":
+            if not tool.Model.is_parametric_window_active() and not tool.Model.is_parametric_door_active():
+                add_layout_hotkey_operator(cls.layout, "Edit Profile", "S_E", "")
+
         elif AuthoringData.data["active_class"] in ("IfcSpace",):
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.generate_space.__doc__)
 
         elif tool.Model.is_parametric_roof_active() and not context.active_object.BIMRoofProperties.is_editing_path:
             row = cls.layout.row(align=True)
-            row.label(text="", icon=f"EVENT_TAB")
+            row.label(text="", icon="EVENT_TAB")
             row.operator("bim.enable_editing_roof_path", text="Edit Roof Path")
 
         if context.region.type != "TOOL_HEADER" and PortData.data["total_ports"] > 0:
