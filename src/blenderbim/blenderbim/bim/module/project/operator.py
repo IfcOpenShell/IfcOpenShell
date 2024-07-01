@@ -28,6 +28,7 @@ import datetime
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.file
 import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
@@ -668,9 +669,9 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         if not filepath:
             return tooltip
         filepath = Path(filepath)
-        tooltip += f".\n\n"
+        tooltip += f".\n"
         if not filepath.exists():
-            tooltip += "File does not exist"
+            tooltip += "\nFile does not exist"
             return tooltip
 
         def get_modified_date(st_mtime: float) -> str:
@@ -691,8 +692,13 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                 size = size_bytes / (1024 * 1024)
                 return f"{size:.1f} MiB"
 
+        extractor = ifcopenshell.util.file.IfcHeaderExtractor(str(filepath))
+        header_metadata = extractor.extract()
+        if schema := header_metadata.get("schema_name"):
+            tooltip += f"\nSchema: {schema}"
+
         file_stat = filepath.stat()
-        tooltip += f"Modified: {get_modified_date(file_stat.st_mtime)}"
+        tooltip += f"\nModified: {get_modified_date(file_stat.st_mtime)}"
         tooltip += f"\nSize: {get_file_size(file_stat.st_size)}"
 
         return tooltip
