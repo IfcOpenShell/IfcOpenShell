@@ -20,17 +20,91 @@ import blenderbim.core.tool as tool
 from typing import Literal
 
 
-def join_wall_LV(blender: tool.Blender, joiner, join_type: Literal["L", "V"] = "L") -> None:
-    if len(selected_objs := blender.get_selected_objects()) != 2:
-        raise RequireTwoObjectsError()
+def unjoin_walls(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:
+    for obj in blender.get_selected_objects():
+        if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
+            continue
+        geometry.clear_scale(obj)
+        joiner.unjoin(obj)
 
-    active_obj = blender.get_active_object()
-    another_selected_object = next(o for o in selected_objs if o != active_obj)
+
+def extend_walls(
+    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model, target
+) -> None:
+    for obj in blender.get_selected_objects():
+        if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
+            continue
+        geometry.clear_scale(obj)
+        joiner.join_E(obj, target)
+
+
+def join_walls_LV(
+    ifc: tool.Ifc,
+    blender: tool.Blender,
+    geometry: tool.Geometry,
+    joiner,
+    model: tool.Model,
+    join_type: Literal["L", "V"] = "L",
+) -> None:
+    selected_objs = [
+        o for o in blender.get_selected_objects() if (e := ifc.get_entity(o)) and model.get_usage_type(e) == "LAYER2"
+    ]
+    if len(selected_objs) != 2:
+        raise RequireTwoWallsError("Two vertically layered elements must be selected to connect their paths together")
+
+    if active_obj := blender.get_active_object():
+        another_selected_object = next(o for o in selected_objs if o != active_obj)
+    else:
+        active_obj, another_selected_object = selected_objs
+
+    for obj in selected_objs:
+        geometry.clear_scale(obj)
+
     if join_type == "L":
         joiner.join_L(another_selected_object, active_obj)
     elif join_type == "V":
         joiner.join_V(another_selected_object, active_obj)
 
 
-class RequireTwoObjectsError(Exception):
+def join_walls_TZ(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:
+    selected_objs = [
+        o
+        for o in blender.get_selected_objects()
+        if (e := ifc.get_entity(o)) and model.get_usage_type(e) in ("LAYER2", "LAYER3")
+    ]
+    if len(selected_objs) != 2:
+        raise RequireAtLeastTwoLayeredElements(
+            "Two or more vertically or horizontally layered elements must be selected to connect their paths together"
+        )
+
+    for obj in selected_objs:
+        geometry.clear_scale(obj)
+
+    elements = [ifc.get_entity(o) for o in blender.get_selected_objects()]
+    layer2_elements = []
+    layer3_elements = []
+    for element in elements:
+        usage = model.get_usage_type(element)
+        if usage == "LAYER2":
+            layer2_elements.append(element)
+        elif usage == "LAYER3":
+            layer3_elements.append(element)
+    if layer3_elements:
+        target = ifc.get_object(layer3_elements[0])
+        for element in layer2_elements:
+            joiner.join_Z(ifc.get_object(element), target)
+    else:
+        if not (active_obj := blender.get_active_object()):
+            active_obj = selected_objs[0]
+        for obj in selected_objs:
+            if obj == active_obj:
+                continue
+            joiner.join_T(obj, active_obj)
+
+
+class RequireTwoWallsError(Exception):
+    pass
+
+
+class RequireAtLeastTwoLayeredElements(Exception):
     pass

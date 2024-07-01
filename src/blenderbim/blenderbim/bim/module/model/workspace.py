@@ -18,10 +18,8 @@
 
 import os
 import bpy
-import ifcopenshell
-import ifcopenshell.util.unit
 import blenderbim.tool as tool
-import blenderbim.core.model
+import blenderbim.core.model as core
 from blenderbim.bim.module.model.wall import DumbWallJoiner
 from blenderbim.bim.helper import prop_with_search
 from bpy.types import WorkSpaceTool
@@ -350,7 +348,7 @@ class BimToolUI:
             add_layout_hotkey_operator(cls.layout, "Split", "S_K", bpy.ops.bim.split_wall.__doc__)
             add_layout_hotkey_operator(cls.layout, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__)
             add_layout_hotkey_operator(cls.layout, "Regen", "S_G", bpy.ops.bim.recalculate_wall.__doc__)
-            row.operator("bim.join_wall", icon="X", text="").join_type = ""
+            row.operator("bim.unjoin_walls", icon="X", text="")
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if len(context.selected_objects) == 1:
@@ -680,7 +678,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                     bpy.ops.bim.enable_editing_extrusion_profile()
             elif self.active_material_usage == "LAYER2":
                 # Extend LAYER2 to cursor
-                bpy.ops.bim.join_wall(join_type="T")
+                core.extend_walls(
+                    tool.Ifc,
+                    tool.Blender,
+                    tool.Geometry,
+                    DumbWallJoiner(),
+                    tool.Model,
+                    bpy.context.scene.cursor.location,
+                )
             elif self.active_material_usage == "PROFILE":
                 # Extend PROFILE to cursor
                 bpy.ops.bim.extend_profile(join_type="T")
@@ -698,13 +703,19 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             # Extend LAYER2s to LAYER3
             [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
-            bpy.ops.bim.join_wall(join_type="T")
+            try:
+                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
 
         elif self.active_material_usage == "LAYER2":
             # Extend LAYER2s to LAYER2
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            bpy.ops.bim.join_wall(join_type="T")
+            try:
+                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
 
         elif self.active_material_usage == "PROFILE":
             # Extend PROFILEs to PROFILE
@@ -721,7 +732,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.flip_fill()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.flip_object(flip_local_axes="XZ")
-
 
     def hotkey_S_G(self):
         obj = bpy.context.active_object
@@ -755,7 +765,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         else:
             if len(bpy.context.selected_objects) == 1:
                 self.report(
-                    {"INFO"},
+                    {"ERROR"},
                     "At least two objects must be selected: an object to be mirrored, and a mirror axis as the active object.",
                 )
             else:
@@ -782,10 +792,9 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                blenderbim.core.model.join_wall_LV(tool.Blender, DumbWallJoiner(), join_type="L")
-            except blenderbim.core.model.RequireTwoObjectsError:
-                self.report({"ERROR"}, "Please select 2 objects to do a butt joint")
-                return {"CANCELLED"}
+                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="L")
+            except core.RequireTwoWallsError as e:
+                self.report({"ERROR"}, str(e))
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="L")
 
@@ -811,15 +820,13 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                blenderbim.core.model.join_wall_LV(tool.Blender, DumbWallJoiner(), join_type="V")
-            except blenderbim.core.model.RequireTwoObjectsError:
-                self.report({"ERROR"}, "Please select 2 objects to do a mitre joint")
-                return {"CANCELLED"}
+                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="V")
+            except core.RequireTwoWallsError as e:
+                self.report({"ERROR"}, str(e))
         elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
-
 
     def hotkey_S_B(self):
         bpy.ops.bim.add_boundary()
@@ -828,7 +835,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if len(bpy.context.selected_objects) == 2:
             bpy.ops.bim.add_opening()
         else:
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             bpy.ops.bim.add_potential_opening(x=self.x, y=self.y, z=self.z)
             self.props.x = self.x
             self.props.y = self.y

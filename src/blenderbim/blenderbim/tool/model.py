@@ -41,7 +41,7 @@ from blenderbim.bim.module.geometry.helper import Helper
 from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable
+from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 
 T = TypeVar("T")
 
@@ -570,7 +570,9 @@ class Model(blenderbim.core.tool.Model):
             return material.MaterialProfiles[0].Profile
 
     @classmethod
-    def get_usage_type(cls, element):
+    def get_usage_type(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Optional[Literal["LAYER1", "LAYER2", "LAYER3", "PROFILE"]]:
         material = ifcopenshell.util.element.get_material(element, should_inherit=False)
         if material:
             if material.is_a("IfcMaterialLayerSetUsage"):

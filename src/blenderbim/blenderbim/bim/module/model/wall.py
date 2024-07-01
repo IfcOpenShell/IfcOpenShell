@@ -41,74 +41,17 @@ from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from typing import Optional
 
 
-class JoinWall(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.join_wall"
-    bl_label = "Join Wall"
+class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unjoin_walls"
+    bl_label = "Unjoin Walls"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = """ Trim/Extend the selected walls to the last selected wall:
-    'T' mode: Trim/Extend to a selected wall, slab, or 3D target
-    'L' mode: Butt join two selected walls
-    'V' mode: Mitre join two selected wall
-    '' (empty) mode: Unjoin selected walls
-    """
-    join_type: bpy.props.StringProperty()
 
     @classmethod
     def poll(cls, context):
         return context.selected_objects
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.BIMObjectProperties.ifc_definition_id]
-        joiner = DumbWallJoiner()
-        if not self.join_type:
-            for obj in selected_objs:
-                joiner.unjoin(obj)
-            return {"FINISHED"}
-
-        if not context.active_object or not context.active_object.BIMObjectProperties.ifc_definition_id:
-            self.report({"ERROR"}, f"No active object selected")
-            return {"CANCELLED"}
-
-        for obj in selected_objs:
-            tool.Geometry.clear_scale(obj)
-
-        if not selected_objs:
-            self.report({"ERROR"}, f"No IFC objects selected")
-            return {"CANCELLED"}
-
-        if len(selected_objs) == 1:
-            joiner.join_E(context.active_object, context.scene.cursor.location)
-            return {"FINISHED"}
-
-        if self.join_type in ("L", "V"):
-            try:
-                core.join_wall_LV(tool.Blender, joiner, join_type=self.join_type)
-            except core.RequireTwoObjectsError:
-                join_type_name = {"L": "butt", "V": "mitre"}[self.join_type]
-                self.report({"ERROR"}, f"Please select 2 objects to do a {join_type_name} joint")
-                return {"CANCELLED"}
-            return {"FINISHED"}
-
-        if self.join_type == "T":
-            elements = [tool.Ifc.get_entity(o) for o in context.selected_objects]
-            layer2_elements = []
-            layer3_elements = []
-            for element in elements:
-                usage = tool.Model.get_usage_type(element)
-                if usage == "LAYER2":
-                    layer2_elements.append(element)
-                elif usage == "LAYER3":
-                    layer3_elements.append(element)
-            if layer3_elements:
-                target = tool.Ifc.get_object(layer3_elements[0])
-                for element in layer2_elements:
-                    joiner.join_Z(tool.Ifc.get_object(element), target)
-            else:
-                for obj in selected_objs:
-                    if obj == context.active_object:
-                        continue
-                    joiner.join_T(obj, context.active_object)
-        return {"FINISHED"}
+        core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
 
 
 class AlignWall(bpy.types.Operator):
@@ -1049,8 +992,6 @@ class DumbWallJoiner:
 
     def join_E(self, wall1, target):
         element1 = tool.Ifc.get_entity(wall1)
-        if not element1:
-            return
 
         axis1 = tool.Model.get_wall_axis(wall1)
         intersect, connection = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
