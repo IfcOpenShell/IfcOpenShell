@@ -19,15 +19,22 @@
 import bpy
 import ifcopenshell
 import blenderbim.core.tool
+from typing import TYPE_CHECKING
+
 
 try:
     import ifcpatch
-except:
+except ImportError:
     print("IfcPatch not available")
+
+if TYPE_CHECKING:
+    import ifcpatch
 
 
 class Patch(blenderbim.core.tool.Patch):
     @classmethod
-    def run_migrate_patch(cls, infile, outfile, schema):
-        output = ifcpatch.execute({"input": infile, "file": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]})
+    def run_migrate_patch(cls, infile: str, outfile: str, schema: str) -> None:
+        output = ifcpatch.execute(
+            {"input": infile, "file": ifcopenshell.open(infile), "recipe": "Migrate", "arguments": [schema]}
+        )
         ifcpatch.write(output, outfile)
