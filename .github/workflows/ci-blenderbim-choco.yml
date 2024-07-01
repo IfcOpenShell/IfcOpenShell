@@ -51,13 +51,20 @@ jobs:
         id: do_choco
         run: |
           cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
-          echo "::set-output name=choco_release::$(python3 check_release_needed.py)"
+          echo "check GITHUB_ENV is present: $GITHUB_ENV" &&
+          echo "::set-output name=choco_release::$(python3 check_release_needed.py)" &&
+          echo $choco_release      >> $GITHUB_STEP_SUMMARY &&
+          echo $target_release_tag >> $GITHUB_STEP_SUMMARY
 
       - name: Fill chocolatey scripts on win with latest blender python
         if: ${{steps.do_choco.outputs.choco_release}} == 'do_choco_release'
         run: |
           cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/blenderbim/ &&
+          echo "check GITHUB_ENV is present: $GITHUB_ENV" &&
           yesterday_non_iso="$(date  --date='yesterday' +'%y%m%d' | tr -d '\n')" &&
+          python3 check_release_needed.py &&
+          echo "choco_release     : $choco_release" &&
+          echo "target_release_tag: $target_release_tag" &&
           target_os=${{ matrix.config.short_name }} &&
           latest_blender_python_version_maj_min=$(python3 check_repo_infos.py --latest_blender_python_version_maj_min?) &&
           echo "latest_blender_python_version_maj_min?: $latest_blender_python_version_maj_min" &&
