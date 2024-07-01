@@ -416,24 +416,6 @@ namespace {
         return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(nullptr, nullptr);
     }
 
-    const IfcSchema::IfcStyledItem* find_style(const IfcSchema::IfcRepresentationItem* representation_item) {
-        // For certain representation items, most notably boolean operands,
-        // a style definition might reside on one of its operands.
-        representation_item = find_item_carrying_style(representation_item);
-
-        if (representation_item->as<IfcSchema::IfcStyledItem>()) {
-            return representation_item->as<IfcSchema::IfcStyledItem>();
-        }
-
-        IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
-        if (styled_items->size()) {
-            // StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
-            return *styled_items->begin();
-        }
-
-        return nullptr;
-    }
-
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
         if (colour != 0) {
             rgb[0] = colour->Red();
@@ -462,6 +444,24 @@ namespace {
             return false;
         }
     }
+}
+
+const IfcSchema::IfcStyledItem* mapping::find_style(const IfcSchema::IfcRepresentationItem* representation_item) {
+    // For certain representation items, most notably boolean operands,
+    // a style definition might reside on one of its operands.
+    representation_item = find_item_carrying_style(representation_item);
+
+    if (representation_item->as<IfcSchema::IfcStyledItem>()) {
+        return representation_item->as<IfcSchema::IfcStyledItem>();
+    }
+
+    IfcSchema::IfcStyledItem::list::ptr styled_items = representation_item->StyledByItem();
+    if (styled_items->size()) {
+        // StyledByItem is a SET [0:1] OF IfcStyledItem, so we return after the first IfcStyledItem:
+        return *styled_items->begin();
+    }
+
+    return nullptr;
 }
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
@@ -500,6 +500,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     IfcSchema::IfcSurfaceStyleShading* shading = style_pair.second;
 
     if (style == nullptr) {
+        // @todo we should probably log something that the kind of style,
+        // such as IfcCurveStyle, in this collections are unsupported.
+        failed_on_purpose_.insert(inst);
         return nullptr;
     }
 
