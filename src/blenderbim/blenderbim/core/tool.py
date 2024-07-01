@@ -537,6 +537,7 @@ class Model:
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def clear_scene_openings(cls): pass
+    def get_usage_type(cls, element): pass
     def get_material_layer_parameters(cls, element): pass
     def get_manual_booleans(cls, element): pass
     def get_wall_axis(cls, obj, layers=None): pass
