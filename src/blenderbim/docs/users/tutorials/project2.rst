@@ -30,9 +30,12 @@ Tutorial Steps
 1. Project Initialization
 -------------------------
 
-1. Set up a new IFC project for the bungalow
+1. Set up a new IFC project for the bungalow `project2.ifc`
 2. Define project parameters (site conditions, climate zone, etc.)
 3. Create a basic site plan
+
+.. note:: See :doc:`/users/modeling/starting_new_project` for detailed instructions.
+
 
 2. Advanced Foundation Design
 -----------------------------
