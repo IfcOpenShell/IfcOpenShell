@@ -735,7 +735,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             tool.Blender.register_toolbar()
-            tool.Blender.add_recent_ifc_project(filepath.absolute())
+            tool.Project.add_recent_ifc_project(filepath.absolute())
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
@@ -759,7 +759,7 @@ class ClearRecentIFCProjects(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-        tool.Blender.clear_recent_ifc_projects()
+        tool.Project.clear_recent_ifc_projects()
         return {"FINISHED"}
 
 

@@ -1077,68 +1077,6 @@ class Blender(blenderbim.core.tool.Blender):
         del polls[panel]
 
     @classmethod
-    def get_recent_ifc_projects_path(cls) -> Path:
-        return Path(bpy.utils.user_resource("CONFIG")) / "recent-ifc-projects.txt"
-
-    _recent_ifc_projects_loaded: bool = False
-    _recent_ifc_projects: list[Path] = []
-
-    @classmethod
-    def get_recent_ifc_projects(cls) -> list[Path]:
-        if cls._recent_ifc_projects_loaded:
-            return cls._recent_ifc_projects
-
-        filepath = cls.get_recent_ifc_projects_path()
-        if not filepath.exists():
-            cls._recent_ifc_projects = []
-            return []
-
-        paths = []
-        with open(filepath, "r") as fi:
-            for line in fi:
-                line = line.strip()
-                if not line:
-                    continue
-                paths.append(Path(line))
-
-        cls._recent_ifc_projects = paths
-        return paths
-
-    @classmethod
-    def write_recent_ifc_projects(cls, filepaths: list[Path]) -> None:
-        recent_projects_path = cls.get_recent_ifc_projects_path()
-        try:
-            recent_projects_path.parent.mkdir(parents=True, exist_ok=True)
-            with open(recent_projects_path, "w") as fo:
-                fo.write("\n".join(str(p) for p in filepaths))
-            cls._recent_ifc_projects_loaded = False
-        except PermissionError:
-            msg = (
-                f"WARNING. PermissionError trying to access '{str(recent_projects_path)}'. "
-                "List of recently opened IFC projects won't be stored between Blender sessions."
-            )
-            print(msg)
-            cls._recent_ifc_projects = filepaths
-
-    @classmethod
-    def add_recent_ifc_project(cls, filepath: Path) -> None:
-        """Add `filepath` to the list of the recently opened IFC projects.
-
-        If `filepath` was opened before, bump it in the list.
-        """
-        current_filepaths = cls.get_recent_ifc_projects()
-        if filepath in current_filepaths:
-            current_filepaths.remove(filepath)
-        current_filepaths = [filepath] + current_filepaths
-        # Limit it to 20 recent files.
-        current_filepaths = current_filepaths[:20]
-        cls.write_recent_ifc_projects(current_filepaths)
-
-    @classmethod
-    def clear_recent_ifc_projects(cls) -> None:
-        cls.write_recent_ifc_projects([])
-
-    @classmethod
     def get_blender_addon_package_name(cls) -> str:
         if bpy.app.version >= (4, 2, 0):
             return blenderbim.BLENDER_PACKAGE_NAME

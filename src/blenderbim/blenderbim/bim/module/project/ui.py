@@ -42,7 +42,7 @@ class BIM_MT_recent_projects(Menu):
     bl_label = "Open Recent IFC Project"
 
     def draw(self, context):
-        paths = tool.Blender.get_recent_ifc_projects()
+        paths = tool.Project.get_recent_ifc_projects()
         if not paths:
             self.layout.label(text="No Recent IFC Projects")
             return
