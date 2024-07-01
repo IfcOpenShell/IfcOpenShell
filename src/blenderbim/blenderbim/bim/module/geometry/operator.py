@@ -53,6 +53,10 @@ class Operator:
 class EditObjectPlacement(bpy.types.Operator, Operator):
     bl_idname = "bim.edit_object_placement"
     bl_label = "Edit Object Placement"
+    bl_description = (
+        "Write selected objects placements to IFC.\n"
+        "A star in the operator name indicates that active object placement in IFC is not yet synced with Blender"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
@@ -305,6 +309,10 @@ class PurgeUnusedRepresentations(bpy.types.Operator, Operator):
 class UpdateRepresentation(bpy.types.Operator, Operator):
     bl_idname = "bim.update_representation"
     bl_label = "Update Representation"
+    bl_description = (
+        "Write selected objects representations to IFC.\n"
+        "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     ifc_representation_class: bpy.props.StringProperty()
