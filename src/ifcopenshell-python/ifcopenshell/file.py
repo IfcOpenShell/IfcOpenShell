@@ -322,6 +322,12 @@ class file:
     def create_entity(self, type: str, *args, **kwargs) -> ifcopenshell.entity_instance:
         """Create a new IFC entity in the file.
 
+        You can also use dynamic methods similar to `ifc_file.createIfcWall(...)`
+        to create IFC entities. They work exactly the same as if you would do
+        `ifc_file.create_entity("IfcWall", ...)` but the resulting typing
+        is not as accurate as for `create_entity` due to a dynamic nature
+        of those methods.
+
         :param type: Case insensitive name of the IFC class
         :type type: string
         :param args: The positional arguments of the IFC class
@@ -399,29 +405,41 @@ class file:
 
         return e
 
+    @property
+    def schema(self) -> str:
+        """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
+        prefixes = ("IFC", "X", "_ADD", "_TC")
+        reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
+        match = re.match(reg, self.wrapped_data.schema)
+        version_tuple = tuple(
+            map(
+                lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
+                ((p, match.group(p)) for p in prefixes),
+            )
+        )
+        return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
+
+    @property
+    def schema_identifier(self) -> str:
+        """Full IFC schema version: IFC2X3_TC1, IFC4_ADD2, IFC4X3_ADD2, etc."""
+        return self.wrapped_data.schema
+
+    @property
+    def schema_version(self) -> tuple[int, int, int, int]:
+        """Numeric representation of the full IFC schema version.
+
+        E.g. IFC4X3_ADD2 is represented as (4, 3, 2, 0).
+        """
+        schema = self.wrapped_data.schema
+        version = []
+        for prefix in ("IFC", "X", "_ADD", "_TC"):
+            number = re.search(prefix + r"(\d)", schema)
+            version.append(int(number.group(1)) if number else 0)
+        return tuple(version)
+
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
             return functools.partial(self.create_entity, attr[6:])
-        elif attr == "schema":
-            prefixes = ("IFC", "X", "_ADD", "_TC")
-            reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
-            match = re.match(reg, self.wrapped_data.schema)
-            version_tuple = tuple(
-                map(
-                    lambda pp: int(pp[1][len(pp[0]) :]) if pp[1] else None,
-                    ((p, match.group(p)) for p in prefixes),
-                )
-            )
-            return "".join("".join(map(str, t)) if t[1] else "" for t in zip(prefixes, version_tuple[0:2]))
-        elif attr == "schema_identifier":
-            return self.wrapped_data.schema
-        elif attr == "schema_version":
-            schema = self.wrapped_data.schema
-            version = []
-            for prefix in ("IFC", "X", "_ADD", "_TC"):
-                number = re.search(prefix + r"(\d)", schema)
-                version.append(int(number.group(1)) if number else 0)
-            return tuple(version)
         else:
             return getattr(self.wrapped_data, attr)
 
