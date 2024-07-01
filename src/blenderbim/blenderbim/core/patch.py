@@ -17,5 +17,14 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def run_migrate_patch(patch, infile=None, outfile=None, schema=None):
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
+
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def run_migrate_patch(patch: tool.Patch, infile: str, outfile: str, schema: str) -> None:
     patch.run_migrate_patch(infile, outfile, schema)
