@@ -3,3 +3,4 @@ line-length = 120
 
 [tool.pyright]
 reportInvalidTypeForm = false
+disableBytesTypePromotions = true

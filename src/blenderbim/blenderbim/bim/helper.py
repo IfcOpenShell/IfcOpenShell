@@ -20,7 +20,6 @@
 import bpy
 import json
 import math
-import zipfile
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
@@ -322,50 +321,3 @@ def draw_filter(layout, filter_groups, data, module):
             op.group_index = i
             op.index = j
             op.module = module
-
-
-# TODO this should move into ifcopenshell.util
-
-
-class IfcHeaderExtractor:
-    def __init__(self, filepath: str):
-        self.filepath = filepath
-
-    def extract(self):
-        extension = self.filepath.split(".")[-1]
-        if extension.lower() == "ifc":
-            with open(self.filepath) as ifc_file:
-                return self.extract_ifc_spf(ifc_file)
-        elif extension.lower() == "ifczip":
-            return self.extract_ifc_zip()
-        elif extension.lower() == "ifcsqlite":
-            return {}  # TODO
-
-    def extract_ifc_spf(self, ifc_file):
-        # https://www.steptools.com/stds/step/IS_final_p21e3.html#clause-8
-        data = {}
-        max_lines_to_parse = 50
-        for _ in range(max_lines_to_parse):
-            line = next(ifc_file)
-            if isinstance(line, bytes):
-                line = line.decode("utf-8")
-            if line.startswith("FILE_DESCRIPTION"):
-                for i, part in enumerate(line.split("'")):
-                    if i == 1:
-                        data["description"] = part
-                    elif i == 3:
-                        data["implementation_level"] = part
-            elif line.startswith("FILE_NAME"):
-                for i, part in enumerate(line.split("'")):
-                    if i == 1:
-                        data["name"] = part
-                    elif i == 3:
-                        data["time_stamp"] = part
-            elif line.startswith("FILE_SCHEMA"):
-                data["schema_name"] = line.split("'")[1]
-                break
-        return data
-
-    def extract_ifc_zip(self):
-        archive = zipfile.ZipFile(self.filepath, "r")
-        return self.extract_ifc_spf(archive.open(archive.filelist[0]))

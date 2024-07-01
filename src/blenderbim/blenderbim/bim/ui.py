@@ -33,7 +33,7 @@ from . import ifc
 from blenderbim import get_debug_info
 import blenderbim.bim
 import blenderbim.tool as tool
-from blenderbim.bim.helper import IfcHeaderExtractor
+from ifcopenshell.util.file import IfcHeaderExtractor
 from blenderbim.bim.prop import Attribute
 from typing import Optional
 
