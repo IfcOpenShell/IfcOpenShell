@@ -872,7 +872,7 @@ int main(int argc, char** argv) {
 		return EXIT_FAILURE;
 	}
 
-    if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD) {
+    if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
         cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
         /// @todo Lots of duplicate error-and-exit code.
 		write_log(!quiet);
