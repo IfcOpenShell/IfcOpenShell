@@ -99,7 +99,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-39cd980-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-42b96d6-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
