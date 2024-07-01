@@ -20,8 +20,10 @@ import bpy
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import tempfile
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.project import Project as subject
+from pathlib import Path
 
 
 class TestImplementsTool(NewFile):
@@ -122,3 +124,68 @@ class TestSetDefaultModelingDimensions(NewFile):
         assert props.x == 0.5
         assert props.y == 0.5
         assert props.z == 0.5
+
+
+class PreserveFileContents:
+    original_content: str
+    filepath: Path
+
+    def __init__(self, filepath: Path):
+        self.filepath = filepath
+
+    def __enter__(self):
+        if not self.filepath.exists():
+            self.filepath.parent.mkdir(parents=True, exist_ok=True)
+            open(self.filepath, "w").close()  # touch.
+
+        with open(self.filepath, "r") as file:
+            self.original_content = file.read()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        with open(self.filepath, "w") as file:
+            file.write(self.original_content)
+
+
+class TestRecentIFCProjects(NewFile):
+    def test_get_recent_ifc_projects_path(self):
+        assert subject.get_recent_ifc_projects_path().name == "recent-ifc-projects.txt"
+
+    def test_clear_recent_ifc_projects(self):
+        filepath = subject.get_recent_ifc_projects_path()
+        with PreserveFileContents(filepath):
+            with open(filepath, "w") as fo:
+                fo.write(tempfile.NamedTemporaryFile(suffix=".ifc").name)
+
+            assert filepath.stat().st_size != 0
+            subject.clear_recent_ifc_projects()
+            assert filepath.stat().st_size == 0
+
+    def test_get_write_recent_ifc_projects(self):
+        filepath = subject.get_recent_ifc_projects_path()
+        with PreserveFileContents(filepath):
+            subject.clear_recent_ifc_projects()
+            assert filepath.stat().st_size == 0
+
+            projects: list[Path] = []
+            for _ in range(3):
+                ifc_file = Path(tempfile.NamedTemporaryFile(suffix=".ifc").name)
+                open(ifc_file, "w").close()
+                projects.append(ifc_file)
+
+            subject.write_recent_ifc_projects(projects)
+            assert filepath.stat().st_size != 0
+            assert subject.get_recent_ifc_projects() == projects
+            with open(filepath) as fi:
+                contents = fi.read()
+            assert contents == "\n".join(str(p) for p in projects)
+
+    def test_add_recent_ifc_project(self):
+        filepath = subject.get_recent_ifc_projects_path()
+        with PreserveFileContents(filepath):
+            subject.clear_recent_ifc_projects()
+            assert filepath.stat().st_size == 0
+            ifc_file = Path(tempfile.NamedTemporaryFile(suffix=".ifc").name)
+            subject.add_recent_ifc_project(ifc_file)
+            assert filepath.stat().st_size != 0
+            assert subject.get_recent_ifc_projects() == [ifc_file]
