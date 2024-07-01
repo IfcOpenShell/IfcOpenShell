@@ -352,7 +352,10 @@ class BIM_PT_mesh(Panel):
         layout = self.layout
 
         row = layout.row()
-        row.operator("bim.update_representation", text="Manually Save Representation")
+        text = "Manually Save Representation"
+        if tool.Ifc.is_edited(context.active_object):
+            text += "*"
+        row.operator("bim.update_representation", text=text)
 
         row = layout.row()
         row.operator("bim.copy_representation", text="Copy Mesh From Active To Selected")
@@ -447,7 +450,10 @@ class BIM_PT_derived_coordinates(Panel):
             DerivedCoordinatesData.load()
 
         row = self.layout.row()
-        row.operator("bim.edit_object_placement", icon="EXPORT")
+        text = "Edit Object Placement"
+        if tool.Ifc.is_moved(context.active_object):
+            text += "*"
+        row.operator("bim.edit_object_placement", text=text, icon="EXPORT")
 
         row = self.layout.row()
         row.label(text="XYZ Dimensions")
