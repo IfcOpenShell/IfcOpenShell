@@ -23,6 +23,7 @@ import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.core.patch as core
 import blenderbim.bim.handler
+from pathlib import Path
 
 try:
     import ifcpatch
@@ -139,9 +140,18 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
 class RunMigratePatch(bpy.types.Operator):
     bl_idname = "bim.run_migrate_patch"
     bl_label = "Run Migrate Patch"
-    infile: bpy.props.StringProperty()
-    outfile: bpy.props.StringProperty()
-    schema: bpy.props.StringProperty()
+    infile: bpy.props.StringProperty(name="Input IFC filepath")
+    outfile: bpy.props.StringProperty(name="Output IFC filepath")
+    schema: bpy.props.StringProperty(name="Target IFC schema")
+
+    @classmethod
+    def description(cls, context, properties):
+        if not all((properties.infile, properties.outfile, properties.schema)):
+            return ""
+        return (
+            f"Migrate file '{Path(properties.infile).name}' to IFC schema "
+            f"{properties.schema} and save as '{Path(properties.outfile).name}'"
+        )
 
     def execute(self, context):
         core.run_migrate_patch(tool.Patch, infile=self.infile, outfile=self.outfile, schema=self.schema)
