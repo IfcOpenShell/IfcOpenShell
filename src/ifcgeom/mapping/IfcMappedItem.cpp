@@ -33,6 +33,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMappedItem* inst) {
 	// @todo allow for multiple levels of matrix?
 	auto shapes = taxonomy::dcast<taxonomy::collection>(map(rmap->MappedRepresentation()));
 	if (shapes == nullptr) {
+		if (failed_on_purpose_.find(rmap->MappedRepresentation()) != failed_on_purpose_.end()) {
+			// propagate
+			failed_on_purpose_.insert(inst);
+		}
 		return shapes;
 	}
 

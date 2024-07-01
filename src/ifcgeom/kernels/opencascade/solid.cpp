@@ -101,7 +101,7 @@ bool OpenCascadeKernel::convert(const taxonomy::solid::ptr solid, TopoDS_Shape& 
 	return !result.IsNull();
 }
 
-bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid , IfcGeom::ConversionResults& results) {
+bool OpenCascadeKernel::convert_impl(const taxonomy::solid::ptr solid, IfcGeom::ConversionResults& results) {
 	TopoDS_Shape shape;
 	if (!convert(solid, shape)) {
 		return false;
