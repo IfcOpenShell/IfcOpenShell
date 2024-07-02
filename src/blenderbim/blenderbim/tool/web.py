@@ -164,7 +164,7 @@ class Web(blenderbim.core.tool.Web):
 
     @classmethod
     def handle_gantt_operator(cls, operator_data):
-        pass
+        print(operator_data)
 
     @classmethod
     def open_web_browser(cls, port):

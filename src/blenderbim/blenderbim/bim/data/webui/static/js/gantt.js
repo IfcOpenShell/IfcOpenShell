@@ -261,9 +261,10 @@ function editValue(list, task, event, cell, column) {
     blenderId: blenderId,
     operator: {
       type: "editTask",
+      taskId: task.getOriginalID(),
       column: column,
       value: event.target.value,
     },
   };
-  // socket.emit("web_operator", msg);
+  socket.emit("web_operator", msg);
 }
