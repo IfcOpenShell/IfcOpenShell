@@ -20,6 +20,7 @@ import bpy
 from blenderbim.bim.module.web.data import WebData
 import blenderbim.core.tool
 import blenderbim.tool as tool
+import ifcopenshell.api.sequence
 import socket
 import os
 import subprocess
@@ -34,6 +35,13 @@ sio = None
 ws_process = None
 ws_thread = None
 web_operator_queue = queue.Queue()
+
+IFC_TASK_ATTRIBUTE_MAP = {
+    "pStart": "ScheduleStart",
+    "pEnd": "ScheduleFinish",
+    "pName": "",
+    "pRes": "",
+}
 
 
 class Web(blenderbim.core.tool.Web):
@@ -164,7 +172,30 @@ class Web(blenderbim.core.tool.Web):
 
     @classmethod
     def handle_gantt_operator(cls, operator_data):
-        print(operator_data)
+        ifc_file = tool.Ifc.get()
+        if operator_data["type"] == "editTask":
+            task_id = int(operator_data["taskId"])
+            task_time = ifc_file.by_id(task_id).TaskTime
+            column = operator_data["column"]
+            new_value = operator_data["value"]
+
+            # editing a parent task time will throw an exception
+            try:
+                ifcopenshell.api.sequence.edit_task_time(
+                    ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
+                )
+            except AttributeError:
+                pass
+
+        bpy.ops.bim.load_task_properties()
+
+        # after updating, send new gantt data to handle the case where
+        # changing a task cascades and changes other tasks. as this wouldn't
+        # be reflected in the web ui
+        work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
+        task_json = tool.Sequence.create_tasks_json(work_schedule)
+        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
+        cls.send_webui_data(extra_data=gantt_data, extra_data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def open_web_browser(cls, port):
