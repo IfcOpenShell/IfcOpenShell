@@ -1976,11 +1976,11 @@ namespace IfcGeom {
 				TopoDS_Iterator it(compound);
 				for (; it.More(); it.Next(), ++git) {
 					// Assumption is that the number of styles is small, so the linear lookup time is not significant.
-					auto sit = std::find(styles_.begin(), styles_.end(), git->Style());
+					auto sit = std::find(styles_.begin(), styles_.end(), git->StylePtr());
 					size_t index;
 					if (sit == styles_.end()) {
 						index = styles_.size();
-						styles_.push_back(git->Style());
+						styles_.push_back(git->StylePtr());
 					} else {
 						index = std::distance(styles_.begin(), sit);
 					}
@@ -2058,7 +2058,7 @@ namespace IfcGeom {
 			enable_face_styles_ = b;
 		}
 
-		const std::vector<ifcopenshell::geometry::taxonomy::style>& styles() const {
+		const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& styles() const {
 			return styles_;
 		}
 
@@ -2066,7 +2066,7 @@ namespace IfcGeom {
 		typedef TopTools_DataMapOfShapeInteger face_style_map_t;
 
 		face_style_map_t face_styles_;
-		std::vector<ifcopenshell::geometry::taxonomy::style> styles_;
+		std::vector<ifcopenshell::geometry::taxonomy::style::ptr> styles_;
 	};
 
 }

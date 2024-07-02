@@ -161,3 +161,41 @@ CREATE_VECTOR_TYPEMAP_OUT(IfcGeom::ConversionResultShape *)
 %typemap(out) std::pair<const char*, size_t> {
     $result = PyBytes_FromStringAndSize($1.first, $1.second);
 }
+
+%define vector_of_item(item_name)
+
+%typemap(out) const std::vector<item_name::ptr>& {
+	$result = PyTuple_New((*$1).size());
+	for (int i = 0; i < (*$1).size(); ++i) {
+		PyTuple_SetItem($result, i, item_to_pyobject((*$1).at(i)));
+	}
+};
+
+%enddef
+
+vector_of_item(ifcopenshell::geometry::taxonomy::bspline_curve)
+vector_of_item(ifcopenshell::geometry::taxonomy::bspline_surface)
+vector_of_item(ifcopenshell::geometry::taxonomy::circle)
+vector_of_item(ifcopenshell::geometry::taxonomy::collection)
+vector_of_item(ifcopenshell::geometry::taxonomy::colour)
+vector_of_item(ifcopenshell::geometry::taxonomy::cylinder)
+vector_of_item(ifcopenshell::geometry::taxonomy::direction3)
+vector_of_item(ifcopenshell::geometry::taxonomy::edge)
+vector_of_item(ifcopenshell::geometry::taxonomy::ellipse)
+vector_of_item(ifcopenshell::geometry::taxonomy::extrusion)
+vector_of_item(ifcopenshell::geometry::taxonomy::face)
+vector_of_item(ifcopenshell::geometry::taxonomy::line)
+vector_of_item(ifcopenshell::geometry::taxonomy::loft)
+vector_of_item(ifcopenshell::geometry::taxonomy::loop)
+vector_of_item(ifcopenshell::geometry::taxonomy::matrix4)
+vector_of_item(ifcopenshell::geometry::taxonomy::node)
+vector_of_item(ifcopenshell::geometry::taxonomy::offset_curve)
+vector_of_item(ifcopenshell::geometry::taxonomy::piecewise_function)
+vector_of_item(ifcopenshell::geometry::taxonomy::plane)
+vector_of_item(ifcopenshell::geometry::taxonomy::point3)
+vector_of_item(ifcopenshell::geometry::taxonomy::revolve)
+vector_of_item(ifcopenshell::geometry::taxonomy::shell)
+vector_of_item(ifcopenshell::geometry::taxonomy::solid)
+vector_of_item(ifcopenshell::geometry::taxonomy::sphere)
+vector_of_item(ifcopenshell::geometry::taxonomy::style)
+vector_of_item(ifcopenshell::geometry::taxonomy::surface_curve_sweep)
