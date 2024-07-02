@@ -741,9 +741,28 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 	sass.reserve(wires.size());
 
 	for (auto& w : wires) {
-		wire_faces.push_back(BRepBuilderAPI_MakeFace(w).Face());
-		wire_clss.emplace_back(wire_faces.back(), eps);
-		sass.push_back(std::make_unique<ShapeAnalysis_Surface>(BRep_Tool::Surface(wire_faces.back())));
+		try {
+			const TopoDS_Face face = BRepBuilderAPI_MakeFace(w).Face();
+			if (face.IsNull()) {
+				Logger::Notice("Face creation failed. Face is null");
+				continue;
+			}
+	
+			wire_faces.push_back(face);
+			wire_clss.emplace_back(wire_faces.back(), eps);
+			sass.push_back(std::make_unique<ShapeAnalysis_Surface>(BRep_Tool::Surface(wire_faces.back())));
+		}
+		catch (const Standard_Failure& e) {
+			if (e.GetMessageString() && strlen(e.GetMessageString())) {
+				Logger::Notice(e.GetMessageString());
+			}
+			else {
+				Logger::Notice("Unknown standard error creating face");
+			}
+		}
+		catch (...) {
+			Logger::Notice("Unknown error creating face");
+		}
 	}
 
 	// First check for containment in outer wire
