@@ -863,6 +863,42 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
+    def switch_from_representation(cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance) -> None:
+        """Switch object representation to any other besides `representation`.
+
+        If no other representation present, will replace object with an empty.
+        Method assumes that `obj` does have a current representation (it could be not `representation`).
+        """
+        element = tool.Ifc.get_entity(obj)
+        assert element
+
+        active_representation = tool.Geometry.get_active_representation(obj)
+        active_representation = tool.Geometry.resolve_mapped_representation(active_representation)
+        if active_representation != representation:
+            return
+
+        new_representation = None
+        for r in cls.get_representations_iter(element):
+            if r != representation:
+                new_representation = r
+                break
+
+        # `representation` is the only representation for object.
+        if new_representation is None:
+            cls.replace_object_with_empty(obj)
+            return
+
+        blenderbim.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=False,
+            should_sync_changes_first=False,
+            is_global=True,
+        )
+
+    @classmethod
     def remove_representation_item(cls, representation_item: ifcopenshell.entity_instance) -> None:
         # NOTE: we assume it's not the last representation item
         # otherwise we probably would need to remove representation too

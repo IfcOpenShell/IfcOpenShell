@@ -183,18 +183,18 @@ def remove_representation(
             for element in geometry.get_elements_of_type(element_type):
                 obj = ifc.get_object(element)
                 if obj:
-                    obj = geometry.replace_object_with_empty(obj)
+                    geometry.switch_from_representation(obj, representation)
             obj = ifc.get_object(element_type)
             if obj:
-                obj = geometry.replace_object_with_empty(obj)
+                geometry.switch_from_representation(obj, representation)
         ifc.run("geometry.unassign_representation", product=element_type, representation=representation)
-        ifc.run("geometry.remove_representation", representation=representation)
     else:
         data = geometry.get_representation_data(representation)
         if data and geometry.has_data_users(data):
-            geometry.replace_object_with_empty(obj)
+            geometry.switch_from_representation(obj, representation)
         ifc.run("geometry.unassign_representation", product=element, representation=representation)
-        ifc.run("geometry.remove_representation", representation=representation)
+
+    ifc.run("geometry.remove_representation", representation=representation)
     if data:
         geometry.delete_data(data)
 
