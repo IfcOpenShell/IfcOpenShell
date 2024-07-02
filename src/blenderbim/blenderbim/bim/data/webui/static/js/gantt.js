@@ -1,5 +1,5 @@
 // keeps track of blenders connected in form of
-// shown:bool, work_schedule: {}, task_json: {},
+// shown:bool, workSchedule: {}, ganttTasks: {},
 const connectedClients = {};
 let socket;
 
@@ -40,8 +40,8 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
-      work_schedule: {},
-      task_json: {},
+      workSchedule: {},
+      ganttTasks: {},
     };
   }
 }
@@ -70,18 +70,20 @@ function handleGanttData(data) {
     if (!connectedClients[blenderId].shown) {
       connectedClients[blenderId] = {
         shown: true,
-        task_json: ganttTasks,
-        work_schedule: ganttWorkSched,
+        ganttTasks: ganttTasks,
+        workSchedule: ganttWorkSched,
       };
       addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
     } else {
       updateGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
+      connectedClients[blenderId].workSchedule = ganttWorkSched;
+      connectedClients[blenderId].ganttTasks = ganttTasks;
     }
   } else {
     connectedClients[blenderId] = {
       shown: true,
-      task_json: ganttTasks,
-      work_schedule: ganttWorkSched,
+      ganttTasks: ganttTasks,
+      workSchedule: ganttWorkSched,
     };
     addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
   }
@@ -208,6 +210,10 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
 
 // Function to update gantt and filename
 function updateGanttElement(blenderId, tasks, workSched, filename) {
+  if (workSched != undefined) {
+    //TODO: handle updating work schedule table
+  }
+
   let g = connectedClients[blenderId]["gantt"];
   g.ClearTasks();
   g.Draw();
@@ -250,7 +256,7 @@ function editValue(list, task, event, cell, column) {
   const ganttId = task.getGantt()["vDiv"].id;
   const index = ganttId.indexOf("-") + 1;
   const blenderId = ganttId.substring(index);
-  const workSchedId = connectedClients[blenderId].work_schedule.id;
+  const workSchedId = connectedClients[blenderId].workSchedule.id;
 
   // update data object reprsenting the task
   const dataObj = task.getDataObject();
