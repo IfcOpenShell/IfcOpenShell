@@ -575,13 +575,13 @@ void ifcopenshell::geometry::taxonomy::colour::print(std::ostream& o, int indent
 
 void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "style" << std::endl;
-	o << std::string(indent, ' ') << "     " << "name" << (name) << std::endl;
+	o << std::string(indent, ' ') << "     " << "name " << (name) << std::endl;
 	if (diffuse.components_) {
-		o << std::string(indent, ' ') << "     " << "diffuse" << (name) << std::endl;
+		o << std::string(indent, ' ') << "     " << "diffuse" << std::endl;
 		diffuse.print(o, indent + 5 + 7);
 	}
 	if (specular.components_) {
-		o << std::string(indent, ' ') << "     " << "specular" << (name) << std::endl;
+		o << std::string(indent, ' ') << "     " << "specular" << std::endl;
 		specular.print(o, indent + 5 + 8);
 	}
 	// @todo
