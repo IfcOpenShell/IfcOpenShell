@@ -294,7 +294,7 @@ Geometry serialisation
 Geometry may be serialised into many different formats using
 :doc:`IfcConvert<../ifcconvert>`. Alternatively, you may also access the
 serialiser with Python to customise the conversion, such as by writing a script
-the modifies the IFC on the fly before converting it, or writing complex
+that modifies the IFC on the fly before converting it, or writing complex
 include and exclude filters.
 
 Here is a typical example to serialising to glTF / glb. Example settings to
