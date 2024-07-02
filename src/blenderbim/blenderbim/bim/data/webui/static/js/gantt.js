@@ -1,5 +1,5 @@
 // keeps track of blenders connected in form of
-// shown:bool, work_sched: {}, task_json: {},
+// shown:bool, work_schedule: {}, task_json: {},
 const connectedClients = {};
 let socket;
 
@@ -40,7 +40,7 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
-      work_sched: {},
+      work_schedule: {},
       task_json: {},
     };
   }
@@ -63,15 +63,15 @@ function handleGanttData(data) {
 
   const filename = data["data"]["IFC_File"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
-  // const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
-  const ganttWorkSched = {};
+  const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
+  // const ganttWorkSched = {};
 
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
       connectedClients[blenderId] = {
         shown: true,
-        work_sched: ganttTasks,
-        task_json: ganttWorkSched,
+        task_json: ganttTasks,
+        work_schedule: ganttWorkSched,
       };
       addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
     } else {
@@ -80,8 +80,8 @@ function handleGanttData(data) {
   } else {
     connectedClients[blenderId] = {
       shown: true,
-      work_sched: ganttTasks,
-      task_json: ganttWorkSched,
+      task_json: ganttTasks,
+      work_schedule: ganttWorkSched,
     };
     addGanttElement(blenderId, ganttTasks, ganttWorkSched, filename);
   }
@@ -250,7 +250,7 @@ function editValue(list, task, event, cell, column) {
   const ganttId = task.getGantt()["vDiv"].id;
   const index = ganttId.indexOf("-") + 1;
   const blenderId = ganttId.substring(index);
-  console.log("blenderId:", blenderId);
+  const workSchedId = connectedClients[blenderId].work_schedule.id;
 
   // update data object reprsenting the task
   const dataObj = task.getDataObject();
@@ -262,6 +262,7 @@ function editValue(list, task, event, cell, column) {
     blenderId: blenderId,
     operator: {
       type: "editTask",
+      workScheduleId: workSchedId,
       taskId: task.getOriginalID(),
       column: column,
       value: event.target.value,
