@@ -662,7 +662,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         height = max(y) - min(y)
         depth = max(z) - min(z)
 
-        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name(geometry))
+        camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
         camera.type = camera_type
         camera.show_limits = True
 

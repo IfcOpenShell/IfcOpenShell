@@ -71,7 +71,7 @@ class Loader(blenderbim.core.tool.Loader):
         return collection
 
     @classmethod
-    def get_mesh_name(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
+    def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
         representation_id = geometry.id
         if "-" in representation_id:
             # Example: 2432-openings-2468, where
@@ -82,6 +82,10 @@ class Loader(blenderbim.core.tool.Loader):
             representation_id = int(re.sub(r"\D", "", representation_id))
         representation = tool.Ifc.get().by_id(representation_id)
         context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return cls.get_mesh_name(context_id, representation_id)
+
+    @classmethod
+    def get_mesh_name(cls, context_id: int, representation_id: int) -> str:
         return "{}/{}".format(context_id, representation_id)
 
     @classmethod

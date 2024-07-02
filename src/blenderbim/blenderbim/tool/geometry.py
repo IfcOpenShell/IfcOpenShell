@@ -468,7 +468,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def get_representation_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        return f"{representation.ContextOfItems.id()}/{representation.id()}"
+        return tool.Loader.get_mesh_name(representation.ContextOfItems.id(), representation.id())
 
     @classmethod
     def get_styles(
