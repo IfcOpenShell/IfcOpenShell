@@ -27,6 +27,7 @@ import ifcopenshell.geom
 
 from xml.dom.minidom import parseString
 from dataclasses import dataclass, fields
+from typing import Callable, Sequence
 
 import numpy
 
@@ -64,7 +65,13 @@ class draw_settings:
     unify_inputs: bool = True
 
 
-def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
+def main(
+    settings: draw_settings,
+    files: list[ifcopenshell.file],
+    iterators: Sequence[ifcopenshell.geom.iterator] = (),
+    merge_projection: bool = True,
+    progress_function: Callable = DO_NOTHING,
+):
 
     geom_settings = ifcopenshell.geom.settings(
         # when not doing booleans, proper solids from shells isn't a requirement
@@ -96,13 +103,6 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             cache = ifcopenshell.geom.serializers.hdf5("cache.h5", geom_settings)
             for it in iterators:
                 it.set_cache(cache)
-
-    def yield_from_iterator(it):
-        if it.initialize():
-            while True:
-                yield it.get()
-                if not it.next():
-                    break
 
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
@@ -167,7 +167,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     # Loop over iterators for geometric content
     for i, it in enumerate(iterators):
-        for elem in yield_from_iterator(it):
+        for elem in it:
             sr.write(elem)
             if elem.type != "IfcSpace":
                 tree.add_element(elem)

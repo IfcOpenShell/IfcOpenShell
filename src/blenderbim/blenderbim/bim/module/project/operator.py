@@ -33,7 +33,9 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 import blenderbim.tool as tool
