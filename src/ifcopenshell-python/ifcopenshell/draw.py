@@ -67,13 +67,14 @@ class draw_settings:
 def main(settings, files, iterators=None, merge_projection=True, progress_function=DO_NOTHING):
 
     geom_settings = ifcopenshell.geom.settings(
-        # this is required for serialization
-        APPLY_DEFAULT_MATERIALS=True,
-        DISABLE_TRIANGULATION=True,
-        INCLUDE_CURVES=settings.include_curves,
         # when not doing booleans, proper solids from shells isn't a requirement
-        SEW_SHELLS=settings.subtract_before_hlr,
+        # SEW_SHELLS=settings.subtract_before_hlr,
     )
+
+    # this is required for serialization
+    geom_settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    geom_settings.set("iterator-output", ifcopenshell.ifcopenshell_wrapper.NATIVE)
+    geom_settings.set("apply-default-materials", True)
 
     if not iterators:
         iterator_kwargs = {}
@@ -105,7 +106,8 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     # Initialize serializer
     buffer = ifcopenshell.geom.serializers.buffer()
-    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings)
+    serialiser_settings = ifcopenshell.geom.serializer_settings()
+    sr = ifcopenshell.geom.serializers.svg(buffer, geom_settings, serialiser_settings)
 
     sr.setFile(files[0])
     if settings.auto_floorplan:
