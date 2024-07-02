@@ -661,7 +661,7 @@ class IfcImporter:
     def create_generic_sqlite_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
         self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
         for geometry_id, geometry in self.geometry_cache["geometry"].items():
-            mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+            mesh_name = tool.Loader.get_mesh_name_from_shape(type("Geometry", (), {"id": geometry_id}))
             mesh = bpy.data.meshes.new(mesh_name)
 
             verts = geometry["verts"]
@@ -701,7 +701,7 @@ class IfcImporter:
             mesh = None
             geometry_id = self.geometry_cache["shapes"][element.id()]["geometry"]
             if geometry_id:
-                mesh_name = tool.Loader.get_mesh_name(type("Geometry", (), {"id": geometry_id}))
+                mesh_name = tool.Loader.get_mesh_name_from_shape(type("Geometry", (), {"id": geometry_id}))
                 mesh = self.meshes.get(mesh_name)
             self.create_product(element, mesh=mesh)
 
@@ -776,7 +776,7 @@ class IfcImporter:
             if not vertex or not context or not representation:
                 continue  # TODO implement non cartesian point vertexes
 
-            mesh_name = f"{context.id()}/{representation.id()}"
+            mesh_name = tool.Geometry.get_representation_name(representation)
             mesh = bpy.data.meshes.new(mesh_name)
             mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
 
@@ -841,7 +841,7 @@ class IfcImporter:
         if len(vertex_list) == 0:
             return None
 
-        mesh_name = f"{representation.ContextOfItems.id()}/{representation.id()}"
+        mesh_name = tool.Geometry.get_representation_name(representation)
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
         tool.Ifc.link(representation, mesh)
@@ -873,7 +873,7 @@ class IfcImporter:
             mesh = self.create_curve(element, shape)
             tool.Loader.link_mesh(shape, mesh)
         elif shape:
-            mesh_name = tool.Loader.get_mesh_name(shape.geometry)
+            mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
             mesh = self.meshes.get(mesh_name)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
@@ -1323,7 +1323,7 @@ class IfcImporter:
         else:
             geometry = shape
 
-        curve = bpy.data.curves.new(tool.Loader.get_mesh_name(geometry), type="CURVE")
+        curve = bpy.data.curves.new(tool.Loader.get_mesh_name_from_shape(geometry), type="CURVE")
         curve.dimensions = "3D"
         curve.resolution_u = 2
 
@@ -1354,7 +1354,7 @@ class IfcImporter:
             else:
                 geometry = shape
 
-            mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name(geometry))
+            mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
 
             if geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
