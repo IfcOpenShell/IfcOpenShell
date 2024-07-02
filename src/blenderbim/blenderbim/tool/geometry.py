@@ -41,6 +41,7 @@ from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
 from typing import Union, Iterable, Optional, Literal
+from typing import Iterator
 
 
 class Geometry(blenderbim.core.tool.Geometry):
@@ -346,17 +347,21 @@ class Geometry(blenderbim.core.tool.Geometry):
         )
 
     @classmethod
+    def get_representations_iter(cls, element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
+        if element.is_a("IfcProduct") and (rep := element.Representation):
+            for r in rep.Representations:
+                yield r
+        elif element.is_a("IfcTypeProduct") and (maps := element.RepresentationMaps):
+            for r in maps:
+                yield r.MappedRepresentation
+
+    @classmethod
     def get_representation_by_context(
         cls, element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
     ) -> Union[ifcopenshell.entity_instance, None]:
-        if element.is_a("IfcProduct") and element.Representation:
-            for r in element.Representation.Representations:
-                if r.ContextOfItems == context:
-                    return r
-        elif element.is_a("IfcTypeProduct") and element.RepresentationMaps:
-            for r in element.RepresentationMaps:
-                if r.MappedRepresentation.ContextOfItems == context:
-                    return r.MappedRepresentation
+        for r in cls.get_representations_iter(element):
+            if r.ContextOfItems == context:
+                return r
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
