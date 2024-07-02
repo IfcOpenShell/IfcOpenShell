@@ -365,6 +365,8 @@ def create_shape(
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
 
+    :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
+
     :return:
         - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType
         - `inst` is IfcRepresentation and `repr` is None -> ShapeType

@@ -46,11 +46,11 @@ import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
 from blenderbim.bim.module.drawing.decoration import CutDecorator
 from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from typing import NamedTuple, List, Union, Optional
+from typing import NamedTuple, List, Union, Optional, Literal
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, Literal, RASTER_STYLE_PROPERTIES_EXCLUDE
+from blenderbim.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
 from blenderbim.bim.ifc import IfcStore
 from pathlib import Path
 from bpy_extras.image_utils import load_image
@@ -465,12 +465,12 @@ class CreateDrawing(bpy.types.Operator):
         ifc: ifcopenshell.file,
         tree: ifcopenshell.geom.tree,
         contexts: LineworkContexts,
-        context_type: str,
+        context_type: Literal["body", "annotation"],
         drawing_elements: set[ifcopenshell.entity_instance],
         target_view: str,
     ) -> None:
         drawing_elements = drawing_elements.copy()
-        contexts = getattr(contexts, context_type)
+        contexts: list[list[int]] = getattr(contexts, context_type)
         for context in contexts:
             with profile(f"Processing {context_type} context"):
                 if not context or not drawing_elements:

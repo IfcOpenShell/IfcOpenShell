@@ -543,6 +543,7 @@ class Geometry(blenderbim.core.tool.Geometry):
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
         element = tool.Ifc.get_entity(obj)
+        assert element  # Type checker.
         settings = ifcopenshell.geom.settings()
         settings.set("weld-vertices", True)
         settings.set("apply-default-materials", False)
