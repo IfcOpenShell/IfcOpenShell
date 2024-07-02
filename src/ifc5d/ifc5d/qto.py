@@ -94,6 +94,7 @@ class IfcOpenShell:
         "get_x": Function("IfcLengthMeasure", "X", "Calculates the length along the local X axis"),
         "get_y": Function("IfcLengthMeasure", "Y", "Calculates the length along the local Y axis"),
         "get_z": Function("IfcLengthMeasure", "Z", "Calculates the length along the local Z axis"),
+        "get_max_xy": Function("IfcLengthMeasure", "Max XY", "The maximum X or Y local dimension"),
         "get_max_xyz": Function("IfcLengthMeasure", "Max XYZ", "The maximum X, Y, or Z local dimension"),
         "get_min_xyz": Function("IfcLengthMeasure", "Min XYZ", "The minimum X, Y, or Z local dimension"),
         "get_top_elevation": Function("IfcLengthMeasure", "Top elevation", "The local maximum Z ordinate"),
