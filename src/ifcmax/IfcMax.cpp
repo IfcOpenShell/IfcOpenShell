@@ -27,7 +27,7 @@
 
 #include "../ifcgeom_schema_agnostic/IfcGeomIterator.h"
 #include "../ifcgeom_schema_agnostic/IfcGeomMaterial.h"
-#include "../ifcgeom/IfcGeomElement.h"
+#include "../ifcgeom_schema_agnostic/IfcGeomElement.h"
 
 static const int NUM_MATERIAL_SLOTS = 24;
 
@@ -46,6 +46,11 @@ public:
     void *                  Create(BOOL /*loading = FALSE*/) { return new IFCImp; }
     // TODO Delete() function?
     const TCHAR *			ClassName() { return _T("IFCImp"); }
+
+#if MAX_VERSION_MAJOR >= 24
+	const TCHAR *	NonLocalizedClassName() { return ClassName(); }
+#endif 
+
     SClass_ID               SuperClassID() { return SCENE_IMPORT_CLASS_ID; }
     Class_ID                ClassID() { return Class_ID(0x3f230dbf, 0x5b3015c2); }
     const TCHAR*			Category() { return _T("Chrutilities"); }
@@ -230,8 +235,10 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 #endif
 
 	IfcParse::IfcFile file(fn_mb);
-	IfcGeom::Iterator<float> iterator(settings, &file);
-    delete fn_mb;
+	
+	IfcGeom::Iterator iterator(settings, &file);
+
+    delete[] fn_mb;
 	if (!iterator.initialize()) return false;
 
 	itfc->ProgressStart(_T("Importing file..."), TRUE, fn, NULL);
@@ -242,10 +249,12 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 	std::map<std::vector<std::string>, Mtl*> material_cache;
 
 	do{
-		const IfcGeom::TriangulationElement<float>* o = static_cast<const IfcGeom::TriangulationElement<float>*>(iterator.get());
+		const IfcGeom::Element* element = static_cast<const IfcGeom::Element*>(iterator.get());
+		const IfcGeom::TriangulationElement* o = static_cast<const IfcGeom::TriangulationElement*>(iterator.get());
 
 		TSTR o_type = S(o->type());
 		TSTR o_guid = S(o->guid());
+		TSTR o_name = S(o->name());
 
 		Mtl *m = ComposeMultiMaterial(material_cache, mats, itfc, slot, o->geometry().materials(), o->type(), o->geometry().material_ids());
 
@@ -307,12 +316,15 @@ int IFCImp::DoImport(const TCHAR *name, ImpInterface *impitfc, Interface *itfc, 
 
 		ImpNode* node = impitfc->CreateNode();
 		node->Reference(tri);
-		node->SetName(o_guid);
+		
+		node->SetName( o_name );
+
 		node->GetINode()->Hide(o->type() == "IfcOpeningElement" || o->type() == "IfcSpace");
 		if (m) {
 			node->GetINode()->SetMtl(m);
 		}
-		const std::vector<float>& matrix_data = o->transformation().matrix().data();
+		const std::vector<double>& matrix_data = o->transformation().matrix().data();
+
 		node->SetTransform(0,Matrix3 ( Point3(matrix_data[0],matrix_data[1],matrix_data[2]),Point3(matrix_data[3],matrix_data[4],matrix_data[5]),
 			Point3(matrix_data[6],matrix_data[7],matrix_data[8]),Point3(matrix_data[9],matrix_data[10],matrix_data[11]) ));
 		impitfc->AddNodeToScene(node);
