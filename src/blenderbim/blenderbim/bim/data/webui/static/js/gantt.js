@@ -210,6 +210,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
 function updateGanttElement(blenderId, tasks, workSched, filename) {
   let g = connectedClients[blenderId]["gantt"];
   g.ClearTasks();
+  g.Draw();
   JSGantt.addJSONTask(g, tasks);
   g.Draw();
 }
