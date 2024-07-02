@@ -77,12 +77,7 @@ class RepresentationsData:
         if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
             active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
 
-        representations = []
-        if element.is_a("IfcProduct") and element.Representation:
-            representations = element.Representation.Representations
-        elif element.is_a("IfcTypeProduct"):
-            representations = [rm.MappedRepresentation for rm in element.RepresentationMaps or []]
-        for representation in representations:
+        for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
             if representation_type == "MappedRepresentation":
                 representation_type = representation.Items[0].MappingSource.MappedRepresentation.RepresentationType
