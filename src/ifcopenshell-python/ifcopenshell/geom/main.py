@@ -454,28 +454,34 @@ serialise = make_shape_function(ifcopenshell_wrapper.serialise)
 tesselate = make_shape_function(ifcopenshell_wrapper.tesselate)
 
 
-def wrap_buffer_creation(fn: T):
-    """
-    Python does not have automatic casts. The C++ serializers accept a stream_or_filename
-    which in C++ can be automatically constructed from a filename string. In Python we
-    have to implement this cast/construction explicitly.
-    """
-
-    def transform_string(v):
-        if isinstance(v, str):
-            return ifcopenshell_wrapper.buffer(v)
-        else:
-            return v
-
-    def inner(*args) -> T:
-        return fn(*map(transform_string, args))
-
-    return inner
+def transform_string(v: Union[str, serializers.buffer]) -> serializers.buffer:
+    if isinstance(v, str):
+        return ifcopenshell_wrapper.buffer(v)
+    return v
 
 
 class serializers:
-    obj = wrap_buffer_creation(ifcopenshell_wrapper.WaveFrontOBJSerializer)
-    svg = wrap_buffer_creation(ifcopenshell_wrapper.SvgSerializer)
+    # Python does not have automatic casts. The C++ serializers accept a stream_or_filename
+    # which in C++ can be automatically constructed from a filename string. In Python we
+    # have to implement this cast/construction explicitly by transform_string.
+    @staticmethod
+    def obj(
+        out_filename: Union[str, serializers.buffer],
+        mtl_filename: Union[str, serializers.buffer],
+        geometry_settings: settings,
+        settings: serializer_settings,
+    ) -> ifcopenshell_wrapper.WaveFrontOBJSerializer:
+        out_filename = transform_string(out_filename)
+        mtl_filename = transform_string(mtl_filename)
+        return ifcopenshell_wrapper.WaveFrontOBJSerializer(out_filename, mtl_filename, geometry_settings, settings)
+
+    @staticmethod
+    def svg(
+        out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
+    ) -> ifcopenshell_wrapper.SvgSerializer:
+        out_filename = transform_string(out_filename)
+        return ifcopenshell_wrapper.SvgSerializer(out_filename, geometry_settings, settings)
+
     # Hdf- Xml- and glTF- serializers don't support writing to a buffer, only to filename
     # so no wrap_buffer_creation() for these serializers
     xml = ifcopenshell_wrapper.XmlSerializer
