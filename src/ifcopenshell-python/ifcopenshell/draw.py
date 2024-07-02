@@ -184,7 +184,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
 
     if not settings.cells:
         return svg_data_1.encode("ascii", "xmlcharrefreplace")
-    
+
     def yield_groups(n):
         if n.nodeType == n.ELEMENT_NODE and n.tagName == "g":
             yield n
@@ -195,46 +195,46 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
     svg1 = dom1.childNodes[0]
     # From file 1 we take the groups to be substituted
     groups1 = [g for g in yield_groups(svg1) if g.getAttribute("class") == "projection"]
-    
+
     # Parse SVG into vector of line segments
     #
     # The second argument 'projection' tells the parser to only include <g> groups
     # that have the classname 'projection'. The IfcOpenShell SVG serializer puts
     # the hidden line rendering output into this group. So the sections are not
     # included here as they already form closed loops.
-    
+
     ls_groups = W.svg_to_line_segments(svg_data_1, "projection")
     for i, (ls, g1) in enumerate(zip(ls_groups, groups1)):
         progress_function("creating cells", i)
-        
+
         projection, g1 = g1, g1.parentNode
-        
+
         svgfill_context = W.context(W.FILTERED_CARTESIAN_QUOTIENT, 1.0e-3)
 
         # remove duplicates (without tolerance)
         ls = list(map(tuple, set(map(frozenset, ls))))
 
         svgfill_context.add(ls)
-        
+
         if settings.merge_cells:
             # To be refined:
             # - Find cells on original line segments
             # - Associate cells with IFC entities for merging
             # - Merge cells by discarding edges
-            # - Associate cells with IFC entities for styling        
+            # - Associate cells with IFC entities for styling
             num_passes = 1
         else:
             num_passes = 0
-        
-        for iteration in range(num_passes+1):
-        
+
+        for iteration in range(num_passes + 1):
+
             # initialize empty group, note that in the current approach only one
             # group is stored
             ps = W.svg_groups_of_polygons()
-            
+
             if iteration != 0 or svgfill_context.build():
                 svgfill_context.write(ps)
-        
+
             """
             # Debugging tool to plot line segments and cells
             from matplotlib import pyplot as plt
@@ -245,10 +245,10 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             for x in ps[0]:
                 plt.fill(numpy.array(x.boundary).T[0], numpy.array(x.boundary).T[1])
             """
-            
+
             if iteration != num_passes:
                 pairs = svgfill_context.get_face_pairs()
-                semantics = [None] * (max(pairs)+1)
+                semantics = [None] * (max(pairs) + 1)
                 # For every edge print the two neighbouring faces
                 # for x in range(0, len(pairs), 2):
                 #     print(x // 2, *pairs[x:x+2])
@@ -263,7 +263,7 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
             svg2 = dom2.childNodes[0]
             # file 2 only has the groups we are interested in.
             # in fact in the approach, it's only a single group
-            
+
             g2 = list(yield_groups(svg2))[0]
 
             # These are attributes on the original group that we can use to reconstruct
@@ -299,12 +299,12 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                 assert p.hasAttribute("ifc:pointInside")
 
                 xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
-                
+
                 a, b = project(xy, 0.0), project(xy, -100.0)
-                
+
                 inside_elements = tree.select(pythonize(a))
-                
-                if inside_elements:                
+
+                if inside_elements:
                     elements = None
                     if iteration != num_passes:
                         semantics[pi] = (inside_elements[0], -1)
@@ -331,14 +331,14 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                     clr = WHITE * (1.0 - factor) + clr * factor
 
                     svg_fill = "rgb(%s)" % ", ".join(str(f * 255.0) for f in clr[0:3])
-                    
+
                     if iteration != num_passes:
                         semantics[pi] = elements[0]
                 else:
                     svg_fill = "none"
 
                 p.setAttribute("style", "fill: " + svg_fill)
-                
+
             if iteration != num_passes:
                 to_remove = []
 
@@ -346,23 +346,25 @@ def main(settings, files, iterators=None, merge_projection=True, progress_functi
                     # @todo instead of ray_distance, better do (x.point - y.point).dot(x.normal)
                     # to see if they're coplanar, because ray-distance will be different in case
                     # of element surfaces non-orthogonal to the view direction
-                    
+
                     def format(x):
-                        if x is None: return None
+                        if x is None:
+                            return None
                         elif isinstance(x, tuple):
                             # found to be inside element using tree.select() no face or style info
                             return x
-                        else: return (x.instance.is_a(), x.ray_distance, tuple(x.position))
-                    
-                    pp = pairs[he_idx:he_idx+2]
+                        else:
+                            return (x.instance.is_a(), x.ray_distance, tuple(x.position))
+
+                    pp = pairs[he_idx : he_idx + 2]
                     if pp == (-1, -1):
                         continue
                     data = list(map(format, map(semantics.__getitem__, pp)))
-                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.e-5:
+                    if None not in data and data[0][0] == data[1][0] and abs(data[0][1] - data[1][1]) < 1.0e-5:
                         to_remove.append(he_idx // 2)
                         # Print edge index and semantic data
                         # print(he_idx // 2, *data)
-                
+
                 svgfill_context.merge(to_remove)
 
         # Swap the XML nodes from the files
