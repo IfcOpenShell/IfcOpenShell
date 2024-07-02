@@ -1544,7 +1544,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def generate_gantt_browser_chart(
         cls, task_json: list[dict[str, Any]], work_schedule: ifcopenshell.entity_instance
     ) -> None:
-        gantt_data = {"tasks": task_json, "word_schedule": json.dumps(work_schedule.get_info(recursive=True))}
+        gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
         tool.Web.send_webui_data(extra_data=gantt_data, extra_data_key="gantt_data", event="gantt_data")
 
     @classmethod
