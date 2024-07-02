@@ -406,7 +406,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("files", type=str, nargs="+")
+    parser.add_argument(
+        "files",
+        type=str,
+        nargs="+",
+        help=(
+            "List of files for script to use. "
+            "Last file is considered an output file (.svg), all other files are existing IFC files."
+        ),
+    )
 
     for field in fields(draw_settings):
         if field.type == bool:
@@ -418,9 +426,8 @@ if __name__ == "__main__":
                 "--" + field.name.replace("_", "-"), dest=field.name, type=field.type, default=field.default
             )
 
-    args = vars(parser.parse_args(sys.argv))
+    args = vars(parser.parse_args())
     files = args.pop("files")
-    files.remove(__file__)
     output = files.pop()
 
     settings = draw_settings(**args)
