@@ -690,7 +690,9 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.name = name
 
     @classmethod
-    def recreate_object_with_data(cls, obj: bpy.types.Object, data: Union[bpy.types.ID, None]) -> bpy.types.Object:
+    def recreate_object_with_data(
+        cls, obj: bpy.types.Object, data: Union[bpy.types.ID, None], is_global: bool = False
+    ) -> bpy.types.Object:
         """Recreate a Blender object with the provided `data`.
 
         This method is useful when an object should no longer have associated
@@ -703,11 +705,18 @@ class Geometry(blenderbim.core.tool.Geometry):
         Original `obj` is deleted and becomes invalid and should be replaced
         with an object returned by this method.
 
+        :param is_global: Whether all `obj` occurrences should also be recreated
+        with the provided `data`. Works only if `obj` is an IfcTypeProduct.
         :return: The newly recreated object.
         """
         element = tool.Ifc.get_entity(obj)
         name = obj.name
         if element:
+            if is_global and element.is_a("IfcTypeProduct"):
+                ocurrences = ifcopenshell.util.element.get_types(element)
+                for occurrence in ocurrences:
+                    cls.recreate_object_with_data(tool.Ifc.get_object(occurrence), data)
+
             tool.Ifc.unlink(element=element)
 
         obj.name = ifcopenshell.guid.new()

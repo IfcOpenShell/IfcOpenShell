@@ -20,11 +20,13 @@ import bpy
 import math
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.type
 import blenderbim.core.tool
 import blenderbim.tool as tool
 from mathutils import Vector
 from test.bim.bootstrap import NewFile
 from blenderbim.tool.geometry import Geometry as subject
+from typing import Union
 
 
 class TestImplementsTool(NewFile):
@@ -375,23 +377,75 @@ class TestRenameObject(NewFile):
         assert obj.name == "name"
 
 
-# TODO: add a test
 class TestReplaceObjectWithEmpty(NewFile):
-    def test_run(self):
+    def validate(
+        self,
+        element: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        new_obj: bpy.types.Object,
+        new_data: Union[bpy.types.Mesh, None],
+    ) -> None:
+        assert not tool.Blender.is_valid_data_block(obj)
+        assert new_obj.users_collection[0] == bpy.context.scene.collection
+        assert tool.Ifc.get_entity(new_obj) == element
+        assert tool.Ifc.get_object(element) == new_obj
+        assert new_obj.data is new_data
+        assert new_obj.matrix_world.translation.x == 1
+
+    def create_object(
+        self, name: str, data: Union[bpy.types.Mesh, None], ifc_class: str
+    ) -> tuple[bpy.types.Object, ifcopenshell.entity_instance]:
+        ifc = tool.Ifc.get()
+        obj = bpy.data.objects.new(name, data)
+        obj.matrix_world.translation.x = 1
+        bpy.context.scene.collection.objects.link(obj)
+        element = ifc.create_entity(ifc_class)
+        tool.Ifc.link(element, obj)
+        return obj, element
+
+    def run_test_replace_non_global(
+        self, from_data: Union[bpy.types.Mesh, None], to_data: Union[bpy.types.Mesh, None]
+    ) -> None:
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.matrix_world[0][3] = 1
-        bpy.context.scene.collection.objects.link(obj)
-        element = ifc.createIfcWall()
-        tool.Ifc.link(element, obj)
-        subject.recreate_object_with_data(obj, None)
-        obj = bpy.data.objects.get("Object")
-        assert obj.users_collection[0] == bpy.context.scene.collection
-        assert tool.Ifc.get_entity(obj) == element
-        assert tool.Ifc.get_object(element) == obj
-        assert obj.data is None
-        assert obj.matrix_world[0][3] == 1
+
+        obj, element = self.create_object("Object", from_data, "IfcWall")
+        new_obj = subject.recreate_object_with_data(obj, to_data)
+        if from_data:
+            assert tool.Blender.is_valid_data_block(from_data)
+        self.validate(element, obj, new_obj, to_data)
+
+    def test_replace_mesh_with_empty(self) -> None:
+        self.run_test_replace_non_global(bpy.data.meshes.new("Mesh"), None)
+
+    def test_replace_empty_with_mesh(self) -> None:
+        self.run_test_replace_non_global(None, bpy.data.meshes.new("New Mesh"))
+
+    def run_test_for_global_argument(
+        self, from_data: Union[bpy.types.Mesh, None], to_data: Union[bpy.types.Mesh, None]
+    ) -> None:
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        type_obj, element_type = self.create_object("IfcWallType", from_data, "IfcWallType")
+        obj1, element1 = self.create_object("IfcWall1", from_data, "IfcWall")
+        obj2, element2 = self.create_object("IfcWall2", from_data, "IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element1, element2], relating_type=element_type)
+
+        to_data = to_data
+        new_obj = subject.recreate_object_with_data(type_obj, to_data, is_global=True)
+        if from_data:
+            assert tool.Blender.is_valid_data_block(from_data)
+
+        self.validate(element_type, type_obj, new_obj, to_data)
+        self.validate(element1, obj1, bpy.data.objects["IfcWall1"], to_data)
+        self.validate(element2, obj2, bpy.data.objects["IfcWall2"], to_data)
+
+    def test_replace_mesh_with_empty_global(self) -> None:
+        self.run_test_for_global_argument(bpy.data.meshes.new("Mesh"), None)
+
+    def test_replace_empty_with_mesh_global(self) -> None:
+        self.run_test_for_global_argument(None, bpy.data.meshes.new("New Mesh"))
 
 
 class TestResolveMappedRepresentation(NewFile):
