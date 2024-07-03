@@ -67,6 +67,36 @@ nav .bottom-bar {
     background-color: #25682a;
 }
 
+.table-description {
+    margin-bottom: 1rem;
+    width: 50%;
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+    border-color: #464444;
+    border: 1px solid #464444;
+    border-radius: 0.25rem;
+    box-shadow: 0 0 0.7rem rgba(95, 95, 95, 0.4);
+    text-align: center;
+}
+
+.table-description tr {
+    display: table-row;
+    border-bottom: 1px solid #464444;
+}
+
+.gantt-info {
+    margin: 0.5rem;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.btn {
+    margin: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
 @media print {
     .no-print {
         display: none;
