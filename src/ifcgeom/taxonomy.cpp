@@ -102,13 +102,14 @@ namespace {
 		}
 	}
 
-	int compare(const boost::variant<point3::ptr, double>& a, const boost::variant<point3::ptr, double>& b) {
+	int compare(const boost::variant<boost::blank, point3::ptr, double>& a, const boost::variant<boost::blank, point3::ptr, double>& b) {
 		bool a_lt_b, b_lt_a;
 		if (a.which() == 0) {
+			return 0;
+		} else if (a.which() == 1) {
 			a_lt_b = compare(*boost::get<point3::ptr>(a), *boost::get<point3::ptr>(b));
 			b_lt_a = compare(*boost::get<point3::ptr>(b), *boost::get<point3::ptr>(a));
-		}
-		else {
+		} else {
 			a_lt_b = std::less<double>()(boost::get<double>(a), boost::get<double>(b));
 			b_lt_a = std::less<double>()(boost::get<double>(b), boost::get<double>(a));
 		}
@@ -153,7 +154,11 @@ namespace {
 		throw std::runtime_error("not implemented");
 	}
 
-	bool compare(const surface_curve_sweep&, const surface_curve_sweep&) {
+	bool compare(const torus&, const torus&) {
+		throw std::runtime_error("not implemented");
+	}
+
+	bool compare(const sweep_along_curve&, const sweep_along_curve&) {
 		throw std::runtime_error("not implemented");
 	}
 
@@ -552,7 +557,7 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
-		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "sphere"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "surface_curve_sweep"s, "node"s, "collection"s, "boolean_result"s, "piecewise_function"s, "colour"s, "style"s,
+		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "sphere"s, "torus"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "sweep_along_curve"s, "node"s, "collection"s, "boolean_result"s, "piecewise_function"s, "colour"s, "style"s,
 	};
 
 	return values[k];
@@ -560,18 +565,17 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 
 std::atomic_uint32_t item::counter_(0);
 
-void ifcopenshell::geometry::taxonomy::piecewise_function::print(std::ostream& o, int) const {
-	o << "piecewise_function" << std::endl;
+void ifcopenshell::geometry::taxonomy::item::print(std::ostream& o, int indent) const {
+	o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
 }
 
 void ifcopenshell::geometry::taxonomy::matrix4::print(std::ostream& o, int indent) const {
-	print_impl(o, "matrix4", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::colour::print(std::ostream& o, int indent) const {
-	print_impl(o, "colour", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
-
 
 void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "style" << std::endl;
@@ -588,31 +592,23 @@ void ifcopenshell::geometry::taxonomy::style::print(std::ostream& o, int indent)
 }
 
 void ifcopenshell::geometry::taxonomy::point3::print(std::ostream& o, int indent) const {
-	print_impl(o, "point3", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::direction3::print(std::ostream& o, int indent) const {
-	print_impl(o, "direction3", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::line::print(std::ostream& o, int indent) const {
-	print_impl(o, "line", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::circle::print(std::ostream& o, int indent) const {
-	print_impl(o, "circle", indent);
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::ellipse::print(std::ostream& o, int indent) const {
-	print_impl(o, "ellipse", indent);
-}
-
-void ifcopenshell::geometry::taxonomy::bspline_curve::print(std::ostream& o, int indent) const {
-	o << std::string(indent, ' ') << "bspline curve" << std::endl;
-}
-
-void ifcopenshell::geometry::taxonomy::offset_curve::print(std::ostream& o, int indent) const {
-	o << std::string(indent, ' ') << "offset_curve" << std::endl;
+	print_impl(o, kind_to_string(kind()), indent);
 }
 
 void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
@@ -632,12 +628,12 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 		basis->print(o, indent + 4);
 	}
 
-	const boost::variant<point3::ptr, double>* const start_end[2] = { &start, &end };
+	const boost::variant<boost::blank, point3::ptr, double>* const start_end[2] = { &start, &end };
 	for (int i = 0; i < 2; ++i) {
 		o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
-		if (start_end[i]->which() == 0) {
+		if (start_end[i]->which() == 1) {
 			boost::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
-		} else if (start_end[i]->which() == 1) {
+		} else if (start_end[i]->which() == 2) {
 			o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
 		}
 	}
@@ -647,32 +643,8 @@ void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int
 	}
 }
 
-void ifcopenshell::geometry::taxonomy::plane::print(std::ostream& o, int indent) const {
-	o << "not implemented";
-}
-
-void ifcopenshell::geometry::taxonomy::cylinder::print(std::ostream& o, int indent) const {
-	o << "not implemented";
-}
-
-void ifcopenshell::geometry::taxonomy::sphere::print(std::ostream& o, int indent) const {
-	o << "not implemented";
-}
-
-void ifcopenshell::geometry::taxonomy::bspline_surface::print(std::ostream& o, int indent) const {
-	o << "not implemented";
-}
-
 void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int indent) const {
 	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
-}
-
-void ifcopenshell::geometry::taxonomy::revolve::print(std::ostream& o, int indent) const {
-	o << std::string(indent, ' ') << "revolve" << std::endl;
-}
-
-void ifcopenshell::geometry::taxonomy::surface_curve_sweep::print(std::ostream& o, int indent) const {
-	o << std::string(indent, ' ') << "surface_curve_sweep" << std::endl;
 }

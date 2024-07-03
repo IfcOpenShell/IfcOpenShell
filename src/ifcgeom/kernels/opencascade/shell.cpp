@@ -7,9 +7,28 @@ using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
 
+namespace {
+	// @todo move into taxonomy;
+	bool shell_polyhedral(const taxonomy::shell::ptr& sh) {
+		for (auto& f : sh->children) {
+			for (auto& w : f->children) {
+				if (!w->is_polyhedron()) {
+					return false;
+				}
+			}
+			if (f->basis && f->basis->kind() != taxonomy::PLANE) {
+				return false;
+			}
+		}
+		return true;
+	}
+}
+
 bool OpenCascadeKernel::convert(const taxonomy::shell::ptr l, TopoDS_Shape& shape) {
 	std::unique_ptr<faceset_helper> helper_scope;
-	helper_scope.reset(new faceset_helper(this, l));
+	if (shell_polyhedral(l)) {
+		helper_scope.reset(new faceset_helper(this, l));
+	}
 
 	faceset_helper_ = helper_scope.get();
 

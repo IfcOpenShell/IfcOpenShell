@@ -20,6 +20,7 @@
 %rename("buffer") stream_or_filename;
 
 %ignore stream_or_filename::stream;
+%ignore boost::hash_value;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
@@ -100,8 +101,11 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 
 %ignore ifcopenshell::geometry::taxonomy::item::print;
 
-%typemap(out) boost::variant< ifcopenshell::geometry::taxonomy::point3::ptr,double > {
+%typemap(out) boost::variant<boost::blank, ifcopenshell::geometry::taxonomy::point3::ptr, double> {
 	if ($1.which() == 0) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	} else if ($1.which() == 1) {
 		return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geometry::taxonomy::point3>(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t, 0 | SWIG_POINTER_OWN);
 	} else {
 		return PyFloat_FromDouble(boost::get<double>($1));
@@ -137,6 +141,7 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	if (!$1) $1 = try_upcast<shell>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__shell_t);
 	if (!$1) $1 = try_upcast<solid>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__solid_t);
 	if (!$1) $1 = try_upcast<sphere>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t);
+	if (!$1) $1 = try_upcast<torus>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__torus_t);
 	if (!$1) $1 = try_upcast<style>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t);
 	if (!$1) $1 = try_upcast<surface_curve_sweep>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__surface_curve_sweep_t);
 }
@@ -180,6 +185,7 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 %shared_ptr(ifcopenshell::geometry::taxonomy::plane);
 %shared_ptr(ifcopenshell::geometry::taxonomy::cylinder);
 %shared_ptr(ifcopenshell::geometry::taxonomy::sphere);
+%shared_ptr(ifcopenshell::geometry::taxonomy::torus);
 %shared_ptr(ifcopenshell::geometry::taxonomy::bspline_surface);
 %shared_ptr(ifcopenshell::geometry::taxonomy::sweep);
 %shared_ptr(ifcopenshell::geometry::taxonomy::extrusion);
@@ -505,7 +511,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 // Note that these elements ARE to be owned by SWIG/Python
 %typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> {
 	// See which type is set and return appropriate
-	$result = boost::apply_visitor(ShapeRTTI(), $1);
+	$result = boost::apply_visitor(ShapeRTTI(), (boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*>) $1);
 }
 
 %newobject construct_iterator_with_include_exclude;
@@ -1149,6 +1155,7 @@ assign_repr(ifcopenshell::geometry::taxonomy::revolve)
 assign_repr(ifcopenshell::geometry::taxonomy::shell)
 assign_repr(ifcopenshell::geometry::taxonomy::solid)
 assign_repr(ifcopenshell::geometry::taxonomy::sphere)
+assign_repr(ifcopenshell::geometry::taxonomy::torus)
 assign_repr(ifcopenshell::geometry::taxonomy::style)
 assign_repr(ifcopenshell::geometry::taxonomy::surface_curve_sweep)
 

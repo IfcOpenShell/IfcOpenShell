@@ -37,6 +37,17 @@
 #include <Message_Msg.hxx>
 #include <ShapeFix_Edge.hxx>
 #include <BRepPrimAPI_MakeHalfSpace.hxx>
+#include <Geom_BSplineSurface.hxx>
+#include <Geom_CylindricalSurface.hxx>
+#include <Geom_SphericalSurface.hxx>
+#include <Geom_ToroidalSurface.hxx>
+#include <BRepAdaptor_CompCurve.hxx>
+#include <Approx_Curve3d.hxx>
+#include <BRepAdaptor_HCompCurve.hxx>
+#include <Standard_Version.hxx>
+#include <Geom_SurfaceOfLinearExtrusion.hxx>
+#include <Geom_SurfaceOfRevolution.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 
 #include "OpenCascadeKernel.h"
 #include "face_definition.h"
@@ -48,6 +59,173 @@ using namespace ifcopenshell::geometry::kernels;
 using namespace IfcGeom;
 using namespace IfcGeom::util;
 
+
+namespace {
+	struct surface_creation_visitor {
+		OpenCascadeKernel* kernel;
+		Handle(Geom_Surface) result;
+
+		Handle(Geom_Surface) operator()(const taxonomy::bspline_surface::ptr& bs) {
+			auto& cps = bs->control_points;
+			if (!cps.size() || !cps[0].size()) {
+				throw std::runtime_error("Empty control point array");
+			}
+
+			auto& uknots = bs->knots[0];
+			auto& vknots = bs->knots[1];
+			auto& umults = bs->multiplicities[0];
+			auto& vmults = bs->multiplicities[1];
+
+			TColgp_Array2OfPnt Poles(0, (int)cps.size() - 1, 0, (int)cps[0].size() - 1);
+			TColStd_Array1OfReal UKnots(0, (int)uknots.size() - 1);
+			TColStd_Array1OfReal VKnots(0, (int)vknots.size() - 1);
+			TColStd_Array1OfInteger UMults(0, (int)umults.size() - 1);
+			TColStd_Array1OfInteger VMults(0, (int)vmults.size() - 1);
+			Standard_Integer UDegree = bs->degree[0];
+			Standard_Integer VDegree = bs->degree[1];
+
+			int i = 0, j;
+			for (auto it = cps.begin(); it != cps.end(); ++it, ++i) {
+				j = 0;
+				for (auto jt = (*it).begin(); jt != (*it).end(); ++jt, ++j) {
+					Poles(i, j) = kernel->convert_xyz<gp_Pnt>(**jt);
+				}
+			}
+			i = 0;
+			for (std::vector<double>::const_iterator it = uknots.begin(); it != uknots.end(); ++it, ++i) {
+				UKnots(i) = *it;
+			}
+			i = 0;
+			for (std::vector<double>::const_iterator it = vknots.begin(); it != vknots.end(); ++it, ++i) {
+				VKnots(i) = *it;
+			}
+			i = 0;
+			for (std::vector<int>::const_iterator it = umults.begin(); it != umults.end(); ++it, ++i) {
+				UMults(i) = *it;
+			}
+			i = 0;
+			for (std::vector<int>::const_iterator it = vmults.begin(); it != vmults.end(); ++it, ++i) {
+				VMults(i) = *it;
+			}
+			return result = Handle(Geom_Surface)(new Geom_BSplineSurface(Poles, UKnots, VKnots, UMults, VMults, UDegree, VDegree));
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::plane::ptr& p) {
+			const auto& m = p->matrix->ccomponents();
+			return result = Handle(Geom_Surface)(new Geom_Plane(
+				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2))));
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::cylinder::ptr& c) {
+			const auto& m = c->matrix->ccomponents();
+			return result = Handle(Geom_Surface)(new Geom_CylindricalSurface(gp_Ax3(
+				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+			), c->radius));
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::sphere::ptr& s) {
+			const auto& m = s->matrix->ccomponents();
+			return result = Handle(Geom_Surface)(new Geom_SphericalSurface(gp_Ax3(
+				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+			), s->radius));
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::torus::ptr& t) {
+			const auto& m = t->matrix->ccomponents();
+			return result = Handle(Geom_Surface)(new Geom_ToroidalSurface(gp_Ax3(
+				OpenCascadeKernel::convert_xyz2<gp_Pnt>(m.col(3)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(2)),
+				OpenCascadeKernel::convert_xyz2<gp_Dir>(m.col(0))
+			), t->radius1, t->radius2));
+		}
+
+		TopoDS_Wire get_edges_as_wire(const taxonomy::item::ptr& i) {
+			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
+			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
+			auto crv_or_wire = kernel->convert_curve(i);
+			if (crv_or_wire.which() == 1) {
+				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+				return w;
+			} else {
+				throw std::runtime_error("Unexpected curve evaluation");
+			}
+		}
+
+		Handle(Geom_Curve) get_curve(const taxonomy::item::ptr& i) {
+			// @todo unify with trimmed curve handling
+			auto crv_or_wire = kernel->convert_curve(i);
+			if (crv_or_wire.which() == 0) {
+				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
+			} else {
+				// @todo
+				const double precision_ = 1.e-5;
+				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
+				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
+#if OCC_VERSION_HEX < 0x70600
+				BRepAdaptor_CompCurve cc(w, true);
+				Handle(Adaptor3d_HCurve) hcc = Handle(Adaptor3d_HCurve)(new BRepAdaptor_HCompCurve(cc));
+#else
+				auto hcc = new BRepAdaptor_CompCurve(w, true);
+#endif
+				// @todo, arbitrary numbers here, note they cannot be too high as contiguous memory is allocated based on them.
+				Approx_Curve3d approx(hcc, precision_, GeomAbs_C0, 10, 10);
+				return approx.Curve();
+			}
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::extrusion::ptr& e) {
+			auto crv = get_curve(e->basis);
+			return result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
+				crv,
+				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction)
+			));
+		}
+
+		Handle(Geom_Surface) operator()(const taxonomy::revolve::ptr& e) {
+			gp_Ax1 ax(
+				OpenCascadeKernel::convert_xyz<gp_Pnt>(*e->axis_origin),
+				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction));
+
+			if (e->basis && (e->basis->kind() == taxonomy::EDGE || (e->basis->kind() == taxonomy::LOOP && taxonomy::cast<taxonomy::loop>(e->basis)->children.size() == 1))) {
+				auto e_basis = e->basis;
+				if ((e->basis->kind() == taxonomy::LOOP)) {
+					e_basis = taxonomy::cast<taxonomy::loop>(e->basis)->children[0];
+				}
+				auto w = get_edges_as_wire(e_basis);
+				TopoDS_Shape shp = BRepPrimAPI_MakeRevol(w, ax);
+				TopExp_Explorer exp(shp, TopAbs_FACE);
+				if (exp.More()) {
+					Handle(Geom_Surface) surf = BRep_Tool::Surface(TopoDS::Face(exp.Current()));
+					exp.Next();
+					if (!exp.More()) {
+						return result = surf;
+					}
+				}
+				// fall back to approach below
+			}
+
+			auto crv = get_curve(e->basis);
+			return result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
+				crv, ax	
+			));
+		}
+	};
+}
+
+Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surface) {
+	surface_creation_visitor v{ this };
+	if (dispatch_surface_creation<surface_creation_visitor, 0>::dispatch(surface, v)) {
+		return v.result;
+	} else {
+		throw std::runtime_error("No surface created");
+	}
+}
+
 bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result) {
 #ifdef IFOPSH_DEBUG
 	std::ostringstream oss;
@@ -58,24 +236,9 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	face_definition fd;
 
-	const bool is_face_surface = false; /* todo */
-
-	/*
-	if (is_face_surface) {
-		IfcSchema::IfcFaceSurface* fs = (IfcSchema::IfcFaceSurface*) l;
-		fs->FaceSurface();
-		// FIXME: Surfaces are interpreted as a TopoDS_Shape
-		TopoDS_Shape surface_shape;
-		if (!convert_shape(fs->FaceSurface(), surface_shape)) return false;
-
-		// FIXME: Assert this obtains the only face
-		TopExp_Explorer exp(surface_shape, TopAbs_FACE);
-		if (!exp.More()) return false;
-
-		TopoDS_Face surface = TopoDS::Face(exp.Current());
-		fd.surface() = BRep_Tool::Surface(surface);
+	if (face->basis) {
+		fd.surface() = convert_surface(face->basis);
 	}
-	*/
 
 	const int num_bounds = face->children.size();
 	int num_outer_bounds = 0;
@@ -198,11 +361,22 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		if (fd.all_outer()) {
 			for (const auto& w : fd.wires()) {
 				TopTools_ListOfShape fl;
-				triangulate_wire({ w }, fl);
+				auto r = triangulate_wire({ w }, fl);
+				if (r == util::TRIANGULATE_WIRE_FAIL) {
+					continue;
+				}
 				face_list.Append(fl);
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
 			}
 		} else {
-			triangulate_wire(fd.wires(), face_list);
+			auto r = triangulate_wire(fd.wires(), face_list);
+			if (r != util::TRIANGULATE_WIRE_FAIL) {
+				if (faceset_helper_ && r == util::TRIANGULATE_WIRE_NON_MANIFOLD) {
+					faceset_helper_->non_manifold() = true;
+				}
+			}
 		}
 	} else if (!fd.all_outer()) {
 		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
@@ -210,13 +384,20 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 		if (mf.IsDone()) {
 			// Is this necessary
 			TopoDS_Face f = mf.Face();
-			mf.Init(f);
+			if (std::distance(fd.inner_wires().first, fd.inner_wires().second)) {
+				mf.Init(f);
 
-			for (auto it = fd.inner_wires().first; it != fd.inner_wires().second; ++it) {
-				mf.Add(*it);
+				for (auto it = fd.inner_wires().first; it != fd.inner_wires().second; ++it) {
+					mf.Add(*it);
+				}
+
+				face_list.Append(mf.Face());
+			} else {
+				face_list.Append(f);
 			}
-
-			face_list.Append(mf.Face());
+		} else {
+			Logger::Error("Internal error in face creation");
+			return false;
 		}
 	} else {
 		for (const auto& w : fd.wires()) {
@@ -237,12 +418,24 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			// For planar faces, Open Cascade generates p-curves on the fly.
 
 			for (TopTools_ListIteratorOfListOfShape it(face_list); it.More(); it.Next()) {
-				// Small chance there are multiple faces
-				const TopoDS_Face& occ_face = TopoDS::Face(it.Value());
-				for (TopExp_Explorer exp2(occ_face, TopAbs_EDGE); exp2.More(); exp2.Next()) {
-					const TopoDS_Edge& edge = TopoDS::Edge(exp2.Current());
-					ShapeFix_Edge fix_edge;
-					fix_edge.FixAddPCurve(edge, occ_face, false, precision_);
+				ShapeFix_Shape sfs(it.Value());
+
+				Handle(ShapeExtend_MsgRegistrator) msg;
+				msg = new ShapeExtend_MsgRegistrator;
+				sfs.SetMsgRegistrator(msg);
+
+				sfs.Perform();
+				it.Value() = sfs.Shape();
+
+				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				for (; jt.More(); jt.Next()) {
+					Message_ListIteratorOfListOfMsg kt(jt.Value());
+					for (; kt.More(); kt.Next()) {
+						char* c = new char[kt.Value().Value().LengthOfCString() + 1];
+						kt.Value().Value().ToUTF8CString(c);
+						Logger::Notice(c, face->instance);
+						delete[] c;
+					}
 				}
 			}
 		}

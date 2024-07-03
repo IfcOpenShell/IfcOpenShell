@@ -30,6 +30,8 @@
 
 // @todo don't do std::less but use hashing and cache hash values.
 
+namespace boost { inline std::size_t hash_value(const blank&) { return 0; } }
+
 namespace ifcopenshell {
 
 	namespace geometry {
@@ -91,7 +93,7 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
-			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
+			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, TORUS, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
 
 			const std::string& kind_to_string(kinds k);
 
@@ -109,7 +111,7 @@ typedef item const* ptr;
 
 				virtual item* clone_() const = 0;
 				virtual kinds kind() const = 0;
-				virtual void print(std::ostream&, int indent = 0) const = 0;
+				virtual void print(std::ostream&, int indent = 0) const;
 				virtual void reverse() { throw taxonomy::topology_error(); }
 				virtual size_t calc_hash() const = 0;
 				virtual size_t hash() const {
@@ -377,8 +379,6 @@ typedef item const* ptr;
                return *length_;
             }
 
-				void print(std::ostream& o, int = 0) const;
-
 				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
 				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
 
@@ -608,8 +608,6 @@ typedef item const* ptr;
 				std::vector<double> knots;
 				boost::optional<std::vector<double>> weights;
 				int degree;
-
-				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct offset_curve : public curve {
@@ -626,8 +624,6 @@ typedef item const* ptr;
 					auto v = std::make_tuple(static_cast<size_t>(OFFSET_CURVE), reference->hash(), offset, basis ? basis->hash() : size_t(0));
 					return boost::hash<decltype(v)>{}(v);
 				}
-
-				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct trimmed_curve : public geom_item {
@@ -635,7 +631,7 @@ typedef item const* ptr;
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
 				// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
-				boost::variant<point3::ptr, double> start, end;
+				boost::variant<boost::blank, point3::ptr, double> start, end;
 
 				// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
 				item::ptr basis;
@@ -643,7 +639,7 @@ typedef item const* ptr;
 				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
 				boost::optional<bool> curve_sense;
 
-				trimmed_curve() : basis(nullptr), curve_sense(true) {}
+				trimmed_curve() : basis(nullptr) {}
 				trimmed_curve(const point3::ptr& a, const point3::ptr& b) : start(a), end(b), basis(nullptr) {}
 
 				virtual void reverse() {
@@ -704,6 +700,10 @@ typedef item const* ptr;
 					}
 				}
 
+				virtual void print_impl(std::ostream&, int) const {
+					// empty on purpose
+				}
+
 				void print(std::ostream& o, int indent = 0) const {
 					o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
 					if (matrix && !matrix->is_identity()) {
@@ -712,6 +712,7 @@ typedef item const* ptr;
 					for (auto& c : children) {
 						c->print(o, indent + 4);
 					}
+					print_impl(o, indent + 4);
 				}
 
 				virtual ~collection_base() {
@@ -762,6 +763,28 @@ typedef item const* ptr;
 					return true;
 				}
 
+				void calculate_linear_edge_curves() const {
+					for (auto& e : children) {
+						if (e->basis == nullptr) {
+							if (e->start.which() == 1 && e->end.which() == 1) {
+								auto ln = make<taxonomy::line>();
+								auto a = boost::get<point3::ptr>(e->start)->ccomponents();
+								auto b = boost::get<point3::ptr>(e->end)->ccomponents();
+								ln->matrix = make<matrix4>(a, b - a);
+								e->basis = ln;
+							}
+						}
+					}
+				}
+
+				void remove_linear_edge_curves() const {
+					for (auto& e : children) {
+						if (e->basis != nullptr && e->basis->kind() == LINE) {
+							e->basis = nullptr;
+						}
+					}
+				}
+
 				virtual loop* clone_() const { return new loop(*this); }
 				virtual kinds kind() const { return LOOP; }
 
@@ -779,6 +802,13 @@ typedef item const* ptr;
 				virtual face* clone_() const { return new face(*this); }
 				virtual kinds kind() const { return FACE; }
 
+				virtual void print_impl(std::ostream& o, int indent) const {
+					if (basis) {
+						o << std::string(indent, ' ') << "basis" << std::endl;
+						basis->print(o, indent + 4);
+					}
+				}
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(FACE), hash_elements(), basis ? basis->hash() : size_t(0));
 					return boost::hash<decltype(v)>{}(v);
@@ -789,6 +819,11 @@ typedef item const* ptr;
 				DECLARE_PTR(shell)
 
 				boost::optional<bool> closed;
+
+				virtual void print_impl(std::ostream& o, int indent) const {
+					using namespace std::string_literals;
+					o << std::string(indent, ' ') << "closed " << (closed ? *closed ? "yes"s : "no"s : "unknown"s) << std::endl;
+				}
 
 				virtual shell* clone_() const { return new shell(*this); }
 				virtual kinds kind() const { return SHELL; }
@@ -819,6 +854,11 @@ typedef item const* ptr;
 				virtual loft* clone_() const { return new loft(*this); }
 				virtual kinds kind() const { return LOFT; }
 
+				virtual void print_impl(std::ostream& o, int indent) const {
+					o << std::string(indent, ' ') << "axis" << std::endl;
+					axis->print(o, indent + 4);
+				}
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(LOFT), hash_elements(), axis ? axis->hash() : size_t(0));
 					return boost::hash<decltype(v)>{}(v);
@@ -832,8 +872,6 @@ typedef item const* ptr;
 
 				virtual plane* clone_() const { return new plane(*this); }
 				virtual kinds kind() const { return PLANE; }
-
-				void print(std::ostream& o, int) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(PLANE), matrix->hash_components());
@@ -849,8 +887,6 @@ typedef item const* ptr;
 				virtual cylinder* clone_() const { return new cylinder(*this); }
 				virtual kinds kind() const { return CYLINDER; }
 
-				void print(std::ostream& o, int) const;
-
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(CYLINDER), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
@@ -865,10 +901,23 @@ typedef item const* ptr;
 				virtual sphere* clone_() const { return new sphere(*this); }
 				virtual kinds kind() const { return SPHERE; }
 
-				void print(std::ostream& o, int) const;
-
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SPHERE), matrix->hash_components());
+					return boost::hash<decltype(v)>{}(v);
+				}
+			};
+
+			struct torus : public surface {
+				DECLARE_PTR(torus)
+
+				double radius1;
+				double radius2;
+
+				virtual torus* clone_() const { return new torus(*this); }
+				virtual kinds kind() const { return TORUS; }
+
+				virtual size_t calc_hash() const {
+					auto v = std::make_tuple(static_cast<size_t>(TORUS), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
@@ -914,17 +963,15 @@ typedef item const* ptr;
 				std::array<std::vector<double>, 2> knots;
 				boost::optional<std::vector<std::vector<double>>> weights;
 				std::array<int, 2> degree;
-
-				void print(std::ostream& o, int) const;
 			};
 
 			struct sweep : public geom_item {
 				DECLARE_PTR(sweep)
 
-				face::ptr basis;
+				item::ptr basis;
 
 				sweep(face::ptr b) : basis(b) {}
-				sweep(matrix4::ptr m, face::ptr b) : geom_item(m), basis(b) {}
+				sweep(matrix4::ptr m, item::ptr b) : geom_item(m), basis(b) {}
 			};
 
 			struct extrusion : public sweep {
@@ -936,7 +983,7 @@ typedef item const* ptr;
 				virtual extrusion* clone_() const { return new extrusion(*this); }
 				virtual kinds kind() const { return EXTRUSION; }
 
-				extrusion(matrix4::ptr m, face::ptr basis, direction3::ptr dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
+				extrusion(matrix4::ptr m, item::ptr basis, direction3::ptr dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
 
 				void print(std::ostream& o, int indent = 0) const;
 
@@ -956,9 +1003,7 @@ typedef item const* ptr;
 				virtual revolve* clone_() const { return new revolve(*this); }
 				virtual kinds kind() const { return REVOLVE; }
 
-				revolve(matrix4::ptr m, face::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
-
-				void print(std::ostream& o, int indent = 0) const;
+				revolve(matrix4::ptr m, item::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(REVOLVE), matrix->hash_components(), basis->calc_hash(), axis_origin->hash_components(), direction->hash_components(), angle ? *angle : 1000.);
@@ -966,18 +1011,16 @@ typedef item const* ptr;
 				}
 			};
 
-			struct surface_curve_sweep : public sweep {
-				DECLARE_PTR(surface_curve_sweep)
+			struct sweep_along_curve : public sweep {
+				DECLARE_PTR(sweep_along_curve)
 
 				item::ptr surface;
 				item::ptr curve;
 
-				virtual surface_curve_sweep* clone_() const { return new surface_curve_sweep(*this); }
+				virtual sweep_along_curve* clone_() const { return new sweep_along_curve(*this); }
 				virtual kinds kind() const { return SURFACE_CURVE_SWEEP; }
 
-				surface_curve_sweep(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
-
-				void print(std::ostream& o, int indent = 0) const;
+				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(SURFACE_CURVE_SWEEP), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
@@ -1025,9 +1068,9 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result, piecewise_function> KindsTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, piecewise_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
-				typedef std::tuple<plane, cylinder, sphere, bspline_surface> SurfacesTuple;
+				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
 			}
 
 			struct type_by_kind {
@@ -1093,16 +1136,25 @@ typedef item const* ptr;
 					if constexpr (std::is_same_v<T, edge>) {
 						auto circle = taxonomy::dcast<taxonomy::circle>(item);
 						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						if (circle || ellipse) {
+						auto line = taxonomy::dcast<taxonomy::line>(item);
+						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
+						if (circle || ellipse || line || bspline_curve) {
 							edge_ = taxonomy::make<taxonomy::edge>();
 							if (circle) {
 								(*edge_)->basis = circle;
-							} else {
+							} else if (ellipse) {
 								(*edge_)->basis = ellipse;
+							} else if (line) {
+								(*edge_)->basis = line;
+							} else if (bspline_curve) {
+								(*edge_)->basis = bspline_curve;
 							}
-							// @todo make trims optional to allow unbounded edges
-							(*edge_)->start = 0.;
-							(*edge_)->end = 2 * boost::math::constants::pi<double>();
+
+							if (circle || ellipse) {
+								// @todo
+								(*edge_)->start = 0.;
+								(*edge_)->end = 2 * boost::math::constants::pi<double>();
+							}
 						}
 					}
 				}
@@ -1131,17 +1183,55 @@ typedef item const* ptr;
 					if constexpr (std::is_same_v<T, loop>) {
 						auto circle = taxonomy::dcast<taxonomy::circle>(item);
 						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						if (circle || ellipse) {
+						auto line = taxonomy::dcast<taxonomy::line>(item);
+						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
+						if (circle || ellipse || line || bspline_curve) {
 							auto edge = taxonomy::make<taxonomy::edge>();
 							if (circle) {
 								edge->basis = circle;
-							} else {
+							} else if (ellipse) {
 								edge->basis = ellipse;
+							} else if (line) {
+								edge->basis = line;
+							} else if (bspline_curve) {
+								edge->basis = bspline_curve;
 							}
-							// @todo make trims optional to allow unbounded edges
-							edge->start = 0.;
-							edge->end = 2 * boost::math::constants::pi<double>();
 
+							if (circle || ellipse) {
+								// @todo
+								edge->start = 0.;
+								edge->end = 2 * boost::math::constants::pi<double>();
+							}
+
+							loop_ = taxonomy::make<taxonomy::loop>();
+							(*loop_)->children.push_back(edge);
+						}
+					}
+				}
+
+				operator bool() const {
+					return loop_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, loop>) {
+						if (loop_) {
+							return *loop_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+			template <typename T>
+			class edge_to_loop_upgrade {
+			private:
+				boost::optional<taxonomy::loop::ptr> loop_;
+			public:
+				edge_to_loop_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, loop>) {
+						auto edge = taxonomy::dcast<taxonomy::edge>(item);
+						if (edge) {
 							loop_ = taxonomy::make<taxonomy::loop>();
 							(*loop_)->children.push_back(edge);
 						}
@@ -1172,16 +1262,25 @@ typedef item const* ptr;
 					if constexpr (std::is_same_v<T, edge>) {
 						auto circle = taxonomy::dcast<taxonomy::circle>(item);
 						auto ellipse = taxonomy::dcast<taxonomy::ellipse>(item);
-						if (circle || ellipse) {
+						auto line = taxonomy::dcast<taxonomy::line>(item);
+						auto bspline_curve = taxonomy::dcast<taxonomy::bspline_curve>(item);
+						if (circle || ellipse || line || bspline_curve) {
 							auto edge = taxonomy::make<taxonomy::edge>();
 							if (circle) {
 								edge->basis = circle;
-							} else {
+							} else if (ellipse) {
 								edge->basis = ellipse;
+							} else if (line) {
+								edge->basis = line;
+							} else if (bspline_curve) {
+								edge->basis = bspline_curve;
 							}
-							// @todo make trims optional to allow unbounded edges
-							edge->start = 0.;
-							edge->end = 2 * boost::math::constants::pi<double>();
+
+							if (circle || ellipse) {
+								// @todo
+								edge->start = 0.;
+								edge->end = 2 * boost::math::constants::pi<double>();
+							}
 							
 							auto loop = taxonomy::make<taxonomy::loop>();
 							loop->children.push_back(edge);
@@ -1279,6 +1378,12 @@ typedef item const* ptr;
 					}
 				}
 				{
+					edge_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
 					curve_to_face_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
@@ -1312,6 +1417,12 @@ typedef item const* ptr;
 				}
 				{
 					curve_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					edge_to_loop_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
 					}
@@ -1450,10 +1561,10 @@ typedef item const* ptr;
 				}
 				else if (auto l = taxonomy::dcast<taxonomy::edge>(i)) {
 					// @todo maybe make edge a collection then as well?
-					if (l->start.which() == 0) {
+					if (l->start.which() == 1) {
 						fn(boost::get<taxonomy::point3::ptr>(l->start));
 					}
-					if (l->end.which() == 0) {
+					if (l->end.which() == 1) {
 						fn(boost::get<taxonomy::point3::ptr>(l->end));
 					}
 				}

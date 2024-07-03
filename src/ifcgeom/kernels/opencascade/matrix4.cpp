@@ -15,7 +15,7 @@ bool OpenCascadeKernel::convert(const taxonomy::matrix4::ptr matrix, gp_GTrsf& t
 	);
 
 	if (matrix->instance && matrix->instance->declaration().name() == "IfcCartesianTransformationOperator3DnonUniform") {
-		std::wcout << "non uniform" << std::endl;
+		// std::wcout << "non uniform" << std::endl;
 	}
 
 	// @nb SetVectorialPart() sets gp_GTrsf.scale to 0.0, causing an non-invertable

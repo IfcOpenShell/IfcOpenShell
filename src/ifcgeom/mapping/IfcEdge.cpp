@@ -40,7 +40,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcEdge* inst) {
 	e->end = taxonomy::cast<taxonomy::point3>(map(pnt2));
 
 	if (inst->as<IfcSchema::IfcEdgeCurve>()) {
-		e->basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
+		auto basis = map(inst->as<IfcSchema::IfcEdgeCurve>()->EdgeGeometry());
+		auto loop = taxonomy::dcast<taxonomy::loop>(basis);
+		if (loop && loop->children.size() == 1) {
+			loop->calculate_linear_edge_curves();
+			basis = loop->children[0]->basis;
+		}
+		e->basis = basis;
 		e->curve_sense = inst->as<IfcSchema::IfcEdgeCurve>()->SameSense();
 	}
 

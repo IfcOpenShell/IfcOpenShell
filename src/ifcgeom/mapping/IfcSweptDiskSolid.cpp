@@ -94,6 +94,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 			e->basis = c;
 			e->start = 0.;
 			e->end = 2 * boost::math::constants::pi<double>();
+			// @todo allow identity by leaving unspecified?
+			c->matrix = taxonomy::make<taxonomy::matrix4>();
 
 			auto l = taxonomy::make<taxonomy::loop>();
 			l->children = { e };
@@ -103,7 +105,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 		}
 	}
 
-	return taxonomy::make<taxonomy::surface_curve_sweep>(taxonomy::make<taxonomy::matrix4>(), f, nullptr, loop);
+	return taxonomy::make<taxonomy::sweep_along_curve>(taxonomy::make<taxonomy::matrix4>(), f, nullptr, loop);
 
 
 	
