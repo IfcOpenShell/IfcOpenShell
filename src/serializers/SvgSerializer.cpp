@@ -434,6 +434,12 @@ namespace {
 	};
 
 	boost::optional<box_t> box_from_compound(TopoDS_Shape& compound) {
+		/*
+		// in v0.8 apparently we don't get a solid/shell anymore because
+		// we no longer use PrimAPI, but rather resolve the box to an
+		// explicit shell with 6 faces in the mapping, which - depending 
+		// on settings - may remain solely a compound of 6.
+
 		TopExp_Explorer exp(compound, TopAbs_SHELL);
 		TopoDS_Shell shell;
 		if (exp.More()) {
@@ -446,12 +452,14 @@ namespace {
 		else {
 			return boost::none;
 		}
+		*/
+		auto& shell = compound;
 
 		if (IfcGeom::util::count(shell, TopAbs_FACE) != 6) {
 			return boost::none;
 		}
 
-		TopoDS_Iterator it(shell);
+		TopExp_Explorer it(shell, TopAbs_FACE);
 		for (; it.More(); it.Next()) {
 			const auto& face = TopoDS::Face(it.Value());
 			auto surf = BRep_Tool::Surface(face);
