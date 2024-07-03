@@ -93,7 +93,7 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
-			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, TORUS, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
+			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, SPHERE, TORUS, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SWEEP_ALONG_CURVE, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
 
 			const std::string& kind_to_string(kinds k);
 
@@ -1018,12 +1018,12 @@ typedef item const* ptr;
 				item::ptr curve;
 
 				virtual sweep_along_curve* clone_() const { return new sweep_along_curve(*this); }
-				virtual kinds kind() const { return SURFACE_CURVE_SWEEP; }
+				virtual kinds kind() const { return SWEEP_ALONG_CURVE; }
 
 				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(SURFACE_CURVE_SWEEP), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
+					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
