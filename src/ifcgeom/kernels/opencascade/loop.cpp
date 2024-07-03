@@ -151,7 +151,11 @@ namespace {
 					auto p1 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_start));
 					auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e_end));
 
-					E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+					if (curve->IsClosed() && p1.Distance(p2) <= kernel->settings().get<settings::Precision>().get()) {
+						E = BRepBuilderAPI_MakeEdge(curve).Edge();
+					} else {
+						E = BRepBuilderAPI_MakeEdge(curve, p1, p2).Edge();
+					}
 				} else if (e_start.which() == 2) {
 					auto v1 = boost::get<double>(e_start);
 					auto v2 = boost::get<double>(e_end);
