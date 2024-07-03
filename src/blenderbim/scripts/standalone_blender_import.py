@@ -16,6 +16,7 @@ class BlenderImporter:
         self.created_guids = set()
 
         self.settings = ifcopenshell.geom.settings()
+        self.settings.set("keep-bounding-boxes", True)
         self.settings.set("mesher-linear-deflection", self.deflection_tolerance)
         self.settings.set("mesher-angular-deflection", self.angular_tolerance)
         self.settings_2d = ifcopenshell.geom.settings()
