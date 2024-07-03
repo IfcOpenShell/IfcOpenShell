@@ -144,6 +144,14 @@ class AddRepresentation(bpy.types.Operator, Operator):
             ),
             ("OBJECT", "From Object", "Copies geometry from another object"),
             ("PROJECT", "Full Representation", "Reuses the current representation"),
+            (
+                "CUBE",
+                "Cube",
+                (
+                    "Add cube representation.\n"
+                    "Useful for adding a representation to an object without any representations"
+                ),
+            ),
         ],
         name="Representation Conversion Method",
     )
@@ -160,7 +168,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
         original_data = obj.data
 
         conversion_method = self.representation_conversion_method
-        if not original_data:
+        if not original_data and conversion_method not in ("OBJECT", "CUBE"):
             self.report(
                 {"ERROR"},
                 (f"No mesh data found for the active object. Mesh data required for '{conversion_method}' method."),
@@ -183,13 +191,25 @@ class AddRepresentation(bpy.types.Operator, Operator):
             else:
                 data = tool.Geometry.generate_3d_box_mesh(obj)
             tool.Geometry.change_object_data(obj, data, is_global=True)
-        elif conversion_method == "OBJECT":
-            if not props.representation_from_object:
-                self.report({"ERROR"}, "No object is selected to copy a representation from.")
-                return {"FINISHED"}
+        elif conversion_method in ("OBJECT", "CUBE"):
+            if conversion_method == "OBJECT":
+                if not props.representation_from_object:
+                    self.report({"ERROR"}, "No object is selected to copy a representation from.")
+                    return {"FINISHED"}
 
-            data = tool.Geometry.duplicate_object_data(props.representation_from_object)
-            tool.Geometry.change_object_data(obj, data, is_global=True)
+                data_ = tool.Geometry.duplicate_object_data(props.representation_from_object)
+                assert isinstance(data_, bpy.types.Mesh)  # Type checker.
+                data = data_
+            else:  # CUBE
+                data = bpy.data.meshes.new("Cube")
+                bm = tool.Blender.get_bmesh_for_mesh(data)
+                bmesh.ops.create_cube(bm, size=1)
+                tool.Blender.apply_bmesh(data, bm)
+
+            if original_data:
+                tool.Geometry.change_object_data(obj, data, is_global=True)
+            else:
+                obj = tool.Geometry.recreate_object_with_data(obj, data)
 
         try:
             core.add_representation(
@@ -202,6 +222,9 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 ifc_representation_class=None,
                 profile_set_usage=None,
             )
+            # Object might be recreated, need to set it as active again.
+            if context.active_object != obj:
+                tool.Blender.set_active_object(obj)
         except core.IncompatibleRepresentationError:
             if obj.data != original_data:
                 tool.Geometry.change_object_data(obj, original_data, is_global=True)
