@@ -375,6 +375,7 @@ class TestRenameObject(NewFile):
         assert obj.name == "name"
 
 
+# TODO: add a test
 class TestReplaceObjectWithEmpty(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
@@ -384,7 +385,7 @@ class TestReplaceObjectWithEmpty(NewFile):
         bpy.context.scene.collection.objects.link(obj)
         element = ifc.createIfcWall()
         tool.Ifc.link(element, obj)
-        subject.replace_object_with_empty(obj)
+        subject.recreate_object_with_data(obj, None)
         obj = bpy.data.objects.get("Object")
         assert obj.users_collection[0] == bpy.context.scene.collection
         assert tool.Ifc.get_entity(obj) == element
