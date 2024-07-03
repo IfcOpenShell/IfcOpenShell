@@ -83,13 +83,13 @@ The following function shows how property sets can be extracted from a given ``I
             is_defined_by->begin(), is_defined_by->end(), rels.begin(),
             [](const typename Schema::IfcRelDefines *x) {
                 if (x == nullptr) return false;
-                const typename Schema::IfcRelDefinesByProperties *defines_by_properties =
-                    dynamic_cast<const typename Schema::IfcRelDefinesByProperties*>(x);
+                const typename Schema::IfcRelDefinesByProperties *defines_by_properties = 
+                    x->template as<typename Schema::IfcRelDefinesByProperties>();
                 if (defines_by_properties == nullptr) return false;
                 const auto *relating_property_definition =
                     defines_by_properties->RelatingPropertyDefinition();
                 if (relating_property_definition == nullptr) return false;
-                return dynamic_cast<const typename Schema::IfcPropertySet*>(relating_property_definition) !=
+                return relating_property_definition->template as<typename Schema::IfcPropertySet>() !=
                     nullptr;
             });
         rels.resize(std::distance(rels.begin(), it));
