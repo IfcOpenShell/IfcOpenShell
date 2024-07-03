@@ -26,7 +26,7 @@ import blenderbim.core.tool
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, final
 
 
 class Ifc(blenderbim.core.tool.Ifc):
@@ -209,7 +209,22 @@ class Ifc(blenderbim.core.tool.Ifc):
         return occurrences
 
     class Operator:
+        """IFC Operator class.
+
+        Operators that edit any IFC data should inherit from this class
+        and implement `_execute` method.
+
+        `execute` method is already reserved by this class to keep track of the
+        IFC changes for Undo system.
+        """
+
+        @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
             blenderbim.bim.handler.refresh_ui_data()
             return {"FINISHED"}
+
+        # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod
+        # because it conflicts with bpy.types.Operator.
+        def _execute(self, context: bpy.types.Context) -> None:
+            raise NotImplementedError("IFC operator must implement _execute method.")
