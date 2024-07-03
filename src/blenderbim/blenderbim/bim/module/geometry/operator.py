@@ -175,6 +175,8 @@ class AddRepresentation(bpy.types.Operator, Operator):
             )
             return {"FINISH"}
 
+        # NOTE: `data` is temporary data generated to add a representation.
+        data: bpy.types.Mesh
         if conversion_method == "OUTLINE":
             if ifc_context.ContextType == "Plan":
                 data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
@@ -225,6 +227,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
             # Object might be recreated, need to set it as active again.
             if context.active_object != obj:
                 tool.Blender.set_active_object(obj)
+            bpy.data.meshes.remove(data)
         except core.IncompatibleRepresentationError:
             if obj.data != original_data:
                 tool.Geometry.change_object_data(obj, original_data, is_global=True)
