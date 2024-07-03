@@ -211,7 +211,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
             if original_data:
                 tool.Geometry.change_object_data(obj, data, is_global=True)
             else:
-                obj = tool.Geometry.recreate_object_with_data(obj, data)
+                obj = tool.Geometry.recreate_object_with_data(obj, data, is_global=True)
 
         try:
             core.add_representation(
