@@ -101,12 +101,57 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     .addClass("no-print")
     .css("margin-bottom", "10px");
 
+  const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
+
+  const scheduleTable = $("<table></table>")
+    .addClass("no-print table-description")
+    .attr("id", "workSchedTable-" + blenderId)
+    .hide();
+
+  $.each(workSched, (key, value) => {
+    value = value ? value : "null";
+    $("<tr></tr>")
+      .append($("<td></td>").text(key))
+      .append($("<td></td>").text(value))
+      .appendTo(scheduleTable);
+  });
+
+  const toggleButton = $("<button></button>")
+    .text("Show Schedule Info")
+    .addClass("btn no-print")
+    .on("click", function () {
+      scheduleTable.toggle();
+      const buttonText = scheduleTable.is(":visible")
+        ? "Hide Schedule Info"
+        : "Show Schedule Info";
+      toggleButton.text(buttonText);
+    });
+
+  var ganttInfoDiv = $("<div></div>")
+    .addClass("gantt-info")
+    .attr("id", "gantt-info-" + blenderId);
+
+  const scheduleName = $("<span></span>").text("Schedule: " + workSched.Name);
+
+  const createdOn = $("<span></span>")
+    .text("Created: " + new Date(workSched.CreationDate).toLocaleDateString())
+    .css("float", "right");
+
   const ganttDiv = $("<div></div>")
     .addClass("gantt-chart")
     .attr("id", "gantt-" + blenderId);
 
+  ganttInfoDiv.append(scheduleName);
+  ganttInfoDiv.append(createdOn);
+
+  workSchedDiv.append(toggleButton);
+  workSchedDiv.append(scheduleTable);
+
   ganttContainer.append(ganttTitle);
+  ganttContainer.append(workSchedDiv);
+  ganttContainer.append(ganttInfoDiv);
   ganttContainer.append(ganttDiv);
+
   $("#container").append(ganttContainer);
 
   let g = new JSGantt.GanttChart($("#gantt-" + blenderId)[0], "week");
@@ -154,7 +199,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
   let printButton = $("<button>", {
     id: "print-btn-" + blenderId,
     html: "Print",
-    class: "no-print",
+    class: "btn no-print",
   });
 
   let printOptions = $("<select>", {
@@ -204,21 +249,32 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     g.setTotalHeight(900);
     g.Draw();
   });
+
   ganttContainer.append(printOptions);
   ganttContainer.append(printButton);
 }
 
 // Function to update gantt and filename
 function updateGanttElement(blenderId, tasks, workSched, filename) {
-  if (workSched != undefined) {
-    //TODO: handle updating work schedule table
-  }
+  // update work schedule table
+  const table = $("#workSchedTable-" + blenderId);
+  table.empty();
+  $.each(workSched, (key, value) => {
+    value = value ? value : "null";
+    $("<tr></tr>")
+      .append($("<td></td>").text(key))
+      .append($("<td></td>").text(value))
+      .appendTo(table);
+  });
 
+  // update gantt chart with new data
   let g = connectedClients[blenderId]["gantt"];
   g.ClearTasks();
   g.Draw();
   JSGantt.addJSONTask(g, tasks);
   g.Draw();
+
+  $("#title-" + blenderId).text(filename);
 }
 
 // Function to remove gantt element
