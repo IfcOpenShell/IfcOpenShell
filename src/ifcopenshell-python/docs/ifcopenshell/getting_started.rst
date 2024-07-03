@@ -59,7 +59,7 @@ Reading out attributes of an IfcProduct
 ---------------------------------------
 
 The properties of an ``IfcProduct``, and by extension any derived class, can be read as by calling the method of the same name, e.g. ``GlobalId()``, ``Name()``. 
-Note that optional properties like name, long name, or description, among others, are wrapped with a ``boost::optional`` (`documentation <https://www.boost.org/doc/libs/1_84_0/libs/optional/doc/html/index.html>`__) container object.
+Note that optional properties like name, long name, or description, among others, are wrapped with a ``boost::optional`` (`documentation <https://www.boost.org/doc/libs/1_84_0/libs/optional/doc/html/index.html>`__) container object. Except for pointer types such as IfcRoot::OwnerHistory, here the developer is still responsible for performing comparison to `nullptr` before using the value.
 
 Navigating relationships in IFC
 -------------------------------
@@ -106,4 +106,4 @@ Defensive programming with IfcOpenshell
 
 The need for (down-)casting object pointers when accessing various properties in an IFC entity is evident from the previous code sample as the methods and properties usually 
 return the abstract class of the entity. It is hence important to check for ``nullptr`` when performing such casts. 
-The existence of certain fields and properties should also be checked.  
+The existence of certain fields and properties should also be checked.  Also note that IfcOpenShell has as of now not been tested explicitly against malicious inputs. Schema validation (the correctness of attribute types and conformance to schema where rules) can currently only be assessed in Python (using `ifcopenshell.validate --rules`).
