@@ -15,7 +15,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	}
 
 	TopoDS_Shape face;
-	if (!convert(extrusion->basis, face)) {
+	if (!convert(taxonomy::cast<taxonomy::face>(extrusion->basis), face)) {
 		return false;
 	}
 

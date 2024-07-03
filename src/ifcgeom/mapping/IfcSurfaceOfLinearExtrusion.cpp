@@ -23,37 +23,19 @@ using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfLinearExtrusion* inst) {
 	return nullptr;
-
-	/*
-	TopoDS_Wire wire;
-	if ( !convert_wire(inst->SweptCurve(), wire) ) {
-		TopoDS_Face face;
-		if ( !convert_face(inst->SweptCurve(),face) ) return false;
-		TopExp_Explorer exp(face, TopAbs_WIRE);
-		wire = TopoDS::Wire(exp.Current());
-	}
-	const double height = inst->Depth() * length_unit_;
-	
-	gp_Trsf trsf;
+	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(inst->Position(), trsf);
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
-	gp_Dir dir;
-	convert(inst->ExtrudedDirection(),dir);
-
-	shape = BRepPrimAPI_MakePrism(wire, height*dir);
-	
-	if (has_position) {
-		// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
-		// and therefore has a unit scale factor
-		shape.Move(trsf);
-	}
-	
-	return !shape.IsNull();
-	*/
+	return taxonomy::make<taxonomy::extrusion>(
+		matrix,
+		taxonomy::cast<taxonomy::loop>(map(inst->SweptCurve())),
+		taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+		std::numeric_limits<double>::infinity()
+	);
 }

@@ -54,8 +54,9 @@ namespace ifcopenshell { namespace geometry { namespace kernels {
 		virtual bool convert_impl(const taxonomy::bspline_surface::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::cylinder::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::sphere::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
+		virtual bool convert_impl(const taxonomy::torus::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::solid::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
-		virtual bool convert_impl(const taxonomy::surface_curve_sweep::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
+		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw std::runtime_error("Not implemented"); }
 		virtual bool convert_impl(const taxonomy::collection::ptr, IfcGeom::ConversionResults&);
 		virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs);
@@ -107,7 +108,7 @@ namespace {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T& visitor) {
 			// @todo it should be possible to eliminate this dynamic_cast when there is a static equivalent to kind()
 			auto v = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::curves::type<N>>(item);
-			if (v) {
+			if (v && item->kind() == v->kind()) {
 				visitor(v);
 				return true;
 			} else {
@@ -118,6 +119,28 @@ namespace {
 
 	template <typename T>
 	struct dispatch_curve_creation<T, ifcopenshell::geometry::taxonomy::curves::max> {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T&) {
+			Logger::Error("No conversion for " + std::to_string(item->kind()));
+			return false;
+		}
+	};
+
+	/* A compile-time for loop over the curve kinds */
+	template <typename T, size_t N = 0>
+	struct dispatch_surface_creation {
+		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T& visitor) {
+			auto v = ifcopenshell::geometry::taxonomy::template dcast<ifcopenshell::geometry::taxonomy::surfaces::type<N>>(item);
+			if (v && item->kind() == v->kind()) {
+				visitor(v);
+				return true;
+			} else {
+				return dispatch_surface_creation<T, N + 1>::dispatch(item, visitor);
+			}
+		}
+	};
+
+	template <typename T>
+	struct dispatch_surface_creation<T, ifcopenshell::geometry::taxonomy::surfaces::max> {
 		static bool dispatch(const ifcopenshell::geometry::taxonomy::ptr item, T&) {
 			Logger::Error("No conversion for " + std::to_string(item->kind()));
 			return false;

@@ -135,6 +135,7 @@ public:
 	bool convert(const ifcopenshell::geometry::taxonomy::solid::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::loft::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
+	bool convert(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
 
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::edge::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loop::ptr, IfcGeom::ConversionResults&);
@@ -144,9 +145,14 @@ public:
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loft::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&);
 
 	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
+
+	typedef boost::variant<Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
+	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
+	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
 
 	template <typename T, typename U>
 	static T convert_xyz(const U& u) {

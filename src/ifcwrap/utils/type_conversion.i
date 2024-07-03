@@ -271,6 +271,7 @@ PyObject* item_to_pyobject(const ifcopenshell::geometry::taxonomy::item::ptr& i)
 	else if (kind == SHELL) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<shell>(std::static_pointer_cast<shell>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__shell_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == SOLID) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<solid>(std::static_pointer_cast<solid>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__solid_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == SPHERE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<sphere>(std::static_pointer_cast<sphere>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == TORUS) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<torus>(std::static_pointer_cast<torus>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__torus_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == STYLE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<style>(std::static_pointer_cast<style>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == SURFACE_CURVE_SWEEP) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<surface_curve_sweep>(std::static_pointer_cast<surface_curve_sweep>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__surface_curve_sweep_t, 0 | SWIG_POINTER_OWN); }
 	else {

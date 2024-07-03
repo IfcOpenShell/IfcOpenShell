@@ -354,6 +354,10 @@ namespace {
 		double u;
 		typedef void result_type;
 
+		void operator()(const boost::blank&) {
+			throw std::runtime_error("Unbounded curve not supported here");
+		}
+
 		void operator()(const taxonomy::point3::ptr& p) {
 			point_projection_visitor_ v{ *p };
 			dispatch_curve_creation<point_projection_visitor_>::dispatch(curve, v);
@@ -1121,7 +1125,7 @@ bool CgalKernel::convert(const taxonomy::extrusion::ptr extrusion, cgal_shape_t 
 	}
 
 	std::list<cgal_face_t> bottom_face;
-	if (!convert(extrusion->basis, bottom_face) || bottom_face.size() != 1) {
+	if (!convert(taxonomy::cast<taxonomy::face>(taxonomy::cast<taxonomy::face>(extrusion->basis)), bottom_face) || bottom_face.size() != 1) {
 		return false;
 	}
 
@@ -1542,8 +1546,9 @@ bool CgalKernel::process_as_2d_polygon(const taxonomy::boolean_result::ptr br, s
 	try {
 		std::transform(extrusions.begin(), extrusions.end(), std::back_inserter(wires), [this](extrusion_pair& p) {
 			auto ex = p.second;
-			if (ex->basis->children.size() == 1 && ex->basis->children[0]->kind() == taxonomy::LOOP) {
-				auto l = (taxonomy::loop::ptr) ex->basis->children[0];
+			auto ex_basis = taxonomy::cast<taxonomy::face>(ex->basis);
+			if (ex_basis->children.size() == 1 && ex_basis->children[0]->kind() == taxonomy::LOOP) {
+				auto l = (taxonomy::loop::ptr) ex_basis->children[0];
 				cgal_wire_t w;
 				cgal_placement_t trsf;
 				convert_placement(ex->matrix, trsf);

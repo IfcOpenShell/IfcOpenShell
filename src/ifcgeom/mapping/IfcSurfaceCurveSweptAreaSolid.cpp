@@ -33,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceCurveSweptAreaSolid* 
 		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
-	auto scs = taxonomy::make<taxonomy::surface_curve_sweep>(matrix, f, map(inst->ReferenceSurface()), map(inst->Directrix()));
+	auto scs = taxonomy::make<taxonomy::sweep_along_curve>(matrix, f, map(inst->ReferenceSurface()), map(inst->Directrix()));
 	scs->matrix = matrix;
 
 	return scs;
