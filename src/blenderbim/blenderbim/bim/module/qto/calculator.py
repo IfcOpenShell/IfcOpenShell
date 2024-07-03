@@ -1168,6 +1168,7 @@ def create_mesh_from_shape(
 ) -> bpy.types.Mesh:
     if settings is None:
         settings = ifcopenshell.geom.settings()
+        settings.set("keep-bounding-boxes", True)
     shape = ifcopenshell.geom.create_shape(settings, element)
     geometry = shape.geometry if element.is_a("IfcRoot") else shape
     faces = geometry.faces

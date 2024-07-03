@@ -556,6 +556,7 @@ class Loader(blenderbim.core.tool.Loader):
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             settings.set("context-ids", [context.id()])
             settings.set("apply-default-materials", False)
+            settings.set("keep-bounding-boxes", True)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)
