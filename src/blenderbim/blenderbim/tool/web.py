@@ -39,7 +39,7 @@ web_operator_queue = queue.Queue()
 IFC_TASK_ATTRIBUTE_MAP = {
     "pStart": "ScheduleStart",
     "pEnd": "ScheduleFinish",
-    "pName": "",
+    "pName": "Name",
     "pRes": "",
 }
 
@@ -175,17 +175,22 @@ class Web(blenderbim.core.tool.Web):
         ifc_file = tool.Ifc.get()
         if operator_data["type"] == "editTask":
             task_id = int(operator_data["taskId"])
-            task_time = ifc_file.by_id(task_id).TaskTime
+            task = ifc_file.by_id(task_id)
+            task_time = task.TaskTime
             column = operator_data["column"]
             new_value = operator_data["value"]
 
-            # editing a parent task time will throw an exception
             try:
+                ifcopenshell.api.sequence.edit_task(
+                    ifc_file, task, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
+                )
+            except AttributeError:
+                if task_time is None:
+                    ifcopenshell.api.sequence.add_task_time(ifc_file, task)
+                    task_time = task.TaskTime
                 ifcopenshell.api.sequence.edit_task_time(
                     ifc_file, task_time=task_time, attributes={IFC_TASK_ATTRIBUTE_MAP[column]: str(new_value)}
                 )
-            except AttributeError:
-                pass
 
         bpy.ops.bim.load_task_properties()
 
