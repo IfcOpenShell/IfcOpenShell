@@ -183,9 +183,11 @@ class AddRepresentation(bpy.types.Operator, Operator):
             else:
                 data = tool.Geometry.generate_3d_box_mesh(obj)
             tool.Geometry.change_object_data(obj, data, is_global=True)
-        elif (
-            conversion_method == "OBJECT" and props.representation_from_object and props.representation_from_object.data
-        ):
+        elif conversion_method == "OBJECT":
+            if not props.representation_from_object:
+                self.report({"ERROR"}, "No object is selected to copy a representation from.")
+                return {"FINISHED"}
+
             data = tool.Geometry.duplicate_object_data(props.representation_from_object)
             tool.Geometry.change_object_data(obj, data, is_global=True)
 

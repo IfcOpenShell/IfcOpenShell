@@ -136,4 +136,12 @@ class BIMGeometryProperties(PropertyGroup):
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
-    representation_from_object: PointerProperty(type=bpy.types.Object)
+
+    def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
+        return bool(obj != bpy.context.active_object and obj.data)
+
+    representation_from_object: PointerProperty(
+        name="Object to copy a representation from.\nIt doesn't have to be an IFC object.",
+        type=bpy.types.Object,
+        poll=is_object_valid_for_representation_copy,
+    )
