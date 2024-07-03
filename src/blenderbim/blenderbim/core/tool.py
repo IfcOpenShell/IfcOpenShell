@@ -400,7 +400,7 @@ class Geometry:
     def record_object_position(cls, obj): pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
-    def replace_object_with_empty(cls, obj): pass
+    def recreate_object_with_data(cls, obj, data): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
     def run_geometry_update_representation(cls, obj=None): pass

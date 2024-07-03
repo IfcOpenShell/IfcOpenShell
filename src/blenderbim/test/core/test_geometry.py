@@ -321,9 +321,9 @@ class TestRemoveRepresentation:
         geometry.has_data_users("data").should_be_called().will_return(True)
         geometry.get_elements_of_type("type").should_be_called().will_return(["element"])
         ifc.get_object("element").should_be_called().will_return("obj")
-        geometry.replace_object_with_empty("obj").should_be_called()
+        geometry.recreate_object_with_data("obj").should_be_called()
         ifc.get_object("type").should_be_called().will_return("type_obj")
-        geometry.replace_object_with_empty("type_obj").should_be_called()
+        geometry.recreate_object_with_data("type_obj").should_be_called()
         ifc.run("geometry.unassign_representation", product="type", representation="representation").should_be_called()
         ifc.run("geometry.remove_representation", representation="representation").should_be_called()
         geometry.delete_data("data").should_be_called()
@@ -344,7 +344,7 @@ class TestRemoveRepresentation:
         geometry.get_element_type("element").should_be_called().will_return(None)
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.has_data_users("data").should_be_called().will_return(True)
-        geometry.replace_object_with_empty("obj").should_be_called()
+        geometry.recreate_object_with_data("obj").should_be_called()
         ifc.run(
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()
@@ -359,7 +359,7 @@ class TestRemoveRepresentation:
         geometry.is_type_product("element").should_be_called().will_return(False)
         geometry.get_representation_data("representation").should_be_called().will_return("data")
         geometry.has_data_users("data").should_be_called().will_return(True)
-        geometry.replace_object_with_empty("obj").should_be_called()
+        geometry.recreate_object_with_data("obj").should_be_called()
         ifc.run(
             "geometry.unassign_representation", product="element", representation="representation"
         ).should_be_called()

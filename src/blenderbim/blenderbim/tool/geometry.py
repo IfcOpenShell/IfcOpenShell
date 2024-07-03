@@ -690,13 +690,20 @@ class Geometry(blenderbim.core.tool.Geometry):
         obj.name = name
 
     @classmethod
-    def replace_object_with_empty(cls, obj: bpy.types.Object) -> None:
-        """Recreate a Blender object as an empty object.
+    def recreate_object_with_data(cls, obj: bpy.types.Object, data: Union[bpy.types.ID, None]) -> bpy.types.Object:
+        """Recreate a Blender object with the provided `data`.
 
         This method is useful when an object should no longer have associated
-        data (in Blender, you cannot simply assign .data to None). Note that the
-        object's original data is not handled by this method and should be
+        data (in Blender, you cannot simply assign .data to None).
+        Or if object is an empty and should now have a data.
+
+        The object's original data is not handled by this method and should be
         processed separately to avoid leaving orphan data.
+
+        Original `obj` is deleted and becomes invalid and should be replaced
+        with an object returned by this method.
+
+        :return: The newly recreated object.
         """
         element = tool.Ifc.get_entity(obj)
         name = obj.name
@@ -704,7 +711,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             tool.Ifc.unlink(element=element)
 
         obj.name = ifcopenshell.guid.new()
-        new_obj = bpy.data.objects.new(name, None)
+        new_obj = bpy.data.objects.new(name, data)
 
         if element:
             tool.Ifc.link(element, new_obj)
@@ -712,6 +719,7 @@ class Geometry(blenderbim.core.tool.Geometry):
             collection.objects.link(new_obj)
         new_obj.matrix_world = obj.matrix_world
         bpy.data.objects.remove(obj)
+        return new_obj
 
     @classmethod
     def resolve_mapped_representation(
@@ -885,7 +893,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         # `representation` is the only representation for object.
         if new_representation is None:
-            cls.replace_object_with_empty(obj)
+            cls.recreate_object_with_data(obj, None)
             return
 
         blenderbim.core.geometry.switch_representation(
