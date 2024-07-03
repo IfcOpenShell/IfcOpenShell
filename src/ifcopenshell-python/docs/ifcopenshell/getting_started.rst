@@ -96,8 +96,8 @@ The following function shows how property sets can be extracted from a given ``I
         property_sets.resize(rels.size());
         std::transform(rels.begin(), rels.end(), property_sets.begin(),
                         [](const typename Schema::IfcRelDefines *x) {
-                        const typename Schema::IfcRelDefinesByProperties *defines_by_properties = dynamic_cast<const typename Schema::IfcRelDefinesByProperties*>(x);
-                        return dynamic_cast< typename Schema::IfcPropertySet*>(defines_by_properties->RelatingPropertyDefinition());
+                        const typename Schema::IfcRelDefinesByProperties *defines_by_properties = x->template as<typename Schema::IfcRelDefinesByProperties>();
+                        return defines_by_properties->RelatingPropertyDefinition()->template as<typename Schema::IfcPropertySet>();
                         });
     }
 
