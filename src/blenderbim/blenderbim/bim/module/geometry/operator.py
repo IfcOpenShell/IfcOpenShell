@@ -159,7 +159,15 @@ class AddRepresentation(bpy.types.Operator, Operator):
 
         original_data = obj.data
 
-        if self.representation_conversion_method == "OUTLINE":
+        conversion_method = self.representation_conversion_method
+        if not original_data:
+            self.report(
+                {"ERROR"},
+                (f"No mesh data found for the active object. Mesh data required for '{conversion_method}' method."),
+            )
+            return {"FINISH"}
+
+        if conversion_method == "OUTLINE":
             if ifc_context.ContextType == "Plan":
                 data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
             elif ifc_context.ContextIdentifier == "Profile":
@@ -167,7 +175,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
             else:
                 data = tool.Geometry.generate_outline_mesh(obj, axis="+Z")
             tool.Geometry.change_object_data(obj, data, is_global=True)
-        elif self.representation_conversion_method == "BOX":
+        elif conversion_method == "BOX":
             if ifc_context.ContextType == "Plan":
                 data = tool.Geometry.generate_2d_box_mesh(obj, axis="Z")
             elif ifc_context.ContextIdentifier == "Profile":
@@ -176,9 +184,7 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 data = tool.Geometry.generate_3d_box_mesh(obj)
             tool.Geometry.change_object_data(obj, data, is_global=True)
         elif (
-            self.representation_conversion_method == "OBJECT"
-            and props.representation_from_object
-            and props.representation_from_object.data
+            conversion_method == "OBJECT" and props.representation_from_object and props.representation_from_object.data
         ):
             data = tool.Geometry.duplicate_object_data(props.representation_from_object)
             tool.Geometry.change_object_data(obj, data, is_global=True)
