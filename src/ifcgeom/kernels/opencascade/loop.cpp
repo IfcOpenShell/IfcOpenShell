@@ -225,7 +225,7 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 	for (auto& segment : loop->children) {
 		TopoDS_Wire segment_wire;
 		try {
-			segment_wire = boost::get<TopoDS_Wire>(convert_curve(this, segment));
+			segment_wire = boost::get<TopoDS_Wire>(convert_curve(segment));
 		} catch (...) {
 			// @todo we should do some better logging here and catch specific exceptions
 			// but most notably we just want to continue processing when there are
