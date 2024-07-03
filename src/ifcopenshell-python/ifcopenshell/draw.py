@@ -324,9 +324,9 @@ def main(
                     # - style transparency
                     # the factor determines how much white will be interpolated
                     # into the style diffuse color.
-                    clr = numpy.array(style.diffuse)
+                    clr = numpy.array(style.diffuse if style else (0.6, 0.6, 0.6))
                     factor = (math.log(elements[0].distance + 2.0) / 7.0) * (1.0 - 0.5 * abs(elements[0].dot_product))
-                    if style.has_transparency:
+                    if style and style.has_transparency:
                         factor *= 1.0 - style.transparency
                     clr = WHITE * (1.0 - factor) + clr * factor
 
