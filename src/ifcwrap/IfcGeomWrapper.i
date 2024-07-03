@@ -143,7 +143,7 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	if (!$1) $1 = try_upcast<sphere>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t);
 	if (!$1) $1 = try_upcast<torus>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__torus_t);
 	if (!$1) $1 = try_upcast<style>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t);
-	if (!$1) $1 = try_upcast<surface_curve_sweep>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__surface_curve_sweep_t);
+	if (!$1) $1 = try_upcast<sweep_along_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sweep_along_curve_t);
 }
 
 %inline %{
@@ -190,7 +190,7 @@ std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
 %shared_ptr(ifcopenshell::geometry::taxonomy::sweep);
 %shared_ptr(ifcopenshell::geometry::taxonomy::extrusion);
 %shared_ptr(ifcopenshell::geometry::taxonomy::revolve);
-%shared_ptr(ifcopenshell::geometry::taxonomy::surface_curve_sweep);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sweep_along_curve);
 %shared_ptr(ifcopenshell::geometry::taxonomy::node);
 
 %include "../ifcgeom/ifc_geom_api.h"
@@ -1157,6 +1157,6 @@ assign_repr(ifcopenshell::geometry::taxonomy::solid)
 assign_repr(ifcopenshell::geometry::taxonomy::sphere)
 assign_repr(ifcopenshell::geometry::taxonomy::torus)
 assign_repr(ifcopenshell::geometry::taxonomy::style)
-assign_repr(ifcopenshell::geometry::taxonomy::surface_curve_sweep)
+assign_repr(ifcopenshell::geometry::taxonomy::sweep_along_curve)
 
 #endif
