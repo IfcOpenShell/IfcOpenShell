@@ -551,7 +551,7 @@ In Python, this is set in the settings passed to the iterator.
     offset[0], offset[1], offset[2] = (1, 2, 3)
     settings.offset = offset
 
-SEW_SHELLS
+REORIENT_SHELLS
 ----------
 
 +------+---------------------+---------+

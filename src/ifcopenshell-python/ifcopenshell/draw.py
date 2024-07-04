@@ -75,7 +75,7 @@ def main(
 
     geom_settings = ifcopenshell.geom.settings(
         # when not doing booleans, proper solids from shells isn't a requirement
-        # SEW_SHELLS=settings.subtract_before_hlr,
+        REORIENT_SHELLS=settings.subtract_before_hlr,
     )
 
     # this is required for serialization
