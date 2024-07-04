@@ -43,11 +43,14 @@
 #include <Geom_ToroidalSurface.hxx>
 #include <BRepAdaptor_CompCurve.hxx>
 #include <Approx_Curve3d.hxx>
-#include <BRepAdaptor_HCompCurve.hxx>
 #include <Standard_Version.hxx>
 #include <Geom_SurfaceOfLinearExtrusion.hxx>
 #include <Geom_SurfaceOfRevolution.hxx>
 #include <BRepPrimAPI_MakeRevol.hxx>
+
+#if OCC_VERSION_HEX < 0x70600
+#include <BRepAdaptor_HCompCurve.hxx>
+#endif
 
 #include "OpenCascadeKernel.h"
 #include "face_definition.h"
