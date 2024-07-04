@@ -225,6 +225,8 @@ class BIM_PT_object_material(Panel):
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
 
         total_items = len(ObjectMaterialData.data["set_items"])
+        row = self.layout.row(align=True)
+        row.label(text="----- Exterior -----")
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
             if len(self.props.material_set_item_profile_attributes) and self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_profile_ui(set_item)
@@ -232,6 +234,8 @@ class BIM_PT_object_material(Panel):
                 self.draw_editable_set_item_ui(set_item)
             else:
                 self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
+        row = self.layout.row(align=True)
+        row.label(text="----- Interior -----")
 
     def draw_editable_set_item_profile_ui(self, set_item):
         box = self.layout.box()
