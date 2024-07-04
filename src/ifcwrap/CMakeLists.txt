@@ -76,6 +76,14 @@ endif()
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(Python COMPONENTS Interpreter)
 IF((Python_Interpreter_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+    # Find Python interpreter and get its version
+    EXECUTE_PROCESS(
+    	COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
+    	OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
+    	OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    SET_TARGET_PROPERTIES(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
+
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
