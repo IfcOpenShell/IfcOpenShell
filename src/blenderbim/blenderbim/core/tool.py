@@ -487,7 +487,6 @@ class Loader:
 @interface
 class Material:
     def add_material_to_set(cls, material_set, material): pass
-    def delete_object(cls, obj): pass
     def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
     def enable_editing_material(cls, material): pass
@@ -498,7 +497,6 @@ class Material:
     def get_elements_by_material(cls, material): pass
     def get_material(cls, element, should_inherit): pass
     def get_material_attributes(cls): pass
-    def get_name(cls, obj): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
     def import_material_definitions(cls, material_type): pass
