@@ -82,11 +82,13 @@ ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
 endif
 
+# Current build commit hash.
+OLD:=42b96d6
 .PHONY: bump
 bump:
-	cd . && $(SED) "s/$(OLD)/$(NEW)/" Makefile
-	cd ../ifcopenshell-python/ && $(SED) "s/$(OLD)/$(NEW)/" Makefile
-	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) "s/$(OLD)/$(NEW)/" installation.rst
+	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
+	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) -b "s/$(OLD)/$(NEW)/" installation.rst
 
 .PHONY: dist
 dist:
@@ -99,7 +101,7 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-42b96d6-$(PLATFORM)64.zip
+	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v$(VERSION)-${OLD}-$(PLATFORM)64.zip
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
