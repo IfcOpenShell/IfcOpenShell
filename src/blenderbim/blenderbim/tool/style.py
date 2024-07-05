@@ -66,7 +66,14 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         new_style = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), style)
-        new_style.Name = style.Name + "_copy"
+        name = (style.Name or "Unnamed") + "_copy"
+        new_style.Name = name
+
+        blender_material = tool.Ifc.get_object(style).copy()
+        blender_material.use_fake_user = True
+        blender_material.name = name
+        tool.Ifc.link(new_style, blender_material)
+
         return new_style
 
     @classmethod
