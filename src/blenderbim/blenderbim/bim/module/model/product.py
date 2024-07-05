@@ -542,23 +542,3 @@ def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, set
             elements.extend(tool.Model.get_occurrences_without_material_override(element))
 
     tool.Model.apply_ifc_material_changes(elements, assigned_material=settings["material"])
-
-
-def ensure_material_unassigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    return  # TODO ensure this now works with the new approach of styles
-    elements = settings["products"]
-
-    # unassign_material could be called when product is about to get removed
-    # and representation might be already removed.
-    elements = [
-        e
-        for e in elements
-        if (obj := tool.Ifc.get_object(e))
-        and obj.data
-        and tool.Ifc.get_entity_by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-    ]
-
-    for element in elements[:]:
-        if element.is_a("IfcElementType"):
-            elements.extend(tool.Model.get_occurrences_without_material_override(element))
-    tool.Model.apply_ifc_material_changes(elements)
