@@ -546,6 +546,7 @@ class TestApplyIfcMaterialChanges(NewFile):
             assert self.get_used_styles(obj) == expected
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        tool.Material.ensure_material_unassigned([element_type])
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == set()
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
@@ -573,6 +574,7 @@ class TestApplyIfcMaterialChanges(NewFile):
             assert self.get_used_styles(obj) == {green_style}
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element_type])
+        tool.Material.ensure_material_unassigned([element_type])
         assert self.get_used_styles(tool.Ifc.get_object(element_type)) == {green_style}
         for element in ifc_file.by_type("IfcActuator"):
             obj = tool.Ifc.get_object(element)
@@ -613,6 +615,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
         assert self.get_used_styles(obj) == {green_style, red_style}
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         mesh = self.get_mesh(obj)
         assert len(mesh.materials) == 2
         assert set(mesh.materials) == {bpy.data.materials["Green"], None}
@@ -630,6 +633,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert set(get_material_indices(mesh)) == {mesh.materials.find("Red")}
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         mesh = self.get_mesh(obj)
         assert len(mesh.materials) == 2
         assert set(mesh.materials) == {bpy.data.materials["Red"], None}
@@ -651,4 +655,5 @@ class TestApplyIfcMaterialChanges(NewFile):
         assert self.get_mesh(obj).materials[:] == []
 
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        tool.Material.ensure_material_unassigned([element])
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]

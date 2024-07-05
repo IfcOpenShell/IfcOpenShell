@@ -116,21 +116,27 @@ def assign_material(
 def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list[bpy.types.Object]) -> None:
     for obj in objects:
         element = ifc.get_entity(obj)
-        if element:
-            material = material_tool.get_material(element, should_inherit=False)
-            inherited_material = material_tool.get_material(element, should_inherit=True)
-            if material:
-                if "Usage" in material.is_a():
-                    element_type = material_tool.get_type(element)
-                    ifc.run("material.unassign_material", products=[element_type])
-                else:
-                    ifc.run("material.unassign_material", products=[element])
-            elif inherited_material:
+        if not element:
+            continue
+        material = material_tool.get_material(element, should_inherit=False)
+        inherited_material = material_tool.get_material(element, should_inherit=True)
+        if material:
+            if "Usage" in material.is_a():
                 element_type = material_tool.get_type(element)
+                assert element_type  # Type checker.
                 ifc.run("material.unassign_material", products=[element_type])
+                material_tool.ensure_material_unassigned(elements=[element_type])
             else:
-                # Has no material and has no inherited material, nothing to unassign.
-                pass
+                ifc.run("material.unassign_material", products=[element])
+                material_tool.ensure_material_unassigned(elements=[element])
+        elif inherited_material:
+            element_type = material_tool.get_type(element)
+            assert element_type  # Type checker.
+            ifc.run("material.unassign_material", products=[element_type])
+            material_tool.ensure_material_unassigned(elements=[element_type])
+        else:
+            # Has no material and has no inherited material, nothing to unassign.
+            pass
 
 
 def patch_non_parametric_mep_segment(

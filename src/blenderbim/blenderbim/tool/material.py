@@ -284,3 +284,18 @@ class Material(blenderbim.core.tool.Material):
                     for style in item.Styles:
                         if style.is_a("IfcSurfaceStyle"):
                             return style
+
+    @classmethod
+    def ensure_material_unassigned(cls, elements: list[ifcopenshell.entity_instance]) -> None:
+        """Ensure blender materials are updated after a material unassignment.
+
+        E.g. during a material unassignment some material style may not apply anymore
+        or some other may be applied now since it's no longer overridden,
+        therefore we need to make sure blender materials reflect correct styles.
+
+        Designed to be called after material.unassign_material API call."""
+        elements = elements.copy()  # Avoid argument mutation.
+        for element in elements[:]:
+            if element.is_a("IfcElementType"):
+                elements.extend(tool.Model.get_occurrences_without_material_override(element))
+        tool.Model.apply_ifc_material_changes(elements)
