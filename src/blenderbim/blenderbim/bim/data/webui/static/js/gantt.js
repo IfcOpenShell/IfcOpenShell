@@ -231,6 +231,11 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     g.setTotalHeight("");
     g.Draw();
 
+    addEventListener("afterprint", (event) => {
+      g.setEditable(true);
+    },);
+
+
     let css =
       "@media print {\n" +
       "    @page {\n" +
