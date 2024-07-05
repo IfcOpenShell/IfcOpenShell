@@ -264,19 +264,6 @@ class Material(blenderbim.core.tool.Material):
         tool.Geometry.reload_representation(objects)
 
     @classmethod
-    def sync_blender_material_name(cls, material: ifcopenshell.entity_instance) -> None:
-        name = material.Name or "Unnamed"
-        obj = tool.Ifc.get_object(material)
-        if obj:
-            obj.name = name
-        style = tool.Style.get_style(obj)
-        if style:
-            style.Name = name
-            obj = tool.Ifc.get_object(style)
-            if obj:
-                obj.name = name
-
-    @classmethod
     def get_style(cls, material: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         for material_representation in material.HasRepresentation:
             for representation in material_representation.Representations:

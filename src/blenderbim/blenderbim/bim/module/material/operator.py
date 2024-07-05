@@ -148,15 +148,9 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
         material = tool.Ifc.get().by_id(self.material)
         new = tool.Ifc.run("material.copy_material", material=material)
 
-        blender_material = tool.Ifc.get_object(material)
-        new_blender = blender_material.copy()
-        new_blender.use_fake_user = True
-        tool.Ifc.link(new, new_blender)
-
         if not new.is_a("IfcMaterialList"):
             name = new[0] + " Copy"
             new[0] = name
-            new_blender.name = name
 
         material_prop_purge()
         bpy.ops.bim.load_materials()

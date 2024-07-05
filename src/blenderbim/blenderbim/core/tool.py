@@ -507,7 +507,6 @@ class Material:
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
-    def sync_blender_material_name(cls, material): pass
 
 
 @interface

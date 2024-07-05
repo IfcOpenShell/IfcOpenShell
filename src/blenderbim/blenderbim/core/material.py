@@ -88,7 +88,6 @@ def enable_editing_material(material_tool: tool.Material, material: ifcopenshell
 def edit_material(ifc: tool.Ifc, material_tool: tool.Material, material: ifcopenshell.entity_instance) -> None:
     attributes = material_tool.get_material_attributes()
     ifc.run("material.edit_material", material=material, attributes=attributes)
-    material_tool.sync_blender_material_name(material)
     material_tool.disable_editing_material()
     material_type = material_tool.get_active_material_type()
     material_tool.import_material_definitions(material_type)
