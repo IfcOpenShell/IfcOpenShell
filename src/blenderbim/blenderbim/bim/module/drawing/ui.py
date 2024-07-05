@@ -28,7 +28,6 @@ from blenderbim.bim.module.drawing.data import (
     ElementFiltersData,
     DecoratorData,
 )
-from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 
 
 class BIM_PT_camera(Panel):

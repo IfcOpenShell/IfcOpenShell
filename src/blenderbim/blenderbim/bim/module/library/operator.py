@@ -24,14 +24,7 @@ import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class AddLibrary(bpy.types.Operator, Operator):
+class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_library"
     bl_label = "Add Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -40,7 +33,7 @@ class AddLibrary(bpy.types.Operator, Operator):
         core.add_library(tool.Ifc)
 
 
-class RemoveLibrary(bpy.types.Operator, Operator):
+class RemoveLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_library"
     bl_label = "Remove Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -50,7 +43,7 @@ class RemoveLibrary(bpy.types.Operator, Operator):
         core.remove_library(tool.Ifc, library=tool.Ifc.get().by_id(self.library))
 
 
-class EnableEditingLibraryReferences(bpy.types.Operator, Operator):
+class EnableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library_references"
     bl_label = "Enable Editing Library References"
     bl_options = {"REGISTER", "UNDO"}
@@ -60,7 +53,7 @@ class EnableEditingLibraryReferences(bpy.types.Operator, Operator):
         core.enable_editing_library_references(tool.Library, library=tool.Ifc.get().by_id(self.library))
 
 
-class DisableEditingLibraryReferences(bpy.types.Operator, Operator):
+class DisableEditingLibraryReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library_references"
     bl_label = "Disable Editing Library References"
     bl_options = {"REGISTER", "UNDO"}
@@ -69,7 +62,7 @@ class DisableEditingLibraryReferences(bpy.types.Operator, Operator):
         core.disable_editing_library_references(tool.Library)
 
 
-class EnableEditingLibrary(bpy.types.Operator, Operator):
+class EnableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library"
     bl_label = "Enable Editing Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -78,7 +71,7 @@ class EnableEditingLibrary(bpy.types.Operator, Operator):
         core.enable_editing_library(tool.Library)
 
 
-class DisableEditingLibrary(bpy.types.Operator, Operator):
+class DisableEditingLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library"
     bl_label = "Disable Editing Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -87,7 +80,7 @@ class DisableEditingLibrary(bpy.types.Operator, Operator):
         core.disable_editing_library(tool.Library)
 
 
-class EditLibrary(bpy.types.Operator, Operator):
+class EditLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_library"
     bl_label = "Edit Library"
     bl_options = {"REGISTER", "UNDO"}
@@ -96,7 +89,7 @@ class EditLibrary(bpy.types.Operator, Operator):
         core.edit_library(tool.Ifc, tool.Library)
 
 
-class AddLibraryReference(bpy.types.Operator, Operator):
+class AddLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_library_reference"
     bl_label = "Add Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -105,7 +98,7 @@ class AddLibraryReference(bpy.types.Operator, Operator):
         core.add_library_reference(tool.Ifc, tool.Library)
 
 
-class RemoveLibraryReference(bpy.types.Operator, Operator):
+class RemoveLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_library_reference"
     bl_label = "Remove Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -115,7 +108,7 @@ class RemoveLibraryReference(bpy.types.Operator, Operator):
         core.remove_library_reference(tool.Ifc, tool.Library, reference=tool.Ifc.get().by_id(self.reference))
 
 
-class EnableEditingLibraryReference(bpy.types.Operator, Operator):
+class EnableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_library_reference"
     bl_label = "Enable Editing Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -125,7 +118,7 @@ class EnableEditingLibraryReference(bpy.types.Operator, Operator):
         core.enable_editing_library_reference(tool.Library, reference=tool.Ifc.get().by_id(self.reference))
 
 
-class DisableEditingLibraryReference(bpy.types.Operator, Operator):
+class DisableEditingLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_library_reference"
     bl_label = "Disable Editing Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -134,7 +127,7 @@ class DisableEditingLibraryReference(bpy.types.Operator, Operator):
         core.disable_editing_library_reference(tool.Library)
 
 
-class EditLibraryReference(bpy.types.Operator, Operator):
+class EditLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_library_reference"
     bl_label = "Edit Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -143,7 +136,7 @@ class EditLibraryReference(bpy.types.Operator, Operator):
         core.edit_library_reference(tool.Ifc, tool.Library)
 
 
-class AssignLibraryReference(bpy.types.Operator, Operator):
+class AssignLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_library_reference"
     bl_label = "Assign Library Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -155,7 +148,7 @@ class AssignLibraryReference(bpy.types.Operator, Operator):
         )
 
 
-class UnassignLibraryReference(bpy.types.Operator, Operator):
+class UnassignLibraryReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_library_reference"
     bl_label = "Unassign Library Reference"
     bl_options = {"REGISTER", "UNDO"}

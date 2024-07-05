@@ -41,14 +41,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
 import blenderbim.bim.import_ifc
-import blenderbim.bim.module.drawing.sheeter as sheeter
-import blenderbim.bim.module.drawing.scheduler as scheduler
-import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.core.root
 from shapely.ops import unary_union
-from blenderbim.bim.module.drawing.data import FONT_SIZES, DecoratorData
-from blenderbim.bim.module.drawing.prop import get_diagram_scales, BOX_ALIGNMENT_POSITIONS, ANNOTATION_TYPES_DATA
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
@@ -59,6 +53,30 @@ from pathlib import Path
 class Drawing(blenderbim.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
+
+    # ObjectType: annotation_name, description, icon, data_type
+    # fmt: off
+    ANNOTATION_TYPES_DATA = {
+        "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
+        "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
+        "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
+        "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
+        "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
+        "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
+        "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
+        "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
+        "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
+        "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
+        "SYMBOL":        ("Symbol",           "", "KEYFRAME", "empty"),
+        "MULTI_SYMBOL":  ("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
+        "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
+        "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+        "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
+        "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
+        "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
+        "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
+    }
+    # fmt: on
 
     @classmethod
     def canonicalise_class_name(cls, name):
@@ -73,10 +91,12 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
-        return ANNOTATION_TYPES_DATA[object_type][3]
+        return cls.ANNOTATION_TYPES_DATA[object_type][3]
 
     @classmethod
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
+        import blenderbim.bim.module.drawing.annotation as annotation
+
         data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
         if object_type == "FILL_AREA":
@@ -238,6 +258,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def create_svg_schedule(cls, schedule):
+        import blenderbim.bim.module.drawing.scheduler as scheduler
+
         schedule_creator = scheduler.Scheduler()
         schedule_creator.schedule(
             cls.get_document_uri(schedule), cls.get_path_with_ext(cls.get_document_uri(schedule), "svg")
@@ -245,6 +267,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
+        import blenderbim.bim.module.drawing.sheeter as sheeter
+
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")
@@ -253,6 +277,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def add_drawings(cls, sheet):
+        import blenderbim.bim.module.drawing.sheeter as sheeter
+
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         drawing_references = {}
@@ -707,7 +733,9 @@ class Drawing(blenderbim.core.tool.Drawing):
         return obj
 
     @classmethod
-    def import_camera_props(cls, drawing, obj):
+    def import_camera_props(cls, drawing: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        from blenderbim.bim.module.drawing.prop import get_diagram_scales
+
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
         ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
         obj.BIMObjectProperties.ifc_definition_id = 0
@@ -749,7 +777,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         obj.BIMObjectProperties.ifc_definition_id = ifc_definition_id
 
     @classmethod
-    def import_drawings(cls):
+    def import_drawings(cls) -> None:
         props = bpy.context.scene.DocProperties
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
         current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
@@ -846,6 +874,8 @@ class Drawing(blenderbim.core.tool.Drawing):
 
     @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
+        from blenderbim.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
+
         props = obj.BIMTextProperties
         props.literals.clear()
 
@@ -858,6 +888,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             box_alignment_mask[BOX_ALIGNMENT_POSITIONS.index(position_string)] = True
             literal_props.box_alignment = box_alignment_mask
             literal_props.ifc_definition_id = ifc_literal.id()
+
+        from blenderbim.bim.module.drawing.data import DecoratorData
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
@@ -947,6 +979,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
+        from blenderbim.bim.module.drawing.data import FONT_SIZES
+
         props = obj.BIMTextProperties
         element = tool.Ifc.get_entity(obj)
         # updating text font size in EPset_Annotation.Classes
@@ -1151,6 +1185,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
+        import blenderbim.bim.module.drawing.helper as helper
+
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
         reference_obj = tool.Ifc.get_object(reference_element)
@@ -1216,6 +1252,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
+        import blenderbim.bim.module.drawing.helper as helper
+
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
         camera = tool.Ifc.get_object(drawing)
@@ -1338,6 +1376,8 @@ class Drawing(blenderbim.core.tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
+        import blenderbim.bim.module.drawing.helper as helper
+
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
         camera = tool.Ifc.get_object(drawing)

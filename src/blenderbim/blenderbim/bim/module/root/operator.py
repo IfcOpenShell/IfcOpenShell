@@ -34,13 +34,6 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import get_enum_items
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
 class EnableReassignClass(bpy.types.Operator):
     bl_idname = "bim.enable_reassign_class"
     bl_label = "Enable Reassign IFC Class"
@@ -169,7 +162,7 @@ class ReassignClass(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AssignClass(bpy.types.Operator, Operator):
+class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -297,7 +290,7 @@ class UnlinkObject(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class CopyClass(bpy.types.Operator, Operator):
+class CopyClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_class"
     bl_label = "Copy Class"
     bl_options = {"REGISTER", "UNDO"}

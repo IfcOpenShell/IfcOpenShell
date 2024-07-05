@@ -24,9 +24,13 @@ import blenderbim.bim.schema
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
+from typing import final
 
 
-class Operator:
+class PsetTemplateOperator:
+    """`tool.Ifc.Operator` but for pset template file."""
+
+    @final
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.pset_template_file.begin_transaction()
@@ -42,6 +46,9 @@ class Operator:
 
     def commit(self, data):
         IfcStore.pset_template_file.redo()
+
+    def _execute(self, context: bpy.types.Context) -> None:
+        tool.Ifc.Operator._execute(self, context)
 
 
 class AddPsetTemplateFile(bpy.types.Operator):
@@ -70,7 +77,7 @@ class AddPsetTemplateFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPsetTemplate(bpy.types.Operator, Operator):
+class AddPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.add_pset_template"
     bl_label = "Add Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -84,7 +91,7 @@ class AddPsetTemplate(bpy.types.Operator, Operator):
         context.scene.BIMPsetTemplateProperties.pset_templates = str(template.id())
 
 
-class RemovePsetTemplate(bpy.types.Operator, Operator):
+class RemovePsetTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.remove_pset_template"
     bl_label = "Remove Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -191,7 +198,7 @@ class DisableEditingPropTemplate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditPsetTemplate(bpy.types.Operator, Operator):
+class EditPsetTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.edit_pset_template"
     bl_label = "Edit Pset Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -242,7 +249,7 @@ class RemovePsetTemplateFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddPropTemplate(bpy.types.Operator, Operator):
+class AddPropTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.add_prop_template"
     bl_label = "Add Prop Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -261,7 +268,7 @@ class AddPropTemplate(bpy.types.Operator, Operator):
         blenderbim.bim.schema.reload(tool.Ifc.get().schema)
 
 
-class RemovePropTemplate(bpy.types.Operator, Operator):
+class RemovePropTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.remove_prop_template"
     bl_label = "Remove Prop Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -278,7 +285,7 @@ class RemovePropTemplate(bpy.types.Operator, Operator):
         blenderbim.bim.schema.reload(tool.Ifc.get().schema)
 
 
-class EditPropTemplate(bpy.types.Operator, Operator):
+class EditPropTemplate(bpy.types.Operator, PsetTemplateOperator):
     bl_idname = "bim.edit_prop_template"
     bl_label = "Edit Prop Template"
     bl_options = {"REGISTER", "UNDO"}
@@ -301,7 +308,7 @@ class EditPropTemplate(bpy.types.Operator, Operator):
                 "PrimaryMeasureType": props.active_prop_template.primary_measure_type,
                 "TemplateType": props.active_prop_template.template_type,
                 "Enumerators": enumerators,
-            }
+            },
         )
         bpy.ops.bim.disable_editing_prop_template()
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)

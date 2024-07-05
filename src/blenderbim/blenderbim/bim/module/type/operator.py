@@ -31,14 +31,7 @@ import blenderbim.core.root
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class AssignType(bpy.types.Operator, Operator):
+class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
     bl_options = {"REGISTER", "UNDO"}

@@ -28,14 +28,6 @@ from blenderbim.bim.ifc import IfcStore
 import blenderbim.bim.handler
 
 
-# declaring it here to avoid circular import problems
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
 class CoveringTool(WorkSpaceTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -153,7 +145,7 @@ class CoveringToolUI:
                     op.ifc_class = cls.props.ifc_class
 
 
-class Hotkey(bpy.types.Operator, Operator):
+class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.covering_hotkey"
     bl_label = "Hotkey"
     bl_options = {"REGISTER", "UNDO"}

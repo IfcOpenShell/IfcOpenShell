@@ -31,14 +31,7 @@ import blenderbim.bim.module.pset.data
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class TogglePsetExpansion(bpy.types.Operator, Operator):
+class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.toggle_pset_expansion"
     bl_label = "Toggle Pset Expansion"
     pset_id: bpy.props.IntProperty()
@@ -70,7 +63,7 @@ class EnablePsetEditing(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisablePsetEditing(bpy.types.Operator, Operator):
+class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_pset_editing"
     bl_label = "Disable Pset Editing"
     bl_options = {"REGISTER", "UNDO"}
@@ -91,7 +84,7 @@ class DisablePsetEditing(bpy.types.Operator, Operator):
         props.active_pset_type = ""
 
 
-class EditPset(bpy.types.Operator, Operator):
+class EditPset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_pset"
     bl_label = "Edit Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -159,7 +152,7 @@ class EditPset(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
-class RemovePset(bpy.types.Operator, Operator):
+class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_pset"
     bl_label = "Remove Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -187,7 +180,7 @@ class RemovePset(bpy.types.Operator, Operator):
                 )
 
 
-class AddPset(bpy.types.Operator, Operator):
+class AddPset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_pset"
     bl_label = "Add Pset"
     bl_options = {"REGISTER", "UNDO"}
@@ -198,7 +191,7 @@ class AddPset(bpy.types.Operator, Operator):
         core.add_pset(tool.Ifc, tool.Pset, tool.Blender, obj_name=self.obj, obj_type=self.obj_type)
 
 
-class AddQto(bpy.types.Operator, Operator):
+class AddQto(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_qto"
     bl_label = "Add Qto"
     bl_options = {"REGISTER", "UNDO"}
@@ -214,7 +207,7 @@ class AddQto(bpy.types.Operator, Operator):
         )
 
 
-class CopyPropertyToSelection(bpy.types.Operator, Operator):
+class CopyPropertyToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_property_to_selection"
     bl_label = "Copy Property To Selection"
     name: bpy.props.StringProperty()
