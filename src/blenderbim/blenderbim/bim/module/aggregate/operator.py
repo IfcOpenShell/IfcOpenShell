@@ -26,14 +26,7 @@ import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
+class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
     """Create aggregation relationship between two ifc elements"""
 
     bl_idname = "bim.aggregate_assign_object"
@@ -75,7 +68,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, Operator):
                 self.report({"ERROR"}, f"Cannot aggregate to {relating_obj.name} with a body representation")
 
 
-class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
+class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
     """Remove aggregation relationship between two ifc elements"""
 
     bl_idname = "bim.aggregate_unassign_object"
@@ -106,7 +99,7 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, Operator):
                     ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
               
-class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
+class BIM_OT_enable_editing_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     """Enable editing aggregation relationship"""
 
     bl_idname = "bim.enable_editing_aggregate"
@@ -117,7 +110,7 @@ class BIM_OT_enable_editing_aggregate(bpy.types.Operator, Operator):
         core.enable_editing_aggregate(tool.Aggregate, obj=context.active_object)
 
 
-class BIM_OT_disable_editing_aggregate(bpy.types.Operator, Operator):
+class BIM_OT_disable_editing_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     """Disable editing aggregation relationship"""
 
     bl_idname = "bim.disable_editing_aggregate"
@@ -268,7 +261,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
+class BIM_OT_add_part_to_object(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_part_to_object"
     bl_label = "Add Part to Object"
     bl_options = {"REGISTER", "UNDO"}
@@ -293,7 +286,7 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, Operator):
         blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
 
 
-class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
+class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.break_link_to_other_aggregates"
     bl_label = "Break link to other aggregates"
     bl_options = {"REGISTER", "UNDO"}
@@ -324,7 +317,7 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_select_linked_aggregates(bpy.types.Operator, Operator):
+class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_linked_aggregates"
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}

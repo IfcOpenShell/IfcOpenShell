@@ -27,14 +27,7 @@ import blenderbim.core.unit as core
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data
-        return {"FINISHED"}
-
-
-class AssignSceneUnits(bpy.types.Operator, Operator):
+class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_scene_units"
     bl_label = "Assign Scene Units"
     bl_options = {"REGISTER", "UNDO"}
@@ -43,7 +36,7 @@ class AssignSceneUnits(bpy.types.Operator, Operator):
         core.assign_scene_units(tool.Ifc, tool.Unit)
 
 
-class AssignUnit(bpy.types.Operator, Operator):
+class AssignUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_unit"
     bl_label = "Assign Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -53,7 +46,7 @@ class AssignUnit(bpy.types.Operator, Operator):
         core.assign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class UnassignUnit(bpy.types.Operator, Operator):
+class UnassignUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_unit"
     bl_label = "Unassign Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -63,7 +56,7 @@ class UnassignUnit(bpy.types.Operator, Operator):
         core.unassign_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class LoadUnits(bpy.types.Operator, Operator):
+class LoadUnits(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_units"
     bl_label = "Load Units"
     bl_options = {"REGISTER", "UNDO"}
@@ -73,7 +66,7 @@ class LoadUnits(bpy.types.Operator, Operator):
         core.load_units(tool.Unit)
 
 
-class DisableUnitEditingUI(bpy.types.Operator, Operator):
+class DisableUnitEditingUI(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_unit_editing_ui"
     bl_label = "Disable Unit Editing UI"
     bl_options = {"REGISTER", "UNDO"}
@@ -83,7 +76,7 @@ class DisableUnitEditingUI(bpy.types.Operator, Operator):
         core.disable_unit_editing_ui(tool.Unit)
 
 
-class RemoveUnit(bpy.types.Operator, Operator):
+class RemoveUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_unit"
     bl_label = "Remove Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -93,7 +86,7 @@ class RemoveUnit(bpy.types.Operator, Operator):
         core.remove_unit(tool.Ifc, tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class AddConversionBasedUnit(bpy.types.Operator, Operator):
+class AddConversionBasedUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_conversion_based_unit"
     bl_label = "Add Conversion Based Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -103,7 +96,7 @@ class AddConversionBasedUnit(bpy.types.Operator, Operator):
         core.add_conversion_based_unit(tool.Ifc, tool.Unit, name=self.name)
 
 
-class AddMonetaryUnit(bpy.types.Operator, Operator):
+class AddMonetaryUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_monetary_unit"
     bl_label = "Add Monetary Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -112,7 +105,7 @@ class AddMonetaryUnit(bpy.types.Operator, Operator):
         core.add_monetary_unit(tool.Ifc, tool.Unit)
 
 
-class AddSIUnit(bpy.types.Operator, Operator):
+class AddSIUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_si_unit"
     bl_label = "Add SI Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -122,7 +115,7 @@ class AddSIUnit(bpy.types.Operator, Operator):
         core.add_si_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type)
 
 
-class AddContextDependentUnit(bpy.types.Operator, Operator):
+class AddContextDependentUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_context_dependent_unit"
     bl_label = "Add Context Dependent Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -133,7 +126,7 @@ class AddContextDependentUnit(bpy.types.Operator, Operator):
         core.add_context_dependent_unit(tool.Ifc, tool.Unit, unit_type=self.unit_type, name=self.name)
 
 
-class EnableEditingUnit(bpy.types.Operator, Operator):
+class EnableEditingUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_unit"
     bl_label = "Enable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -143,7 +136,7 @@ class EnableEditingUnit(bpy.types.Operator, Operator):
         core.enable_editing_unit(tool.Unit, unit=tool.Ifc.get().by_id(self.unit))
 
 
-class DisableEditingUnit(bpy.types.Operator, Operator):
+class DisableEditingUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_unit"
     bl_label = "Disable Editing Unit"
     bl_options = {"REGISTER", "UNDO"}
@@ -152,7 +145,7 @@ class DisableEditingUnit(bpy.types.Operator, Operator):
         core.disable_editing_unit(tool.Unit)
 
 
-class EditUnit(bpy.types.Operator, Operator):
+class EditUnit(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_unit"
     bl_label = "Edit Unit"
     bl_options = {"REGISTER", "UNDO"}

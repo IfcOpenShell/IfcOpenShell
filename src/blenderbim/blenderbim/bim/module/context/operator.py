@@ -24,14 +24,7 @@ import blenderbim.bim.handler
 from blenderbim.bim.ifc import IfcStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class AddContext(bpy.types.Operator, Operator):
+class AddContext(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_context"
     bl_label = "Add Subcontext"
     bl_options = {"REGISTER", "UNDO"}
@@ -50,7 +43,7 @@ class AddContext(bpy.types.Operator, Operator):
         )
 
 
-class RemoveContext(bpy.types.Operator, Operator):
+class RemoveContext(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_context"
     bl_label = "Remove Context"
     bl_description = (
@@ -64,7 +57,7 @@ class RemoveContext(bpy.types.Operator, Operator):
         core.remove_context(tool.Ifc, context=tool.Ifc.get().by_id(self.context))
 
 
-class EnableEditingContext(bpy.types.Operator, Operator):
+class EnableEditingContext(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_context"
     bl_label = "Enable Editing Context"
     bl_options = {"REGISTER", "UNDO"}
@@ -74,7 +67,7 @@ class EnableEditingContext(bpy.types.Operator, Operator):
         core.enable_editing_context(tool.Context, context=tool.Ifc.get().by_id(self.context))
 
 
-class DisableEditingContext(bpy.types.Operator, Operator):
+class DisableEditingContext(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_context"
     bl_label = "Disable Editing Context"
     bl_options = {"REGISTER", "UNDO"}
@@ -83,7 +76,7 @@ class DisableEditingContext(bpy.types.Operator, Operator):
         core.disable_editing_context(tool.Context)
 
 
-class EditContext(bpy.types.Operator, Operator):
+class EditContext(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_context"
     bl_label = "Edit Context"
     bl_options = {"REGISTER", "UNDO"}

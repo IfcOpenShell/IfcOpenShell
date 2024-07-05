@@ -28,13 +28,6 @@ from blenderbim.bim.ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
 class SetOverrideColour(bpy.types.Operator):
     bl_idname = "bim.set_override_colour"
     bl_label = "Set Override Colour"
@@ -117,7 +110,7 @@ class SnapSpacesTogether(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ResizeToStorey(bpy.types.Operator, Operator):
+class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.resize_to_storey"
     bl_label = "Resize To Storey"
     bl_options = {"REGISTER", "UNDO"}
@@ -132,7 +125,7 @@ class ResizeToStorey(bpy.types.Operator, Operator):
             core.resize_to_storey(tool.Misc, obj=obj, total_storeys=self.total_storeys)
 
 
-class SplitAlongEdge(bpy.types.Operator, Operator):
+class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_along_edge"
     bl_label = "Split Along Edge"
     bl_description = (
@@ -206,7 +199,7 @@ class SplitAlongEdge(bpy.types.Operator, Operator):
         self.report({"INFO"}, f"Splitting finished, {len(new_objs)} new objects created.")
 
 
-class GetConnectedSystemElements(bpy.types.Operator, Operator):
+class GetConnectedSystemElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.get_connected_system_elements"
     bl_label = "Get Connected System Elements"
     bl_options = {"REGISTER", "UNDO"}
@@ -258,7 +251,7 @@ class GetConnectedSystemElements(bpy.types.Operator, Operator):
                 obj.select_set(True)
 
 
-class DrawSystemArrows(bpy.types.Operator, Operator):
+class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.draw_system_arrows"
     bl_label = "Draw System Arrows"
     bl_options = {"REGISTER", "UNDO"}

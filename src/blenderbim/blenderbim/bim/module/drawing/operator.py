@@ -73,19 +73,12 @@ class profile:
         print(self.task, timer() - self.start)
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
 class LineworkContexts(NamedTuple):
     body: List[List[int]]
     annotation: List[List[int]]
 
 
-class AddAnnotationType(bpy.types.Operator, Operator):
+class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_annotation_type"
     bl_label = "Add Annotation Type"
     bl_options = {"REGISTER", "UNDO"}
@@ -116,7 +109,7 @@ class AddAnnotationType(bpy.types.Operator, Operator):
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
 
 
-class EnableAddAnnotationType(bpy.types.Operator, Operator):
+class EnableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_add_annotation_type"
     bl_label = "Enable Add Annotation Type"
     bl_options = {"REGISTER", "UNDO"}
@@ -125,7 +118,7 @@ class EnableAddAnnotationType(bpy.types.Operator, Operator):
         bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
 
 
-class DisableAddAnnotationType(bpy.types.Operator, Operator):
+class DisableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_add_annotation_type"
     bl_label = "Disable Add Annotation Type"
     bl_options = {"REGISTER", "UNDO"}
@@ -134,7 +127,7 @@ class DisableAddAnnotationType(bpy.types.Operator, Operator):
         bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
 
 
-class AddDrawing(bpy.types.Operator, Operator):
+class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
@@ -158,7 +151,7 @@ class AddDrawing(bpy.types.Operator, Operator):
             pass
 
 
-class DuplicateDrawing(bpy.types.Operator, Operator):
+class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_drawing"
     bl_label = "Duplicate Drawing"
     bl_options = {"REGISTER", "UNDO"}
@@ -1185,7 +1178,7 @@ class CreateDrawing(bpy.types.Operator):
         return drawing_path
 
 
-class AddAnnotation(bpy.types.Operator, Operator):
+class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_annotation"
     bl_label = "Add Annotation"
     bl_options = {"REGISTER", "UNDO"}
@@ -1212,7 +1205,7 @@ class AddAnnotation(bpy.types.Operator, Operator):
             self.report({"WARNING"}, r)
 
 
-class AddSheet(bpy.types.Operator, Operator):
+class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_sheet"
     bl_label = "Add Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -1221,7 +1214,7 @@ class AddSheet(bpy.types.Operator, Operator):
         core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
 
 
-class OpenSheet(bpy.types.Operator, Operator):
+class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_sheet"
     bl_label = "Open Sheet Layout"
     bl_options = {"REGISTER", "UNDO"}
@@ -1234,7 +1227,7 @@ class OpenSheet(bpy.types.Operator, Operator):
         core.open_sheet(tool.Drawing, sheet=sheet)
 
 
-class AddDrawingToSheet(bpy.types.Operator, Operator):
+class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_to_sheet"
     bl_label = "Add Drawing To Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -1286,7 +1279,7 @@ class AddDrawingToSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
-class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
+class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing_from_sheet"
     bl_label = "Remove Drawing From Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -1305,7 +1298,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
-class CreateSheets(bpy.types.Operator, Operator):
+class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_sheets"
     bl_label = "Create Sheets"
     bl_description = "Build a sheet from the sheet layout"
@@ -1598,7 +1591,7 @@ class ResizeText(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class RemoveDrawing(bpy.types.Operator, Operator):
+class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
     bl_options = {"REGISTER", "UNDO"}
@@ -1701,7 +1694,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class AddDrawingStyle(bpy.types.Operator, Operator):
+class AddDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1715,7 +1708,7 @@ class AddDrawingStyle(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class RemoveDrawingStyle(bpy.types.Operator, Operator):
+class RemoveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing_style"
     bl_label = "Remove Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1728,7 +1721,7 @@ class RemoveDrawingStyle(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class SaveDrawingStyle(bpy.types.Operator, Operator):
+class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_drawing_style"
     bl_label = "Save Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1793,7 +1786,7 @@ class SaveDrawingStyle(bpy.types.Operator, Operator):
                 return space
 
 
-class SaveDrawingStylesData(bpy.types.Operator, Operator):
+class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_drawing_styles_data"
     bl_label = "Save Drawing Styles Data"
     bl_options = {"REGISTER", "UNDO"}
@@ -1846,7 +1839,7 @@ class SaveDrawingStylesData(bpy.types.Operator, Operator):
         return {"FINISHED"}
 
 
-class ActivateDrawingStyle(bpy.types.Operator, Operator):
+class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.activate_drawing_style"
     bl_label = "Activate Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
@@ -1935,7 +1928,7 @@ class ActivateDrawingStyle(bpy.types.Operator, Operator):
                 return space
 
 
-class RemoveSheet(bpy.types.Operator, Operator):
+class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_sheet"
     bl_label = "Remove Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -1945,7 +1938,7 @@ class RemoveSheet(bpy.types.Operator, Operator):
         core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
-class AddSchedule(bpy.types.Operator, Operator):
+class AddSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
@@ -1975,7 +1968,7 @@ class AddSchedule(bpy.types.Operator, Operator):
         return {"RUNNING_MODAL"}
 
 
-class RemoveSchedule(bpy.types.Operator, Operator):
+class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_schedule"
     bl_label = "Remove Schedule"
     bl_options = {"REGISTER", "UNDO"}
@@ -1985,7 +1978,7 @@ class RemoveSchedule(bpy.types.Operator, Operator):
         core.remove_document(tool.Ifc, tool.Drawing, "SCHEDULE", document=tool.Ifc.get().by_id(self.schedule))
 
 
-class OpenSchedule(bpy.types.Operator, Operator):
+class OpenSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_schedule"
     bl_label = "Open Schedule"
     bl_options = {"REGISTER", "UNDO"}
@@ -1995,7 +1988,7 @@ class OpenSchedule(bpy.types.Operator, Operator):
         core.open_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
-class BuildSchedule(bpy.types.Operator, Operator):
+class BuildSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.build_schedule"
     bl_label = "Build Schedule"
     schedule: bpy.props.IntProperty()
@@ -2004,7 +1997,7 @@ class BuildSchedule(bpy.types.Operator, Operator):
         core.build_schedule(tool.Drawing, schedule=tool.Ifc.get().by_id(self.schedule))
 
 
-class AddScheduleToSheet(bpy.types.Operator, Operator):
+class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_schedule_to_sheet"
     bl_label = "Add Schedule To Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -2060,7 +2053,7 @@ class AddScheduleToSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
-class AddReferenceToSheet(bpy.types.Operator, Operator):
+class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_to_sheet"
     bl_label = "Add Reference To Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -2117,7 +2110,7 @@ class AddReferenceToSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
-class AddReference(bpy.types.Operator, Operator):
+class AddReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference"
     bl_label = "Add Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -2147,7 +2140,7 @@ class AddReference(bpy.types.Operator, Operator):
         return {"RUNNING_MODAL"}
 
 
-class RemoveReference(bpy.types.Operator, Operator):
+class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_reference"
     bl_label = "Remove Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -2157,7 +2150,7 @@ class RemoveReference(bpy.types.Operator, Operator):
         core.remove_document(tool.Ifc, tool.Drawing, "REFERENCE", document=tool.Ifc.get().by_id(self.reference))
 
 
-class OpenReference(bpy.types.Operator, Operator):
+class OpenReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.open_reference"
     bl_label = "Open Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -2270,7 +2263,7 @@ class EditTextPopup(bpy.types.Operator):
             return {"FINISHED"}
 
 
-class EditText(bpy.types.Operator, Operator):
+class EditText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_text"
     bl_label = "Edit Text"
     bl_options = {"REGISTER", "UNDO"}
@@ -2280,7 +2273,7 @@ class EditText(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
-class EnableEditingText(bpy.types.Operator, Operator):
+class EnableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_text"
     bl_label = "Enable Editing Text"
     bl_options = {"REGISTER", "UNDO"}
@@ -2289,7 +2282,7 @@ class EnableEditingText(bpy.types.Operator, Operator):
         core.enable_editing_text(tool.Drawing, obj=context.active_object)
 
 
-class DisableEditingText(bpy.types.Operator, Operator):
+class DisableEditingText(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_text"
     bl_label = "Disable Editing Text"
     bl_options = {"REGISTER", "UNDO"}
@@ -2407,7 +2400,7 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditAssignedProduct(bpy.types.Operator, Operator):
+class EditAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_assigned_product"
     bl_label = "Edit Text Product"
     bl_options = {"REGISTER", "UNDO"}
@@ -2420,7 +2413,7 @@ class EditAssignedProduct(bpy.types.Operator, Operator):
         tool.Blender.update_viewport()
 
 
-class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
+class EnableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_assigned_product"
     bl_label = "Enable Editing Assigned Product"
     bl_options = {"REGISTER", "UNDO"}
@@ -2429,7 +2422,7 @@ class EnableEditingAssignedProduct(bpy.types.Operator, Operator):
         core.enable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
-class DisableEditingAssignedProduct(bpy.types.Operator, Operator):
+class DisableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_assigned_product"
     bl_label = "Disable Editing Assigned Product"
     bl_options = {"REGISTER", "UNDO"}
@@ -2438,7 +2431,7 @@ class DisableEditingAssignedProduct(bpy.types.Operator, Operator):
         core.disable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
-class LoadSheets(bpy.types.Operator, Operator):
+class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_sheets"
     bl_label = "Load Sheets"
     bl_options = {"REGISTER", "UNDO"}
@@ -2465,7 +2458,7 @@ class LoadSheets(bpy.types.Operator, Operator):
             self.report({"ERROR"}, "Some sheets svg files are missing:\n" + "\n".join(sheets_not_found))
 
 
-class EditSheet(bpy.types.Operator, Operator):
+class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_sheet"
     bl_label = "Edit Sheet"
     bl_options = {"REGISTER", "UNDO"}
@@ -2521,7 +2514,7 @@ class EditSheet(bpy.types.Operator, Operator):
         tool.Drawing.import_sheets()
 
 
-class DisableEditingSheets(bpy.types.Operator, Operator):
+class DisableEditingSheets(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_sheets"
     bl_label = "Disable Editing Sheets"
     bl_options = {"REGISTER", "UNDO"}
@@ -2530,7 +2523,7 @@ class DisableEditingSheets(bpy.types.Operator, Operator):
         core.disable_editing_sheets(tool.Drawing)
 
 
-class LoadSchedules(bpy.types.Operator, Operator):
+class LoadSchedules(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_schedules"
     bl_label = "Load Schedules"
     bl_options = {"REGISTER", "UNDO"}
@@ -2539,7 +2532,7 @@ class LoadSchedules(bpy.types.Operator, Operator):
         core.load_schedules(tool.Drawing)
 
 
-class DisableEditingSchedules(bpy.types.Operator, Operator):
+class DisableEditingSchedules(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_schedules"
     bl_label = "Disable Editing Schedules"
     bl_options = {"REGISTER", "UNDO"}
@@ -2548,7 +2541,7 @@ class DisableEditingSchedules(bpy.types.Operator, Operator):
         core.disable_editing_schedules(tool.Drawing)
 
 
-class LoadReferences(bpy.types.Operator, Operator):
+class LoadReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_references"
     bl_label = "Load References"
     bl_options = {"REGISTER", "UNDO"}
@@ -2557,7 +2550,7 @@ class LoadReferences(bpy.types.Operator, Operator):
         core.load_references(tool.Drawing)
 
 
-class DisableEditingReferences(bpy.types.Operator, Operator):
+class DisableEditingReferences(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_references"
     bl_label = "Disable Editing References"
     bl_options = {"REGISTER", "UNDO"}
@@ -2566,7 +2559,7 @@ class DisableEditingReferences(bpy.types.Operator, Operator):
         core.disable_editing_references(tool.Drawing)
 
 
-class LoadDrawings(bpy.types.Operator, Operator):
+class LoadDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_drawings"
     bl_label = "Load Drawings"
     bl_options = {"REGISTER", "UNDO"}
@@ -2575,7 +2568,7 @@ class LoadDrawings(bpy.types.Operator, Operator):
         core.load_drawings(tool.Drawing)
 
 
-class DisableEditingDrawings(bpy.types.Operator, Operator):
+class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.disable_editing_drawings"
     bl_label = "Disable Editing Drawings"
     bl_options = {"REGISTER", "UNDO"}
@@ -2640,7 +2633,7 @@ class ContractSheet(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectAssignedProduct(bpy.types.Operator, Operator):
+class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_assigned_product"
     bl_label = "Select Assigned Product"
     bl_options = {"REGISTER", "UNDO"}
@@ -2649,7 +2642,7 @@ class SelectAssignedProduct(bpy.types.Operator, Operator):
         core.select_assigned_product(tool.Drawing, context)
 
 
-class EnableEditingElementFilter(bpy.types.Operator, Operator):
+class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_element_filter"
     bl_label = "Enable Editing Element Filter"
     bl_options = {"REGISTER", "UNDO"}
@@ -2669,7 +2662,7 @@ class EnableEditingElementFilter(bpy.types.Operator, Operator):
                 pass
 
 
-class EditElementFilter(bpy.types.Operator, Operator):
+class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_element_filter"
     bl_label = "Edit Element Filter"
     bl_options = {"REGISTER", "UNDO"}
@@ -2690,7 +2683,7 @@ class EditElementFilter(bpy.types.Operator, Operator):
         bpy.ops.bim.activate_drawing(drawing=element.id(), camera_view_point=False)
 
 
-class AddReferenceImage(bpy.types.Operator, Operator):
+class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_reference_image"
     bl_label = "Add Reference Image"
     bl_options = {"REGISTER", "UNDO"}

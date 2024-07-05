@@ -36,7 +36,6 @@ import blenderbim.tool as tool
 from itertools import chain, accumulate
 from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from blenderbim.tool.loader import OBJECT_DATA_TYPE
-from blenderbim.bim.module.drawing.prop import ANNOTATION_TYPES_DATA
 from typing import Dict, Union, Optional, Any
 
 
@@ -1262,9 +1261,12 @@ class IfcImporter:
             if isinstance(obj, bpy.types.Object):
                 tool.Collector.assign(obj)
 
-    def is_curve_annotation(self, element):
+    def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
         object_type = element.ObjectType
-        return object_type in ANNOTATION_TYPES_DATA and ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+        return (
+            object_type in tool.Drawing.ANNOTATION_TYPES_DATA
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+        )
 
     def get_drawing_group(self, element):
         for rel in element.HasAssignments or []:

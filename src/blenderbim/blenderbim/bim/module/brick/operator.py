@@ -26,14 +26,7 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.tool.brick import BrickStore
 
 
-class Operator:
-    def execute(self, context):
-        IfcStore.execute_ifc_operator(self, context)
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
-
-
-class LoadBrickProject(bpy.types.Operator, Operator):
+class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_brick_project"
     bl_label = "Load Brickschema Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -53,7 +46,7 @@ class LoadBrickProject(bpy.types.Operator, Operator):
         return {"RUNNING_MODAL"}
 
 
-class ViewBrickClass(bpy.types.Operator, Operator):
+class ViewBrickClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.view_brick_class"
     bl_label = "View Brick Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -65,7 +58,7 @@ class ViewBrickClass(bpy.types.Operator, Operator):
         core.view_brick_class(tool.Brick, brick_class=self.brick_class, split_screen=self.split_screen)
 
 
-class ViewBrickItem(bpy.types.Operator, Operator):
+class ViewBrickItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.view_brick_item"
     bl_label = "View Brick Item"
     bl_options = {"REGISTER", "UNDO"}
@@ -80,7 +73,7 @@ class ViewBrickItem(bpy.types.Operator, Operator):
             self.report({'ERROR'}, f'Could not find {self.item}')
 
 
-class RewindBrickClass(bpy.types.Operator, Operator):
+class RewindBrickClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.rewind_brick_class"
     bl_label = "Rewind Brick Class"
     bl_options = {"REGISTER", "UNDO"}
@@ -91,7 +84,7 @@ class RewindBrickClass(bpy.types.Operator, Operator):
         core.rewind_brick_class(tool.Brick, split_screen=self.split_screen)
 
 
-class CloseBrickProject(bpy.types.Operator, Operator):
+class CloseBrickProject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.close_brick_project"
     bl_label = "Close Brick Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -101,7 +94,7 @@ class CloseBrickProject(bpy.types.Operator, Operator):
         core.close_brick_project(tool.Brick)
 
 
-class ConvertBrickProject(bpy.types.Operator, Operator):
+class ConvertBrickProject(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.convert_brick_project"
     bl_label = "Convert Brick Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -111,7 +104,7 @@ class ConvertBrickProject(bpy.types.Operator, Operator):
         core.convert_brick_project(tool.Ifc, tool.Brick)
 
 
-class AssignBrickReference(bpy.types.Operator, Operator):
+class AssignBrickReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_brick_reference"
     bl_label = "Assign Brick Reference"
     bl_options = {"REGISTER", "UNDO"}
@@ -136,7 +129,7 @@ class AssignBrickReference(bpy.types.Operator, Operator):
         )
 
 
-class AddBrick(bpy.types.Operator, Operator):
+class AddBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_brick"
     bl_label = "Add Brick"
     bl_options = {"REGISTER", "UNDO"}
@@ -155,7 +148,7 @@ class AddBrick(bpy.types.Operator, Operator):
         )
 
 
-class AddBrickRelation(bpy.types.Operator, Operator):
+class AddBrickRelation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_brick_relation"
     bl_label = "Add Brick Relation"
     bl_options = {"REGISTER", "UNDO"}
@@ -178,7 +171,7 @@ class AddBrickRelation(bpy.types.Operator, Operator):
         )
 
 
-class ConvertIfcToBrick(bpy.types.Operator, Operator):
+class ConvertIfcToBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.convert_ifc_to_brick"
     bl_label = "Convert IFC To Brick"
     bl_options = {"REGISTER", "UNDO"}
@@ -225,7 +218,7 @@ class NewBrickFile(bpy.types.Operator):
         BrickStore.graph = data["graph"]
 
 
-class RefreshBrickViewer(bpy.types.Operator, Operator):
+class RefreshBrickViewer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.refresh_brick_viewer"
     bl_label = "Refresh Brick Viewer"
     bl_options = {"REGISTER", "UNDO"}
@@ -235,7 +228,7 @@ class RefreshBrickViewer(bpy.types.Operator, Operator):
         core.refresh_brick_viewer(tool.Brick)
 
 
-class RemoveBrick(bpy.types.Operator, Operator):
+class RemoveBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_brick"
     bl_label = "Remove Brick"
     bl_options = {"REGISTER", "UNDO"}
@@ -279,7 +272,7 @@ class SerializeBrick(bpy.types.Operator):
         return "Save the Brick project"
 
 
-class AddBrickNamespace(bpy.types.Operator, Operator):
+class AddBrickNamespace(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_brick_namespace"
     bl_label = "Add Brick Namespace"
     bl_description = "Bind a new namespace to the Brick project"
@@ -291,7 +284,7 @@ class AddBrickNamespace(bpy.types.Operator, Operator):
         core.add_brick_namespace(tool.Brick, alias=alias, uri=uri)
 
 
-class RemoveBrickRelation(bpy.types.Operator, Operator):
+class RemoveBrickRelation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_brick_relation"
     bl_label = "Remove Relation"
     bl_options = {"REGISTER", "UNDO"}
