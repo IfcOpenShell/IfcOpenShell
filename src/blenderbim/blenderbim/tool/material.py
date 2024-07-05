@@ -39,6 +39,19 @@ class Material(blenderbim.core.tool.Material):
         bpy.context.scene.BIMMaterialProperties.is_editing = False
 
     @classmethod
+    def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        new = tool.Ifc.run("material.copy_material", material=material)
+
+        # Doesn't have a name.
+        if new.is_a("IfcMaterialList"):
+            return new
+
+        name_index = 1 if new.is_a("IfcMaterialLayerSet") else 0
+        name = (new[name_index] or "Unnamed") + " Copy"
+        new[name_index] = name
+        return new
+
+    @classmethod
     def enable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = True
 
