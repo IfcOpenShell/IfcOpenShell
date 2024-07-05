@@ -39,7 +39,7 @@ class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
             root = context.scene.BIMBrickProperties.brick_list_root
             core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
         else:
-            self.report({'ERROR'}, f'Failed to load {self.filepath}')
+            self.report({"ERROR"}, f"Failed to load {self.filepath}")
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -70,7 +70,7 @@ class ViewBrickItem(bpy.types.Operator, tool.Ifc.Operator):
         try:
             core.view_brick_item(tool.Brick, item=self.item, split_screen=self.split_screen)
         except:
-            self.report({'ERROR'}, f'Could not find {self.item}')
+            self.report({"ERROR"}, f"Could not find {self.item}")
 
 
 class RewindBrickClass(bpy.types.Operator, tool.Ifc.Operator):
@@ -112,13 +112,13 @@ class AssignBrickReference(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         if not context.active_object:
-            self.report({'ERROR'}, f'No Ifc selected')
+            self.report({"ERROR"}, f"No Ifc selected")
             return
         props = context.scene.BIMBrickProperties
         try:
             props.bricks[props.active_brick_index]
         except:
-            self.report({'ERROR'}, f'No Brick selected')
+            self.report({"ERROR"}, f"No Brick selected")
             return
         core.assign_brick_reference(
             tool.Ifc,
@@ -163,12 +163,7 @@ class AddBrickRelation(bpy.types.Operator, tool.Ifc.Operator):
             object = props.split_screen_bricks[props.split_screen_active_brick_index].uri
         else:
             object = props.namespace + props.new_brick_relation_object
-        core.add_brick_relation(
-            tool.Brick,
-            brick_uri=brick.uri,
-            predicate=props.new_brick_relation_type,
-            object=object
-        )
+        core.add_brick_relation(tool.Brick, brick_uri=brick.uri, predicate=props.new_brick_relation_type, object=object)
 
 
 class ConvertIfcToBrick(bpy.types.Operator, tool.Ifc.Operator):

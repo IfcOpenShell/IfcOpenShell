@@ -271,9 +271,7 @@ class CreateDrawing(bpy.types.Operator):
                 with profile("Combine SVG layers"):
                     svg_path = self.combine_svgs(context, underlay_svg, linework_svg, annotation_svg)
 
-            tool.Drawing.open_with_user_command(
-                tool.Blender.get_addon_preferences().svg_command, svg_path
-            )
+            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, svg_path)
 
         if self.print_all:
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, camera_view_point=False)
@@ -1455,9 +1453,7 @@ class OpenDrawing(bpy.types.Operator):
             return {"CANCELLED"}
 
         for drawing_uri in drawing_uris:
-            tool.Drawing.open_with_user_command(
-                tool.Blender.get_addon_preferences().svg_command, drawing_uri
-            )
+            tool.Drawing.open_with_user_command(tool.Blender.get_addon_preferences().svg_command, drawing_uri)
         return {"FINISHED"}
 
 
@@ -1557,7 +1553,6 @@ class ActivateDrawing(bpy.types.Operator):
         if camera_props.update_representation(camera):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
 
-            
         return {"FINISHED"}
 
 

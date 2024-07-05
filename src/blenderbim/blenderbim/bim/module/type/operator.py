@@ -141,15 +141,15 @@ class SelectType(bpy.types.Operator):
 
     def execute(self, context):
 
-        if self.relating_type: #if operator button sends a relating_type, the iterator only selects this one type
+        if self.relating_type:  # if operator button sends a relating_type, the iterator only selects this one type
             element = tool.Ifc.get().by_id(self.relating_type)
             obj = tool.Ifc.get_object(element)
             selected_objs = [obj]
-        else:    #else, the iterator selects all the types of all the selected objects
+        else:  # else, the iterator selects all the types of all the selected objects
             selected_objs = context.selected_objects
             active_obj = context.active_object
-            selected_objs.append(active_obj) #update selected_objs so the active_obj is at the end of the list
-        
+            selected_objs.append(active_obj)  # update selected_objs so the active_obj is at the end of the list
+
         last_relating_type_obj = None
         for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
@@ -157,14 +157,14 @@ class SelectType(bpy.types.Operator):
             if relating_type:
                 relating_type_obj = tool.Ifc.get_object(relating_type)
                 if relating_type_obj:
-                    if relating_type_obj.hide_get():  
-                        relating_type_obj.hide_set(False)  
-                    relating_type_obj.select_set(True)  
+                    if relating_type_obj.hide_get():
+                        relating_type_obj.hide_set(False)
+                    relating_type_obj.select_set(True)
                     last_relating_type_obj = relating_type_obj
-            if not element.is_a("IfcTypeObject"): 
+            if not element.is_a("IfcTypeObject"):
                 obj.select_set(False)
 
-        context.view_layer.objects.active = last_relating_type_obj #makes the active_obj's type the active object
+        context.view_layer.objects.active = last_relating_type_obj  # makes the active_obj's type the active object
 
         return {"FINISHED"}
 
@@ -175,7 +175,7 @@ class SelectType(bpy.types.Operator):
             if "IfcProject" in child.name:
                 ifc_project_collection = child
                 break
-        
+
         if ifc_project_collection:
             collection_in_view_layer = ifc_project_collection.children.get(collection_name)
             return collection_in_view_layer
