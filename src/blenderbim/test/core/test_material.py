@@ -22,16 +22,26 @@ from test.core.bootstrap import ifc, material, style, spatial
 
 class TestAddMaterial:
     def test_add_a_material(self, ifc, material):
-        ifc.run("material.add_material", name="name").should_be_called().will_return("material")
+        ifc.run(
+            "material.add_material", name="name", category="category", description="description"
+        ).should_be_called().will_return("material")
         material.is_editing_materials().should_be_called().will_return(False)
-        assert subject.add_material(ifc, material, name="name") == "material"
+        assert (
+            subject.add_material(ifc, material, name="name", category="category", description="description")
+            == "material"
+        )
 
     def test_reloading_imported_materials_if_you_are_editing_scene_materials(self, ifc, material):
-        ifc.run("material.add_material", name="name").should_be_called().will_return("material")
+        ifc.run(
+            "material.add_material", name="name", category="category", description="description"
+        ).should_be_called().will_return("material")
         material.is_editing_materials().should_be_called().will_return(True)
         material.get_active_material_type().should_be_called().will_return("material_type")
         material.import_material_definitions("material_type").should_be_called()
-        assert subject.add_material(ifc, material, name="name") == "material"
+        assert (
+            subject.add_material(ifc, material, name="name", category="category", description="description")
+            == "material"
+        )
 
 
 class TestAddMaterialSet:
