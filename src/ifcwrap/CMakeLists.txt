@@ -33,27 +33,23 @@ IF(NOT "$ENV{PYTHON_LIBRARY}" STREQUAL "")
 	MESSAGE(STATUS "Looking for Python library file in: ${PYTHON_LIBRARY}")
 ENDIF()
 
-# TODO: Is still a problem after we moved to FIND_PACKAGE(Python)?
-# NOTE Python_Development_FOUND and Python_Interpreter_FOUND cannot seem to be trusted so
+# NOTE PYTHONLIBS_FOUND and PYTHONINTERP_FOUND cannot seem to be trusted so
 # we need further checks to see whether the packages were actually found or not.
-FIND_PACKAGE(Python COMPONENTS Development)
-IF(NOT Python_Development_FOUND OR "${Python_INCLUDE_DIRS}" STREQUAL "")
+FIND_PACKAGE(PythonLibs)
+IF(NOT PYTHONLIBS_FOUND OR "$PYTHON_INCLUDE_DIRS}" STREQUAL "")
 	MESSAGE(FATAL_ERROR "BUILD_IFCPYTHON enabled, but unable to find Python lib or header. Disable BUILD_IFCPYTHON or fix Python paths to proceed.")
 ENDIF()
 
-INCLUDE_DIRECTORIES(${Python_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_DIRS})
 INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 
 SET(CMAKE_SWIG_FLAGS ${SWIG_DEFINES})
 # NOTE Workaround for most likely missing debug Python libraries on Windows (requires Python built from the source).
 # Python 3.5 intaller and onwards will have an option to install the debug libraries too.
-IF(WIN32)
-        STRING(REPLACE ";" ";" Python_LIBRARIES_LIST "${Python_LIBRARIES}")
-        LIST(FIND Python_LIBRARIES_LIST "debug" debug_index)
-        IF(debug_index EQUAL -1)
-                MESSAGE(STATUS "Python debug libraries are not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
-                ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
-        ENDIF()
+# NOTE PYTHON_DEBUG_LIBRARIES appears to be a deprecated variable
+IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
+	MESSAGE(STATUS "PYTHON_DEBUG_LIBRARIES not found, defining SWIG_PYTHON_INTERPRETER_NO_DEBUG workaround for IfcWrap.")
+	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
 ENDIF()
 
 if (WITH_CGAL)
@@ -63,10 +59,10 @@ endif()
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
-    # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-    SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
+# On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
-    SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${Python_LIBRARIES} ${LIBSVGFILL})
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -74,16 +70,15 @@ endif()
 
 # Try to find the Python interpreter to get the site-packages
 # directory in which the wrapper can be installed.
-FIND_PACKAGE(Python COMPONENTS Interpreter)
-IF((Python_Interpreter_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+FIND_PACKAGE(PythonInterp)
+IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
     # Find Python interpreter and get its version
     EXECUTE_PROCESS(
-    	COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
-    	OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
-    	OUTPUT_STRIP_TRAILING_WHITESPACE
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
+        OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     SET_TARGET_PROPERTIES(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
-
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
