@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Client</title>
-    <link rel="stylesheet" type="text/css" href="/static/css/jsgantt.css" />
+    <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css" />
     <link rel="stylesheet" href="/static/css/gantt.css" />
     <script
       type="text/javascript"
@@ -14,7 +14,7 @@
       type="text/javascript"
       src="https://cdn.socket.io/4.0.0/socket.io.min.js"
     ></script>
-    <script type="text/javascript" src="./static/js/jsgantt.js"></script>
+    <script type="text/javascript" src="./jsgantt/jsgantt.js"></script>
     <script>
       var SOCKET_PORT = {{port}};
     </script>
@@ -22,9 +22,10 @@
   </head>
   <body>
     <nav class="no-print">
+      <img src="https://blenderbim.org/assets/images/blender/blender-logo.png" alt="Logo" class="logo" />
       <ul>
         <li><a href="/">IFC Data</a></li>
-        <li><a href="/gantt" class="active">Gantt</a></li>
+        <li><a href="/gantt" class="active">Gantt Chart</a></li>
       </ul>
       <div class="bottom-bar"></div>
     </nav>
