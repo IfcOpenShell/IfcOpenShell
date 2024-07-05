@@ -142,7 +142,14 @@ class AddRepresentation(bpy.types.Operator, Operator):
                 "for Profile - 2D bounding box by local XZ axes.\n"
                 "For other contexts - bounding box is 3d.",
             ),
-            ("OBJECT", "From Object", "Copies geometry from another object"),
+            (
+                "OBJECT",
+                "From Object",
+                (
+                    "Copies geometry from another object.\n"
+                    "Final version of the geometry will be used (e.g. with all modifiers, shape keys applied)"
+                ),
+            ),
             ("PROJECT", "Full Representation", "Reuses the current representation"),
             (
                 "CUBE",
@@ -195,13 +202,13 @@ class AddRepresentation(bpy.types.Operator, Operator):
             tool.Geometry.change_object_data(obj, data, is_global=True)
         elif conversion_method in ("OBJECT", "CUBE"):
             if conversion_method == "OBJECT":
-                if not props.representation_from_object:
+                if not (source_obj := props.representation_from_object):
                     self.report({"ERROR"}, "No object is selected to copy a representation from.")
                     return {"FINISHED"}
 
-                data_ = tool.Geometry.duplicate_object_data(props.representation_from_object)
-                assert isinstance(data_, bpy.types.Mesh)  # Type checker.
-                data = data_
+                depsgraph = context.evaluated_depsgraph_get()
+                eval_obj = source_obj.evaluated_get(depsgraph)
+                data = bpy.data.meshes.new_from_object(eval_obj)
             else:  # CUBE
                 data = bpy.data.meshes.new("Cube")
                 bm = tool.Blender.get_bmesh_for_mesh(data)
