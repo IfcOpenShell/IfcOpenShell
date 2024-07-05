@@ -119,14 +119,18 @@ def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list
         if element:
             material = material_tool.get_material(element, should_inherit=False)
             inherited_material = material_tool.get_material(element, should_inherit=True)
-            if material and "Usage" in material.is_a():
+            if material:
+                if "Usage" in material.is_a():
+                    element_type = material_tool.get_type(element)
+                    ifc.run("material.unassign_material", products=[element_type])
+                else:
+                    ifc.run("material.unassign_material", products=[element])
+            elif inherited_material:
                 element_type = material_tool.get_type(element)
                 ifc.run("material.unassign_material", products=[element_type])
-            elif not material and inherited_material:
-                element_type = material_tool.get_type(element)
-                ifc.run("material.unassign_material", products=[element_type])
-            elif material:
-                ifc.run("material.unassign_material", products=[element])
+            else:
+                # Has no material and has no inherited material, nothing to unassign.
+                pass
 
 
 def patch_non_parametric_mep_segment(
