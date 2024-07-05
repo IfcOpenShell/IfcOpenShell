@@ -101,6 +101,7 @@ async def gantt(request):
 
 app.router.add_get("/", index)
 app.router.add_get("/gantt", gantt)
+app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
 app.router.add_static("/static/", path="./static", name="static")
 
 
