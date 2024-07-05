@@ -146,12 +146,7 @@ class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
-        new = tool.Ifc.run("material.copy_material", material=material)
-
-        if not new.is_a("IfcMaterialList"):
-            name = new[0] + " Copy"
-            new[0] = name
-
+        tool.Material.duplicate_material(material)
         material_prop_purge()
         bpy.ops.bim.load_materials()
 
