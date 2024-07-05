@@ -92,13 +92,13 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
             )
 
             # Removes Pset related to Linked Aggregates
-            if not element.is_a('IfcElementAssembly'):
-                pset = ifcopenshell.util.element.get_pset(element, 'BBIM_Linked_Aggregate')
+            if not element.is_a("IfcElementAssembly"):
+                pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate")
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
                     ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
-              
+
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     """Enable editing aggregation relationship"""
 
@@ -225,7 +225,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
         # obj = bpy.data.objects.get(self.obj) or context.active_object
         # aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
         # aggregate_obj = tool.Ifc.get_object(aggregate)
-        
+
         all_parts = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -238,7 +238,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
                     pass
             if not element:
                 obj.select_set(False)
-        
+
         if self.select_parts:
             all_objs = []
             for part in all_parts:
@@ -256,7 +256,7 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             for aggregate_element in all_parts:
                 aggregate_obj = tool.Ifc.get_object(aggregate_element)
                 aggregate_obj.select_set(True)
-                bpy.context.view_layer.objects.active = aggregate_obj      
+                bpy.context.view_layer.objects.active = aggregate_obj
 
         return {"FINISHED"}
 
@@ -331,7 +331,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
             return "Select all aggregates"
 
     def _execute(self, context):
-        
+
         for obj in context.selected_objects:
             obj.select_set(False)
             element = tool.Ifc.get_entity(obj)
