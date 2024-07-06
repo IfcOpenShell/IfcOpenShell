@@ -168,8 +168,13 @@ class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
 
+    property_group: bpy.props.StringProperty(name="Property Group", default="")
+
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        if self.property_group == "CsvProperties":
+            props = context.scene.CsvProperties
+        elif self.property_group == "BIMSearchProperties":
+            props = context.scene.BIMSearchProperties
         results = ifcopenshell.util.selector.filter_elements(
             tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
         )

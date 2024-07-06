@@ -88,6 +88,11 @@ class BIM_PT_ifccsv(Panel):
         blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
 
         row = layout.row(align=True)
+        op = row.operator("bim.search", text="Select", icon="VIEWZOOM")
+        op.property_group = "CsvProperties"  
+        layout.separator()
+
+        row = layout.row(align=True)
         row.operator("bim.add_csv_attribute", icon="ADD")
         row.prop(props, "should_show_sort", icon="SORTSIZE", text="")
         row.prop(props, "should_show_group", icon="OUTLINER_COLLECTION", text="")
@@ -123,3 +128,6 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row(align=True)
         row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
+
+
+        
