@@ -18,11 +18,13 @@
 
 import blenderbim.bim.helper
 import blenderbim.tool as tool
+import bpy
 from bpy.types import Panel, UIList
 from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.helper import draw_attributes
 from blenderbim.bim.helper import prop_with_search
 from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
+from blenderbim.bim.module.drawing.helper import format_distance
 
 
 class BIM_PT_materials(Panel):
@@ -327,8 +329,16 @@ class BIM_PT_object_material(Panel):
                 row.label(text=set_item["material"], icon="MATERIAL")
 
         if ObjectMaterialData.data["total_thickness"]:
+            total_thickness = ObjectMaterialData.data["total_thickness"]
+            unit_system = bpy.context.scene.unit_settings.system
+
+            if unit_system == "IMPERIAL":
+                precision = bpy.context.scene.DocProperties.imperial_precision
+            else:
+                precision = None
+            formatted_thickness = format_distance(total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length = True)
             row = self.layout.row(align=True)
-            row.label(text=f"Total Thickness: {ObjectMaterialData.data['total_thickness']:.3f}")
+            row.label(text=f"Total Thickness: {formatted_thickness}")
 
 
 class BIM_UL_materials(UIList):

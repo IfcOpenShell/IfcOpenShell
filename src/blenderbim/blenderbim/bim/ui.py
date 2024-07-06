@@ -349,6 +349,9 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "drawing_font")
         row.prop(context.scene.DocProperties, "magic_font_scale")
+        row = self.layout.row()
+        row.prop(context.scene.DocProperties, "imperial_precision")
+        
 
 
 # Scene panel groups

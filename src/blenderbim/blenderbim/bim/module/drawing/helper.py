@@ -121,7 +121,13 @@ class BoundingBox:
 # This function stolen from https://github.com/kevancress/MeasureIt_ARCH/blob/dcf607ce0896aa2284463c6b4ae9cd023fc54cbe/measureit_arch_baseclass.py
 # MeasureIt-ARCH is GPL-v3
 def format_distance(
-    value, isArea=False, hide_units=True, precision=None, decimal_places=None, suppress_zero_inches=False
+    value,
+    isArea=False,
+    hide_units=True,
+    precision=None,
+    decimal_places=None,
+    suppress_zero_inches=False,
+    in_unit_length = False
 ):
     s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
 
@@ -130,17 +136,22 @@ def format_distance(
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
 
-    toInches = 39.3700787401574887
-    inPerFoot = 11.9999
-
-    if isArea:
-        toInches = 1550
-        inPerFoot = 143.999
-
     value *= scaleFactor
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":
+        if in_unit_length:
+            if unit_length == 'INCHES':
+                toInches = 1
+            if unit_length == 'FEET':
+                toInches = 11.9999
+        else:
+            toInches = 39.3700787401574887
+        inPerFoot = 11.9999
+
+        if isArea:
+            toInches = 1550
+            inPerFoot = 143.999
         if not precision:
             precision = 256
         elif precision == "1":
@@ -210,6 +221,12 @@ def format_distance(
 
     # METRIC FORMATTING
     elif unit_system == "METRIC":
+        if in_unit_length:
+            if unit_length == 'CENTIMETERS':
+                value = value/100
+            if unit_length == 'MILLIMETERS':
+                value = value/1000
+        
         if precision:
             value = precision * round(float(value) / precision)
 
