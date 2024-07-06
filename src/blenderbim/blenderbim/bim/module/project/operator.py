@@ -1060,10 +1060,12 @@ def run():
     gprops = bpy.context.scene.BIMGeoreferenceProperties
     # Our model origin becomes their host model origin
     gprops.host_model_origin = "{gprops.model_origin}"
+    gprops.host_model_project_north = "{gprops.model_project_north}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
     gprops.blender_eastings = "{gprops.blender_eastings}"
     gprops.blender_northings = "{gprops.blender_northings}"
     gprops.blender_orthogonal_height = "{gprops.blender_orthogonal_height}"
+    gprops.blender_project_north = "{gprops.blender_project_north}"
     gprops.blender_offset_x = "{gprops.blender_offset_x}"
     gprops.blender_offset_y = "{gprops.blender_offset_y}"
     gprops.blender_offset_z = "{gprops.blender_offset_z}"
@@ -1395,6 +1397,7 @@ class LoadLinkedProject(bpy.types.Operator):
         elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
             if gprops.host_model_origin:
                 tool.Loader.settings.false_origin = list(map(float, gprops.host_model_origin.split(",")))
+                tool.Loader.settings.project_north = float(gprops.host_model_project_north)
                 tool.Loader.set_manual_blender_offset(self.file)
             else:
                 tool.Loader.guess_false_origin(self.file)
@@ -1403,7 +1406,9 @@ class LoadLinkedProject(bpy.types.Operator):
         self.json_filepath = self.filepath + ".cache.json"
         data = {
             "host_model_origin": gprops.host_model_origin,
+            "host_model_project_north": gprops.host_model_project_north,
             "model_origin": gprops.model_origin,
+            "model_project_north": gprops.model_project_north,
             "has_blender_offset": gprops.has_blender_offset,
             "blender_eastings": gprops.blender_eastings,
             "blender_northings": gprops.blender_northings,

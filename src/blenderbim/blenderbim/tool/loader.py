@@ -570,8 +570,7 @@ class Loader(blenderbim.core.tool.Loader):
         zero_origin = np.array((0, 0, 0))
         has_offset = not np.allclose(model_offset, zero_origin)
 
-        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(ifc_file)
-        model_north = ifcopenshell.util.geolocation.xaxis2angle(parameters.xaa, parameters.xao)
+        model_north = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
         project_north = cls.settings.project_north
         model_rotation = project_north - model_north
         if model_rotation > 180:
@@ -741,7 +740,9 @@ class Loader(blenderbim.core.tool.Loader):
             gprops.model_origin = (
                 f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
             )
+            gprops.model_project_north = gprops.blender_project_north
         else:
             gprops.model_origin = ",".join(
                 map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
             )
+            gprops.model_project_north = str(ifcopenshell.util.geolocation.get_grid_north(ifc_file))

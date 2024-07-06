@@ -113,18 +113,32 @@ class BIMGeoreferenceProperties(PropertyGroup):
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
     x_axis_ordinate: StringProperty(name="X Axis Ordinate", update=update_grid_north_vector)
     x_axis_is_null: BoolProperty(name="X Axis Is Null")
+
+    # These are only for reference to capture data about a host model from a linked model
+    # If you relink a model from a new host origin, we can autodetect it in theory with this
     host_model_origin: StringProperty(name="Host Model Origin")
+    host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
+
+    # These are only for reference, calculated using tool.Loader.calculate_model_origin
     model_origin: StringProperty(name="Model Origin")
+    model_project_north: StringProperty(name="Model Angle to Grid North")
+
+    # True if there is a temporary Blender session coordinate system
     has_blender_offset: BoolProperty(name="Has Blender Offset")
+
+    # These E, N, H, and project north are the absolute map coordinates of the Blender session
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")
     blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")
     blender_project_north: StringProperty(name="Blender Angle to Grid North", default="0")
+
+    # These are the helmert transformation parameters of the Blender session
     blender_offset_x: StringProperty(name="Blender Offset X", default="0")
     blender_offset_y: StringProperty(name="Blender Offset Y", default="0")
     blender_offset_z: StringProperty(name="Blender Offset Z", default="0")
     blender_x_axis_abscissa: StringProperty(name="Blender X Axis Abscissa", default="1")
     blender_x_axis_ordinate: StringProperty(name="Blender X Axis Ordinate", default="0")
+
     true_north_angle: StringProperty(name="True North Angle", update=update_true_north_angle)
     true_north_abscissa: StringProperty(name="True North Abscissa", update=update_true_north_vector)
     true_north_ordinate: StringProperty(name="True North Ordinate", update=update_true_north_vector)
