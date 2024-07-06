@@ -175,6 +175,8 @@ class BIM_PT_project(Panel):
         if pprops.false_origin_mode == "MANUAL":
             row = self.layout.row()
             row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
 
         row = self.layout.row()
         row.label(text="Element Range")

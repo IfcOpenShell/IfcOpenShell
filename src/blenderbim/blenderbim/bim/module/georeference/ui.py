@@ -92,7 +92,7 @@ class BIM_PT_gis(Panel):
 
         if props.has_blender_offset:
             row = self.layout.row()
-            row.label(text="Blender Session Origin", icon="TRACKING_REFINE_FORWARDS")
+            row.label(text="Blender Session Coordinates", icon="TRACKING_REFINE_FORWARDS")
 
             row = self.layout.row(align=True)
             row.label(text=f"Eastings ({GeoreferenceData.data['local_unit_symbol']})")
@@ -104,14 +104,8 @@ class BIM_PT_gis(Panel):
             row.label(text=f"OrthogonalHeight ({GeoreferenceData.data['local_unit_symbol']})")
             row.label(text=props.blender_orthogonal_height)
             row = self.layout.row(align=True)
-            row.label(text="XAxisAbscissa")
-            row.label(text=props.blender_x_axis_abscissa)
-            row = self.layout.row(align=True)
-            row.label(text="XAxisOrdinate")
-            row.label(text=props.blender_x_axis_ordinate)
-            row = self.layout.row(align=True)
-            row.label(text="Derived Grid North")
-            row.label(text=GeoreferenceData.data["blender_derived_angle"])
+            row.label(text="Angle to Grid North")
+            row.label(text=props.blender_project_north)
 
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
@@ -144,7 +138,7 @@ class BIM_PT_gis(Panel):
             row.label(text=str(value))
             if key == "XAxisOrdinate":
                 row = self.layout.row(align=True)
-                row.label(text="Derived Angle")
+                row.label(text="*Angle to Grid North")
                 row.label(text=GeoreferenceData.data["map_derived_angle"])
 
 
@@ -195,7 +189,7 @@ class BIM_PT_gis_true_north(Panel):
             row.operator("bim.enable_editing_true_north", icon="GREASEPENCIL", text="")
             row.operator("bim.remove_true_north", icon="X", text="")
             row = self.layout.row(align=True)
-            row.label(text="Derived Angle")
+            row.label(text="*Angle to True North")
             row.label(text=GeoreferenceData.data["true_derived_angle"])
         else:
             row = self.layout.row(align=True)

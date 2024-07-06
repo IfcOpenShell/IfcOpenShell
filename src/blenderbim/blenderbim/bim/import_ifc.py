@@ -1498,6 +1498,7 @@ class IfcImportSettings:
         self.distance_limit = 1000
         self.false_origin_mode = "AUTOMATIC"
         self.false_origin = None
+        self.project_north = None
         self.element_offset = 0
         self.element_limit = 30000
         self.has_filter = None
@@ -1533,6 +1534,10 @@ class IfcImportSettings:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
         except:
             settings.false_origin = [0, 0, 0]
+        try:
+            settings.project_north = float(props.project_north)
+        except:
+            settings.project_north = 0
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
         return settings
