@@ -90,7 +90,7 @@ class Bsdd(blenderbim.core.tool.Bsdd):
 
         psets = {}
         for prop in properties:
-            if prop.get("propertyDictionaryName") == "IFC":
+            if prop.get("propertyDictionaryName") != "IFC":
                 continue
             pset = prop.get("propertySet", None)
             if not pset:
