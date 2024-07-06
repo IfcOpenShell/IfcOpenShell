@@ -568,15 +568,36 @@ class Loader(blenderbim.core.tool.Loader):
         false_origin = np.array(cls.settings.false_origin)
         model_offset = false_origin - model_origin
         zero_origin = np.array((0, 0, 0))
-        has_model_offset = not np.allclose(model_offset, zero_origin)
-        if has_model_offset:
+        has_offset = not np.allclose(model_offset, zero_origin)
+
+        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(ifc_file)
+        model_north = ifcopenshell.util.geolocation.xaxis2angle(parameters.xaa, parameters.xao)
+        project_north = cls.settings.project_north
+        model_rotation = project_north - model_north
+        if model_rotation > 180:
+            model_rotation = (360 - model_rotation) * -1
+        elif model_rotation < -180:
+            model_rotation = (model_rotation * -1) - 360
+        has_rotation = not np.isclose(model_north, project_north)
+
+        if not has_offset:
+            model_offset = false_origin = (0, 0, 0)
+
+        if not has_rotation:
+            project_north = 0
+
+        if has_offset or has_rotation:
             props = bpy.context.scene.BIMGeoreferenceProperties
-            props.blender_offset_x = str(model_offset[0])
-            props.blender_offset_y = str(model_offset[1])
-            props.blender_offset_z = str(model_offset[2])
             props.blender_eastings = str(false_origin[0])
             props.blender_northings = str(false_origin[1])
             props.blender_orthogonal_height = str(false_origin[2])
+            props.blender_project_north = str(project_north)
+            props.blender_offset_x = str(model_offset[0])
+            props.blender_offset_y = str(model_offset[1])
+            props.blender_offset_z = str(model_offset[2])
+            xaa, xao = ifcopenshell.util.geolocation.angle2xaxis(model_rotation)
+            props.blender_x_axis_abscissa = str(xaa)
+            props.blender_x_axis_ordinate = str(xao)
             props.has_blender_offset = True
 
     @classmethod

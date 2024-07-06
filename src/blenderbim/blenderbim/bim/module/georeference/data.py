@@ -35,7 +35,6 @@ class GeoreferenceData:
     @classmethod
     def load(cls):
         cls.data["coordinate_operation_class"] = cls.coordinate_operation_class()
-        cls.data["blender_derived_angle"] = cls.blender_derived_angle()
         cls.data["coordinate_operation"] = cls.coordinate_operation()
         cls.data["map_derived_angle"] = cls.map_derived_angle()
         cls.data["projected_crs"] = cls.projected_crs()
@@ -55,19 +54,6 @@ class GeoreferenceData:
         names = [d.name() for d in declarations]
         version = tool.Ifc.get_schema()
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
-
-    @classmethod
-    def blender_derived_angle(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset:
-            return str(
-                round(
-                    ifcopenshell.util.geolocation.xaxis2angle(
-                        float(props.blender_x_axis_abscissa), float(props.blender_x_axis_ordinate)
-                    ),
-                    3,
-                )
-            )
 
     @classmethod
     def coordinate_operation(cls):

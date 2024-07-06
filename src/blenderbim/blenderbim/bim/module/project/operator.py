@@ -918,6 +918,8 @@ class LinkIfc(bpy.types.Operator):
         if pprops.false_origin_mode == "MANUAL":
             row = self.layout.row()
             row.prop(pprops, "false_origin")
+            row = self.layout.row()
+            row.prop(pprops, "project_north")
 
     def execute(self, context):
         start = time.time()
@@ -1071,6 +1073,7 @@ def run():
     pprops.distance_limit = {pprops.distance_limit}
     pprops.false_origin_mode = "{pprops.false_origin_mode}"
     pprops.false_origin = "{pprops.false_origin}"
+    pprops.project_north = "{pprops.project_north}"
     bpy.ops.bim.load_linked_project(filepath="{self.filepath}")
     bpy.ops.wm.save_as_mainfile(filepath="{blend_filepath}")
 
@@ -1413,6 +1416,7 @@ class LoadLinkedProject(bpy.types.Operator):
             "distance_limit": pprops.distance_limit,
             "false_origin_mode": pprops.false_origin_mode,
             "false_origin": pprops.false_origin,
+            "project_north": pprops.project_north,
         }
         with open(self.json_filepath, "w") as f:
             json.dump(data, f)

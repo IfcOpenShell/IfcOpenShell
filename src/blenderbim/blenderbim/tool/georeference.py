@@ -91,7 +91,7 @@ class Georeference(blenderbim.core.tool.Georeference):
             elif name == "XAxisAbscissa":
                 props = bpy.context.scene.BIMGeoreferenceProperties
                 props.is_changing_angle = True
-                if data["XAxisAbscissa"] is None or data["XAxisOrdinate"]:
+                if data["XAxisAbscissa"] is None or data["XAxisOrdinate"] is None:
                     props.x_axis_is_null = True
                 else:
                     props.grid_north_angle = str(
