@@ -40,7 +40,8 @@ class BIM_PT_search(Panel):
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)
-            row.operator("bim.search", text="Search", icon="VIEWZOOM")
+            op = row.operator("bim.search", text="Search", icon="VIEWZOOM")
+            op.property_group = "BIMSearchProperties"  # Pass property group name
 
         return
 
