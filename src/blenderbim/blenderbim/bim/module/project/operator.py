@@ -1382,6 +1382,7 @@ class LoadLinkedProject(bpy.types.Operator):
         tool.Loader.set_settings(import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger))
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
+        tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
         self.elements = set(self.file.by_type("IfcElement"))
         if self.file.schema in ("IFC2X3", "IFC4"):
