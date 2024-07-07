@@ -373,7 +373,12 @@ def nothing_happens():
 
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
-    obj = bpy.data.objects.get(name)
+    # Some objects from linked collections may share the same name. This disambiguates them.
+    if name.startswith("Col:"):
+        _, collection_name, name = name.split(":")
+        obj = bpy.data.collections.get(collection_name).objects.get(name)
+    else:
+        obj = bpy.data.objects.get(name)
     if not obj:
         assert False, f'The object "{name}" does not exist'
     return obj

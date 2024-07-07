@@ -454,10 +454,10 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
 Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/geolocation-offsetsite.ifc', is_advanced=True)"
-    When I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
-    When I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
-    When I set "scene.BIMProjectProperties.distance_limit" to "5"
-    And I press "bim.load_project_elements"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    When I press "bim.load_project_elements"
     Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
     And "scene.BIMGeoreferenceProperties.blender_eastings" is "0.0"
     And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
@@ -488,6 +488,36 @@ Scenario: Load project elements - all georeferencing coordinate situations with 
     And the object "IfcActuator/G" has a vertex at "15.385,8.264,-1"
     And the object "IfcActuator/J" has a vertex at "10.366,3.813,-1"
     And the object "IfcActuator/J" has a vertex at "12.298,4.331,-1"
+
+Scenario: Load project elements - all georeferencing coordinate situations with an offset site - manual false origin mode - with custom project north
+    Given an empty Blender session
+    And I press "bim.load_project(filepath='{cwd}/test/files/geolocation-offsetsite.ifc', is_advanced=True)"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "0,10000,0"
+    And I set "scene.BIMProjectProperties.project_north" to "-15"
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    When I press "bim.load_project_elements"
+    Then "scene.BIMGeoreferenceProperties.has_blender_offset" is "True"
+    And "scene.BIMGeoreferenceProperties.blender_eastings" is "0.0"
+    And "scene.BIMGeoreferenceProperties.blender_northings" is "10000.0"
+    And "scene.BIMGeoreferenceProperties.blender_orthogonal_height" is "0.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_x" is "0.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_y" is "10000.0"
+    And "scene.BIMGeoreferenceProperties.blender_offset_z" is "0.0"
+    And the object "IfcSite/My Site" is at "0,0,0"
+    And the object "IfcBuilding/My Building" is at "0,0,0"
+    And the object "IfcBuildingStorey/My Storey" is at "0,0,0"
+    And the object "IfcActuator/A" is at "7,3,0"
+    And the object "IfcActuator/B" is at "6,1,0"
+    And the object "IfcActuator/C" is at "0,0,0"
+    And the object "IfcActuator/D" is at "13,4,-1"
+    And the object "IfcActuator/E" is at "6,3,0"
+    And the object "IfcActuator/F" is at "3,3,0"
+    And the object "IfcActuator/G" is at "15,6,-1"
+    And the object "IfcActuator/H" is at "9,2,0"
+    And the object "IfcActuator/I" is at "3,3,0"
+    And the object "IfcActuator/J" is at "11,3,-1"
+    And the object "IfcActuator/K" is at "10,0,0"
 
 Scenario: Load project elements - all georeferencing coordinate situations with a map conversion - disabled false origin mode (this should be identical to the situation with no map conversion)
     Given an empty Blender session
@@ -717,6 +747,39 @@ Scenario: Link IFC - manual false origin mode
     And the object "Chunk" has a vertex at "-8,2,-1"
     And the object "Chunk" has a vertex at "-1,-1,-1"
     And the object "Chunk" has a vertex at "7,4,-1"
+
+Scenario: Link IFC - automatic false origin mode - two different false origins and project norths - grid north is up because we start with geolocation.ifc
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-11,-2,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-4,-5,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "4,0,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4.732,-3.268,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "9.294,-9.366,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "18.722,-9.036,0"
+
+Scenario: Link IFC - automatic false origin mode - two different false origins and project norths - project north is up because we start with geolocation-mapconversion-angle.ifc
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-mapconversion-angle.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-11,-2,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "-4,-5,0"
+    And the object "Col:IfcProject/geolocation-mapconversion-angle.ifc:Chunk" has a vertex at "4,0,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-25.258,-8.768,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-17.696,-7.866,0"
+    And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-13.268,0.464,0"
+
 
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project

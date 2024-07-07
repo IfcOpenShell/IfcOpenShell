@@ -1112,7 +1112,7 @@ except Exception as e:
             data = json.load(f)
 
         gprops = bpy.context.scene.BIMGeoreferenceProperties
-        for prop in ("model_origin", "blender_x_axis_abscissa", "blender_x_axis_ordinate"):
+        for prop in ("model_origin", "model_project_north"):
             if (value := data.get(prop, None)) is not None:
                 setattr(gprops, prop, value)
 
