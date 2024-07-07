@@ -564,9 +564,12 @@ class Loader(blenderbim.core.tool.Loader):
 
     @classmethod
     def set_manual_blender_offset(cls, ifc_file: ifcopenshell.file) -> None:
-        model_origin = np.array(ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
         false_origin = np.array(cls.settings.false_origin)
-        model_offset = false_origin - model_origin
+        model_offset = np.array(
+            ifcopenshell.util.geolocation.auto_enh2xyz(
+                ifc_file, *cls.settings.false_origin, is_specified_in_map_units=False
+            )
+        )
         zero_origin = np.array((0, 0, 0))
         has_offset = not np.allclose(model_offset, zero_origin)
 
@@ -582,7 +585,7 @@ class Loader(blenderbim.core.tool.Loader):
         if not has_offset:
             model_offset = false_origin = (0, 0, 0)
 
-        if not has_rotation:
+        if np.isclose(project_north, 0):
             project_north = 0
 
         if has_offset or has_rotation:
@@ -676,6 +679,8 @@ class Loader(blenderbim.core.tool.Loader):
         if offset_point is None:
             return
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        if angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file):
+            cls.settings.project_north = angle
         cls.set_manual_blender_offset(ifc_file)
 
     @classmethod
@@ -742,7 +747,5 @@ class Loader(blenderbim.core.tool.Loader):
             )
             gprops.model_project_north = gprops.blender_project_north
         else:
-            gprops.model_origin = ",".join(
-                map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0))
-            )
+            gprops.model_origin = ",".join(map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0)))
             gprops.model_project_north = str(ifcopenshell.util.geolocation.get_grid_north(ifc_file))
