@@ -673,6 +673,51 @@ Scenario: Link IFC
     And the object "Chunk" exists
     And the object "Chunk" is placed in the collection "IfcProject/basic.ifc"
 
+Scenario: Link IFC - disabled false origin mode
+    Given an empty IFC project
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "DISABLED"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "2,2,-1"
+    And the object "Chunk" has a vertex at "9,-1,-1"
+    And the object "Chunk" has a vertex at "17,4,-1"
+
+Scenario: Link IFC - from an empty IFC project - automatic false origin mode (0,0,0 will be the false origin)
+    Given an empty IFC project
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "2,2,-1"
+    And the object "Chunk" has a vertex at "9,-1,-1"
+    And the object "Chunk" has a vertex at "17,4,-1"
+
+Scenario: Link IFC - from an empty Blender session - automatic false origin mode (a new false origin will be detected)
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "-11,-2,0"
+    And the object "Chunk" has a vertex at "-4,-5,0"
+    And the object "Chunk" has a vertex at "4,0,0"
+
+Scenario: Link IFC - manual false origin mode
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "MANUAL"
+    And I set "scene.BIMProjectProperties.false_origin" to "10000,0,0"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation.ifc', use_cache=False)"
+    Then the object "Chunk" exists
+    And the object "Chunk" has a vertex at "-8,2,-1"
+    And the object "Chunk" has a vertex at "-1,-1,-1"
+    And the object "Chunk" has a vertex at "7,4,-1"
+
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
