@@ -83,7 +83,7 @@ PYPI_PLATFORM:=--platform win_amd64
 endif
 
 # Current build commit hash.
-OLD:=dda4dd3
+OLD:=79f96d2
 .PHONY: bump
 bump:
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
