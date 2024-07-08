@@ -265,7 +265,7 @@ class BIM_UL_styles(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.prop(item, "name", text="", emboss=False)
             if item.has_surface_colour:
                 row = row.row(align=True)
                 row.enabled = False
