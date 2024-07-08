@@ -38,7 +38,6 @@ from blenderbim.bim.ifc import IfcStore
 from blenderbim.bim.module.model.data import AuthoringData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
-from . import prop
 import json
 from typing import Any, Union, Optional, assert_never
 
@@ -511,34 +510,3 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 is_global=True,
                 should_sync_changes_first=False,
             )
-
-
-def ensure_material_assigned(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    return  # TODO ensure this now works with the new approach of styles
-    elements = settings["products"]
-    material = settings.get("material")
-    if material:
-        assigned_material = settings["material"]
-    else:
-        material_type: ifcopenshell.util.element.MATERIAL_TYPE = settings["type"]
-        element = elements[0]
-        if material_type == "IfcMaterial":
-            assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-            assert assigned_material  # Type checker.
-        # Material usages just inherit the style from the type material, so can't override it.
-        elif material_type in ("IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"):
-            return
-        # If type is Set and no material argument were provided, then Set was just created
-        # and not yet have any IfcMaterials.
-        elif material_type in ("IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"):
-            return
-        elif material_type == "IfcMaterialList":
-            assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
-        else:
-            assert_never(material_type)
-
-    for element in elements[:]:
-        if element.is_a("IfcElementType"):
-            elements.extend(tool.Model.get_occurrences_without_material_override(element))
-
-    tool.Model.apply_ifc_material_changes(elements, assigned_material=settings["material"])
