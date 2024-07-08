@@ -110,7 +110,7 @@ class BIM_UL_profiles(UIList):
         props = context.scene.BIMProfileProperties
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name or "Unnamed")
+            row.prop(item, "name", text="", emboss=False)
             row.label(text=item.ifc_class)
 
             if props.active_profile_id == item.ifc_definition_id:

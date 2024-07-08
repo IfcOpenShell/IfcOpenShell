@@ -43,8 +43,13 @@ def get_profile_classes(self, context):
     return ProfileData.data["profile_classes"]
 
 
+def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
+    profile = tool.Ifc.get().by_id(self.ifc_definition_id)
+    profile.ProfileName = self.name
+
+
 class Profile(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_profile_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
