@@ -20,6 +20,7 @@ import ifcpatch
 import ifcopenshell
 import ifcopenshell.api.georeference
 import ifcopenshell.util.placement
+import ifcopenshell.util.shape_builder
 import test.bootstrap
 import tempfile
 import numpy as np
@@ -81,31 +82,60 @@ class TestMergeProject(test.bootstrap.IFC4):
         assert len(output.by_type("IfcProjectedCRS")) == 1
         assert len(output.by_type("IfcMapConversion")) == 1
 
-    def test_shifting_the_source_project_to_match_the_original_project_origin(self):
+    def test_shifting_the_other_project_to_match_the_original_project_origin(self):
         self.file = self.setup_project(self.file)
         second_file = self.setup_project()
         ifcopenshell.api.georeference.add_georeferencing(self.file)
+        xaa1, xao1 = ifcopenshell.util.geolocation.angle2xaxis(10)
         ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, coordinate_operation={"Eastings": 10, "Northings": 20}, projected_crs={"Name": "EPSG:1234"}
+            self.file,
+            coordinate_operation={"Eastings": 10, "Northings": 20, "XAxisAbscissa": xaa1, "XAxisOrdinate": xao1},
+            projected_crs={"Name": "EPSG:1234"},
         )
         ifcopenshell.api.georeference.add_georeferencing(second_file)
+        xaa, xao = ifcopenshell.util.geolocation.angle2xaxis(30)
         ifcopenshell.api.georeference.edit_georeferencing(
-            second_file, coordinate_operation={"Eastings": 30000, "Northings": 40000}, projected_crs={"Name": "EPSG:0"}
+            second_file,
+            coordinate_operation={"Eastings": 30000, "Northings": 40000, "XAxisAbscissa": xaa, "XAxisOrdinate": xao},
+            projected_crs={"Name": "EPSG:0"},
         )
+
+        builder1 = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
+        builder2 = ifcopenshell.util.shape_builder.ShapeBuilder(second_file)
+        o1 = builder1.create_axis2_placement_3d()
+        o2 = builder2.create_axis2_placement_3d()
+        body1 = ifcopenshell.util.representation.get_context(self.file, "Model", "Body", "MODEL_VIEW")
+        body2 = ifcopenshell.util.representation.get_context(second_file, "Model", "Body", "MODEL_VIEW")
 
         # Original file is in meters
         wall1 = self.file.by_type("IfcWall")[0]
         m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1, 2, 3, 1))
         global_m1 = ifcopenshell.util.geolocation.auto_local2global(self.file, m1, should_return_in_map_units=False)
-        assert np.allclose(global_m1[:, 3], (11, 22, 3, 1))
+        assert np.allclose(global_m1[:, 3], (11.332, 21.796, 3, 1))
+
+        block = self.file.createIfcCsgSolid(self.file.createIfcBlock(o1, 2, 2, 2))
+        rep = builder1.get_representation(context=body1, items=[block])
+        ifcopenshell.api.geometry.assign_representation(self.file, product=wall1, representation=rep)
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
+        verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
 
         # Second file is in millimeters with a different false origin
         wall1 = second_file.by_type("IfcWall")[0]
         m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1000, 2000, 3000, 1))
         global_m1 = ifcopenshell.util.geolocation.auto_local2global(second_file, m1, should_return_in_map_units=False)
-        assert np.allclose(global_m1[:, 3], (31000, 42000, 3000, 1))
+        assert np.allclose(global_m1[:, 3], (31866, 41232, 3000, 1))
+
+        block = second_file.createIfcCsgSolid(second_file.createIfcBlock(o2, 2000, 2000, 2000))
+        rep = builder2.get_representation(context=body2, items=[block])
+        ifcopenshell.api.geometry.assign_representation(second_file, product=wall1, representation=rep)
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
+        verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
 
         output = ifcpatch.execute({"file": self.file, "recipe": "MergeProject", "arguments": [second_file]})
 
@@ -117,11 +147,25 @@ class TestMergeProject(test.bootstrap.IFC4):
         params = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
         assert params.e == 10
         assert params.n == 20
+        assert params.xaa == xaa1
+        assert params.xao == xao1
+
         wall1, wall2 = output.by_type("IfcWall")
         m1 = ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement)
         m2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
         assert np.allclose(m1[:, 3], (1, 2, 3, 1))
-        assert np.allclose(m2[:, 3], (21, 22, 3, 1))
+        # assert np.allclose(m2[:, 3], (8.321, 29.321, 3, 1), atol=1e-3)
+        assert np.allclose(m2[:, 3], (17.847, 24.707, 3., 1.), atol=1e-3)
+
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall1)
+        verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+        assert np.any(np.all(np.isclose(np.array((1., 2., 3.)), verts), axis=1))
+        assert np.any(np.all(np.isclose(np.array((3., 4., 5.)), verts), axis=1))
+
+        shape = ifcopenshell.geom.create_shape(ifcopenshell.geom.settings(), wall2)
+        verts = ifcopenshell.util.shape.get_shape_vertices(shape, shape.geometry)
+        assert np.any(np.all(np.isclose(np.array((17.847, 24.707, 3.)), verts, atol=1e-3), axis=1))
+        assert np.any(np.all(np.isclose(np.array((20.410, 25.902, 5.)), verts, atol=1e-3), axis=1))
 
 
 class TestMergeProjectIFC2X3(test.bootstrap.IFC2X3, TestMergeProject):

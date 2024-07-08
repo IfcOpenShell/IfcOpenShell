@@ -780,7 +780,6 @@ Scenario: Link IFC - automatic false origin mode - two different false origins a
     And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-17.696,-7.866,0"
     And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-13.268,0.464,0"
 
-
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
