@@ -663,3 +663,10 @@ class Style(blenderbim.core.tool.Style):
                 tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
         else:
             assert_never(style_type)
+
+    @classmethod
+    def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
+        """Rename style and related blender material."""
+        blender_material = tool.Ifc.get_object(style)
+        # Will implicitly update the style name using handler.
+        blender_material.name = name
