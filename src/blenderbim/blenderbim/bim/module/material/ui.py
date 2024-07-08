@@ -67,6 +67,8 @@ class BIM_PT_materials(Panel):
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
                     op.material = material.ifc_definition_id
+                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
+                    op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
                     op.material = material.ifc_definition_id
                     op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
@@ -80,6 +82,8 @@ class BIM_PT_materials(Panel):
                 material = self.props.materials[self.props.active_material_index]
                 if material.ifc_definition_id:
                     op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                    op.material = material.ifc_definition_id
+                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
                     op.material = material.ifc_definition_id
                     row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
 
