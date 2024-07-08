@@ -143,7 +143,7 @@ class BIMMaterialProperties(PropertyGroup):
 
 class BIMObjectMaterialProperties(PropertyGroup):
     material_type: EnumProperty(items=get_object_material_type, name="Material Type")
-    material: EnumProperty(items=get_materials, name="Material")
+    material: EnumProperty(items=get_materials, name="Material", description="Currently selected IfcMaterial")
     is_editing: BoolProperty(name="Is Editing", default=False)
     material_set_usage_attributes: CollectionProperty(name="Material Set Usage Attributes", type=Attribute)
     material_set_attributes: CollectionProperty(name="Material Set Attributes", type=Attribute)

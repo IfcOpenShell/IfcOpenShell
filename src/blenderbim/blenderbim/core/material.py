@@ -99,17 +99,33 @@ def disable_editing_material(material_tool: tool.Material) -> None:
 
 
 def assign_material(
-    ifc: tool.Ifc, material_tool: tool.Material, material_type: Union[str, None], objects: list[bpy.types.Object]
+    ifc: tool.Ifc,
+    material_tool: tool.Material,
+    material_type: Union[str, None],
+    objects: list[bpy.types.Object],
+    material: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
-    material_type = material_type or material_tool.get_active_object_material()
-    material = material_tool.get_active_material()
+    """Assign material to the provided objects.
+
+    If `material_type` or `material` are not provided, the active ones from
+        Object Materials UI is used.
+    """
+    material_type = material_type or material_tool.get_object_ui_material_type()
+    material = material or material_tool.get_object_ui_active_material()
     for obj in objects:
         element = ifc.get_entity(obj)
         if not element:
             continue
+
         ifc.run("material.assign_material", products=[element], type=material_type, material=material)
         assigned_material = material_tool.get_material(element)
-        if material_tool.is_a_material_set(assigned_material):
+        assert assigned_material  # Type checker.
+
+        if material_tool.is_a_material_set(material):
+            # Ensure set is a valid IFC.
+            default_material = material_tool.get_default_material()
+            material_tool.add_material_to_set(material_set=material, material=default_material)
+        elif material_tool.is_a_material_set(assigned_material):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)
 
 

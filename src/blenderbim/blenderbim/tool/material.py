@@ -19,6 +19,7 @@
 from __future__ import annotations
 import bpy
 import ifcopenshell
+import ifcopenshell.api.material
 import blenderbim.core.tool
 import blenderbim.core.material
 import blenderbim.tool as tool
@@ -166,18 +167,26 @@ class Material(blenderbim.core.tool.Material):
         props.editing_material_type = ""
 
     @classmethod
+    def get_default_material(cls) -> ifcopenshell.entity_instance:
+        """Return first found IfcMaterial in IFC file or create a new default material."""
+        ifc_file = tool.Ifc.get()
+        material = next(iter(ifc_file.by_type("IfcMaterial")), None)
+        if material:
+            return material
+        material = ifcopenshell.api.material.add_material(ifc_file, name="Default")
+        return material
+
+    @classmethod
     def get_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_type(element)
 
     @classmethod
-    def get_active_object_material(cls) -> Union[str, None]:
+    def get_object_ui_material_type(cls) -> str:
         active_obj = bpy.context.active_object
-        if not active_obj:
-            return
         return active_obj.BIMObjectMaterialProperties.material_type
 
     @classmethod
-    def get_active_material(cls) -> ifcopenshell.entity_instance:
+    def get_object_ui_active_material(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
 
     @classmethod

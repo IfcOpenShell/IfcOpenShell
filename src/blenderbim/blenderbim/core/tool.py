@@ -493,7 +493,7 @@ class Material:
     def enable_editing_materials(cls): pass
     def get_active_material(cls): pass
     def get_active_material_type(cls): pass
-    def get_active_object_material(cls, obj): pass
+    def get_active_object_material_type(cls, obj): pass
     def get_elements_by_material(cls, material): pass
     def get_material(cls, element, should_inherit): pass
     def get_material_attributes(cls): pass

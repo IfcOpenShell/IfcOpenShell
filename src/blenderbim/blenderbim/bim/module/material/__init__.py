@@ -28,6 +28,7 @@ classes = (
     operator.AddMaterialSet,
     operator.AddProfile,
     operator.AssignMaterial,
+    operator.AssignMaterialToSelected,
     operator.AssignParameterizedProfile,
     operator.ContractMaterialCategory,
     operator.DisableEditingAssignedMaterial,
