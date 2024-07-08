@@ -77,6 +77,7 @@ class MaterialCreator:
         self.load_texture_maps()
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
+        del self.mesh["ios_materials"]
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
@@ -109,7 +110,7 @@ class MaterialCreator:
                 tool.Loader.load_indexed_texture_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
-        if "ios_materials" not in self.mesh or not self.mesh["ios_materials"]:
+        if not self.mesh["ios_materials"]:
             return
 
         ios_materials = self.mesh["ios_materials"]
