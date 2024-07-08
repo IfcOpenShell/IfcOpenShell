@@ -118,6 +118,7 @@ def assign_material(
             continue
 
         ifc.run("material.assign_material", products=[element], type=material_type, material=material)
+        material_tool.ensure_material_assigned(elements=[element], material_type=material_type, material=material)
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
 

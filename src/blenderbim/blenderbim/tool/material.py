@@ -27,7 +27,7 @@ import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING
+from typing import Union, Any, TYPE_CHECKING, Optional, assert_never
 
 if TYPE_CHECKING:
     # Avoid circular imports.
@@ -308,3 +308,43 @@ class Material(blenderbim.core.tool.Material):
             if element.is_a("IfcElementType"):
                 elements.extend(tool.Model.get_occurrences_without_material_override(element))
         tool.Model.apply_ifc_material_changes(elements)
+
+    @classmethod
+    def ensure_material_assigned(
+        cls,
+        elements: list[ifcopenshell.entity_instance],
+        material_type: ifcopenshell.util.element.MATERIAL_TYPE = "IfcMaterial",
+        material: Optional[ifcopenshell.entity_instance] = None,
+    ) -> None:
+        """Ensure blender materials are updated after a material assignment.
+
+        Designed to be called after material.assign_material API call."""
+
+        # NOTE: adding/editing/removing layers/profiles/constituents is not supported.
+        # Adding support for profiles/layers it only will be possible when we'll be adding styles
+        # to the representations generated from layer and profile sets.
+
+        if material:
+            assigned_material = material
+        else:
+            element = elements[0]
+            if material_type == "IfcMaterial":
+                assigned_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+                assert assigned_material  # Type checker.
+            # Material usages just inherit the style from the type material, so can't override it.
+            elif material_type in ("IfcMaterialLayerSetUsage", "IfcMaterialProfileSetUsage"):
+                return
+            # If type is Set and no material argument were provided, then Set was just created
+            # and not yet have any IfcMaterials.
+            elif material_type in ("IfcMaterialConstituentSet", "IfcMaterialLayerSet", "IfcMaterialProfileSet"):
+                return
+            elif material_type == "IfcMaterialList":
+                assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
+            else:
+                assert_never(material_type)
+
+        for element in elements[:]:
+            if element.is_a("IfcElementType"):
+                elements.extend(tool.Model.get_occurrences_without_material_override(element))
+
+        tool.Model.apply_ifc_material_changes(elements, assigned_material=assigned_material)
