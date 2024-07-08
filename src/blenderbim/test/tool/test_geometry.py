@@ -727,3 +727,35 @@ class TestRemoveRepresentationItemFromShapeAspect(NewFile):
         subject.remove_representation_items_from_shape_aspect([items[1]], shape_aspect1)
         representation = shape_aspect1.ShapeRepresentations[0]
         assert set(representation.Items) == {items[0]}
+
+
+class TestApplyItemIdsAsVertexGroups(NewFile):
+    def test_run(self):
+        bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
+        obj = bpy.data.objects["Cube"]
+        bpy.ops.object.editmode_toggle()
+        bpy.ops.mesh.quads_convert_to_tris()
+        bpy.ops.mesh.duplicate_move()
+        bpy.ops.object.editmode_toggle()
+
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        assert len(mesh.polygons) == 24
+
+        mesh["ios_edges"] = []  # Method requirement.
+        ios_item_ids = (95,) * 12 + (45,) * 12
+        mesh["ios_item_ids"] = ios_item_ids
+        unique = tuple(dict.fromkeys(ios_item_ids))
+        ios_item_ids_unique = [unique.index(i) for i in ios_item_ids]
+
+        tool.Geometry.apply_item_ids_as_vertex_groups(obj)
+
+        vertex_group_names = [vg.name for vg in obj.vertex_groups]
+        assert vertex_group_names == [f"ios_item_id_{i}" for i in unique]
+
+        verts = mesh.vertices
+        for i, polygon in enumerate(mesh.polygons):
+            for vi in polygon.vertices:
+                vert = verts[vi]
+                groups = [g.group for g in vert.groups]
+                assert groups == [ios_item_ids_unique[i]]

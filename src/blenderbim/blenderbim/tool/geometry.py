@@ -37,6 +37,7 @@ import blenderbim.core.system
 import blenderbim.core.geometry
 import blenderbim.tool as tool
 import blenderbim.bim.import_ifc
+from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
 from blenderbim.bim.ifc import IfcStore
@@ -172,6 +173,39 @@ class Geometry(blenderbim.core.tool.Geometry):
             bm.to_mesh(obj.data)
             bm.free()
             del obj.data["ios_edges"]
+
+    @classmethod
+    def apply_item_ids_as_vertex_groups(cls, obj: bpy.types.Object) -> None:
+        """Save mesh-object item_ids as vertex groups in format 'ios_item_id_xxxx'.
+
+        Since ios_item_ids are item ids for original faces (triangulated),
+        this method should be used before `dissolve_triangulated_edges`."""
+
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        # I guess, they're already applied.
+        if "ios_item_ids" not in mesh:
+            return
+
+        # Just to be safe.
+        if "ios_edges" not in mesh:
+            raise Exception("Triangulated edges are already dissolved, cannot aply item ids.")
+
+        polygon_verts = np.empty(len(mesh.polygons) * 3, dtype="I")
+        mesh.polygons.foreach_get("vertices", polygon_verts)
+        polygon_verts = polygon_verts.reshape(-1, 3)
+
+        ios_item_ids: list[int] = mesh["ios_item_ids"]
+        vertices_by_item_ids = defaultdict(list[int])
+        for i, item_id in enumerate(ios_item_ids):
+            # .tolist() as VertexGroup.add() is not ready for uints.
+            vertices_by_item_ids[item_id].extend(polygon_verts[i].tolist())
+
+        for item_id, verts in vertices_by_item_ids.items():
+            vg = obj.vertex_groups.new(name=f"ios_item_id_{item_id}")
+            vg.add(verts, weight=1.0, type="ADD")
+
+        del mesh["ios_item_ids"]
 
     @classmethod
     def does_representation_id_exist(cls, representation_id: int) -> bool:

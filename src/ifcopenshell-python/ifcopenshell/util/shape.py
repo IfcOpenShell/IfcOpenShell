@@ -275,6 +275,11 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     return np.array([[faces[i], faces[i + 1], faces[i + 2]] for i in range(0, len(faces), 3)])
 
 
+def get_representation_item_ids(geometry: ShapeType) -> npt.NDArray[np.int32]:
+    """Get representation item ids for the geometry faces."""
+    return np.frombuffer(geometry.item_ids_buffer, dtype="i")
+
+
 def get_shape_vertices(shape: ShapeType, geometry: ShapeType) -> npt.NDArray[np.float64]:
     """Get the shape's vertices as a numpy array
 
