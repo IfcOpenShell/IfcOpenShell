@@ -348,6 +348,9 @@ class BIM_PT_object_material(Panel):
 
 class BIM_UL_materials(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        mprops = context.scene.BIMMaterialProperties
+        material_type = mprops.material_type
+
         if item:
             row = layout.row(align=True)
 
@@ -363,7 +366,10 @@ class BIM_UL_materials(UIList):
                 row.label(text=item.name)
             else:
                 row.label(text="", icon="BLANK1")
-                row.label(text=item.name, icon="MATERIAL")
+                if material_type == "IfcMaterialList":
+                    row.label(text=item.name, icon="MATERIAL")
+                else:
+                    row.prop(item, "name", text="", icon="MATERIAL", emboss=False)
 
                 row2 = row.row()
                 row2.alignment = "RIGHT"

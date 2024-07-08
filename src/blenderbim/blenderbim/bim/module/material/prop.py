@@ -119,8 +119,18 @@ def get_contexts(self, context):
     return MaterialsData.data["contexts"]
 
 
+def update_material_name(self: "Material", context: bpy.types.Context) -> None:
+    ifc_file = tool.Ifc.get()
+    name = self.name
+    material = ifc_file.by_id(self.ifc_definition_id)
+    if material.is_a("IfcMaterialLayerSet"):
+        material.LayerSetName = name
+    else:
+        material.Name = name
+
+
 class Material(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_material_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_category: BoolProperty(name="Is Category", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=False)
