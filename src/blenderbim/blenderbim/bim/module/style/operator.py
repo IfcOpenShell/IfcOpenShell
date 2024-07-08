@@ -540,6 +540,14 @@ class EnableAddingPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Enable Add Presentation Style"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        style_type = bpy.context.scene.BIMStylesProperties.style_type
+        if style_type != "IfcSurfaceStyle":
+            cls.poll_message_set(f"Adding {style_type} is not currently supported.")
+            return False
+        return True
+
     def _execute(self, context):
         props = bpy.context.scene.BIMStylesProperties
         props.is_adding = True
