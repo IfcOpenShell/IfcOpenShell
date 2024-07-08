@@ -52,6 +52,17 @@ class Blender(blenderbim.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
 
+    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
+    """
+    Options:
+
+    - (identifier, name, description)
+
+    - (identifier, name, description, number)
+
+    - (identifier, name, description, icon, number)
+    """
+
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
