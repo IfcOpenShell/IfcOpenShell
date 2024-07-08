@@ -297,9 +297,14 @@ class ObjectMaterialData:
             return getattr(material, "Name", None) or "Unnamed"
 
     @classmethod
-    def materials(cls):
+    def materials(cls) -> list[tool.Blender.BLENDER_ENUM_ITEM]:
+        is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
         return sorted(
-            [(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")], key=lambda x: x[1]
+            [
+                (str(m.id()), m.Name or "Unnamed", "" if is_ifc2x3 else (m.Description or ""))
+                for m in tool.Ifc.get().by_type("IfcMaterial")
+            ],
+            key=lambda x: x[1],
         )
 
     @classmethod
