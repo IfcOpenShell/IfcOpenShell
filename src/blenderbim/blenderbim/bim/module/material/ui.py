@@ -47,10 +47,11 @@ class BIM_PT_materials(Panel):
         self.props = context.scene.BIMMaterialProperties
 
         row = self.layout.row(align=True)
-        row.label(text=f"{MaterialsData.data['total_materials']} Materials", icon="NODE_MATERIAL")
         if self.props.is_editing:
+            row.label(text=f"{MaterialsData.data['total_materials']} {self.props.material_type}s", icon="NODE_MATERIAL")
             row.operator("bim.disable_editing_materials", text="", icon="CANCEL")
         else:
+            row.label(text=f"{MaterialsData.data['total_materials']} Materials", icon="NODE_MATERIAL")
             prop_with_search(row, self.props, "material_type", text="")
             row.operator("bim.load_materials", text="", icon="IMPORT")
             return
