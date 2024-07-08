@@ -355,4 +355,4 @@ class ObjectMaterialData:
         # so we check occurrence material explicitly
         element = tool.Ifc.get_entity(bpy.context.active_object)
         occurrence_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-        return bool(occurrence_material)
+        return bool(occurrence_material) and "Usage" not in occurrence_material.is_a()
