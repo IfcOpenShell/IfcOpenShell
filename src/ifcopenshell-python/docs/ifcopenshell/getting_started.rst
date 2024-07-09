@@ -23,10 +23,16 @@ would be with the use of templates as shown below.
     
     // necessary includes
 
+    // For BOOST_PP_SEQ_FOR_EACH and BOOST_PP_STRINGIZE preprocessor macro
+    #include <boost/preprocessor/seq/for_each.hpp>
     // Include all possible schema types that could be parsed
     #include "ifcparse/Ifc2x3.h"
     #include "ifcparse/Ifc4.h"
     #include "ifcparse/Ifc4x3_add2.h"
+
+    #define IFC_SCHEMA_SEQ (4x3_rc2)(4)(2x3) // TODO: Enumerate through all IFC schemas you want to be able to process
+    #define EXPAND_AND_CONCATENATE(elem) Ifc##elem
+    #define PROCESS_FOR_SCHEMA(r, data, elem) if (schema_version == BOOST_PP_STRINGIZE(elem)) { parseIfc<EXPAND_AND_CONCATENATE(elem)>(file); } else
 
     template<typename Schema>
     void parseIfc(IfcParse::IfcFile &file) {
@@ -37,21 +43,21 @@ would be with the use of templates as shown below.
             // TODO: Do something with ifcProduct
         }
     }
-    //
+
+    void process(const std::string &schema_version, IfcParse::IfcFile &file) {
+        // Syntactic sugar for iterating through all IFC schemas and passing them to main processing method
+        BOOST_PP_SEQ_FOR_EACH(PROCESS_FOR_SCHEMA, ,IFC_SCHEMA_SEQ)
+        { // The final else to catch unhandled schema version
+            throw std::invalid_argument("IFC Schema " + schema_version + " not supported");
+        }
+    }
+
     int main(int argc, char* argv[]) {
         // file of IfcParse::IfcFile previously defined
         auto schema_version = file.schema()->name();
         schema_version = schema_version.substr(3);
         std::transform(schema_version.begin(), schema_version.end(), schema_version.begin(), [](unsigned char c) { return std::tolower(c); });
-        if (schema_version == "4x3_rc2") {
-            parseIfc<Ifc4x3_rc2>(file);
-        }
-        else if (schema_version == "4") {
-            parseIfc<Ifc4>(file);
-        }
-        else if (schema_version == "2x3") {
-            parseIfc<Ifc2x3>(file);
-        }
+        process(schema_version, file);
         // TODO: Handle more cases of IFC schema versions here
     }
 
