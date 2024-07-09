@@ -24,31 +24,20 @@ import logging
 import tempfile
 import ifcopenshell
 import blenderbim.tool as tool
+from blenderbim.bim.operator import MultipleFileSelector
 
 
-class SelectFMIfcFile(bpy.types.Operator):
+class SelectFMIfcFile(MultipleFileSelector):
     bl_idname = "bim.select_fm_ifc_file"
     bl_label = "Select FM IFC File"
-    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-    files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
-        props.ifc_files.clear()
-        dirname = os.path.dirname(self.filepath)
-        for f in self.files:
-            new = props.ifc_files.add()
-            new.name = os.path.join(dirname, f.name)
-        props.ifc_file = self.filepath
+
+        self.update_props(props, "ifc_file", props.ifc_files)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
 
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
