@@ -21,6 +21,14 @@ from bpy.props import IntProperty, StringProperty, EnumProperty
 from bpy.types import PropertyGroup
 
 class RadianceExporterProperties(PropertyGroup):
+
+    def update_json_file_path(self, context):
+        if self.json_file_path:
+            self.json_file_path = bpy.path.abspath(self.json_file_path)
+
+
+
+
     radiance_resolution_x: IntProperty(
         name="X",
         description="Horizontal resolution of the output image",
@@ -36,8 +44,17 @@ class RadianceExporterProperties(PropertyGroup):
     ifc_file_name: StringProperty(
         name="IFC File Name",
         description="Name of the IFC file to use (without .ifc extension)",
-        default="AC20-FZK-Haus"
+        default=""
     )
+
+    json_file_path: StringProperty(
+        name="JSON File",
+        description="Path to the JSON file",
+        default="",
+        subtype="FILE_PATH",
+        update=lambda self, context: self.update_json_file_path(context)
+    )
+    
     radiance_quality: EnumProperty(
         name="Quality",
         description="Radiance rendering quality",

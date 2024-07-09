@@ -36,6 +36,9 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         
         row = layout.row()
         row.prop(props, "ifc_file_name")
+
+        row = layout.row()
+        row.prop(props, "json_file_path")
         
         row = layout.row()
         row.label(text="Resolution")
@@ -55,4 +58,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.prop(props, "radiance_variability")
         
         row = layout.row()
-        row.operator("export_scene.radiance", text="Export and Render")
+        row.operator("export_scene.radiance", text="Export to OBJ")
+
+        row = layout.row()
+        row.operator("render_scene.radiance", text="Radiance Render")
