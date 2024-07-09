@@ -21,17 +21,14 @@ from . import ui, prop, operator
 
 
 classes = (
-    operator.ExportRadiance,
+    operator.ExportOBJ,
+    operator.RadianceRender,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,
 )
 
 def register():
-    # for cls in classes:
-    #     bpy.utils.register_class(cls)
     bpy.types.Scene.radiance_exporter_properties = bpy.props.PointerProperty(type=prop.RadianceExporterProperties)
 
 def unregister():
-    # for cls in reversed(classes):
-    #     bpy.utils.unregister_class(cls)
     del bpy.types.Scene.radiance_exporter_properties
