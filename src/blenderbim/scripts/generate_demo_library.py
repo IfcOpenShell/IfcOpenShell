@@ -89,8 +89,8 @@ class LibraryGenerator:
         profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=0.3)
         self.create_profile_type("IfcPileType", "P1", profile)
 
-        self.create_layer_type("IfcSlabType", "FLR150", 0.2)
-        self.create_layer_type("IfcSlabType", "FLR250", 0.3)
+        self.create_layer_type("IfcSlabType", "FLR200", 0.2)
+        self.create_layer_type("IfcSlabType", "FLR300", 0.3)
 
         profile = self.file.create_entity(
             "IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6
