@@ -25,7 +25,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal, assert_never
+from typing import Union, Any, Optional, Literal
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -662,7 +662,7 @@ class Style(blenderbim.core.tool.Style):
             if rendering_style and texture_style:
                 tool.Loader.create_surface_style_with_textures(blender_material, rendering_style, texture_style)
         else:
-            assert_never(style_type)
+            assert False, f"Invalid style type found: {style_type}"
 
     @classmethod
     def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
