@@ -17,7 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import pyradiance as pr
+
+try:
+    import pyradiance as pr
+except ImportError:
+    print("PyRadiance is not available. Rendering functionality will be disabled.")
+    pr = None
+
 import bpy
 
 from pathlib import Path
@@ -120,6 +126,10 @@ class RadianceRender(bpy.types.Operator):
     bl_description = "Renders the scene using Radiance"
 
     def execute(self, context):
+        if pr is None:
+            self.report({'ERROR'}, "PyRadiance is not available. Cannot perform rendering.")
+            return {'CANCELLED'}
+        
         # Get the resolution from the user input
         resolution_x, resolution_y = self.getResolution(context)
         quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
@@ -140,9 +150,7 @@ class RadianceRender(bpy.types.Operator):
         style = []
         obj_file_path = os.path.join(radiance_dir, "model.obj")
         with open(obj_file_path, "r") as obj_file:
-            # Iterate through each line in the file
             for line in obj_file:
-                # Check if the line starts with "usemtl"
                 if line.startswith("usemtl"):
                     l = line.strip().split(" ")
                     style.append(l[1])
