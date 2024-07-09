@@ -399,9 +399,10 @@ namespace {
         }
 #endif
 
+        IfcSchema::IfcSurfaceStyle *surface_style = nullptr;
         for (auto& style : prs_styles) {
             if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-                IfcSchema::IfcSurfaceStyle* surface_style = (IfcSchema::IfcSurfaceStyle*)style;
+                surface_style = (IfcSchema::IfcSurfaceStyle*)style;
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
@@ -412,8 +413,7 @@ namespace {
                 }
             }
         }
-
-        return std::make_pair<IfcSchema::IfcSurfaceStyle*, T*>(nullptr, nullptr);
+        return std::make_pair(surface_style, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -473,7 +473,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
             styles->push((**it).Items()->as<IfcSchema::IfcStyledItem>());
         }
         if (styles->size() == 1) {
-            return map(*styles->begin());
+            IfcSchema::IfcStyledItem *styled_item = *styles->begin();
+            auto mapped_item = map(styled_item);
+            if (mapped_item) {
+                return mapped_item;
+            }
+            // Check if it's failed or just some unsupported case.
+            if (failed_on_purpose_.find(styled_item) == failed_on_purpose_.end()) {
+                return nullptr;
+            }
+            Logger::Warning("Skipping unsupported material style for material: ", material);
         }
     }
 
@@ -500,25 +509,32 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     IfcSchema::IfcSurfaceStyleShading* shading = style_pair.second;
 
     if (style == nullptr) {
-        // @todo we should probably log something that the kind of style,
-        // such as IfcCurveStyle, in this collections are unsupported.
+        // E.g. IfcCurveStyle is skipped as unsupported.
+        Logger::Warning("Only IfcSurfaceStyle is supported, couldn't find it in IfcStyledItem: ", inst);
         failed_on_purpose_.insert(inst);
         return nullptr;
     }
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
-
     surface_style->instance = style;
     if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
         surface_style->name = *style->Name();
     } else {
         std::ostringstream oss;
-        oss << shading->declaration().name() << "-" << shading->data().id();
+        if (shading) {
+            oss << shading->declaration().name() << "-" << shading->data().id();
+        } else {
+            oss << "-";
+        }
         surface_style->name = oss.str();
     }
-    
+
+    if (shading == nullptr) {
+        // E.g. IfcSurface style has only IfcExternallyDefinedSurfaceStyle.
+        return surface_style;
+    }
+
+    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
     double rgb[3];
     if (process_colour(shading->SurfaceColour(), rgb)) {
         surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
