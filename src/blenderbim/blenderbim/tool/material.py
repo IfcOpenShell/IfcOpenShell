@@ -27,7 +27,7 @@ import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING, Optional, assert_never
+from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     # Avoid circular imports.
@@ -341,7 +341,7 @@ class Material(blenderbim.core.tool.Material):
             elif material_type == "IfcMaterialList":
                 assert False, "Current assign_material implementation requires 'material' argument for IfcMaterialList."
             else:
-                assert_never(material_type)
+                assert False, f"Invalid material type found: {material_type}"
 
         for element in elements[:]:
             if element.is_a("IfcElementType"):

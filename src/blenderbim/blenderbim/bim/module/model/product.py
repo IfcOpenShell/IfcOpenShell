@@ -39,7 +39,7 @@ from blenderbim.bim.module.model.data import AuthoringData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json
-from typing import Any, Union, Optional, assert_never
+from typing import Any, Union, Optional
 
 
 class EnableAddType(bpy.types.Operator, tool.Ifc.Operator):
