@@ -611,14 +611,16 @@ class Loader(blenderbim.core.tool.Loader):
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
         cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+
+        # Prioritise coordinate operation angles
+        angle = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
+        if np.isclose(angle, 0.):
+            # Fallback to the placement angle as a good guess
+            xaa, xao = placement[:, 0][0:2]
+            angle = ifcopenshell.util.geolocation.xaxis2angle(xaa, xao)
+
+        cls.settings.project_north = 0 if np.isclose(angle, 0) else angle
         cls.set_manual_blender_offset(ifc_file)
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        x_axis = Vector(placement[:, 0][0:3])
-        default_x_axis = Vector((1, 0, 0))
-        if (default_x_axis - x_axis).length > 0.01:
-            props.blender_x_axis_abscissa = str(placement[0][0])
-            props.blender_x_axis_ordinate = str(placement[1][0])
-        props.has_blender_offset = True
 
     @classmethod
     def find_decomposed_ifc_class(
