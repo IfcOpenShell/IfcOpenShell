@@ -212,9 +212,11 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install lark --target=./site-packages
 	# Required by IFC4D
 	cd dist/working && . env/bin/activate && $(PIP) install PyP6Xer --target=./site-packages
-	# Required by Web module
+	# Required by web module
 	cd dist/working && . env/bin/activate && $(PIP) install python-socketio[asyncio_client] --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install aiohttp --target=./site-packages
+	# Required by light module
+	cd dist/working && . env/bin/activate && $(PIP) install pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 
 	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
