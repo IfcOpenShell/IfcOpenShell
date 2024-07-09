@@ -27,6 +27,7 @@ import ifctester.reporter
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.handler
+from blenderbim.bim.operator import MultipleFileSelector
 from pathlib import Path
 
 
@@ -92,38 +93,32 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class SelectSpecs(bpy.types.Operator):
+class SelectSpecs(MultipleFileSelector):
     bl_idname = "bim.select_specs"
     bl_label = "Select IDS"
-    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ids"
     filter_glob: bpy.props.StringProperty(default="*.ids;*.xml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.IfcTesterProperties.specs = self.filepath
+        props = context.scene.IfcTesterProperties
+
+        self.update_props(props, "specs", props.specs_files)
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
-class SelectIfcTesterIfcFile(bpy.types.Operator):
+class SelectIfcTesterIfcFile(MultipleFileSelector):
     bl_idname = "bim.select_ifctester_ifc_file"
     bl_label = "Select IfcTester IFC File"
-    bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.IfcTesterProperties.ifc_file = self.filepath
-        return {"FINISHED"}
+        props = context.scene.IfcTesterProperties
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        self.update_props(props, "ifc_file", props.ifc_files)
+        return {"FINISHED"}
 
 
 class SelectRequirement(bpy.types.Operator):

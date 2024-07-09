@@ -50,11 +50,18 @@ class BIM_PT_tester(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
-            row.prop(props, "ifc_file")
+            if len(props.ifc_files) > 1:
+                row.label(text=f"{len(props.ifc_files)} Files Selected")
+            else:
+                row.prop(props, "ifc_file")
+
             row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
 
         row = self.layout.row(align=True)
-        row.prop(props, "specs")
+        if len(props.specs_files) > 1:
+            row.label(text=f"{len(props.specs_files)} Files Selected")
+        else:
+            row.prop(props, "specs")
         row.operator("bim.select_specs", icon="FILE_FOLDER", text="")
 
         row = self.layout.row()
