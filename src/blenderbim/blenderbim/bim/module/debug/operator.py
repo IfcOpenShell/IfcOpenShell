@@ -672,7 +672,9 @@ class DebugActiveDrawing(bpy.types.Operator):
         def drawing_fails_to_load(chunk_to_include: set) -> bool:
             current_elements = all_elements - chunk_to_include
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": f"{original_exclude}, {excluded_guids}"})
+            new_exclude = "" if not original_exclude else f"{original_exclude}, "
+            new_exclude += excluded_guids
+            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": new_exclude})
 
             try:
                 bpy.ops.bim.create_drawing(sync=False)
