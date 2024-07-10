@@ -17,7 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import zipfile
-from typing import IO, Union, TypedDict, NotRequired
+from typing import IO, Union, TypedDict
+from typing_extensions import NotRequired
 
 
 class HeaderMetadata(TypedDict):
