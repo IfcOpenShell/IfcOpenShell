@@ -127,7 +127,7 @@ print(f"{blender_python_version_maj_min=}")
 python_version = f"py{found[0].replace('.', '')}"
 print(f"{python_version=}")
 
-blenderbim_build_version = f"0.0.{blenderbim_date_yesterday}"
+blenderbim_build_version = target_release_tag.replace("blenderbim-", "")
 
 # url_blenderbim_py3x_win_zip
 release_zip_file_name = f"{target_release_tag}-{python_version}-{target_os}.zip"
