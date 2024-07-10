@@ -60,6 +60,7 @@ class draw_settings:
     cells: bool = True
     merge_cells: bool = False
     include_projection: bool = True
+    hlr_poly: bool = False
     prefilter: bool = True
     include_curves: bool = False
     unify_inputs: bool = True
@@ -137,6 +138,7 @@ def main(
     if settings.subtract_before_hlr:
         sr.setSubtractionSettings(W.ALWAYS)
 
+    sr.setUseHlrPoly(settings.hlr_poly)
     sr.setUsePrefiltering(settings.prefilter)
     sr.setUnifyInputs(settings.unify_inputs)
 
