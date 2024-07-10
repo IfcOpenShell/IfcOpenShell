@@ -152,12 +152,12 @@ class RepresentationItemsData:
         cls.is_loaded = True
 
     @classmethod
-    def total_items(cls):
-        active_representation_id = None
+    def total_items(cls) -> int:
         result = 0
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
-            element = tool.Ifc.get().by_id(active_representation_id)
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Geometry.get_active_representation(obj)
+        if element:
             if not element.is_a("IfcShapeRepresentation"):
                 return 0
             queue = list(element.Items)
