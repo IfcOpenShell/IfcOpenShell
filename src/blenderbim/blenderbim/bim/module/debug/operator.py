@@ -724,3 +724,36 @@ class DebugActiveDrawing(bpy.types.Operator):
 
         self.report({"INFO"}, "See system console for the results")
         return {"FINISHED"}
+
+
+class ToggleDetailedIOSLogs(bpy.types.Operator):
+    bl_idname = "bim.toggle_detailed_ios_logs"
+    bl_label = "Toggle Detailed IfcOpenShell Logs"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Turn on detailed IfcOpenShell logs in the system console.\n"
+        + "Could be useful debugging issues "
+        + "loading IFC representations / serializing IFC geometry."
+        + "\n\nALT+CLICK to disable the logs"
+    )
+    # NOTE: No idea if it's possible to check from Python
+    # whether detailed logs are currently enabled or not.
+    # Therefore we just distinguish between click
+    # and alt-click to allow enabling/disabling the logs.
+    turn_on_logs: bpy.props.BoolProperty(name="Turn On Logs", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.turn_on_logs = False
+        return self.execute(context)
+
+    def execute(self, context):
+        import ifcopenshell.ifcopenshell_wrapper as wrapper
+
+        if self.turn_on_logs:
+            wrapper.turn_on_detailed_logging()
+            self.report({"INFO"}, "Detailed IfcOpenShell logs turned on.")
+        else:
+            wrapper.turn_off_detailed_logging()
+            self.report({"INFO"}, "Detailed IfcOpenShell logs turned off.")
+        return {"FINISHED"}
