@@ -164,6 +164,7 @@ class BatchReassignClass:
 class Migrator:
     def __init__(self):
         self.migrated_ids = {}
+        self.attribute_overrides = {}
         self.class_4_to_2x3 = json.load(open(os.path.join(cwd, "class_4_to_2x3.json"), "r"))
         self.class_2x3_to_4 = json.load(open(os.path.join(cwd, "class_2x3_to_4.json"), "r"))
 
@@ -224,7 +225,6 @@ class Migrator:
         }
 
     def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file):
-        self.attribute_overrides = {}
         to_delete = set()
 
         if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
@@ -262,7 +262,7 @@ class Migrator:
         except:
             pass
         # print("Migrating", element)
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(new_file.schema)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(new_file.schema_identifier)
         new_element = self.migrate_class(element, new_file)
         # print("Migrated class from {} to {}".format(element, new_element))
         new_element_schema = schema.declaration_by_name(new_element.is_a())
