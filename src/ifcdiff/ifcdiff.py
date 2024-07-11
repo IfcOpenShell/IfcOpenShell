@@ -44,7 +44,7 @@ class IfcDiff:
 
     :param old: IFC file object for the old model
     :type old: ifcopenshell.file.file
-    :param new: IFC file object for the old model
+    :param new: IFC file object for the new model
     :type new: ifcopenshell.file.file
     :param relationships: List of relationships to check. None means that only
         geometry is compared.
