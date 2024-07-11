@@ -2,7 +2,7 @@ ISO-10303-21;
 HEADER;
 FILE_DESCRIPTION((''),'2;1');
 FILE_NAME('','2019-03-20T15:56:44',(''),(''),'BuildingSmart IfcKit by Constructivity','IfcDoc 12.0.0.0','');
-FILE_SCHEMA(('IFC4x1'));
+FILE_SCHEMA(('IFC4X3_ADD2'));
 ENDSEC;
 
 DATA;
