@@ -955,8 +955,8 @@ class BIM_PT_work_calendars(Panel):
         row.label(text=work_calendar["Name"] or "Unnamed", icon="VIEW_ORTHO")
         if self.props.active_work_calendar_id == work_calendar_id:
             if self.props.editing_type == "ATTRIBUTES":
-                row.operator("bim.edit_work_calendar", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_work_calendar", text="Cancel", icon="CANCEL")
+                row.operator("bim.edit_work_calendar", icon="CHECKMARK")
+            row.operator("bim.disable_editing_work_calendar", text="", icon="CANCEL")
         elif self.props.active_work_calendar_id:
             row.operator("bim.remove_work_calendar", text="", icon="X").work_calendar = work_calendar_id
         else:
