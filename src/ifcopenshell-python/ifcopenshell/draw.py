@@ -431,6 +431,10 @@ if __name__ == "__main__":
             )
 
     args = vars(parser.parse_args())
+
+    if len(args["files"]) < 2:
+        parser.error("At least 2 files are required: one or more input files and one output file.")
+
     files = args.pop("files")
     output = files.pop()
 
