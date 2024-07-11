@@ -126,16 +126,21 @@ class ShapeBuilder:
         # then we do need to create segments
         segments = []
         cur_i = 0
+        closed_by_arc = False
         while cur_i < len(points) - 1:
             cur_i_ifc = cur_i + 1
             if cur_i + 1 in arc_points:
-                segments.append((cur_i_ifc, cur_i_ifc + 1, cur_i_ifc + 2))
+                if cur_i_ifc + 1 < len(points):
+                    segments.append((cur_i_ifc, cur_i_ifc + 1, cur_i_ifc + 2))
+                else:
+                    segments.append((cur_i_ifc, cur_i_ifc + 1, 1))
+                    closed_by_arc = True
                 cur_i += 2
             else:
                 segments.append((cur_i_ifc, cur_i_ifc + 1))
                 cur_i += 1
 
-        if closed:
+        if closed and not closed_by_arc:
             segments.append((len(points), 1))
 
         ifc_segments = []
