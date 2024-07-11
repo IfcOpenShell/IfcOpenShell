@@ -48,9 +48,9 @@ class FailedEntities(PropertyGroup):
 
 
 class IfcTesterProperties(PropertyGroup):
-    specs: StringProperty(default="", name="IDS File")
+    specs: StringProperty(default="", name="IDS File(s)")
     specs_files: CollectionProperty(name="IDS Files", type=StrProperty)
-    ifc_file: StringProperty(default="", name="IFC File")
+    ifc_file: StringProperty(default="", name="IFC File(s)")
     ifc_files: CollectionProperty(name="IFC Files", type=StrProperty)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory", options=set())
     generate_html_report: BoolProperty(default=False, name="Generate HTML report", options=set())
