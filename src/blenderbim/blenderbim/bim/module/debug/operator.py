@@ -34,6 +34,7 @@ import blenderbim.tool as tool
 import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
+from pathlib import Path
 from blenderbim import get_debug_info, format_debug_info
 from blenderbim.bim.ifc import IfcStore
 
@@ -139,20 +140,30 @@ class ValidateIfcFile(bpy.types.Operator):
 
 
 class ProfileImportIFC(bpy.types.Operator):
+    profile_filename = "blender.prof"
     bl_idname = "bim.profile_import_ifc"
     bl_label = "Profile Import IFC"
+    bl_description = f"Reload currently loaded project and save cprofile stats for reloading to '{profile_filename}'"
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file() and context.scene.BIMProperties.ifc_file
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not context.scene.BIMProperties.ifc_file:
+            cls.poll_message_set("Current IFC file is not saved.")
+            return False
+        return True
 
     def execute(self, context):
         import cProfile
         import pstats
 
-        cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", "blender.prof")
-        p = pstats.Stats("blender.prof")
+        profile_file = Path(profile_filename)
+        cProfile.run("import bpy; bpy.ops.bim.load_project_elements()", str(profile_file))
+        p = pstats.Stats(str(profile_file))
         p.sort_stats("cumulative").print_stats(50)
+        self.report({"INFO"}, f'Profile stats are saved to "{profile_file.absolute()}".')
         return {"FINISHED"}
 
 
@@ -661,7 +672,9 @@ class DebugActiveDrawing(bpy.types.Operator):
         def drawing_fails_to_load(chunk_to_include: set) -> bool:
             current_elements = all_elements - chunk_to_include
             excluded_guids = ", ".join([e.GlobalId for e in current_elements if hasattr(e, "GlobalId")])
-            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": f"{original_exclude}, {excluded_guids}"})
+            new_exclude = "" if not original_exclude else f"{original_exclude}, "
+            new_exclude += excluded_guids
+            tool.Ifc.run("pset.edit_pset", pset=pset, properties={"Exclude": new_exclude})
 
             try:
                 bpy.ops.bim.create_drawing(sync=False)
@@ -723,4 +736,37 @@ class DebugActiveDrawing(bpy.types.Operator):
         test_elements(list(all_elements))
 
         self.report({"INFO"}, "See system console for the results")
+        return {"FINISHED"}
+
+
+class ToggleDetailedIOSLogs(bpy.types.Operator):
+    bl_idname = "bim.toggle_detailed_ios_logs"
+    bl_label = "Toggle Detailed IfcOpenShell Logs"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Turn on detailed IfcOpenShell logs in the system console.\n"
+        + "Could be useful debugging issues "
+        + "loading IFC representations / serializing IFC geometry."
+        + "\n\nALT+CLICK to disable the logs"
+    )
+    # NOTE: No idea if it's possible to check from Python
+    # whether detailed logs are currently enabled or not.
+    # Therefore we just distinguish between click
+    # and alt-click to allow enabling/disabling the logs.
+    turn_on_logs: bpy.props.BoolProperty(name="Turn On Logs", default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.turn_on_logs = False
+        return self.execute(context)
+
+    def execute(self, context):
+        import ifcopenshell.ifcopenshell_wrapper as wrapper
+
+        if self.turn_on_logs:
+            wrapper.turn_on_detailed_logging()
+            self.report({"INFO"}, "Detailed IfcOpenShell logs turned on.")
+        else:
+            wrapper.turn_off_detailed_logging()
+            self.report({"INFO"}, "Detailed IfcOpenShell logs turned off.")
         return {"FINISHED"}

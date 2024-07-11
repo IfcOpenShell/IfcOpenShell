@@ -171,6 +171,8 @@ endif
 	mkdir dist/working
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
+	# IfcOpenShell dependency - support for new typing features
+	cd dist/working && . env/bin/activate && $(PIP) install typing_extensions --target=./site-packages
 	# Required by IfcCSV
 	cd dist/working && . env/bin/activate && $(PIP) install pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 	# Pandas ships with very heavy tests

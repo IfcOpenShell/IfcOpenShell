@@ -103,6 +103,7 @@ namespace IfcGeom {
 
 		std::atomic<bool> finished_{ false };
 		std::atomic<bool> terminating_{ false };
+		std::atomic<bool> had_error_processing_elements_ { false };
 		std::atomic<int> progress_{ 0 };
 
 		std::vector<geometry_conversion_result> tasks_;
@@ -163,9 +164,22 @@ namespace IfcGeom {
 
 		const std::string& unit_name() const { return unit_name_; }
 		double unit_magnitude() const { return unit_magnitude_; }
+		// Check if error occurred during iterator initialization or iteration over elements.
+		bool had_error_processing_elements() const { return had_error_processing_elements_; }
 
 		boost::optional<bool> initialization_outcome_;
 
+		/**
+		 * @return Returns true if the iterator is initialized with any elements, false otherwise.
+		 *
+		 * @note
+		 * - A true return value does not guarantee successful initialization of all elements.
+		 *   Some elements may have failed to initialize. Check had_error_processing_elements()
+		 *   to see whether there were errors during the initialization.
+		 *
+		 * - For non-concurrent iterators, a false return may occur if initialization of the first
+		 *   element fails, even if subsequent elements could be initialized successfully.
+		 */
 		bool initialize() {
 			using std::chrono::high_resolution_clock;
 			
@@ -322,7 +336,23 @@ namespace IfcGeom {
 						ifcopenshell::geometry::Converter* kernel,
 						ifcopenshell::geometry::Settings settings,
 						geometry_conversion_result* rep) {
-							this->create_element_(kernel, settings, rep); 
+							// Catch exceptions to be safe from freezing the iterator.
+							try {
+								this->create_element_(kernel, settings, rep);
+							} catch (const std::exception& e) {
+								Logger::Error(
+									std::string("Exception '") + e.what() + 
+									std::string("' occurred while iterator was creating a shape: "), 
+									rep->item->instance
+								);
+								had_error_processing_elements_ = true;
+							} catch (...) {
+								Logger::Error(
+									"Unknown exception occurred while iteartor was creating a shape: ", 
+									rep->item->instance
+								);
+								had_error_processing_elements_ = true;
+							}
 							return rep;
 						},
 					K,
@@ -758,6 +788,7 @@ namespace IfcGeom {
 				product = create_shape_model_for_next_entity();
 			} catch (const std::exception& e) {
 				Logger::Error(e);
+				had_error_processing_elements_ = true;
 			}
 #ifdef IFOPSH_WITH_OPENCASCADE
 			catch (const Standard_Failure& e) {
@@ -766,10 +797,12 @@ namespace IfcGeom {
 				} else {
 					Logger::Error("Unknown error creating geometry");
 				}
-			}
+				had_error_processing_elements_ = true;
+			}		
 #endif
 			catch (...) {
 				Logger::Error("Unknown error creating geometry");
+				had_error_processing_elements_ = true;
 			}
 			return product;
 		}
