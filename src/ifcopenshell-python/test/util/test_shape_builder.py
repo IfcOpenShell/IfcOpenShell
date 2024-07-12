@@ -62,6 +62,26 @@ class TestCreatePolyline(test.bootstrap.IFC4):
         assert segment.is_a("IfcLineIndex")
         assert segment.wrappedValue == (3, 4)
 
+    def test_closed_polyline_ending_with_arc(self):
+        builder = ShapeBuilder(self.file)
+
+        points = Vector((0, 0)), Vector((1, 0)), Vector((0.5, 0.5))
+        position = Vector((2, 0))
+        arc_points = (2,)
+        # 4=IfcIndexedPolyCurve(#3,(IfcLineIndex((1,2)),IfcArcIndex((2,3,1))),$)
+        polyline = builder.polyline(points, closed=True, position_offset=position, arc_points=arc_points)
+        points = [p + position for p in points]
+        assert np.allclose(np.array(points), np.array(polyline.Points.CoordList))
+        assert len(polyline.Segments) == 2
+
+        segment = polyline.Segments[0]
+        assert segment.is_a("IfcLineIndex")
+        assert segment.wrappedValue == (1, 2)
+
+        segment = polyline.Segments[1]
+        assert segment.is_a("IfcArcIndex")
+        assert segment.wrappedValue == (2, 3, 1)
+
 
 class TestCalculateTransitions(test.bootstrap.IFC4):
     def calculate_and_test(self, params, length):
