@@ -1053,6 +1053,7 @@ class LoadLink(bpy.types.Operator):
             pprops = bpy.context.scene.BIMProjectProperties
             gprops = bpy.context.scene.BIMGeoreferenceProperties
             tool.Loader.calculate_model_origin(tool.Ifc.get())
+
             code = f"""
 import bpy
 
@@ -1060,6 +1061,7 @@ def run():
     gprops = bpy.context.scene.BIMGeoreferenceProperties
     # Our model origin becomes their host model origin
     gprops.host_model_origin = "{gprops.model_origin}"
+    gprops.host_model_origin_si = "{gprops.model_origin_si}"
     gprops.host_model_project_north = "{gprops.model_project_north}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
     gprops.blender_eastings = "{gprops.blender_eastings}"
@@ -1112,7 +1114,7 @@ except Exception as e:
             data = json.load(f)
 
         gprops = bpy.context.scene.BIMGeoreferenceProperties
-        for prop in ("model_origin", "model_project_north"):
+        for prop in ("model_origin", "model_origin_si", "model_project_north"):
             if (value := data.get(prop, None)) is not None:
                 setattr(gprops, prop, value)
 
@@ -1396,8 +1398,10 @@ class LoadLinkedProject(bpy.types.Operator):
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
         elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
-            if gprops.host_model_origin:
-                tool.Loader.settings.false_origin = list(map(float, gprops.host_model_origin.split(",")))
+            if gprops.host_model_origin_si:
+                tool.Loader.settings.false_origin = [
+                    float(o) / self.unit_scale for o in gprops.host_model_origin_si.split(",")
+                ]
                 tool.Loader.settings.project_north = float(gprops.host_model_project_north)
                 tool.Loader.set_manual_blender_offset(self.file)
             else:
@@ -1407,8 +1411,10 @@ class LoadLinkedProject(bpy.types.Operator):
         self.json_filepath = self.filepath + ".cache.json"
         data = {
             "host_model_origin": gprops.host_model_origin,
+            "host_model_origin_si": gprops.host_model_origin_si,
             "host_model_project_north": gprops.host_model_project_north,
             "model_origin": gprops.model_origin,
+            "model_origin_si": gprops.model_origin_si,
             "model_project_north": gprops.model_project_north,
             "has_blender_offset": gprops.has_blender_offset,
             "blender_eastings": gprops.blender_eastings,
