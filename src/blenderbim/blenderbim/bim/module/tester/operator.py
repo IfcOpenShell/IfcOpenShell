@@ -43,22 +43,35 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
     def execute(self, context):
         props = context.scene.IfcTesterProperties
 
+        props.specifications.clear()
+
+        if props.should_load_from_memory and tool.Ifc.get():
+            ifc_data = tool.Ifc.get()
+            ifc_path = tool.Ifc.get_path()
+
+            for f in props.specs_files:
+                self.execute_tester(ifc_data, ifc_path, f.name)
+        else:
+            for ifc_file in props.ifc_files:
+                ifc_data = ifcopenshell.open(ifc_file.name)
+
+                for f in props.specs_files:
+                    self.execute_tester(ifc_data, ifc_file.name, f.name)
+
+        blenderbim.bim.handler.refresh_ui_data()
+        return {"FINISHED"}
+
+    def execute_tester(self, ifc_data, ifc_path, specs_path):
+        props = bpy.context.scene.IfcTesterProperties
+
         with tempfile.TemporaryDirectory() as dirpath:
             start = time.time()
-            output = Path(os.path.join(dirpath, "{}.html".format(props.specs)))
+            output = Path(os.path.join(dirpath, "{}_{}.html".format(ifc_path, os.path.basename(specs_path))))
 
-            filepath = None
-            if props.should_load_from_memory and tool.Ifc.get():
-                ifc = tool.Ifc.get()
-                filepath = tool.Ifc.get_path()
-            else:
-                ifc = ifcopenshell.open(props.ifc_file)
-                filepath = props.ifc_file
-
-            specs = ifctester.ids.open(props.specs)
+            specs = ifctester.ids.open(specs_path)
             print("Finished loading:", time.time() - start)
             start = time.time()
-            specs.validate(ifc, filepath=filepath)
+            specs.validate(ifc_data, filepath=ifc_path)
 
             print("Finished validating:", time.time() - start)
             start = time.time()
@@ -81,16 +94,13 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
             if report:
                 tool.Tester.specs = specs
                 tool.Tester.report = report
-            props.specifications.clear()
+
             for spec in report:
                 print(spec)
                 new_spec = props.specifications.add()
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
                 new_spec.status = spec["status"]
-
-        blenderbim.bim.handler.refresh_ui_data()
-        return {"FINISHED"}
 
 
 class SelectSpecs(MultipleFileSelector):
@@ -105,7 +115,6 @@ class SelectSpecs(MultipleFileSelector):
 
         self.update_props(props, "specs", props.specs_files)
         return {"FINISHED"}
-
 
 
 class SelectIfcTesterIfcFile(MultipleFileSelector):
