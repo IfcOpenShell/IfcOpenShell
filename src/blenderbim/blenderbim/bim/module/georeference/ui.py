@@ -111,6 +111,13 @@ class BIM_PT_gis(Panel):
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
             if tool.Ifc.get_schema() != "IFC2X3":
+                
+                if props.is_visualizing:
+                    icon = "HIDE_OFF"
+                else:
+                    icon = "HIDE_ON"
+                row.prop(props, "is_visualizing", icon = icon , text = "")
+
                 row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_georeferencing", icon="X", text="")
 
