@@ -51,6 +51,17 @@ class BIM_PT_units(Panel):
             row.operator("bim.load_units", text="", icon="GREASEPENCIL")
 
         if not self.props.is_editing:
+            row = self.layout.row(align=True)
+            row.label(text="Length Unit", icon="ARROW_LEFTRIGHT")
+            row.label(text=str(UnitsData.data["length_unit"]))
+
+            row = self.layout.row(align=True)
+            row.label(text="Area Unit", icon="ORIENTATION_VIEW")
+            row.label(text=str(UnitsData.data["area_unit"]))
+
+            row = self.layout.row(align=True)
+            row.label(text="Volume Unit", icon="EMPTY_ARROWS")
+            row.label(text=str(UnitsData.data["volume_unit"]))
             return
 
         row = self.layout.row(align=True)

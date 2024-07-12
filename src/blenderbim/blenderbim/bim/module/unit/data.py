@@ -35,12 +35,30 @@ class UnitsData:
     @classmethod
     def load(cls):
         cls.data = {
+            "length_unit": cls.length_unit(),
+            "area_unit": cls.area_unit(),
+            "volume_unit": cls.volume_unit(),
             "unit_classes": cls.unit_classes(),
             "named_unit_types": cls.named_unit_types(),
             "conversion_unit_types": cls.conversion_unit_types(),
             "total_units": cls.get_total_units(),
         }
         cls.is_loaded = True
+
+    @classmethod
+    def length_unit(cls):
+        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
+            return ifcopenshell.util.unit.get_full_unit_name(unit)
+
+    @classmethod
+    def area_unit(cls):
+        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
+            return ifcopenshell.util.unit.get_full_unit_name(unit)
+
+    @classmethod
+    def volume_unit(cls):
+        if unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "VOLUMEUNIT"):
+            return ifcopenshell.util.unit.get_full_unit_name(unit)
 
     @classmethod
     def unit_classes(cls):
