@@ -117,16 +117,21 @@ class BIMGeoreferenceProperties(PropertyGroup):
     # These are only for reference to capture data about a host model from a linked model
     # If you relink a model from a new host origin, we can autodetect it in theory with this
     host_model_origin: StringProperty(name="Host Model Origin")
+    host_model_origin_si: StringProperty(name="Host Model Origin SI")
     host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
 
     # These are only for reference, calculated using tool.Loader.calculate_model_origin
+    # TODO perform calculate_model_origin at load time, not as an explicit step.
     model_origin: StringProperty(name="Model Origin")
+    model_origin_si: StringProperty(name="Model Origin SI")
     model_project_north: StringProperty(name="Model Angle to Grid North")
 
     # True if there is a temporary Blender session coordinate system
     has_blender_offset: BoolProperty(name="Has Blender Offset")
 
     # These E, N, H, and project north are the absolute map coordinates of the Blender session
+    # If has_blender_offset is True, this is equivalent to model_origin and model_project_north.
+    # TODO consolidate this with model_origin and model_project_north.
     blender_eastings: StringProperty(name="Blender Eastings", default="0")
     blender_northings: StringProperty(name="Blender Northings", default="0")
     blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")

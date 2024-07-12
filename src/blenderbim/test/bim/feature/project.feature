@@ -780,6 +780,21 @@ Scenario: Link IFC - automatic false origin mode - two different false origins a
     And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-17.696,-7.866,0"
     And the object "Col:IfcProject/geolocation.ifc:Chunk" has a vertex at "-13.268,0.464,0"
 
+Scenario: Link IFC - automatic false origin mode - three identical false origins but different project and map units
+    Given an empty Blender session
+    # Not currently possible via UI
+    And I set "scene.BIMProjectProperties.distance_limit" to "5"
+    And I set "scene.BIMProjectProperties.false_origin_mode" to "AUTOMATIC"
+    When I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit1.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit2.ifc', use_cache=False)"
+    And I press "bim.link_ifc(filepath='{cwd}/test/files/geolocation-unit3.ifc', use_cache=False)"
+    Then the object "Col:IfcProject/geolocation-unit1.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit2.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit3.ifc:Chunk" exists
+    And the object "Col:IfcProject/geolocation-unit1.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
+    And the object "Col:IfcProject/geolocation-unit2.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
+    And the object "Col:IfcProject/geolocation-unit3.ifc:Chunk" has a vertex at "7.294,-5.366,-1"
+
 Scenario: Toggle link visibility - wireframe mode
     Given an empty IFC project
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
