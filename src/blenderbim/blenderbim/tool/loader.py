@@ -610,11 +610,13 @@ class Loader(blenderbim.core.tool.Loader):
             return
         placement = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
         offset_point = [placement[0][3], placement[1][3], placement[2][3]]
-        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
+            ifc_file, *offset_point, should_return_in_map_units=False
+        )
 
         # Prioritise coordinate operation angles
         angle = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
-        if np.isclose(angle, 0.):
+        if np.isclose(angle, 0.0):
             # Fallback to the placement angle as a good guess
             xaa, xao = placement[:, 0][0:2]
             angle = ifcopenshell.util.geolocation.xaxis2angle(xaa, xao)
@@ -680,7 +682,9 @@ class Loader(blenderbim.core.tool.Loader):
         offset_point = cls.get_offset_point(ifc_file)
         if offset_point is None:
             return
-        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, *offset_point)
+        cls.settings.false_origin = ifcopenshell.util.geolocation.auto_xyz2enh(
+            ifc_file, *offset_point, should_return_in_map_units=False
+        )
         if angle := ifcopenshell.util.geolocation.get_grid_north(ifc_file):
             cls.settings.project_north = angle
         cls.set_manual_blender_offset(ifc_file)
@@ -747,7 +751,10 @@ class Loader(blenderbim.core.tool.Loader):
             gprops.model_origin = (
                 f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
             )
+            gprops.model_origin_si = f"{float(gprops.blender_eastings) * cls.unit_scale},{float(gprops.blender_northings) * cls.unit_scale},{float(gprops.blender_orthogonal_height) * cls.unit_scale}"
             gprops.model_project_north = gprops.blender_project_north
         else:
-            gprops.model_origin = ",".join(map(str, ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0)))
+            enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0, should_return_in_map_units=False)
+            gprops.model_origin = ",".join(map(str, enh))
+            gprops.model_origin_si = ",".join([str(o * cls.unit_scale) for o in enh])
             gprops.model_project_north = str(ifcopenshell.util.geolocation.get_grid_north(ifc_file))
