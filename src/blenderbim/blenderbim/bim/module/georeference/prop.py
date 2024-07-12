@@ -31,6 +31,7 @@ from bpy.props import (
     CollectionProperty,
 )
 from blenderbim.bim.module.georeference.data import GeoreferenceData
+from blenderbim.bim.module.georeference.decorator import GeoVizDecorator
 
 
 def get_coordinate_operation_class(self, context):
@@ -92,8 +93,21 @@ def update_grid_north_vector(self, context):
         pass
     self.is_changing_angle = False
 
-
+def update_geoviz(self, context):
+    if context.scene.BIMGeoreferenceProperties.is_visualizing:
+        GeoVizDecorator.install(context)
+    else:
+        GeoVizDecorator.uninstall(context)
+        
+    # Force redraw to update the UI immediately
+    for area in context.screen.areas:
+        if context.area.type == 'VIEW_3D':
+            context.area.tag_redraw()
+            
 class BIMGeoreferenceProperties(PropertyGroup):
+
+    is_visualizing: BoolProperty(name = "Visualize GeoReference", default = False, update = update_geoviz)
+    
     coordinate_operation_class: bpy.props.EnumProperty(
         items=get_coordinate_operation_class, name="Coordinate Operation Class"
     )
