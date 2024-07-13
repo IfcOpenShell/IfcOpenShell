@@ -11,7 +11,7 @@ from bpy_extras.view3d_utils import location_3d_to_region_2d
 class GeoVizDecorator():
     is_installed = False
     handlers = []
-
+    end2 = Vector()
     @classmethod
     def install(cls, context):
         if cls.is_installed:
@@ -41,21 +41,68 @@ class GeoVizDecorator():
         self.addon_prefs = context.preferences.addons["blenderbim"].preferences
         special_elements_color = self.addon_prefs.decorator_color_special
         
-        #Draw the X
-        text_pos = Vector((0,0,0))
+        # Coordinates
+        font_id = 0
+        blf.size(font_id, 15)
+        blf.color(font_id, *special_elements_color)
 
-        self.addon_prefs = context.preferences.addons["blenderbim"].preferences
-        special_elements_color = self.addon_prefs.decorator_color_special
+        text_offset = 50  # Offset to the right of the arrow
 
+        values = [
+            f"E: {context.scene.BIMGeoreferenceProperties.coordinate_operation[0].string_value}",
+            f"N: {context.scene.BIMGeoreferenceProperties.coordinate_operation[1].string_value}",
+            f"H: {context.scene.BIMGeoreferenceProperties.coordinate_operation[2].string_value}",
+        ]
+
+        p = Vector((0, 1, 0))  # Position at the end of the first arrow
+
+        coords_2d = location_3d_to_region_2d(context.region, context.region_data, p)
+
+        if coords_2d:
+            for i, value in enumerate(values):
+                blf.position(font_id, coords_2d[0] + text_offset, coords_2d[1] -20 - i * 20, 0)
+                blf.draw(font_id, value)
+        
+        
+        pos1 = Vector((0,0,0))
+        
         font_id = 0
         blf.size(font_id, 20)
         blf.color(font_id, *special_elements_color)
 
-        coords_2d = location_3d_to_region_2d(context.region, context.region_data, text_pos)
+        coords_2d = location_3d_to_region_2d(context.region, context.region_data, pos1)
 
         if coords_2d:
             blf.position(font_id, coords_2d[0], coords_2d[1], 0)
-            blf.draw(font_id, f"x")
+            blf.draw(font_id, f"Angle: {bpy.context.scene.BIMGeoreferenceProperties.grid_north_angle}")
+
+
+        #Project North Text
+        pos2 = Vector((-0.1, 1, 0))
+        
+        font_id = 0
+        blf.size(font_id, 10)
+        blf.color(font_id, *special_elements_color)
+
+        coords_2d = location_3d_to_region_2d(context.region, context.region_data, pos2)
+
+        if coords_2d:
+            blf.position(font_id, coords_2d[0], coords_2d[1], 0)
+            blf.draw(font_id, f"PROJECT NORTH")
+
+        
+        #Grid North Text
+        pos2 = self.end2
+        
+        font_id = 0
+        blf.size(font_id, 10)
+        blf.color(font_id, *special_elements_color)
+
+        coords_2d = location_3d_to_region_2d(context.region, context.region_data, pos2)
+
+        if coords_2d:
+            blf.position(font_id, coords_2d[0], coords_2d[1], 0)
+            blf.draw(font_id, f"GRID NORTH")
 
 
     def draw_arrows(self, context):
@@ -91,23 +138,40 @@ class GeoVizDecorator():
         self.draw_batch("LINES", arrow_vertices, special_elements_color, arrow_indices)
 
         # Second arrow rotated counterclockwise
-        value = float(context.scene.BIMGeoreferenceProperties.grid_north_angle)
+        value = int(context.scene.BIMGeoreferenceProperties.grid_north_angle)
         angle = math.radians(value)
         rotation_matrix = Matrix.Rotation(-angle, 4, 'Z')
 
         start2 = Vector((0, 0, 0))
-        end2 = Vector((0, 1, 0)) @ rotation_matrix
-        arrow_vertices2 = [start2, end2]
+        self.end2 = Vector((0, 1, 0)) @ rotation_matrix
+        arrow_vertices2 = [start2, self.end2]
 
-        direction2 = (end2 - start2).normalized()
+        direction2 = (self.end2 - start2).normalized()
         perpendicular2 = direction2.cross(Vector((0, 0, 1)))
 
-        arrowhead3 = end2 - direction2 * arrow_size + perpendicular2 * arrow_size * 0.5
-        arrowhead4 = end2 - direction2 * arrow_size - perpendicular2 * arrow_size * 0.5
+        arrowhead3 = self.end2 - direction2 * arrow_size + perpendicular2 * arrow_size * 0.5
+        arrowhead4 = self.end2 - direction2 * arrow_size - perpendicular2 * arrow_size * 0.5
 
-        arrow_vertices2.extend([end2, arrowhead3, end2, arrowhead4])
+        arrow_vertices2.extend([self.end2, arrowhead3, self.end2, arrowhead4])
         arrow_indices2 = [(0, 1), (2, 3), (4, 5)]
 
         self.draw_batch("LINES", arrow_vertices2, special_elements_color, arrow_indices2)
 
+        # Draw the angle arc
+        self.draw_arc(context, start, math.pi / 2, math.pi / 2 - angle, num_segments=32, radius=0.2)
         
+        
+    def draw_arc(self, context, center, start_angle, end_angle, num_segments=32, radius=0.5):
+        arc_vertices = []
+        arc_indices = []
+
+        for i in range(num_segments + 1):
+            t = i / num_segments
+            current_angle = start_angle + t * (start_angle - end_angle)
+            point = Vector((math.cos(current_angle), math.sin(current_angle), 0)) * radius + center
+            arc_vertices.append(point)
+            if i > 0:
+                arc_indices.append((i - 1, i))
+
+        self.draw_batch("LINES", arc_vertices, self.addon_prefs.decorator_color_special, arc_indices)
+
