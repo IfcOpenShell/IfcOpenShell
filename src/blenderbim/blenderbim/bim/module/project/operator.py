@@ -1645,7 +1645,7 @@ class LoadLinkedProject(bpy.types.Operator):
                 if material.has_transparency and material.transparency > 0:
                     alpha = 1.0 - material.transparency
                 if material.instance_id():
-                    diffuse = material.diffuse + (alpha,)
+                    diffuse = (material.diffuse.r(), material.diffuse.g(), material.diffuse.b(), alpha)
                 else:
                     diffuse = (0.8, 0.8, 0.8, 1)  # Blender's default material
                 material_name = f"{diffuse[0]}-{diffuse[1]}-{diffuse[2]}-{diffuse[3]}"
