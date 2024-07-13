@@ -43,6 +43,7 @@ classes = (
     operator.SetIfcTrueNorth,
     prop.BIMGeoreferenceProperties,
     ui.BIM_PT_gis,
+    ui.BIM_PT_gis_blender,
     ui.BIM_PT_gis_wcs,
     ui.BIM_PT_gis_true_north,
     ui.BIM_PT_gis_calculator,

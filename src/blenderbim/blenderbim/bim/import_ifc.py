@@ -509,6 +509,7 @@ class IfcImporter:
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
             if not props.has_blender_offset:
                 tool.Loader.guess_false_origin(self.file)
+        tool.Georeference.set_model_origin()
 
     def create_positioning_elements(self):
         self.create_grids()
