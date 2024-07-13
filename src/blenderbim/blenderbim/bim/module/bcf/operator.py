@@ -949,9 +949,9 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
-                float(props.blender_eastings) * unit_scale,
-                float(props.blender_northings) * unit_scale,
-                float(props.blender_orthogonal_height) * unit_scale,
+                float(props.blender_offset_x) * unit_scale,
+                float(props.blender_offset_y) * unit_scale,
+                float(props.blender_offset_z) * unit_scale,
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
             )

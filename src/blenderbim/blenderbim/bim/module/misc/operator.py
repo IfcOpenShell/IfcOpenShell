@@ -312,9 +312,9 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
             matrix = np.array(
                 ifcopenshell.util.geolocation.global2local(
                     matrix,
-                    float(props.blender_eastings),
-                    float(props.blender_northings),
-                    float(props.blender_orthogonal_height),
+                    float(props.blender_offset_x),
+                    float(props.blender_offset_y),
+                    float(props.blender_offset_z),
                     float(props.blender_x_axis_abscissa),
                     float(props.blender_x_axis_ordinate),
                 )

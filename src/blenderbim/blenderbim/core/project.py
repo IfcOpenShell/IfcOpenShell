@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import blenderbim.tool as tool
 
 
-def create_project(ifc: tool.Ifc, project: tool.Project, spatial: tool.Spatial, schema: str, template: Optional[str] = None) -> None:
+def create_project(ifc: tool.Ifc, georeference: tool.Georeference, project: tool.Project, spatial: tool.Spatial, schema: str, template: Optional[str] = None) -> None:
     if ifc.get():
         return
 
@@ -100,3 +100,4 @@ def create_project(ifc: tool.Ifc, project: tool.Project, spatial: tool.Spatial, 
     project.load_default_thumbnails()
     project.set_default_context()
     project.set_default_modeling_dimensions()
+    georeference.set_model_origin()

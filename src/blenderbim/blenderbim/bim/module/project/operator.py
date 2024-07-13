@@ -127,7 +127,7 @@ class CreateProject(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
-        core.create_project(tool.Ifc, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
+        core.create_project(tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
         blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
@@ -1052,7 +1052,6 @@ class LoadLink(bpy.types.Operator):
         if not os.path.exists(blend_filepath):
             pprops = bpy.context.scene.BIMProjectProperties
             gprops = bpy.context.scene.BIMGeoreferenceProperties
-            tool.Loader.calculate_model_origin(tool.Ifc.get())
 
             code = f"""
 import bpy
@@ -1064,10 +1063,6 @@ def run():
     gprops.host_model_origin_si = "{gprops.model_origin_si}"
     gprops.host_model_project_north = "{gprops.model_project_north}"
     gprops.has_blender_offset = {gprops.has_blender_offset}
-    gprops.blender_eastings = "{gprops.blender_eastings}"
-    gprops.blender_northings = "{gprops.blender_northings}"
-    gprops.blender_orthogonal_height = "{gprops.blender_orthogonal_height}"
-    gprops.blender_project_north = "{gprops.blender_project_north}"
     gprops.blender_offset_x = "{gprops.blender_offset_x}"
     gprops.blender_offset_y = "{gprops.blender_offset_y}"
     gprops.blender_offset_z = "{gprops.blender_offset_z}"
@@ -1369,6 +1364,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
         self.collection = bpy.data.collections.new("IfcProject/" + os.path.basename(self.filepath))
         self.file = ifcopenshell.open(self.filepath)
+        tool.Ifc.set(self.file)
         print("Finished opening")
 
         self.db_filepath = self.filepath + ".cache.sqlite"
@@ -1398,16 +1394,15 @@ class LoadLinkedProject(bpy.types.Operator):
         if tool.Loader.settings.false_origin_mode == "MANUAL" and tool.Loader.settings.false_origin:
             tool.Loader.set_manual_blender_offset(self.file)
         elif tool.Loader.settings.false_origin_mode == "AUTOMATIC":
-            if gprops.host_model_origin_si:
-                tool.Loader.settings.false_origin = [
-                    float(o) / self.unit_scale for o in gprops.host_model_origin_si.split(",")
-                ]
+            if host_model_origin_si := gprops.host_model_origin_si:
+                host_model_origin_si = [float(o) / self.unit_scale for o in host_model_origin_si.split(",")]
+                tool.Loader.settings.false_origin = host_model_origin_si
                 tool.Loader.settings.project_north = float(gprops.host_model_project_north)
                 tool.Loader.set_manual_blender_offset(self.file)
             else:
                 tool.Loader.guess_false_origin(self.file)
 
-        tool.Loader.calculate_model_origin(self.file)
+        tool.Georeference.set_model_origin()
         self.json_filepath = self.filepath + ".cache.json"
         data = {
             "host_model_origin": gprops.host_model_origin,
@@ -1417,9 +1412,6 @@ class LoadLinkedProject(bpy.types.Operator):
             "model_origin_si": gprops.model_origin_si,
             "model_project_north": gprops.model_project_north,
             "has_blender_offset": gprops.has_blender_offset,
-            "blender_eastings": gprops.blender_eastings,
-            "blender_northings": gprops.blender_northings,
-            "blender_orthogonal_height": gprops.blender_orthogonal_height,
             "blender_offset_x": gprops.blender_offset_x,
             "blender_offset_y": gprops.blender_offset_y,
             "blender_offset_z": gprops.blender_offset_z,

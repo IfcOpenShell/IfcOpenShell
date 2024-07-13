@@ -575,11 +575,7 @@ class Loader(blenderbim.core.tool.Loader):
 
         model_north = ifcopenshell.util.geolocation.get_grid_north(ifc_file)
         project_north = cls.settings.project_north
-        model_rotation = project_north - model_north
-        if model_rotation > 180:
-            model_rotation = (360 - model_rotation) * -1
-        elif model_rotation < -180:
-            model_rotation = (model_rotation * -1) - 360
+        model_rotation = tool.Cad.normalise_angle(project_north - model_north)
         has_rotation = not np.isclose(model_north, project_north)
 
         if not has_offset:
@@ -590,10 +586,6 @@ class Loader(blenderbim.core.tool.Loader):
 
         if has_offset or has_rotation:
             props = bpy.context.scene.BIMGeoreferenceProperties
-            props.blender_eastings = str(false_origin[0])
-            props.blender_northings = str(false_origin[1])
-            props.blender_orthogonal_height = str(false_origin[2])
-            props.blender_project_north = str(project_north)
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
@@ -741,20 +733,3 @@ class Loader(blenderbim.core.tool.Loader):
                 float(props.blender_x_axis_ordinate),
             )
         return Matrix(matrix.tolist())
-
-    @classmethod
-    def calculate_model_origin(cls, ifc_file: ifcopenshell.file | None) -> None:
-        if not ifc_file:
-            return
-        gprops = bpy.context.scene.BIMGeoreferenceProperties
-        if gprops.has_blender_offset:
-            gprops.model_origin = (
-                f"{gprops.blender_eastings},{gprops.blender_northings},{gprops.blender_orthogonal_height}"
-            )
-            gprops.model_origin_si = f"{float(gprops.blender_eastings) * cls.unit_scale},{float(gprops.blender_northings) * cls.unit_scale},{float(gprops.blender_orthogonal_height) * cls.unit_scale}"
-            gprops.model_project_north = gprops.blender_project_north
-        else:
-            enh = ifcopenshell.util.geolocation.auto_xyz2enh(ifc_file, 0, 0, 0, should_return_in_map_units=False)
-            gprops.model_origin = ",".join(map(str, enh))
-            gprops.model_origin_si = ",".join([str(o * cls.unit_scale) for o in enh])
-            gprops.model_project_north = str(ifcopenshell.util.geolocation.get_grid_north(ifc_file))

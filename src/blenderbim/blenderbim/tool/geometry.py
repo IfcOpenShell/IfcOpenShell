@@ -399,15 +399,11 @@ class Geometry(blenderbim.core.tool.Geometry):
 
     @classmethod
     def get_cartesian_point_coordinate_offset(cls, obj: bpy.types.Object) -> Union[Vector, None]:
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT":
-            return Vector(
-                (
-                    float(props.blender_eastings),
-                    float(props.blender_northings),
-                    float(props.blender_orthogonal_height),
-                )
-            )
+        if (
+            obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
+            and obj.BIMObjectProperties.cartesian_point_offset
+        ):
+            return Vector(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
 
     @classmethod
     def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:

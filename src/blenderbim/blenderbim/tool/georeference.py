@@ -261,20 +261,22 @@ class Georeference(blenderbim.core.tool.Georeference):
         )
 
     @classmethod
-    def xyz2enh(cls, coordinates):
+    def xyz2enh(cls, coordinates, should_return_in_map_units=True):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.xyz2enh(
                 coordinates[0],
                 coordinates[1],
                 coordinates[2],
-                float(props.blender_eastings),
-                float(props.blender_northings),
-                float(props.blender_orthogonal_height),
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
             )
-        return ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *coordinates)
+        return ifcopenshell.util.geolocation.auto_xyz2enh(
+            tool.Ifc.get(), *coordinates, should_return_in_map_units=should_return_in_map_units
+        )
 
     @classmethod
     def enh2xyz(cls, coordinates):
@@ -285,9 +287,9 @@ class Georeference(blenderbim.core.tool.Georeference):
                 coordinates[0],
                 coordinates[1],
                 coordinates[2],
-                float(props.blender_eastings),
-                float(props.blender_northings),
-                float(props.blender_orthogonal_height),
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
                 float(props.blender_x_axis_abscissa),
                 float(props.blender_x_axis_ordinate),
             )
@@ -397,3 +399,18 @@ class Georeference(blenderbim.core.tool.Georeference):
     @classmethod
     def set_wcs(cls, wcs):
         ifcopenshell.api.georeference.edit_wcs(tool.Ifc.get(), **wcs, is_si=False)
+
+    @classmethod
+    def set_model_origin(cls) -> None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        gprops = bpy.context.scene.BIMGeoreferenceProperties
+        e, n, h = cls.xyz2enh((0, 0, 0), should_return_in_map_units=False)
+        gprops.model_origin = f"{e},{n},{h}"
+        gprops.model_origin_si = f"{e * unit_scale},{n * unit_scale},{h * unit_scale}"
+        angle = ifcopenshell.util.geolocation.get_grid_north(tool.Ifc.get())
+        if gprops.has_blender_offset:
+            angle += ifcopenshell.util.geolocation.xaxis2angle(
+                float(gprops.blender_x_axis_abscissa), float(gprops.blender_x_axis_ordinate)
+            )
+            angle = tool.Cad.normalise_angle(angle)
+        gprops.model_project_north = str(angle)

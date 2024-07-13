@@ -120,22 +120,16 @@ class BIMGeoreferenceProperties(PropertyGroup):
     host_model_origin_si: StringProperty(name="Host Model Origin SI")
     host_model_project_north: StringProperty(name="Host Model Angle to Grid North")
 
-    # These are only for reference, calculated using tool.Loader.calculate_model_origin
-    # TODO perform calculate_model_origin at load time, not as an explicit step.
+    # This is the ENH in project units and SI units of the Blender session's 0,0,0.
+    # These are only for reference, using tool.Georeference.set_model_origin on
+    # project load, project create, and when linking for the first time from an
+    # empty Blender session.
     model_origin: StringProperty(name="Model Origin")
     model_origin_si: StringProperty(name="Model Origin SI")
     model_project_north: StringProperty(name="Model Angle to Grid North")
 
     # True if there is a temporary Blender session coordinate system
     has_blender_offset: BoolProperty(name="Has Blender Offset")
-
-    # These E, N, H, and project north are the absolute map coordinates of the Blender session
-    # If has_blender_offset is True, this is equivalent to model_origin and model_project_north.
-    # TODO consolidate this with model_origin and model_project_north.
-    blender_eastings: StringProperty(name="Blender Eastings", default="0")
-    blender_northings: StringProperty(name="Blender Northings", default="0")
-    blender_orthogonal_height: StringProperty(name="Blender Orthogonal Height", default="0")
-    blender_project_north: StringProperty(name="Blender Angle to Grid North", default="0")
 
     # These are the helmert transformation parameters of the Blender session
     blender_offset_x: StringProperty(name="Blender Offset X", default="0")
