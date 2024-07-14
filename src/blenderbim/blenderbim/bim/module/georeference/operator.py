@@ -20,6 +20,7 @@ import bpy
 
 import blenderbim.tool as tool
 import blenderbim.core.georeference as core
+from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 class AddGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):

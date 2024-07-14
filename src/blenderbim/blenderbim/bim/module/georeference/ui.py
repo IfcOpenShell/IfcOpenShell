@@ -60,14 +60,20 @@ class BIM_PT_gis(Panel):
             if attribute.name == "XAxisAbscissa":
                 row = self.layout.row(align=True)
                 row.prop(props, "grid_north_angle", text="Angle")
-                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+                row.prop(
+                    props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
                 row = self.layout.row(align=True)
                 row.prop(props, "x_axis_abscissa", text="XAxis Abscissa")
-                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+                row.prop(
+                    props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
             elif attribute.name == "XAxisOrdinate":
                 row = self.layout.row(align=True)
                 row.prop(props, "x_axis_ordinate", text="XAxis Ordinate")
-                row.prop(props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text="")
+                row.prop(
+                    props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text=""
+                )
                 if hasattr(context.scene, "sun_pos_properties"):
                     row = self.layout.row(align=True)
                     row.operator("bim.set_ifc_grid_north", text="Set IFC North")
@@ -83,8 +89,9 @@ class BIM_PT_gis(Panel):
             row.label(text="IFC2X3 Fallback In Use", icon="INFO")
 
         if not GeoreferenceData.data["projected_crs"]:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text="Not Georeferenced", icon="ERROR")
+            row.prop(props, "should_visualise", icon="HIDE_OFF", text="")
             if tool.Ifc.get_schema() != "IFC2X3":
                 row = self.layout.row(align=True)
                 row.prop(props, "coordinate_operation_class", text="")
@@ -93,6 +100,7 @@ class BIM_PT_gis(Panel):
         if GeoreferenceData.data["projected_crs"]:
             row = self.layout.row(align=True)
             row.label(text="Projected CRS", icon="WORLD")
+            row.prop(props, "should_visualise", icon="HIDE_OFF", text="")
             if tool.Ifc.get_schema() != "IFC2X3":
                 row.operator("bim.enable_editing_georeferencing", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_georeferencing", icon="X", text="")
@@ -194,9 +202,6 @@ class BIM_PT_gis_blender(Panel):
             GeoreferenceData.load()
 
         props = context.scene.BIMGeoreferenceProperties
-
-        row = self.layout.row()
-        row.label(text="Blender Session Coordinates", icon="BLENDER")
 
         if props.has_blender_offset:
             row = self.layout.row()

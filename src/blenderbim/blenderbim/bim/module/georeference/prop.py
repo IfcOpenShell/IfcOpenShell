@@ -31,6 +31,7 @@ from bpy.props import (
     CollectionProperty,
 )
 from blenderbim.bim.module.georeference.data import GeoreferenceData
+from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
 def get_coordinate_operation_class(self, context):
@@ -93,6 +94,13 @@ def update_grid_north_vector(self, context):
     self.is_changing_angle = False
 
 
+def update_should_visualise(self, context):
+    if self.should_visualise:
+        GeoreferenceDecorator.install(bpy.context)
+    else:
+        GeoreferenceDecorator.uninstall()
+
+
 class BIMGeoreferenceProperties(PropertyGroup):
     coordinate_operation_class: bpy.props.EnumProperty(
         items=get_coordinate_operation_class, name="Coordinate Operation Class"
@@ -108,6 +116,12 @@ class BIMGeoreferenceProperties(PropertyGroup):
     )
     map_coordinates: StringProperty(
         name="Map Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+    )
+    should_visualise: BoolProperty(
+        name="Should Visualise",
+        description="Displays a visualisation of all georeferencing data at the origin",
+        default=False,
+        update=update_should_visualise,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)

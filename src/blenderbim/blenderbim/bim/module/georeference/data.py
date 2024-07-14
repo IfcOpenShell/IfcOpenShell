@@ -21,6 +21,7 @@ import bpy
 import numpy as np
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
+from mathutils import Matrix
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -162,7 +163,12 @@ class GeoreferenceData:
         if np.allclose(wcs, np.eye(4)):
             result["has_transformation"] = False
         else:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             result["has_transformation"] = True
             result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
             result["x"], result["y"], result["z"] = wcs[:, 3][:3]
+            wcs[0][3] *= unit_scale
+            wcs[1][3] *= unit_scale
+            wcs[2][3] *= unit_scale
+            result["matrix"] = Matrix(wcs)
         return result
