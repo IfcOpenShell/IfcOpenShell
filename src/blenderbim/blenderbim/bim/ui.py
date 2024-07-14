@@ -240,7 +240,25 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         min=0.0,
         max=1.0,
         size=4,
-        description="Color of special selected verts/edges (openings, preview verts/edges in roof editing, verts with arcs/circles in profile editing)",
+        description="Color of derived, parametric, or invisible geometry",
+    )
+    decorator_color_error: bpy.props.FloatVectorProperty(
+        name="Warning Elements Color",
+        subtype="COLOR",
+        default=(1, 0.2, 0.322, 1),  # red
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of warning, error, or problem overlays",
+    )
+    decorator_color_background: bpy.props.FloatVectorProperty(
+        name="Background Elements Color",
+        subtype="COLOR",
+        default=(0.2, 0.2, 0.2, 1),  # grey
+        min=0.0,
+        max=1.0,
+        size=4,
+        description="Color of background overlays",
     )
 
     def draw(self, context):
@@ -315,6 +333,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(self, "decorator_color_unselected")
         row = self.layout.row()
         row.prop(self, "decorator_color_special")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_error")
+        row = self.layout.row()
+        row.prop(self, "decorator_color_background")
 
         row = self.layout.row(align=True)
         row.prop(context.scene.BIMProperties, "schema_dir")
