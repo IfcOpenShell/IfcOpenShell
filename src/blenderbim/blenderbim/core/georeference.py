@@ -99,6 +99,7 @@ def edit_wcs(ifc, georeference):
     wcs = georeference.export_wcs()
     georeference.set_wcs(wcs)
     georeference.disable_editing_wcs()
+    georeference.set_model_origin()
 
 
 def enable_editing_true_north(georeference):
