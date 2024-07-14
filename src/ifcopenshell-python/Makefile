@@ -93,14 +93,7 @@ endif
 
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win64)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else ifeq ($(PLATFORM), win32)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
-endif
+	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
 	rm -rf dist/working
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
 	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
