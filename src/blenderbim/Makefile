@@ -220,7 +220,7 @@ endif
 	# Required by light module
 ifeq ($(PLATFORM), linux)
 	# See https://github.com/LBNL-ETA/pyradiance/issues/34
-	cd dist/working && . env/bin/activate && $(PIP) install pyradiance manylinux1 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform manylinux1_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 else ifneq ($(PLATFORM), macos)
 	# No support for MacOS Intel from upstream. Too bad :(
 	cd dist/working && . env/bin/activate && $(PIP) install pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
