@@ -146,9 +146,17 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_container"
     bl_label = "Select Container"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
 
     def _execute(self, context):
-        core.select_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+        if self.container:
+            container = tool.Ifc.get().by_id(self.container)
+        elif element := tool.Ifc.get_entity(context.active_object):
+            container = ifcopenshell.util.element.get_container(element)
+        else:
+            return
+        if container:
+            core.select_container(tool.Ifc, tool.Spatial, container=container)
 
 
 class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -233,7 +241,7 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return f"Select all elements contained in {operator.ifc_class}"
+        return f"Select all elements contained in this {operator.ifc_class}"
 
     def _execute(self, context):
         core.select_decomposed_elements(tool.Spatial, container=tool.Ifc.get().by_id(self.container))

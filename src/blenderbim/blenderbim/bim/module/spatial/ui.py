@@ -61,7 +61,7 @@ class BIM_PT_spatial(Panel):
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
                 row.label(text=SpatialData.data["label"])
-                row.operator("bim.select_container", icon="OBJECT_DATA", text="")
+                row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = 0
                 row.operator("bim.select_similar_container", icon="RESTRICT_SELECT_OFF", text="")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
                 if SpatialData.data["is_directly_contained"]:
@@ -121,7 +121,7 @@ class BIM_PT_spatial_decomposition(Panel):
         row.operator("bim.import_spatial_decomposition", icon="FILE_REFRESH", text="")
 
         if self.props.active_container:
-            ifc_definition_id = self.props.active_container.ifc_definition_id if self.props.active_container else 0
+            ifc_definition_id = self.props.active_container.ifc_definition_id
             row = self.layout.row(align=True)
             row.prop(self.props, "subelement_class", text="")
             op = row.operator("bim.add_part_to_object", icon="ADD", text="")
@@ -136,8 +136,10 @@ class BIM_PT_spatial_decomposition(Panel):
             row.operator("bim.select_decomposed_elements", icon="FULLSCREEN_EXIT", text="Isolate")
             row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text="")
             row.operator("bim.select_decomposed_elements", icon="HIDE_ON", text="")
-            row.operator("bim.select_decomposed_elements", icon="OBJECT_DATA", text="")
-            row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+            row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
+            op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+            op.ifc_class = self.props.active_container.ifc_class
+            op.container = ifc_definition_id
             op = row.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
 
