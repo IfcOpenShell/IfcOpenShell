@@ -20,15 +20,50 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict
+from typing import Optional, Union, TypedDict, Literal
+
+
+CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
+REPRESENTATION_IDENTIFIER = Literal[
+    "CoG",
+    "Box",
+    "Annotation",
+    "Axis",
+    "FootPrint",
+    "Profile",
+    "Surface",
+    "Reference",
+    "Body",
+    "Body-Fallback",
+    "Clearance",
+    "Lighting",
+]
+TARGET_VIEW = Literal[
+    "ELEVATION_VIEW",
+    "GRAPH_VIEW",
+    "MODEL_VIEW",
+    "PLAN_VIEW",
+    "REFLECTED_PLAN_VIEW",
+    "SECTION_VIEW",
+    "SKETCH_VIEW",
+    "USERDEFINED",
+    "NOTDEFINED",
+]
 
 
 def get_context(
     ifc_file: ifcopenshell.file,
-    context: str,
-    subcontext: Optional[str] = None,
-    target_view: Optional[str] = None,
+    context: CONTEXT_TYPE,
+    subcontext: Optional[REPRESENTATION_IDENTIFIER] = None,
+    target_view: Optional[TARGET_VIEW] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
+    """Get IfcGeometricRepresentationSubContext by the provided context type, identifier, and target view.
+
+    :param context: ContextType.
+    :param subcontext: A ContextIdentifier string, or any if left blank.
+    :param target_view: A TargetView string, or any if left blank.
+    """
+
     if subcontext or target_view:
         elements = ifc_file.by_type("IfcGeometricRepresentationSubContext")
     else:
@@ -45,10 +80,18 @@ def get_context(
 
 def is_representation_of_context(
     representation: ifcopenshell.entity_instance,
-    context: Union[ifcopenshell.entity_instance, str],
-    subcontext: Optional[str] = None,
-    target_view: Optional[str] = None,
+    context: Union[ifcopenshell.entity_instance, CONTEXT_TYPE],
+    subcontext: Optional[REPRESENTATION_IDENTIFIER] = None,
+    target_view: Optional[TARGET_VIEW] = None,
 ) -> bool:
+    """Check if representation has specified context or context type, identifier, and target view.
+
+    :param representation: IfcShapeRepresentation.
+    :param context: Either a specific IfcGeometricRepresentationContext or a ContextType.
+    :param subcontext: A ContextIdentifier string, or any if left blank.
+    :param target_view: A TargetView string, or any if left blank.
+    """
+
     if isinstance(context, ifcopenshell.entity_instance):
         return representation.ContextOfItems == context
 
@@ -71,9 +114,9 @@ def is_representation_of_context(
 
 def get_representation(
     element: ifcopenshell.entity_instance,
-    context: Union[ifcopenshell.entity_instance, str],
-    subcontext: Optional[str] = None,
-    target_view: Optional[str] = None,
+    context: Union[ifcopenshell.entity_instance, CONTEXT_TYPE],
+    subcontext: Optional[REPRESENTATION_IDENTIFIER] = None,
+    target_view: Optional[TARGET_VIEW] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Gets a IfcShapeRepresentation filtered by the context type, identifier, and target view
 
