@@ -28,7 +28,10 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from OCC.Core import TopoDS
 
 T = TypeVar("T")
 ShapeElementType = Union[
@@ -356,7 +359,7 @@ def create_shape(
     inst: entity_instance,
     repr: Optional[entity_instance] = None,
     geometry_library: GEOMETRY_LIBRARY = "opencascade",
-) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation]:
+) -> Union[ShapeType, ShapeElementType, ifcopenshell_wrapper.Transformation, utils.shape_tuple, TopoDS.TopoDS_Shape]:
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
@@ -368,14 +371,18 @@ def create_shape(
     :raises RuntimeError: If failed to process shape. You can turn detailed logging to get more details.
 
     :return:
-        - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType
-        - `inst` is IfcRepresentation and `repr` is None -> ShapeType
-        - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType
-        - `inst` is IfcProfileDef and `repr` is None -> ShapeType
-        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation
-        - `inst` is IfcTypeProduct and `repr` is None -> None
+        - `inst` is IfcProduct and `repr` provided / None -> ShapeElementType\n
+        - `inst` is IfcRepresentation and `repr` is None -> ShapeType\n
+        - `inst` is IfcRepresentationItem and `repr` is None -> ShapeType\n
+        - `inst` is IfcProfileDef and `repr` is None -> ShapeType\n
+        - `inst` is IfcPlacement / IfcObjectPlacement -> Transformation\n
+        - `inst` is IfcTypeProduct and `repr` is None -> None\n
         - `inst` is IfcTypeProduct and `repr` is provided -> RuntimeError
-        (for IfcTypeProducts provide just IfcRepresentation as `inst`).
+        (for IfcTypeProducts provide just IfcRepresentation as `inst`).\n
+
+        If 'use-python-opencascade' is enabled in settings then\n
+        - instead of ShapeElementType it returns shape_tuple, \n
+        - instead of ShapeType it returns TopoDS.TopoDS_Shape.
 
     Example:
 
