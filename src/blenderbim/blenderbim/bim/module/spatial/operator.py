@@ -228,9 +228,15 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
     bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+    ifc_class: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, operator):
+        return f"Select all elements contained in {operator.ifc_class}"
 
     def _execute(self, context):
-        core.select_decomposed_elements(tool.Spatial)
+        core.select_decomposed_elements(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
 
 
 class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -238,6 +244,7 @@ class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Set Default Container"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    bl_description = "Set this as the default container that all new elements will be contained in"
 
     def _execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))

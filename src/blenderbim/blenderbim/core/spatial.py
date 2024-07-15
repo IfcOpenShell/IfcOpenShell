@@ -152,10 +152,8 @@ def delete_container(
     spatial.import_spatial_decomposition()
 
 
-def select_decomposed_elements(spatial: tool.Spatial) -> None:
-    container = spatial.get_active_container()
-    if container:
-        spatial.select_products(spatial.get_decomposed_elements(container))
+def select_decomposed_elements(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
+    spatial.select_products(spatial.get_decomposed_elements(container))
 
 
 def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type) -> None:
