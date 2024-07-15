@@ -235,7 +235,13 @@ class Spatial(blenderbim.core.tool.Spatial):
         container = tool.Ifc.get().by_id(container.ifc_definition_id)
 
         results = {}
-        for element in ifcopenshell.util.element.get_contained(container):
+        if props.should_include_children:
+            elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+        else:
+            elements = ifcopenshell.util.element.get_contained(container)
+        for element in elements:
+            if not element.is_a("IfcElement"):
+                continue
             element_type = ifcopenshell.util.element.get_type(element)
             ifc_class = element.is_a()
             type_name = element_type.Name or "Unnamed" if element_type else "Untyped"
