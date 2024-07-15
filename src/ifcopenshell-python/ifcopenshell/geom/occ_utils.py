@@ -240,11 +240,15 @@ def create_shape_from_serialization(brep_object):
         return shape_tuple(brep_object, None, styles, style_ids)
 
     try:
-        ss = BRepTools.BRepTools_ShapeSet()
-        ss.ReadFromString(brep_data)
-        occ_shape = ss.Shape(ss.NbShapes())
-    except BaseException:
-        pass
+        if OCC.VERSION < "7.8":
+            ss = BRepTools.BRepTools_ShapeSet()
+            ss.ReadFromString(brep_data)
+            occ_shape = ss.Shape(ss.NbShapes())
+        else:
+            ss = BRepTools.breptools()
+            occ_shape = ss.ReadFromString(brep_data)
+    except BaseException as e:
+        print("Error occurred parsing a shape from a string:", e)
 
     if is_product_shape:
         return shape_tuple(brep_object, occ_shape, styles, style_ids)
