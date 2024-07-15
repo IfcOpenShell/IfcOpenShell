@@ -22,7 +22,8 @@ IfcOpenShell depends on:
 
 - `Boost <http://www.boost.org/>`__
 - `OpenCascade <https://dev.opencascade.org/>`__ - for building IfcGeom For
-  converting IFC representation items into BRep solids and tessellated meshes
+  converting IFC representation items into BRep solids and tessellated meshes.
+  Officially v7.5.0 is supported. Other versions may have unexpected behaviour.
 - (Optional) `OpenCOLLADA <https://github.com/khronosGroup/OpenCOLLADA/>`__ -
   for IfcConvert to be able to write tessellated Collada (.dae) files
 - (Optional) `SWIG <http://www.swig.org/>`__ and `Python
@@ -61,8 +62,7 @@ operating systems. GCC (4.7 or newer) or Clang (any version) is required.
 
        sudo apt-get install git cmake gcc g++ libboost-all-dev libcgal-dev
 
-3. Install OpenCascade Technology (OCCT). Officially v7.5.0 is supported. Other
-   versions may have unexpected behaviour.
+3. Install OpenCascade Technology (OCCT).
 
    .. code-block:: bash
 
