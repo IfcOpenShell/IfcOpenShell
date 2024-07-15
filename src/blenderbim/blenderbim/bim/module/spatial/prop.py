@@ -59,6 +59,10 @@ def update_active_container_index(self, context):
     tool.Spatial.load_contained_elements()
 
 
+def update_should_include_children(self, context):
+    tool.Spatial.load_contained_elements()
+
+
 def update_relating_container_from_object(self, context):
     if self.relating_container_object is None or context.active_object is None:
         return
@@ -132,6 +136,9 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     total_elements: IntProperty(name="Total Elements")
     subelement_class: bpy.props.EnumProperty(items=get_subelement_class, name="Subelement Class")
     default_container: IntProperty(name="Default Container", default=0)
+    should_include_children: BoolProperty(
+        name="Should Include Children", default=True, update=update_should_include_children
+    )
 
     @property
     def active_container(self):

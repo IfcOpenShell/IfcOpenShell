@@ -137,9 +137,6 @@ class BIM_PT_spatial_decomposition(Panel):
             row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text="")
             row.operator("bim.select_decomposed_elements", icon="HIDE_ON", text="")
             row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
-            op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
-            op.ifc_class = self.props.active_container.ifc_class
-            op.container = ifc_definition_id
             op = row.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
 
@@ -157,13 +154,17 @@ class BIM_PT_spatial_decomposition(Panel):
             return
 
         if not self.props.total_elements:
-            row = self.layout.row()
+            row = self.layout.row(align=True)
             row.label(text="No Contained Elements", icon="FILE_3D")
+            row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
             return
 
         row = self.layout.row(align=True)
         row.label(text=f"{self.props.total_elements} Contained Elements", icon="FILE_3D")
-        row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
+        op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        op.ifc_class = self.props.active_container.ifc_class
+        op.container = ifc_definition_id
 
         self.layout.template_list(
             "BIM_UL_elements",
