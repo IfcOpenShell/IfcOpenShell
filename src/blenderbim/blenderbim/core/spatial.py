@@ -109,11 +109,8 @@ def copy_to_container(
     return result_objs
 
 
-def select_container(ifc: tool.Ifc, spatial: tool.Spatial, obj: bpy.types.Object) -> None:
-    element = ifc.get_entity(obj)
-    if not element:
-        return
-    spatial.set_active_object(ifc.get_object(spatial.get_container(element)))
+def select_container(ifc: tool.Ifc, spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
+    spatial.set_active_object(ifc.get_object(container))
 
 
 def select_similar_container(ifc: tool.Ifc, spatial: tool.Spatial, obj: bpy.types.Object) -> None:
