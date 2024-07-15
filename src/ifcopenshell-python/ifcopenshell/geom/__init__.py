@@ -29,6 +29,9 @@ geometry. See also :mod:`ifcopenshell.util.shape` for deriving quantities.
 
 
 def _has_occ():
+    # NOTE: All pythonocc versions since 7.4.0 are using OCC.Core.
+    # Previous versions (pythonocc<=0.17.3) are using just OCC.
+
     try:
         import OCC.Core.BRepTools
 
