@@ -22,6 +22,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.api.sequence
 import socket
+import sys
 import os
 import subprocess
 import webbrowser
@@ -71,7 +72,9 @@ class Web(blenderbim.core.tool.Web):
 
         ws_path = os.path.join(webui_path, "sioserver.py")
 
-        ws_process = subprocess.Popen(["python", ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path)
+        ws_process = subprocess.Popen(
+            [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path
+        )
         cls.open_web_browser(port)
         cls.set_is_running(True)
 
