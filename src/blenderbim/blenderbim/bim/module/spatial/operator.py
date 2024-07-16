@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.core.spatial as core
 import blenderbim.core.geometry
@@ -251,8 +252,55 @@ class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.set_default_container"
     bl_label = "Set Default Container"
     bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
     bl_description = "Set this as the default container that all new elements will be contained in"
+    container: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+
+
+class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.set_container_visibility"
+    bl_label = "Set Container Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+    container: bpy.props.IntProperty()
+    should_include_children: bpy.props.BoolProperty(name="Should Include Children", default=True, options={"SKIP_SAVE"})
+    mode: bpy.props.StringProperty(name="Mode")
+
+    @classmethod
+    def description(cls, context, operator):
+        if operator.mode == "HIDE":
+            return "Hides the selected container and all children.\n" + "ALT+CLICK to ignore children"
+        elif operator.mode == "SHOW":
+            return "Shows the selected container and all children.\n" + "ALT+CLICK to ignore children"
+        return "Isolate the selected container and all children.\n" + "ALT+CLICK to ignore children"
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.should_include_children = False
+        return self.execute(context)
+
+    def _execute(self, context):
+        if self.mode == "ISOLATE":
+            if tool.Ifc.get_schema() == "IFC2X3":
+                containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+            elif tool.Ifc.get_schema() != "IFC2X3":
+                containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
+                containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
+            for container in containers:
+                if obj := tool.Ifc.get_object(container):
+                    if collection := obj.BIMObjectProperties.collection:
+                        collection.hide_viewport = True
+            should_hide = False
+        else:
+            should_hide = self.mode == "HIDE"
+
+        container = tool.Ifc.get().by_id(self.container)
+        queue = [container]
+        while queue:
+            container = queue.pop()
+            if obj := tool.Ifc.get_object(container):
+                if collection := obj.BIMObjectProperties.collection:
+                    collection.hide_viewport = should_hide
+            if self.should_include_children:
+                queue.extend(ifcopenshell.util.element.get_parts(container))

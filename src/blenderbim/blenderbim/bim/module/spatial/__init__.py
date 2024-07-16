@@ -37,6 +37,7 @@ classes = (
     operator.SelectDecomposedElements,
     operator.SelectProduct,
     operator.SelectSimilarContainer,
+    operator.SetContainerVisibility,
     operator.SetDefaultContainer,
     prop.SpatialElement,
     prop.Element,
