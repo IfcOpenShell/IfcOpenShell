@@ -92,6 +92,7 @@ namespace IfcGeom {
 		const std::string& name() const { return _name; }
 		const std::string& type() const { return _type; }
 		const std::string& guid() const { return _guid; }
+		// Return the representation's identifier (e.g. "Body") if present, or it's context type (e.g. "Model").
 		const std::string& context() const { return _context; }
 		const std::string& unique_id() const { return _unique_id; }
 		const Transformation& transformation() const { return _transformation; }
