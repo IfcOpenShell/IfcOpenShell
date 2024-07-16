@@ -168,6 +168,7 @@ classes = [
     ui.BIM_PT_tab_references,
     # Services and systems
     ui.BIM_PT_tab_services,
+    ui.BIM_PT_tab_lighting,
     ui.BIM_PT_tab_zones,
     # Structural analysis
     ui.BIM_PT_tab_structural,

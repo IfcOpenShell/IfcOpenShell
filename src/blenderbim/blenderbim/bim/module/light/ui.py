@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
@@ -26,19 +27,28 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_services"
+    bl_parent_id = "BIM_PT_tab_lighting"
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
         props = scene.radiance_exporter_properties
+
+        if tool.Ifc.get():
+            row = self.layout.row()
+            row.prop(props, "should_load_from_memory")
         
-        row = layout.row()
-        row.prop(props, "ifc_file_name")
+        if not tool.Ifc.get() or not props.should_load_from_memory:
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file")
+            # row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
 
         row = layout.row()
-        row.prop(props, "json_file_path")
+        row.prop(props, "output_dir")
+        
+        row = layout.row()
+        row.prop(props, "json_file")
         
         row = layout.row()
         row.label(text="Resolution")

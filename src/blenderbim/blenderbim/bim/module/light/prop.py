@@ -17,17 +17,29 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bpy.props import IntProperty, StringProperty, EnumProperty
+from bpy.props import IntProperty, StringProperty, EnumProperty, BoolProperty
 from bpy.types import PropertyGroup
 
 class RadianceExporterProperties(PropertyGroup):
 
-    def update_json_file_path(self, context):
-        if self.json_file_path:
-            self.json_file_path = bpy.path.abspath(self.json_file_path)
+    def update_json_file(self, context):
+        if self.json_file:
+            self.json_file = bpy.path.abspath(self.json_file)
+
+    def update_output_dir(self, context):
+        if self.output_dir:
+            self.output_dir = bpy.path.abspath(self.output_dir)
+
+    def update_ifc_file(self, context):
+        if self.ifc_file:
+            self.ifc_file = bpy.path.abspath(self.ifc_file)
 
 
-
+    should_load_from_memory: BoolProperty(
+        name="Load from Memory",
+        default=False, 
+        name="Load from Memory"
+    )
 
     radiance_resolution_x: IntProperty(
         name="X",
@@ -41,18 +53,26 @@ class RadianceExporterProperties(PropertyGroup):
         default=1080,
         min=1
     )
-    ifc_file_name: StringProperty(
-        name="IFC File Name",
-        description="Name of the IFC file to use (without .ifc extension)",
-        default=""
+    output_dir: StringProperty(
+        name="Output Directory",
+        description="Directory to output Radiance files",
+        default="",
+        subtype="DIR_PATH",
+        update=lambda self, context: self.update_output_dir(context)
     )
-
-    json_file_path: StringProperty(
+    ifc_file: StringProperty(
+        name="IFC File",
+        description="Path to the IFC file",
+        default="",
+        subtype="FILE_PATH",
+        update=lambda self, context: self.update_ifc_file(context)
+    )
+    json_file: StringProperty(
         name="JSON File",
         description="Path to the JSON file",
         default="",
         subtype="FILE_PATH",
-        update=lambda self, context: self.update_json_file_path(context)
+        update=lambda self, context: self.update_json_file(context)
     )
     
     radiance_quality: EnumProperty(
