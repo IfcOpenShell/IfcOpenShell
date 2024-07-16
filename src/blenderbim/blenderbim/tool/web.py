@@ -66,14 +66,21 @@ class Web(blenderbim.core.tool.Web):
 
     @classmethod
     def start_websocket_server(cls, port):
+        import addon_utils
+
         global ws_process
 
         webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-
         ws_path = os.path.join(webui_path, "sioserver.py")
 
+        addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "BlenderBIM"][0]
+        blenderbim_path = os.path.dirname(addon.__file__)
+
+        env = os.environ.copy()
+        env["blenderbim_path"] = blenderbim_path
+
         ws_process = subprocess.Popen(
-            [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path
+            [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path, env=env
         )
         cls.open_web_browser(port)
         cls.set_is_running(True)
