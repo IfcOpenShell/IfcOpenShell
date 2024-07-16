@@ -305,7 +305,7 @@ ifeq ($(IS_STABLE), TRUE)
 else
 	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION).$(VERSION_DATE)/" blender_manifest.toml
-	cd dist/blenderbim/bim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
+	cd dist/blenderbim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
 	cd dist && zip -r blenderbim-$(VERSION).$(VERSION_DATE)-$(PYVERSION)-$(PLATFORM).zip ./*
 endif
 	rm -rf dist/blenderbim

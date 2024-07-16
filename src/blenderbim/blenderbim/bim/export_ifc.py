@@ -178,8 +178,8 @@ class IfcExporter:
                 ][0]
             ]
         )
-        if blenderbim.bim.last_commit_hash != "8888888":
-            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
+        if commit_hash := tool.Blender.get_last_commit_hash():
+            version += f"-{commit_hash}"
         return version
 
 
