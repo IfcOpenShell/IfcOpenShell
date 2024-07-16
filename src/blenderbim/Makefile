@@ -214,7 +214,9 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install python-socketio[asyncio_client] --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install aiohttp --target=./site-packages
 	# Required by light module
-# pyradiance is using different platform versions than defaults in our makefile.
+	cd dist/working && . env/bin/activate && $(PIP) install pytz --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) install tzfpy --target=./site-packages
+	# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
 	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 else ifeq ($(PLATFORM), macos)
