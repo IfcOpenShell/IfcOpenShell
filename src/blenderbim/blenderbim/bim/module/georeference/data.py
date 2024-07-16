@@ -119,16 +119,11 @@ class GeoreferenceData:
     def true_north(cls):
         ifc = tool.Ifc.get()
         true_north = {}
-
-        if ifc.schema == "IFC2X3":
-            return
-
         for context in ifc.by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if not context.TrueNorth:
                 continue
             true_north = context.TrueNorth.DirectionRatios
             break
-
         return true_north
 
     @classmethod

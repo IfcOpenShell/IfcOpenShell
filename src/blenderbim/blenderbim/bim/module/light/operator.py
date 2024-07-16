@@ -17,17 +17,17 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-
-import pyradiance as pr
 import bpy
-
-from pathlib import Path
-from typing import Union, Optional, Sequence
 import json
+import shutil
+import multiprocessing
+import pyradiance as pr
 import ifcopenshell
 import ifcopenshell.geom
-import multiprocessing
-import shutil
+import blenderbim.tool as tool
+from pathlib import Path
+from typing import Union
+from blenderbim.bim.module.light.data import SolarData
 
 
 
@@ -230,3 +230,42 @@ def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwarg
     with open(output_file, 'wb') as f:
         f.write(output_bytes)
     return output_file
+
+
+class ImportTrueNorth(bpy.types.Operator):
+    bl_idname = "bim.import_true_north"
+    bl_label = "Import True North"
+    bl_description = "Imports the True North from your IFC geometric context"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            return False
+        if not SolarData.is_loaded:
+            SolarData.load()
+        return SolarData.data["true_north"] is not None
+
+    def execute(self, context):
+        props = context.scene.BIMSolarProperties
+        for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+            if not context.TrueNorth:
+                continue
+            value = context.TrueNorth.DirectionRatios
+            props.true_north = ifcopenshell.util.geolocation.yaxis2angle(*value[:2])
+        return {"FINISHED"}
+
+
+class ImportLatLong(bpy.types.Operator):
+    bl_idname = "bim.import_lat_long"
+    bl_label = "Import Latitude / Longitude"
+    bl_description = "Imports the latitude / longitude from an IfcSite"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMSolarProperties
+        site = tool.Ifc.get().by_id(int(props.sites))
+        if site.RefLatitude and site.RefLongitude:
+            props.latitude = ifcopenshell.util.geolocation.dms2dd(*site.RefLatitude)
+            props.longitude = ifcopenshell.util.geolocation.dms2dd(*site.RefLongitude)
+        return {"FINISHED"}

@@ -373,7 +373,6 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.DocProperties, "magic_font_scale")
         row = self.layout.row()
         row.prop(context.scene.DocProperties, "imperial_precision")
-        
 
 
 # Scene panel groups
@@ -697,6 +696,20 @@ class BIM_PT_tab_services(Panel):
 
 class BIM_PT_tab_zones(Panel):
     bl_label = "Zones"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_solar_analysis(Panel):
+    bl_label = "Solar Analysis"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
