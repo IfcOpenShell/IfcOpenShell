@@ -105,11 +105,6 @@ endif
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 
-	# See bug #812
-	cd dist/working && wget https://raw.githubusercontent.com/IfcOpenShell/IfcOpenShell/v0.8.0/src/blenderbim/occ_utils.py
-	cd dist/working && mv occ_utils.py ../blenderbim/libs/site/packages/ifcopenshell/geom/occ_utils.py
-	rm -rf dist/working
-
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip
