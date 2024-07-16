@@ -214,11 +214,12 @@ endif
 	cd dist/working && . env/bin/activate && $(PIP) install python-socketio[asyncio_client] --target=./site-packages
 	cd dist/working && . env/bin/activate && $(PIP) install aiohttp --target=./site-packages
 	# Required by light module
+# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
-	# See https://github.com/LBNL-ETA/pyradiance/issues/34
-	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform manylinux1_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
-else ifneq ($(PLATFORM), macos)
-	# No support for MacOS Intel from upstream. Too bad :(
+	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+else ifeq ($(PLATFORM), macos)
+	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+else
 	cd dist/working && . env/bin/activate && $(PIP) install pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
 endif
 
