@@ -133,9 +133,15 @@ class BIM_PT_spatial_decomposition(Panel):
                 row.enabled = False
             op = row.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
-            row.operator("bim.select_decomposed_elements", icon="FULLSCREEN_EXIT", text="Isolate")
-            row.operator("bim.select_decomposed_elements", icon="HIDE_OFF", text="")
-            row.operator("bim.select_decomposed_elements", icon="HIDE_ON", text="")
+            op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+            op.mode = "ISOLATE"
+            op.container = ifc_definition_id
+            op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+            op.mode = "SHOW"
+            op.container = ifc_definition_id
+            op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+            op.mode = "HIDE"
+            op.container = ifc_definition_id
             row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
             op = row.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
