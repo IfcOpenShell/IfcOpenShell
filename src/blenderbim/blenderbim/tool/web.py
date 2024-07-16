@@ -21,6 +21,7 @@ from blenderbim.bim.module.web.data import WebData
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.api.sequence
+from typing import Any, Dict, Optional
 import socket
 import sys
 import os
@@ -136,7 +137,25 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server terminated successfully")
 
     @classmethod
-    def send_webui_data(cls, data=None, data_key="data", event="data", namespace="/blender", use_web_data=True):
+    def send_webui_data(
+        cls,
+        data: Optional[Any] = None,
+        data_key: str = "data",
+        event: str = "data",
+        namespace: str = "/blender",
+        use_web_data: bool = True,
+    ) -> None:
+        """
+        Sends data to the Web UI via Websocket connection.
+
+        Args:
+        - data (Optional[Any]): The data to send. If None, just sends data from WebData.
+        - data_key (str): The key under which to store the data in the payload. Defaults to "data".
+        - event (str): The WebSocket event to emit. Defaults to "data".
+        - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
+        - use_web_data (bool): Whether to use data from WebData. Defaults to True.
+        """
+
         global ws_thread
         payload = {}
 
