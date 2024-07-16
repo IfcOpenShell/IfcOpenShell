@@ -28,12 +28,14 @@ IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
     import addon_utils
+
+import re
 import platform
 import traceback
 import webbrowser
 from collections import deque
 from pathlib import Path
-from typing import Union
+from typing import Union, Any
 
 
 # NOTE: bl_info is superseded by blender_manifest.toml
@@ -108,7 +110,33 @@ if IN_BLENDER:
     # Process *.pth in /libs/site/packages to setup globally importable modules
     # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
     # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
-    sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+    site_path = Path(__file__).parent.resolve() / "libs" / "site" / "packages"
+    sys.path.insert(0, str(site_path))
+
+    def get_binary_info() -> dict[str, Any]:
+        info = {}
+        lib = site_path / "ifcopenshell"
+        binary = next((i for i in lib.glob("_ifcopenshell_wrapper.*")), None)
+        if binary is None:
+            info["binary_error"] = "Couldn't find ifcopenshell wrapper binary."
+            return info
+
+        # Examples:
+        # _ifcopenshell_wrapper.cp311-win_amd64.pyd
+        # _ifcopenshell_wrapper.cpython-311-darwin.so
+        # _ifcopenshell_wrapper.cpython-311-x86_64-linux-gnu.so
+        binary = binary.name
+        info["binary_file_name"] = binary
+        pattern = re.compile(r"cp(\d+)|cpython-(\d+)")
+        match = pattern.search(binary)
+        if not match:
+            info["binary_error"] = f"Couldn't parse binary version from '{binary}'."
+            return info
+
+        version = match.group(1) or match.group(2)
+        version = f"{version[0]}.{version[1:]}"
+        info["binary_python_version"] = version
+        return info
 
     try:
         import git
@@ -187,6 +215,15 @@ if IN_BLENDER:
                 if commit_hash := info.get("blenderbim_commit_hash"):
                     blenderbim_version += f"-{commit_hash}"
                 box.label(text=f"Python {py} BBIM {info['blenderbim_version']}", icon="SCRIPTPLUGINS")
+
+                binary_py = get_binary_info().get("binary_python_version")
+                if binary_py and py != binary_py:
+                    box.separator()
+                    box.label(text="BlenderBIM installed for wrong Python version.")
+                    box.label(text=f"Expected: {py}. Got: {binary_py}.")
+                    box.label(text="Try reinstalling with the correct Python version.")
+                    box.label(text="You can download correct version below.")
+
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")
                 op.uri = "https://docs.blenderbim.org/users/troubleshooting.html#installation-issues"
@@ -221,7 +258,9 @@ if IN_BLENDER:
             bl_description = "Copies debugging information to your clipboard for use in bugreports"
 
             def execute(self, context):
-                info = format_debug_info(get_debug_info())
+                info = get_debug_info()
+                info.update(get_binary_info())
+                info = format_debug_info(info)
                 context.window_manager.clipboard = info
                 return {"FINISHED"}
 
