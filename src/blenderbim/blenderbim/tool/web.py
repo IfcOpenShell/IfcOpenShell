@@ -136,22 +136,20 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server terminated successfully")
 
     @classmethod
-    def send_webui_data(
-        cls, extra_data=None, extra_data_key="data", event="data", namespace="/blender", use_web_data=True
-    ):
+    def send_webui_data(cls, data=None, data_key="data", event="data", namespace="/blender", use_web_data=True):
         global ws_thread
-        data = {}
+        payload = {}
 
         if use_web_data:
             if not WebData.is_loaded:
                 WebData.load()
-            data = WebData.data
+            payload = WebData.data
 
-        if extra_data is not None:
-            data[extra_data_key] = extra_data
+        if data is not None:
+            payload[data_key] = data
 
         if ws_thread is not None and bpy.context.scene.WebProperties.is_connected:
-            ws_thread.run_coro(cls.sio_send(data, event, namespace))
+            ws_thread.run_coro(cls.sio_send(payload, event, namespace))
 
     @classmethod
     def check_operator_queue(cls):
@@ -210,7 +208,7 @@ class Web(blenderbim.core.tool.Web):
         work_schedule = ifc_file.by_id(operator_data["workScheduleId"])
         task_json = tool.Sequence.create_tasks_json(work_schedule)
         gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
-        cls.send_webui_data(extra_data=gantt_data, extra_data_key="gantt_data", event="gantt_data")
+        cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
 
     @classmethod
     def open_web_browser(cls, port):
