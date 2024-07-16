@@ -230,7 +230,7 @@ if IN_BLENDER:
 
                 layout.label(text="Try Reinstalling:", icon="IMPORT")
                 op = layout.operator("bim.open_uri", text="Re-download Add-on")
-                bbim_date = info["blenderbim_version"].split(".")[-1]
+                bbim_version = info["blenderbim_version"]
                 py_tag = py.replace(".", "")
                 if "Linux" in info["os"]:
                     os = "linux"
@@ -241,7 +241,7 @@ if IN_BLENDER:
                         os = "macos"
                 else:
                     os = "win"
-                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_date}/blenderbim-{bbim_date}-py{py_tag}-{os}.zip"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim-{bbim_version}-py{py_tag}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
