@@ -169,6 +169,7 @@ classes = [
     # Services and systems
     ui.BIM_PT_tab_services,
     ui.BIM_PT_tab_zones,
+    ui.BIM_PT_tab_solar_analysis,
     # Structural analysis
     ui.BIM_PT_tab_structural,
     # Construction scheduling
