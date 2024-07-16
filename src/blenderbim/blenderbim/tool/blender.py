@@ -910,6 +910,18 @@ class Blender(blenderbim.core.tool.Blender):
                         yield child_obj
 
     @classmethod
+    def get_last_commit_hash(cls) -> Union[str, None]:
+        """Get 8 symbols of last commit hash if it's present or return None otherwise."""
+        commit_hash = blenderbim.bim.last_commit_hash
+
+        # Commit hash is unset - user is using __init__ from repo
+        # without setting up git repository.
+        if commit_hash == "8888888":
+            return None
+
+        return commit_hash[:7]
+
+    @classmethod
     def get_blenderbim_version(cls):
         version = ".".join(
             [
@@ -921,8 +933,8 @@ class Blender(blenderbim.core.tool.Blender):
                 ][0]
             ]
         )
-        if blenderbim.bim.last_commit_hash != "8888888":
-            version += f"-{blenderbim.bim.last_commit_hash[:7]}"
+        if commit_hash := cls.get_last_commit_hash():
+            version += f"-{commit_hash}"
         return version
 
     @classmethod

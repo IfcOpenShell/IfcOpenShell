@@ -32,6 +32,9 @@ import platform
 import traceback
 import webbrowser
 from collections import deque
+from pathlib import Path
+from typing import Union
+
 
 # NOTE: bl_info is superseded by blender_manifest.toml
 # if addon is installed as an extension (Blender 4.2+)
@@ -46,6 +49,18 @@ bl_info = {
     "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
     "category": "System",
 }
+
+last_commit_hash = "8888888"
+
+
+def get_last_commit_hash() -> Union[str, None]:
+    # Using this weird way to write 8888888,
+    # so makefile won't accidentally replace it here
+    # we'll be able to distinguish commit hash from placeholder value.
+    if last_commit_hash == str(8_888888):
+        return None
+    return last_commit_hash[:7]
+
 
 last_error = None
 last_actions: deque = deque(maxlen=10)
@@ -62,6 +77,7 @@ def get_debug_info():
             ][0]
         ]
     )
+
     return {
         "os": platform.system(),
         "os_version": platform.version(),
@@ -71,6 +87,7 @@ def get_debug_info():
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
         "blenderbim_version": version,
+        "blenderbim_commit_hash": get_last_commit_hash(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -92,6 +109,18 @@ if IN_BLENDER:
     # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
     # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
+
+    try:
+        import git
+
+        # We can't just use __file__ as blenderbim/__init__.py is typically not symlinked
+        # as Blender have errors symlinking main addon package file.
+        path = Path(__file__).parent / "bim" / "__init__.py"
+        path = path.resolve().parent
+        repo = git.Repo(str(path), search_parent_directories=True)
+        last_commit_hash = repo.head.object.hexsha
+    except:
+        pass
 
     try:
         import ifcopenshell.api
@@ -152,7 +181,11 @@ if IN_BLENDER:
                 box = layout.box()
                 py = ".".join(info["python_version"].split(".")[0:2])
                 b3d = ".".join(info["blender_version"].split(".")[0:2])
+                box.label(text="System Information:")
                 box.label(text=f"Blender {b3d} {info['os']} {info['machine']}", icon="BLENDER")
+                blenderbim_version = info["blenderbim_version"]
+                if commit_hash := info.get("blenderbim_commit_hash"):
+                    blenderbim_version += f"-{commit_hash}"
                 box.label(text=f"Python {py} BBIM {info['blenderbim_version']}", icon="SCRIPTPLUGINS")
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
                 op = layout.operator("bim.open_uri", text="How Can I Fix This?")

@@ -253,17 +253,6 @@ def register():
             icon_preview.load(icon_name, icon_path, "IMAGE")
 
     icons = icon_preview
-
-    global last_commit_hash
-    try:
-        import git
-
-        path = Path(__file__).resolve().parent
-        repo = git.Repo(str(path), search_parent_directories=True)
-        last_commit_hash = repo.head.object.hexsha
-    except:
-        pass
-
     bpy.app.translations.register("blenderbim", translations_dict)
 
 
