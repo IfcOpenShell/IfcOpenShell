@@ -21,11 +21,13 @@ import pytz
 import tzfpy
 import datetime
 import sun_position.sun_calc
+import blenderbim.tool as tool
 from math import radians, pi
-from mathutils import Euler, Vector, Matrix
-from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty
+from mathutils import Euler, Vector, Matrix, Quaternion
+from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty, BoolProperty
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
+from blenderbim.bim.module.light.decorator import SolarDecorator
 
 
 def get_sites(self, context):
@@ -67,10 +69,35 @@ def update_sun_path_size(self, context):
     update_sun_path()
 
 
+def update_display_shadows(self, context):
+    if self.display_shadows:
+        update_sun_path()
+        context.scene.render.engine = "BLENDER_WORKBENCH"
+        context.scene.display.shading.light = "FLAT"
+        context.scene.display.shading.show_shadows = True
+        context.scene.display.shading.show_object_outline = True
+        context.scene.display.shadow_focus = 1.0
+        context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "RENDERED"
+    else:
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "SOLID"
+
+
+def update_display_sun_path(self, context):
+    if self.display_sun_path:
+        update_sun_path()
+        SolarDecorator.install(bpy.context)
+    else:
+        SolarDecorator.uninstall()
+
+
 def update_sun_path():
     props = bpy.context.scene.BIMSolarProperties
     sun_props = bpy.context.scene.sun_pos_properties
-    timezone = pytz.timezone(tzfpy.get_tz(props.longitude, props.latitude))
+    props.timezone = tzfpy.get_tz(props.longitude, props.latitude)
+    timezone = pytz.timezone(props.timezone)
     dt = datetime.datetime(sun_props.year, sun_props.month, sun_props.day, props.hour, props.minute)
     local_time = timezone.localize(dt, is_dst=None)
     sun_props.use_daylight_savings = bool(local_time.dst())
@@ -92,14 +119,21 @@ def update_sun_path():
     # sun_vector.z = max(0, sun_vector.z)
     # Light direction is a bit weird?
     mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0))).inverted()
+    rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
+    rotation_quaternion = rotation_euler.to_quaternion()
+
     if sun_vector.z < 0:
         bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
     else:
-        rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
-        bpy.context.scene.display.light_direction = mat @ (
-            rotation_euler.to_quaternion() @ Vector((0, 0, -1))
-        )
+        bpy.context.scene.display.light_direction = mat @ (rotation_quaternion @ Vector((0, 0, -1)))
     SolarData.data["sun"] = sun_vector
+
+    if obj := bpy.data.objects.get("SunPathCamera"):
+        obj.matrix_world.translation = sun_vector
+        z180_quaternion = Quaternion((0, 0, 1), radians(180))
+        obj.rotation_mode = "QUATERNION"
+        obj.rotation_quaternion = rotation_quaternion @ z180_quaternion
+        obj.data.ortho_scale = props.sun_path_size * 2
 
 
 class RadianceExporterProperties(PropertyGroup):
@@ -154,11 +188,24 @@ class BIMSolarProperties(PropertyGroup):
     sites: EnumProperty(items=get_sites, name="Sites")
     latitude: FloatProperty(name="Latitude", min=-90, max=90, update=update_latlong)
     longitude: FloatProperty(name="Longitude", min=-180, max=180, update=update_latlong)
+    timezone: StringProperty(name="Timezone", default="Etc/GMT")
     true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
     month: IntProperty(name="Month", min=1, max=12, default=1, update=update_date)
     day: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
-    hour: IntProperty(name="Hour", min=0, max=23, update=update_hourminute)
+    hour: IntProperty(name="Hour", min=0, max=23, default=12, update=update_hourminute)
     minute: IntProperty(name="Minute", min=0, max=59, update=update_hourminute)
     sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
-    sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(10, 0, 0))
+    sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(0, 0, 0))
     sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path_size)
+    display_shadows: BoolProperty(
+        name="Display Shadows",
+        default=False,
+        description="Enables a visual style to display shadows easily",
+        update=update_display_shadows,
+    )
+    display_sun_path: BoolProperty(
+        name="Display Sun Path",
+        default=False,
+        description="Displays analemmas and sun position",
+        update=update_display_sun_path,
+    )
