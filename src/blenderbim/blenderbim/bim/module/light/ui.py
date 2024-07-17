@@ -105,8 +105,21 @@ class BIM_PT_solar(bpy.types.Panel):
             row.operator("bim.import_true_north", icon="IMPORT", text="")
 
         row = self.layout.row(align=True)
-        row.prop(props, "month", text="")
-        row.prop(props, "date")
+        row.prop(props, "month", text={
+            1: "January",
+            2: "February",
+            3: "March",
+            4: "April",
+            5: "May",
+            6: "June",
+            7: "July",
+            8: "August",
+            9: "September",
+            10: "October",
+            11: "November",
+            12: "December",
+        }[props.month])
+        row.prop(props, "day")
 
         row = self.layout.row(align=True)
         row.prop(props, "hour")
@@ -134,5 +147,10 @@ class BIM_PT_solar(bpy.types.Panel):
         row2.label(text=f"Sunset: {sunset}")
 
         row = self.layout.row(align=True)
-        row.prop(sun_props, "sun_distance", text="Sun Path Size")
-        row.prop(sun_props, "show_analemmas", icon="HIDE_ON" if sun_props.show_analemmas else "HIDE_OFF", text="")
+        row.prop(props, "sun_path_size")
+
+        row = self.layout.row()
+        row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+
+        row = self.layout.row()
+        row.operator("bim.visualise_shadows", text="Visualise Shadows")

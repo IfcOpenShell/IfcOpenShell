@@ -20,8 +20,10 @@ import bpy
 import pytz
 import tzfpy
 import datetime
-from math import radians
-from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty
+import sun_position.sun_calc
+from math import radians, pi
+from mathutils import Euler, Vector, Matrix
+from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 
@@ -46,6 +48,9 @@ def update_hourminute(self, context):
 
 
 def update_date(self, context):
+    sun_props = context.scene.sun_pos_properties
+    sun_props.month = self.month
+    sun_props.day = self.day
     update_sun_path()
 
 
@@ -53,16 +58,48 @@ def update_true_north(self, context):
     sun_props = context.scene.sun_pos_properties
     # Preserve IFC sign convention
     sun_props.north_offset = radians(self.true_north * -1)
+    update_sun_path()
+
+
+def update_sun_path_size(self, context):
+    sun_props = context.scene.sun_pos_properties
+    sun_props.sun_distance = self.sun_path_size
+    update_sun_path()
 
 
 def update_sun_path():
     props = bpy.context.scene.BIMSolarProperties
     sun_props = bpy.context.scene.sun_pos_properties
     timezone = pytz.timezone(tzfpy.get_tz(props.longitude, props.latitude))
-    dt = datetime.datetime(datetime.datetime.now(datetime.UTC).year, int(props.month), props.date, props.hour, props.minute)
+    dt = datetime.datetime(sun_props.year, sun_props.month, sun_props.day, props.hour, props.minute)
     local_time = timezone.localize(dt, is_dst=None)
     sun_props.use_daylight_savings = bool(local_time.dst())
     sun_props.UTC_zone = local_time.utcoffset().total_seconds() / 3600
+    zone = -sun_props.UTC_zone
+    if sun_props.use_daylight_savings:
+        zone -= 1
+    azimuth, elevation = sun_position.sun_calc.get_sun_coordinates(
+        sun_props.time,
+        sun_props.latitude,
+        sun_props.longitude,
+        zone,
+        sun_props.month,
+        sun_props.day,
+        sun_props.year,
+    )
+    sun_vector = sun_position.sun_calc.get_sun_vector(azimuth, elevation) * sun_props.sun_distance
+    props.sun_position = sun_vector
+    # sun_vector.z = max(0, sun_vector.z)
+    # Light direction is a bit weird?
+    mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0))).inverted()
+    if sun_vector.z < 0:
+        bpy.context.scene.display.light_direction = mat @ Vector((0, 0, 1))
+    else:
+        rotation_euler = Euler((elevation - pi / 2, 0, -azimuth))
+        bpy.context.scene.display.light_direction = mat @ (
+            rotation_euler.to_quaternion() @ Vector((0, 0, -1))
+        )
+    SolarData.data["sun"] = sun_vector
 
 
 class RadianceExporterProperties(PropertyGroup):
@@ -118,29 +155,10 @@ class BIMSolarProperties(PropertyGroup):
     latitude: FloatProperty(name="Latitude", min=-90, max=90, update=update_latlong)
     longitude: FloatProperty(name="Longitude", min=-180, max=180, update=update_latlong)
     true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
-    month: EnumProperty(
-        name="Month",
-        items=[
-            (str(i + 1), m, "")
-            for i, m in enumerate(
-                (
-                    "January",
-                    "February",
-                    "March",
-                    "April",
-                    "May",
-                    "June",
-                    "July",
-                    "August",
-                    "September",
-                    "October",
-                    "November",
-                    "December",
-                )
-            )
-        ],
-        update=update_date
-    )
-    date: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
+    month: IntProperty(name="Month", min=1, max=12, default=1, update=update_date)
+    day: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
     hour: IntProperty(name="Hour", min=0, max=23, update=update_hourminute)
     minute: IntProperty(name="Minute", min=0, max=59, update=update_hourminute)
+    sun_position: FloatVectorProperty(name="Sun Position", subtype="XYZ", default=(0, 0, 0))
+    sun_path_origin: FloatVectorProperty(name="Sun Path Origin", subtype="XYZ", default=(10, 0, 0))
+    sun_path_size: FloatProperty(name="Sun Path Size", min=0.1, default=50, update=update_sun_path_size)
