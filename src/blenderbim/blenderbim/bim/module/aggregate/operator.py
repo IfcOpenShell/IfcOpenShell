@@ -304,7 +304,7 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operato
         for part in parts:
             pset = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
             pset = tool.Ifc.get().by_id(pset["id"])
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), pset=pset)
+            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=part, pset=pset)
 
         linked_aggregate_group = [
             r.RelatingGroup
