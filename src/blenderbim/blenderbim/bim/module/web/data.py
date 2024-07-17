@@ -32,7 +32,7 @@ class WebData:
     @classmethod
     def load(cls):
         cls.data = {
-            "IFC_File": cls.ifc_file_name(),
+            "ifc_file": cls.ifc_file_name(),
         }
         cls.is_loaded = True
 
