@@ -41,7 +41,7 @@ function handleBlenderDisconnect(blenderId) {
 function handleCsvData(data) {
   const blenderId = data["blenderId"];
   const csvData = data["data"]["csv_data"];
-  const filename = data["data"]["IFC_File"];
+  const filename = data["data"]["ifc_file"];
   console.log(data);
 
   if (connectedClients.hasOwnProperty(blenderId)) {

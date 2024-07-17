@@ -61,7 +61,7 @@ function handleGanttData(data) {
 
   console.log(data);
 
-  const filename = data["data"]["IFC_File"];
+  const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
   const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
   // const ganttWorkSched = {};
@@ -233,8 +233,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
 
     addEventListener("afterprint", (event) => {
       g.setEditable(true);
-    },);
-
+    });
 
     let css =
       "@media print {\n" +
