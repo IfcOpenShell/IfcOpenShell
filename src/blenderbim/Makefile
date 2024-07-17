@@ -101,61 +101,69 @@ endif
 	cp -r blenderbim/* dist/blenderbim/
 
 	# Provides IfcOpenShell Python functionality
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.9-${OLD}-$(PLATFORM)64.zip
-	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.9-${OLD}-$(PLATFORM)64.zip
+	# cd dist/working && unzip ifcopenshell-python*
+	# cp -r dist/working/ifcopenshell dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides dependencies that are part of IfcOpenShell
 	mkdir dist/working
-	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip
-	cd dist/working && unzip v0.8.0.zip
+	# cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/archive/refs/heads/v0.8.0.zip
+	# cd dist/working && unzip v0.8.0.zip
 	# IfcOpenBot sometimes lags behind, so we only use its binaries
-	mv dist/blenderbim/libs/site/packages/ifcopenshell/*ifcopenshell_wrapper* dist/working/
-	rm -rf dist/blenderbim/libs/site/packages/ifcopenshell
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell dist/blenderbim/libs/site/packages/
-	mv dist/working/*ifcopenshell_wrapper* dist/blenderbim/libs/site/packages/ifcopenshell/
+	# mv dist/blenderbim/libs/site/packages/ifcopenshell/*ifcopenshell_wrapper* dist/working/
+	# rm -rf dist/blenderbim/libs/site/packages/ifcopenshell
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifcopenshell-python/ifcopenshell dist/blenderbim/libs/site/packages/
+	# mv dist/working/*ifcopenshell_wrapper* dist/blenderbim/libs/site/packages/ifcopenshell/
 	# Provides bcf functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
+	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/bcf/src/bcf dist/blenderbim/libs/site/packages/
 	# Provides IFCClash functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
+	cd ../ifcclash && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifcclash/ifcclash dist/blenderbim/libs/site/packages/
 	# Provides BIMTester functionality
-	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && . env/bin/activate && $(PIP) install pybabel
-	cd dist/working && . env/bin/activate && $(PIP) install babel
-	cd dist/working && . env/bin/activate && ./env/bin/pybabel compile -d ./IfcOpenShell-0.8.0/src/ifcbimtester/bimtester/locale/
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcbimtester/bimtester dist/blenderbim/libs/site/packages/
+	cd ../ifcbimtester && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
 	# Provides IFCTester functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
+	cd ../ifctester && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifctester/ifctester dist/blenderbim/libs/site/packages/
 	# Provides IFCFM functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcfm/ifcfm dist/blenderbim/libs/site/packages/
+	cd ../ifcfm && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifcfm/ifcfm dist/blenderbim/libs/site/packages/
 	# Provides bSDD functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/bsdd/* dist/blenderbim/libs/site/packages/
+	cd ../bsdd && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/bsdd/* dist/blenderbim/libs/site/packages/
 	# Provides IFCDiff functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
+	cd ../ifcdiff && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifcdiff/* dist/blenderbim/libs/site/packages/
 	# Provides IFCCSV functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
+	cd ../ifccsv && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifccsv/* dist/blenderbim/libs/site/packages/
 	# Provides IFCPatch functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
+	cd ../ifcpatch && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifcpatch/ifcpatch dist/blenderbim/libs/site/packages/
 	# Provides IFC4D functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
+	cd ../ifc4d && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifc4d/ifc4d dist/blenderbim/libs/site/packages/
 	# Provides IFC5D functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
+	cd ../ifc5d && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifc5d/ifc5d dist/blenderbim/libs/site/packages/
 	# Provides IFCCityJSON functionality
-	cp -r dist/working/IfcOpenShell-0.8.0/src/ifccityjson dist/blenderbim/libs/site/packages/
+	cd ../ifccityjson && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
+	# cp -r dist/working/IfcOpenShell-0.8.0/src/ifccityjson dist/blenderbim/libs/site/packages/
 	# Provides IfcGit functionality
-	cd dist/working && . env/bin/activate && $(PIP) install GitPython --target=./site-packages
-	cp -r dist/working/site-packages/smmap dist/blenderbim/libs/site/packages/
-	cp -r dist/working/site-packages/gitdb dist/blenderbim/libs/site/packages/
-	cp -r dist/working/site-packages/git dist/blenderbim/libs/site/packages/
+	cd dist/working && . env/bin/activate && $(PIP) download GitPython --dest=../blenderbim/wheels
+	# cp -r dist/working/site-packages/smmap dist/blenderbim/libs/site/packages/
+	# cp -r dist/working/site-packages/gitdb dist/blenderbim/libs/site/packages/
+	# cp -r dist/working/site-packages/git dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Provides audio playback for costing
-	mkdir -p dist/working
-	git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
-	cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
-	cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
-	rm -rf dist/working
+	# mkdir -p dist/working
+	# git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
+	# cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
+	# cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
+	# rm -rf dist/working
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	mkdir dist/working
@@ -168,64 +176,68 @@ endif
 	cd dist/working && $(PYTHON) -m venv env
 	cd dist/working && mkdir site-packages
 	# IfcOpenShell dependency - support for new typing features
-	cd dist/working && . env/bin/activate && $(PIP) install typing_extensions --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download typing_extensions --dest=../blenderbim/wheels
 	# Required by IfcCSV
-	cd dist/working && . env/bin/activate && $(PIP) install pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 	# Pandas ships with very heavy tests
-	cd dist/working/site-packages/pandas && rm -rf tests
-	cd dist/working && . env/bin/activate && $(PIP) install openpyxl --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install odfpy --target=./site-packages
+	# cd dist/working/site-packages/pandas && rm -rf tests
+	cd dist/working && . env/bin/activate && $(PIP) download openpyxl --dest=../blenderbim/wheels
+	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
+	cd dist/working && . env/bin/activate && $(PIP) wheel odfpy --wheel-dir=./
+	cd dist/working && tar -xzvf odfpy* && cd odfpy* && python -m build && cp dist/*.whl ../blenderbim/wheels
+	# pip wheel odfpy --wheel-dir=.
 	# Required by IFCCityJSON
-	cd dist/working && . env/bin/activate && $(PIP) install cjio --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download cjio --dest=../blenderbim/wheels
 	# Provides express rule validation for ifcopenshell.validate
-	cd dist/working && . env/bin/activate && $(PIP) install pytest --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pytest --dest=../blenderbim/wheels
 	# Provides Brickschema functionality
-	cd dist/working && . env/bin/activate && $(PIP) install "brickschema[persistence]==0.7.6a2" --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download "brickschema[persistence]==0.7.6a2" --dest=../blenderbim/wheels
 	# Required for SVG to DXF conversion
-	cd dist/working && . env/bin/activate && $(PIP) install ezdxf --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download ezdxf --dest=../blenderbim/wheels
 	# Required by bcf
-	cd dist/working && . env/bin/activate && $(PIP) install xsdata --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install xmlschema --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install elementpath --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install six --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download xsdata --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download xmlschema --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download elementpath --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download six --dest=../blenderbim/wheels
 	# Required by drawing module
-	cd dist/working && . env/bin/activate && $(PIP) install lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 	# Required by qto and drawing module
-	cd dist/working && . env/bin/activate && $(PIP) install shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 	# Required by the BIM type manager thumbnail generator
-	cd dist/working && . env/bin/activate && $(PIP) install pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 	# Provides mustache templating in construction docs and web UI data
-	cd dist/working && . env/bin/activate && $(PIP) install pystache --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pystache --dest=../blenderbim/wheels
 	# Provides SVG export in construction documentation
-	cd dist/working && . env/bin/activate && $(PIP) install svgwrite --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download svgwrite --dest=../blenderbim/wheels
 	# Provides fuzzy date parsing for construction sequencing
-	cd dist/working && . env/bin/activate && $(PIP) install python-dateutil --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download python-dateutil --dest=../blenderbim/wheels
 	# Provides duration parsing for construction sequencing
-	cd dist/working && . env/bin/activate && $(PIP) install isodate --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download isodate --dest=../blenderbim/wheels
 	# Provides networkx graph analysis for project dependency calculations
-	cd dist/working && . env/bin/activate && $(PIP) install networkx --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download networkx --dest=../blenderbim/wheels
 	# Required by IFCDiff
-	cd dist/working && . env/bin/activate && $(PIP) install deepdiff --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download deepdiff --dest=../blenderbim/wheels
 	# Required by IFCCSV and ifcopenshell.util.selector
-	cd dist/working && . env/bin/activate && $(PIP) install lark --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download lark --dest=../blenderbim/wheels
 	# Required by IFC4D
-	cd dist/working && . env/bin/activate && $(PIP) install PyP6Xer --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download PyP6Xer --dest=../blenderbim/wheels
 	# Required by web module
-	cd dist/working && . env/bin/activate && $(PIP) install python-socketio[asyncio_client] --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install aiohttp --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download python-socketio[asyncio_client] --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download aiohttp --dest=../blenderbim/wheels
 	# Required by light module
-	cd dist/working && . env/bin/activate && $(PIP) install pytz --target=./site-packages
-	cd dist/working && . env/bin/activate && $(PIP) install tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	# cd dist/working && . env/bin/activate && $(PIP) download pytz --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download pytz --dest ../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 	# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
-	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 else ifeq ($(PLATFORM), macos)
-	cd dist/working && . env/bin/activate && $(PIP) install pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 else
-	cd dist/working && . env/bin/activate && $(PIP) install pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --target=./site-packages
+	cd dist/working && . env/bin/activate && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 endif
 
-	cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
+	# cp -r dist/working/site-packages/* dist/blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required by BIMTester
@@ -245,16 +257,8 @@ endif
 
 	# Required by behave
 	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/f4/65/220bb4075fddb09d5b3ea2c1c1fa66c1c72be9361ec187aab50fa161e576/parse-1.15.0.tar.gz
-	cd dist/working && tar -xzvf parse*
-	cd dist/working/parse-1.15.0/ && cp parse.py ../../blenderbim/libs/site/packages/
-	rm -rf dist/working
-
-	# Required by behave
-	mkdir dist/working
-	cd dist/working && wget https://files.pythonhosted.org/packages/2e/79/81bebd1b0446d46733db99d74543b4bb80646ef4c988584bae0862e706bc/parse_type-0.5.2.tar.gz
-	cd dist/working && tar -xzvf parse_type*
-	cd dist/working/parse_type-0.5.2/ && cp -r parse_type ../../blenderbim/libs/site/packages/
+	cd dist/working && . env/bin/activate && $(PIP) download parse --dest=../blenderbim/wheels
+	cd dist/working && . env/bin/activate && $(PIP) download parse-type --dest=../blenderbim/wheels
 	rm -rf dist/working
 
 	# Provides IFCJSON functionality
@@ -295,8 +299,9 @@ endif
 	rm -rf dist/working
 
 	# Remove dependencies also bundled with Blender
-	rm -rf dist/blenderbim/libs/site/packages/numpy
-	rm -rf dist/blenderbim/libs/site/packages/numpy.libs
+	rm -rf dist/blenderbim/wheels/numpy*
+	# rm -rf dist/blenderbim/libs/site/packages/numpy
+	# rm -rf dist/blenderbim/libs/site/packages/numpy.libs
 
 ifeq ($(IS_STABLE), TRUE)
 	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
