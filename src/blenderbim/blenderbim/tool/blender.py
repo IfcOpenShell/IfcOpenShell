@@ -247,6 +247,13 @@ class Blender(blenderbim.core.tool.Blender):
                     return area
 
     @classmethod
+    def get_view3d_space(cls):
+        if area := cls.get_view3d_area():
+            for space in area.spaces:
+                if space.type == "VIEW_3D":
+                    return space
+
+    @classmethod
     def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:

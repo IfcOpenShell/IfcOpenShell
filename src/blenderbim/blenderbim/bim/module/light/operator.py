@@ -28,11 +28,12 @@ import blenderbim.tool as tool
 from pathlib import Path
 from typing import Union
 from blenderbim.bim.module.light.data import SolarData
-
+from blenderbim.bim.module.light.decorator import SolarDecorator
 
 
 class ExportOBJ(bpy.types.Operator):
     """Exports the IFC File to OBJ"""
+
     bl_idname = "export_scene.radiance"
     bl_label = "Export"
     bl_description = "Export the IFC to OBJ"
@@ -43,21 +44,21 @@ class ExportOBJ(bpy.types.Operator):
         quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
         detail = context.scene.radiance_exporter_properties.radiance_detail.upper()
         variability = context.scene.radiance_exporter_properties.radiance_variability.upper()
-        
+
         # Calculate the aspect ratio
         aspect_ratio = resolution_x / resolution_y
 
         # Get the blend file path and create the "Radiance Rendering" directory
-        self.report({'INFO'}, "Exporting Radiance files...")
+        self.report({"INFO"}, "Exporting Radiance files...")
         blend_file_path = bpy.data.filepath
         if not blend_file_path:
-            self.report({'ERROR'}, "Please save the Blender file before exporting.")
-            return {'CANCELLED'}
+            self.report({"ERROR"}, "Please save the Blender file before exporting.")
+            return {"CANCELLED"}
 
         blend_file_dir = os.path.dirname(blend_file_path)
         radiance_dir = os.path.join(blend_file_dir, "RadianceRendering")
-        
-        self.report({'INFO'}, "Radiance directory: {}".format(radiance_dir))
+
+        self.report({"INFO"}, "Radiance directory: {}".format(radiance_dir))
 
         if not os.path.exists(radiance_dir):
             os.makedirs(radiance_dir)
@@ -67,7 +68,6 @@ class ExportOBJ(bpy.types.Operator):
         # Settings for obj
 
         serializer_settings = ifcopenshell.geom.serializer_settings()
-        
 
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
@@ -76,19 +76,17 @@ class ExportOBJ(bpy.types.Operator):
 
         ifc_file_name = context.scene.radiance_exporter_properties.ifc_file_name
         ifc_file_path = os.path.join(blend_file_dir, f"{ifc_file_name}.ifc")
-        
+
         if not os.path.exists(ifc_file_path):
-            self.report({'ERROR'}, f"IFC file not found: {ifc_file_path}")
-            return {'CANCELLED'}
-        
+            self.report({"ERROR"}, f"IFC file not found: {ifc_file_path}")
+            return {"CANCELLED"}
 
         ifc_file = ifcopenshell.open(ifc_file_path)
         for material in ifc_file.by_type("IfcMaterial"):
-            self.report({'INFO'}, f"Material: {material.Name}, ID: {material.id()}")
+            self.report({"INFO"}, f"Material: {material.Name}, ID: {material.id()}")
 
         obj_file_path = os.path.join(radiance_dir, "model.obj")
         mtl_file_path = os.path.join(radiance_dir, "model.mtl")
-        
 
         # serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, ifcopenshell.geom.serializer_settings())
         serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, serializer_settings)
@@ -104,8 +102,8 @@ class ExportOBJ(bpy.types.Operator):
                     break
         serialiser.finalize()
 
-        return {'FINISHED'}
-    
+        return {"FINISHED"}
+
     def getResolution(self, context):
         scene = context.scene
         props = scene.radiance_exporter_properties
@@ -116,30 +114,30 @@ class ExportOBJ(bpy.types.Operator):
 
 class RadianceRender(bpy.types.Operator):
     """Radiance Rendering"""
+
     bl_idname = "render_scene.radiance"
     bl_label = "Render"
     bl_description = "Renders the scene using Radiance"
 
     def execute(self, context):
         if pr is None:
-            self.report({'ERROR'}, "PyRadiance is not available. Cannot perform rendering.")
-            return {'CANCELLED'}
-        
+            self.report({"ERROR"}, "PyRadiance is not available. Cannot perform rendering.")
+            return {"CANCELLED"}
+
         # Get the resolution from the user input
         resolution_x, resolution_y = self.getResolution(context)
         quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
         detail = context.scene.radiance_exporter_properties.radiance_detail.upper()
         variability = context.scene.radiance_exporter_properties.radiance_variability.upper()
-        
+
         # Get the blend file path and create the "Radiance Rendering" directory
         blend_file_path = bpy.data.filepath
         if not blend_file_path:
-            self.report({'ERROR'}, "Please save the Blender file before rendering.")
-            return {'CANCELLED'}
+            self.report({"ERROR"}, "Please save the Blender file before rendering.")
+            return {"CANCELLED"}
 
         blend_file_dir = os.path.dirname(blend_file_path)
         radiance_dir = os.path.join(blend_file_dir, "RadianceRendering")
-
 
         # Material processing
         style = []
@@ -153,19 +151,18 @@ class RadianceRender(bpy.types.Operator):
         # json_file_path = os.path.join(blend_file_dir, "material_mapping.json")
 
         json_file_path = context.scene.radiance_exporter_properties.json_file_path
-        self.report({'INFO'}, f"Selected JSON file: {json_file_path}")
+        self.report({"INFO"}, f"Selected JSON file: {json_file_path}")
         if json_file_path:
             # self.report({'INFO'}, f"Selected JSON file: {json_file_name}")
             json_dest_path = os.path.join(blend_file_dir, json_file_path.split("\\")[-1])
             shutil.copy(json_file_path, json_dest_path)
-            self.report({'INFO'}, f"JSON file saved to: {json_dest_path}")
+            self.report({"INFO"}, f"JSON file saved to: {json_dest_path}")
         else:
-            self.report({'WARNING'}, "No JSON file selected")
+            self.report({"WARNING"}, "No JSON file selected")
 
-
-        with open(json_file_path, 'r') as file:
+        with open(json_file_path, "r") as file:
             data = json.load(file)
-        
+
         # Create materials.rad file
         materials_file = os.path.join(radiance_dir, "materials.rad")
         with open(materials_file, "w") as file:
@@ -180,18 +177,18 @@ class RadianceRender(bpy.types.Operator):
             for i in set(style):
                 file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
 
-        self.report({'INFO'}, "Exported Materials Rad file to: {}".format(materials_file))
+        self.report({"INFO"}, "Exported Materials Rad file to: {}".format(materials_file))
 
         # Run obj2mesh
         rtm_file_path = os.path.join(radiance_dir, "model.rtm")
-        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path,  matfiles=[materials_file])
+        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
         # subprocess.run(["obj2mesh", "-a", materials_file, obj_file_path, rtm_file_path])
-        self.report({'INFO'}, "obj2mesh output: {}".format(mesh_file_path))
+        self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
         scene_file = os.path.join(radiance_dir, "scene.rad")
         with open(scene_file, "w") as file:
             file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
 
-        self.report({'INFO'}, "Exported Scene file to: {}".format(scene_file))
+        self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
 
         # Py Radiance Rendering code
         scene = pr.Scene("ascene")
@@ -207,15 +204,21 @@ class RadianceRender(bpy.types.Operator):
 
         octpath = os.path.join(blend_file_dir, "ascene.oct")
         print("Reached here")
-        image = pr.render(scene, ambbounce=1, resolution=(resolution_x, resolution_y),
-                          quality=quality, detail=detail, variability=variability)
-        
+        image = pr.render(
+            scene,
+            ambbounce=1,
+            resolution=(resolution_x, resolution_y),
+            quality=quality,
+            detail=detail,
+            variability=variability,
+        )
+
         raw_hdr_path = os.path.join(radiance_dir, "raw.hdr")
         with open(raw_hdr_path, "wb") as wtr:
             wtr.write(image)
 
-        self.report({'INFO'}, "Radiance rendering completed. Output: {}".format(raw_hdr_path))
-        return {'FINISHED'}
+        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(raw_hdr_path))
+        return {"FINISHED"}
 
     def getResolution(self, context):
         scene = context.scene
@@ -224,10 +227,11 @@ class RadianceRender(bpy.types.Operator):
         resolution_y = props.radiance_resolution_y
         return resolution_x, resolution_y
 
+
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
     output_bytes = pr.obj2mesh(inp, **kwargs)
 
-    with open(output_file, 'wb') as f:
+    with open(output_file, "wb") as f:
         f.write(output_bytes)
     return output_file
 
@@ -268,4 +272,22 @@ class ImportLatLong(bpy.types.Operator):
         if site.RefLatitude and site.RefLongitude:
             props.latitude = ifcopenshell.util.geolocation.dms2dd(*site.RefLatitude)
             props.longitude = ifcopenshell.util.geolocation.dms2dd(*site.RefLongitude)
+        return {"FINISHED"}
+
+
+class VisualiseShadows(bpy.types.Operator):
+    bl_idname = "bim.visualise_shadows"
+    bl_label = "Visualise Shadows"
+    bl_description = "Enables a visual style to display shadows easily"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        context.scene.render.engine = "BLENDER_WORKBENCH"
+        context.scene.display.shading.light = "FLAT"
+        context.scene.display.shading.show_shadows = True
+        context.scene.display.shadow_focus = 1.0
+        context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "RENDERED"
+        SolarDecorator.install(bpy.context)
         return {"FINISHED"}

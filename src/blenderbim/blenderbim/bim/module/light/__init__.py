@@ -25,6 +25,7 @@ classes = (
     operator.ImportLatLong,
     operator.ImportTrueNorth,
     operator.RadianceRender,
+    operator.VisualiseShadows,
     prop.BIMSolarProperties,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,
