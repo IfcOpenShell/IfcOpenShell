@@ -25,5 +25,8 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifc5d"]
+include = ["ifc5d*"]
 exclude = ["test*"]
+
+[tool.setuptools.package-data]
+"*" = ["*.*"]
