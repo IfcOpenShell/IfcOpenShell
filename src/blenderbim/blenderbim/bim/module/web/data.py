@@ -18,6 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
+import os
 
 
 def refresh():
@@ -37,4 +38,5 @@ class WebData:
 
     @classmethod
     def ifc_file_name(cls):
-        return bpy.context.scene.BIMProperties.ifc_file
+        filename = os.path.basename(bpy.context.scene.BIMProperties.ifc_file)
+        return filename
