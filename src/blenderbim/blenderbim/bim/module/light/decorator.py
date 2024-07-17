@@ -21,18 +21,14 @@ import blf
 import gpu
 import bmesh
 import blenderbim.tool as tool
-
-try:
-    import sun_position.sun_calc
-except ImportError:
-    sun_position = None
-
 from bpy.types import SpaceView3D
 from math import radians
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from blenderbim.bim.module.light.data import SolarData
+
+sun_position = tool.Blender.get_sun_position_addon()
 
 
 class SolarDecorator:

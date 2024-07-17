@@ -27,6 +27,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim
 import addon_utils
+import types
 from mathutils import Vector
 from pathlib import Path
 from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
@@ -1116,3 +1117,29 @@ class Blender(blenderbim.core.tool.Blender):
     def get_addon_preferences(cls) -> blenderbim.bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
         return bpy.context.preferences.addons[blender_package_name].preferences
+
+    @classmethod
+    def get_sun_position_addon(cls) -> Union[types.ModuleType, None]:
+        # Check if it's installed as legacy Blender addon.
+        try:
+            import sun_position
+        except ImportError:
+            sun_position = None
+
+        if sun_position:
+            return
+
+        # No extensions prior to 4.2.
+        if bpy.app.version < (4, 2, 0):
+            return sun_position
+
+        if sun_position:
+            return sun_position
+
+        import importlib
+
+        for package_name in bpy.context.preferences.addons.keys():
+            if package_name.endswith(".sun_position"):
+                sun_position = importlib.import_module(package_name)
+
+        return sun_position
