@@ -237,13 +237,13 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	const IfcUtil::IfcBaseEntity *representation = representation_node->instance->as<IfcUtil::IfcBaseEntity>();
 	auto representation_identifier = representation->get("RepresentationIdentifier");
 	if (!representation_identifier->isNull()) {
-		context_string = *representation_identifier;
+		context_string = (std::string) *representation_identifier;
 	}
 	else {
 		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass *) *representation->get("ContextOfItems");
 		auto context_type = context->as<IfcUtil::IfcBaseEntity>()->get("ContextType");
 		if (!context_type->isNull()) {
-			context_string = *context_type;
+			context_string = (std::string) *context_type;
 		}
 	}
 
