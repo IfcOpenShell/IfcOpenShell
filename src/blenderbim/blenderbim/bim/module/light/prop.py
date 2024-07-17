@@ -20,7 +20,12 @@ import bpy
 import pytz
 import tzfpy
 import datetime
-import sun_position.sun_calc
+
+try:
+    import sun_position.sun_calc
+except ImportError:
+    sun_position = None
+
 import blenderbim.tool as tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
