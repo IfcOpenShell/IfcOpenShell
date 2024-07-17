@@ -74,10 +74,6 @@ class BIM_PT_gis(Panel):
                 row.prop(
                     props, "x_axis_is_null", icon="RADIOBUT_OFF" if props.x_axis_is_null else "RADIOBUT_ON", text=""
                 )
-                if hasattr(context.scene, "sun_pos_properties"):
-                    row = self.layout.row(align=True)
-                    row.operator("bim.set_ifc_grid_north", text="Set IFC North")
-                    row.operator("bim.set_blender_grid_north", text="Set Blender North")
             else:
                 draw_attribute(attribute, self.layout.row())
 
@@ -160,10 +156,6 @@ class BIM_PT_gis_true_north(Panel):
         row.prop(self.props, "true_north_abscissa", text="Abscissa")
         row = self.layout.row()
         row.prop(self.props, "true_north_ordinate", text="Ordinate")
-        if hasattr(context.scene, "sun_pos_properties"):
-            row = self.layout.row(align=True)
-            row.operator("bim.set_ifc_true_north", text="Set IFC North")
-            row.operator("bim.set_blender_true_north", text="Set Blender North")
 
         row = self.layout.row(align=True)
         row.operator("bim.edit_true_north", icon="CHECKMARK")
