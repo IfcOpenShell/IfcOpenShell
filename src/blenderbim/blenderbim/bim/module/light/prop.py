@@ -20,12 +20,6 @@ import bpy
 import pytz
 import tzfpy
 import datetime
-
-try:
-    import sun_position.sun_calc
-except ImportError:
-    sun_position = None
-
 import blenderbim.tool as tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
@@ -33,6 +27,8 @@ from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, 
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 from blenderbim.bim.module.light.decorator import SolarDecorator
+
+sun_position = tool.Blender.get_sun_position_addon()
 
 
 def get_sites(self, context):

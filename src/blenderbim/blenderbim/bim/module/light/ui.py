@@ -17,13 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import blenderbim.tool as tool
 from blenderbim.bim.module.light.data import SolarData
 
-try:
-    import sun_position
-    from sun_position.sun_calc import format_time, format_hms, sun
-except ImportError:
-    sun_position = None
+
+sun_position = tool.Blender.get_sun_position_addon()
 
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
