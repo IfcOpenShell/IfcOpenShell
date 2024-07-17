@@ -29,6 +29,8 @@ sio = socketio.AsyncServer(
 app = web.Application()
 sio.attach(app)
 
+
+# represents a caching for blender messages
 blender_messages = {}
 
 
@@ -39,6 +41,8 @@ class WebNamespace(socketio.AsyncNamespace):
 
     async def on_connect(self, sid, environ):
         print(f"Web client connected: {sid}")
+        if blender_messages:
+            await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
         print(f"Web client disconnected: {sid}")
@@ -50,6 +54,14 @@ class WebNamespace(socketio.AsyncNamespace):
             namespace="/blender",
             room=data["blenderId"],
         )
+
+    async def send_cached_messages(self, sid):
+        # Send cached messages to the connected web client
+        for blenderId, messages in blender_messages.items():
+            if "csv_data" in messages:
+                await self.emit("csv_data", {"blenderId": blenderId, "data": messages["csv_data"]}, room=sid)
+            if "gantt_data" in messages:
+                await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
 
 
 # Blender namespace
