@@ -34,6 +34,7 @@ nav {
     display: flex;
     align-items: center;
     position: relative;
+    border-bottom: 2px solid #25682a;
 }
 
 nav .logo {
@@ -64,13 +65,4 @@ nav ul li a {
 nav ul li a:hover,
 nav ul li a.active {
     color: #3fb449;
-}
-
-nav .bottom-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #25682a;
 }
