@@ -73,26 +73,6 @@ class DisableEditingGeoreferencing(bpy.types.Operator, tool.Ifc.Operator):
         core.disable_editing_georeferencing(tool.Georeference)
 
 
-class SetIfcGridNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_ifc_grid_north"
-    bl_label = "Set IFC Grid North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC grid north based on current Blender North Offset"
-
-    def _execute(self, context):
-        core.set_ifc_grid_north(tool.Georeference)
-
-
-class SetBlenderGridNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_blender_grid_north"
-    bl_label = "Set Blender Grid North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender North Offset based on current IFC grid north"
-
-    def _execute(self, context):
-        core.set_blender_grid_north(tool.Georeference)
-
-
 class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.get_cursor_location"
     bl_label = "Get Cursor Location"
@@ -105,26 +85,6 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.get_cursor_location(tool.Georeference)
-
-
-class SetIfcTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_ifc_true_north"
-    bl_label = "Set IFC True North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set IFC true north based on current Blender North Offset"
-
-    def _execute(self, context):
-        core.set_ifc_true_north(tool.Georeference)
-
-
-class SetBlenderTrueNorth(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_blender_true_north"
-    bl_label = "Set Blender True North"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Set Blender North Offset based on current IFC true north"
-
-    def _execute(self, context):
-        core.set_blender_true_north(tool.Georeference)
 
 
 class ConvertLocalToGlobal(bpy.types.Operator, tool.Ifc.Operator):

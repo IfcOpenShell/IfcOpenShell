@@ -45,22 +45,6 @@ def edit_georeferencing(ifc, georeference):
     georeference.set_model_origin()
 
 
-def set_ifc_grid_north(georeference):
-    georeference.set_ifc_grid_north()
-
-
-def set_blender_grid_north(georeference):
-    georeference.set_blender_grid_north()
-
-
-def set_ifc_true_north(georeference):
-    georeference.set_ifc_true_north()
-
-
-def set_blender_true_north(georeference):
-    georeference.set_blender_true_north()
-
-
 def get_cursor_location(georeference):
     georeference.set_coordinates("local", georeference.get_cursor_location())
 

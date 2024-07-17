@@ -246,21 +246,6 @@ class Georeference(blenderbim.core.tool.Georeference):
         bpy.context.scene.cursor.location = [co * scale for co in coordinates]
 
     @classmethod
-    def set_ifc_true_north(cls):
-        y_angle = -bpy.context.scene.sun_pos_properties.north_offset + radians(90)
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa = str(cos(y_angle))
-        bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate = str(sin(y_angle))
-
-    @classmethod
-    def set_blender_true_north(cls):
-        bpy.context.scene.sun_pos_properties.north_offset = -radians(
-            ifcopenshell.util.geolocation.yaxis2angle(
-                float(bpy.context.scene.BIMGeoreferenceProperties.true_north_abscissa),
-                float(bpy.context.scene.BIMGeoreferenceProperties.true_north_ordinate),
-            )
-        )
-
-    @classmethod
     def xyz2enh(cls, coordinates, should_return_in_map_units=True):
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
@@ -294,22 +279,6 @@ class Georeference(blenderbim.core.tool.Georeference):
                 float(props.blender_x_axis_ordinate),
             )
         return coordinates
-
-    @classmethod
-    def set_ifc_grid_north(cls):
-        x_angle = bpy.context.scene.sun_pos_properties.north_offset
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        props.coordinate_operation.get("XAxisAbscissa").string_value = str(cos(x_angle))
-        props.coordinate_operation.get("XAxisOrdinate").string_value = str(sin(x_angle))
-
-    @classmethod
-    def set_blender_grid_north(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        angle = ifcopenshell.util.geolocation.xaxis2angle(
-            float(props.coordinate_operation.get("XAxisAbscissa").string_value),
-            float(props.coordinate_operation.get("XAxisOrdinate").string_value),
-        )
-        bpy.context.scene.sun_pos_properties.north_offset = -radians(angle)
 
     @classmethod
     def angle2coords(cls, angle, type):
