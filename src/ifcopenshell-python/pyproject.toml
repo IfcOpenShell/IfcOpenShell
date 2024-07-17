@@ -39,5 +39,4 @@ where = ["dist"]
 include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
-ifcopenshell = ["*.pyd", "*.so", "*.json"]
-"ifcopenshell.util" = ["*.json", "schema/*.ifc"]
+"*" = ["*.*"]
