@@ -45,25 +45,6 @@ class SetOverrideColour(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SetViewportShadowFromSun(bpy.types.Operator):
-    bl_idname = "bim.set_viewport_shadow_from_sun"
-    bl_label = "Set Viewport Shadow from Sun"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        return context.active_object
-
-    def execute(self, context):
-        # Does this belong in the drawing module? Perhaps.
-        # The vector used for the light direction is a bit funny
-        mat = Matrix(((-1.0, 0.0, 0.0, 0.0), (0.0, 0, 1.0, 0.0), (-0.0, -1.0, 0, 0.0), (0.0, 0.0, 0.0, 1.0)))
-        context.scene.display.light_direction = mat.inverted() @ (
-            context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, -1))
-        )
-        return {"FINISHED"}
-
-
 class SnapSpacesTogether(bpy.types.Operator):
     bl_idname = "bim.snap_spaces_together"
     bl_label = "Snap Spaces Together"
