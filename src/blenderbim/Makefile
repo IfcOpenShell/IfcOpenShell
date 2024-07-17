@@ -215,17 +215,17 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd dist/working && unzip master.zip
-	# IFCJSON doesn't have pyrproject.toml, so we use python command.
-	cd dist/working/IFC2JSON_python-master/file_converters/ifcjson && \
-		$(PYTHON) -c "from setuptools import setup, find_packages; \
+	# IFCJSON doesn't have pyproject.toml, so we use python command.
+	cd dist/working/IFC2JSON_python-master/file_converters && \
+		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='ifcjson', \
 			version='0.0.0', \
 			author='Jan Brouwer', \
 			author_email='jan@brewsky.nl', \
-			packages=find_packages(include=['ifcjson*']), \
+			packages=['ifcjson'], \
 		)" bdist_wheel
-	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson/dist/*.whl dist/blenderbim/wheels/
+	cp -r dist/working/IFC2JSON_python-master/file_converters/dist/*.whl dist/blenderbim/wheels/
 	rm -rf dist/working
 
 	# Brickschema requires pkg_resources which is provided by Blender.
@@ -240,14 +240,14 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
 	cd dist/working && unzip master.zip
-	cd dist/working/bpypolyskel-master/bpypolyskel && \
-		$(PYTHON) -c "from setuptools import setup, find_packages; \
+	cd dist/working/bpypolyskel-master && \
+		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
-			name='bpypolyskel_libs', \
+			name='bpypolyskel', \
 			version='0.0.0', \
-			py_modules=['bpyeuclid', 'bpypolyskel', 'poly2FacesGraph'], \
+			packages=['bpypolyskel'], \
 		)" bdist_wheel
-	cp -r dist/working/bpypolyskel-master/bpypolyskel/dist/*.whl dist/blenderbim/wheels/
+	cp -r dist/working/bpypolyskel-master/dist/*.whl dist/blenderbim/wheels/
 	rm -rf dist/working
 
 	# Required for Desktop icon and file association
