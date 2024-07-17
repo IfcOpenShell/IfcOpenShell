@@ -278,19 +278,12 @@ endif
 	cp -r dist/working/IFC2JSON_python-master/file_converters/ifcjson/dist/*.whl dist/blenderbim/wheels/
 	rm -rf dist/working
 
+	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	mkdir dist/working
 	# For now lets bundle the latest nightly schema
 	cd dist/working && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 	cd dist/working && cp Brick.ttl ../blenderbim/bim/schema/Brick.ttl
-	rm -rf dist/working
-
-	# Required by brickschema
-	# This is a bit of a dodgy one, it should be provided by setuptools which Blender doesn't ship.
-	mkdir dist/working
-	cd dist/working && wget https://github.com/IfcOpenShell/IfcOpenShell/raw/v0.8.0/src/blenderbim/scripts/pkg_resources.tar.gz
-	cd dist/working && tar -xzvf pkg_resources*
-	cd dist/working/ && cp -r pkg_resources ../blenderbim/libs/site/packages/
 	rm -rf dist/working
 
 	# Required for hipped roof generation
