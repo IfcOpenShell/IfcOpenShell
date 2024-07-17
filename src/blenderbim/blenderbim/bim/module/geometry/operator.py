@@ -1000,7 +1000,8 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     if r.is_a("IfcRelAssignsToGroup")
                     if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
                 ]
-                tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
+                if linked_aggregate_group:
+                    tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
 
 
 class OverrideDuplicateMoveLinkedMacro(bpy.types.Macro):
@@ -1282,8 +1283,9 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
                         except:
                             continue
-                        index = pset["Index"]
-                        original_names[group][index] = tool.Ifc.get_object(part).name
+                        if pset:
+                            index = pset["Index"]
+                            original_names[group][index] = tool.Ifc.get_object(part).name
 
             return original_names
 
