@@ -35,13 +35,18 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	// @todo use pointers?
 	std::vector<ifcopenshell::geometry::taxonomy::point3::ptr> points;
 	std::vector<ifcopenshell::geometry::taxonomy::loop::ptr> loops;
+	std::set<uint32_t> point_identities_visited;
 
 	for (auto& f : shell->children) {
 		for (auto& l : f->children) {
 			loops.push_back(l);
 			for (auto& e : l->children) {
 				// @todo make sure only cartesian points are provided here
-				points.push_back(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->start));
+				auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->start);
+				if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
+					point_identities_visited.insert(p->identity());
+					points.push_back(p);
+				}
 			}
 		}
 	}
