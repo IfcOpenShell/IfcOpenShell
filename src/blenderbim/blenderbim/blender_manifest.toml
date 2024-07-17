@@ -5,8 +5,33 @@ name = "BlenderBIM"
 tagline = "Transforms Blender into a native Building Information Model authoring platform using IFC."
 maintainer = "Dion Moult <dion@thinkmoult.com>"
 type = "add-on"
-permissions = ["files"]
+permissions = ["network", "files", "clipboard"]
 website = "https://blenderbim.org/"
-tags = ["System"]
+tags = [
+    "3D View",
+    "Add Mesh",
+    "Animation",
+    "Camera",
+    "Development",
+    "Import-Export",
+    "Lighting",
+    "Material",
+    "Modeling",
+    "Mesh",
+    "Node",
+    "Object",
+    "Pipeline",
+    "Render",
+    "Scene",
+    "System",
+    "User Interface",
+    "UV"
+]
 blender_version_min = "4.2.0"
 license = ["SPDX:GPL-3.0-or-later"]
+platforms = ["os-arch"]
+
+[permissions]
+network = "Used in the Augin and Cove.Tool platform integrations for VR and environmental analysis"
+files = "Load and save IFCs, IDS, BCF, etc from disk"
+clipboard = "Copy and paste error logs"
