@@ -19,5 +19,6 @@
 from os.path import dirname
 from os.path import realpath
 
+__version__ = version = "0.0.0"
 
 package_path = dirname(realpath(__file__))
