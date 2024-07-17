@@ -75,6 +75,7 @@ class BIM_PT_solar(bpy.types.Panel):
     bl_region_type = 'WINDOW'
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_solar_analysis"
+    bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
         if not SolarData.is_loaded:
@@ -100,7 +101,6 @@ class BIM_PT_solar(bpy.types.Panel):
 
         row = self.layout.row(align=True)
         row.prop(props, "true_north")
-        row.prop(sun_props, "show_north", icon="HIDE_ON" if sun_props.show_north else "HIDE_OFF", text="")
         if SolarData.data["true_north"] is not None:
             row.operator("bim.import_true_north", icon="IMPORT", text="")
 
@@ -125,7 +125,13 @@ class BIM_PT_solar(bpy.types.Panel):
         row.prop(props, "hour")
         row.prop(props, "minute")
 
-        row = self.layout.row(align=True)
+        col = self.layout.column(align=True)
+        box = col.box()
+        row = box.row()
+        row.alignment = "CENTER"
+        row.label(text=props.timezone)
+
+        row = col.row(align=True)
         box = row.box()
 
         local_time = format_time(sun_props.time, sun_props.use_daylight_savings)
@@ -146,11 +152,18 @@ class BIM_PT_solar(bpy.types.Panel):
         row2 = box.row()
         row2.label(text=f"Sunset: {sunset}")
 
-        row = self.layout.row(align=True)
+        col = self.layout.column(align=True)
+        row = col.row(align=True)
+        row.prop(props, "display_sun_path", icon="LIGHT_SUN")
         row.prop(props, "sun_path_size")
 
-        row = self.layout.row()
+        if props.display_sun_path:
+            row = col.row()
+            row.operator("bim.move_sun_path_to_3d_cursor")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "display_shadows", icon="SHADING_RENDERED")
         row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
 
-        row = self.layout.row()
-        row.operator("bim.visualise_shadows", text="Visualise Shadows")
+        row = self.layout.row(align=True)
+        row.operator("bim.view_from_sun", icon="LIGHT_HEMI")

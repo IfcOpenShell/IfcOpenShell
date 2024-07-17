@@ -28,7 +28,6 @@ import blenderbim.tool as tool
 from pathlib import Path
 from typing import Union
 from blenderbim.bim.module.light.data import SolarData
-from blenderbim.bim.module.light.decorator import SolarDecorator
 
 
 class ExportOBJ(bpy.types.Operator):
@@ -275,19 +274,32 @@ class ImportLatLong(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class VisualiseShadows(bpy.types.Operator):
-    bl_idname = "bim.visualise_shadows"
-    bl_label = "Visualise Shadows"
-    bl_description = "Enables a visual style to display shadows easily"
+class MoveSunPathTo3DCursor(bpy.types.Operator):
+    bl_idname = "bim.move_sun_path_to_3d_cursor"
+    bl_label = "Move Sun Path To 3D Cursor"
+    bl_description = "Shifts the visualisation of the Sun Path to the 3D cursor"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.render.engine = "BLENDER_WORKBENCH"
-        context.scene.display.shading.light = "FLAT"
-        context.scene.display.shading.show_shadows = True
-        context.scene.display.shadow_focus = 1.0
-        context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
-        space = tool.Blender.get_view3d_space()
-        space.shading.type = "RENDERED"
-        SolarDecorator.install(bpy.context)
+        props = context.scene.BIMSolarProperties
+        props.sun_path_origin = bpy.context.scene.cursor.location
+        tool.Blender.update_viewport()
+        return {"FINISHED"}
+
+
+class ViewFromSun(bpy.types.Operator):
+    bl_idname = "bim.view_from_sun"
+    bl_label = "View From Sun"
+    bl_description = "Views your model as if you were looking from the perspective of the sun"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        if not (camera := bpy.data.objects.get("SunPathCamera")):
+            camera = bpy.data.objects.new("SunPathCamera", bpy.data.cameras.new("SunPathCamera"))
+            camera.data.type = "ORTHO"
+            camera.data.ortho_scale = 100  # The default of 6m is too small
+            bpy.context.scene.collection.objects.link(camera)
+        tool.Blender.activate_camera(camera)
+        props = context.scene.BIMSolarProperties
+        props.hour = props.hour  # Just to refresh camera position
         return {"FINISHED"}
