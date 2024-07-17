@@ -21,7 +21,12 @@ import blf
 import gpu
 import bmesh
 import blenderbim.tool as tool
-import sun_position.sun_calc
+
+try:
+    import sun_position.sun_calc
+except ImportError:
+    sun_position = None
+
 from bpy.types import SpaceView3D
 from math import radians
 from mathutils import Vector, Matrix

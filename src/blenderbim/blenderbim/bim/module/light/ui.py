@@ -18,7 +18,12 @@
 
 import bpy
 from blenderbim.bim.module.light.data import SolarData
-from sun_position.sun_calc import format_time, format_hms, sun
+
+try:
+    import sun_position
+    from sun_position.sun_calc import format_time, format_hms, sun
+except ImportError:
+    sun_position = None
 
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
@@ -34,6 +39,10 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+
+        if sun_position is None:
+            layout.label(text="Enable 'Sun Position' addon to continue.")
+            return
 
         props = scene.radiance_exporter_properties
         
@@ -78,6 +87,10 @@ class BIM_PT_solar(bpy.types.Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
+        if sun_position is None:
+            self.layout.label(text="Enable 'Sun Position' addon to continue.")
+            return
+
         if not SolarData.is_loaded:
             SolarData.load()
 
