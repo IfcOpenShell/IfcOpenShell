@@ -279,7 +279,6 @@ class BIM_PT_structural_connection(Panel):
 class BIM_PT_structural_analysis_models(Panel):
     bl_label = "Structural Analysis Models"
     bl_idname = "BIM_PT_structural_analysis_models"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -354,7 +353,6 @@ class BIM_UL_structural_analysis_models(UIList):
 class BIM_PT_structural_load_cases(Panel):
     bl_label = "Structural Load Cases"
     bl_idname = "BIM_PT_structural_load_cases"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -450,7 +448,6 @@ class BIM_UL_structural_activities(UIList):
 class BIM_PT_structural_loads(Panel):
     bl_label = "Structural Loads"
     bl_idname = "BIM_PT_structural_loads"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
@@ -520,7 +517,6 @@ class BIM_UL_structural_loads(UIList):
 class BIM_PT_boundary_conditions(Panel):
     bl_label = "Boundary Conditions"
     bl_idname = "BIM_PT_boundary_conditions"
-    bl_options = {"DEFAULT_CLOSED"}
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"
