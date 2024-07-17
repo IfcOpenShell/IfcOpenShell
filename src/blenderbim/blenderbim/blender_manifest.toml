@@ -8,5 +8,5 @@ type = "add-on"
 permissions = ["files"]
 website = "https://blenderbim.org/"
 tags = ["System"]
-blender_version_min = "3.5.0"
+blender_version_min = "4.2.0"
 license = ["SPDX:GPL-3.0-or-later"]
