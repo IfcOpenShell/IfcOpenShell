@@ -35,8 +35,6 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row.prop(props, "override_colour", text="")
         row.operator("bim.set_override_colour")
         row = layout.row()
-        row.operator("bim.set_viewport_shadow_from_sun")
-        row = layout.row()
         row.operator("bim.snap_spaces_together")
         row = layout.split(factor=0.2, align=True)
         row.prop(props, "total_storeys", text="")
