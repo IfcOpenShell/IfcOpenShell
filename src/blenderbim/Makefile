@@ -68,18 +68,22 @@ endif
 
 ifeq ($(PLATFORM), linux)
 PYPI_PLATFORM:=--platform manylinux_2_17_x86_64
+BLENDER_PLATFORM:=linux-x64
 endif
 
 ifeq ($(PLATFORM), macos)
 PYPI_PLATFORM:=--platform macosx_10_10_x86_64
+BLENDER_PLATFORM:=macos-x64
 endif
 
 ifeq ($(PLATFORM), macosm1)
 PYPI_PLATFORM:=--platform macosx_11_0_arm64
+BLENDER_PLATFORM:=macos-arm64
 endif
 
 ifeq ($(PLATFORM), win)
 PYPI_PLATFORM:=--platform win_amd64
+BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
@@ -100,57 +104,28 @@ endif
 	mkdir -p dist/blenderbim
 	cp -r blenderbim/* dist/blenderbim/
 
+	# To scope any build-time dependencies
+	cd dist/working && $(PYTHON) -m venv env
+	cd dist/working && . env/bin/activate && $(PIP) install wheel
+
 	# Provides IfcOpenShell Python functionality
 	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	rm -rf dist/working
-
-	# Provides dependencies that are part of IfcOpenShell
-	mkdir dist/working
-	# Provides bcf functionality
 	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCClash functionality
 	cd ../ifcclash && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides BIMTester functionality
 	cd ../ifcbimtester && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCTester functionality
 	cd ../ifctester && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCFM functionality
 	cd ../ifcfm && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides bSDD functionality
 	cd ../bsdd && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCDiff functionality
 	cd ../ifcdiff && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCCSV functionality
 	cd ../ifccsv && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCPatch functionality
 	cd ../ifcpatch && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFC4D functionality
 	cd ../ifc4d && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFC5D functionality
 	cd ../ifc5d && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IFCCityJSON functionality
 	cd ../ifccityjson && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
-	# Provides IfcGit functionality
 	cd dist/working && . env/bin/activate && $(PIP) download GitPython --dest=../blenderbim/wheels
-	rm -rf dist/working
-
 	# Provides audio playback for costing
-	# mkdir -p dist/working
-	# git clone https://github.com/Andrej730/aud.git --branch master-reduced-size --depth 1 dist/working/aud
-	# cd dist/working/aud && git checkout 529af208fbcb707c387bfb681d2605c0b6112de7
-	# cp -r dist/working/aud/aud dist/blenderbim/libs/site/packages/
-	# rm -rf dist/working
-
-	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
-	mkdir dist/working
-	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-	cp dist/working/jsgantt* dist/blenderbim/bim/data/gantt/
-	rm -rf dist/working
-
-	mkdir dist/working
-	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && mkdir site-packages
+	# This is a REALLY IMPORTANT feature
+	cd dist/working && . env/bin/activate && $(PIP) wheel git+https://github.com/Andrej730/aud.git --wheel-dir=../blenderbim/wheels
 	# IfcOpenShell dependency - support for new typing features
 	cd dist/working && . env/bin/activate && $(PIP) download typing_extensions --dest=../blenderbim/wheels
 	# Required by IfcCSV
@@ -159,7 +134,7 @@ endif
 	# cd dist/working/site-packages/pandas && rm -rf tests
 	cd dist/working && . env/bin/activate && $(PIP) download openpyxl --dest=../blenderbim/wheels
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
-	cd dist/working && . env/bin/activate && $(PIP) wheel odfpy --wheel-dir=./
+	cd dist/working && . env/bin/activate && $(PIP) wheel odfpy --wheel-dir=../blenderbim/wheels
 	# Required by IFCCityJSON
 	cd dist/working && . env/bin/activate && $(PIP) download cjio --dest=../blenderbim/wheels
 	# Provides express rule validation for ifcopenshell.validate
@@ -209,6 +184,13 @@ else ifeq ($(PLATFORM), macos)
 else
 	cd dist/working && . env/bin/activate && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=../blenderbim/wheels
 endif
+	rm -rf dist/working
+
+	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
+	mkdir dist/working
+	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+	cd dist/working && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+	cp dist/working/jsgantt* dist/blenderbim/bim/data/gantt/
 	rm -rf dist/working
 
 	# Provides IFCJSON functionality
@@ -264,13 +246,15 @@ endif
 ifeq ($(IS_STABLE), TRUE)
 	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
-	cd dist && zip -r blenderbim-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./*
 else
 	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
 	# Blender manifest version must be semver compatible.
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)-$(VERSION_DATE)/" blender_manifest.toml
+	cd dist/blenderbim && $(SED) "s/os-arch/$(BLENDER_PLATFORM)/" blender_manifest.toml
+	$(PYTHON) scripts/get_wheels.py dist/blenderbim/wheels dist/blenderbim/blender_manifest.toml
 	cd dist/blenderbim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
-	cd dist && zip -r blenderbim-$(VERSION).$(VERSION_DATE)-$(PYVERSION)-$(PLATFORM).zip ./*
+	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./*
 endif
 	rm -rf dist/blenderbim
 
