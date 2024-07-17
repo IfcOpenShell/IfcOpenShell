@@ -111,8 +111,11 @@ class curve_segment_evaluator {
     std::optional<std::function<Eigen::Matrix4d(double)>> parent_curve_fn_; // function for the parent curve. Function takes distances along, u, and returns the 4x4 position matrix
     std::optional<Eigen::Matrix4d> parent_curve_start_point_;                 // placement matrix for the parent curve
 
+    std::optional<Eigen::Matrix4d> placement_; // placement of this segment
+    std::optional<Eigen::Matrix4d> next_segment_placement_; // placement of the next segment
+
   public:
-    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, double length_unit, segment_type_t segment_type)
+    curve_segment_evaluator(mapping* mapping, const IfcSchema::IfcCurveSegment* inst, const IfcSchema::IfcCurveSegment* next_inst, double length_unit, segment_type_t segment_type)
         : mapping_(mapping),
           inst_(inst),
           length_unit_(length_unit),
@@ -120,6 +123,14 @@ class curve_segment_evaluator {
           parent_curve_(inst->ParentCurve()) {
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
         length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
+
+        if (inst) {
+            placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst->Placement()))->ccomponents();
+        }
+
+        if (next_inst) {
+            next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(next_inst->Placement()))->ccomponents();
+        }
     }
 
     // Take the boost::type value from mpl::for_each and test it against our curve instance
@@ -140,6 +151,10 @@ class curve_segment_evaluator {
 
     const std::optional<Eigen::Matrix4d>& parent_curve_start_point() const {
         return parent_curve_start_point_;
+    }
+
+    const std::optional<Eigen::Matrix4d>& segment_placement() const {
+        return placement_;
     }
 
     void set_spiral_function(double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
@@ -238,14 +253,38 @@ class curve_segment_evaluator {
         parent_curve_start_point_ = (*parent_curve_fn_)(0.0);
     }
 
+    boost::optional<std::function<double(double)>> get_cant_superelevation_function() {
+        boost::optional<std::function<double(double)>> fn;
+
+        if (next_segment_placement_.has_value() && placement_.has_value()) {
+            // cant superelevation should be y value (row 1)
+            double y1 = (*placement_)(1, 3);
+            double y2 = (*next_segment_placement_)(1, 3);
+
+            // if y2-y1 = 0, there is no superelevation
+            // so we need a Cant function that always returns zero
+            if (!(y2 - y1)) {
+                fn = [](double)->double { return 0.0; };
+            }
+        }
+
+        return fn;
+    }
+
 #ifdef SCHEMA_HAS_IfcClothoid
     void operator()(const IfcSchema::IfcClothoid* c) {
         auto A = c->ClothoidConstant();
 
         if (segment_type_ == ST_CANT) {
-            auto Cant = [A, L = length_ * length_unit_](double t) -> double { return A ? L * A * t / fabs(pow(A, 3)) : 0.0; };
+
+           auto Cant = get_cant_superelevation_function(); // fn that always returns zero if there is no superelevation
+            if (!Cant.has_value()) {
+               // function not provided so there must be a superelevation - this function provides the superelevation transition
+               Cant = [A, L = length_ * length_unit_](double t) -> double { return A ? L * A * t / fabs(pow(A, 3)) : 0.0; };
+            }
+
             auto CantSlope = [A, L = length_ * length_unit_](double /*t*/) -> double { return A ? L * A / fabs(pow(A, 3)) : 0.0; };
-            set_cant_spiral_function(Cant, CantSlope);
+            set_cant_spiral_function(*Cant, CantSlope);
         } else {
             auto s = fabs(A * sqrt(PI)); // curve length when u = 1.0
             auto fn_x = [A, s](double t) -> double { return A ? s * cos(PI * A * t * t / (2 * fabs(A))) : 0.0; };
@@ -272,16 +311,21 @@ class curve_segment_evaluator {
             double s = 1.0;
             set_spiral_function(s, fn_x, fn_y);
         } else if (segment_type_ == ST_CANT) {
-            auto Cant = [constant_term, cosine_term, L, lu = length_unit_](double t) -> double {
-                auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
-                auto a1 = (L / (cosine_term * lu)) * cos(PI * t * lu / L);
-                return a0 + a1;
-            };
+            auto Cant = get_cant_superelevation_function(); // fn that always returns zero if there is no superelevation
+            if (!Cant.has_value()) {
+                // function not provided so there must be a superelevation - this function provides the superelevation transition
+                Cant = [constant_term, cosine_term, L, lu = length_unit_](double t) -> double {
+                    auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
+                    auto a1 = (L / (cosine_term * lu)) * cos(PI * t * lu / L);
+                    return a0 + a1;
+                };
+            }
+
             auto CantSlope = [cosine_term, L, lu = length_unit_](double t) -> double {
                 auto a1 = -(PI / L) * (L / (cosine_term * lu)) * sin(PI * t * lu / L);
                 return a1;
             };
-            set_cant_spiral_function(Cant, CantSlope);
+            set_cant_spiral_function(*Cant, CantSlope);
         } else if (segment_type_ == ST_VERTICAL) {
             Logger::Error(std::runtime_error("IfcCosineSpiral cannot be used for vertical alignment"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -310,18 +354,23 @@ class curve_segment_evaluator {
             double s = 1.0;
             set_spiral_function(s, fn_x, fn_y);
         } else if (segment_type_ == ST_CANT) {
-            auto Cant = [constant_term, linear_term, sine_term, L, lu = length_unit_](double t) -> double {
-                auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
-                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / (linear_term.value() * lu), 2.0) * (t / L) : 0.0;
-                auto a2 = (L / (sine_term * lu)) * sin(2 * PI * t / L);
-                return a0 + a1 + a2;
-            };
+            auto Cant = get_cant_superelevation_function(); // fn that always returns zero if there is no superelevation
+            if (!Cant.has_value()) {
+                // function not provided so there must be a superelevation - this function provides the superelevation transition
+                Cant = [constant_term, linear_term, sine_term, L, lu = length_unit_](double t) -> double {
+                    auto a0 = constant_term.has_value() ? L / (constant_term.value() * lu) : 0.0;
+                    auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / (linear_term.value() * lu), 2.0) * (t / L) : 0.0;
+                    auto a2 = (L / (sine_term * lu)) * sin(2 * PI * t / L);
+                    return a0 + a1 + a2;
+                };
+            }
+
             auto CantSlope = [linear_term, sine_term, L, lu = length_unit_](double t) -> double {
                 auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / (linear_term.value() * lu), 2.0) * (1.0 / L) : 0.0;
                 auto a2 = (2 * PI / L) * (L / (sine_term * lu)) * cos(2 * PI * t / L);
                 return a1 + a2;
             };
-            set_cant_spiral_function(Cant, CantSlope);
+            set_cant_spiral_function(*Cant, CantSlope);
         } else if (segment_type_ == ST_VERTICAL) {
             Logger::Error(std::runtime_error("IfcSineSpiral cannot be used for vertical alignment"));
             parent_curve_fn_ = [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); };
@@ -353,18 +402,22 @@ class curve_segment_evaluator {
     }
 
     void polynomial_cant_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
-        auto Cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, L = length_ * length_unit_, lu = length_unit_, length = length_](double t) {
-            t += start;
-            auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
-            auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
-            auto a2 = A2.has_value() ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
-            auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
-            auto a4 = A4.has_value() ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
-            auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
-            auto a6 = A6.has_value() ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
-            auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
-            return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
-        };
+        auto Cant = get_cant_superelevation_function(); // fn that always returns zero if there is no superelevation
+        if (!Cant.has_value()) {
+            // function not provided so there must be a superelevation - this function provides the superelevation transition
+            Cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, L = length_ * length_unit_, lu = length_unit_, length = length_](double t) {
+                t += start;
+                auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
+                auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+                auto a2 = A2.has_value() ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+                auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+                auto a4 = A4.has_value() ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+                auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+                auto a6 = A6.has_value() ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+                auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+                return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
+            };
+        }
 
         auto CantSlope = [A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, L = length_ * length_unit_, lu = length_unit_, length = length_](double t) {
             t += start;
@@ -378,7 +431,7 @@ class curve_segment_evaluator {
             return L * (a1 + a2 + a3 + a4 + a5 + a6 + a7);
         };
 
-        set_cant_spiral_function(Cant, CantSlope);
+        set_cant_spiral_function(*Cant, CantSlope);
     }
 
 #ifdef SCHEMA_HAS_IfcSecondOrderPolynomialSpiral
@@ -733,6 +786,26 @@ class curve_segment_evaluator {
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     auto composite_curves = inst->UsingCurves();
 
+    // Find the next segment after inst
+    const IfcSchema::IfcCurveSegment* next_inst = nullptr;
+    if (composite_curves) {
+        if (composite_curves->size() == 1) {
+            auto segments = (*composite_curves->begin())->as<IfcSchema::IfcCompositeCurve>()->Segments();
+            bool emit_next = false;
+            for (auto& s : *segments) {
+                if (emit_next) {
+                    next_inst = s->as<IfcSchema::IfcCurveSegment>();
+                    break;
+                }
+                if (s == inst) {
+                    emit_next = true;
+                }
+            }
+        } else {
+            Logger::Warning("IfcCurveSegment belongs to multiple IfcCompositeCurve instances. Cannot determine the next segment.");
+        }
+    }
+
     bool is_horizontal = false;
     bool is_vertical = false;
     bool is_cant = false;
@@ -757,7 +830,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
     auto segment_type = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
 
-    curve_segment_evaluator cse(this, inst, length_unit_, segment_type);
+    curve_segment_evaluator cse(this, inst, next_inst, length_unit_, segment_type);
     boost::mpl::for_each<curve_seg_types, boost::type<boost::mpl::_>>(std::ref(cse));
     const auto& parent_curve_fn = cse.parent_curve_function();
     const auto& parent_curve_start_point = cse.parent_curve_start_point();
@@ -788,7 +861,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     remove_parent_curve_rotation(1, 0) *= -1.0;
     remove_parent_curve_rotation.col(3) = Eigen::Vector4d(0, 0, 0, 1); // remove the parent curve placement point
 
-    const Eigen::Matrix4d& curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(map(inst->Placement()))->ccomponents();
+    const auto& curve_segment_placement = cse.segment_placement();
 
     std::function<Eigen::Matrix4d(double u)> fn;
     if (segment_type == ST_CANT)
@@ -799,7 +872,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
        // cause the resulting z value to be slightly off. My solution is to change the upper 3x3 of the curve_segment_placement
        // matrix to identity. This results in correct cant values, but I think it messes up the resulting direction vectors
         Eigen::Matrix4d c = Eigen::Matrix4d::Identity();
-        c.col(3) = curve_segment_placement.col(3);
+        c.col(3) = (*curve_segment_placement).col(3);
 
         fn = [c, remove_parent_curve_rotation, remove_parent_curve_translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
             Eigen::Matrix4d parent_curve_point = (*parent_curve_fn)(u);
@@ -809,7 +882,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
     } else {
         fn = [curve_segment_placement, remove_parent_curve_rotation, remove_parent_curve_translation, parent_curve_fn](double u) -> Eigen::Matrix4d {
             auto parent_curve_point = (*parent_curve_fn)(u);
-            return curve_segment_placement * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point;
+            return (*curve_segment_placement) * remove_parent_curve_rotation * remove_parent_curve_translation * parent_curve_point;
         };
     }
 
