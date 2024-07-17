@@ -240,7 +240,14 @@ endif
 	mkdir dist/working
 	cd dist/working && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
 	cd dist/working && unzip master.zip
-	cp -r dist/working/bpypolyskel-master/bpypolyskel dist/blenderbim/libs/site/packages/
+	cd dist/working/bpypolyskel-master/bpypolyskel && \
+		$(PYTHON) -c "from setuptools import setup, find_packages; \
+		setup( \
+			name='bpypolyskel_libs', \
+			version='0.0.0', \
+			py_modules=['bpyeuclid', 'bpypolyskel', 'poly2FacesGraph'], \
+		)" bdist_wheel
+	cp -r dist/working/bpypolyskel-master/bpypolyskel/dist/*.whl dist/blenderbim/wheels/
 	rm -rf dist/working
 
 	# Required for Desktop icon and file association
