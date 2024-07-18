@@ -119,6 +119,7 @@ endif
 	$(PIP) install build
 	cd dist/working && . env/bin/activate && $(PIP) install wheel
 
+	mkdir wheels
 	# Provides IfcOpenShell Python functionality
 	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
 	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/dist/blenderbim/wheels/
