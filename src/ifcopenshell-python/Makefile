@@ -2,6 +2,7 @@ VERSION:=$(shell cat ../../VERSION)
 PYVERSION:=py311
 PLATFORM:=linux64
 
+PYTHON:=python3.11
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
