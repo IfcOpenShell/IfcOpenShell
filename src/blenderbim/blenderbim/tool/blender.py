@@ -1109,8 +1109,9 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def get_blender_addon_package_name(cls) -> str:
-        if bpy.app.version >= (4, 2, 0):
-            return blenderbim.BLENDER_PACKAGE_NAME
+        for package_name in bpy.context.preferences.addons.keys():
+            if package_name.endswith(".blenderbim"):
+                return package_name
         return "blenderbim"
 
     @classmethod

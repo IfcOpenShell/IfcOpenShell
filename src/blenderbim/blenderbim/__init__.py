@@ -38,20 +38,6 @@ from pathlib import Path
 from typing import Union, Any
 
 
-# NOTE: bl_info is superseded by blender_manifest.toml
-# if addon is installed as an extension (Blender 4.2+)
-bl_info = {
-    "name": "BlenderBIM",
-    "description": "Transforms Blender into a native Building Information Model authoring platform using IFC.",
-    "author": "IfcOpenShell Contributors",
-    "blender": (3, 1, 0),
-    "version": (0, 0, 0),
-    "location": "File Menu, Scene Properties Tab. See documentation for more.",
-    "doc_url": "https://docs.blenderbim.org/",
-    "tracker_url": "https://github.com/IfcOpenShell/IfcOpenShell/issues",
-    "category": "System",
-}
-
 last_commit_hash = "8888888"
 
 
@@ -107,12 +93,6 @@ def format_debug_info(info: dict):
 
 
 if IN_BLENDER:
-    # Process *.pth in /libs/site/packages to setup globally importable modules
-    # This is 3 levels deep as required by the static RPATH of ../../ from dependencies taken from Anaconda
-    # site.addsitedir(os.path.join(os.path.dirname(os.path.realpath(__file__)), "libs", "site", "packages"))
-    site_path = Path(__file__).parent.resolve() / "libs" / "site" / "packages"
-    sys.path.insert(0, str(site_path))
-
     def get_binary_info() -> dict[str, Any]:
         info = {}
         lib = site_path / "ifcopenshell"
@@ -165,14 +145,6 @@ if IN_BLENDER:
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
-            global BLENDER_PACKAGE_NAME, __name__, __package__
-            BLENDER_PACKAGE_NAME = __name__
-            if bpy.app.version >= (4, 2, 0):
-                sys.modules["blenderbim"] = sys.modules[__name__]
-                __name__ = "blenderbim"
-                # Only renaming __name__ is actually required to make imports work.
-                # We renaming __package__ just for consistency.
-                __package__ = "blenderbim"
             import blenderbim.bim
 
             blenderbim.bim.register()
