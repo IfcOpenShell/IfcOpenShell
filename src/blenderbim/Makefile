@@ -94,6 +94,16 @@ bump:
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) -b "s/$(OLD)/$(NEW)/" installation.rst
 
+.PHONY: dist-blenderbim
+dist-blenderbim:
+	cp pyproject.toml pyproject.toml.bak
+	cp blenderbim/__init__.py __init__.py.bak
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' blenderbim/__init__.py
+	python -m build
+	mv pyproject.toml.bak pyproject.toml
+	mv __init__.py.bak blenderbim/__init__.py
+
 .PHONY: dist
 dist:
 ifndef PLATFORM
@@ -244,18 +254,27 @@ endif
 	rm -rf dist/blenderbim/wheels/numpy*
 
 ifeq ($(IS_STABLE), TRUE)
-	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH)/" __init__.py
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
+else
+	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)-$(VERSION_DATE)/" blender_manifest.toml
+	cd dist/blenderbim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
+endif
+
+	cd dist/blenderbim && $(SED) "s/os-arch/$(BLENDER_PLATFORM)/" blender_manifest.toml
+
+	# Provides BlenderBIM Add-on functionality
+	make dist-blenderbim && cp dist/*.whl ./dist/blenderbim/wheels/
+	$(PYTHON) scripts/get_wheels.py dist/blenderbim/wheels dist/blenderbim/blender_manifest.toml
+	rm -rf dist/blenderbim/bim/
+	rm -rf dist/blenderbim/core/
+	rm -rf dist/blenderbim/tool/
+
+ifeq ($(IS_STABLE), TRUE)
 	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./*
 else
-	cd dist/blenderbim && $(SED) "s/0, 0, 0/$(VERSION_MAJOR), $(VERSION_MINOR), $(VERSION_PATCH), $(VERSION_DATE)/" __init__.py
-	# Blender manifest version must be semver compatible.
-	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)-$(VERSION_DATE)/" blender_manifest.toml
-	cd dist/blenderbim && $(SED) "s/os-arch/$(BLENDER_PLATFORM)/" blender_manifest.toml
-	$(PYTHON) scripts/get_wheels.py dist/blenderbim/wheels dist/blenderbim/blender_manifest.toml
-	cd dist/blenderbim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
 	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./*
 endif
+
 	rm -rf dist/blenderbim
 
 .PHONY: test
