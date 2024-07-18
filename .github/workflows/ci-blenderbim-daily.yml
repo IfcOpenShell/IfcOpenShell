@@ -40,18 +40,22 @@ jobs:
           - {
             name: "Windows Build",
             short_name: win,
+            blender_platform: windows-x64,
           }
           - {
             name: "Linux Build",
             short_name: linux
+            blender_platform: linux-x64,
           }
           - {
             name: "MacOS Build",
             short_name: macos
+            blender_platform: macos-x64,
           }
           - {
             name: "MacOS ARM Build",
             short_name: macosm1
+            blender_platform: macos-arm64,
           }
     steps:
       - uses: actions/checkout@v2
@@ -72,8 +76,8 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: src/blenderbim/dist/blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          asset_name: blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}-${{ matrix.pyver }}-${{ matrix.config.short_name }}.zip
-          release_name: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}} (unstable)"
+          file: src/blenderbim/dist/blenderbim_${{ matrix.pyver }}-${{steps.version.outputs.version}}-${{steps.date.outputs.date}}-${{ matrix.config.blender_platform }}.zip
+          asset_name: blenderbim_${{ matrix.pyver }}-${{steps.version.outputs.version}}-${{steps.date.outputs.date}}-${{ matrix.config.blender_platform }}.zip
+          release_name: "blenderbim-${{steps.version.outputs.version}}-${{steps.date.outputs.date}} (unstable)"
           tag: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
           overwrite: true
