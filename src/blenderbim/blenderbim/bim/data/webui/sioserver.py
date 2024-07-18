@@ -85,7 +85,7 @@ class BlenderNamespace(socketio.AsyncNamespace):
     async def on_data(self, sid, data):
         print(f"Data from Blender client {sid}")
         # blender_messages[sid]["default_data"] = data
-        # await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
+        await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_csv_data(self, sid, data):
         print(f"CSV data from Blender client {sid}")
