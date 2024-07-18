@@ -223,7 +223,7 @@ endif
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
 	# Required for Desktop icon and file association
-	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
+	cp -r blenderbim/libs/desktop build/blenderbim/libs/
 
 	# Generate translations module for BBIM build
 	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build
