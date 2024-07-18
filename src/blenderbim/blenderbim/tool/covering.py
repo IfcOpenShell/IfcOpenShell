@@ -24,7 +24,7 @@ import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.core.spatial
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .. import tool
 import json
 from math import pi
 from mathutils import Vector, Matrix

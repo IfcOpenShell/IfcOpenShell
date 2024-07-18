@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.api.material
 import blenderbim.core.tool
 import blenderbim.core.material
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element

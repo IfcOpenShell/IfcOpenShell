@@ -26,7 +26,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.import_ifc
 import numpy as np
 import numpy.typing as npt

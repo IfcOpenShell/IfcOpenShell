@@ -22,7 +22,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api.georeference
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
 from math import radians, cos, sin
 

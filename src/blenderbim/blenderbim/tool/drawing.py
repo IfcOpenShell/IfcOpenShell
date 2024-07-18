@@ -33,7 +33,7 @@ import subprocess
 import numpy as np
 import blenderbim.core.tool
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .. import tool
 import ifcopenshell.api
 import ifcopenshell.geom
 import ifcopenshell.util.representation

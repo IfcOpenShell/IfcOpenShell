@@ -20,9 +20,9 @@
 
 import bpy
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
-import blenderbim.bim.module.sequence.helper as helper
+from ..bim.module.sequence. import helper
 import json
 import time
 import isodate

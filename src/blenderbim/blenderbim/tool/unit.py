@@ -20,7 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 
 
 class Unit(blenderbim.core.tool.Unit):

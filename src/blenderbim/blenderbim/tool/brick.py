@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from contextlib import contextmanager
 import datetime
 

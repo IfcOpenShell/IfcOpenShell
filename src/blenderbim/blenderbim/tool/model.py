@@ -30,8 +30,8 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.geometry
 import blenderbim.core.tool
-import blenderbim.tool as tool
-import blenderbim.core.geometry as geometry
+from .. import tool
+from ..core. import geometry
 from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy

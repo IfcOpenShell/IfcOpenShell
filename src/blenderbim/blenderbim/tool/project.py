@@ -28,7 +28,7 @@ import blenderbim.core.root
 import blenderbim.core.unit
 import blenderbim.core.owner
 import blenderbim.bim.schema
-import blenderbim.tool as tool
+from .. import tool
 from ..bim.ifc import IfcStore
 from pathlib import Path
 from typing import Optional

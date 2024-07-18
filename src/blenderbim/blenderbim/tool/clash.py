@@ -21,7 +21,7 @@ import bpy
 import json
 import ifcopenshell
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from contextlib import contextmanager
 from mathutils import Vector
 

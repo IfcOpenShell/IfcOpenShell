@@ -19,7 +19,7 @@
 import bpy
 import mathutils
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from mathutils import Matrix, Vector
 from typing import Any, Sequence
 

@@ -22,7 +22,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
 from typing import Union
 

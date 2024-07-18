@@ -31,7 +31,7 @@
 
 import bpy
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 
 
 # There is always one class in each tool file, which implements the interface

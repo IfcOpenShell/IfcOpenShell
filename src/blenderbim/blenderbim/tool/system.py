@@ -23,7 +23,7 @@ import blenderbim.bim.helper
 import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from ..bim import import_ifc
 import re
 from math import pi, cos, sin

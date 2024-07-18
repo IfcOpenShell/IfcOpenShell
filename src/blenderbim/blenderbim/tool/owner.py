@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
 import ifcopenshell
 from typing import Union, Any

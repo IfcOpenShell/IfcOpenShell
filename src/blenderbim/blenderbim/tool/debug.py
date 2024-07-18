@@ -20,7 +20,7 @@ import os
 import bpy
 import ifcopenshell.express
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from ..bim.ifc import IfcStore
 
 

@@ -1,5 +1,5 @@
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import bpy
 import json
 

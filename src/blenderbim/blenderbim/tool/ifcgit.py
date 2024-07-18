@@ -4,7 +4,7 @@ import bpy
 import logging
 from ..bim import import_ifc
 from ..bim.ifc import IfcStore
-import blenderbim.tool as tool
+from .. import tool
 
 # allows git import even if git executable isn't found
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"

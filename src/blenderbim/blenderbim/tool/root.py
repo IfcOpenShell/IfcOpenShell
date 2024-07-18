@@ -28,7 +28,7 @@ import blenderbim.core.aggregate
 import blenderbim.core.geometry
 import blenderbim.core.material
 import blenderbim.core.style
-import blenderbim.tool as tool
+from .. import tool
 from typing import Union, Optional, Any
 
 

@@ -23,7 +23,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import PIL.ImageDraw
 from ..bim.module.model.decorator import ProfileDecorator
 from typing import Union

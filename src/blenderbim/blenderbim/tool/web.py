@@ -19,7 +19,7 @@
 import bpy
 from ..bim.module.web.data import WebData
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import ifcopenshell.api.sequence
 import socket
 import os

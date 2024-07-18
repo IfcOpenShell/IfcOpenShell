@@ -22,7 +22,7 @@ import json
 import blenderbim.bim.helper
 import blenderbim.core.tool
 import blenderbim.core.structural
-import blenderbim.tool as tool
+from .. import tool
 from ..bim.ifc import IfcStore
 from pprint import pprint
 

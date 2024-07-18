@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 
 
 class Library(blenderbim.core.tool.Library):

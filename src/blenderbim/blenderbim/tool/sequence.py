@@ -31,9 +31,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import blenderbim.core.tool
 import blenderbim.core
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
-import blenderbim.bim.module.sequence.helper as helper
+from ..bim.module.sequence. import helper
 from dateutil import parser
 from datetime import datetime
 from typing import Optional, Any, Union

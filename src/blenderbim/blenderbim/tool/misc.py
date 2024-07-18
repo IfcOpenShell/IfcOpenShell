@@ -21,7 +21,7 @@ import bmesh
 import ifcopenshell
 import blenderbim.core.tool
 import blenderbim.core.root
-import blenderbim.tool as tool
+from .. import tool
 from mathutils import Vector, Matrix
 from ..bim.ifc import IfcStore
 

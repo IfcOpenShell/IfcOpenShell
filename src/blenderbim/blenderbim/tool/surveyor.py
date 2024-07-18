@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.api
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import numpy as np
 
 

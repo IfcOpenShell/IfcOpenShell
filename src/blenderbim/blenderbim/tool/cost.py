@@ -1,7 +1,7 @@
 import os
 import bpy
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost

@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.util.system
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 from ..bim import import_ifc
 
 

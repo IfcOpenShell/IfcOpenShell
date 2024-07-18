@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.helper
 from mathutils import Color
 from typing import Union, Any, Optional, Literal

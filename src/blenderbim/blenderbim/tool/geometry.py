@@ -35,7 +35,7 @@ import blenderbim.core.style
 import blenderbim.core.spatial
 import blenderbim.core.system
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim.import_ifc
 from collections import defaultdict
 from math import radians, pi

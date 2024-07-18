@@ -24,7 +24,7 @@ import os
 import ifcopenshell.api
 import ifcopenshell.util.element
 import blenderbim.core.tool
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.bim
 import addon_utils
 import types
