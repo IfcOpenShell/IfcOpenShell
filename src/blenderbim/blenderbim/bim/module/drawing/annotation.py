@@ -20,7 +20,7 @@ import os
 import bpy
 import math
 import bmesh
-import blenderbim.tool as tool
+from .... import tool
 import ifcopenshell.util.element
 from mathutils import Vector, Matrix
 

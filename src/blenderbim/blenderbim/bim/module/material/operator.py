@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.style
 import blenderbim.core.material as core
 import blenderbim.bim.module.model.profile as model_profile

@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, Menu
 from .data import (
     AuthoringData,

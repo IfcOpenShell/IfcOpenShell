@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.nest as core
 import blenderbim.core.spatial
 import blenderbim.bim.handler

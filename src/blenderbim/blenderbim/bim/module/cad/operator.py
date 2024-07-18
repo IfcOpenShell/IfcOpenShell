@@ -21,7 +21,7 @@ import math
 import bmesh
 import mathutils
 import bpy_extras
-import blenderbim.tool as tool
+from .... import tool
 from mathutils import Vector, Matrix
 from math import pi, radians, sin, cos, sqrt
 import ifcopenshell.util.unit

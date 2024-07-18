@@ -20,7 +20,7 @@ import bpy
 import bmesh
 
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 
 import json
 import zipfile

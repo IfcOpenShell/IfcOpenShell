@@ -32,7 +32,7 @@ import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
-import blenderbim.tool as tool
+from .. import tool
 from itertools import chain, accumulate
 from .ifc import IfcStore, IFC_CONNECTED_TYPE
 from ..tool.loader import OBJECT_DATA_TYPE

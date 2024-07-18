@@ -29,7 +29,7 @@ import blenderbim.core.spatial
 import blenderbim.core.style
 import blenderbim.core.type
 import blenderbim.core.root as core
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 from ...helper import get_enum_items
 

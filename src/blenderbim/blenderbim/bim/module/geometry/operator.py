@@ -34,7 +34,7 @@ import blenderbim.core.aggregate
 import blenderbim.core.style
 import blenderbim.core.root
 import blenderbim.core.drawing
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
 from time import time

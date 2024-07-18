@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
 import blenderbim.core.root
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .... import tool
 from .door import bm_sort_out_geom
 from .data import RailingData, refresh
 from .decorator import ProfileDecorator

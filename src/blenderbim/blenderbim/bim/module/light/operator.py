@@ -24,7 +24,7 @@ import multiprocessing
 import pyradiance as pr
 import ifcopenshell
 import ifcopenshell.geom
-import blenderbim.tool as tool
+from .... import tool
 from pathlib import Path
 from typing import Union
 from .data import SolarData

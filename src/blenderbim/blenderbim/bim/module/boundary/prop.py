@@ -29,7 +29,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-import blenderbim.tool as tool
+from .... import tool
 
 
 def space_filter(self, object):

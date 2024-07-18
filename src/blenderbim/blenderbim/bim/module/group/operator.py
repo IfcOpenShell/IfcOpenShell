@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 import json
 

@@ -21,7 +21,7 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 from mathutils import Vector, Matrix
 
 

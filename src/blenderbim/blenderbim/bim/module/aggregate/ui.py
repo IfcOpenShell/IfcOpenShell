@@ -20,7 +20,7 @@ from bpy.types import Panel
 from .data import AggregateData
 from ..group.data import GroupsData, ObjectGroupsData
 from ...ifc import IfcStore
-import blenderbim.tool as tool
+from .... import tool
 
 
 class BIM_PT_aggregate(Panel):

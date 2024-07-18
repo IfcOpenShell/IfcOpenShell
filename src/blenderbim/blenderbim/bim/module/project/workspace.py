@@ -18,7 +18,7 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import WorkSpaceTool
 from .data import LinksData
 

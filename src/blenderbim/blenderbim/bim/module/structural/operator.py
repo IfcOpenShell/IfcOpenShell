@@ -24,7 +24,7 @@ import ifcopenshell.util.attribute
 import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.core.structural as core
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.context
 from math import degrees
 from mathutils import Vector, Matrix

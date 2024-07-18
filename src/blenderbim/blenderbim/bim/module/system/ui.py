@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from ...helper import prop_with_search
 from bpy.types import Panel, UIList
 from .data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData

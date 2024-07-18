@@ -28,7 +28,7 @@
 # "Operators", since they correlate to a single user operation.
 
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.demo as core
 import blenderbim.bim.handler
 

@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 from ..classification.data import CostClassificationsData
 from .data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData

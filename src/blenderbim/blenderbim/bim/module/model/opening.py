@@ -32,9 +32,9 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.geometry
-import blenderbim.bim.import_ifc as import_ifc
+from ... import import_ifc
 import blenderbim.bim.handler
 from ...ifc import IfcStore
 from math import pi, radians

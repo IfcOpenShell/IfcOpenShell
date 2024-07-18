@@ -30,7 +30,7 @@ from ifcopenshell.util.doc import (
     get_attribute_doc,
 )
 import blenderbim.bim
-import blenderbim.tool as tool
+from .. import tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from .prop import Attribute
 from typing import Optional

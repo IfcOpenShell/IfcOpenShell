@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from .data import ContextData
 
 

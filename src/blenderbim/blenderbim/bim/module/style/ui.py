@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from .data import StylesData, BlenderMaterialStyleData

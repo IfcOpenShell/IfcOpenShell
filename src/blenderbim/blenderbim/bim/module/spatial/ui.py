@@ -18,7 +18,7 @@
 
 from bpy.types import Panel, UIList
 from .data import SpatialData, SpatialDecompositionData
-import blenderbim.tool as tool
+from .... import tool
 
 
 class BIM_PT_spatial(Panel):

@@ -19,7 +19,7 @@
 
 import bpy
 import numpy as np
-import blenderbim.tool as tool
+from .... import tool
 import ifcopenshell.util.geolocation
 from mathutils import Matrix
 from ifcopenshell.util.doc import get_entity_doc

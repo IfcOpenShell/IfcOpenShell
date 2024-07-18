@@ -24,7 +24,7 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import blenderbim.core.root
-import blenderbim.tool as tool
+from .... import tool
 from ...helper import convert_property_group_from_si
 from .door import bm_sort_out_geom
 from .data import RoofData, refresh

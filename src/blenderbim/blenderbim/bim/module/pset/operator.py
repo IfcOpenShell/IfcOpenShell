@@ -25,7 +25,7 @@ import ifcopenshell.util.attribute
 import blenderbim.bim.schema
 import blenderbim.bim.helper
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.pset as core
 import blenderbim.bim.module.pset.data
 from ...ifc import IfcStore

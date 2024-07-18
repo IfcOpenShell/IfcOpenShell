@@ -25,7 +25,7 @@ import ifctester
 import ifctester.ids
 import ifctester.reporter
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.handler
 from ...operator import MultipleFileSelector
 from pathlib import Path

@@ -19,7 +19,7 @@
 import bpy
 import json
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():

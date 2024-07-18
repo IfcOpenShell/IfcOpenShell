@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
-import blenderbim.tool as tool
+from .... import tool
 from .data import SpaceBoundariesData
 
 

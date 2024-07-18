@@ -20,7 +20,7 @@ import bpy
 from bpy_extras.io_utils import ImportHelper
 from .ui import draw_productivity_ui
 import blenderbim.core.resource as core
-import blenderbim.tool as tool
+from .... import tool
 
 
 class LoadResources(bpy.types.Operator):

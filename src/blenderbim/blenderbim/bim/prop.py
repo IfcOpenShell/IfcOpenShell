@@ -34,7 +34,7 @@ import blenderbim.bim
 import blenderbim.bim.schema
 import blenderbim.bim.handler
 from .ifc import IfcStore
-import blenderbim.tool as tool
+from .. import tool
 from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (

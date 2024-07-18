@@ -24,8 +24,8 @@ import logging
 import tempfile
 import ifcopenshell
 import ifcopenshell.util.selector
-import blenderbim.tool as tool
-import blenderbim.bim.module.drawing.scheduler as scheduler
+from .... import tool
+from ..drawing import scheduler
 from ...ifc import IfcStore
 from ...handler import refresh_ui_data
 

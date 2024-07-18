@@ -2,7 +2,7 @@ import os
 import re
 import bpy
 import blenderbim.core.ifcgit as core
-import blenderbim.tool as tool
+from .... import tool
 from .data import IfcGitData, refresh
 
 

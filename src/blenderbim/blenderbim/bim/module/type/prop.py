@@ -21,7 +21,7 @@ import ifcopenshell.util.type
 from .data import TypeData
 from ...prop import StrProperty, Attribute
 from ...ifc import IfcStore
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

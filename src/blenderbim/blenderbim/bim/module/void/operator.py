@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.bim.handler

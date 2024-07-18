@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
-import blenderbim.tool as tool
+from .... import tool
 from ..drawing.helper import format_distance
 
 

@@ -23,7 +23,7 @@ import ifcfm
 import logging
 import tempfile
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 from ...operator import MultipleFileSelector
 
 

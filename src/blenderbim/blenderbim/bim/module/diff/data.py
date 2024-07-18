@@ -18,7 +18,7 @@
 
 import bpy
 import json
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():

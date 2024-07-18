@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 from ...prop import StrProperty, Attribute
 from .data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup

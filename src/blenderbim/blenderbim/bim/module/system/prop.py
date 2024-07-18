@@ -18,7 +18,7 @@
 
 import bpy
 from .data import SystemData
-import blenderbim.bim.module.system.decorator as decorator
+from . import decorator
 from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (

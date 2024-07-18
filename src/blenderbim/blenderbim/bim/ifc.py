@@ -29,7 +29,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .. import tool
 from pathlib import Path
 from ..tool.brick import BrickStore
 from typing import Set, Union, Optional, TypedDict, Callable

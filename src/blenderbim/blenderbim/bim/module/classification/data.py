@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.classification
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 
 

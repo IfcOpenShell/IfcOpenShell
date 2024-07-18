@@ -19,7 +19,7 @@
 import os
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.brick as core
 import blenderbim.bim.handler
 from ...ifc import IfcStore

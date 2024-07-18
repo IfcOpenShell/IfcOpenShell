@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector

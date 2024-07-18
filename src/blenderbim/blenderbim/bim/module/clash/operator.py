@@ -23,7 +23,7 @@ import bmesh
 import logging
 import numpy as np
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 from math import radians
 from mathutils import Matrix, Vector
 from ...ifc import IfcStore

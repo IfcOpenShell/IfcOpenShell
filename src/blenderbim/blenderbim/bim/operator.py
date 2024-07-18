@@ -31,7 +31,7 @@ import tempfile
 import webbrowser
 import ifcopenshell
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .. import tool
 from . import schema
 from ..bim import import_ifc
 from .ifc import IfcStore

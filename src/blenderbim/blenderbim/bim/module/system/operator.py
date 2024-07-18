@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
 import blenderbim.bim.helper

@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.spatial as core
 import blenderbim.core.geometry
 import blenderbim.core.aggregate

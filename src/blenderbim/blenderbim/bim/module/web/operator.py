@@ -19,7 +19,7 @@
 import os
 import bpy
 import blenderbim.core.web as core
-import blenderbim.tool as tool
+from .... import tool
 
 
 class ConnectToWebsocketServer(bpy.types.Operator):

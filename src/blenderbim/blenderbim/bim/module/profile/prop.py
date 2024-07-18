@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 from ...prop import StrProperty, Attribute
 from .data import ProfileData

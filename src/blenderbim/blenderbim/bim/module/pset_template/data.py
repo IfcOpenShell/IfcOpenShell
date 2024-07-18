@@ -22,7 +22,7 @@ import pathlib
 import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 
 

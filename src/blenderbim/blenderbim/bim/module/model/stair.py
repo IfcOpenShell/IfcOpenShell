@@ -24,7 +24,7 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import blenderbim.core.root
-import blenderbim.tool as tool
+from .... import tool
 from mathutils import Vector
 from bmesh.types import BMVert
 from bpy.types import Operator

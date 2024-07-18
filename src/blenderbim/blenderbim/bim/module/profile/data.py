@@ -20,7 +20,7 @@ import bpy
 import bpy.utils
 import bpy.utils.previews
 import ifcopenshell.util.doc
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():

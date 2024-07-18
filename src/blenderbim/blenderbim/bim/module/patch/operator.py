@@ -20,7 +20,7 @@ import os
 import bpy
 import json
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.patch as core
 import blenderbim.bim.handler
 from pathlib import Path

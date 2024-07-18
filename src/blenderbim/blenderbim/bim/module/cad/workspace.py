@@ -18,7 +18,7 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool

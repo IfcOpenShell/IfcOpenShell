@@ -38,14 +38,14 @@ import ifcopenshell.util.element
 import blenderbim.bim.schema
 import blenderbim.bim.helper
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.geometry
 import blenderbim.core.drawing as core
-import blenderbim.bim.module.drawing.svgwriter as svgwriter
-import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.sheeter as sheeter
-import blenderbim.bim.module.drawing.scheduler as scheduler
-import blenderbim.bim.module.drawing.helper as helper
+from . import svgwriter
+from . import annotation
+from . import sheeter
+from . import scheduler
+from . import helper
 import blenderbim.bim.export_ifc
 from .decoration import CutDecorator
 from .data import DecoratorData, DrawingsData

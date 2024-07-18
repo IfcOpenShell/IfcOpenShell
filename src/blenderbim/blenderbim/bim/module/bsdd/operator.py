@@ -18,7 +18,7 @@
 
 import bpy
 import bsdd
-import blenderbim.tool as tool
+from .... import tool
 from ....core import bsdd as core
 
 

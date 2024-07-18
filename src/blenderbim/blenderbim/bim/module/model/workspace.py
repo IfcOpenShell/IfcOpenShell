@@ -18,7 +18,7 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.model as core
 from .wall import DumbWallJoiner
 from ...helper import prop_with_search

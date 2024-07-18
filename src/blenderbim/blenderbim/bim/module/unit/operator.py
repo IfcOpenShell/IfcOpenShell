@@ -22,7 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 import blenderbim.bim.helper
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.unit as core
 from ...ifc import IfcStore
 

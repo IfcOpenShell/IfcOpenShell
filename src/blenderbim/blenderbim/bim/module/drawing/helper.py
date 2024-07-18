@@ -19,7 +19,7 @@
 import bpy
 import math
 import mathutils.geometry
-import blenderbim.tool as tool
+from .... import tool
 from mathutils import Vector
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2

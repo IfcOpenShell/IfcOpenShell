@@ -22,7 +22,7 @@ import json
 import ifcopenshell
 import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
-import blenderbim.tool as tool
+from .... import tool
 from math import degrees
 
 

@@ -20,7 +20,7 @@ import bpy
 import numpy as np
 import ifcopenshell
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.misc as core
 import blenderbim.core.geometry as core_geometry
 import blenderbim.core.root

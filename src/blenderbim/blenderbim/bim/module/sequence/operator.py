@@ -23,8 +23,8 @@ import time
 import calendar
 import isodate
 import blenderbim.core.sequence as core
-import blenderbim.tool as tool
-import blenderbim.bim.module.sequence.helper as helper
+from .... import tool
+from . import helper
 import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime

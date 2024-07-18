@@ -26,7 +26,7 @@ import ifcopenshell.util.element
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 from mathutils import geometry
 from mathutils import Vector
-import blenderbim.tool as tool
+from .. import tool
 from .ifc import IfcStore
 from typing import Optional, Callable, Any, Union
 

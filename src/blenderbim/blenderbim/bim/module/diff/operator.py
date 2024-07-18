@@ -21,7 +21,7 @@ import json
 import logging
 import ifcopenshell
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 
 

@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.schema
 
 

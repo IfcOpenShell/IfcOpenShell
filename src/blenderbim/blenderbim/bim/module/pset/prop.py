@@ -22,7 +22,7 @@ import ifcopenshell
 import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 from ...prop import Attribute, StrProperty
 from .data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
 from ...ifc import IfcStore

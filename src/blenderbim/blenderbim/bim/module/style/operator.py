@@ -20,7 +20,7 @@ import os
 import bpy
 import blenderbim.bim.helper
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.style as core
 import ifcopenshell.api
 import ifcopenshell.api.style

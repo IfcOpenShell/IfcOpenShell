@@ -21,7 +21,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():

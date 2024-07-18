@@ -20,7 +20,7 @@ import bpy
 import pytz
 import tzfpy
 import datetime
-import blenderbim.tool as tool
+from .... import tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
 from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty, BoolProperty

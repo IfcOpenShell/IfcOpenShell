@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, UIList
 from .data import ProfileData
 from .prop import generate_thumbnail_for_active_profile

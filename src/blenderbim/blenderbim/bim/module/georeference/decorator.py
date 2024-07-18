@@ -20,7 +20,7 @@ import blf
 import gpu
 import bmesh
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 from math import radians
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix

@@ -28,7 +28,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.aggregate
 import blenderbim.core.type
 import blenderbim.core.geometry

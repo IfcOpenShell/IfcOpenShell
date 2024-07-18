@@ -21,10 +21,10 @@ import bpy
 import json
 import enum
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.drawing as core
-import blenderbim.bim.module.drawing.annotation as annotation
-import blenderbim.bim.module.drawing.decoration as decoration
+from . import annotation
+from . import decoration
 from ...prop import BIMFilterGroup
 from .data import DrawingsData, DecoratorData, SheetsData, AnnotationData
 from .data import refresh as refresh_drawing_data

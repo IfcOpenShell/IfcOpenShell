@@ -22,9 +22,9 @@ import json
 import time
 import ifcopenshell.api
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from bpy_extras.io_utils import ImportHelper
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.cost as core
 
 

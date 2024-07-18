@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 from ifcopenshell.util.doc import get_entity_doc
 from typing import Union
 

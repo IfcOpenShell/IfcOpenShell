@@ -18,7 +18,7 @@
 
 from math import radians
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 from ...prop import StrProperty, Attribute
 from .data import StructuralLoadCasesData, StructuralLoadsData, BoundaryConditionsData

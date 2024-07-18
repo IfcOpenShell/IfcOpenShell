@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
-import blenderbim.tool as tool
+from .... import tool
 from .data import IfcClassData
 from bpy.types import PropertyGroup
 from bpy.props import (

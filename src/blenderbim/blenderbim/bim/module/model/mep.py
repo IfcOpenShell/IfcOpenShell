@@ -34,7 +34,7 @@ import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
-import blenderbim.tool as tool
+from .... import tool
 from math import pi, degrees, radians, sin, cos, asin, tan
 from copy import copy
 from mathutils import Vector, Matrix

@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():

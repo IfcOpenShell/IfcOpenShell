@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.module.drawing.decoration as decoration
-import blenderbim.tool as tool
+from . import decoration
+from .... import tool
 from bpy.app.handlers import persistent
 
 

@@ -31,8 +31,8 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
-import blenderbim.bim.import_ifc as import_ifc
+from .... import tool
+from ... import import_ifc
 from math import pi, inf, degrees, acos, radians
 from mathutils import Vector, Matrix
 from ...ifc import IfcStore

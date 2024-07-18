@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.util.element
-import blenderbim.tool as tool
+from .... import tool
 import ifcopenshell.util.placement
 from mathutils import Vector
 

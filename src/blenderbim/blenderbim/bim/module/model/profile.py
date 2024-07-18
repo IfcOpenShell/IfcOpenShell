@@ -28,7 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import blenderbim.bim.handler
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.material

@@ -19,7 +19,7 @@
 
 import os
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 from ...helper import prop_with_search
 from bpy.types import WorkSpaceTool
 from ...ifc import IfcStore

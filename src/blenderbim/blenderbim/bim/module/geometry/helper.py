@@ -21,7 +21,7 @@ import bmesh
 import mathutils
 import ifcopenshell
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+from .... import tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
 from typing import Union

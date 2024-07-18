@@ -24,7 +24,7 @@ import ntpath
 import pystache
 import urllib.parse
 import xml.etree.ElementTree as ET
-import blenderbim.tool as tool
+from .... import tool
 import ifcopenshell.util.geolocation
 from xml.dom import minidom
 from mathutils import Vector

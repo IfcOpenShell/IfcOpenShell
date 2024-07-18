@@ -31,10 +31,10 @@ import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.debug as core
 import blenderbim.bim.handler
-import blenderbim.bim.import_ifc as import_ifc
+from ... import import_ifc
 from pathlib import Path
 from ...ifc import IfcStore
 

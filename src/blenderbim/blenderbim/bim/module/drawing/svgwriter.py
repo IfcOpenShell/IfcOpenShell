@@ -29,9 +29,9 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.selector
-import blenderbim.tool as tool
-import blenderbim.bim.module.drawing.helper as helper
-import blenderbim.bim.module.drawing.annotation as annotation
+from .... import tool
+from . import helper
+from . import annotation
 from .data import DrawingsData
 
 from .data import DecoratorData

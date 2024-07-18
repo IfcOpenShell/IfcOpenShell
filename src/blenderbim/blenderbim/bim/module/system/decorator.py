@@ -19,7 +19,7 @@
 import bpy
 import gpu
 import bmesh
-import blenderbim.tool as tool
+from .... import tool
 from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix

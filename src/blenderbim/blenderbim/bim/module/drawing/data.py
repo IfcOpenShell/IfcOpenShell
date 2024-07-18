@@ -21,7 +21,7 @@ import bpy
 import json
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.tool as tool
+from .... import tool
 from pathlib import Path
 from typing import Any, Union
 

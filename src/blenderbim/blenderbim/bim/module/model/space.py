@@ -18,7 +18,7 @@
 
 
 import bpy
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.spatial as core
 
 

@@ -20,7 +20,7 @@
 import os
 import bpy
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 from ...helper import prop_with_search
 from ..model.data import AuthoringData
 from bpy.types import WorkSpaceTool

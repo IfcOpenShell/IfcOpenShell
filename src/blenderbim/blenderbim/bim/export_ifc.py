@@ -29,7 +29,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
-import blenderbim.tool as tool
+from .. import tool
 import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.spatial

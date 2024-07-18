@@ -20,7 +20,7 @@ from bpy.types import Panel
 from ...ifc import IfcStore
 from .data import DiffData
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 
 
 class BIM_PT_diff(Panel):

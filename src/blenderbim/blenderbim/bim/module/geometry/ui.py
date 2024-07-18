@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.bim
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, Menu, UIList
 from ...ifc import IfcStore
 from ...helper import prop_with_search

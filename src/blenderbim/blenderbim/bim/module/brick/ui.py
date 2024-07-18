@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, UIList
 from ...helper import prop_with_search
 from .data import BrickschemaData, BrickschemaReferencesData

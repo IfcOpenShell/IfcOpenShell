@@ -39,7 +39,7 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import blenderbim.bim.handler
 import blenderbim.bim.schema
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.project as core
 import blenderbim.core.context
 import blenderbim.core.owner

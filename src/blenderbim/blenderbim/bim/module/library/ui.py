@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from bpy.types import Panel, UIList
 from .data import LibrariesData, LibraryReferencesData
 

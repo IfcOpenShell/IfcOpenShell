@@ -24,7 +24,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.geometry
 import blenderbim.core.type as core
 import blenderbim.core.root

@@ -19,7 +19,7 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.core.covering as core
 
 

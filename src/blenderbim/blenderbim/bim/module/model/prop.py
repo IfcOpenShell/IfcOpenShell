@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.tool as tool
+from .... import tool
 import math
 from ...prop import ObjProperty
 from .data import AuthoringData

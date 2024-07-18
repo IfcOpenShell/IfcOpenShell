@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.api
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.module.model.profile as model_profile
 import blenderbim.core.profile as core
 from ..model.decorator import ProfileDecorator

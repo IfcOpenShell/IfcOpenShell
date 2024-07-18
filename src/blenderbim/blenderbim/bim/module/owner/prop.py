@@ -18,7 +18,7 @@
 
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
-import blenderbim.tool as tool
+from .... import tool
 from ...prop import StrProperty, Attribute
 from .data import OwnerData, ActorData, ObjectActorData
 from bpy.types import PropertyGroup

@@ -30,7 +30,7 @@ import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.root
-import blenderbim.tool as tool
+from .... import tool
 from mathutils import Vector, Matrix
 from ..geometry.helper import Helper
 from .decorator import ProfileDecorator

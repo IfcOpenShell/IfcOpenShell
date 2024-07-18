@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.api
 import ifcopenshell.util.resource
 from ...ifc import IfcStore
-import blenderbim.tool as tool
+from .... import tool
 import blenderbim.bim.module.pset.data
 import blenderbim.bim.module.resource.data
 import blenderbim.bim.module.sequence.data

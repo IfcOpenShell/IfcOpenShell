@@ -21,7 +21,7 @@ import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 import blenderbim.bim.helper
-import blenderbim.tool as tool
+from .... import tool
 from ...ifc import IfcStore
 
 

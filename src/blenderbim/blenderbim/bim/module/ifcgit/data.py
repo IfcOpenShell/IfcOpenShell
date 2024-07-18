@@ -3,7 +3,7 @@ import os
 import shutil
 
 # import tool
-import blenderbim.tool as tool
+from .... import tool
 
 
 def refresh():
