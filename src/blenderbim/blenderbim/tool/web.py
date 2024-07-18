@@ -84,7 +84,10 @@ class Web(blenderbim.core.tool.Web):
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path, env=env
         )
-        cls.open_web_browser(port)
+        # moved intial opening of web browser to server on startup event
+        # to handle race condition between starting server and openning browser
+        # TODO: a better way to handle race condition
+        # cls.open_web_browser(port)
         cls.set_is_running(True)
 
     @classmethod
