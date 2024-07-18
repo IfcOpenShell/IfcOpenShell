@@ -3,7 +3,7 @@ name: ci-blenderbim-daily
 on:
   push:
     paths:
-      - '.github/workflows/ci-blenderbim-matrix.yml'
+      - '.github/workflows/ci-blenderbim-daily.yml'
       - 'src/blenderbim/**'
       - 'src/ifcopenshell-python/ifcopenshell/**'
       - 'src/bcf/src/bcf/**'
