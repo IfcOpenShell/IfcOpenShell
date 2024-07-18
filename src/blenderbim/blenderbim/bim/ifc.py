@@ -24,10 +24,10 @@ import hashlib
 import zipfile
 import tempfile
 import traceback
+import importlib
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
-import blenderbim
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
@@ -35,6 +35,7 @@ from blenderbim.tool.brick import BrickStore
 from typing import Set, Union, Optional, TypedDict, Callable
 
 
+bbim = importlib.import_module("..", package=__package__)
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
 
 
@@ -364,7 +365,7 @@ class IfcStore:
 
     @staticmethod
     def execute_ifc_operator(operator: bpy.types.Operator, context: bpy.types.Context, is_invoke=False):
-        blenderbim.last_actions.append({"type": "operator", "name": operator.bl_idname})
+        bbim.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
 
@@ -385,7 +386,7 @@ class IfcStore:
             else:
                 result = getattr(operator, "_execute")(context)
         except:
-            blenderbim.last_error = traceback.format_exc()
+            bbim.last_error = traceback.format_exc()
             raise
 
         if is_top_level_operator:

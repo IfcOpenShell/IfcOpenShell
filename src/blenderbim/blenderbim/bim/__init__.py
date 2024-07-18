@@ -25,7 +25,7 @@ from . import handler, ui, prop, operator, helper
 from typing import Callable, Union
 
 try:
-    from blenderbim.translations import translations_dict
+    from .translations import translations_dict
 except ImportError:
     translations_dict = {}
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -91,7 +91,7 @@ modules = {
 
 
 for name in modules.keys():
-    modules[name] = importlib.import_module(f"blenderbim.bim.module.{name}")
+    modules[name] = importlib.import_module(f".module.{name}", package=__package__)
 
 
 classes = [
@@ -289,7 +289,7 @@ def unregister():
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
 
-    import blenderbim.tool as tool
+    from . import tool
 
     # use tuple() as method will be removing keys from dict
     for panel in tuple(original_scene_panels_polls.keys()):

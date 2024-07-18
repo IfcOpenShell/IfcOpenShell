@@ -25,6 +25,7 @@ import logging
 import textwrap
 import shutil
 import platform
+import importlib
 import subprocess
 import tempfile
 import webbrowser
@@ -42,6 +43,9 @@ from math import radians
 from pathlib import Path
 from collections import namedtuple
 from typing import List
+
+
+bbim = importlib.import_module("..", package=__package__)
 
 
 class SetTab(bpy.types.Operator):
@@ -95,7 +99,7 @@ class CloseError(bpy.types.Operator):
     bl_label = "Close Error"
 
     def execute(self, context):
-        blenderbim.last_error = None
+        bbim.last_error = None
         return {"FINISHED"}
 
     def draw(self, context):

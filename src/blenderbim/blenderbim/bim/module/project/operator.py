@@ -22,6 +22,7 @@ import time
 import json
 import logging
 import tempfile
+import importlib
 import traceback
 import subprocess
 import datetime
@@ -56,6 +57,9 @@ from ifcopenshell.geom import ShapeElementType
 from blenderbim.bim.module.project.data import LinksData
 from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
 from typing import Union
+
+
+bbim = importlib.import_module("..", package=__package__)
 
 
 class NewProject(bpy.types.Operator):
@@ -742,7 +746,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
         except:
-            blenderbim.last_error = traceback.format_exc()
+            bbim.last_error = traceback.format_exc()
             raise
         return {"FINISHED"}
 
