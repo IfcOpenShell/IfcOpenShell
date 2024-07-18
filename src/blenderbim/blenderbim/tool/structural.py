@@ -23,7 +23,7 @@ import blenderbim.bim.helper
 import blenderbim.core.tool
 import blenderbim.core.structural
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ..bim.ifc import IfcStore
 from pprint import pprint
 
 

@@ -23,7 +23,7 @@ import blenderbim.core.tool
 import blenderbim.core.root
 import blenderbim.tool as tool
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
+from ..bim.ifc import IfcStore
 
 
 class Misc(blenderbim.core.tool.Misc):

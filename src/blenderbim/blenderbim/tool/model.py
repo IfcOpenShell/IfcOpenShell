@@ -36,10 +36,10 @@ from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
-from blenderbim.bim import import_ifc
-from blenderbim.bim.module.geometry.helper import Helper
-from blenderbim.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from ..bim import import_ifc
+from ..bim.module.geometry.helper import Helper
+from ..bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
+from ..bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import V, ShapeBuilder
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 

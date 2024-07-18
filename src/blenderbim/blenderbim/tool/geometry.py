@@ -40,7 +40,7 @@ import blenderbim.bim.import_ifc
 from collections import defaultdict
 from math import radians, pi
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
+from ..bim.ifc import IfcStore
 from typing import Union, Iterable, Optional, Literal
 from typing import Iterator
 

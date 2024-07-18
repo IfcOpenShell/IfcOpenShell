@@ -4,7 +4,7 @@ import lark
 import blenderbim.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
-from blenderbim.bim.prop import BIMFacet
+from ..bim.prop import BIMFacet
 from typing import Union, Literal
 
 

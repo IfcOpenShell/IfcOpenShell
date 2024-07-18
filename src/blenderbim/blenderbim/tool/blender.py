@@ -30,7 +30,7 @@ import addon_utils
 import types
 from mathutils import Vector
 from pathlib import Path
-from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
+from ..bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable
 
 

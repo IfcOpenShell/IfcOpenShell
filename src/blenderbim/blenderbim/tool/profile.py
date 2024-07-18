@@ -25,7 +25,7 @@ import ifcopenshell.util.representation
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import PIL.ImageDraw
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from ..bim.module.model.decorator import ProfileDecorator
 from typing import Union
 
 

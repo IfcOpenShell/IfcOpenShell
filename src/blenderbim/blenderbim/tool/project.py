@@ -29,7 +29,7 @@ import blenderbim.core.unit
 import blenderbim.core.owner
 import blenderbim.bim.schema
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ..bim.ifc import IfcStore
 from pathlib import Path
 from typing import Optional
 

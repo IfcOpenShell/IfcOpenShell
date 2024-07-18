@@ -25,7 +25,7 @@ import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
+from ..bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from typing import Optional, Union, Any, final
 
 

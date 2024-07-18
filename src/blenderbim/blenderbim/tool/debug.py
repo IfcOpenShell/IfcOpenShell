@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell.express
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ..bim.ifc import IfcStore
 
 
 class Debug(blenderbim.core.tool.Debug):

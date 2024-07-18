@@ -2,8 +2,8 @@ import os
 import re
 import bpy
 import logging
-from blenderbim.bim import import_ifc
-from blenderbim.bim.ifc import IfcStore
+from ..bim import import_ifc
+from ..bim.ifc import IfcStore
 import blenderbim.tool as tool
 
 # allows git import even if git executable isn't found

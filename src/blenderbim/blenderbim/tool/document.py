@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.util.system
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.bim import import_ifc
+from ..bim import import_ifc
 
 
 class Document(blenderbim.core.tool.Document):

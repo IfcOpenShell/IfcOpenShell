@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.web.data import WebData
+from ..bim.module.web.data import WebData
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.api.sequence

@@ -24,12 +24,12 @@ import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.core.tool
 import blenderbim.tool as tool
-from blenderbim.bim import import_ifc
+from ..bim import import_ifc
 import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
-from blenderbim.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from blenderbim.bim.module.drawing.decoration import profile_consequential
+from ..bim.module.system.data import ObjectSystemData, SystemDecorationData
+from ..bim.module.drawing.decoration import profile_consequential
 from enum import Enum
 
 
