@@ -40,22 +40,22 @@ jobs:
           - {
             name: "Windows Build",
             short_name: win,
-            blender_platform: windows-x64,
+            blender_platform: windows-x64
           }
           - {
             name: "Linux Build",
-            short_name: linux
-            blender_platform: linux-x64,
+            short_name: linux,
+            blender_platform: linux-x64
           }
           - {
             name: "MacOS Build",
-            short_name: macos
-            blender_platform: macos-x64,
+            short_name: macos,
+            blender_platform: macos-x64
           }
           - {
             name: "MacOS ARM Build",
-            short_name: macosm1
-            blender_platform: macos-arm64,
+            short_name: macosm1,
+            blender_platform: macos-arm64
           }
     steps:
       - uses: actions/checkout@v2
