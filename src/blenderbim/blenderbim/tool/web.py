@@ -25,6 +25,7 @@ from typing import Any, Dict, Optional
 import socket
 import sys
 import os
+import errno
 import subprocess
 import webbrowser
 import asyncio
@@ -59,11 +60,11 @@ class Web(blenderbim.core.tool.Web):
     @classmethod
     def is_port_available(cls, port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            # connect_ex returns 0 if the connection succeeds
+            # connect_ex returns errno.SUCCESS (0) if the connection succeeds
             # indicating the port is in use
-            # otherwise returns 10061 if no server is listening
+            # otherwise returns errno.ECONNREFUSED (111 or 10061) if no server is listening
             # indicating the port is available for use
-            return s.connect_ex(("localhost", port)) == 10061
+            return s.connect_ex(("localhost", port)) == errno.ECONNREFUSED
 
     @classmethod
     def start_websocket_server(cls, port):
