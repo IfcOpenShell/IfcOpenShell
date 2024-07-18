@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import json
 import os
+import importlib
 import ifcopenshell.api
 import ifcopenshell.util.element
 from ..core import tool as core_tool
@@ -33,6 +34,8 @@ from pathlib import Path
 from ..bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable
 
+
+bbim = importlib.import_module("..", package=__package__)
 
 VIEWPORT_ATTRIBUTES = [
     "view_matrix",
@@ -947,11 +950,11 @@ class Blender(core_tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import bim.module.model.workspace as ws_model
-        import bim.module.drawing.workspace as ws_drawing
-        import bim.module.spatial.workspace as ws_spatial
-        import bim.module.structural.workspace as ws_structural
-        import bim.module.covering.workspace as ws_covering
+        from ..bim.module.model import workspace as ws_model
+        from ..bim.module.drawing import workspace as ws_drawing
+        from ..bim.module.spatial import workspace as ws_spatial
+        from ..bim.module.structural import workspace as ws_structural
+        from ..bim.module.covering import workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1110,7 +1113,7 @@ class Blender(core_tool.Blender):
     @classmethod
     def get_blender_addon_package_name(cls) -> str:
         if bpy.app.version >= (4, 2, 0):
-            return blenderbim.BLENDER_PACKAGE_NAME
+            return bbim.BLENDER_PACKAGE_NAME
         return "blenderbim"
 
     @classmethod

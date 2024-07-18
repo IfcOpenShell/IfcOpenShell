@@ -31,7 +31,7 @@ from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     # Avoid circular imports.
-    from blenderbim.bim.module.material.prop import Material as MaterialItem
+    from ..bim.module.material.prop import Material as MaterialItem
 
 
 class Material(core_tool.Material):

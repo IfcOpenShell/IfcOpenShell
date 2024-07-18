@@ -31,7 +31,6 @@ import ifcopenshell.util.representation
 from ..core import geometry as core_geometry
 from ..core import tool as core_tool
 from .. import tool
-from ..core. import geometry
 from math import atan, degrees
 from mathutils import Matrix, Vector
 from copy import deepcopy
@@ -762,7 +761,7 @@ class Model(core_tool.Model):
             ifcopenshell.api.run(
                 "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
             )
-        geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

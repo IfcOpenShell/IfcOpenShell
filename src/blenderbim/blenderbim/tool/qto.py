@@ -127,8 +127,6 @@ class Qto(core_tool.Qto):
         Example:
 
         .. code::Python
-        import blenderbim.tool as tool
-
         relating_cost_items = tool.Qto.relating_cost_items(my_beautiful_wall)
         for relating_cost_item in relating_cost_items:
             print(f"RELATING COST ITEM NAME: {relating_cost_item["cost_item_name"]}")

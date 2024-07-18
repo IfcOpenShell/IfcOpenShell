@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from ..bim import handler as bim_handler
 from ..core import aggregate as core_aggregate
 from ..core import context as core_context
 from ..core import tool as core_tool
@@ -122,7 +123,7 @@ class Project(core_tool.Project):
 
     @classmethod
     def set_context(cls, context):
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         bpy.context.scene.BIMRootProperties.contexts = str(context.id())
 
     @classmethod

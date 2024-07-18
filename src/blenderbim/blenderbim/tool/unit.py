@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell
+from ..bim import helper as bim_helper
 from ..core import tool as core_tool
 from .. import tool
 
@@ -47,7 +48,7 @@ class Unit(core_tool.Unit):
                 return True
 
         props = bpy.context.scene.BIMUnitProperties
-        return blenderbim.bim.helper.export_attributes(props.unit_attributes, callback=callback)
+        return bim_helper.export_attributes(props.unit_attributes, callback=callback)
 
     @classmethod
     def get_scene_unit_name(cls, unit_type):
@@ -95,7 +96,7 @@ class Unit(core_tool.Unit):
 
         props = bpy.context.scene.BIMUnitProperties
         props.unit_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
+        bim_helper.import_attributes2(unit, props.unit_attributes, callback=callback)
 
     @classmethod
     def import_units(cls):

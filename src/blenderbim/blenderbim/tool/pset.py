@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
+from ..bim import helper as bim_helper
 from ..core import tool as core_tool
 from .. import tool
 from ..bim import schema as bim_schema
@@ -204,7 +205,7 @@ class Pset(core_tool.Pset):
             metadata.bool_value = False if metadata.is_null else bool(data[prop_template.Name])
 
         metadata.ifc_class = pset_template.Name
-        blenderbim.bim.helper.add_attribute_description(metadata, prop_template)
+        bim_helper.add_attribute_description(metadata, prop_template)
 
     @classmethod
     def import_pset_from_template(cls, pset_template, pset, props):

@@ -133,7 +133,7 @@ class Ifc(core_tool.Ifc):
             if global_id:
                 IfcStore.guid_map[global_id] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", bim_handler.name_callback)
+            bim_handler.subscribe_to(obj, "name", bim_handler.name_callback)
             bim_handler.subscribe_to(
                 obj, "active_material_index", bim_handler.active_material_index_callback
             )
@@ -151,7 +151,7 @@ class Ifc(core_tool.Ifc):
             if style:
                 IfcStore.id_map[style.id()] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", bim_handler.name_callback)
+            bim_handler.subscribe_to(obj, "name", bim_handler.name_callback)
 
     @classmethod
     def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:

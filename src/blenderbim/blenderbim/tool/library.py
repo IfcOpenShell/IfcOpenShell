@@ -17,6 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+from ..bim import helper as bim_helper
 from ..core import tool as core_tool
 from .. import tool
 
@@ -29,12 +30,12 @@ class Library(core_tool.Library):
     @classmethod
     def export_library_attributes(cls):
         props = bpy.context.scene.BIMLibraryProperties
-        return blenderbim.bim.helper.export_attributes(props.library_attributes)
+        return bim_helper.export_attributes(props.library_attributes)
 
     @classmethod
     def export_reference_attributes(cls):
         props = bpy.context.scene.BIMLibraryProperties
-        return blenderbim.bim.helper.export_attributes(props.reference_attributes)
+        return bim_helper.export_attributes(props.reference_attributes)
 
     @classmethod
     def get_active_library(cls):
@@ -48,13 +49,13 @@ class Library(core_tool.Library):
     def import_library_attributes(cls, library):
         props = bpy.context.scene.BIMLibraryProperties
         props.library_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(library, props.library_attributes)
+        bim_helper.import_attributes2(library, props.library_attributes)
 
     @classmethod
     def import_reference_attributes(cls, reference):
         props = bpy.context.scene.BIMLibraryProperties
         props.reference_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(reference, props.reference_attributes)
+        bim_helper.import_attributes2(reference, props.reference_attributes)
 
     @classmethod
     def import_references(cls, library):

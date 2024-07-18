@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.system
+from ..bim import helper as bim_helper
 from ..core import tool as core_tool
 from .. import tool
 from ..bim import import_ifc
@@ -54,7 +55,7 @@ class Document(core_tool.Document):
 
     @classmethod
     def export_document_attributes(cls):
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
 
     @classmethod
     def get_active_breadcrumb(cls):
@@ -66,7 +67,7 @@ class Document(core_tool.Document):
     def import_document_attributes(cls, document):
         props = bpy.context.scene.BIMDocumentProperties
         props.document_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(document, props.document_attributes)
+        bim_helper.import_attributes2(document, props.document_attributes)
 
     @classmethod
     def import_project_documents(cls):

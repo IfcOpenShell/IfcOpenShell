@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
+from ..core import brick as core_brick
 from ..core import tool as core_tool
 from .. import tool
 from contextlib import contextmanager
@@ -395,17 +396,17 @@ class Brick(core_tool.Brick):
 
     @classmethod
     def run_assign_brick_reference(cls, element=None, library=None, brick_uri=None):
-        return blenderbim.core.brick.assign_brick_reference(
+        return core_brick.assign_brick_reference(
             tool.Ifc, tool.Brick, element=element, library=library, brick_uri=brick_uri
         )
 
     @classmethod
     def run_refresh_brick_viewer(cls):
-        return blenderbim.core.brick.refresh_brick_viewer(tool.Brick)
+        return core_brick.refresh_brick_viewer(tool.Brick)
 
     @classmethod
     def run_view_brick_class(cls, brick_class=None, split_screen=False):
-        return blenderbim.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
+        return core_brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
 
     @classmethod
     def select_browser_item(cls, item, split_screen=False):

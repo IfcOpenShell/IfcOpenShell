@@ -33,7 +33,7 @@ from ..core import tool as core_tool
 from .. import core as core
 from .. import tool
 from ..bim import helper as bim_helper
-from ..bim.module.sequence. import helper
+from ..bim.module.sequence import helper
 from dateutil import parser
 from datetime import datetime
 from typing import Optional, Any, Union

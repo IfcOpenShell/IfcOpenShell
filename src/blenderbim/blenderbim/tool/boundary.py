@@ -27,7 +27,7 @@ from typing import Any, Sequence
 class Boundary(core_tool.Boundary):
     @classmethod
     def get_assign_connection_geometry_settings(cls, obj: bpy.types.Object) -> dict[str, Any]:
-        from blenderbim.bim.module.geometry.helper import Helper
+        from ..bim.module.geometry.helper import Helper
 
         ifc = tool.Ifc.get()
         helper = Helper(ifc)

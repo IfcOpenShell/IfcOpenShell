@@ -31,6 +31,7 @@ import platform
 import mathutils
 import subprocess
 import numpy as np
+from ..bim import helper as bim_helper
 from ..core import tool as core_tool
 from ..core import geometry as core_geometry
 from .. import tool
@@ -95,7 +96,7 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
-        import blenderbim.bim.module.drawing.annotation as annotation
+        from ..bim.module.drawing import annotation
 
         data_type = cls.get_annotation_data_type(object_type)
         obj = annotation.Annotator.get_annotation_obj(drawing, object_type, data_type)
@@ -258,7 +259,7 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def create_svg_schedule(cls, schedule):
-        import blenderbim.bim.module.drawing.scheduler as scheduler
+        from ..bim.module.drawing import scheduler
 
         schedule_creator = scheduler.Scheduler()
         schedule_creator.schedule(
@@ -267,7 +268,7 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def create_svg_sheet(cls, document: ifcopenshell.entity_instance, titleblock: str) -> str:
-        import blenderbim.bim.module.drawing.sheeter as sheeter
+        from ..bim.module.drawing import sheeter
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
@@ -277,7 +278,7 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def add_drawings(cls, sheet):
-        import blenderbim.bim.module.drawing.sheeter as sheeter
+        from ..bim.module.drawing import sheeter
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
@@ -390,7 +391,7 @@ class Drawing(core_tool.Drawing):
     def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
         for literal_props in obj.BIMTextProperties.literals:
-            literal_data = blenderbim.bim.helper.export_attributes(literal_props.attributes)
+            literal_data = bim_helper.export_attributes(literal_props.attributes)
             literals.append(literal_data)
         return literals
 
@@ -734,7 +735,7 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def import_camera_props(cls, drawing: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
-        from blenderbim.bim.module.drawing.prop import get_diagram_scales
+        from ..bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
         ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
@@ -874,14 +875,14 @@ class Drawing(core_tool.Drawing):
 
     @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
-        from blenderbim.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
+        from ..bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
         props = obj.BIMTextProperties
         props.literals.clear()
 
         for ifc_literal in cls.get_text_literal(obj, return_list=True):
             literal_props = props.literals.add()
-            blenderbim.bim.helper.import_attributes2(ifc_literal, literal_props.attributes)
+            bim_helper.import_attributes2(ifc_literal, literal_props.attributes)
 
             box_alignment_mask = [False] * 9
             position_string = literal_props.attributes["BoxAlignment"].string_value
@@ -889,7 +890,7 @@ class Drawing(core_tool.Drawing):
             literal_props.box_alignment = box_alignment_mask
             literal_props.ifc_definition_id = ifc_literal.id()
 
-        from blenderbim.bim.module.drawing.data import DecoratorData
+        from ..bim.module.drawing.data import DecoratorData
 
         text_data = DecoratorData.get_ifc_text_data(obj)
         props.font_size = str(text_data["FontSize"])
@@ -979,7 +980,7 @@ class Drawing(core_tool.Drawing):
         """updates pset `EPset_Annotation.Classes` value
         based on current font size from `obj.BIMTextProperties.font_size`
         """
-        from blenderbim.bim.module.drawing.data import FONT_SIZES
+        from ..bim.module.drawing.data import FONT_SIZES
 
         props = obj.BIMTextProperties
         element = tool.Ifc.get_entity(obj)
@@ -1185,7 +1186,7 @@ class Drawing(core_tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        from ..bim.module.drawing import helper
 
         camera = tool.Ifc.get_object(drawing)
         bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
@@ -1252,7 +1253,7 @@ class Drawing(core_tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        from ..bim.module.drawing import helper
 
         reference_obj = tool.Ifc.get_object(reference_element)
         reference_obj.matrix_world
@@ -1376,7 +1377,7 @@ class Drawing(core_tool.Drawing):
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
     ) -> ifcopenshell.entity_instance:
-        import blenderbim.bim.module.drawing.helper as helper
+        from ..bim.module.drawing import helper
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 

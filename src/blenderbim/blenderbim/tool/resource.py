@@ -22,7 +22,7 @@ import bpy
 from ..core import tool as core_tool
 from .. import tool
 from ..bim import helper as bim_helper
-from ..bim.module.sequence. import helper
+from ..bim.module.sequence import helper
 import json
 import time
 import isodate
