@@ -116,6 +116,7 @@ endif
 
 	# To scope any build-time dependencies
 	cd dist/working && $(PYTHON) -m venv env
+	cd dist/working && . env/bin/activate && $(PIP) install build
 	cd dist/working && . env/bin/activate && $(PIP) install wheel
 
 	# Provides IfcOpenShell Python functionality
