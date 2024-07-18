@@ -16,14 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcBIMTester.  If not, see <http://www.gnu.org/licenses/>.
 
-PYTHON:=python3.11
-PIP:=pip3.11
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-PYTHON:=python3
-SED:=sed -i '' -e
-endif
-VERSION:=$(shell cat ../../VERSION)
+PACKAGE_NAME:=bimtester
+include ../common.mk
 
 .PHONY: license
 license:
@@ -35,17 +29,17 @@ qa:
 
 .PHONY: dist
 dist:
-	rm -rf dist
-	cp pyproject.toml pyproject.toml.bak
-	cp bimtester/__init__.py __init__.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' bimtester/__init__.py
-	mkdir -p dist/working
-	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && . env/bin/activate && $(PIP) install pybabel
-	cd dist/working && . env/bin/activate && $(PIP) install babel
-	cd dist/working/ && . env/bin/activate && ./env/bin/pybabel compile -d ../../bimtester/locale/
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv __init__.py.bak bimtester/__init__.py
-	rm -rf dist/working
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r $(PACKAGE_NAME) build/
+	cp pyproject.toml build/
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/$(PACKAGE_NAME)/__init__.py
+	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
+	cd build && . env/bin/activate && $(PIP) install pybabel
+	cd build && . env/bin/activate && $(PIP) install babel
+	cd build && . env/bin/activate && ./env/bin/pybabel compile -d ./bimtester/locale/
+	cd build && . env/bin/activate && $(PYTHON) -m build
+	cp build/dist/*.whl dist/
+	rm -rf build
