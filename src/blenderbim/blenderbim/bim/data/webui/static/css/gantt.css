@@ -59,6 +59,13 @@ nav ul li a.active {
     color: #3fb449;
 }
 
+.warning {
+    color: #ff4c4c;
+    margin-bottom: 10px;
+    padding: 2px;
+    display: none;
+    /* Initially hidden */
+}
 
 .table-description {
     margin-bottom: 1rem;
