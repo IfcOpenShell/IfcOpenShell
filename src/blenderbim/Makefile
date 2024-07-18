@@ -94,16 +94,6 @@ bump:
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) -b "s/$(OLD)/$(NEW)/" installation.rst
 
-.PHONY: dist-blenderbim
-dist-blenderbim:
-	cp pyproject.toml pyproject.toml.bak
-	cp blenderbim/__init__.py __init__.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' blenderbim/__init__.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv __init__.py.bak blenderbim/__init__.py
-
 .PHONY: dist
 dist:
 ifndef PLATFORM
@@ -116,7 +106,7 @@ endif
 
 	# To scope any build-time dependencies
 	cd dist/working && $(PYTHON) -m venv env
-	$(PIP) install build
+	cd dist/working && . env/bin/activate && $(PIP) install build
 	cd dist/working && . env/bin/activate && $(PIP) install wheel
 
 	mkdir wheels
@@ -255,17 +245,24 @@ endif
 	# Remove dependencies also bundled with Blender
 	rm -rf dist/blenderbim/wheels/numpy*
 
+	cp pyproject.toml pyproject.toml.bak
 ifeq ($(IS_STABLE), TRUE)
 	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)/" blender_manifest.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
 else
-	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)-$(VERSION_DATE)/" blender_manifest.toml
+	cd dist/blenderbim && $(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" blender_manifest.toml
 	cd dist/blenderbim && $(SED) "s/8888888/$(LAST_COMMIT_HASH)/" __init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' pyproject.toml
 endif
 
 	cd dist/blenderbim && $(SED) "s/os-arch/$(BLENDER_PLATFORM)/" blender_manifest.toml
 
 	# Provides BlenderBIM Add-on functionality
-	make dist-blenderbim && cp dist/*.whl ./dist/blenderbim/wheels/
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
+	$(PYTHON) -m build
+	cp dist/*.whl ./dist/blenderbim/wheels/
+	mv pyproject.toml.bak pyproject.toml
+
 	$(PYTHON) scripts/get_wheels.py dist/blenderbim/wheels dist/blenderbim/blender_manifest.toml
 	rm -rf dist/blenderbim/bim/
 	rm -rf dist/blenderbim/core/
@@ -274,7 +271,7 @@ endif
 ifeq ($(IS_STABLE), TRUE)
 	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./*
 else
-	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./*
+	cd dist && zip -r blenderbim_$(PYVERSION)-$(VERSION)-alpha$(VERSION_DATE)-$(BLENDER_PLATFORM).zip ./*
 endif
 
 	rm -rf dist/blenderbim
