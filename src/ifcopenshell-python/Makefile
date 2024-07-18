@@ -109,6 +109,9 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
+	cd dist/working && $(PYTHON) -m venv env
+	cd dist/working && . env/bin/activate && $(PIP) install build
+
 	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
 	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
@@ -119,7 +122,7 @@ endif
 	cp pyproject.toml pyproject.toml.bak
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
-	python -m build
+	. dist/working/env/bin/activate && $(PYTHON) -m build
 	mv pyproject.toml.bak pyproject.toml
 	mv ../README.bak README.md
 	cd dist && mv ifcopenshell-$(VERSION)-py3-none-any.whl ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
