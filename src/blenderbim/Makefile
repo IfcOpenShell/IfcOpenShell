@@ -226,8 +226,9 @@ endif
 	cp -r blenderbim/libs/desktop build/blenderbim/libs/
 
 	# Generate translations module for BBIM build
-	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build
-	$(PYTHON) scripts/bbim_translations.py -i "build" -o "build/blenderbim"
+	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build/working
+	$(PYTHON) scripts/bbim_translations.py -i "build/working" -o "build/blenderbim"
+	rm -rf build/working
 
 	# Remove dependencies also bundled with Blender
 	rm -rf build/wheels/numpy*
