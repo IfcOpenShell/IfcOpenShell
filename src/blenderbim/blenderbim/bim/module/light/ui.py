@@ -145,8 +145,8 @@ class BIM_PT_solar(bpy.types.Panel):
         row = col.row(align=True)
         box = row.box()
 
-        local_time = format_time(sun_props.time, sun_props.use_daylight_savings)
-        utc_time = format_time(sun_props.time, sun_props.use_daylight_savings, sun_props.UTC_zone)
+        local_time = sun_position.sun_calc.format_time(sun_props.time, sun_props.use_daylight_savings)
+        utc_time = sun_position.sun_calc.format_time(sun_props.time, sun_props.use_daylight_savings, sun_props.UTC_zone)
 
         row2 = box.row()
         row2.label(text=f"Local Time: {local_time}")
@@ -155,8 +155,8 @@ class BIM_PT_solar(bpy.types.Panel):
 
         box = row.box()
 
-        sunrise = format_hms(sun.sunrise)
-        sunset = format_hms(sun.sunset)
+        sunrise = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunrise)
+        sunset = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunset)
 
         row2 = box.row()
         row2.label(text=f"Sunrise: {sunrise}")
