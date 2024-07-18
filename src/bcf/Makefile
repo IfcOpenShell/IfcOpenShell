@@ -16,11 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with BCF.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=$(shell cat ../../VERSION)
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=bcf
+include ../common.mk
 
 .PHONY: ci
 ci:
@@ -35,17 +32,6 @@ license:
 models:
 	cd src && xsdata generate -p bcf.v2.model --unnest-classes --kw-only --slots -ds Google bcf/v2/xsd
 	cd src && xsdata generate -p bcf.v3.model --unnest-classes --kw-only --slots -ds Google bcf/v3/xsd
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	cp pyproject.toml pyproject.toml.bak
-	cp src/bcf/__init__.py __init__.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' src/bcf/__init__.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv __init__.py.bak src/bcf/__init__.py
 
 # .PHONY
 # api:
