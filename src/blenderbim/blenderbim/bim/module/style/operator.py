@@ -21,7 +21,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.bim.handler
 from .... import tool
-import blenderbim.core.style as core
+from ....core import style as core
 import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation

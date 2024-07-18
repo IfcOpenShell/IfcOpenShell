@@ -18,7 +18,7 @@
 
 import bpy
 from .... import tool
-import blenderbim.core.owner as core
+from ....core import owner as core
 import blenderbim.bim.handler
 from ...ifc import IfcStore
 

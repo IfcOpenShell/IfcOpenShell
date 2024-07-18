@@ -20,7 +20,7 @@
 import bpy
 import ifcopenshell
 from .... import tool
-import blenderbim.core.covering as core
+from ....core import covering as core
 
 
 class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator):

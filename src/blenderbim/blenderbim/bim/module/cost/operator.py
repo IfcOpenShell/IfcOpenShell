@@ -25,7 +25,7 @@ import blenderbim.bim.helper
 from .... import tool
 from bpy_extras.io_utils import ImportHelper
 from .... import tool
-import blenderbim.core.cost as core
+from ....core import cost as core
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):

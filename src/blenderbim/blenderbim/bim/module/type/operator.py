@@ -26,7 +26,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.api
 from .... import tool
 import blenderbim.core.geometry
-import blenderbim.core.type as core
+from ....core import type as core
 import blenderbim.core.root
 from ...ifc import IfcStore
 

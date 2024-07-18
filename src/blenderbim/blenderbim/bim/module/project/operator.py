@@ -40,7 +40,7 @@ import ifcopenshell.util.unit
 import blenderbim.bim.handler
 import blenderbim.bim.schema
 from .... import tool
-import blenderbim.core.project as core
+from ....core import project as core
 import blenderbim.core.context
 import blenderbim.core.owner
 import blenderbim.core.spatial

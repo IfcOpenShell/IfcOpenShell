@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 from .... import tool
-import blenderbim.core.aggregate as core
+from ....core import aggregate as core
 import blenderbim.core.spatial
 import blenderbim.bim.handler
 from ...ifc import IfcStore

@@ -29,7 +29,7 @@
 
 import bpy
 from .... import tool
-import blenderbim.core.demo as core
+from ....core import demo as core
 import blenderbim.bim.handler
 
 

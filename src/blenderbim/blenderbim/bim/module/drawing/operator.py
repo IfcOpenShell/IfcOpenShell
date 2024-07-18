@@ -40,7 +40,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 from .... import tool
 import blenderbim.core.geometry
-import blenderbim.core.drawing as core
+from ....core import drawing as core
 from . import svgwriter
 from . import annotation
 from . import sheeter

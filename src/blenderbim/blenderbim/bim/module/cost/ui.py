@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.bim.helper
-import blenderbim.bim.module.cost.prop as CostProp
+from . import prop as CostProp
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from .data import CostSchedulesData

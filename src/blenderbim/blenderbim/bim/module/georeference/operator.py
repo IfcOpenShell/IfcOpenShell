@@ -19,7 +19,7 @@
 import bpy
 
 from .... import tool
-import blenderbim.core.georeference as core
+from ....core import georeference as core
 from .decorator import GeoreferenceDecorator
 
 

@@ -25,7 +25,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.api.owner.settings
 import blenderbim.bim
 from .. import tool
-import blenderbim.core.owner as core_owner
+from ..core import owner as core_owner
 from bpy.app.handlers import persistent
 from .ifc import IfcStore
 from .module.owner.prop import get_user_person, get_user_organisation

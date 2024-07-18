@@ -25,8 +25,8 @@ import ifcopenshell.util.representation
 import blenderbim.bim.helper
 from .... import tool
 import blenderbim.core.style
-import blenderbim.core.material as core
-import blenderbim.bim.module.model.profile as model_profile
+from ....core import material as core
+from ..model import profile as model_profile
 from .prop import purge as material_prop_purge
 from ...ifc import IfcStore
 

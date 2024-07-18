@@ -32,7 +32,7 @@ import blenderbim.bim.handler
 import blenderbim.core.type
 import blenderbim.core.root
 import blenderbim.core.geometry
-import blenderbim.core.model as core
+from ....core import model as core
 from .... import tool
 from ...ifc import IfcStore
 from math import pi, sin, cos, degrees

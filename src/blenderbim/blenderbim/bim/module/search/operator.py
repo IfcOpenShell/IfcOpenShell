@@ -25,7 +25,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.selector
 from .... import tool
 from ...ifc import IfcStore
-import blenderbim.core.search as core
+from ....core import search as core
 from itertools import cycle
 from bpy.types import PropertyGroup, Operator
 from bpy.props import (

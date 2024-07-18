@@ -29,7 +29,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
 import blenderbim.core.geometry
-import blenderbim.core.geometry as core
+from ....core import geometry as core
 import blenderbim.core.aggregate
 import blenderbim.core.style
 import blenderbim.core.root

@@ -20,8 +20,8 @@ import bpy
 import ifcopenshell.api
 import blenderbim.bim.helper
 from .... import tool
-import blenderbim.bim.module.model.profile as model_profile
-import blenderbim.core.profile as core
+from ..model import profile as model_profile
+from ....core import profile as core
 from ..model.decorator import ProfileDecorator
 from .prop import generate_thumbnail_for_active_profile
 from .data import refresh

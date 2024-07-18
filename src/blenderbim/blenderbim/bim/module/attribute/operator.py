@@ -24,7 +24,7 @@ import ifcopenshell.guid
 import blenderbim.bim.helper
 import blenderbim.bim.handler
 from .... import tool
-import blenderbim.core.attribute as core
+from ....core import attribute as core
 from ...ifc import IfcStore
 
 

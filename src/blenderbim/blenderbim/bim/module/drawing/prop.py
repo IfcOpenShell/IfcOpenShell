@@ -22,7 +22,7 @@ import json
 import enum
 import ifcopenshell
 from .... import tool
-import blenderbim.core.drawing as core
+from ....core import drawing as core
 from . import annotation
 from . import decoration
 from ...prop import BIMFilterGroup

@@ -18,7 +18,7 @@
 
 import blenderbim.bim.helper
 from .... import tool
-import blenderbim.bim.module.classification.prop as classification_prop
+from . import prop as classification_prop
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from .data import (

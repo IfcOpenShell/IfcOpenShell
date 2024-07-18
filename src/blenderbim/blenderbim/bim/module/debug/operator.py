@@ -32,7 +32,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 from .... import tool
-import blenderbim.core.debug as core
+from ....core import debug as core
 import blenderbim.bim.handler
 from ... import import_ifc
 from pathlib import Path

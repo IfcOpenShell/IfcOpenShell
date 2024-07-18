@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 from .... import tool
-import blenderbim.core.qto as core
+from ....core import qto as core
 from ...ifc import IfcStore
 from . import helper
 

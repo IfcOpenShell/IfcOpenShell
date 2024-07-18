@@ -28,7 +28,7 @@ import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import V
 from .... import tool
 import blenderbim.core.geometry
-import blenderbim.core.geometry as core
+from ....core import geometry as core
 import blenderbim.core.root
 from .window import create_bm_window, create_bm_box
 

@@ -21,8 +21,8 @@ import numpy as np
 import ifcopenshell
 import blenderbim.bim.handler
 from .... import tool
-import blenderbim.core.misc as core
-import blenderbim.core.geometry as core_geometry
+from ....core import misc as core
+from ....core import geometry as core_geometry
 import blenderbim.core.root
 from ...ifc import IfcStore
 from mathutils import Vector, Matrix, Euler

@@ -19,7 +19,7 @@
 
 import bpy
 from .... import tool
-import blenderbim.core.spatial as core
+from ....core import spatial as core
 
 
 class GenerateSpace(bpy.types.Operator, tool.Ifc.Operator):

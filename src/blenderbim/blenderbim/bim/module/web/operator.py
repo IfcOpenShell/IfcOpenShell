@@ -18,7 +18,7 @@
 
 import os
 import bpy
-import blenderbim.core.web as core
+from ....core import web as core
 from .... import tool
 
 

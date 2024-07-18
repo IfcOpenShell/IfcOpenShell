@@ -20,7 +20,7 @@ import os
 import bpy
 import ifcopenshell.api
 from .... import tool
-import blenderbim.core.brick as core
+from ....core import brick as core
 import blenderbim.bim.handler
 from ...ifc import IfcStore
 from ....tool.brick import BrickStore

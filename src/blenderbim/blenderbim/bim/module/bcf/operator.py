@@ -27,7 +27,7 @@ import tempfile
 import webbrowser
 import ifcopenshell
 import ifcopenshell.util.unit
-import blenderbim.bim.module.bcf.prop as bcf_prop
+from . import prop as bcf_prop
 from . import bcfstore
 from pathlib import Path
 from ...ifc import IfcStore

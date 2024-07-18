@@ -22,7 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_predefined_type_doc
 from .... import tool
-import blenderbim.core.sequence as core
+from ....core import sequence as core
 from ...ifc import IfcStore
 from .data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
 import blenderbim.bim.module.resource.data

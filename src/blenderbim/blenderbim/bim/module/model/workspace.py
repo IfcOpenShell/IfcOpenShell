@@ -19,7 +19,7 @@
 import os
 import bpy
 from .... import tool
-import blenderbim.core.model as core
+from ....core import model as core
 from .wall import DumbWallJoiner
 from ...helper import prop_with_search
 from bpy.types import WorkSpaceTool

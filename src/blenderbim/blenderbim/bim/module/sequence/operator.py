@@ -22,7 +22,7 @@ import json
 import time
 import calendar
 import isodate
-import blenderbim.core.sequence as core
+from ....core import sequence as core
 from .... import tool
 from . import helper
 import ifcopenshell.util.sequence

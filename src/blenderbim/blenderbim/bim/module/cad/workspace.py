@@ -19,7 +19,7 @@
 import os
 import bpy
 from .... import tool
-import blenderbim.bim.module.type.prop as type_prop
+from ..type import prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from ..model.data import AuthoringData, RailingData, RoofData

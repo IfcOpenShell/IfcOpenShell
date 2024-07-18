@@ -23,7 +23,7 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 import blenderbim.bim.helper
 import blenderbim.bim.handler
-import blenderbim.core.structural as core
+from ....core import structural as core
 from .... import tool
 import blenderbim.core.context
 from math import degrees

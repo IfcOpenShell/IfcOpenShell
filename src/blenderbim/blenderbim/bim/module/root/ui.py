@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.module.root.prop as root_prop
+from . import prop as root_prop
 from bpy.types import Panel
 from ...ifc import IfcStore
 from ...helper import prop_with_search

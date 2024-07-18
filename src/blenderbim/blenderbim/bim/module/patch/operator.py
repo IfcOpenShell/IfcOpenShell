@@ -21,7 +21,7 @@ import bpy
 import json
 import ifcopenshell
 from .... import tool
-import blenderbim.core.patch as core
+from ....core import patch as core
 import blenderbim.bim.handler
 from pathlib import Path
 

@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.util.element
 from .... import tool
-import blenderbim.core.spatial as core
+from ....core import spatial as core
 import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.root
