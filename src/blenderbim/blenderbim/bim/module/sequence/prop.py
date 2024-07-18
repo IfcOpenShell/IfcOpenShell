@@ -25,8 +25,8 @@ from .... import tool
 from ....core import sequence as core
 from ...ifc import IfcStore
 from .data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
-import blenderbim.bim.module.resource.data
-import blenderbim.bim.module.pset.data
+from ..resource import data as bim_module_resource_data
+from ..pset import data as bim_module_pset_data
 from ...prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
@@ -92,7 +92,7 @@ def update_active_task_index(self, context):
     task = tool.Sequence.get_highlighted_task()
     self.highlighted_task_id = task.id() if task else 0
     tool.Sequence.update_task_ICOM(task)
-    blenderbim.bim.module.pset.data.refresh()
+    bim_module_pset_data.refresh()
     if self.editing_task_type == "SEQUENCE":
         tool.Sequence.load_task_properties()
 
@@ -342,9 +342,9 @@ def updateAssignedResourceUsage(self, context):
     tool.Sequence.load_task_properties()
     tool.Resource.load_resource_properties()
     tool.Sequence.refresh_task_resources()
-    blenderbim.bim.module.resource.data.refresh()
+    bim_module_resource_data.refresh()
     refresh_sequence_data()
-    blenderbim.bim.module.pset.data.refresh()
+    bim_module_pset_data.refresh()
 
 
 def update_task_bar_list(self, context):

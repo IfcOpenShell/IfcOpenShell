@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
-import blenderbim.bim
+from .... import bim
 from .... import tool
 from ...helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
@@ -49,7 +49,7 @@ class BIM_MT_recent_projects(Menu):
 
         for path in paths:
             op = self.layout.operator(
-                "bim.load_project", text=path.name, icon_value=blenderbim.bim.icons["IFC"].icon_id
+                "bim.load_project", text=path.name, icon_value=bim.icons["IFC"].icon_id
             )
             op.filepath = str(path)
             op.should_start_fresh_session = True
@@ -71,7 +71,7 @@ class BIM_MT_new_project(Menu):
         # Do we need to set it back to exec default?
         # self.layout.operator_context = "EXEC_DEFAULT"
         self.layout.separator()
-        self.layout.label(text="New IFC Project", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+        self.layout.label(text="New IFC Project", icon_value=bim.icons["IFC"].icon_id)
         self.layout.operator("bim.new_project", text="Metric (m) Project").preset = "metric_m"
         self.layout.operator("bim.new_project", text="Metric (mm) Project").preset = "metric_mm"
         self.layout.operator("bim.new_project", text="Imperial (ft) Project").preset = "imperial_ft"

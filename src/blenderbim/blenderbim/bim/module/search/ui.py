@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel
 from .data import SearchData, ColourByPropertyData, SelectSimilarData
 
@@ -36,7 +36,7 @@ class BIM_PT_search(Panel):
 
         props = context.scene.BIMSearchProperties
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
+        bim_helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
         if len(props.filter_groups):
             row = self.layout.row(align=True)

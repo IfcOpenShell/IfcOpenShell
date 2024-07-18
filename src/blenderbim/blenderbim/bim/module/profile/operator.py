@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from ..model import profile as model_profile
 from ....core import profile as core
@@ -85,7 +85,7 @@ class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
+        bim_helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
 
 
@@ -107,7 +107,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMProfileProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.profile_attributes)
+        attributes = bim_helper.export_attributes(props.profile_attributes)
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)

@@ -56,7 +56,7 @@ def get_mode(self, context):
 
 def get_styles(self, context):
     # postponed import to avoid circular import
-    from blenderbim.bim.module.material.data import MaterialsData
+    from ..material.data import MaterialsData
 
     if not MaterialsData.is_loaded:
         MaterialsData.load()
@@ -70,7 +70,7 @@ def get_shape_aspects(self, context):
 
 
 def get_material_constituents(self, context, edit_text):
-    from blenderbim.bim.module.material.data import ObjectMaterialData
+    from ..material.data import ObjectMaterialData
 
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()

@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim
+from .... import bim
 from .... import tool
 from bpy.types import Panel, Menu
 from .data import (
@@ -664,10 +664,10 @@ def add_menu(self, context):
 
 def add_mesh_object_menu(self, context):
     self.layout.separator()
-    self.layout.operator("mesh.add_grid", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_stair", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_clever_stair", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_window", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_door", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_railing", icon_value=blenderbim.bim.icons["IFC"].icon_id)
-    self.layout.operator("mesh.add_roof", icon_value=blenderbim.bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_grid", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_stair", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_clever_stair", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_window", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_door", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_railing", icon_value=bim.icons["IFC"].icon_id)
+    self.layout.operator("mesh.add_roof", icon_value=bim.icons["IFC"].icon_id)

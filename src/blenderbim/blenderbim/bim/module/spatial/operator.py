@@ -20,10 +20,10 @@ import bpy
 import ifcopenshell.util.element
 from .... import tool
 from ....core import spatial as core
-import blenderbim.core.geometry
-import blenderbim.core.aggregate
-import blenderbim.core.root
-import blenderbim.bim.handler
+from ....core import geometry as core_geometry
+from ....core import aggregate as core_aggregate
+from ....core import root as core_root
+from ... import handler as bim_handler
 
 
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
@@ -140,7 +140,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
                 old_to_new[tool.Ifc.get_entity(obj)] = result_objs
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
 
 
 class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):

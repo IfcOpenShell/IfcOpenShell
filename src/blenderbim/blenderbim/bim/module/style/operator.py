@@ -18,8 +18,8 @@
 
 import os
 import bpy
-import blenderbim.bim.helper
-import blenderbim.bim.handler
+from ... import helper as bim_helper
+from ... import handler as bim_handler
 from .... import tool
 from ....core import style as core
 import ifcopenshell.api
@@ -666,7 +666,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         if attributes is not None:
             attributes.clear()
-            blenderbim.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
+            bim_helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
 
         material = tool.Ifc.get_object(style)
         active_style_type = material.BIMStyleProperties.active_style_type
@@ -753,7 +753,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 "style.edit_surface_style",
                 tool.Ifc.get(),
                 style=self.surface_style,
-                attributes=blenderbim.bim.helper.export_attributes(attributes),
+                attributes=bim_helper.export_attributes(attributes),
             )
 
     def add_new_style(self):
@@ -804,7 +804,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class=self.props.is_editing_class,
-                attributes=blenderbim.bim.helper.export_attributes(attributes),
+                attributes=bim_helper.export_attributes(attributes),
             )
 
     def get_shading_attributes(self):

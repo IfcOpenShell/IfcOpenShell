@@ -27,12 +27,12 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from .... import tool
-import blenderbim.core.type
-import blenderbim.core.geometry
-import blenderbim.core.material
-import blenderbim.core.root
+from ....core import type as core_type
+from ....core import geometry as core_geometry
+from ....core import material as core_material
+from ....core import root as core_root
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
 from ..geometry.helper import Helper
@@ -88,7 +88,7 @@ class DumbProfileGenerator:
         if self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -103,7 +103,7 @@ class DumbProfileGenerator:
 
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         if self.axis_context:
             representation = ifcopenshell.api.run(
@@ -127,7 +127,7 @@ class DumbProfileGenerator:
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -452,7 +452,7 @@ class DumbProfileJoiner:
             if old_axis:
                 for inverse in tool.Ifc.get().get_inverse(old_axis):
                     ifcopenshell.util.element.replace_attribute(inverse, old_axis, new_axis)
-                blenderbim.core.geometry.remove_representation(
+                core_geometry.remove_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=old_axis
                 )
             else:
@@ -488,7 +488,7 @@ class DumbProfileJoiner:
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
             obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
             obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
-            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
+            core_geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
@@ -512,8 +512,8 @@ class DumbProfileJoiner:
                 else:
                     coordinates[2] -= change_in_z
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        blenderbim.core.geometry.switch_representation(
+            core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -525,7 +525,7 @@ class DumbProfileJoiner:
         tool.Geometry.record_object_materials(obj)
         if element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting"):
             # lazy import to avoid circular import errors
-            from blenderbim.bim.module.model.mep import MEPGenerator
+            from .mep import MEPGenerator
 
             MEPGenerator().setup_ports(obj)
 
@@ -931,7 +931,7 @@ class PatchNonParametricMepSegment(bpy.types.Operator, tool.Ifc.Operator):
         return context.active_object
 
     def _execute(self, context):
-        blenderbim.core.material.patch_non_parametric_mep_segment(
+        core_material.patch_non_parametric_mep_segment(
             tool.Ifc, tool.Material, tool.Profile, obj=context.active_object
         )
         bpy.ops.bim.enable_editing_extrusion_axis()
@@ -984,7 +984,7 @@ def disable_editing_extrusion_axis(context):
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
-    blenderbim.core.geometry.switch_representation(
+    core_geometry.switch_representation(
         tool.Ifc,
         tool.Geometry,
         obj=obj,
@@ -1048,7 +1048,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         matrix.translation = start
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

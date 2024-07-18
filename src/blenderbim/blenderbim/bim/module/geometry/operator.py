@@ -28,14 +28,14 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.api
-import blenderbim.core.geometry
+from ....core import geometry as core_geometry
 from ....core import geometry as core
-import blenderbim.core.aggregate
-import blenderbim.core.style
-import blenderbim.core.root
-import blenderbim.core.drawing
+from ....core import aggregate as core_aggregate
+from ....core import style as core_style
+from ....core import root as core_root
+from ....core import drawing as core_drawing
 from .... import tool
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from mathutils import Vector, Matrix
 from time import time
 from ...ifc import IfcStore
@@ -89,7 +89,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             if new_obj == obj:
                 continue
             # This is not very efficient, it needlessly copies the representations first.
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            core_root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
             new_objs.append(new_obj)
         for new_obj in new_objs:
             bpy.ops.bim.update_representation(obj=new_obj.name)
@@ -874,7 +874,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
             # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
             if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
             new_obj = obj.copy()
             temp_data = None
@@ -897,7 +897,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
             # clear object's collection so it will be able to have it's own
             new_obj.BIMObjectProperties.collection = None
             # copy the actual class
-            new = blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+            new = core_root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 
             # clean up the orphaned mesh with ifc id of the original object to avoid confusion
             # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
@@ -934,7 +934,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         # Recreate decompositions
         tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
         OverrideDuplicateMove.remove_linked_aggregate_data(old_to_new)
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return old_to_new
 
     @staticmethod
@@ -1200,7 +1200,7 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         if location_from_3d_cursor:
             get_location_from_3d_cursor(old_to_new, selected_element)
 
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
 
         return old_to_new
 
@@ -1430,7 +1430,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                         new_aggregate = ifcopenshell.util.element.get_aggregate(new[0])
 
                         if not new_aggregate:
-                            blenderbim.core.aggregate.assign_object(
+                            core_aggregate.assign_object(
                                 tool.Ifc,
                                 tool.Aggregate,
                                 tool.Collector,
@@ -1442,7 +1442,7 @@ class RefreshLinkedAggregate(bpy.types.Operator):
                     new_obj = tool.Ifc.get_object(new[0])
                     set_original_name(new_obj, original_names)
 
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
 
         operator_time = time() - refresh_start_time
         if operator_time > 10:
@@ -1919,7 +1919,7 @@ def poll_editing_representaiton_item_style(cls, context):
     if shape_aspect == "":
         return True
 
-    from blenderbim.bim.module.material.data import ObjectMaterialData
+    from ..material.data import ObjectMaterialData
 
     if not ObjectMaterialData.is_loaded:
         ObjectMaterialData.load()

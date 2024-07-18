@@ -26,10 +26,10 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import ifcopenshell.util.type
-import blenderbim.bim.handler
-import blenderbim.core.type
-import blenderbim.core.geometry
-import blenderbim.core.root
+from ... import handler as bim_handler
+from ....core import type as core_type
+from ....core import geometry as core_geometry
+from ....core import root as core_root
 from .... import tool
 from mathutils import Vector, Matrix
 from ..geometry.helper import Helper
@@ -169,7 +169,7 @@ class DumbSlabGenerator:
         obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
         bpy.context.view_layer.update()
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -179,7 +179,7 @@ class DumbSlabGenerator:
         )
         ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
 
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
             "geometry.add_slab_representation",
             tool.Ifc.get(),
@@ -191,7 +191,7 @@ class DumbSlabGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
 
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -308,7 +308,7 @@ class DumbSlabPlaner:
                 )
                 for inverse in tool.Ifc.get().get_inverse(representation):
                     ifcopenshell.util.element.replace_attribute(inverse, representation, new_rep)
-                blenderbim.core.geometry.switch_representation(
+                core_geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=obj,
@@ -317,7 +317,7 @@ class DumbSlabPlaner:
                     is_global=True,
                     should_sync_changes_first=False,
                 )
-                blenderbim.core.geometry.remove_representation(
+                core_geometry.remove_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=representation
                 )
                 return
@@ -335,7 +335,7 @@ class DumbSlabPlaner:
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
             )
 
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -540,7 +540,7 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.view3d.slvs_delete_entity(index=p1["slvs_index"])
         bpy.ops.view3d.slvs_delete_entity(index=nm["slvs_index"])
 
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -585,7 +585,7 @@ def disable_editing_extrusion_profile(context):
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
     profile_mesh = obj.data
-    blenderbim.core.geometry.switch_representation(
+    core_geometry.switch_representation(
         tool.Ifc,
         tool.Geometry,
         obj=obj,
@@ -686,7 +686,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
         profile_mesh = obj.data
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -717,7 +717,7 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         if old_footprint:
             for inverse in tool.Ifc.get().get_inverse(old_footprint):
                 ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
-            blenderbim.core.geometry.remove_representation(
+            core_geometry.remove_representation(
                 tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
             )
         else:

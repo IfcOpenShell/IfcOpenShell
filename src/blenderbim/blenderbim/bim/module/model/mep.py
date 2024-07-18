@@ -30,10 +30,10 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import mathutils.geometry
 import numpy as np
-import blenderbim.bim.handler
-import blenderbim.core.type
-import blenderbim.core.root
-import blenderbim.core.geometry
+from ... import handler as bim_handler
+from ....core import type as core_type
+from ....core import root as core_root
+from ....core import geometry as core_geometry
 from .... import tool
 from math import pi, degrees, radians, sin, cos, asin, tan
 from copy import copy
@@ -529,7 +529,7 @@ class MEPGenerator:
 
         obj = bpy.data.objects.new("Obstruction", None)
         # TODO: OBSTRUCTION predefined type is available only for IfcDuctFitting and IfcPipeFitting
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -838,7 +838,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
-            transition_type = blenderbim.core.root.assign_class(
+            transition_type = core_root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,
@@ -1189,7 +1189,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Bend")
             obj = bpy.data.objects.new("Bend", mesh)
-            bend_type = blenderbim.core.root.assign_class(
+            bend_type = core_root.assign_class(
                 tool.Ifc,
                 tool.Collector,
                 tool.Root,

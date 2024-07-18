@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from . import prop as CostProp
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
@@ -131,7 +131,7 @@ class BIM_PT_cost_schedules(Panel):
             row.operator("bim.add_currency", text="", icon="ADD")
 
     def draw_editable_cost_schedule_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.cost_schedule_attributes, self.layout)
 
     def draw_editable_cost_item_ui(self):
         row = self.layout.row(align=True)
@@ -188,7 +188,7 @@ class BIM_PT_cost_schedules(Panel):
                 self.draw_editable_cost_item_values_ui()
 
     def draw_editable_cost_item_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.cost_item_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.cost_item_attributes, self.layout)
 
     def draw_editable_cost_item_quantities_ui(self, cost_item: dict[str, Any]):
         quantities = CostSchedulesData.data["cost_quantities"]
@@ -225,7 +225,7 @@ class BIM_PT_cost_schedules(Panel):
                 op.physical_quantity = quantity["id"]
 
             if self.props.active_cost_item_quantity_id and self.props.active_cost_item_quantity_id == quantity["id"]:
-                blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, self.layout.box())
+                bim_helper.draw_attributes(self.props.quantity_attributes, self.layout.box())
 
     def draw_editable_cost_item_values_ui(self):
         row = self.layout.row(align=True)
@@ -245,7 +245,7 @@ class BIM_PT_cost_schedules(Panel):
             self.draw_readonly_cost_value_ui(row, cost_value)
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
-            blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
+            bim_helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
     def draw_readonly_cost_value_ui(self, layout, cost_value):
         if cost_value["name"]:

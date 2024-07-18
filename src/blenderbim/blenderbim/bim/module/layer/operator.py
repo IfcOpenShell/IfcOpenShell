@@ -21,7 +21,7 @@ import json
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from ...ifc import IfcStore
 
@@ -63,7 +63,7 @@ class EnableEditingLayer(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMLayerProperties
         props.layer_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
+        bim_helper.import_attributes2(tool.Ifc.get().by_id(self.layer), props.layer_attributes)
         props.active_layer_id = self.layer
         return {"FINISHED"}
 

@@ -20,8 +20,8 @@ import bpy
 import ifcopenshell.api
 from .... import tool
 from ....core import system as core
-import blenderbim.bim.handler
-import blenderbim.bim.helper
+from ... import handler as bim_handler
+from ... import helper as bim_helper
 from ...ifc import IfcStore
 from .data import PortData
 from mathutils import Matrix
@@ -380,7 +380,7 @@ class EnableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMZoneProperties
         props.attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
+        bim_helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
         props.is_editing = self.zone
 
 
@@ -402,7 +402,7 @@ class EditZone(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMZoneProperties
         zone = tool.Ifc.get().by_id(props.is_editing)
-        attributes = blenderbim.bim.helper.export_attributes(props.attributes)
+        attributes = bim_helper.export_attributes(props.attributes)
         ifcopenshell.api.run("system.edit_system", tool.Ifc.get(), system=zone, attributes=attributes)
         props.is_editing = 0
         bpy.ops.bim.load_zones()

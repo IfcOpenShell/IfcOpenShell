@@ -26,7 +26,7 @@ import ifctester.ids
 import ifctester.reporter
 import ifcopenshell
 from .... import tool
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from ...operator import MultipleFileSelector
 from pathlib import Path
 
@@ -58,7 +58,7 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
                 for f in props.specs_files:
                     self.execute_tester(ifc_data, ifc_file.name, f.name)
 
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}
 
     def execute_tester(self, ifc_data, ifc_path, specs_path):

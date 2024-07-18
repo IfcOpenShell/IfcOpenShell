@@ -20,8 +20,8 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.unit
-import blenderbim.bim.helper
-import blenderbim.bim.handler
+from ... import helper as bim_helper
+from ... import handler as bim_handler
 from .... import tool
 from ....core import unit as core
 from ...ifc import IfcStore

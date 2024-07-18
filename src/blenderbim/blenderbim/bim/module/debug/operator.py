@@ -33,7 +33,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 from .... import tool
 from ....core import debug as core
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from ... import import_ifc
 from pathlib import Path
 from ...ifc import IfcStore
@@ -102,7 +102,7 @@ class ConvertToBlender(bpy.types.Operator):
         context.scene.BIMProperties.ifc_file = ""
         context.scene.BIMDebugProperties.attributes.clear()
         IfcStore.purge()
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -409,7 +409,7 @@ class ParseExpress(bpy.types.Operator):
 
     def execute(self, context):
         core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}
 
 
@@ -610,8 +610,6 @@ class PipInstall(bpy.types.Operator):
     name: bpy.props.StringProperty()
 
     def execute(self, context):
-        import blenderbim.bim
-
         target = [p for p in sys.path if p.endswith("packages") and "addons" in p][0]
         py_exec = str(sys.executable)
 

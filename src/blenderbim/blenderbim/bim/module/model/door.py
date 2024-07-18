@@ -27,9 +27,9 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import V
 from .... import tool
-import blenderbim.core.geometry
+from ....core import geometry as core_geometry
 from ....core import geometry as core
-import blenderbim.core.root
+from ....core import root as core_root
 from .window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
@@ -142,7 +142,7 @@ def update_door_modifier_representation(context: bpy.types.Context, obj: bpy.typ
                 previously_active_context.TargetView,
             )
 
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -508,10 +508,10 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("IfcDoor", mesh)
         obj.location = spawn_location
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcDoor", should_add_representation=False
         )
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "DOOR"
 
@@ -573,7 +573,7 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

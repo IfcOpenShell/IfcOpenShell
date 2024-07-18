@@ -30,9 +30,9 @@ from ifcopenshell.util.doc import (
     get_property_doc,
     get_predefined_type_doc,
 )
-import blenderbim.bim
-import blenderbim.bim.schema
-import blenderbim.bim.handler
+from .. import bim
+from . import schema as bim_schema
+from . import handler as bim_handler
 from .ifc import IfcStore
 from .. import tool
 from collections import defaultdict
@@ -109,20 +109,20 @@ def get_attribute_enum_values(prop, context):
 
 
 def update_schema_dir(self, context):
-    import blenderbim.bim.schema
+    from . import schema
 
-    blenderbim.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
+    schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
 
 
 def update_data_dir(self, context):
-    import blenderbim.bim.schema
+    from . import schema
 
-    blenderbim.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+    schema.ifc.data_dir = context.scene.BIMProperties.data_dir
 
 
 def update_ifc_file(self, context):
     if context.scene.BIMProperties.ifc_file:
-        blenderbim.bim.handler.loadIfcStore(context.scene)
+        bim.handler.loadIfcStore(context.scene)
 
 
 def update_section_color(self, context):
@@ -308,7 +308,7 @@ class Attribute(PropertyGroup):
 
 def get_tab(self, context):
     return [
-        ("PROJECT", "Project Overview", "", blenderbim.bim.icons["IFC"].icon_id, 0),
+        ("PROJECT", "Project Overview", "", bim.icons["IFC"].icon_id, 0),
         ("OBJECT", "Object Information", "", "FILE_3D", 1),
         ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
         ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),

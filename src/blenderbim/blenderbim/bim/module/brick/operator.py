@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell.api
 from .... import tool
 from ....core import brick as core
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 from ....tool.brick import BrickStore
 
@@ -197,7 +197,7 @@ class NewBrickFile(bpy.types.Operator):
         }
         IfcStore.add_transaction_operation(self, rollback=lambda data: True, commit=self.commit)
         IfcStore.end_transaction(self)
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}
 
     def _execute(self, context):

@@ -30,10 +30,10 @@ import ifcopenshell.api
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
 from .. import tool
-import blenderbim.core.geometry
-import blenderbim.core.aggregate
-import blenderbim.core.spatial
-import blenderbim.core.style
+from ..core import geometry as core_geometry
+from ..core import aggregate as core_aggregate
+from ..core import spatial as core_spatial
+from ..core import style as core_style
 from .ifc import IfcStore
 from mathutils import Vector
 from typing import Union
@@ -152,7 +152,7 @@ class IfcExporter:
             return self.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
     def sync_grid_axis_object_placement(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:

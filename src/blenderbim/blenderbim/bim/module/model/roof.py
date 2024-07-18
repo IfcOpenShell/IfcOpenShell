@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.root
+from ....core import root as core_root
 from .... import tool
 from ...helper import convert_property_group_from_si
 from .door import bm_sort_out_geom
@@ -516,7 +516,7 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
 
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.root.assign_class(
+        core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

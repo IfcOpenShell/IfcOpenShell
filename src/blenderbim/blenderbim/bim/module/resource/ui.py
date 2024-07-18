@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from .data import ResourceData
@@ -235,10 +235,10 @@ class BIM_PT_resources(Panel):
             row.operator("bim.disable_editing_resource", text="", icon="CANCEL")
 
     def draw_editable_resource_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.resource_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.resource_attributes, self.layout)
 
     def draw_editable_resource_time_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.resource_time_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.resource_time_attributes, self.layout)
 
     def draw_editable_resource_quantity_ui(self):
         resource = ResourceData.data["resources"][self.props.active_resource_id]
@@ -261,7 +261,7 @@ class BIM_PT_resources(Panel):
 
             if self.props.is_editing_quantity:
                 box = self.layout.box()
-                blenderbim.bim.helper.draw_attributes(self.props.quantity_attributes, box)
+                bim_helper.draw_attributes(self.props.quantity_attributes, box)
         else:
             row = self.layout.row(align=True)
             row.prop(self.props, "quantity_types", text="")
@@ -285,7 +285,7 @@ class BIM_PT_resources(Panel):
             self.draw_readonly_cost_value_ui(row, cost_value)
 
         if self.props.cost_value_editing_type == "ATTRIBUTES":
-            blenderbim.bim.helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
+            bim_helper.draw_attributes(self.props.cost_value_attributes, self.layout.box())
 
     def draw_readonly_cost_value_ui(self, layout, cost_value):
         if self.props.active_cost_value_id == cost_value["id"] and self.props.cost_value_editing_type == "FORMULA":

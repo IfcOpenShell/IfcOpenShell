@@ -21,8 +21,8 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
-import blenderbim.bim.helper
-import blenderbim.bim.handler
+from ... import helper as bim_helper
+from ... import handler as bim_handler
 from .... import tool
 from ....core import attribute as core
 from ...ifc import IfcStore
@@ -58,13 +58,13 @@ class EnableEditingAttributes(bpy.types.Operator):
                 new.data_type = "string"
                 new.ifc_class = data["type"]
                 new.string_value = "" if new.is_null else json.dumps(data[name])
-                blenderbim.bim.helper.add_attribute_description(new)
+                bim_helper.add_attribute_description(new)
                 new.description += " The degrees, minutes and seconds should follow this format : [12,34,56]"
             if name in ("PredefinedType", "ObjectType") and has_inherited_predefined_type:
                 props.attributes.remove(len(props.attributes) - 1)
                 return True
 
-        blenderbim.bim.helper.import_attributes2(element, props.attributes, callback=callback)
+        bim_helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
         return {"FINISHED"}
 
@@ -105,7 +105,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
                         attributes[prop.name] = None
                 return True
 
-        attributes = blenderbim.bim.helper.export_attributes(props.attributes, callback=callback)
+        attributes = bim_helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
         return {"FINISHED"}

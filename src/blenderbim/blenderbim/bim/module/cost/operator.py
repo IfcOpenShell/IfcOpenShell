@@ -21,7 +21,7 @@ import bpy
 import json
 import time
 import ifcopenshell.api
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from bpy_extras.io_utils import ImportHelper
 from .... import tool

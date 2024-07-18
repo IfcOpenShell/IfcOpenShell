@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel
 from ...ifc import IfcStore
 from ..search.data import SearchData
@@ -85,7 +85,7 @@ class BIM_PT_ifccsv(Panel):
             row.prop(props, "concat_value")
             layout.use_property_split = False
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
+        bim_helper.draw_filter(self.layout, props.filter_groups, SearchData, "csv")
 
         row = layout.row(align=True)
         op = row.operator("bim.search", text="Select", icon="VIEWZOOM")

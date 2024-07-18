@@ -21,8 +21,8 @@ import ifcopenshell
 import ifcopenshell.util.element
 from .... import tool
 from ....core import aggregate as core
-import blenderbim.core.spatial
-import blenderbim.bim.handler
+from ....core import spatial as core_spatial
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 
 
@@ -163,7 +163,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                     related_obj=aggregate,
                 )
             elif current_container:
-                blenderbim.core.spatial.assign_container(
+                core_spatial.assign_container(
                     tool.Ifc,
                     tool.Collector,
                     tool.Spatial,
@@ -283,7 +283,7 @@ class BIM_OT_add_part_to_object(bpy.types.Operator, tool.Ifc.Operator):
             part_class=self.part_class,
             part_name=self.part_name,
         )
-        blenderbim.core.spatial.import_spatial_decomposition(tool.Spatial)
+        core_spatial.import_spatial_decomposition(tool.Spatial)
 
 
 class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operator):

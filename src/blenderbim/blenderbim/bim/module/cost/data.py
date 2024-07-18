@@ -23,7 +23,7 @@ import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from .... import tool
-import blenderbim.bim.schema
+from ... import schema as bim_schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 from typing import Any
 

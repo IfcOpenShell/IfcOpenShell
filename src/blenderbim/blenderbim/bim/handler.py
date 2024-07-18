@@ -23,7 +23,7 @@ import addon_utils
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.api.owner.settings
-import blenderbim.bim
+from .. import bim
 from .. import tool
 from ..core import owner as core_owner
 from bpy.app.handlers import persistent
@@ -170,7 +170,7 @@ def subscribe_to(obj, data_path, callback):
 
 
 def refresh_ui_data():
-    from blenderbim.bim import modules
+    from . import modules
 
     for name, value in modules.items():
         try:
@@ -308,7 +308,7 @@ def load_post(scene):
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
     for panel in tool.Blender.get_scene_panels_list():
-        if panel in blenderbim.bim.original_scene_panels_polls:
+        if panel in bim.original_scene_panels_polls:
             continue
         tool.Blender.override_scene_panel(panel)
     tool.Blender.setup_tabs()

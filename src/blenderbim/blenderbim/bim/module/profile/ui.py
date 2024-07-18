@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from bpy.types import Panel, UIList
 from .data import ProfileData
@@ -102,7 +102,7 @@ class BIM_PT_profiles(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        blenderbim.bim.helper.draw_attributes(self.props.profile_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.profile_attributes, self.layout)
 
 
 class BIM_UL_profiles(UIList):

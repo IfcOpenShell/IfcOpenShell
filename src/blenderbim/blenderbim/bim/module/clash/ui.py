@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel
 from .data import ClashData
 
@@ -92,7 +92,7 @@ class BIM_PT_ifcclash(Panel):
             op.group = "a"
 
             if source.mode != "a":
-                blenderbim.bim.helper.draw_filter(
+                bim_helper.draw_filter(
                     layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_a_{index}"
                 )
 
@@ -112,7 +112,7 @@ class BIM_PT_ifcclash(Panel):
             op.group = "b"
 
             if source.mode != "a":
-                blenderbim.bim.helper.draw_filter(
+                bim_helper.draw_filter(
                     layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_b_{index}"
                 )
 

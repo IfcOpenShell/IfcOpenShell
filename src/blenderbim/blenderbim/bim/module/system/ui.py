@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from ...helper import prop_with_search
 from bpy.types import Panel, UIList
@@ -377,7 +377,7 @@ class BIM_PT_zones(Panel):
         self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
 
         if self.props.is_editing:
-            blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
+            bim_helper.draw_attributes(self.props.attributes, self.layout)
             row = self.layout.row(align=True)
             row.operator("bim.edit_zone", icon="CHECKMARK")
             row.operator("bim.disable_editing_zone", icon="CANCEL", text="")

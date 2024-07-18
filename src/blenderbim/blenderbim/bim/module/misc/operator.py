@@ -19,11 +19,11 @@
 import bpy
 import numpy as np
 import ifcopenshell
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from .... import tool
 from ....core import misc as core
 from ....core import geometry as core_geometry
-import blenderbim.core.root
+from ....core import root as core_root
 from ...ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
@@ -160,7 +160,7 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
 
         new_objs = tool.Misc.split_objects_with_cutter(objs_to_cut, cutter)
         for obj in new_objs:
-            blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
+            core_root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
             bpy.ops.bim.update_representation(obj=obj.name)
         for obj in objs_to_cut:
             bpy.ops.bim.update_representation(obj=obj.name)

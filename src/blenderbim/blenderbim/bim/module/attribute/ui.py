@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel
 from ...ifc import IfcStore
 from .data import AttributesData
@@ -34,7 +34,7 @@ def draw_ui(context, layout, attributes):
         op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
         op.obj = obj.name
 
-        blenderbim.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
+        bim_helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")

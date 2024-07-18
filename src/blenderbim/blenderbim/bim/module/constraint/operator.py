@@ -20,7 +20,7 @@ import bpy
 import json
 import ifcopenshell.api
 import ifcopenshell.util.attribute
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from ...ifc import IfcStore
 
@@ -62,7 +62,7 @@ class EnableEditingConstraint(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMConstraintProperties
         props.constraint_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
+        bim_helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
         props.active_constraint_id = self.constraint
         return {"FINISHED"}
 

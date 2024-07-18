@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from bpy.types import Panel
 from .data import (
@@ -119,7 +119,7 @@ class BIM_PT_element_filters(Panel):
         props = context.scene.camera.data.BIMCameraProperties
 
         if props.filter_mode == "INCLUDE":
-            blenderbim.bim.helper.draw_filter(
+            bim_helper.draw_filter(
                 self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
             )
             row = self.layout.row(align=True)
@@ -128,7 +128,7 @@ class BIM_PT_element_filters(Panel):
             ).filter_mode = "INCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
         elif props.filter_mode == "EXCLUDE":
-            blenderbim.bim.helper.draw_filter(
+            bim_helper.draw_filter(
                 self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
             )
             row = self.layout.row(align=True)
@@ -532,7 +532,7 @@ class BIM_PT_text(Panel):
 
                 # skip BoxAlignment since we're going to format it ourselves
                 attributes = [a for a in literal_props.attributes if a.name != "BoxAlignment"]
-                blenderbim.bim.helper.draw_attributes(attributes, box)
+                bim_helper.draw_attributes(attributes, box)
 
                 row = box.row(align=True)
                 cols = [row.column(align=True) for i in range(3)]

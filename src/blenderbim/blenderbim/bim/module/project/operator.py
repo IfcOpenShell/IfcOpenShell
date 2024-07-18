@@ -37,13 +37,13 @@ import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import blenderbim.bim.handler
-import blenderbim.bim.schema
+from ... import handler as bim_handler
+from ... import schema as bim_schema
 from .... import tool
 from ....core import project as core
-import blenderbim.core.context
-import blenderbim.core.owner
-import blenderbim.core.spatial
+from ....core import context as core_context
+from ....core import owner as core_owner
+from ....core import spatial as core_spatial
 from ...ifc import IfcStore
 from ...ui import IFCFileSelector
 from ....bim import import_ifc
@@ -132,7 +132,7 @@ class CreateProject(bpy.types.Operator):
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
         core.create_project(tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
-        blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
+        bim_schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 
     def rollback(self, data):
@@ -469,7 +469,7 @@ class AppendLibraryElement(bpy.types.Operator):
         except:
             # TODO Remove this terrible code when I refactor this into the core
             pass
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}
 
     def import_material_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
@@ -795,7 +795,7 @@ class LoadProjectElements(bpy.types.Operator):
     def execute(self, context):
         self.props = context.scene.BIMProjectProperties
         self.file = IfcStore.get_file()
-        blenderbim.bim.schema.reload(self.file.schema_identifier)
+        bim_schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
         path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
@@ -1315,7 +1315,7 @@ class ExportIFCBase:
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
         bpy.context.scene.BIMProperties.is_dirty = False
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         self.report(
             {"INFO"},
             f'IFC Project "{os.path.basename(output_file)}" {"" if not save_blend_file else "And Current Blend File Are"} Saved',
@@ -1860,7 +1860,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
-        from blenderbim.bim.module.project.data import LinksData
+        from .data import LinksData
 
         if not LinksData.linked_data:
             self.report({"INFO"}, "No linked element found.")

@@ -21,8 +21,8 @@ import ifcopenshell
 import ifcopenshell.util.element
 from .... import tool
 from ....core import nest as core
-import blenderbim.core.spatial
-import blenderbim.bim.handler
+from ....core import spatial as core_spatial
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 
 

@@ -28,10 +28,10 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import mathutils.geometry
-import blenderbim.bim.handler
-import blenderbim.core.type
-import blenderbim.core.root
-import blenderbim.core.geometry
+from ... import handler as bim_handler
+from ....core import type as core_type
+from ....core import root as core_root
+from ....core import geometry as core_geometry
 from ....core import model as core
 from .... import tool
 from ...ifc import IfcStore
@@ -227,7 +227,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             if tool.Model.get_usage_type(element) == "LAYER2":
                 layer2_objs.append(obj)
             else:
-                blenderbim.core.geometry.switch_representation(
+                core_geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=obj,
@@ -554,7 +554,7 @@ class DumbWallGenerator:
         obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -573,7 +573,7 @@ class DumbWallGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
             )
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         representation = ifcopenshell.api.run(
             "geometry.add_wall_representation",
             tool.Ifc.get(),
@@ -587,7 +587,7 @@ class DumbWallGenerator:
         ifcopenshell.api.run(
             "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
         )
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -791,7 +791,7 @@ class DumbWallJoiner:
 
     def flip(self, wall1):
         if tool.Ifc.is_moved(wall1):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
+            core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
         element1 = tool.Ifc.get_entity(wall1)
         if not element1 or tool.Model.get_usage_type(element1) != "LAYER2":
@@ -865,7 +865,7 @@ class DumbWallJoiner:
             bpy.context.view_layer.update()
 
         body = ifcopenshell.util.representation.get_representation(element1, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=wall1,
@@ -938,7 +938,7 @@ class DumbWallJoiner:
         wall2.data = wall2.data.copy()
         for collection in wall1.users_collection:
             collection.objects.link(wall2)
-        blenderbim.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
+        core_root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=wall2)
         return wall2
 
     def join_Z(self, wall1, slab2):
@@ -1131,7 +1131,7 @@ class DumbWallJoiner:
             if old_axis:
                 for inverse in tool.Ifc.get().get_inverse(old_axis):
                     ifcopenshell.util.element.replace_attribute(inverse, old_axis, new_axis)
-                blenderbim.core.geometry.remove_representation(
+                core_geometry.remove_representation(
                     tool.Ifc, tool.Geometry, obj=obj, representation=old_axis
                 )
             else:
@@ -1158,7 +1158,7 @@ class DumbWallJoiner:
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
             obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
             obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
-            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
+            core_geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(
                 "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_body
@@ -1184,23 +1184,23 @@ class DumbWallJoiner:
                     coordinates[0] -= change_in_x
                 opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
 
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         # If opening has filling then stick to the filling's position
         # We're applying new openings position only after wall position is applied
         for opening in [r.RelatedOpeningElement for r in element.HasOpenings if r.RelatedOpeningElement.HasFillings]:
-            similar_openings = blenderbim.core.geometry.get_similar_openings(tool.Ifc, opening)
+            similar_openings = core_geometry.get_similar_openings(tool.Ifc, opening)
             filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
             filling_moved = tool.Ifc.is_moved(filling_obj)
             if filling_moved:
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
+                core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
             if filling_moved or wall_moved:
                 ifcopenshell.api.run(
                     "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
                 )
-                blenderbim.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
+                core_geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
 
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

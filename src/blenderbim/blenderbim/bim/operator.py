@@ -30,7 +30,8 @@ import subprocess
 import tempfile
 import webbrowser
 import ifcopenshell
-import blenderbim.bim.handler
+from .. import bim
+from . import handler as bim_handler
 from .. import tool
 from . import schema
 from ..bim import import_ifc
@@ -58,7 +59,7 @@ class SetTab(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return next((t[1] for t in blenderbim.bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
+        return next((t[1] for t in bim.prop.get_tab(None, context) if t[0] == operator.tab), "")
 
     def execute(self, context):
         if context.area.spaces.active.search_filter:

@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.api
 from .... import tool
 from ....core import library as core
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 
 

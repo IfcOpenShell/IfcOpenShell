@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from ...helper import draw_attributes, prop_with_search
@@ -491,7 +491,7 @@ class BIM_PT_structural_loads(Panel):
             )
 
         if self.props.active_structural_load_id:
-            blenderbim.bim.helper.draw_attributes(self.props.structural_load_attributes, self.layout)
+            bim_helper.draw_attributes(self.props.structural_load_attributes, self.layout)
 
 
 class BIM_UL_structural_loads(UIList):
@@ -565,7 +565,7 @@ class BIM_PT_boundary_conditions(Panel):
 
         if self.props.active_boundary_condition_id:
             draw_boundary_condition_editable_ui(self.layout, self.props)
-            # blenderbim.bim.helper.draw_attributes(self.props.boundary_condition_attributes, self.layout)
+            # bim_helper.draw_attributes(self.props.boundary_condition_attributes, self.layout)
 
 
 class BIM_UL_boundary_conditions(UIList):

@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
@@ -46,7 +46,7 @@ class BIM_PT_styles(Panel):
         if not self.props.is_editing:
             row = self.layout.row(align=True)
             row.label(text="{} Styles".format(StylesData.data["total_styles"]), icon="SHADING_RENDERED")
-            blenderbim.bim.helper.prop_with_search(row, self.props, "style_type", text="")
+            bim_helper.prop_with_search(row, self.props, "style_type", text="")
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = self.props.style_type
             return
 
@@ -128,7 +128,7 @@ class BIM_PT_styles(Panel):
         # display style elements props during edit
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
-                blenderbim.bim.helper.draw_attributes(self.props.attributes, self.layout)
+                bim_helper.draw_attributes(self.props.attributes, self.layout)
                 row = self.layout.row(align=True)
                 row.operator("bim.edit_style", text="Save Attributes", icon="CHECKMARK")
                 row.operator("bim.disable_editing_style", text="", icon="CANCEL")
@@ -243,19 +243,19 @@ class BIM_PT_styles(Panel):
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
         style = self.props.styles[self.props.active_style_index]
         op.active_surface_style_id = style.ifc_definition_id
-        blenderbim.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.external_style_attributes, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_refraction_surface_style(self):
-        blenderbim.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save Refraction Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_lighting_surface_style(self):
-        blenderbim.bim.helper.draw_attributes(self.props.lighting_style_colours, self.layout)
+        bim_helper.draw_attributes(self.props.lighting_style_colours, self.layout)
         row = self.layout.row(align=True)
         row.operator("bim.edit_surface_style", text="Save Lighting Style", icon="CHECKMARK")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")

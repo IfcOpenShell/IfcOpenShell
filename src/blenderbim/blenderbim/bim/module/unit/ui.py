@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from ...helper import prop_with_search
@@ -98,7 +98,7 @@ class BIM_PT_units(Panel):
             self.draw_editable_ui(context)
 
     def draw_editable_ui(self, context):
-        blenderbim.bim.helper.draw_attributes(self.props.unit_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.unit_attributes, self.layout)
 
 
 class BIM_UL_units(UIList):

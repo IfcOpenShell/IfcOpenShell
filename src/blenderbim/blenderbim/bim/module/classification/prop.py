@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from ...ifc import IfcStore
 from ...prop import StrProperty, Attribute
 from .data import ClassificationsData, ClassificationReferencesData

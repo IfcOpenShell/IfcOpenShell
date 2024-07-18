@@ -23,8 +23,8 @@ import bmesh
 import collections
 import ifcopenshell
 from .... import tool
-import blenderbim.core.root
-import blenderbim.core.geometry
+from ....core import root as core_root
+from ....core import geometry as core_geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -105,7 +105,7 @@ def update_window_modifier_representation(context, obj):
             previously_active_context.ContextIdentifier,
             previously_active_context.TargetView,
         )
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -403,10 +403,10 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("IfcWindow", mesh)
         obj.location = spawn_location
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcWindow", should_add_representation=False
         )
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         if tool.Ifc.get_schema() != "IFC2X3":
             element.PredefinedType = "WINDOW"
 
@@ -465,7 +465,7 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

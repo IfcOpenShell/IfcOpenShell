@@ -29,10 +29,10 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 from .... import tool
-import blenderbim.core.aggregate
-import blenderbim.core.type
-import blenderbim.core.geometry
-import blenderbim.core.spatial
+from ....core import aggregate as core_aggregate
+from ....core import type as core_type
+from ....core import geometry as core_geometry
+from ....core import spatial as core_spatial
 from . import wall, slab, profile, mep
 from ...ifc import IfcStore
 from .data import AuthoringData
@@ -201,7 +201,7 @@ class AddConstrTypeInstance(bpy.types.Operator):
 
         mesh_data = obj.data
         element = tool.Ifc.get_entity(obj)
-        blenderbim.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+        core_type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
         if obj.data != mesh_data:  # remove orphaned mesh from "bim.assign_class"
             tool.Blender.remove_data_block(mesh_data)
 
@@ -219,14 +219,14 @@ class AddConstrTypeInstance(bpy.types.Operator):
             parent = ifcopenshell.util.element.get_aggregate(building_element)
             if parent:
                 parent_obj = tool.Ifc.get_object(parent)
-                blenderbim.core.aggregate.assign_object(
+                core_aggregate.assign_object(
                     tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=parent_obj, related_obj=obj
                 )
             else:
                 parent = ifcopenshell.util.element.get_container(building_element)
                 if parent:
                     parent_obj = tool.Ifc.get_object(parent)
-                    blenderbim.core.spatial.assign_container(
+                    core_spatial.assign_container(
                         tool.Ifc, tool.Collector, tool.Spatial, structure_obj=parent_obj, element_obj=obj
                     )
 
@@ -467,7 +467,7 @@ def generate_box(usecase_path, ifc_file, settings):
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_box:
-            blenderbim.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_box)
+            core_geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_box)
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
@@ -501,7 +501,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
-            blenderbim.core.geometry.switch_representation(
+            core_geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
                 obj=obj,

@@ -18,8 +18,8 @@
 
 import bpy
 from .... import tool
-import blenderbim.core.spatial
-import blenderbim.core.aggregate
+from ....core import spatial as core_spatial
+from ....core import aggregate as core_aggregate
 from ...ifc import IfcStore
 
 
@@ -70,7 +70,7 @@ class PieUpdateContainer(bpy.types.Operator):
             for collection in obj.users_collection:
                 spatial_obj = collection.BIMCollectionProperties.obj
                 if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
-                    blenderbim.core.spatial.assign_container(
+                    core_spatial.assign_container(
                         tool.Ifc, tool.Collector, tool.Spatial, structure_obj=spatial_obj, element_obj=obj
                     )
                     break

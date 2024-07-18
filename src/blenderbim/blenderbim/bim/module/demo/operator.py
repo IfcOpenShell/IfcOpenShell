@@ -30,7 +30,7 @@
 import bpy
 from .... import tool
 from ....core import demo as core
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 
 
 # Each button correlates to a class like the one below. In this case, we're

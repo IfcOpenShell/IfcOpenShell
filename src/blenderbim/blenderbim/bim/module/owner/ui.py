@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from .data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
 
@@ -33,7 +33,7 @@ def draw_roles(box, parent):
             row = box.row(align=True)
             row.operator("bim.edit_role", icon="CHECKMARK")
             row.operator("bim.disable_editing_role", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(role["props"], box)
+            bim_helper.draw_attributes(role["props"], box)
         else:
             row = box.row(align=True)
             row.label(text=role["label"])
@@ -56,7 +56,7 @@ def draw_addresses(box, parent):
             row = box.row(align=True)
             row.operator("bim.edit_address", icon="CHECKMARK")
             row.operator("bim.disable_editing_address", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(address["props"], box)
+            bim_helper.draw_attributes(address["props"], box)
             for attribute in address["list_attributes"]:
                 row = box.row(align=True)
                 row.label(text=attribute["name"])
@@ -108,7 +108,7 @@ class BIM_PT_people(bpy.types.Panel):
             row = box.row(align=True)
             row.operator("bim.edit_person", icon="CHECKMARK")
             row.operator("bim.disable_editing_person", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(person["props"], box)
+            bim_helper.draw_attributes(person["props"], box)
 
             for attribute in person["list_attributes"]:
                 row = box.row(align=True)
@@ -167,7 +167,7 @@ class BIM_PT_organisations(bpy.types.Panel):
             row = box.row(align=True)
             row.operator("bim.edit_organisation", icon="CHECKMARK")
             row.operator("bim.disable_editing_organisation", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(organisation["props"], box)
+            bim_helper.draw_attributes(organisation["props"], box)
 
             draw_roles(box, organisation)
             draw_addresses(box, organisation)
@@ -274,7 +274,7 @@ class BIM_PT_actor(bpy.types.Panel):
             row = box.row(align=True)
             row.operator("bim.edit_actor", icon="CHECKMARK")
             row.operator("bim.disable_editing_actor", icon="CANCEL", text="")
-            blenderbim.bim.helper.draw_attributes(self.props.actor_attributes, box)
+            bim_helper.draw_attributes(self.props.actor_attributes, box)
         else:
             row = self.layout.row(align=True)
             row.label(text=actor["name"], icon="USER")

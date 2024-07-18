@@ -22,12 +22,12 @@ import ifcopenshell.api
 import ifcopenshell.util.unit
 import ifcopenshell.util.pset
 import ifcopenshell.util.attribute
-import blenderbim.bim.schema
-import blenderbim.bim.helper
-import blenderbim.bim.handler
+from ... import schema as bim_schema
+from ... import helper as bim_helper
+from ... import handler as bim_handler
 from .... import tool
 from ....core import pset as core
-import blenderbim.bim.module.pset.data
+from . import data as bim_module_pset_data
 from ...ifc import IfcStore
 
 
@@ -37,8 +37,8 @@ class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):
     pset_id: bpy.props.IntProperty()
 
     def _execute(self, context):
-        blenderbim.bim.module.pset.data.is_expanded[self.pset_id] = (
-            not blenderbim.bim.module.pset.data.is_expanded.setdefault(self.pset_id, True)
+        bim_module_pset_data.is_expanded[self.pset_id] = (
+            not bim_module_pset_data.is_expanded.setdefault(self.pset_id, True)
         )
 
 
@@ -129,7 +129,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                 pset=pset,
                 name=props.active_pset_name,
                 properties=properties,
-                pset_template=blenderbim.bim.schema.ifc.psetqto.get_by_name(props.active_pset_name),
+                pset_template=bim_schema.ifc.psetqto.get_by_name(props.active_pset_name),
             )
         else:
             for key, value in properties.items():

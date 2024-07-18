@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.util.attribute
 import ifcopenshell.api
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 from ...ifc import IfcStore
 import json
@@ -152,7 +152,7 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMGroupProperties
         props.group_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
+        bim_helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
         return {"FINISHED"}
 

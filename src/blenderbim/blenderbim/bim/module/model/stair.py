@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.root
+from ....core import root as core_root
 from .... import tool
 from mathutils import Vector
 from bmesh.types import BMVert
@@ -218,7 +218,7 @@ class BIM_OT_add_clever_stair(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.new("StairFlight", mesh)
         obj.location = spawn_location
 
-        element = blenderbim.core.root.assign_class(
+        element = core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

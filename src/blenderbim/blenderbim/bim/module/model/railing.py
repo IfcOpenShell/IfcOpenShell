@@ -24,8 +24,8 @@ import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from ifcopenshell.util.shape_builder import V
-import blenderbim.core.root
-import blenderbim.core.geometry
+from ....core import root as core_root
+from ....core import geometry as core_geometry
 from .... import tool
 from .door import bm_sort_out_geom
 from .data import RailingData, refresh
@@ -300,7 +300,7 @@ class BIM_OT_add_railing(bpy.types.Operator, tool.Ifc.Operator):
         obj.location = spawn_location
 
         body_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.root.assign_class(
+        core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -476,7 +476,7 @@ def cancel_editing_railing_path(context):
     else:
         element = tool.Ifc.get_entity(obj)
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        blenderbim.core.geometry.switch_representation(
+        core_geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,

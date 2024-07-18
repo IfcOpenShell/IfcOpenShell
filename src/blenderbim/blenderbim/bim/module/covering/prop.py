@@ -18,7 +18,6 @@
 
 import bpy
 from ...prop import StrProperty, Attribute
-#from blenderbim.bim.module.spatial.data import SpatialData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,9 +29,6 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-#import blenderbim.tool as tool
-#import blenderbim.core.geometry
-#import ifcopenshell
 
 
 class BIMCoveringProperties(PropertyGroup):

@@ -23,8 +23,8 @@ from .... import tool
 from ..model.data import AuthoringData
 from bpy.types import WorkSpaceTool
 from ...ifc import IfcStore
-import blenderbim.bim.handler
-import blenderbim.core.spatial
+from ... import handler as bim_handler
+from ....core import spatial as core_spatial
 
 
 class SpatialTool(WorkSpaceTool):
@@ -153,8 +153,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.generate_spaces_from_walls()
         else:
             try:
-                blenderbim.core.spatial.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
-            except blenderbim.core.spatial.NoDefaultContainer:
+                core_spatial.generate_space(tool.Ifc, tool.Model, tool.Root, tool.Spatial, tool.Type)
+            except core_spatial.NoDefaultContainer:
                 return self.report({"ERROR"}, "Please set a default container to create the space in.")
 
     def hotkey_S_B(self):

@@ -21,9 +21,9 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 from .... import tool
-import blenderbim.core.geometry
-import blenderbim.core.root
-import blenderbim.bim.handler
+from ....core import geometry as core_geometry
+from ....core import root as core_root
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 from ..model.opening import FilledOpeningGenerator
 
@@ -86,7 +86,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if tool.Ifc.is_moved(obj1):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
+                core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
             has_visible_openings = False
             for opening in [r.RelatedOpeningElement for r in element1.HasOpenings]:
@@ -96,7 +96,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
 
             body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
             if not element2:
-                element2 = blenderbim.core.root.assign_class(
+                element2 = core_root.assign_class(
                     tool.Ifc,
                     tool.Collector,
                     tool.Root,
@@ -108,7 +108,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
 
             if tool.Ifc.is_moved(obj2):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
+                core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
 
             voided_objs = [obj1]
             for subelement in ifcopenshell.util.element.get_decomposition(element1):
@@ -119,7 +119,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
             for voided_obj in voided_objs:
                 if voided_obj.data:
                     representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
-                    blenderbim.core.geometry.switch_representation(
+                    core_geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
                         obj=voided_obj,
@@ -162,7 +162,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             building_obj = tool.Ifc.get_object(building_element)
             if building_obj and building_obj.data:
                 representation = tool.Geometry.get_active_representation(building_obj)
-                blenderbim.core.geometry.switch_representation(
+                core_geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
                     obj=building_obj,
@@ -271,5 +271,5 @@ class BooleansMarkAsManual(bpy.types.Operator):
         self.report(
             {"INFO"}, f"{len(booleans)} booleans were marked as {'manual' if self.mark_as_manual else 'automatic'}"
         )
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}

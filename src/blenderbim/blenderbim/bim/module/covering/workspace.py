@@ -25,7 +25,7 @@ from ...helper import prop_with_search
 from ..model.data import AuthoringData
 from bpy.types import WorkSpaceTool
 from ...ifc import IfcStore
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 
 
 class CoveringTool(WorkSpaceTool):

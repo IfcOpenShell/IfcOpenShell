@@ -38,8 +38,8 @@ from mathutils import Vector, Matrix
 from ...ifc import IfcStore
 from ..model.decorator import ProfileDecorator
 from .decorator import BoundaryDecorator
-import blenderbim.core
-import blenderbim.core.geometry
+from .... import core as core
+from ....core import geometry as core_geometry
 
 
 def get_boundaries_collection(blender_space):
@@ -521,7 +521,7 @@ class ShowBoundaries(bpy.types.Operator, tool.Ifc.Operator):
             if not element or not getattr(element, "BoundedBy", None):
                 continue
             if tool.Ifc.is_moved(obj):
-                blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
             element = tool.Ifc.get_entity(obj)
             for rel in element.BoundedBy or []:
                 boundary_obj = loader.load_boundary(rel, obj)
@@ -1014,7 +1014,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
     def get_flattened_polygon(self, element, relating_space_obj, target_face_matrix_i):
         obj = tool.Ifc.get_object(element)
         if obj and tool.Ifc.is_moved(obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
         space_matrix_i = relating_space_obj.matrix_world.inverted()
 

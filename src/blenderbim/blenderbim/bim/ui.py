@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import importlib
 import addon_utils
 import platform
 from pathlib import Path
@@ -29,12 +30,13 @@ from ifcopenshell.util.doc import (
     get_type_doc,
     get_attribute_doc,
 )
-import blenderbim.bim
+from .. import bim
 from .. import tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from .prop import Attribute
 from typing import Optional
 
+bbim = importlib.import_module("..", package=__package__)
 
 class IFCFileSelector:
     filepath: str
@@ -397,7 +399,7 @@ class BIM_PT_tabs(Panel):
                 text="",
                 emboss=aprops.tab == "PROJECT",
                 depress=True,
-                icon_value=blenderbim.bim.icons["IFC"].icon_id,
+                icon_value=bim.icons["IFC"].icon_id,
             ).tab = "PROJECT"
             self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
             self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
@@ -433,7 +435,7 @@ class BIM_PT_tabs(Panel):
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
 
-            if blenderbim.last_error:
+            if bbim.last_error:
                 box = self.layout.box()
                 box.alert = True
                 row = box.row(align=True)

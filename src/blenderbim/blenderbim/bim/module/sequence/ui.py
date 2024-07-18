@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import isodate
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from bpy.types import Panel, UIList
 from ...ifc import IfcStore
 from ...helper import draw_attributes
@@ -384,10 +384,10 @@ class BIM_PT_work_schedules(Panel):
             op.task = task["id"]
 
     def draw_editable_sequence_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.sequence_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.sequence_attributes, self.layout)
 
     def draw_editable_sequence_lag_time_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.lag_time_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.lag_time_attributes, self.layout)
 
     def draw_editable_task_calendar_ui(self):
         task = SequenceData.data["tasks"][self.props.active_task_id]
@@ -409,12 +409,12 @@ class BIM_PT_work_schedules(Panel):
             row.label(text="Must Create a Calendar First. See Work Calendar Panel", icon="INFO")
 
     def draw_editable_task_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(
+        bim_helper.draw_attributes(
             self.props.task_attributes, self.layout, copy_operator="bim.copy_task_attribute"
         )
 
     def draw_editable_task_time_attributes_ui(self):
-        blenderbim.bim.helper.draw_attributes(self.props.task_time_attributes, self.layout)
+        bim_helper.draw_attributes(self.props.task_time_attributes, self.layout)
 
     def draw_baseline_ui(self, work_schedule_id):
         if not self.props.should_show_schedule_baseline_ui:

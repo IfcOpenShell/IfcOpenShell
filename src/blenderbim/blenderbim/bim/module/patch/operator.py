@@ -22,7 +22,7 @@ import json
 import ifcopenshell
 from .... import tool
 from ....core import patch as core
-import blenderbim.bim.handler
+from ... import handler as bim_handler
 from pathlib import Path
 
 try:
@@ -159,5 +159,5 @@ class RunMigratePatch(bpy.types.Operator):
             bpy.ops.file.refresh()
         except:
             pass  # Probably running in headless mode
-        blenderbim.bim.handler.refresh_ui_data()
+        bim_handler.refresh_ui_data()
         return {"FINISHED"}

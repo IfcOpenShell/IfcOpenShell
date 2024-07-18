@@ -19,7 +19,7 @@
 from bpy.types import Panel
 from ...ifc import IfcStore
 from .data import DiffData
-import blenderbim.bim.helper
+from ... import helper as bim_helper
 from .... import tool
 
 
@@ -93,7 +93,7 @@ class BIM_PT_diff(Panel):
             remove.collection = "diff_relationships"
             remove.index = index
 
-        blenderbim.bim.helper.draw_filter(self.layout, props.filter_groups, DiffData, "diff")
+        bim_helper.draw_filter(self.layout, props.filter_groups, DiffData, "diff")
 
         row = layout.row()
         row.operator("bim.execute_ifc_diff")

@@ -28,7 +28,7 @@ import importlib
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper
-import blenderbim.bim.handler
+from . import handler as bim_handler
 from .. import tool
 from pathlib import Path
 from ..tool.brick import BrickStore
@@ -253,11 +253,11 @@ class IfcStore:
         else:
             obj.BIMObjectProperties.ifc_definition_id = element.id()
 
-        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        bim_handler.subscribe_to(obj, "name", bim_handler.name_callback)
 
         if isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            bim_handler.subscribe_to(
+                obj, "active_material_index", bim_handler.active_material_index_callback
             )
 
         if IfcStore.history:
@@ -280,10 +280,10 @@ class IfcStore:
         IfcStore.id_map[data["id"]] = obj
         if "guid" in data:
             IfcStore.guid_map[data["guid"]] = obj
-        blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+        bim_handler.subscribe_to(obj, "name", bim_handler.name_callback)
         if isinstance(obj, bpy.types.Object):
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            bim_handler.subscribe_to(
+                obj, "active_material_index", bim_handler.active_material_index_callback
             )
         # TODO Listeners are not re-registered. Does this cause nasty problems to debug later on?
         # TODO We're handling id_map and guid_map, but what about edited_objs? This might cause big problems.
@@ -398,7 +398,7 @@ class IfcStore:
             if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                 BrickStore.end_transaction()
             IfcStore.end_transaction(operator)
-            blenderbim.bim.handler.refresh_ui_data()
+            bim_handler.refresh_ui_data()
 
         return result
 

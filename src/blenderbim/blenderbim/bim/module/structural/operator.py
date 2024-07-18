@@ -21,11 +21,11 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.attribute
-import blenderbim.bim.helper
-import blenderbim.bim.handler
+from ... import helper as bim_helper
+from ... import handler as bim_handler
 from ....core import structural as core
 from .... import tool
-import blenderbim.core.context
+from ....core import context as core_context
 from math import degrees
 from mathutils import Vector, Matrix
 from ...ifc import IfcStore
@@ -516,7 +516,7 @@ class EditStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMStructuralProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.load_case_attributes)
+        attributes = bim_helper.export_attributes(props.load_case_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "structural.edit_structural_load_case",
@@ -552,7 +552,7 @@ class EnableEditingStructuralLoadCase(bpy.types.Operator):
         self.props.active_load_case_id = self.load_case
         self.props.load_case_editing_type = "ATTRIBUTES"
         self.props.load_case_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(
+        bim_helper.import_attributes2(
             tool.Ifc.get().by_id(self.load_case), self.props.load_case_attributes, callback=self.import_attributes
         )
         return {"FINISHED"}
@@ -756,7 +756,7 @@ class EnableEditingStructuralLoad(bpy.types.Operator):
     def execute(self, context):
         props = context.scene.BIMStructuralProperties
         props.structural_load_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(
+        bim_helper.import_attributes2(
             tool.Ifc.get().by_id(self.structural_load), props.structural_load_attributes
         )
         props.active_structural_load_id = self.structural_load
@@ -798,7 +798,7 @@ class EditStructuralLoad(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMStructuralProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.structural_load_attributes)
+        attributes = bim_helper.export_attributes(props.structural_load_attributes)
         self.file = IfcStore.get_file()
         ifcopenshell.api.run(
             "structural.edit_structural_load",
@@ -909,7 +909,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
         props.boundary_condition_attributes.clear()
 
         boundary_condition = tool.Ifc.get().by_id(self.boundary_condition)
-        # blenderbim.bim.helper.import_attributes(data["type"], props.boundary_condition_attributes, data)
+        # bim_helper.import_attributes(data["type"], props.boundary_condition_attributes, data)
         for attribute in IfcStore.get_schema().declaration_by_name(boundary_condition.is_a()).all_attributes():
             value = getattr(boundary_condition, attribute.name(), None)
             data_type = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -971,7 +971,7 @@ class EditBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMStructuralProperties
         self.file = IfcStore.get_file()
-        # attributes = blenderbim.bim.helper.export_attributes(props.boundary_condition_attributes)
+        # attributes = bim_helper.export_attributes(props.boundary_condition_attributes)
         attributes = {}
         for attribute in props.boundary_condition_attributes:
             if attribute.is_null:

@@ -19,8 +19,8 @@
 import bpy
 from .... import tool
 from ....core import context as core
-import blenderbim.bim.module.context.data
-import blenderbim.bim.handler
+from . import data as bim_module_context_data
+from ... import handler as bim_handler
 from ...ifc import IfcStore
 
 
