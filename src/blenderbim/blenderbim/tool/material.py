@@ -20,10 +20,10 @@ from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api.material
-import blenderbim.core.tool
-import blenderbim.core.material
+from ..core import tool as core_tool
+from ..core import material as core_material
 from .. import tool
-import blenderbim.bim.helper
+from ..bim import helper as bim_helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from blenderbim.bim.module.material.prop import Material as MaterialItem
 
 
-class Material(blenderbim.core.tool.Material):
+class Material(core_tool.Material):
     @classmethod
     def disable_editing_materials(cls) -> None:
         bpy.context.scene.BIMMaterialProperties.is_editing = False
@@ -148,7 +148,7 @@ class Material(blenderbim.core.tool.Material):
     def load_material_attributes(cls, material: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMMaterialProperties
         props.material_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(material, props.material_attributes)
+        bim_helper.import_attributes2(material, props.material_attributes)
 
     @classmethod
     def enable_editing_material(cls, material: ifcopenshell.entity_instance) -> None:
@@ -158,7 +158,7 @@ class Material(blenderbim.core.tool.Material):
 
     @classmethod
     def get_material_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
 
     @classmethod
     def disable_editing_material(cls) -> None:
@@ -272,7 +272,7 @@ class Material(blenderbim.core.tool.Material):
         if not material:
             material = tool.Ifc.get().by_type("IfcMaterial")[0]
         else:
-            blenderbim.core.material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
+            core_material.unassign_material(tool.Ifc, tool.Material, objects=[tool.Ifc.get_object(element)])
         tool.Ifc.run("material.assign_material", products=[element], type="IfcMaterialProfileSet", material=material)
         assinged_material = cls.get_material(element)
         material_profile = tool.Ifc.run("material.add_profile", profile_set=assinged_material, material=material)

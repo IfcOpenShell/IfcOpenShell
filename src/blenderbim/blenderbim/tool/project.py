@@ -21,20 +21,20 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim.core.aggregate
-import blenderbim.core.context
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.core.unit
-import blenderbim.core.owner
-import blenderbim.bim.schema
+from ..core import aggregate as core_aggregate
+from ..core import context as core_context
+from ..core import tool as core_tool
+from ..core import root as core_root
+from ..core import unit as core_unit
+from ..core import owner as core_owner
+from ..bim import schema as bim_schema
 from .. import tool
 from ..bim.ifc import IfcStore
 from pathlib import Path
 from typing import Optional
 
 
-class Project(blenderbim.core.tool.Project):
+class Project(core_tool.Project):
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
@@ -60,17 +60,17 @@ class Project(blenderbim.core.tool.Project):
         pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
         if os.path.isdir(pset_dir):
             for path in Path(pset_dir).glob("*.ifc"):
-                blenderbim.bim.schema.ifc.psetqto.templates.append(ifcopenshell.open(path))
+                bim_schema.ifc.psetqto.templates.append(ifcopenshell.open(path))
 
     @classmethod
     def run_aggregate_assign_object(cls, relating_obj=None, related_obj=None):
-        return blenderbim.core.aggregate.assign_object(
+        return core_aggregate.assign_object(
             tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=relating_obj, related_obj=related_obj
         )
 
     @classmethod
     def run_context_add_context(cls, context_type=None, context_identifier=None, target_view=None, parent=None):
-        return blenderbim.core.context.add_context(
+        return core_context.add_context(
             tool.Ifc,
             context_type=context_type,
             context_identifier=context_identifier,
@@ -80,19 +80,19 @@ class Project(blenderbim.core.tool.Project):
 
     @classmethod
     def run_owner_add_organisation(cls):
-        return blenderbim.core.owner.add_organisation(tool.Ifc)
+        return core_owner.add_organisation(tool.Ifc)
 
     @classmethod
     def run_owner_add_person(cls):
-        return blenderbim.core.owner.add_person(tool.Ifc)
+        return core_owner.add_person(tool.Ifc)
 
     @classmethod
     def run_owner_add_person_and_organisation(cls, person=None, organisation=None):
-        return blenderbim.core.owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
+        return core_owner.add_person_and_organisation(tool.Ifc, person=person, organisation=organisation)
 
     @classmethod
     def run_owner_set_user(cls, user=None):
-        return blenderbim.core.owner.set_user(tool.Owner, user=user)
+        return core_owner.set_user(tool.Owner, user=user)
 
     @classmethod
     def run_root_assign_class(
@@ -104,7 +104,7 @@ class Project(blenderbim.core.tool.Project):
         context: Optional[ifcopenshell.entity_instance] = None,
         ifc_representation_class: Optional[str] = None,
     ) -> ifcopenshell.entity_instance:
-        return blenderbim.core.root.assign_class(
+        return core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -118,7 +118,7 @@ class Project(blenderbim.core.tool.Project):
 
     @classmethod
     def run_unit_assign_scene_units(cls):
-        return blenderbim.core.unit.assign_scene_units(tool.Ifc, tool.Unit)
+        return core_unit.assign_scene_units(tool.Ifc, tool.Unit)
 
     @classmethod
     def set_context(cls, context):

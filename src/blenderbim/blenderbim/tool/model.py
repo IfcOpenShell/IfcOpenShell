@@ -28,8 +28,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
-import blenderbim.core.geometry
-import blenderbim.core.tool
+from ..core import geometry as core_geometry
+from ..core import tool as core_tool
 from .. import tool
 from ..core. import geometry
 from math import atan, degrees
@@ -46,7 +46,7 @@ from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 T = TypeVar("T")
 
 
-class Model(blenderbim.core.tool.Model):
+class Model(core_tool.Model):
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
         if isinstance(value, (tuple, list)):
@@ -897,7 +897,7 @@ class Model(blenderbim.core.tool.Model):
     def sync_object_ifc_position(cls, obj):
         """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
         if tool.Ifc.is_moved(obj):
-            blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+            core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
     def get_element_matrix(cls, element, keep_local=False):
@@ -930,7 +930,7 @@ class Model(blenderbim.core.tool.Model):
                 continue
             element = tool.Ifc.get_entity(obj)
             body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-            blenderbim.core.geometry.switch_representation(
+            core_geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
                 obj=obj,

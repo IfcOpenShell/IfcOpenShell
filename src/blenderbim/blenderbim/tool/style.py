@@ -21,9 +21,9 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
-import blenderbim.bim.helper
+from ..bim import helper as bim_helper
 from mathutils import Color
 from typing import Union, Any, Optional, Literal
 
@@ -46,7 +46,7 @@ STYLE_PROPS_MAP = {
 STYLE_TYPES = Literal["Shading", "External"]
 
 
-class Style(blenderbim.core.tool.Style):
+class Style(core_tool.Style):
     @classmethod
     def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
@@ -89,7 +89,7 @@ class Style(blenderbim.core.tool.Style):
     @classmethod
     def export_surface_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMStylesProperties
-        return blenderbim.bim.helper.export_attributes(props.attributes)
+        return bim_helper.export_attributes(props.attributes)
 
     @classmethod
     def get_active_style_type(cls) -> str:
@@ -517,7 +517,7 @@ class Style(blenderbim.core.tool.Style):
     def import_surface_attributes(cls, style: ifcopenshell.entity_instance) -> None:
         attributes = bpy.context.scene.BIMStylesProperties.attributes
         attributes.clear()
-        blenderbim.bim.helper.import_attributes2(style, attributes)
+        bim_helper.import_attributes2(style, attributes)
 
     @classmethod
     def has_blender_external_style(cls, style_elements: dict[str, ifcopenshell.entity_instance]) -> bool:

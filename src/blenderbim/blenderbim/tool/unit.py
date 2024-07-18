@@ -19,11 +19,11 @@
 import bpy
 import json
 import ifcopenshell
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 
 
-class Unit(blenderbim.core.tool.Unit):
+class Unit(core_tool.Unit):
     @classmethod
     def clear_active_unit(cls):
         bpy.context.scene.BIMUnitProperties.active_unit_id = 0

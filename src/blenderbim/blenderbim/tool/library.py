@@ -17,11 +17,11 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 
 
-class Library(blenderbim.core.tool.Library):
+class Library(core_tool.Library):
     @classmethod
     def clear_editing_mode(cls):
         bpy.context.scene.BIMLibraryProperties.editing_mode = ""

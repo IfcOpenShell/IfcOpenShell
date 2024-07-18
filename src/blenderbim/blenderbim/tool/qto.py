@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
-import blenderbim.bim.schema
+from ..core import tool as core_tool
+from ..bim import schema as bim_schema
 from .. import tool
 import ifcopenshell
 import ifcopenshell.util.unit
@@ -28,7 +28,7 @@ from typing import Optional, Union, Literal
 
 QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
-class Qto(blenderbim.core.tool.Qto):
+class Qto(core_tool.Qto):
     @classmethod
     def get_radius_of_selected_vertices(cls, obj: bpy.types.Object) -> float:
         selected_verts = [v.co for v in obj.data.vertices if v.select]
@@ -64,7 +64,7 @@ class Qto(blenderbim.core.tool.Qto):
             "Q_VOLUME": ("VOLUMEUNIT", "CUBIC_METRE"),
         }
         if not quantity_type:
-            qt = blenderbim.bim.schema.ifc.psetqto.get_by_name(qto_name)
+            qt = bim_schema.ifc.psetqto.get_by_name(qto_name)
             quantity_type = next(q.TemplateType for q in qt.HasPropertyTemplates if q.Name == quantity_name)
 
         unit_type = quantity_to_unit_types.get(quantity_type, None)

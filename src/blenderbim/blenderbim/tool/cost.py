@@ -1,21 +1,21 @@
 import os
 import bpy
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
-import blenderbim.bim.helper
+from ..bim import helper as bim_helper
 import json
 from typing import Optional, Any, Generator, Union
 
 
-class Cost(blenderbim.core.tool.Cost):
+class Cost(core_tool.Cost):
     @classmethod
     def get_cost_schedule_attributes(cls):
         props = bpy.context.scene.BIMCostProperties
-        return blenderbim.bim.helper.export_attributes(props.cost_schedule_attributes)
+        return bim_helper.export_attributes(props.cost_schedule_attributes)
 
     @classmethod
     def disable_editing_cost_schedule(cls):
@@ -86,7 +86,7 @@ class Cost(blenderbim.core.tool.Cost):
 
         props = bpy.context.scene.BIMCostProperties
         props.cost_schedule_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
+        bim_helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
 
     @classmethod
     def enable_editing_cost_items(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
@@ -187,7 +187,7 @@ class Cost(blenderbim.core.tool.Cost):
     def load_cost_item_attributes(cls, cost_item):
         props = bpy.context.scene.BIMCostProperties
         props.cost_item_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(cost_item, props.cost_item_attributes)
+        bim_helper.import_attributes2(cost_item, props.cost_item_attributes)
 
     @classmethod
     def disable_editing_cost_item(cls):
@@ -197,7 +197,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def get_cost_item_attributes(cls):
         props = bpy.context.scene.BIMCostProperties
-        return blenderbim.bim.helper.export_attributes(props.cost_item_attributes)
+        return bim_helper.export_attributes(props.cost_item_attributes)
 
     @classmethod
     def get_active_cost_item(cls) -> Union[ifcopenshell.entity_instance, None]:
@@ -313,7 +313,7 @@ class Cost(blenderbim.core.tool.Cost):
     def load_cost_item_quantity_attributes(cls, physical_quantity=None):
         props = bpy.context.scene.BIMCostProperties
         props.quantity_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
+        bim_helper.import_attributes2(physical_quantity, props.quantity_attributes)
 
     @classmethod
     def enable_editing_cost_item_values(cls, cost_item: ifcopenshell.entity_instance) -> None:
@@ -328,7 +328,7 @@ class Cost(blenderbim.core.tool.Cost):
     @classmethod
     def get_cost_item_quantity_attributes(cls):
         props = bpy.context.scene.BIMCostProperties
-        return blenderbim.bim.helper.export_attributes(props.quantity_attributes)
+        return bim_helper.export_attributes(props.quantity_attributes)
 
     @classmethod
     def get_attributes_for_cost_value(cls, cost_type, cost_category):
@@ -388,7 +388,7 @@ class Cost(blenderbim.core.tool.Cost):
         callback = lambda name, prop, data: import_attributes(
             name, prop, data, cost_value, is_rates, props.cost_value_attributes
         )
-        blenderbim.bim.helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
+        bim_helper.import_attributes2(cost_value, props.cost_value_attributes, callback=callback)
 
     @classmethod
     def calculate_applied_value(
@@ -448,7 +448,7 @@ class Cost(blenderbim.core.tool.Cost):
 
         props = bpy.context.scene.BIMCostProperties
         callback = lambda attributes, prop: export_attributes(attributes, prop)
-        return blenderbim.bim.helper.export_attributes(props.cost_value_attributes, callback)
+        return bim_helper.export_attributes(props.cost_value_attributes, callback)
 
     @classmethod
     def get_cost_value_unit_component(cls) -> ifcopenshell.entity_instance:

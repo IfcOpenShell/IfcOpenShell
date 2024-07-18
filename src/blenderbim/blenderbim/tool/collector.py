@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import ifcopenshell.util.element
 from typing import Union
 
 
-class Collector(blenderbim.core.tool.Collector):
+class Collector(core_tool.Collector):
     @classmethod
     def assign(cls, obj: bpy.types.Object) -> None:
         """Links an object to an appropriate Blender collection."""

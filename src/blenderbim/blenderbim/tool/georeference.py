@@ -21,13 +21,13 @@ import json
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.georeference
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
-import blenderbim.bim.helper
+from ..bim import helper as bim_helper
 from math import radians, cos, sin
 
 
-class Georeference(blenderbim.core.tool.Georeference):
+class Georeference(core_tool.Georeference):
     @classmethod
     def add_georeferencing(cls):
         tool.Ifc.run(
@@ -64,7 +64,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 projected_crs = context.HasCoordinateOperation[0].TargetCRS
-                blenderbim.bim.helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
+                bim_helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
                 return
 
     @classmethod
@@ -120,7 +120,7 @@ class Georeference(blenderbim.core.tool.Georeference):
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.HasCoordinateOperation:
                 coordinate_operation = context.HasCoordinateOperation[0]
-                blenderbim.bim.helper.import_attributes2(
+                bim_helper.import_attributes2(
                     coordinate_operation, props.coordinate_operation, callback=callback
                 )
                 return
@@ -155,7 +155,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        return blenderbim.bim.helper.export_attributes(props.projected_crs, callback=callback)
+        return bim_helper.export_attributes(props.projected_crs, callback=callback)
 
     @classmethod
     def get_coordinate_operation_attributes(cls):
@@ -186,7 +186,7 @@ class Georeference(blenderbim.core.tool.Georeference):
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
-        return blenderbim.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
+        return bim_helper.export_attributes(props.coordinate_operation, callback=callback)
 
     @classmethod
     def get_true_north_attributes(cls):

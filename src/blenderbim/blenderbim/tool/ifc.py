@@ -22,14 +22,14 @@ import numpy as np
 import ifcopenshell.api
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.element
-import blenderbim.core.tool
-import blenderbim.bim.handler
+from ..core import tool as core_tool
+from ..bim import handler as bim_handler
 from .. import tool
 from ..bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from typing import Optional, Union, Any, final
 
 
-class Ifc(blenderbim.core.tool.Ifc):
+class Ifc(core_tool.Ifc):
     @classmethod
     def run(cls, command: str, **kwargs) -> Any:
         return ifcopenshell.api.run(command, IfcStore.get_file(), **kwargs)
@@ -133,9 +133,9 @@ class Ifc(blenderbim.core.tool.Ifc):
             if global_id:
                 IfcStore.guid_map[global_id] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
-            blenderbim.bim.handler.subscribe_to(
-                obj, "active_material_index", blenderbim.bim.handler.active_material_index_callback
+            blenderbim.bim.handler.subscribe_to(obj, "name", bim_handler.name_callback)
+            bim_handler.subscribe_to(
+                obj, "active_material_index", bim_handler.active_material_index_callback
             )
 
         for obj in bpy.data.materials:
@@ -151,7 +151,7 @@ class Ifc(blenderbim.core.tool.Ifc):
             if style:
                 IfcStore.id_map[style.id()] = obj
 
-            blenderbim.bim.handler.subscribe_to(obj, "name", blenderbim.bim.handler.name_callback)
+            blenderbim.bim.handler.subscribe_to(obj, "name", bim_handler.name_callback)
 
     @classmethod
     def link(cls, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
@@ -221,7 +221,7 @@ class Ifc(blenderbim.core.tool.Ifc):
         @final
         def execute(self, context):
             IfcStore.execute_ifc_operator(self, context)
-            blenderbim.bim.handler.refresh_ui_data()
+            bim_handler.refresh_ui_data()
             return {"FINISHED"}
 
         # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod

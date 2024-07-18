@@ -20,17 +20,17 @@ import bpy
 import bmesh
 import shapely
 import ifcopenshell
-import blenderbim.core.tool
-import blenderbim.core.root
-import blenderbim.core.spatial
-import blenderbim.core.geometry
+from ..core import tool as core_tool
+from ..core import root as core_root
+from ..core import spatial as core_spatial
+from ..core import geometry as core_geometry
 from .. import tool
 import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon, MultiPolygon
 
-class Covering(blenderbim.core.tool.Covering):
+class Covering(core_tool.Covering):
     @classmethod
     def get_z_from_ceiling_height(cls):
         props = bpy.context.scene.BIMCoveringProperties

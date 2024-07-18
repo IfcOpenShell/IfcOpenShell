@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from typing import TYPE_CHECKING
 
 
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import ifcpatch
 
 
-class Patch(blenderbim.core.tool.Patch):
+class Patch(core_tool.Patch):
     @classmethod
     def run_migrate_patch(cls, infile: str, outfile: str, schema: str) -> None:
         output = ifcpatch.execute(

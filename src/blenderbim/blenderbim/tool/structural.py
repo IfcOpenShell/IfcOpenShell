@@ -19,15 +19,15 @@
 import bpy
 import ifcopenshell
 import json
-import blenderbim.bim.helper
-import blenderbim.core.tool
-import blenderbim.core.structural
+from ..bim import helper as bim_helper
+from ..core import tool as core_tool
+from ..core import structural as core_structural
 from .. import tool
 from ..bim.ifc import IfcStore
 from pprint import pprint
 
 
-class Structural(blenderbim.core.tool.Structural):
+class Structural(core_tool.Structural):
     @classmethod
     def disable_editing_structural_analysis_model(cls):
         bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = 0
@@ -121,7 +121,7 @@ class Structural(blenderbim.core.tool.Structural):
     @classmethod
     def get_structural_analysis_model_attributes(cls):
         props = bpy.context.scene.BIMStructuralProperties
-        attributes = blenderbim.bim.helper.export_attributes(props.structural_analysis_model_attributes)
+        attributes = bim_helper.export_attributes(props.structural_analysis_model_attributes)
         return attributes
 
     @classmethod

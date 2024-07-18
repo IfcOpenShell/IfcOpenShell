@@ -1,10 +1,10 @@
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import bpy
 import json
 
 
-class Bsdd(blenderbim.core.tool.Bsdd):
+class Bsdd(core_tool.Bsdd):
 
     @classmethod
     def clear_class_psets(cls) -> None:

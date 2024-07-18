@@ -19,10 +19,10 @@
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.system
-import blenderbim.bim.helper
-import blenderbim.core.geometry
-import blenderbim.core.root
-import blenderbim.core.tool
+from ..bim import helper as bim_helper
+from ..core import geometry as core_geometry
+from ..core import root as core_root
+from ..core import tool as core_tool
 from .. import tool
 from ..bim import import_ifc
 import re
@@ -33,7 +33,7 @@ from ..bim.module.drawing.decoration import profile_consequential
 from enum import Enum
 
 
-class System(blenderbim.core.tool.System):
+class System(core_tool.System):
     @classmethod
     def add_ports(cls, obj, add_start_port=True, add_end_port=True, end_port_pos=None, offset_end_port=None):
         def add_port(mep_element, matrix):
@@ -95,7 +95,7 @@ class System(blenderbim.core.tool.System):
 
     @classmethod
     def export_system_attributes(cls):
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMSystemProperties.system_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMSystemProperties.system_attributes)
 
     @classmethod
     def get_connected_port(cls, port):
@@ -128,7 +128,7 @@ class System(blenderbim.core.tool.System):
     def import_system_attributes(cls, system):
         props = bpy.context.scene.BIMSystemProperties
         props.system_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(system, props.system_attributes)
+        bim_helper.import_attributes2(system, props.system_attributes)
 
     @classmethod
     def get_systems(cls):
@@ -172,7 +172,7 @@ class System(blenderbim.core.tool.System):
 
     @classmethod
     def run_geometry_edit_object_placement(cls, obj=None):
-        return blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        return core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
     def run_root_assign_class(
@@ -184,7 +184,7 @@ class System(blenderbim.core.tool.System):
         context=None,
         ifc_representation_class=None,
     ):
-        return blenderbim.core.root.assign_class(
+        return core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,

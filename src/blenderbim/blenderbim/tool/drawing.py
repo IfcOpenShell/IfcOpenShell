@@ -31,8 +31,8 @@ import platform
 import mathutils
 import subprocess
 import numpy as np
-import blenderbim.core.tool
-import blenderbim.core.geometry
+from ..core import tool as core_tool
+from ..core import geometry as core_geometry
 from .. import tool
 import ifcopenshell.api
 import ifcopenshell.geom
@@ -40,8 +40,8 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
-import blenderbim.bim.import_ifc
-import blenderbim.core.root
+from ..bim import import_ifc as bim_import_ifc
+from ..core import root as core_root
 from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
@@ -50,7 +50,7 @@ from typing import Optional, Union, Iterable, Any, Literal
 from pathlib import Path
 
 
-class Drawing(blenderbim.core.tool.Drawing):
+class Drawing(core_tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
 
@@ -654,8 +654,8 @@ class Drawing(blenderbim.core.tool.Drawing):
             [e for e in cls.get_group_elements(group) if e.is_a("IfcAnnotation") and e.ObjectType != "DRAWING"]
         )
         logger = logging.getLogger("ImportIFC")
-        ifc_import_settings = blenderbim.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
-        ifc_importer = blenderbim.bim.import_ifc.IfcImporter(ifc_import_settings)
+        ifc_import_settings = bim_import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        ifc_importer = bim_import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
@@ -941,7 +941,7 @@ class Drawing(blenderbim.core.tool.Drawing):
         context=None,
         ifc_representation_class=None,
     ) -> Union[ifcopenshell.entity_instance, None]:
-        return blenderbim.core.root.assign_class(
+        return core_root.assign_class(
             tool.Ifc,
             tool.Collector,
             tool.Root,
@@ -1548,7 +1548,7 @@ class Drawing(blenderbim.core.tool.Drawing):
             return cls.sync_grid_axis_object_placement(obj, element)
         if not hasattr(element, "ObjectPlacement"):
             return
-        blenderbim.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        core_geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         return element
 
     @classmethod
@@ -1858,7 +1858,7 @@ class Drawing(blenderbim.core.tool.Drawing):
                     break
                 priority_representation = ifcopenshell.util.representation.get_representation(element, *subcontext)
                 if priority_representation:
-                    blenderbim.core.geometry.switch_representation(
+                    core_geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
                         obj=obj,

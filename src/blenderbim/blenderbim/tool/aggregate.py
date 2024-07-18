@@ -17,13 +17,13 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import ifcopenshell.util.element
 from typing import Union
 
 
-class Aggregate(blenderbim.core.tool.Aggregate):
+class Aggregate(core_tool.Aggregate):
     @classmethod
     def can_aggregate(cls, relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
         relating_object = tool.Ifc.get_entity(relating_obj)

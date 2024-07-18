@@ -18,13 +18,13 @@
 
 import bpy
 import mathutils
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 from mathutils import Matrix, Vector
 from typing import Any, Sequence
 
 
-class Boundary(blenderbim.core.tool.Boundary):
+class Boundary(core_tool.Boundary):
     @classmethod
     def get_assign_connection_geometry_settings(cls, obj: bpy.types.Object) -> dict[str, Any]:
         from blenderbim.bim.module.geometry.helper import Helper

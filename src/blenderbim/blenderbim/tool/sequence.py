@@ -29,17 +29,17 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
-import blenderbim.core.tool
-import blenderbim.core
+from ..core import tool as core_tool
+from .. import core as core
 from .. import tool
-import blenderbim.bim.helper
+from ..bim import helper as bim_helper
 from ..bim.module.sequence. import helper
 from dateutil import parser
 from datetime import datetime
 from typing import Optional, Any, Union
 
 
-class Sequence(blenderbim.core.tool.Sequence):
+class Sequence(core_tool.Sequence):
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
         def callback(attributes, prop):
@@ -57,7 +57,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 return True
 
         props = bpy.context.scene.BIMWorkPlanProperties
-        return blenderbim.bim.helper.export_attributes(props.work_plan_attributes, callback)
+        return bim_helper.export_attributes(props.work_plan_attributes, callback)
 
     @classmethod
     def load_work_plan_attributes(cls, work_plan: ifcopenshell.entity_instance) -> None:
@@ -68,7 +68,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
         props = bpy.context.scene.BIMWorkPlanProperties
         props.work_plan_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
+        bim_helper.import_attributes2(work_plan, props.work_plan_attributes, callback)
 
     @classmethod
     def enable_editing_work_plan(cls, work_plan: Union[ifcopenshell.entity_instance, None]) -> None:
@@ -103,7 +103,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 return True
 
         props = bpy.context.scene.BIMWorkScheduleProperties
-        return blenderbim.bim.helper.export_attributes(props.work_schedule_attributes, callback)
+        return bim_helper.export_attributes(props.work_schedule_attributes, callback)
 
     @classmethod
     def load_work_schedule_attributes(cls, work_schedule: ifcopenshell.entity_instance) -> None:
@@ -114,7 +114,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.work_schedule_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(work_schedule, props.work_schedule_attributes, callback)
+        bim_helper.import_attributes2(work_schedule, props.work_schedule_attributes, callback)
 
     @classmethod
     def enable_editing_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
@@ -323,7 +323,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def load_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(task, props.task_attributes)
+        bim_helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
     def enable_editing_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
@@ -333,7 +333,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_task_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.task_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.task_attributes)
 
     @classmethod
     def load_task_time_attributes(cls, task_time: ifcopenshell.entity_instance) -> None:
@@ -357,7 +357,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_time_attributes.clear()
         props.durations_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(task_time, props.task_time_attributes, callback)
+        bim_helper.import_attributes2(task_time, props.task_time_attributes, callback)
 
     @classmethod
     def enable_editing_task_time(cls, task: ifcopenshell.entity_instance) -> None:
@@ -399,7 +399,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                     return True
 
         props = bpy.context.scene.BIMWorkScheduleProperties
-        return blenderbim.bim.helper.export_attributes(props.task_time_attributes, callback)
+        return bim_helper.export_attributes(props.task_time_attributes, callback)
 
     @classmethod
     def load_task_resources(cls, task: ifcopenshell.entity_instance) -> None:
@@ -490,7 +490,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def load_work_calendar_attributes(cls, work_calendar: ifcopenshell.entity_instance) -> dict[str, Any]:
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_calendar_attributes.clear()
-        return blenderbim.bim.helper.import_attributes2(work_calendar, props.work_calendar_attributes)
+        return bim_helper.import_attributes2(work_calendar, props.work_calendar_attributes)
 
     @classmethod
     def enable_editing_work_calendar(cls, work_calendar: ifcopenshell.entity_instance) -> None:
@@ -503,7 +503,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_work_calendar_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(
+        return bim_helper.export_attributes(
             bpy.context.scene.BIMWorkCalendarProperties.work_calendar_attributes
         )
 
@@ -517,7 +517,7 @@ class Sequence(blenderbim.core.tool.Sequence):
         props = bpy.context.scene.BIMWorkCalendarProperties
         props.work_time_attributes.clear()
 
-        blenderbim.bim.helper.import_attributes2(work_time, props.work_time_attributes, callback)
+        bim_helper.import_attributes2(work_time, props.work_time_attributes, callback)
 
     @classmethod
     def enable_editing_work_time(cls, work_time: ifcopenshell.entity_instance) -> None:
@@ -577,7 +577,7 @@ class Sequence(blenderbim.core.tool.Sequence):
                 return True
 
         props = bpy.context.scene.BIMWorkCalendarProperties
-        return blenderbim.bim.helper.export_attributes(props.work_time_attributes, callback)
+        return bim_helper.export_attributes(props.work_time_attributes, callback)
 
     @classmethod
     def get_recurrence_pattern_attributes(cls, recurrence_pattern):
@@ -645,7 +645,7 @@ class Sequence(blenderbim.core.tool.Sequence):
     def load_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.sequence_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(rel_sequence, props.sequence_attributes)
+        bim_helper.import_attributes2(rel_sequence, props.sequence_attributes)
 
     @classmethod
     def enable_editing_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
@@ -669,7 +669,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
         props = bpy.context.scene.BIMWorkScheduleProperties
         props.lag_time_attributes.clear()
-        blenderbim.bim.helper.import_attributes2(lag_time, props.lag_time_attributes, callback)
+        bim_helper.import_attributes2(lag_time, props.lag_time_attributes, callback)
 
     @classmethod
     def enable_editing_sequence_lag_time(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
@@ -679,7 +679,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_rel_sequence_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.sequence_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.sequence_attributes)
 
     @classmethod
     def disable_editing_rel_sequence(cls) -> None:
@@ -687,7 +687,7 @@ class Sequence(blenderbim.core.tool.Sequence):
 
     @classmethod
     def get_lag_time_attributes(cls) -> dict[str, Any]:
-        return blenderbim.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
+        return bim_helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
 
     @classmethod
     def select_products(cls, products):

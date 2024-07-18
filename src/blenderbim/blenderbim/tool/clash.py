@@ -20,13 +20,13 @@ import os
 import bpy
 import json
 import ifcopenshell
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 from contextlib import contextmanager
 from mathutils import Vector
 
 
-class Clash(blenderbim.core.tool.Clash):
+class Clash(core_tool.Clash):
 
     @classmethod
     def export_clash_sets(cls):

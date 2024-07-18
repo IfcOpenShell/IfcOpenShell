@@ -18,12 +18,12 @@
 
 import bpy
 import ifcopenshell.api
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import numpy as np
 
 
-class Surveyor(blenderbim.core.tool.Surveyor):
+class Surveyor(core_tool.Surveyor):
     @classmethod
     def get_absolute_matrix(cls, obj):
         matrix = np.array(obj.matrix_world)

@@ -25,9 +25,9 @@ import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
-import blenderbim.bim.import_ifc
+from ..bim import import_ifc as bim_import_ifc
 import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
@@ -44,16 +44,16 @@ from typing import Union
 OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve]
 
 
-class Loader(blenderbim.core.tool.Loader):
+class Loader(core_tool.Loader):
     unit_scale: float = 1
-    settings: blenderbim.bim.import_ifc.IfcImportSettings = None
+    settings: bim_import_ifc.IfcImportSettings = None
 
     @classmethod
     def set_unit_scale(cls, unit_scale: float) -> None:
         cls.unit_scale = unit_scale
 
     @classmethod
-    def set_settings(cls, settings: blenderbim.bim.import_ifc.IfcImportSettings) -> None:
+    def set_settings(cls, settings: bim_import_ifc.IfcImportSettings) -> None:
         cls.settings = settings
 
     @classmethod

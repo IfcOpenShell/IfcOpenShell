@@ -19,13 +19,13 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
-import blenderbim.bim.schema
+from ..bim import schema as bim_schema
 from typing import Union
 
 
-class Pset(blenderbim.core.tool.Pset):
+class Pset(core_tool.Pset):
     @classmethod
     def get_element_pset(
         cls, element: ifcopenshell.entity_instance, pset_name: str
@@ -67,7 +67,7 @@ class Pset(blenderbim.core.tool.Pset):
     def is_pset_applicable(cls, element: ifcopenshell.entity_instance, pset_name: str) -> bool:
         return bool(
             pset_name
-            in blenderbim.bim.schema.ifc.psetqto.get_applicable_names(
+            in bim_schema.ifc.psetqto.get_applicable_names(
                 element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
             )
         )
@@ -249,7 +249,7 @@ class Pset(blenderbim.core.tool.Pset):
 
     @classmethod
     def get_pset_template(cls, name):
-        return blenderbim.bim.schema.ifc.psetqto.get_by_name(name)
+        return bim_schema.ifc.psetqto.get_by_name(name)
 
     @classmethod
     def add_proposed_property(cls, name, value, props):

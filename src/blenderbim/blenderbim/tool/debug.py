@@ -19,12 +19,12 @@
 import os
 import bpy
 import ifcopenshell.express
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 from ..bim.ifc import IfcStore
 
 
-class Debug(blenderbim.core.tool.Debug):
+class Debug(core_tool.Debug):
     @classmethod
     def add_schema_identifier(cls, schema):
         IfcStore.schema_identifiers.append(schema.schema_name)

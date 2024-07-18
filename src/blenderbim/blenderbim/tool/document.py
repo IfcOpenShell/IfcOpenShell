@@ -18,12 +18,12 @@
 
 import bpy
 import ifcopenshell.util.system
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 from ..bim import import_ifc
 
 
-class Document(blenderbim.core.tool.Document):
+class Document(core_tool.Document):
     @classmethod
     def add_breadcrumb(cls, document):
         props = bpy.context.scene.BIMDocumentProperties

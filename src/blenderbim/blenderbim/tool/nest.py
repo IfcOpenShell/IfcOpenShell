@@ -16,12 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import ifcopenshell.util.element
 
 
-class Nest(blenderbim.core.tool.Nest):
+class Nest(core_tool.Nest):
     @classmethod
     def can_nest(cls, relating_obj, related_obj):
         relating_object = tool.Ifc.get_entity(relating_obj)

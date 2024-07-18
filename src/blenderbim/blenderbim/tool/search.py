@@ -1,14 +1,14 @@
 import bpy
 import json
 import lark
-import blenderbim.core.tool
+from ..core import tool as core_tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
 from ..bim.prop import BIMFacet
 from typing import Union, Literal
 
 
-class Search(blenderbim.core.tool.Search):
+class Search(core_tool.Search):
     @classmethod
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]

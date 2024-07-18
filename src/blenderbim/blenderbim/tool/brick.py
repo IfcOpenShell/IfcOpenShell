@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 from contextlib import contextmanager
 import datetime
@@ -45,7 +45,7 @@ logger = logging.getLogger("rdflib")
 logger.setLevel(logging.ERROR)
 
 
-class Brick(blenderbim.core.tool.Brick):
+class Brick(core_tool.Brick):
     @classmethod
     def add_brick(cls, namespace, brick_class, label):
         ns = Namespace(namespace)

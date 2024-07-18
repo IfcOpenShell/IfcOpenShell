@@ -23,9 +23,9 @@ import json
 import os
 import ifcopenshell.api
 import ifcopenshell.util.element
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
-import blenderbim.bim
+from .. import bim as bim
 import addon_utils
 import types
 from mathutils import Vector
@@ -48,7 +48,7 @@ VIEWPORT_ATTRIBUTES = [
 OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
 
 
-class Blender(blenderbim.core.tool.Blender):
+class Blender(core_tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
@@ -920,7 +920,7 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
         """Get 8 symbols of last commit hash if it's present or return None otherwise."""
-        commit_hash = blenderbim.bim.last_commit_hash
+        commit_hash = bim.last_commit_hash
 
         # Commit hash is unset - user is using __init__ from repo
         # without setting up git repository.
@@ -947,11 +947,11 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def register_toolbar(cls):
-        import blenderbim.bim.module.model.workspace as ws_model
-        import blenderbim.bim.module.drawing.workspace as ws_drawing
-        import blenderbim.bim.module.spatial.workspace as ws_spatial
-        import blenderbim.bim.module.structural.workspace as ws_structural
-        import blenderbim.bim.module.covering.workspace as ws_covering
+        import bim.module.model.workspace as ws_model
+        import bim.module.drawing.workspace as ws_drawing
+        import bim.module.spatial.workspace as ws_spatial
+        import bim.module.structural.workspace as ws_structural
+        import bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -979,11 +979,11 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def unregister_toolbar(cls):
-        import blenderbim.bim.module.model.workspace as ws_model
-        import blenderbim.bim.module.drawing.workspace as ws_drawing
-        import blenderbim.bim.module.spatial.workspace as ws_spatial
-        import blenderbim.bim.module.structural.workspace as ws_structural
-        import blenderbim.bim.module.covering.workspace as ws_covering
+        import bim.module.model.workspace as ws_model
+        import bim.module.drawing.workspace as ws_drawing
+        import bim.module.spatial.workspace as ws_spatial
+        import bim.module.structural.workspace as ws_structural
+        import bim.module.covering.workspace as ws_covering
 
         if bpy.app.background:
             return
@@ -1070,7 +1070,7 @@ class Blender(blenderbim.core.tool.Blender):
         def poll_check_blender_tab(cls, context):
             return tool.Blender.is_tab(context, "BLENDER")
 
-        polls = blenderbim.bim.original_scene_panels_polls
+        polls = bim.original_scene_panels_polls
 
         # override poll method
         if not hasattr(original_panel, "poll"):
@@ -1091,7 +1091,7 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def remove_scene_panel_override(cls, panel: bpy.types.Panel) -> None:
-        polls = blenderbim.bim.original_scene_panels_polls
+        polls = bim.original_scene_panels_polls
 
         poll = polls[panel]
         if poll is None:
@@ -1114,7 +1114,7 @@ class Blender(blenderbim.core.tool.Blender):
         return "blenderbim"
 
     @classmethod
-    def get_addon_preferences(cls) -> blenderbim.bim.ui.BIM_ADDON_preferences:
+    def get_addon_preferences(cls) -> bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
         return bpy.context.preferences.addons[blender_package_name].preferences
 

@@ -18,7 +18,7 @@
 
 import bpy
 from ..bim.module.web.data import WebData
-import blenderbim.core.tool
+from ..core import tool as core_tool
 from .. import tool
 import ifcopenshell.api.sequence
 import socket
@@ -44,7 +44,7 @@ IFC_TASK_ATTRIBUTE_MAP = {
 }
 
 
-class Web(blenderbim.core.tool.Web):
+class Web(core_tool.Web):
     @classmethod
     def generate_port_number(cls):
         print("Generating port number")
