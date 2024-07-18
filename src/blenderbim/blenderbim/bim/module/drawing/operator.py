@@ -36,7 +36,10 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import blenderbim.bim.schema
+import blenderbim.bim.helper
+import blenderbim.bim.handler
 import blenderbim.tool as tool
+import blenderbim.core.geometry
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.svgwriter as svgwriter
 import blenderbim.bim.module.drawing.annotation as annotation

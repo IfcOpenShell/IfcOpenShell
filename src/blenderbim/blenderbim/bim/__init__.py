@@ -19,7 +19,6 @@
 import os
 import bpy
 import bpy.utils.previews
-import blenderbim
 import importlib
 from pathlib import Path
 from . import handler, ui, prop, operator, helper

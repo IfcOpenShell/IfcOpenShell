@@ -23,7 +23,6 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-import blenderbim
 import blenderbim.core.root
 import blenderbim.tool as tool
 from mathutils import Vector
