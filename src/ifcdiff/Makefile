@@ -16,23 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcDiff.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=$(shell cat ../../VERSION)
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=ifcdiff.py
+IS_MODULE:=true
+include ../common.mk
 
 .PHONY: qa
 qa:
 	black .
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	cp pyproject.toml pyproject.toml.bak
-	cp ifcdiff.py ifcdiff.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' ifcdiff.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv ifcdiff.py.bak ifcdiff.py

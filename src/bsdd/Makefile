@@ -16,23 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with bSDD.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=$(shell cat ../../VERSION)
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=bsdd.py
+IS_MODULE:=true
+include ../common.mk
 
 .PHONY: test
 test:
 	pytest -p no:pytest-blender test
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	cp pyproject.toml pyproject.toml.bak
-	cp bsdd.py bsdd.py.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' bsdd.py
-	python -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv bsdd.py.bak bsdd.py

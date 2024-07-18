@@ -23,8 +23,8 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifctester"]
+include = ["ifctester*"]
 exclude = ["test*"]
 
 [tool.setuptools.package-data]
-ifctester = ["*.xsd", "templates/*.html"]
+"*" = ["*.*"]

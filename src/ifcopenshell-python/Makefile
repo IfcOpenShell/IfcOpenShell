@@ -3,6 +3,7 @@ PYVERSION:=py311
 PLATFORM:=linux64
 
 PYTHON:=python3.11
+PIP:=pip3.11
 SED:=sed -i
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
@@ -105,28 +106,21 @@ dist:
 ifndef PLATFORM
 	$(error PLATFORM is not set)
 endif
-	rm -rf dist
-	mkdir -p dist/working
-	mkdir -p dist/ifcopenshell
-	cp -r ifcopenshell/* dist/ifcopenshell/
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r ifcopenshell build/
 
-	cd dist/working && $(PYTHON) -m venv env
-	cd dist/working && . env/bin/activate && $(PIP) install build
+	mkdir build/botbuild
+	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
+	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	cp ../../README.md build/
+	cp pyproject.toml build/
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
 
-	cd dist/working && wget $(IOS_URL)
-	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
-	rm -rf dist/working
-	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
-	cp README.md ../README.bak
-	cp ../../README.md README.md
-	cp pyproject.toml pyproject.toml.bak
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
-	. dist/working/env/bin/activate && $(PYTHON) -m build
-	mv pyproject.toml.bak pyproject.toml
-	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-$(VERSION)-py3-none-any.whl ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
-	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-$(VERSION).tar.gz
+	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
+	cd build && . env/bin/activate && $(PYTHON) -m build
+
+	mv build/dist/ifcopenshell-$(VERSION)-py3-none-any.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	rm -rf build

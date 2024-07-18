@@ -35,7 +35,6 @@ dev = ["pytest"]
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
 
 [tool.setuptools.packages.find]
-where = ["dist"]
 include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
