@@ -2,6 +2,10 @@ PYTHON:=python3.11
 PIP:=pip3.11
 VERSION:=$(shell cat ../../VERSION)
 SED:=sed -i
+ifeq ($(OS),Windows_NT)
+PYTHON:=python
+PIP:=pip
+endif
 ifeq ($(UNAME_S),Darwin)
 SED:=sed -i '' -e
 PYTHON:=python3
