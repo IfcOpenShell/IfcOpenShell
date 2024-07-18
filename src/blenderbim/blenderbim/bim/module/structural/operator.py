@@ -28,7 +28,7 @@ import blenderbim.tool as tool
 import blenderbim.core.context
 from math import degrees
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):

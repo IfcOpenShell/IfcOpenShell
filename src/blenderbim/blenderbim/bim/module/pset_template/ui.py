@@ -18,8 +18,8 @@
 
 import bpy
 from bpy.types import Panel
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.pset_template.data import PsetTemplatesData
+from ...helper import prop_with_search
+from .data import PsetTemplatesData
 
 
 class BIM_PT_pset_template(Panel):

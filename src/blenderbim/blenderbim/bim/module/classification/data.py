@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.classification
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 def refresh():

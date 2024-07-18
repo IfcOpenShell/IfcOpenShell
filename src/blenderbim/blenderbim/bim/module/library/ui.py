@@ -19,7 +19,7 @@
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.library.data import LibrariesData, LibraryReferencesData
+from .data import LibrariesData, LibraryReferencesData
 
 
 class BIM_PT_libraries(Panel):

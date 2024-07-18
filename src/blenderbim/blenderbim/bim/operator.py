@@ -33,11 +33,11 @@ import ifcopenshell
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from . import schema
-from blenderbim.bim import import_ifc
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty
-from blenderbim.bim.ui import IFCFileSelector
-from blenderbim.bim.helper import get_enum_items
+from ..bim import import_ifc
+from .ifc import IfcStore
+from .prop import StrProperty
+from .ui import IFCFileSelector
+from .helper import get_enum_items
 from mathutils import Vector, Matrix, Euler
 from math import radians
 from pathlib import Path

@@ -18,9 +18,9 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-from blenderbim.tool.brick import BrickStore
+from ...helper import prop_with_search
+from .data import BrickschemaData, BrickschemaReferencesData
+from ....tool.brick import BrickStore
 
 
 class BIM_PT_brickschema(Panel):

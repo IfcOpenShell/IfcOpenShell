@@ -24,7 +24,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.unit as core
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class AssignSceneUnits(bpy.types.Operator, tool.Ifc.Operator):

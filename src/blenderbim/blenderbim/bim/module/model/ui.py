@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim
 import blenderbim.tool as tool
 from bpy.types import Panel, Menu
-from blenderbim.bim.module.model.data import (
+from .data import (
     AuthoringData,
     ArrayData,
     StairData,
@@ -30,13 +30,13 @@ from blenderbim.bim.module.model.data import (
     RailingData,
     RoofData,
 )
-from blenderbim.bim.module.model.prop import get_ifc_class
-from blenderbim.bim.module.model.stair import regenerate_stair_mesh
-from blenderbim.bim.module.model.window import update_window_modifier_bmesh
-from blenderbim.bim.module.model.door import update_door_modifier_bmesh
-from blenderbim.bim.module.model.railing import update_railing_modifier_bmesh
-from blenderbim.bim.module.model.roof import update_roof_modifier_bmesh
-from blenderbim.bim.helper import prop_with_search
+from .prop import get_ifc_class
+from .stair import regenerate_stair_mesh
+from .window import update_window_modifier_bmesh
+from .door import update_door_modifier_bmesh
+from .railing import update_railing_modifier_bmesh
+from .roof import update_roof_modifier_bmesh
+from ...helper import prop_with_search
 from collections.abc import Iterable
 
 

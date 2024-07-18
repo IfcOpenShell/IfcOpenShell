@@ -22,8 +22,8 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.brick as core
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.tool.brick import BrickStore
+from ...ifc import IfcStore
+from ....tool.brick import BrickStore
 
 
 class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):

@@ -18,8 +18,8 @@
 
 import blenderbim.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.search.data import SearchData
+from ...ifc import IfcStore
+from ..search.data import SearchData
 
 
 class BIM_PT_ifccsv(Panel):

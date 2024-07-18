@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.qto.data import QtoData
+from .data import QtoData
 
 
 class BIM_PT_qto(bpy.types.Panel):

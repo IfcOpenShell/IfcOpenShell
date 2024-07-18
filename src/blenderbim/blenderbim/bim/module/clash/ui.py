@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.module.clash.data import ClashData
+from .data import ClashData
 
 
 class BIM_PT_ifcclash(Panel):

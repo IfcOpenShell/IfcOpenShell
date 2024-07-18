@@ -19,8 +19,8 @@
 import bpy
 import blenderbim.tool as tool
 from ifcopenshell import util
-from blenderbim.bim.prop import ObjProperty, BIMFilterGroup
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+from ...prop import ObjProperty, BIMFilterGroup
+from .data import SearchData, ColourByPropertyData, SelectSimilarData
 from bpy.types import PropertyGroup
 from . import ui, prop, operator
 from bpy.props import (

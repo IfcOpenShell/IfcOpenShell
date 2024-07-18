@@ -27,8 +27,8 @@ import blenderbim.tool as tool
 import blenderbim.core.style
 import blenderbim.core.material as core
 import blenderbim.bim.module.model.profile as model_profile
-from blenderbim.bim.module.material.prop import purge as material_prop_purge
-from blenderbim.bim.ifc import IfcStore
+from .prop import purge as material_prop_purge
+from ...ifc import IfcStore
 
 
 class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):

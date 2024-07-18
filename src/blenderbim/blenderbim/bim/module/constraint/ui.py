@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
+from ...ifc import IfcStore
+from ...helper import draw_attributes
+from .data import ConstraintsData, ObjectConstraintsData
 
 
 class BIM_PT_constraints(Panel):

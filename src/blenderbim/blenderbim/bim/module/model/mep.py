@@ -39,8 +39,8 @@ from math import pi, degrees, radians, sin, cos, asin, tan
 from copy import copy
 from mathutils import Vector, Matrix
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from blenderbim.bim.module.model.profile import DumbProfileJoiner
-from blenderbim.tool.cad import VTX_PRECISION
+from .profile import DumbProfileJoiner
+from ....tool.cad import VTX_PRECISION
 
 V = lambda *x: Vector([float(i) for i in x])
 

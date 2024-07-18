@@ -19,10 +19,10 @@
 import os
 import blenderbim.bim
 import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+from ...helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.project.data import ProjectData, LinksData
+from ...ifc import IfcStore
+from .data import ProjectData, LinksData
 
 
 class BIM_MT_project(Menu):

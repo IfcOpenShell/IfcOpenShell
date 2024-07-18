@@ -29,12 +29,10 @@ from ifcopenshell.util.doc import (
     get_type_doc,
     get_attribute_doc,
 )
-from . import ifc
-from blenderbim import get_debug_info
 import blenderbim.bim
 import blenderbim.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
-from blenderbim.bim.prop import Attribute
+from .prop import Attribute
 from typing import Optional
 
 

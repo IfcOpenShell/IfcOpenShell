@@ -24,7 +24,7 @@ import blenderbim.tool as tool
 import blenderbim.core.misc as core
 import blenderbim.core.geometry as core_geometry
 import blenderbim.core.root
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from mathutils import Vector, Matrix, Euler
 
 

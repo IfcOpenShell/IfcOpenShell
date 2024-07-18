@@ -19,9 +19,9 @@
 import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes, prop_with_search
-from blenderbim.bim.module.structural.data import (
+from ...ifc import IfcStore
+from ...helper import draw_attributes, prop_with_search
+from .data import (
     StructuralBoundaryConditionsData,
     ConnectedStructuralMembersData,
     StructuralMemberData,

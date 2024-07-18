@@ -30,8 +30,8 @@ import blenderbim.core.style
 import blenderbim.core.type
 import blenderbim.core.root as core
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import get_enum_items
+from ...ifc import IfcStore
+from ...helper import get_enum_items
 
 
 class EnableReassignClass(bpy.types.Operator):

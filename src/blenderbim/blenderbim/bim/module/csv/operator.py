@@ -26,8 +26,8 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.scheduler as scheduler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.handler import refresh_ui_data
+from ...ifc import IfcStore
+from ...handler import refresh_ui_data
 
 
 class AddCsvAttribute(bpy.types.Operator):

@@ -20,12 +20,12 @@ import os
 import bpy
 import blenderbim.tool as tool
 import blenderbim.core.model as core
-from blenderbim.bim.module.model.wall import DumbWallJoiner
-from blenderbim.bim.helper import prop_with_search
+from .wall import DumbWallJoiner
+from ...helper import prop_with_search
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.system.data import PortData
-from blenderbim.bim.module.model.prop import get_ifc_class
+from .data import AuthoringData
+from ..system.data import PortData
+from .prop import get_ifc_class
 
 
 class BimTool(WorkSpaceTool):

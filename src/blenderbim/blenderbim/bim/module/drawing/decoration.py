@@ -32,9 +32,9 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from gpu_extras.batch import batch_for_shader
-from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
-from blenderbim.bim.module.drawing.shaders import add_verts_sequence, add_offsets
-from blenderbim.bim.module.drawing.helper import format_distance
+from .data import DecoratorData, DrawingsData
+from .shaders import add_verts_sequence, add_offsets
+from .helper import format_distance
 from timeit import default_timer as timer
 from functools import lru_cache
 from typing import Optional, Iterator, Type, Union

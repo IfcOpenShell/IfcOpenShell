@@ -19,7 +19,7 @@
 import bpy
 import bsdd
 import blenderbim.tool as tool
-from blenderbim.core import bsdd as core
+from ....core import bsdd as core
 
 
 class LoadBSDDDomains(bpy.types.Operator):

@@ -19,9 +19,9 @@
 from math import radians
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.structural.data import StructuralLoadCasesData, StructuralLoadsData, BoundaryConditionsData
+from ...ifc import IfcStore
+from ...prop import StrProperty, Attribute
+from .data import StructuralLoadCasesData, StructuralLoadsData, BoundaryConditionsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

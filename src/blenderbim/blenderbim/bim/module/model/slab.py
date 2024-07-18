@@ -32,8 +32,8 @@ import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.tool as tool
 from mathutils import Vector, Matrix
-from blenderbim.bim.module.geometry.helper import Helper
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from ..geometry.helper import Helper
+from .decorator import ProfileDecorator
 from typing import Optional
 
 

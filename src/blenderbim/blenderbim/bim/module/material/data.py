@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
-from blenderbim.bim.module.drawing.helper import format_distance
+from ..drawing.helper import format_distance
 
 
 def refresh():

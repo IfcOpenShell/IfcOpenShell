@@ -24,8 +24,8 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.root
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from ...ifc import IfcStore
+from ..model.opening import FilledOpeningGenerator
 
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):

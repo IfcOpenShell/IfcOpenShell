@@ -28,7 +28,7 @@ import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.pset as core
 import blenderbim.bim.module.pset.data
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class TogglePsetExpansion(bpy.types.Operator, tool.Ifc.Operator):

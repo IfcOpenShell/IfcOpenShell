@@ -21,9 +21,9 @@ import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.profile.data import ProfileData
+from ...ifc import IfcStore
+from ...prop import StrProperty, Attribute
+from .data import ProfileData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

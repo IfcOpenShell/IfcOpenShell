@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.module.context.data import ContextData
+from .data import ContextData
 
 
 class BIM_PT_context(bpy.types.Panel):

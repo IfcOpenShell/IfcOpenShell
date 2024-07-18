@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.brick.data import BrickschemaData, BrickschemaReferencesData
-from blenderbim.bim.prop import StrProperty, Attribute
+from .data import BrickschemaData, BrickschemaReferencesData
+from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -32,7 +32,7 @@ from bpy.props import (
 )
 import blenderbim.core.brick as core
 import blenderbim.tool.brick as tool
-from blenderbim.tool.brick import BrickStore
+from ....tool.brick import BrickStore
 
 def update_active_brick_index(self, context):
     BrickschemaData.is_loaded = False

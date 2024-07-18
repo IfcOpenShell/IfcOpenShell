@@ -22,7 +22,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from typing import Union
 
 

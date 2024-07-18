@@ -20,7 +20,7 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.drawing.data import (
+from .data import (
     ProductAssignmentsData,
     SheetsData,
     DocumentsData,

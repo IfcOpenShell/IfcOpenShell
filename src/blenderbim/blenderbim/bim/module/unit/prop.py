@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.unit.data import UnitsData
+from ...ifc import IfcStore
+from ...prop import StrProperty, Attribute
+from .data import UnitsData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

@@ -27,7 +27,7 @@ import ifcopenshell.geom
 import blenderbim.tool as tool
 from pathlib import Path
 from typing import Union
-from blenderbim.bim.module.light.data import SolarData
+from .data import SolarData
 
 
 class ExportOBJ(bpy.types.Operator):

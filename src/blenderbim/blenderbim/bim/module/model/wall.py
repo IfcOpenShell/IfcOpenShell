@@ -34,10 +34,10 @@ import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.core.model as core
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
-from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from .opening import FilledOpeningGenerator
 from typing import Optional
 
 

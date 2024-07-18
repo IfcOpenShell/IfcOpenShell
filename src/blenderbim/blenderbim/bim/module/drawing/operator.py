@@ -47,14 +47,14 @@ import blenderbim.bim.module.drawing.sheeter as sheeter
 import blenderbim.bim.module.drawing.scheduler as scheduler
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.export_ifc
-from blenderbim.bim.module.drawing.decoration import CutDecorator
-from blenderbim.bim.module.drawing.data import DecoratorData, DrawingsData
+from .decoration import CutDecorator
+from .data import DecoratorData, DrawingsData
 from typing import NamedTuple, List, Union, Optional, Literal
 from lxml import etree
 from mathutils import Vector, Color, Matrix
 from timeit import default_timer as timer
-from blenderbim.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
-from blenderbim.bim.ifc import IfcStore
+from .prop import RasterStyleProperty, RASTER_STYLE_PROPERTIES_EXCLUDE
+from ...ifc import IfcStore
 from pathlib import Path
 from bpy_extras.image_utils import load_image
 

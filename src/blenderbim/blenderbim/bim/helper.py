@@ -27,7 +27,7 @@ from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, ge
 from mathutils import geometry
 from mathutils import Vector
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from .ifc import IfcStore
 from typing import Optional, Callable, Any, Union
 
 

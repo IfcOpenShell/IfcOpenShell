@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.module.nest.data import NestData
-from blenderbim.bim.ifc import IfcStore
+from .data import NestData
+from ...ifc import IfcStore
 
 
 class BIM_PT_nest(Panel):

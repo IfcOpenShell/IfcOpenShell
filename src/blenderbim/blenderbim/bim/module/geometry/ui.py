@@ -20,16 +20,16 @@ import bpy
 import blenderbim.bim
 import blenderbim.tool as tool
 from bpy.types import Panel, Menu, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.geometry.data import (
+from ...ifc import IfcStore
+from ...helper import prop_with_search
+from .data import (
     RepresentationsData,
     RepresentationItemsData,
     ConnectionsData,
     PlacementData,
     DerivedCoordinatesData,
 )
-from blenderbim.bim.module.layer.data import LayersData
+from ..layer.data import LayersData
 
 
 def mode_menu(self, context):

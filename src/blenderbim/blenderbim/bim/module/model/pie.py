@@ -20,7 +20,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.core.spatial
 import blenderbim.core.aggregate
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class OpenPieClass(bpy.types.Operator):

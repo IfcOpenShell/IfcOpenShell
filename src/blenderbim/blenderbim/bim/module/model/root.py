@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell.file
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
+from ...ifc import IFC_CONNECTED_TYPE
 from typing import Any
 
 

@@ -18,9 +18,9 @@
 
 import bpy
 import ifcopenshell.util.type
-from blenderbim.bim.module.type.data import TypeData
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.ifc import IfcStore
+from .data import TypeData
+from ...prop import StrProperty, Attribute
+from ...ifc import IfcStore
 import blenderbim.tool as tool
 from bpy.types import PropertyGroup
 from bpy.props import (

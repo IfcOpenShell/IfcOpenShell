@@ -27,7 +27,7 @@
 # panels, buttons, labels, and input fields are laid out.
 
 import bpy
-from blenderbim.bim.module.demo.data import DemoData
+from .data import DemoData
 
 # Every panel in the interface correlates to one of these classes. If you enable
 # the "Developer Extras" option in Blender, then you can actually right click on

@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
+from .data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
 
 
 def draw_roles(box, parent):

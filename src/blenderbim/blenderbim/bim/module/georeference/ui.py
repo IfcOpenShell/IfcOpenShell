@@ -18,8 +18,8 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.helper import draw_attributes, draw_attribute
-from blenderbim.bim.module.georeference.data import GeoreferenceData
+from ...helper import draw_attributes, draw_attribute
+from .data import GeoreferenceData
 
 
 class BIM_PT_gis(Panel):

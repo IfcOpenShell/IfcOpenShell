@@ -23,7 +23,7 @@ import string
 import svgwrite
 import openpyxl
 
-from blenderbim.bim.module.drawing.svgwriter import SvgWriter
+from .svgwriter import SvgWriter
 from odf.opendocument import load as load_ods
 from odf.table import Table, TableRow, TableColumn, TableCell
 from odf.text import P

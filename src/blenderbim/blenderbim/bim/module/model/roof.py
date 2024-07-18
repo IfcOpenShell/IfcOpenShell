@@ -25,10 +25,10 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import blenderbim.core.root
 import blenderbim.tool as tool
-from blenderbim.bim.helper import convert_property_group_from_si
-from blenderbim.bim.module.model.door import bm_sort_out_geom
-from blenderbim.bim.module.model.data import RoofData, refresh
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from ...helper import convert_property_group_from_si
+from .door import bm_sort_out_geom
+from .data import RoofData, refresh
+from .decorator import ProfileDecorator
 
 import json
 from math import tan, pi, radians

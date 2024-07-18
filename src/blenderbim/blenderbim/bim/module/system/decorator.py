@@ -25,7 +25,7 @@ from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 import ifcopenshell
-from blenderbim.bim.module.system.data import SystemDecorationData
+from .data import SystemDecorationData
 from bpy.app.handlers import persistent
 
 

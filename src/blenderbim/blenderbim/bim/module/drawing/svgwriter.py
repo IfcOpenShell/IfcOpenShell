@@ -32,10 +32,10 @@ import ifcopenshell.util.selector
 import blenderbim.tool as tool
 import blenderbim.bim.module.drawing.helper as helper
 import blenderbim.bim.module.drawing.annotation as annotation
-from blenderbim.bim.module.drawing.data import DrawingsData
+from .data import DrawingsData
 
-from blenderbim.bim.module.drawing.data import DecoratorData
-from blenderbim.bim.ifc import IfcStore
+from .data import DecoratorData
+from ...ifc import IfcStore
 
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector

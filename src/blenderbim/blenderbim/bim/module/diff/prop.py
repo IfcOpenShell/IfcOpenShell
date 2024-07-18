@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, BIMFilterGroup
-from blenderbim.bim.module.diff.data import DiffData
+from ...prop import StrProperty, BIMFilterGroup
+from .data import DiffData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

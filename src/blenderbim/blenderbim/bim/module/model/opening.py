@@ -36,7 +36,7 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.bim.import_ifc as import_ifc
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from math import pi, radians
 from mathutils import Vector, Matrix
 from bpy.types import Operator

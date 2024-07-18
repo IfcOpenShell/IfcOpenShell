@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class LoadLayers(bpy.types.Operator):

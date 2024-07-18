@@ -24,7 +24,7 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim.helper
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator):

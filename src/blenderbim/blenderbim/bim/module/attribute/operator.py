@@ -25,7 +25,7 @@ import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 import blenderbim.core.attribute as core
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class EnableEditingAttributes(bpy.types.Operator):

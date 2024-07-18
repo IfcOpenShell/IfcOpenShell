@@ -26,8 +26,8 @@ import ifcopenshell
 import blenderbim.tool as tool
 from math import radians
 from mathutils import Matrix, Vector
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.clash.decorator import ClashDecorator
+from ...ifc import IfcStore
+from .decorator import ClashDecorator
 
 
 class ExportClashSets(bpy.types.Operator):

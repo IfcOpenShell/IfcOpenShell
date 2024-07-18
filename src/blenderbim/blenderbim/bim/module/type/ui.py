@@ -19,9 +19,9 @@
 import blenderbim.tool as tool
 import blenderbim.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.type.data import TypeData
+from ...ifc import IfcStore
+from ...helper import prop_with_search
+from .data import TypeData
 
 
 class BIM_PT_type(Panel):

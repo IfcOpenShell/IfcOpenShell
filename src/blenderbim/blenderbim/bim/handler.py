@@ -27,10 +27,10 @@ import blenderbim.bim
 import blenderbim.tool as tool
 import blenderbim.core.owner as core_owner
 from bpy.app.handlers import persistent
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.owner.prop import get_user_person, get_user_organisation
-from blenderbim.bim.module.model.data import AuthoringData
-from blenderbim.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
+from .ifc import IfcStore
+from .module.owner.prop import get_user_person, get_user_organisation
+from .module.model.data import AuthoringData
+from .module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from mathutils import Vector
 from math import cos, degrees
 from typing import Union

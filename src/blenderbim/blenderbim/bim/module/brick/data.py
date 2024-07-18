@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from blenderbim.tool.brick import BrickStore
+from ....tool.brick import BrickStore
 
 try:
     from rdflib import URIRef, BNode

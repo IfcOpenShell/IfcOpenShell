@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.diff.data import DiffData
+from ...ifc import IfcStore
+from .data import DiffData
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 

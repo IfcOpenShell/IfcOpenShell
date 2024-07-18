@@ -34,8 +34,8 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import blenderbim.tool as tool
 from itertools import chain, accumulate
-from blenderbim.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from blenderbim.tool.loader import OBJECT_DATA_TYPE
+from .ifc import IfcStore, IFC_CONNECTED_TYPE
+from ..tool.loader import OBJECT_DATA_TYPE
 from typing import Dict, Union, Optional, Any
 
 

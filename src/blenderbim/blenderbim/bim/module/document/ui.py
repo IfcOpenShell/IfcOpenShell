@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.module.document.data import DocumentData, ObjectDocumentData
+from ...ifc import IfcStore
+from ...helper import draw_attributes
+from .data import DocumentData, ObjectDocumentData
 
 
 class BIM_PT_documents(Panel):

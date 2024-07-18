@@ -25,11 +25,11 @@ import blenderbim.tool as tool
 import blenderbim.core.drawing as core
 import blenderbim.bim.module.drawing.annotation as annotation
 import blenderbim.bim.module.drawing.decoration as decoration
-from blenderbim.bim.prop import BIMFilterGroup
-from blenderbim.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
-from blenderbim.bim.module.drawing.data import refresh as refresh_drawing_data
+from ...prop import BIMFilterGroup
+from .data import DrawingsData, DecoratorData, SheetsData, AnnotationData
+from .data import refresh as refresh_drawing_data
 from pathlib import Path
-from blenderbim.bim.prop import Attribute, StrProperty
+from ...prop import Attribute, StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

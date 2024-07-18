@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.pset.data import refresh as refresh_pset
+from ...prop import StrProperty, Attribute
+from ..pset.data import refresh as refresh_pset
 from bpy.types import PropertyGroup
 import json
 from bpy.props import (

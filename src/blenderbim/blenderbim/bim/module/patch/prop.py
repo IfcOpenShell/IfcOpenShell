@@ -21,7 +21,7 @@ import importlib
 import importlib.util
 from pathlib import Path
 import ifcpatch
-from blenderbim.bim.prop import StrProperty, Attribute
+from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

@@ -19,8 +19,8 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from blenderbim.bim.module.model import root, product, wall, slab, profile, opening, task
-from blenderbim.bim.ifc import IfcStore
+from . import root, product, wall, slab, profile, opening, task
+from ...ifc import IfcStore
 from bpy.app.handlers import persistent
 
 

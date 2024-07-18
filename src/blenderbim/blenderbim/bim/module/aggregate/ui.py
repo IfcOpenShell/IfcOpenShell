@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.module.aggregate.data import AggregateData
-from blenderbim.bim.module.group.data import GroupsData, ObjectGroupsData
-from blenderbim.bim.ifc import IfcStore
+from .data import AggregateData
+from ..group.data import GroupsData, ObjectGroupsData
+from ...ifc import IfcStore
 import blenderbim.tool as tool
 
 

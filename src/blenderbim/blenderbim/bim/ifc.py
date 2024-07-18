@@ -31,7 +31,7 @@ import ifcopenshell.ifcopenshell_wrapper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
 from pathlib import Path
-from blenderbim.tool.brick import BrickStore
+from ..tool.brick import BrickStore
 from typing import Set, Union, Optional, TypedDict, Callable
 
 

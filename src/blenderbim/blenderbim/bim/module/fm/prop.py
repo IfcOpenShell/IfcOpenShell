@@ -17,8 +17,8 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.fm.data import FMData
-from blenderbim.bim.prop import StrProperty
+from .data import FMData
+from ...prop import StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

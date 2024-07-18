@@ -34,8 +34,8 @@ import blenderbim.core.type
 import blenderbim.core.geometry
 import blenderbim.core.spatial
 from . import wall, slab, profile, mep
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.data import AuthoringData
+from ...ifc import IfcStore
+from .data import AuthoringData
 from mathutils import Vector, Matrix
 from bpy_extras.object_utils import AddObjectHelper
 import json

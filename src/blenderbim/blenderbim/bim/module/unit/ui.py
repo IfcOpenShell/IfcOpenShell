@@ -18,9 +18,9 @@
 
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.unit.data import UnitsData
+from ...ifc import IfcStore
+from ...helper import prop_with_search
+from .data import UnitsData
 
 
 class BIM_PT_units(Panel):

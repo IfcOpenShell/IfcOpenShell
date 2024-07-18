@@ -33,7 +33,7 @@ from ifcopenshell.util.doc import (
 import blenderbim.bim
 import blenderbim.bim.schema
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from .ifc import IfcStore
 import blenderbim.tool as tool
 from collections import defaultdict
 from bpy.types import PropertyGroup

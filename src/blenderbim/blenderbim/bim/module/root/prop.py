@@ -20,7 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.schema
 import blenderbim.tool as tool
-from blenderbim.bim.module.root.data import IfcClassData
+from .data import IfcClassData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

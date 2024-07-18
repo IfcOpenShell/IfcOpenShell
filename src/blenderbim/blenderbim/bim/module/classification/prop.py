@@ -18,9 +18,9 @@
 
 import bpy
 import blenderbim.bim.helper
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.classification.data import ClassificationsData, ClassificationReferencesData
+from ...ifc import IfcStore
+from ...prop import StrProperty, Attribute
+from .data import ClassificationsData, ClassificationReferencesData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

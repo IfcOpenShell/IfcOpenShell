@@ -18,7 +18,7 @@
 
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.module.light.data import SolarData
+from .data import SolarData
 
 
 sun_position = tool.Blender.get_sun_position_addon()

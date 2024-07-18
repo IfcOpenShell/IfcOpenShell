@@ -18,8 +18,8 @@
 
 import blenderbim.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.attribute.data import AttributesData
+from ...ifc import IfcStore
+from .data import AttributesData
 
 
 def draw_ui(context, layout, attributes):

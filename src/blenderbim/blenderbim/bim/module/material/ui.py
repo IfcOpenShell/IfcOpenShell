@@ -20,11 +20,11 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 import bpy
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import draw_attributes
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.material.data import MaterialsData, ObjectMaterialData
-from blenderbim.bim.module.drawing.helper import format_distance
+from ...ifc import IfcStore
+from ...helper import draw_attributes
+from ...helper import prop_with_search
+from .data import MaterialsData, ObjectMaterialData
+from ..drawing.helper import format_distance
 
 
 class BIM_PT_materials(Panel):

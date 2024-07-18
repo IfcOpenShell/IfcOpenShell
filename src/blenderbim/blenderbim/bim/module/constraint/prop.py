@@ -19,7 +19,7 @@
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
 import blenderbim.tool as tool
-from blenderbim.bim.prop import Attribute
+from ...prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

@@ -18,8 +18,8 @@
 
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.helper import draw_attributes
+from ...helper import prop_with_search
+from ...helper import draw_attributes
 
 
 class BIM_PT_patch(bpy.types.Panel):

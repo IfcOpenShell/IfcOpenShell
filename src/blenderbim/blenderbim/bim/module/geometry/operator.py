@@ -38,7 +38,7 @@ import blenderbim.tool as tool
 import blenderbim.bim.handler
 from mathutils import Vector, Matrix
 from time import time
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Any
 

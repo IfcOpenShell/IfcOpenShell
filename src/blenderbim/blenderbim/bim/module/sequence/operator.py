@@ -29,7 +29,7 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 
 

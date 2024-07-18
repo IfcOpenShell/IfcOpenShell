@@ -27,9 +27,9 @@ from ifcopenshell.util.shape_builder import V
 import blenderbim.core.root
 import blenderbim.core.geometry
 import blenderbim.tool as tool
-from blenderbim.bim.module.model.door import bm_sort_out_geom
-from blenderbim.bim.module.model.data import RailingData, refresh
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from .door import bm_sort_out_geom
+from .data import RailingData, refresh
+from .decorator import ProfileDecorator
 
 from mathutils import Vector
 import json

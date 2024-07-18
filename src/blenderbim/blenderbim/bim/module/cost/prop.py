@@ -19,10 +19,10 @@
 import bpy
 import ifcopenshell.api
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import CostClassificationsData
-from blenderbim.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
-from blenderbim.bim.prop import StrProperty, Attribute
+from ...ifc import IfcStore
+from ..classification.data import CostClassificationsData
+from .data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
+from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

@@ -3,7 +3,7 @@ import re
 import bpy
 import blenderbim.core.ifcgit as core
 import blenderbim.tool as tool
-from blenderbim.bim.module.ifcgit.data import IfcGitData, refresh
+from .data import IfcGitData, refresh
 
 
 class CreateRepo(bpy.types.Operator):

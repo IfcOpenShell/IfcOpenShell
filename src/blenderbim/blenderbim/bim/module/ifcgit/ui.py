@@ -1,6 +1,6 @@
 import bpy
 import time
-from blenderbim.bim.module.ifcgit.data import IfcGitData
+from .data import IfcGitData
 
 
 class IFCGIT_PT_panel(bpy.types.Panel):

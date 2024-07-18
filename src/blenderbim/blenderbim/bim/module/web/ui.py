@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from blenderbim.bim.module.web.data import WebData
+from .data import WebData
 
 
 class BIM_PT_webui(Panel):

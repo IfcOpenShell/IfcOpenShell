@@ -34,7 +34,7 @@ import blenderbim.core.geometry
 import blenderbim.core.aggregate
 import blenderbim.core.spatial
 import blenderbim.core.style
-from blenderbim.bim.ifc import IfcStore
+from .ifc import IfcStore
 from mathutils import Vector
 from typing import Union
 from logging import Logger

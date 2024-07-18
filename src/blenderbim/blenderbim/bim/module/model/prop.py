@@ -20,8 +20,8 @@ import bpy
 import ifcopenshell
 import blenderbim.tool as tool
 import math
-from blenderbim.bim.prop import ObjProperty
-from blenderbim.bim.module.model.data import AuthoringData
+from ...prop import ObjProperty
+from .data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
 from math import pi
 

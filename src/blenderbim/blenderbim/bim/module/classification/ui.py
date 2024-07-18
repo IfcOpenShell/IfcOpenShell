@@ -20,8 +20,8 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.classification.data import (
+from ...ifc import IfcStore
+from .data import (
     ClassificationsData,
     ClassificationReferencesData,
     MaterialClassificationsData,

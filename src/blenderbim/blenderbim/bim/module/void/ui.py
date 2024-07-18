@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.module.void.data import BooleansData, VoidsData
+from .data import BooleansData, VoidsData
 
 
 class BIM_PT_voids(Panel):

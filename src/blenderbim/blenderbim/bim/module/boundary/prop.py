@@ -18,7 +18,7 @@
 
 import bpy
 from bpy.types import PropertyGroup
-from blenderbim.bim.prop import ObjProperty
+from ...prop import ObjProperty
 from bpy.props import (
     PointerProperty,
     StringProperty,

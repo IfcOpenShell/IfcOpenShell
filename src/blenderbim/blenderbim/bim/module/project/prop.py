@@ -19,9 +19,9 @@
 import os
 import bpy
 import ifcopenshell.util.placement
-from blenderbim.bim.module.project.data import ProjectData
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.prop import StrProperty, ObjProperty
+from .data import ProjectData
+from ...ifc import IfcStore
+from ...prop import StrProperty, ObjProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

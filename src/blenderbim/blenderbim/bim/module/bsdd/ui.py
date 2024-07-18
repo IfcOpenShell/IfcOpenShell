@@ -18,7 +18,7 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class BIM_PT_bsdd(Panel):

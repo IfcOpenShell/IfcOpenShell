@@ -30,7 +30,7 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.geometry as core
 import blenderbim.core.root
-from blenderbim.bim.module.model.window import create_bm_window, create_bm_box
+from .window import create_bm_window, create_bm_box
 
 from mathutils import Vector, Matrix
 

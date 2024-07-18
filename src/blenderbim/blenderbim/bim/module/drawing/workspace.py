@@ -21,11 +21,11 @@ import os
 import bpy
 import blenderbim.core.type
 import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+from ...helper import prop_with_search
 from bpy.types import WorkSpaceTool
 
-from blenderbim.bim.module.drawing.data import DecoratorData, AnnotationData
-from blenderbim.bim.ifc import IfcStore
+from .data import DecoratorData, AnnotationData
+from ...ifc import IfcStore
 import blenderbim.bim.handler
 
 

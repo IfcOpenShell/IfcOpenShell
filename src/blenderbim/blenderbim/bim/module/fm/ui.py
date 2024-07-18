@@ -18,8 +18,8 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.fm.data import FMData
+from ...ifc import IfcStore
+from .data import FMData
 
 
 class BIM_PT_fm(Panel):

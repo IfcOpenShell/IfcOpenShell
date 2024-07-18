@@ -21,7 +21,7 @@ import blenderbim.tool as tool
 import blenderbim.core.context as core
 import blenderbim.bim.module.context.data
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class AddContext(bpy.types.Operator, tool.Ifc.Operator):

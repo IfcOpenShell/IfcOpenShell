@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.spatial.data import SpatialData, SpatialDecompositionData
+from .data import SpatialData, SpatialDecompositionData
 import blenderbim.tool as tool
 
 

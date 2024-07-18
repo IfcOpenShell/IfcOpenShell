@@ -18,8 +18,8 @@
 
 import blenderbim.bim.helper
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.resource.data import ResourceData
+from ...ifc import IfcStore
+from .data import ResourceData
 
 
 class BIM_PT_resources(Panel):

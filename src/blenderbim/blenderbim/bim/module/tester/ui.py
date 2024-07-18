@@ -18,7 +18,7 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.tester.data import TesterData
+from .data import TesterData
 
 
 class BIM_PT_tester(Panel):

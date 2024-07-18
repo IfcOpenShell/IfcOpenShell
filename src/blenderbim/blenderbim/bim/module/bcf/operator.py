@@ -30,7 +30,7 @@ import ifcopenshell.util.unit
 import blenderbim.bim.module.bcf.prop as bcf_prop
 from . import bcfstore
 from pathlib import Path
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
 from xsdata.models.datatype import XmlDateTime

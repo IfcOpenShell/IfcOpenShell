@@ -22,8 +22,8 @@ import blenderbim.tool as tool
 import blenderbim.core.system as core
 import blenderbim.bim.handler
 import blenderbim.bim.helper
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.system.data import PortData
+from ...ifc import IfcStore
+from .data import PortData
 from mathutils import Matrix
 
 

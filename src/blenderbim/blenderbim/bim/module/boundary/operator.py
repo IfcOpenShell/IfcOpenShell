@@ -35,9 +35,9 @@ import blenderbim.tool as tool
 import blenderbim.bim.import_ifc as import_ifc
 from math import pi, inf, degrees, acos, radians
 from mathutils import Vector, Matrix
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.boundary.decorator import BoundaryDecorator
+from ...ifc import IfcStore
+from ..model.decorator import ProfileDecorator
+from .decorator import BoundaryDecorator
 import blenderbim.core
 import blenderbim.core.geometry
 

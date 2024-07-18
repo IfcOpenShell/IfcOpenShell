@@ -19,8 +19,8 @@
 import blenderbim.bim.helper
 import blenderbim.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.cost.data import CostSchedulesData
+from ...ifc import IfcStore
+from .data import CostSchedulesData
 from typing import Any
 
 

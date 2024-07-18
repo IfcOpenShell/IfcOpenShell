@@ -19,12 +19,12 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.resource
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 import blenderbim.tool as tool
 import blenderbim.bim.module.pset.data
 import blenderbim.bim.module.resource.data
 import blenderbim.bim.module.sequence.data
-from blenderbim.bim.prop import StrProperty, Attribute
+from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

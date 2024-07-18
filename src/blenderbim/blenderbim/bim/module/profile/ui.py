@@ -20,8 +20,8 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.profile.data import ProfileData
-from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
+from .data import ProfileData
+from .prop import generate_thumbnail_for_active_profile
 
 
 class BIM_PT_profiles(Panel):

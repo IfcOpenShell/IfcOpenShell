@@ -18,7 +18,7 @@
 
 import bpy
 import ifcopenshell.util.geolocation
-from blenderbim.bim.prop import Attribute
+from ...prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -30,8 +30,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from blenderbim.bim.module.georeference.data import GeoreferenceData
-from blenderbim.bim.module.georeference.decorator import GeoreferenceDecorator
+from .data import GeoreferenceData
+from .decorator import GeoreferenceDecorator
 
 
 def get_coordinate_operation_class(self, context):

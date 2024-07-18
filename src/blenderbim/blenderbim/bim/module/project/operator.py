@@ -44,18 +44,18 @@ import blenderbim.core.project as core
 import blenderbim.core.context
 import blenderbim.core.owner
 import blenderbim.core.spatial
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.ui import IFCFileSelector
-from blenderbim.bim import import_ifc
-from blenderbim.bim import export_ifc
+from ...ifc import IfcStore
+from ...ui import IFCFileSelector
+from ....bim import import_ifc
+from ... import export_ifc
 from collections import defaultdict
 from math import radians
 from pathlib import Path
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
-from blenderbim.bim.module.project.data import LinksData
-from blenderbim.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator
+from .data import LinksData
+from .decorator import ProjectDecorator, ClippingPlaneDecorator
 from typing import Union
 
 

@@ -22,7 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class LoadObjectives(bpy.types.Operator):

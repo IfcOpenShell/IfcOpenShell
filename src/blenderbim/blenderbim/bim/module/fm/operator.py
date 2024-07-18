@@ -24,7 +24,7 @@ import logging
 import tempfile
 import ifcopenshell
 import blenderbim.tool as tool
-from blenderbim.bim.operator import MultipleFileSelector
+from ...operator import MultipleFileSelector
 
 
 class SelectFMIfcFile(MultipleFileSelector):

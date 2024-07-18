@@ -19,9 +19,9 @@
 import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
-from blenderbim.bim.helper import prop_with_search
+from ...helper import prop_with_search
 from bpy.types import Panel, UIList
-from blenderbim.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
+from .data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
 
 
 FLOW_DIRECTION_TO_ICON = {

@@ -18,7 +18,7 @@
 
 import bpy
 from bpy_extras.io_utils import ImportHelper
-from blenderbim.bim.module.resource.ui import draw_productivity_ui
+from .ui import draw_productivity_ui
 import blenderbim.core.resource as core
 import blenderbim.tool as tool
 

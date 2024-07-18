@@ -23,11 +23,11 @@ import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_predefined_type_doc
 import blenderbim.tool as tool
 import blenderbim.core.sequence as core
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
+from ...ifc import IfcStore
+from .data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
 import blenderbim.bim.module.resource.data
 import blenderbim.bim.module.pset.data
-from blenderbim.bim.prop import StrProperty, Attribute
+from ...prop import StrProperty, Attribute
 from dateutil import parser
 from bpy.types import PropertyGroup
 from bpy.props import (

@@ -21,7 +21,7 @@ import ifcopenshell.api
 import blenderbim.tool as tool
 import blenderbim.core.library as core
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class AddLibrary(bpy.types.Operator, tool.Ifc.Operator):

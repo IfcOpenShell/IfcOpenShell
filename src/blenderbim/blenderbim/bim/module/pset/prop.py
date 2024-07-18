@@ -23,9 +23,9 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
 import blenderbim.tool as tool
-from blenderbim.bim.prop import Attribute, StrProperty
-from blenderbim.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
-from blenderbim.bim.ifc import IfcStore
+from ...prop import Attribute, StrProperty
+from .data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
+from ...ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

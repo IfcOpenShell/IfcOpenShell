@@ -19,7 +19,7 @@
 import bpy
 import blenderbim.bim.helper
 from bpy.types import Panel
-from blenderbim.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
+from .data import SearchData, ColourByPropertyData, SelectSimilarData
 
 
 class BIM_PT_search(Panel):

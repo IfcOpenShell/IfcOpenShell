@@ -35,9 +35,9 @@ import blenderbim.core.material
 import blenderbim.core.root
 from math import pi, degrees, inf
 from mathutils import Vector, Matrix, Quaternion
-from blenderbim.bim.module.geometry.helper import Helper
-from blenderbim.bim.module.model.wall import DumbWallRecalculator
-from blenderbim.bim.module.model.decorator import ProfileDecorator
+from ..geometry.helper import Helper
+from .wall import DumbWallRecalculator
+from .decorator import ProfileDecorator
 
 
 class DumbProfileGenerator:

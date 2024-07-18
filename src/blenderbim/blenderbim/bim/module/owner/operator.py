@@ -20,7 +20,7 @@ import bpy
 import blenderbim.tool as tool
 import blenderbim.core.owner as core
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class EnableEditingPerson(bpy.types.Operator, tool.Ifc.Operator):

@@ -17,9 +17,9 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from blenderbim.bim.module.system.data import SystemData
+from .data import SystemData
 import blenderbim.bim.module.system.decorator as decorator
-from blenderbim.bim.prop import StrProperty, Attribute
+from ...prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

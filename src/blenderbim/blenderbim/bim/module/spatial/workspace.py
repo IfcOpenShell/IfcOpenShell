@@ -20,9 +20,9 @@
 import os
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.module.model.data import AuthoringData
+from ..model.data import AuthoringData
 from bpy.types import WorkSpaceTool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 import blenderbim.bim.handler
 import blenderbim.core.spatial
 

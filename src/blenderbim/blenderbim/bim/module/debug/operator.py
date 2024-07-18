@@ -23,6 +23,7 @@ import time
 import random
 import logging
 import platform
+import importlib
 import subprocess
 import ifcopenshell
 import ifcopenshell.api
@@ -35,9 +36,11 @@ import blenderbim.core.debug as core
 import blenderbim.bim.handler
 import blenderbim.bim.import_ifc as import_ifc
 from pathlib import Path
-from blenderbim import get_debug_info, format_debug_info
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
+bbim = importlib.import_module("....", package=__package__)
+get_debug_info = bbim.get_debug_info
+format_debug_info = bbim.format_debug_info
 
 class CopyDebugInformation(bpy.types.Operator):
     bl_idname = "bim.copy_debug_information"

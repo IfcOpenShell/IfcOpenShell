@@ -22,9 +22,9 @@ import blenderbim.bim.helper
 import blenderbim.tool as tool
 import blenderbim.bim.module.model.profile as model_profile
 import blenderbim.core.profile as core
-from blenderbim.bim.module.model.decorator import ProfileDecorator
-from blenderbim.bim.module.profile.prop import generate_thumbnail_for_active_profile
-from blenderbim.bim.module.profile.data import refresh
+from ..model.decorator import ProfileDecorator
+from .prop import generate_thumbnail_for_active_profile
+from .data import refresh
 
 
 class LoadProfiles(bpy.types.Operator):

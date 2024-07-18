@@ -23,7 +23,7 @@ import ifcopenshell.api
 import blenderbim.bim.schema
 import blenderbim.bim.handler
 import blenderbim.tool as tool
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 from typing import final
 
 

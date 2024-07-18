@@ -23,7 +23,7 @@ import blenderbim.tool as tool
 import blenderbim.core.aggregate as core
 import blenderbim.core.spatial
 import blenderbim.bim.handler
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):

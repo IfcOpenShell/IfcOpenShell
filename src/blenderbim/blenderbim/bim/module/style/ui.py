@@ -20,8 +20,8 @@ import bpy
 import blenderbim.bim.helper
 import blenderbim.tool as tool
 from bpy.types import Panel, UIList
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.module.style.data import StylesData, BlenderMaterialStyleData
+from ...ifc import IfcStore
+from .data import StylesData, BlenderMaterialStyleData
 
 
 class BIM_PT_styles(Panel):

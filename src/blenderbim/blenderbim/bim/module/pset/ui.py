@@ -18,9 +18,9 @@
 
 import blenderbim.tool as tool
 from bpy.types import Panel
-from blenderbim.bim.ifc import IfcStore
-from blenderbim.bim.helper import prop_with_search
-from blenderbim.bim.module.pset.data import (
+from ...ifc import IfcStore
+from ...helper import prop_with_search
+from .data import (
     ObjectPsetsData,
     ObjectQtosData,
     MaterialPsetsData,

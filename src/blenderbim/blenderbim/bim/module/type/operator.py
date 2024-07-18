@@ -28,7 +28,7 @@ import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.type as core
 import blenderbim.core.root
-from blenderbim.bim.ifc import IfcStore
+from ...ifc import IfcStore
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):

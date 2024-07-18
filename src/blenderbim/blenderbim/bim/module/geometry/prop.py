@@ -18,8 +18,8 @@
 
 import bpy
 import blenderbim.tool as tool
-from blenderbim.bim.prop import StrProperty, Attribute
-from blenderbim.bim.module.geometry.data import RepresentationsData, ViewportData
+from ...prop import StrProperty, Attribute
+from .data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
