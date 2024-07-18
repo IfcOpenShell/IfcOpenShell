@@ -1121,13 +1121,15 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def get_sun_position_addon(cls) -> Union[types.ModuleType, None]:
         # Check if it's installed as legacy Blender addon.
+        import importlib
+
         try:
-            import sun_position
+            sun_position = importlib.import_module("sun_position")
         except ImportError:
             sun_position = None
 
         if sun_position:
-            return
+            return sun_position
 
         # No extensions prior to 4.2.
         if bpy.app.version < (4, 2, 0):
@@ -1135,8 +1137,6 @@ class Blender(blenderbim.core.tool.Blender):
 
         if sun_position:
             return sun_position
-
-        import importlib
 
         for package_name in bpy.context.preferences.addons.keys():
             if package_name.endswith(".sun_position"):
