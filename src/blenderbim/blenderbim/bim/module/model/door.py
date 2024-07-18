@@ -26,7 +26,6 @@ import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import V
-import blenderbim
 import blenderbim.tool as tool
 import blenderbim.core.geometry
 import blenderbim.core.geometry as core
