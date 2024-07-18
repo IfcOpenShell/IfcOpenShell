@@ -141,9 +141,10 @@ endif
 	# Provides express rule validation for ifcopenshell.validate
 	cd build && . env/bin/activate && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
-	cd build && . env/bin/activate && $(PIP) download "brickschema[persistence]==0.7.6a2" --dest=./wheels
+	# Is not platform specific but has platform specific dependencies.
+	cd build && . env/bin/activate && $(PIP) download "brickschema[persistence]==0.7.6a2" $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required for SVG to DXF conversion
-	cd build && . env/bin/activate && $(PIP) download ezdxf --dest=./wheels
+	cd build && . env/bin/activate && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by bcf
 	cd build && . env/bin/activate && $(PIP) download xsdata --dest=./wheels
 	cd build && . env/bin/activate && $(PIP) download xmlschema --dest=./wheels
@@ -172,8 +173,9 @@ endif
 	# Required by IFC4D
 	cd build && . env/bin/activate && $(PIP) download PyP6Xer --dest=./wheels
 	# Required by web module
-	cd build && . env/bin/activate && $(PIP) download python-socketio[asyncio_client] --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download aiohttp --dest=./wheels
+	# Is not platform specific but has platform specific dependencies.
+	cd build && . env/bin/activate && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/bin/activate && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by light module
 	cd build && . env/bin/activate && $(PIP) download pytz --dest=./wheels
 	cd build && . env/bin/activate && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
