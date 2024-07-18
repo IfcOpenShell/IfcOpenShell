@@ -194,7 +194,7 @@ endif
 	cd build && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd build && unzip master.zip && rm master.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
-	cd build/IFC2JSON_python-master/file_converters && \
+	cd build && . env/bin/activate && cd IFC2JSON_python-master/file_converters && \
 		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='ifcjson', \
@@ -213,7 +213,7 @@ endif
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
 	cd build && unzip master.zip && rm master.zip
-	cd build/bpypolyskel-master && \
+	cd build && . env/bin/activate && cd bpypolyskel-master && \
 		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='bpypolyskel', \
