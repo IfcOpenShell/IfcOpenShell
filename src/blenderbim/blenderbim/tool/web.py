@@ -105,7 +105,6 @@ class Web(blenderbim.core.tool.Web):
         ws_thread.run_coro(cls.sio_connect(ws_url))
         cls.set_is_connected(True)
         bpy.app.timers.register(cls.check_operator_queue)
-        cls.send_webui_data()
 
     @classmethod
     def disconnect_websocket_server(cls):
