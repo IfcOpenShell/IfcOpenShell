@@ -224,7 +224,7 @@ def updateTaskDuration(self, context):
     else:
         task_time = tool.Ifc.run("sequence.add_task_time", task=task)
     tool.Ifc.run("sequence.edit_task_time", task_time=task_time, attributes={"ScheduleDuration": duration})
-    blenderbim.core.sequence.load_task_properties(tool.Sequence)
+    core.load_task_properties(tool.Sequence)
     tool.Sequence.refresh_task_resources()
 
 
