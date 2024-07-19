@@ -257,6 +257,46 @@ endif
 	cp build/dist/*.whl build/wheels/
 	mv build/wheels/*.whl build/blenderbim/wheels/
 
+	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
+	# Blender doesn't look into the wheel contents, it just checks the name.
+	# So this hack works without working out some way to repack those wheels.
+	# See: https://projects.blender.org/blender/blender/issues/125091
+
+ifeq ($(PLATFORM), macosm1)
+	# Has universal and x86_64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/MarkupSafe-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has universal and x86_64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/lxml-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has only universal build.
+	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+endif
+ifeq ($(PLATFORM), macos)
+	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2/macosx_10_9_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# has universal and amr64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/fonttools-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+endif
+
 	$(PYTHON) scripts/get_wheels.py build/blenderbim/wheels build/blenderbim/blender_manifest.toml
 	rm -rf build/blenderbim/bim/
 	rm -rf build/blenderbim/core/
