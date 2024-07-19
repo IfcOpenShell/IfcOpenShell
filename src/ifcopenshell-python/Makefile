@@ -5,8 +5,12 @@ PLATFORM:=linux64
 PYTHON:=python3.11
 PIP:=pip3.11
 SED:=sed -i
+VENV_ACTIVATE:=bin/activate
+
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
+PYTHON:=python
+VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -119,8 +123,8 @@ endif
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
 
-	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
-	cd build && . env/bin/activate && $(PYTHON) -m build
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 
 	mv build/dist/ifcopenshell-$(VERSION)-py3-none-any.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 	rm -rf build
