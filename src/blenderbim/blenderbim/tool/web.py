@@ -32,6 +32,7 @@ import asyncio
 import socketio
 import threading
 import queue
+import json
 from time import sleep
 
 sio = None
@@ -43,7 +44,6 @@ IFC_TASK_ATTRIBUTE_MAP = {
     "pStart": "ScheduleStart",
     "pEnd": "ScheduleFinish",
     "pName": "Name",
-    "pRes": "",
 }
 
 
@@ -84,10 +84,24 @@ class Web(blenderbim.core.tool.Web):
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"], cwd=webui_path, env=env
         )
+
         # moved intial opening of web browser to server on startup event
         # to handle race condition between starting server and openning browser
-        # TODO: a better way to handle race condition
         # cls.open_web_browser(port)
+
+        pid_file = os.path.join(webui_path, "running_pid.json")
+
+        if os.path.exists(pid_file):
+            with open(pid_file, "r") as f:
+                pids = json.load(f)
+        else:
+            pids = {}
+
+        pids[str(ws_process.pid)] = port
+
+        with open(pid_file, "w") as f:
+            json.dump(pids, f, indent=4)
+
         cls.set_is_running(True)
 
     @classmethod
@@ -129,14 +143,24 @@ class Web(blenderbim.core.tool.Web):
         if bpy.context.scene.WebProperties.is_connected:
             cls.disconnect_websocket_server()
 
-        sleep(0.5)
+        # sleep(0.5)
+        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
+        pid_file = os.path.join(webui_path, "running_pid.json")
+        with open(pid_file, "r") as f:
+            pids = json.load(f)
+
+        if str(ws_process.pid) in pids:
+            del pids[str(ws_process.pid)]
+
+        # Write the updated PIDs back to the file
+        with open(pid_file, "w") as f:
+            json.dump(pids, f, indent=4)
 
         ws_process.terminate()
         ws_process.wait()
         ws_process = None
 
         cls.set_is_running(False)
-
         print("Websocket server terminated successfully")
 
     @classmethod
