@@ -93,8 +93,17 @@ def format_debug_info(info: dict):
 
 
 if IN_BLENDER:
+
     def get_binary_info() -> dict[str, Any]:
         info = {}
+        py_version = sys.version_info
+        site_path = (
+            Path(bpy.utils.user_resource("EXTENSIONS"))
+            / ".local"
+            / "lib"
+            / f"python{py_version.major}.{py_version.minor}"
+            / "site-packages"
+        )
         lib = site_path / "ifcopenshell"
         binary = next((i for i in lib.glob("_ifcopenshell_wrapper.*")), None)
         if binary is None:
