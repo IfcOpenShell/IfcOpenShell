@@ -36,10 +36,10 @@ dist:
 	cp pyproject.toml build/
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/$(PACKAGE_NAME)/__init__.py
-	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
-	cd build && . env/bin/activate && $(PIP) install pybabel
-	cd build && . env/bin/activate && $(PIP) install babel
-	cd build && . env/bin/activate && ./env/bin/pybabel compile -d ./bimtester/locale/
-	cd build && . env/bin/activate && $(PYTHON) -m build
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install pybabel
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install babel
+	cd build && . env/$(VENV_ACTIVATE) && ./env/$(VENV_BIN)/pybabel compile -d ./bimtester/locale/
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl dist/
 	rm -rf build
