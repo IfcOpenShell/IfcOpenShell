@@ -1,27 +1,57 @@
 :root {
-    color-scheme: dark;
+    --font-family: Arial, sans-serif;
+    --margin-small: 0.625rem;
+    --margin-medium: 1.25rem;
+    --margin-large: 2.5rem;
+    --padding-small: 0.125rem;
+    --padding-medium: 1rem;
+    --font-size-large: 1.2rem;
+}
+
+:root.dark {
+    --bg-color: #252525;
+    --text-color: #e0e0e0;
+    --nav-bg-color: #121212;
+    --nav-border-color: #25682a;
+    --nav-link-color: #fff;
+    --nav-link-hover-color: #3fb449;
+    --warning-color: #FFDB8F;
+}
+
+:root.light {
+    --bg-color: #ffffff;
+    --text-color: #000000;
+    --nav-bg-color: #f8f8f8;
+    --nav-border-color: #cccccc;
+    --nav-link-color: #000000;
+    --nav-link-hover-color: #38a63d;
+    --warning-color: #FF4500;
+}
+
+html {
+    font-size: var(--base-font-size);
 }
 
 body {
-    background-color: #252525;
-    color: #e0e0e0;
+    background-color: var(--bg-color);
+    color: var(--text-color);
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-family);
 }
 
 #container {
-    margin-top: 20px;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-bottom: 20px
+    margin-top: var(--margin-medium);
+    margin-left: var(--margin-small);
+    margin-right: var(--margin-small);
+    margin-bottom: var(--margin-medium);
 }
 
 .table-container {
-    margin-bottom: 40px;
+    margin-bottom: var(--margin-large);
 }
 
 .csv-table {
-    margin-top: 10px;
+    margin-top: var(--margin-small);
 }
 
 h3 {
@@ -29,48 +59,59 @@ h3 {
 }
 
 nav {
-    background-color: #121212;
-    padding: 1em 0;
+    background-color: var(--nav-bg-color);
+    padding: var(--padding-medium) 0;
     display: flex;
     align-items: center;
     position: relative;
-    border-bottom: 2px solid #25682a;
+    border-bottom: 2px solid var(--nav-border-color);
 }
 
 nav .logo {
-    margin-left: 40px;
-    height: 40px;
-    /* Adjust height as needed */
+    margin-left: var(--margin-large);
+    height: 2.5rem;
 }
 
 nav ul {
     list-style-type: none;
     margin: 0;
-    margin-left: 1px;
+    margin-left: 0.0625rem;
     display: flex;
     flex-grow: 1;
     justify-content: center;
 }
 
 nav ul li {
-    margin-right: 50px;
+    margin-right: 3.125rem;
 }
 
 nav ul li a {
     text-decoration: none;
-    color: #fff;
-    font-size: 1.2em;
+    color: var(--nav-link-color);
+    font-size: var(--font-size-large);
 }
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: #3fb449;
+    color: var(--nav-link-hover-color);
 }
 
 .warning {
-    color: #FFDB8F;
-    margin-bottom: 10px;
-    padding: 2px;
+    color: var(--warning-color);
+    margin-bottom: var(--margin-small);
+    padding: var(--padding-small);
     display: none;
-    /* Initially hidden */
+}
+
+/* ------------ Overwriting Tabulator CSS rules ------------ */
+
+:root.light .tabulator-header,
+:root.light .tabulator .tabulator-header .tabulator-col {
+    background: var(--nav-bg-color) !important;
+    color: var(--text-color);
+}
+
+:root.light .tabulator {
+    border-top: 1px solid #222;
+    border-bottom: 2px solid #222;
 }
