@@ -164,6 +164,21 @@ if IN_BLENDER:
             blenderbim.bim.unregister()
 
     except:
+
+        def show_scene_properties() -> None:
+            # By default in Blender object properties are selected.
+            # Or user may have some other properties selected in their startup file.
+            # Select scene properties to ensure user will see our error handler.
+            for area in bpy.context.screen.areas:
+                if area.type != "PROPERTIES":
+                    continue
+                space = area.spaces.active
+                assert isinstance(space, bpy.types.SpaceProperties)
+                space.context = "SCENE"
+
+        # Use a timer as we're not allowed to make changes to data during register().
+        bpy.app.timers.register(show_scene_properties, first_interval=0.1)
+
         last_error = traceback.format_exc()
 
         print(last_error)
