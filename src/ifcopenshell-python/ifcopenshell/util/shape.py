@@ -730,3 +730,16 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
             else:
                 break
     return extrusions
+
+
+def get_total_edge_length(geometry: ShapeType) -> float:
+    """Calculates the total length of edges in a given geometry.
+
+    :param geometry: Geometry output calculated by IfcOpenShell
+    :type geometry: geometry
+    :return: The total length of all edges in the geometry.
+    :rtype: float
+    """
+    vertices = get_vertices(geometry)
+    edges = get_edges(geometry)
+    return sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in edges])
