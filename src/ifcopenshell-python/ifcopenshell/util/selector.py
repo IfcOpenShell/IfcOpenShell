@@ -323,7 +323,7 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             elif isinstance(value, (list, tuple)):
                 value = len(value)
             else:
-                value = 1
+                value = int(1)
         elif key == "class":
             value = value.is_a()
         elif key == "predefined_type":
