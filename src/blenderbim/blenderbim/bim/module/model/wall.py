@@ -36,7 +36,10 @@ import blenderbim.core.model as core
 import blenderbim.tool as tool
 from blenderbim.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees
+from time import time
 from mathutils import Vector, Matrix
+from mathutils.bvhtree import BVHTree
+from bpy_extras import view3d_utils
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
 from typing import Optional
 
@@ -279,6 +282,222 @@ def recalculate_dumb_wall_origin(wall, new_origin=None):
         child.matrix_parent_inverse = wall.matrix_world.inverted()
 
 
+class DrawPolylineWall(bpy.types.Operator):
+    bl_idname = "bim.draw_polyline_wall"
+    bl_label = "Draw Polyline Wall"
+    bl_options = {"REGISTER", "UNDO"}
+    ray_cast_type = bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == 'VIEW_3D'
+                                                                             
+
+    def main(self, context, event):
+        scene = context.scene
+        region = context.region
+        rv3d = context.region_data
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+
+        offset = 0.4
+        mouse_offset = (
+            (-offset, offset),  (0, offset),  (offset, offset),
+            (-offset, 0),       (0, 0),       (offset, 0),
+            (-offset, -offset), (0, -offset), (offset, -offset)
+            
+        )
+        
+        # Plane to intersect. Default Container
+        plane_origin = Vector((0, 0, 0))
+        plane_normal = Vector((0, 0, 1))
+
+        
+        def get_viewport_ray_data():
+            view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, mouse_pos)
+            ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
+            ray_target = ray_origin + view_vector
+            ray_direction = ray_target - ray_origin
+            
+            return ray_origin, ray_target, ray_direction
+
+        
+        def get_object_ray_data(obj_matrix):
+            matrix_inv = obj_matrix.inverted()
+            ray_origin_obj = matrix_inv @ ray_origin
+            ray_target_obj = matrix_inv @ ray_target
+            ray_direction_obj = ray_target_obj - ray_origin_obj
+
+            return ray_origin_obj, ray_target_obj, ray_direction_obj
+                                   
+
+        def get_visible_objects():
+            depsgraph = context.evaluated_depsgraph_get()
+            for dup in depsgraph.object_instances:
+                if dup.is_instance:  # Real dupli instance
+                    obj = dup.instance_object
+                    yield (obj, dup.matrix_world.copy())
+                else:  # Usual object
+                    obj = dup.object
+                    yield (obj, obj.matrix_world.copy())
+
+                    
+        def obj_ray_cast(obj):
+            ray_origin_obj, _, ray_direction_obj = get_object_ray_data(obj.matrix_world.copy())
+            success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
+            if success:
+                return location, normal, face_index
+            else:
+                return None, None, None
+
+        
+        def bvh_ray_cast(obj):
+            depsgraph = context.evaluated_depsgraph_get()
+            bvh = BVHTree.FromObject(obj, depsgraph)
+            #BVH uses objects local matrix
+            ray_origin_obj, _, ray_direction_obj = get_object_ray_data(obj.matrix_local.copy())
+            location, normal, face_index, distance = bvh.ray_cast(ray_origin_obj, ray_direction_obj)
+            if location:
+                return location, normal, face_index
+            else:
+                return None, None, None
+            pass
+
+        
+        def ray_cast_to_plane(mouse_pos, context, plane_origin, plane_normal):
+            intersection = Vector ((0,0,0,))
+            try:
+                loc = view3d_utils.region_2d_to_location_3d(
+                    region, rv3d, mouse_pos, ray_direction
+                )
+                intersection = mathutils.geometry.intersect_line_plane(ray_target, loc, plane_origin, plane_normal)
+            except:
+                intersection = Vector((0,0,0))
+
+            if intersection == None:
+                intersection = Vector((0,0,0))
+
+            return intersection
+        
+ 
+        def cast_rays_and_get_best_object():
+            best_length_squared = 1.0
+            best_obj = None
+            best_hit = None
+            best_face_index = None
+                    
+            for obj, matrix in get_visible_objects():
+                if obj.type == 'MESH':
+                    hit, normal, face_index = obj_ray_cast(obj) if self.ray_cast_type == 'OBJ' else bvh_ray_cast(obj)
+                    if hit is not None:
+                        hit_world = matrix @ hit
+                        length_squared = (hit_world - ray_origin).length_squared
+                        if best_obj is None or length_squared < best_length_squared:
+                            best_length_squared = length_squared
+                            best_obj = obj
+                            best_hit = hit_world
+                            best_face_index = face_index
+                            
+            if best_obj is not None:
+                return best_obj, best_hit, best_face_index
+                        
+            else:
+                return None, None, None
+                
+
+        def get_snap_points(obj, face_index):
+            snap_points = {}
+            matrix = obj.matrix_world.copy()
+            face = obj.data.polygons[face_index]
+            vertices = []
+            for i in face.vertices:
+                vertices.append(matrix @ obj.data.vertices[i].co)
+            
+            edges_center = []
+            for v1, v2 in zip(vertices, vertices[1:] + [vertices[0]]):
+                edges_center.append((v1-v2) / 2)
+
+            snap_points.update({tuple(vertex): "Vertices" for vertex in vertices})
+            snap_points.update({tuple(edge_center): "Edge Center" for edge_center in edges_center})
+
+            return snap_points
+
+
+        def select_snap_point(snap_points, hit, threshold):
+            shortest_distance = None
+            snap_point = None
+            for point, snap_type in snap_points.items():
+                point = Vector(point)
+                distance = (point - hit).length
+                if distance > threshold:
+                    continue
+                if shortest_distance and distance < shortest_distance:
+                    shortest_distance = distance
+                    snap_point = (point, snap_type)
+
+                elif not shortest_distance:
+                    shortest_distance = distance
+                    snap_point = (point, snap_type)
+                else:
+                    pass
+                
+            return snap_point
+
+        
+        snap_threshold = 0.3
+        ray_origin, ray_target, ray_direction = get_viewport_ray_data()
+        obj, hit, face_index = cast_rays_and_get_best_object()
+        intersection = ray_cast_to_plane(mouse_pos, context, plane_origin, plane_normal)
+        
+        if obj is not None:
+            original_obj = obj.original
+            bpy.ops.object.select_all(action="DESELECT")
+            original_obj.select_set(True)
+            context.view_layer.objects.active = original_obj
+
+            snap_points = get_snap_points(obj, face_index)
+            snap_point = select_snap_point(snap_points, hit, snap_threshold)
+            if snap_point:
+                scene.cursor.location = snap_point[0]
+            else:
+                scene.cursor.location = hit
+
+        else:
+            pass
+            # bpy.ops.object.select_all(action="DESELECT")
+            # scene.cursor.location = intersection
+
+    
+    def modal(self, context, event):
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            return {'PASS_THROUGH'}
+        elif event.type == 'MOUSEMOVE':
+            start_time = time()
+            self.main(context, event)
+            operator_time = time() - start_time
+            print(f"main function was finished in {operator_time:.2f} seconds")
+            return {'RUNNING_MODAL'}
+        elif event.type == 'O':
+            self.ray_cast_type = 'OBJ'
+            print("OBJ selected.")
+        elif event.type == 'B':
+            self.ray_cast_type = 'BVH'
+            print("BVH selected.")
+        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            print("CANCELLLL")
+            return {'CANCELLED'}
+
+        return {'RUNNING_MODAL'}
+            
+            
+    def invoke(self, context, event):
+        if context.space_data.type == 'VIEW_3D':
+            context.window_manager.modal_handler_add(self)
+            return {'RUNNING_MODAL'}
+        else:
+            self.report({'WARNING'}, "Active space must be a View3d")
+            return {'CANCELLED'}
+
+        
 class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
