@@ -410,6 +410,7 @@ class AnnotationData:
 
         results = [("0", "Untyped", "")]
         results.extend([(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in relating_types])
+        results.sort(key=lambda x: x[1].lower())
         return results
 
     @classmethod
