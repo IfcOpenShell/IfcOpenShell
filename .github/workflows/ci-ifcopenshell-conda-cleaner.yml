@@ -90,7 +90,10 @@ jobs:
                   return
           
               # sort the versions in descending order
-              versions = sorted(versions, reverse=True)
+              print(f"Before reversal: {versions=}")
+              versions.reverse()
+              print(f"After reversal: {versions=}")
+          
               releases = versions[number_of_supported_versions:]
           
               for release in releases:
