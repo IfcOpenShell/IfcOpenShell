@@ -144,6 +144,10 @@ class AddConstrTypeInstance(bpy.types.Operator):
         if self.from_invoke and str(self.relating_type_id) in AuthoringData.data["relating_type_id"]:
             props.relating_type_id = str(self.relating_type_id)
 
+        self.container_obj = None
+        if container := tool.Root.get_default_container():
+            self.container_obj = tool.Ifc.get_object(container)
+
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
@@ -191,10 +195,6 @@ class AddConstrTypeInstance(bpy.types.Operator):
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(relating_type, instance_class), mesh)
 
         obj.location = context.scene.cursor.location
-
-        self.container_obj = None
-        if container := tool.Root.get_default_container():
-            self.container_obj = tool.Ifc.get_object(container)
 
         bpy.ops.bim.assign_class(obj=obj.name, ifc_class=instance_class)
         tool.Blender.remove_data_block(mesh)  # Remove "Instance" mesh
