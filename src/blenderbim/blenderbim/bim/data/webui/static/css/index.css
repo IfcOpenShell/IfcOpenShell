@@ -6,9 +6,11 @@
     --padding-small: 0.125rem;
     --padding-medium: 1rem;
     --font-size-large: 1.2rem;
+    --logo-height: 2.5rem;
 }
 
 :root.dark {
+    color-scheme: dark;
     --bg-color: #252525;
     --text-color: #e0e0e0;
     --nav-bg-color: #121212;
@@ -19,6 +21,7 @@
 }
 
 :root.light {
+    color-scheme: light;
     --bg-color: #ffffff;
     --text-color: #000000;
     --nav-bg-color: #f8f8f8;
@@ -69,7 +72,7 @@ nav {
 
 nav .logo {
     margin-left: var(--margin-large);
-    height: 2.5rem;
+    height: var(--logo-height);
 }
 
 nav ul {
@@ -101,6 +104,18 @@ nav ul li a.active {
     margin-bottom: var(--margin-small);
     padding: var(--padding-small);
     display: none;
+}
+
+#toggle-theme {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--font-size-large);
+    margin-right: var(--margin-medium);
+}
+
+#toggle-theme:focus {
+    outline: none;
 }
 
 /* ------------ Overwriting Tabulator CSS rules ------------ */
