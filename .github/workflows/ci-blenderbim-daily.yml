@@ -81,5 +81,5 @@ jobs:
           file: ${{ steps.find_zip.outputs.filepath }}
           asset_name: ${{ steps.find_zip.outputs.filename }}
           release_name: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}} (unstable)"
-          tag: "blenderbim-${{steps.version.outputs.version}}.${{steps.date.outputs.date}}"
+          tag: "blenderbim-${{steps.version.outputs.version}}-alpha${{steps.date.outputs.date}}"
           overwrite: true
