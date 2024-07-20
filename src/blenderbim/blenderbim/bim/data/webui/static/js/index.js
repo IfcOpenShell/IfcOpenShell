@@ -5,6 +5,12 @@ let socket;
 
 // Document ready function
 $(document).ready(function () {
+  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+  var theme = localStorage.getItem("theme") || systemTheme;
+  setTheme(theme);
+
   connectSocket();
 });
 
@@ -239,4 +245,32 @@ function compareHeaders(headers1, headers2) {
     }
   }
   return true;
+}
+
+function setTheme(theme) {
+  var stylesheet = $("#tabulator-stylesheet");
+  if (theme === "light") {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
+    );
+    $("html").removeClass("dark").addClass("light");
+    $("#toggle-theme").html('<i class="fas fa-sun"></i>');
+  } else {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    );
+    $("html").removeClass("light").addClass("dark");
+    $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  }
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  if ($("html").hasClass("dark")) {
+    setTheme("light");
+  } else {
+    setTheme("dark");
+  }
 }

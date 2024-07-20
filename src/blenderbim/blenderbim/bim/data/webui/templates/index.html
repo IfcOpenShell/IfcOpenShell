@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="/static/css/index.css" />
     <link
       rel="stylesheet"
+      id="tabulator-stylesheet"
       href="https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
     <script
       type="text/javascript"
@@ -37,6 +42,9 @@
         <li><a href="/" class="active">IFC Data</a></li>
         <li><a href="/gantt">Gantt Chart</a></li>
       </ul>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
     </nav>
     <div id="container"></div>
   </body>
