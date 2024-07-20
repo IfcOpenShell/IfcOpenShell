@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Client</title>
     <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css" />
     <link rel="stylesheet" href="/static/css/gantt.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
     <script
       type="text/javascript"
       src="https://code.jquery.com/jquery-3.6.0.min.js"
@@ -31,6 +35,9 @@
         <li><a href="/">IFC Data</a></li>
         <li><a href="/gantt" class="active">Gantt Chart</a></li>
       </ul>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
     </nav>
     <div id="container"></div>
   </body>

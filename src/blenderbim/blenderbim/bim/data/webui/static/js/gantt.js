@@ -19,6 +19,12 @@ const pageSizes = [
 
 // Document ready function
 $(document).ready(function () {
+  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+  var theme = localStorage.getItem("theme") || systemTheme;
+  setTheme(theme);
+
   connectSocket();
 });
 
@@ -356,4 +362,23 @@ function editValue(list, task, event, cell, column) {
     },
   };
   socket.emit("web_operator", msg);
+}
+
+function setTheme(theme) {
+  if (theme === "light") {
+    $("html").removeClass("dark").addClass("light");
+    $("#toggle-theme").html('<i class="fas fa-sun"></i>');
+  } else {
+    $("html").removeClass("light").addClass("dark");
+    $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  }
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  if ($("html").hasClass("dark")) {
+    setTheme("light");
+  } else {
+    setTheme("dark");
+  }
 }
