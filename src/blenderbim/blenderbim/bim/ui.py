@@ -693,6 +693,19 @@ class BIM_PT_tab_services(Panel):
     def draw(self, context):
         pass
 
+class BIM_PT_tab_lighting(Panel):
+    bl_label = "Lighting"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
 
 class BIM_PT_tab_zones(Panel):
     bl_label = "Zones"

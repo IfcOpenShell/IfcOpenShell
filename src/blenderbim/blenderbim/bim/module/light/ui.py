@@ -32,23 +32,28 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
     bl_space_type = 'PROPERTIES'
     bl_region_type = 'WINDOW'
     bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_services"
+    bl_parent_id = "BIM_PT_tab_lighting"
 
     def draw(self, context):
         layout = self.layout
         scene = context.scene
 
-        if sun_position is None:
-            layout.label(text="Enable 'Sun Position' addon to continue.")
-            return
-
         props = scene.radiance_exporter_properties
+
+        if tool.Ifc.get():
+            row = self.layout.row()
+            row.prop(props, "should_load_from_memory")
+        
+        if not tool.Ifc.get() or not props.should_load_from_memory:
+            row = self.layout.row(align=True)
+            row.prop(props, "ifc_file")
+            # row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
+
+        row = layout.row()
+        row.prop(props, "output_dir")
         
         row = layout.row()
-        row.prop(props, "ifc_file_name")
-
-        row = layout.row()
-        row.prop(props, "json_file_path")
+        row.prop(props, "json_file")
         
         row = layout.row()
         row.label(text="Resolution")
@@ -68,11 +73,11 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.prop(props, "radiance_variability")
         
         row = layout.row()
-        row.operator("export_scene.radiance", text="Export to OBJ")
+        row.operator("export_scene.radiance", text="Export Geometry for Simulation")
 
         row = layout.row()
         row.operator("render_scene.radiance", text="Radiance Render")
-
+        row.enabled = not props.is_exporting
 
 class BIM_PT_solar(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
