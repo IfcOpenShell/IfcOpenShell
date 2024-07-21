@@ -605,10 +605,12 @@ void ifcopenshell::geometry::taxonomy::line::print(std::ostream& o, int indent) 
 
 void ifcopenshell::geometry::taxonomy::circle::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
+	o << std::string(indent + 4, ' ') << "radius " << radius << std::endl;
 }
 
 void ifcopenshell::geometry::taxonomy::ellipse::print(std::ostream& o, int indent) const {
 	print_impl(o, kind_to_string(kind()), indent);
+	o << std::string(indent + 4, ' ') << "radii " << radius << " " << radius2 << std::endl;
 }
 
 void ifcopenshell::geometry::taxonomy::trimmed_curve::print(std::ostream& o, int indent) const {
