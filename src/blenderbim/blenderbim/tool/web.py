@@ -74,7 +74,7 @@ class Web(blenderbim.core.tool.Web):
         If the connection is refused, the port is available for use; otherwise, it is in use.
 
         Args:
-            port (int): The port number to check.
+           - port (int): The port number to check.
 
         Returns:
             bool: True if the port is available, False if it is in use.
@@ -94,10 +94,7 @@ class Web(blenderbim.core.tool.Web):
         of running server instances.
 
         Args:
-            port (int): The port number on which to start the WebSocket server.
-
-        Returns:
-            None
+           - port (int): The port number on which to start the WebSocket server.
         """
         import addon_utils
 
@@ -142,10 +139,7 @@ class Web(blenderbim.core.tool.Web):
         reconnection attempts, starts an asyncio thread, connects to the WebSocket server, and sets the connection status.
 
         Args:
-            port (int): The port number to connect to the WebSocket server.
-
-        Returns:
-            None
+           - port (int): The port number to connect to the WebSocket server.
         """
         global ws_thread, sio
 
@@ -186,9 +180,6 @@ class Web(blenderbim.core.tool.Web):
 
         This method checks if there is an active WebSocket server process. If so, it disconnects it (if connected),
         removes its PID from the PID file, terminates the process, and updates the server's running status.
-
-        Returns:
-            None
         """
         global ws_process
 
@@ -346,16 +337,18 @@ class Web(blenderbim.core.tool.Web):
 
 
 class AsyncioThread(threading.Thread):
-    """
-    A thread that runs an asyncio event loop.
-
-    Args:
-        *args: Variable length argument list.
-        loop: An existing asyncio event loop. If None, a new event loop is created.
-        **kwargs: Arbitrary keyword arguments.
-    """
-
     def __init__(self, *args, loop=None, **kwargs):
+        """
+        Initialize an instance of AsyncioThread.
+
+        This class represents a thread that runs an asyncio event loop. It is used to handle asynchronous tasks
+        in a separate thread from the main thread.
+
+        Args:
+           - *args: Variable length argument list. These arguments are passed to the superclass constructor.
+           - loop: An existing asyncio event loop. If None, a new event loop is created.
+           - **kwargs: Arbitrary keyword arguments. These arguments are passed to the superclass constructor.
+        """
         super().__init__(*args, **kwargs)
         self.loop = loop or asyncio.new_event_loop()
         self.running = False
@@ -372,7 +365,7 @@ class AsyncioThread(threading.Thread):
         Run a coroutine in the asyncio event loop from a separate thread.
 
         Args:
-            coro: The coroutine to be run.
+           - coro: The coroutine to be run.
 
         Returns:
             The result of the coroutine.
