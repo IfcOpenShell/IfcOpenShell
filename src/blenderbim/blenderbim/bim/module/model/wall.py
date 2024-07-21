@@ -297,9 +297,9 @@ class DrawPolylineWall(bpy.types.Operator):
         scene = context.scene
         region = context.region
         rv3d = context.region_data
-        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        self.mouse_pos = event.mouse_region_x, event.mouse_region_y
 
-        offset = 0.4
+        offset = 5
         mouse_offset = (
             (-offset, offset),  (0, offset),  (offset, offset),
             (-offset, 0),       (0, 0),       (offset, 0),
@@ -313,8 +313,8 @@ class DrawPolylineWall(bpy.types.Operator):
 
         
         def get_viewport_ray_data():
-            view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, mouse_pos)
-            ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
+            view_vector = view3d_utils.region_2d_to_vector_3d(region, rv3d, self.mouse_pos)
+            ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, self.mouse_pos)
             ray_target = ray_origin + view_vector
             ray_direction = ray_target - ray_origin
             
@@ -322,6 +322,7 @@ class DrawPolylineWall(bpy.types.Operator):
 
         
         def get_object_ray_data(obj_matrix):
+            ray_origin, ray_target, ray_direction = get_viewport_ray_data()
             matrix_inv = obj_matrix.inverted()
             ray_origin_obj = matrix_inv @ ray_origin
             ray_target_obj = matrix_inv @ ray_target
@@ -363,11 +364,11 @@ class DrawPolylineWall(bpy.types.Operator):
             pass
 
         
-        def ray_cast_to_plane(mouse_pos, context, plane_origin, plane_normal):
+        def ray_cast_to_plane(context, plane_origin, plane_normal):
             intersection = Vector ((0,0,0,))
             try:
                 loc = view3d_utils.region_2d_to_location_3d(
-                    region, rv3d, mouse_pos, ray_direction
+                    region, rv3d, self.mouse_pos, ray_direction
                 )
                 intersection = mathutils.geometry.intersect_line_plane(ray_target, loc, plane_origin, plane_normal)
             except:
@@ -388,6 +389,15 @@ class DrawPolylineWall(bpy.types.Operator):
             for obj, matrix in get_visible_objects():
                 if obj.type == 'MESH':
                     hit, normal, face_index = obj_ray_cast(obj) if self.ray_cast_type == 'OBJ' else bvh_ray_cast(obj)
+                    if hit is None:
+                        # Tried original mouse position. Now it will try the offsets.
+                        original_mouse_pos = self.mouse_pos
+                        for value in mouse_offset:
+                            self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                            hit, normal, face_index = obj_ray_cast(obj) if self.ray_cast_type == 'OBJ' else bvh_ray_cast(obj)
+                            if hit:
+                                break
+                        self.mouse_pos = original_mouse_pos
                     if hit is not None:
                         hit_world = matrix @ hit
                         length_squared = (hit_world - ray_origin).length_squared
@@ -446,7 +456,7 @@ class DrawPolylineWall(bpy.types.Operator):
         snap_threshold = 0.3
         ray_origin, ray_target, ray_direction = get_viewport_ray_data()
         obj, hit, face_index = cast_rays_and_get_best_object()
-        intersection = ray_cast_to_plane(mouse_pos, context, plane_origin, plane_normal)
+        intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
         
         if obj is not None:
             original_obj = obj.original
