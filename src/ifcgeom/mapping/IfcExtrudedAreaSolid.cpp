@@ -49,10 +49,28 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolid* inst) {
 	}
 #endif
 
-	return taxonomy::make<taxonomy::extrusion>(
-		matrix,
-		taxonomy::cast<taxonomy::face>(map(inst->SweptArea())),
-		taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
-		height
-	);
+	auto basis = map(inst->SweptArea());
+	if (auto bases = taxonomy::dcast<taxonomy::collection>(basis)) {
+		// @todo this requires a unified approach for all sweeps
+		auto c = taxonomy::make<taxonomy::collection>();
+		for (auto& f : bases->children) {
+			c->children.push_back(
+				taxonomy::make<taxonomy::extrusion>(
+					matrix,
+					taxonomy::cast<taxonomy::face>(f),
+					taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+					height
+				)
+			);
+			c->children.back()->instance = inst;
+		}
+		return c;
+	} else {
+		return taxonomy::make<taxonomy::extrusion>(
+			matrix,
+			taxonomy::cast<taxonomy::face>(basis),
+			taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
+			height
+		);
+	}
 }
