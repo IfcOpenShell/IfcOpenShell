@@ -1446,7 +1446,7 @@ std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>& fil
             layer_filter.populate(f.values);
         } else if (f.type == geom_filter::ENTITY_ARG) {
 			attribute_filter.include = f.include;
-			attribute_filter.traverse = f.traverse;
+			attribute_filter.traverse = attribute_filter.traverse_openings = f.traverse;
 			attribute_filter.attribute_name = f.arg;
 			attribute_filter.populate(f.values);
         }

@@ -78,6 +78,8 @@ private:
 	std::set<int> written_;
 	std::map<int, std::string> paths_;
 	std::map<int, ifcopenshell::geometry::taxonomy::matrix4::ptr> placements_;
+	std::set<std::string> emitted_names_;
+	std::map<int, std::string> element_names_;
 public:
 	USDSerializer(const std::string&, const ifcopenshell::geometry::Settings&, const ifcopenshell::geometry::SerializerSettings&);
 	virtual ~USDSerializer();
@@ -89,6 +91,7 @@ public:
 	bool isTesselated() const { return true; }
 	void setUnitNameAndMagnitude(const std::string&, float) {}
 	void setFile(IfcParse::IfcFile*) {}
+	std::string object_id_unique(const IfcGeom::Element* o);
 };
 
 #endif
