@@ -48,6 +48,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolidTapered* in
 	auto old = loft->children.back()->matrix->ccomponents();
 	loft->children.back()->matrix->components() = old * end_profile;
 
+	taxonomy::matrix4::ptr matrix;
+	bool has_position = true;
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
+	has_position = inst->Position() != nullptr;
+#endif
+	if (has_position) {
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+	}
+	
+	loft->matrix = matrix;
+
 	return loft;
 }
 #endif
