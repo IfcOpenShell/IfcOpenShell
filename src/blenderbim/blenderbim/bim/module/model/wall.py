@@ -462,9 +462,8 @@ class DrawPolylineWall(bpy.types.Operator):
                 scene.cursor.location = hit
 
         else:
-            pass
-            # bpy.ops.object.select_all(action="DESELECT")
-            # scene.cursor.location = intersection
+            bpy.ops.object.select_all(action="DESELECT")
+            scene.cursor.location = intersection
 
     
     def modal(self, context, event):
