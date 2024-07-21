@@ -40,6 +40,8 @@ ws_process = None
 ws_thread = None
 web_operator_queue = queue.Queue()
 
+RECONNECTION_ATTEMPTS = 3
+RECONNECTION_DELAY = 2
 IFC_TASK_ATTRIBUTE_MAP = {
     "pStart": "ScheduleStart",
     "pEnd": "ScheduleFinish",
@@ -147,7 +149,12 @@ class Web(blenderbim.core.tool.Web):
             print(f"Already connected to websocket server on port: {port}")
             return
 
-        sio = socketio.AsyncClient(reconnection=True, reconnection_attempts=3, reconnection_delay=2, logger=True)
+        sio = socketio.AsyncClient(
+            reconnection=True,
+            reconnection_attempts=RECONNECTION_ATTEMPTS,
+            reconnection_delay=RECONNECTION_DELAY,
+            logger=True,
+        )
 
         ws_thread = AsyncioThread()
         ws_thread.daemon = True
