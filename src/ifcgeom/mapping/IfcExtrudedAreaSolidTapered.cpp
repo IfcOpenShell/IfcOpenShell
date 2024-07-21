@@ -42,6 +42,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcExtrudedAreaSolidTapered* in
 		taxonomy::cast<taxonomy::face>(map(inst->EndSweptArea()))
 	};
 
+	if (!loft->children.back()->matrix) {
+		loft->children.back()->matrix = taxonomy::make<taxonomy::matrix4>();
+	}
 	auto old = loft->children.back()->matrix->ccomponents();
 	loft->children.back()->matrix->components() = old * end_profile;
 
