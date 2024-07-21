@@ -19,7 +19,7 @@ usual :doc:`installation instructions</users/quickstart/installation>`.
 
 You will need to choose which build to download.
 
-- If you are on Blender >=4.2, choose py311
+- If you are on Blender >=4.1, choose py311
 - If you are on Blender >=3.1 and <=4.0, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
 - Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
