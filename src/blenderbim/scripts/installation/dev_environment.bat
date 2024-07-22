@@ -1,63 +1,66 @@
 @echo off
 
 rem SETUP BLENDER-BIM LIVE DEVELOPMENT ENVIRONMENT
-rem Setup blenderbim addon location below (probably just need to change "x.x" for your Blender version).
+rem Update BLENDER_VERSION, PYTHON_VERSION, BBIM_REPO in the script bellow.
 rem Put the script to the folder where IfcOpenShell git repository is located
 rem (script will try to clone IfcOpenShell.git if it's not present).
-SET blenderbim=%appdata%\Blender Foundation\Blender\x.x\scripts\addons\blenderbim
+SET BLENDER_VERSION=4.2
+SET PYTHON_VERSION=3.11
+SET BBIM_REPO=user_default
+
+SET BLENDER=%appdata%\Blender Foundation\Blender\%BLENDER_VERSION%
+SET BLENDER_LOCAL=%BLENDER%\extensions\.local\lib\python%PYTHON_VERSION%\site-packages
+SET BLENDERBIM=%BLENDER_LOCAL%\blenderbim
+SET BLENDER_EXT=%BLENDER%\extensions\%BBIM_REPO%\blenderbim
 
 git clone https://github.com/IfcOpenShell/IfcOpenShell.git
 cd IfcOpenShell
 
 echo Removing the Blender add-on Python code...
-rd /S /Q "%blenderbim%\core\"
-rd /S /Q "%blenderbim%\tool\"
-rd /S /Q "%blenderbim%\bim\"
+del "%BLENDER_EXT%\__init__.py"
+rd /S /Q "%BLENDERBIM%"
 
 echo Replacing them with links to the Git repository...
-mklink /D "%blenderbim%\core" "%cd%\src\blenderbim\blenderbim\core"
-mklink /D "%blenderbim%\tool" "%cd%\src\blenderbim\blenderbim\tool"
-mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
+mklink "%BLENDER_EXT%\__init__.py" "%CD%\src\blenderbim\blenderbim\__init__.py"
+mklink /D "%BLENDERBIM%" "%CD%\src\blenderbim\blenderbim"
 
 echo Copy over compiled IfcOpenShell files...
-copy "%blenderbim%\libs\site\packages\ifcopenshell\*_wrapper*" "%cd%\src\ifcopenshell-python\ifcopenshell\"
+copy "%BLENDER_LOCAL%\ifcopenshell\*_wrapper*" "%CD%\src\ifcopenshell-python\ifcopenshell\"
 
 echo Remove the IfcOpenShell dependency...
-rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell"
+rd /S /Q "%BLENDER_LOCAL%\ifcopenshell"
 
 echo Replace them with links to the Git repository...
-mklink /D "%blenderbim%\libs\site\packages\ifcopenshell" "%cd%\src\ifcopenshell-python\ifcopenshell"
+mklink /D "%BLENDER_LOCAL%\ifcopenshell" "%CD%\src\ifcopenshell-python\ifcopenshell"
 
 echo Remove and link other IfcOpenShell utilities...
-del "%blenderbim%\libs\site\packages\ifccsv.py"
-del "%blenderbim%\libs\site\packages\ifcdiff.py"
-del "%blenderbim%\libs\site\packages\bsdd.py"
-rd /S /Q "%blenderbim%\libs\site\packages\bcf"
-rd /S /Q "%blenderbim%\libs\site\packages\ifc4d"
-rd /S /Q "%blenderbim%\libs\site\packages\ifc5d"
-rd /S /Q "%blenderbim%\libs\site\packages\ifccityjson"
-rd /S /Q "%blenderbim%\libs\site\packages\ifcclash"
-rd /S /Q "%blenderbim%\libs\site\packages\ifcpatch"
-rd /S /Q "%blenderbim%\libs\site\packages\ifctester"
-rd /S /Q "%blenderbim%\libs\site\packages\ifcfm"
-rd /S /Q "%blenderbim%\libs\desktop"
+del "%BLENDER_LOCAL%\ifccsv.py"
+del "%BLENDER_LOCAL%\ifcdiff.py"
+del "%BLENDER_LOCAL%\bsdd.py"
+rd /S /Q "%BLENDER_LOCAL%\bcf"
+rd /S /Q "%BLENDER_LOCAL%\ifc4d"
+rd /S /Q "%BLENDER_LOCAL%\ifc5d"
+rd /S /Q "%BLENDER_LOCAL%\ifccityjson"
+rd /S /Q "%BLENDER_LOCAL%\ifcclash"
+rd /S /Q "%BLENDER_LOCAL%\ifcpatch"
+rd /S /Q "%BLENDER_LOCAL%\ifctester"
+rd /S /Q "%BLENDER_LOCAL%\ifcfm"
 
-mklink "%blenderbim%\libs\site\packages\ifccsv.py" "%cd%\src\ifccsv\ifccsv.py"
-mklink "%blenderbim%\libs\site\packages\ifcdiff.py" "%cd%\src\ifcdiff\ifcdiff.py"
-mklink "%blenderbim%\libs\site\packages\bsdd.py" "%cd%\src\bsdd\bsdd.py"
-mklink /D "%blenderbim%\libs\site\packages\bcf" "%cd%\src\bcf\src\bcf"
-mklink /D "%blenderbim%\libs\site\packages\ifc4d" "%cd%\src\ifc4d\ifc4d"
-mklink /D "%blenderbim%\libs\site\packages\ifc5d" "%cd%\src\ifc5d\ifc5d"
-mklink /D "%blenderbim%\libs\site\packages\ifccityjson" "%cd%\src\ifccityjson\ifccityjson"
-mklink /D "%blenderbim%\libs\site\packages\ifcclash" "%cd%\src\ifcclash\ifcclash"
-mklink /D "%blenderbim%\libs\site\packages\ifcpatch" "%cd%\src\ifcpatch\ifcpatch"
-mklink /D "%blenderbim%\libs\site\packages\ifctester" "%cd%\src\ifctester\ifctester"
-mklink /D "%blenderbim%\libs\site\packages\ifcfm" "%cd%\src\ifcfm\ifcfm"
-mklink /D "%blenderbim%\libs\desktop" "%cd%\src\blenderbim\blenderbim\libs\desktop"
+mklink "%BLENDER_LOCAL%\ifccsv.py" "%CD%\src\ifccsv\ifccsv.py"
+mklink "%BLENDER_LOCAL%\ifcdiff.py" "%CD%\src\ifcdiff\ifcdiff.py"
+mklink "%BLENDER_LOCAL%\bsdd.py" "%CD%\src\bsdd\bsdd.py"
+mklink /D "%BLENDER_LOCAL%\bcf" "%CD%\src\bcf\src\bcf"
+mklink /D "%BLENDER_LOCAL%\ifc4d" "%CD%\src\ifc4d\ifc4d"
+mklink /D "%BLENDER_LOCAL%\ifc5d" "%CD%\src\ifc5d\ifc5d"
+mklink /D "%BLENDER_LOCAL%\ifccityjson" "%CD%\src\ifccityjson\ifccityjson"
+mklink /D "%BLENDER_LOCAL%\ifcclash" "%CD%\src\ifcclash\ifcclash"
+mklink /D "%BLENDER_LOCAL%\ifcpatch" "%CD%\src\ifcpatch\ifcpatch"
+mklink /D "%BLENDER_LOCAL%\ifctester" "%CD%\src\ifctester\ifctester"
+mklink /D "%BLENDER_LOCAL%\ifcfm" "%CD%\src\ifcfm\ifcfm"
 
 echo Manually downloading some third party dependencies...
-curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%blenderbim%\bim\data\gantt\jsgantt.js"
-curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%blenderbim%\bim\data\gantt\jsgantt.css"
-curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%blenderbim%\bim\schema\Brick.ttl"
+curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%BLENDERBIM%\bim\data\gantt\jsgantt.js"
+curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%BLENDERBIM%\bim\data\gantt\jsgantt.css"
+curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%BLENDERBIM%\bim\schema\Brick.ttl"
 
 pause
