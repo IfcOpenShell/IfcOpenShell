@@ -147,8 +147,7 @@ if IN_BLENDER:
 
         # We can't just use __file__ as blenderbim/__init__.py is typically not symlinked
         # as Blender have errors symlinking main addon package file.
-        path = Path(__file__).parent / "bim" / "__init__.py"
-        path = path.resolve().parent
+        path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
     except:

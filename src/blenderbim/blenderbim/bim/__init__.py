@@ -196,7 +196,6 @@ for mod in modules.values():
 addon_keymaps = []
 icons = None
 is_registering = False
-last_commit_hash = "8888888"
 original_scene_panels_polls: dict[bpy.types.Panel, Union[Callable, None]] = dict()
 
 
