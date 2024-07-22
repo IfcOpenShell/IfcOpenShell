@@ -64,6 +64,11 @@ Sections
 
       .. container:: card
 
+         :doc:`/users/git_support`
+            Collaborate on projects using Git
+
+      .. container:: card
+
          :doc:`/users/drawing/index`
             2D drawing generation and annotation.
 
@@ -94,8 +99,13 @@ Sections
 
       .. container:: card
 
-         :doc:`/users/appendix/index`
-            Troubleshooting and additional resources.
+         :doc:`/users/other_addons`
+            Other complementary add-ons
+
+      .. container:: card
+
+         :doc:`/users/troubleshooting`
+            Troubleshooting when things go wrong
 
 .. container:: global-index-toc
 
@@ -106,13 +116,15 @@ Sections
 
       users/modeling/interface
       users/modeling/ifc_modeling
+      users/git_support
       users/drawing/index
       users/structural_analysis/index
       users/costing_and_scheduling/index
       users/advanced/index
       users/tutorials/index
       users/user_interface
-      users/appendix/index
+      users/other_addons
+      users/troubleshooting
 
 Get Involved
 ============
