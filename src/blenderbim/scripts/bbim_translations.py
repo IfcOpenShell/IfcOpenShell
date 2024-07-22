@@ -1,5 +1,8 @@
 try:
     import bpy
+    # Ensure it's not fake-bpy-module.
+    if not hasattr(bpy, "context"):
+        raise ModuleNotFoundError
     import bl_i18n_utils
     import addon_utils
 
