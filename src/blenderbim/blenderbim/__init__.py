@@ -52,19 +52,35 @@ def get_last_commit_hash() -> Union[str, None]:
 
 last_error = None
 last_actions: deque = deque(maxlen=10)
+bbim_semver: dict[str, Any] = {}
+
+
+def initialize_bbim_semver():
+    """Initialize `bbim_semver` dictionary.
+
+    Blender doesn't seem to store a full extension version (only major-minor-patch)
+    in `addon_utils.modules()->bl_info['version']`,
+    therefore we just parse it from .toml.
+    """
+    import tomllib
+
+    toml_path = Path(__file__).parent / "blender_manifest.toml"
+    with open(toml_path, "rb") as f:
+        manifest = tomllib.load(f)
+    semver_pattern = r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    version_str = manifest["version"]
+    re_version = re.match(semver_pattern, version_str)
+    assert re_version
+    global bbim_semver
+    bbim_semver = re_version.groupdict()
+    bbim_semver["version"] = version_str
+
+
+initialize_bbim_semver()
 
 
 def get_debug_info():
-    version = ".".join(
-        [
-            str(x)
-            for x in [
-                addon.bl_info.get("version", (-1, -1, -1))
-                for addon in addon_utils.modules()
-                if addon.bl_info["name"] == "BlenderBIM"
-            ][0]
-        ]
-    )
+    bbim_version = bbim_semver["version"]
 
     return {
         "os": platform.system(),
@@ -74,7 +90,7 @@ def get_debug_info():
         "machine": platform.machine(),
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
-        "blenderbim_version": version,
+        "blenderbim_version": bbim_version,
         "blenderbim_commit_hash": get_last_commit_hash(),
         "last_actions": last_actions,
         "last_error": last_error,
@@ -229,15 +245,15 @@ if IN_BLENDER:
                 bbim_version = info["blenderbim_version"]
                 py_tag = py.replace(".", "")
                 if "Linux" in info["os"]:
-                    os = "linux"
+                    os = "linux-x64"
                 elif "Darwin" in info["os"]:
                     if "arm64" in info["machine"]:
-                        os = "macosm1"
+                        os = "macos-arm64"
                     else:
-                        os = "macos"
+                        os = "macos-x64"
                 else:
-                    os = "win"
-                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim-{bbim_version}-py{py_tag}-{os}.zip"
+                    os = "windows-x64"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim_py{py_tag}-{bbim_version}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"
