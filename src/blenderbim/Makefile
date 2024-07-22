@@ -114,19 +114,19 @@ endif
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
-	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcclash && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcbimtester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifctester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcfm && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bsdd && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcdiff && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccsv && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcpatch && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc4d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc5d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccityjson && make dist && cp dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bcf && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcclash && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcbimtester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifctester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcfm && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bsdd && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcdiff && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccsv && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcpatch && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc4d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc5d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccityjson && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
 	# Provides audio playback for costing
 	# This is a REALLY IMPORTANT feature
@@ -255,6 +255,15 @@ endif
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl build/wheels/
+
+	# Safeguard for non-wheel dependencies slipping in.
+	wheels=$$(find build/wheels/* ! -name "*.whl"); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found non-wheel dependencies:"; \
+		echo "$$wheels"; \
+		echo "Error: non-wheel dependencies are not supported by Blender!"; \
+		exit 1; \
+	fi
 	mv build/wheels/*.whl build/blenderbim/wheels/
 
 	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
@@ -298,7 +307,7 @@ ifeq ($(PLATFORM), macos)
 endif
 
 	# Safeguard for unhandled universal files.
-	@wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
+	wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
 	if [ -n "$$wheels" ]; then \
 		echo "Found universal2 wheel files:"; \
 		echo "$$wheels"; \
@@ -309,7 +318,7 @@ endif
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,
 	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
-	@wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
+	wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
 	if [ -n "$$wheels" ]; then \
 		echo "Found linux wheel files in non-linux build:"; \
 		echo "$$wheels"; \
