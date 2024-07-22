@@ -741,5 +741,5 @@ def get_total_edge_length(geometry: ShapeType) -> float:
     :rtype: float
     """
     vertices = get_vertices(geometry)
-    edges = get_edges(geometry)
-    return sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in edges])
+    vertices = vertices[get_edges(geometry)]
+    return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum()
