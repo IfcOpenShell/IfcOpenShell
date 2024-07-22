@@ -22,8 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=4.1, choose py311
 - If you are on Blender >=3.1 and <=4.0, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
-- Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
-  ``win`` depending on your operating system
+- Choose ``linux-x64``, ``macos-x64`` (Apple Intel), ``macos-arm64`` (Apple Silicon), or
+  ``windows-x64`` depending on your operating system
 
 For users who don't follow the `VFX Platform <https://vfxplatform.com/>`_
 standard, we also provide py312 builds.
