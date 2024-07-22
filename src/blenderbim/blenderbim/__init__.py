@@ -27,7 +27,6 @@ import sys
 IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
-    import addon_utils
 
 import re
 import platform

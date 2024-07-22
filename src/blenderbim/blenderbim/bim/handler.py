@@ -222,7 +222,7 @@ def redo_post(scene):
 
 def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     # TODO: cache this for even faster application retrieval. It honestly makes a difference on long scripts.
-    version = get_application_version()
+    version = tool.Blender.get_blenderbim_version()
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "BlenderBIM" and element.Version == version:
             return element
@@ -246,19 +246,6 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
             organization = tool.Ifc.run("owner.add_organisation")
         pao = tool.Ifc.run("owner.add_person_and_organisation", person=person, organisation=organization)
         return pao
-
-
-def get_application_version() -> str:
-    return ".".join(
-        [
-            str(x)
-            for x in [
-                addon.bl_info.get("version", (-1, -1, -1))
-                for addon in addon_utils.modules()
-                if addon.bl_info["name"] == "BlenderBIM"
-            ][0]
-        ]
-    )
 
 
 def viewport_shading_changed_callback(area):
