@@ -297,6 +297,27 @@ ifeq ($(PLATFORM), macos)
 	mv "$$prev_whl_name" "$$whl_name";
 endif
 
+	# Safeguard for unhandled universal files.
+	@wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found universal2 wheel files:"; \
+		echo "$$wheels"; \
+		echo "Error: universal2 wheel files are not supported by Blender!"; \
+		exit 1; \
+	fi
+
+ifneq ($(PLATFORM), linux)
+	# Safeguard: in case one of `pip download` will break,
+	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
+	@wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found linux wheel files in non-linux build:"; \
+		echo "$$wheels"; \
+		echo "Error: linux wheels are incompatible with build $(PLATFORM)!"; \
+		exit 1; \
+	fi
+endif
+
 	$(PYTHON) scripts/get_wheels.py build/blenderbim/wheels build/blenderbim/blender_manifest.toml
 	rm -rf build/blenderbim/bim/
 	rm -rf build/blenderbim/core/
