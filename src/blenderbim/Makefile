@@ -117,7 +117,6 @@ endif
 	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../blenderbim/build/wheels/
 	cd ../bcf && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd ../ifcclash && make dist && mv dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcbimtester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd ../ifctester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd ../ifcfm && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd ../bsdd && make dist && mv dist/*.whl ../blenderbim/build/wheels/
