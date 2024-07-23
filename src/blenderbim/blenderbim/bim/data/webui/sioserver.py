@@ -2,9 +2,8 @@ import sys
 import os
 import webbrowser
 
-blenderbim_path = os.environ.get("blenderbim_path")
-if blenderbim_path:
-    blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
+blenderbim_lib_path = os.environ.get("blenderbim_lib_path")
+if blenderbim_lib_path:
     sys.path.insert(0, blenderbim_lib_path)
 
 import argparse
