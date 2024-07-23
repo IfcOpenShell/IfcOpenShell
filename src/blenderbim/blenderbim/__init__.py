@@ -32,9 +32,11 @@ import re
 import platform
 import traceback
 import webbrowser
+import uuid
+import shutil
 from collections import deque
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Generator
 
 
 last_commit_hash = "8888888"
@@ -107,6 +109,68 @@ def format_debug_info(info: dict):
     return text.strip()
 
 
+def get_binaries(path: Path) -> Generator[Path, None, None]:
+    yield from path.glob("**/*.pyd")
+    yield from path.glob("**/*.dll")
+    # pyradiance is using .so files on windows for some reason.
+    yield from path.glob("**/*.so")
+
+
+def safe_link_dlls() -> None:
+    # Blender 4.2+ has a problem on Windows for disabling/enabling/reinstalling extensions
+    # with loaded binary dependencies (on Windows you can't remove a binary if it's loaded by some program).
+    # To avoid this issue we temporary hard link dlls to our temp directory on unregister()
+    # (unregister is executed before Blender will try to uninstall dependencies and the issue will arise).
+    # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
+    # On register() we clean up our temp directory with binaries.
+    #
+    # TODO: If user uninstalls BlenderBIM to never use it again, temporary directory won't be cleared.
+    #
+    # See: https://projects.blender.org/blender/blender/issues/125049
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    local_path = ext_path / ".local"
+
+    # We use random hash subfolder as user may try to enable/disable addon multiple times.
+    random_hash = uuid.uuid4().hex[:8]
+    temp_local = ext_path / ".local_temp" / random_hash
+    temp_local.mkdir(parents=True)
+
+    for filepath in get_binaries(local_path):
+        dest_path = temp_local / filepath.relative_to(local_path)
+        dest_path.parent.mkdir(exist_ok=True, parents=True)
+        os.link(filepath, dest_path)
+
+
+def clean_up_dlls_safe_links() -> None:
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    temp_path = ext_path / ".local_temp"
+    if not temp_path.exists():
+        return
+
+    for filepath in get_binaries(temp_path):
+        try:
+            os.unlink(filepath)
+        except PermissionError:
+            pass
+
+    def is_empty_directory(directory: Path) -> bool:
+        return not any(directory.iterdir())
+
+    def remove_empty_folders(folder: Path) -> None:
+        for subfolder in folder.iterdir():
+            if subfolder.is_dir():
+                remove_empty_folders(subfolder)
+
+        if is_empty_directory(folder):
+            folder.rmdir()
+
+    remove_empty_folders(temp_path)
+
+
 if IN_BLENDER:
 
     def get_binary_info() -> dict[str, Any]:
@@ -168,11 +232,17 @@ if IN_BLENDER:
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
+            if platform.system() == "Windows":
+                clean_up_dlls_safe_links()
+
             import blenderbim.bim
 
             blenderbim.bim.register()
 
         def unregister():
+            if platform.system() == "Windows":
+                safe_link_dlls()
+
             import blenderbim.bim
 
             blenderbim.bim.unregister()
