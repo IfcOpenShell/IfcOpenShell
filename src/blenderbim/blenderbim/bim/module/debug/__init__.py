@@ -36,6 +36,7 @@ classes = (
     operator.ProfileImportIFC,
     operator.PurgeHdf5Cache,
     operator.PurgeUnusedElementsByClass,
+    operator.RestartBlender,
     operator.RewindInspector,
     operator.SelectExpressFile,
     operator.SelectHighPolygonMeshes,
