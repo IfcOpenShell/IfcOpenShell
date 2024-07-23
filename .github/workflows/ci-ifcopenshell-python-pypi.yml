@@ -57,7 +57,7 @@ jobs:
           pip install build
           cp -r src/ifcopenshell-python src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
           cd src/ifcopenshell_${{ matrix.config.short_name }}_${{ matrix.pyver }} &&
-          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }}
+          make dist PLATFORM=${{ matrix.config.short_name }} PYVERSION=${{ matrix.pyver }} IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:
