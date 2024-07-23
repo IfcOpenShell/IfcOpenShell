@@ -34,6 +34,7 @@ import threading
 import queue
 import json
 from time import sleep
+from pathlib import Path
 
 sio = None
 ws_process = None
@@ -105,11 +106,23 @@ class Web(blenderbim.core.tool.Web):
         webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
         ws_path = os.path.join(webui_path, "sioserver.py")
 
-        addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "BlenderBIM"][0]
-        blenderbim_path = os.path.dirname(addon.__file__)
+        py_version = sys.version_info
+
+        if bpy.app.version >= (4, 2, 0):
+            blenderbim_lib_path = (
+                Path(bpy.utils.user_resource("EXTENSIONS"))
+                / ".local"
+                / "lib"
+                / f"python{py_version.major}.{py_version.minor}"
+                / "site-packages"
+            )
+        else:
+            addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "BlenderBIM"][0]
+            blenderbim_path = os.path.dirname(addon.__file__)
+            blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
 
         env = os.environ.copy()
-        env["blenderbim_path"] = blenderbim_path
+        env["blenderbim_lib_path"] = str(blenderbim_lib_path)
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
