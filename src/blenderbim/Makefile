@@ -251,7 +251,11 @@ endif
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/blenderbim/blender_manifest.toml
 
 	# Provides BlenderBIM Add-on functionality
+ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl build/wheels/
 
