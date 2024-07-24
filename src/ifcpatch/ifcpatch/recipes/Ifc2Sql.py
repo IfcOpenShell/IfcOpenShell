@@ -222,7 +222,7 @@ class Patcher:
                     e = np.array(shape.geometry.edges).tobytes()
                     f = np.array(shape.geometry.faces).tobytes()
                     mids = np.array(shape.geometry.material_ids).tobytes()
-                    m = json.dumps([int(m.name.split("-")[2]) for m in shape.geometry.materials])
+                    m = json.dumps([m.instance_id() for m in shape.geometry.materials])
                     self.geometry_rows[shape.geometry.id] = [shape.geometry.id, v, e, f, mids, m]
                 m = ifcopenshell.util.shape.get_shape_matrix(shape)
                 m[0][3] /= self.unit_scale
