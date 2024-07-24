@@ -7,6 +7,7 @@
     --padding-medium: 1rem;
     --font-size-large: 1.2rem;
     --logo-height: 2.5rem;
+    --nav-height: 2.5rem;
 }
 
 :root.dark {
@@ -18,6 +19,7 @@
     --nav-link-color: #fff;
     --nav-link-hover-color: #3fb449;
     --warning-color: #FFDB8F;
+    --table-border-color: #464444;
 }
 
 :root.light {
@@ -29,6 +31,7 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
+    --table-border-color: #222;
 }
 
 html {
@@ -63,6 +66,7 @@ h3 {
 
 nav {
     background-color: var(--nav-bg-color);
+    height: var(--nav-height);
     padding: var(--padding-medium) 0;
     display: flex;
     align-items: center;
@@ -118,6 +122,67 @@ nav ul li a.active {
     outline: none;
 }
 
+#client-list {
+    position: absolute;
+    top: calc(0 + var(--nav-height));
+    overflow-y: auto;
+    overflow: hidden;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    border: 1px solid var(--table-border-color);
+    background-color: var(--nav-bg-color);
+    z-index: 1;
+    opacity: 0;
+    visibility: hidden;
+    width: auto;
+}
+
+#client-list.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#connected-list-div {
+    display: inline-block;
+}
+
+.client {
+    padding: 10px;
+    border-bottom: 1px solid var(--table-border-color);
+    cursor: pointer;
+}
+
+.client-details {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 10px;
+    transition: max-height 0.2s ease-out, padding 0.2s ease-out, opacity 0.1s ease-out;
+    background-color: var(--bg-color);
+    margin-top: 5px;
+    opacity: 0;
+}
+
+.client-details.show {
+    max-height: none;
+    padding: 10px;
+    opacity: 1;
+}
+
+.client-detail {
+    border-bottom: 1px solid var(--table-border-color);
+    padding: 10px;
+}
+
+#show-connected-button {
+    width: auto;
+    background-color: var(--bg-color);
+    border: none;
+    font-size: var(--base-font-size);
+}
+
+#show-connected-button:hover {
+    cursor: pointer;
+}
+
 /* ------------ Overwriting Tabulator CSS rules ------------ */
 
 :root.light .tabulator-header,
@@ -127,6 +192,6 @@ nav ul li a.active {
 }
 
 :root.light .tabulator {
-    border-top: 1px solid #222;
-    border-bottom: 2px solid #222;
+    border-top: 1px solid var(--table-border-color);
+    border-bottom: 2px solid var(--table-border-color);
 }
