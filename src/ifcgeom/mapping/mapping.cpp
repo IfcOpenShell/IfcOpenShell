@@ -341,10 +341,10 @@ namespace {
             return item;
         }
 
-        while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
+        while (auto booleanresult = item->as<IfcSchema::IfcBooleanClippingResult>()) {
             // All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
             // IfcGeometricRepresentationItem
-            item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
+            item = booleanresult->FirstOperand()->as<IfcSchema::IfcRepresentationItem>();
             if (item->StyledByItem()->size()) {
                 return item;
             }
