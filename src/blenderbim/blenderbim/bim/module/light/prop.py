@@ -151,10 +151,41 @@ class RadianceExporterProperties(PropertyGroup):
         if self.ifc_file:
             self.ifc_file = bpy.path.abspath(self.ifc_file)
 
+    def add_material_mapping(self, style_id, style_name):
+        item = self.material_mappings.add()
+        item.name = style_name
+        item["style_id"] = style_id
+        item["radiance_material"] = "white"  # Default to white
+
+    def get_material_mapping(self, style_name):
+        return next((item for item in self.material_mappings if item.name == style_name), None)
+
+    def set_material_mapping(self, style_id, style_name, radiance_material):
+        item = self.get_material_mapping(style_name)
+        if item:
+            item["radiance_material"] = radiance_material
+        else:
+            self.add_material_mapping(style_id, style_name)
+            self.material_mappings[-1]["radiance_material"] = radiance_material
+
+    def get_mappings_dict(self):
+        return {item["style_id"]: item["radiance_material"] for item in self.material_mappings}
+    
+    use_json_file: BoolProperty(
+        name="Upload JSON",
+        description="Toggle between uploading a JSON file and using in-UI material mapping",
+        default=False
+    )
+    
     is_exporting: bpy.props.BoolProperty(
         name="Is Exporting",
         description="Whether the OBJ export is in progress",
         default=False
+    )
+
+    material_mappings: bpy.props.CollectionProperty(
+        type= bpy.types.PropertyGroup,
+        name="Material Mappings"
     )
 
     should_load_from_memory: BoolProperty(
@@ -226,6 +257,21 @@ class RadianceExporterProperties(PropertyGroup):
         ],
         default="MEDIUM",
     )
+    output_file_name: StringProperty(
+        name="Output File Name",
+        description="Name of the output image file (without extension)",
+        default="render"
+    )
+    
+    output_file_format: EnumProperty(
+        name="Output File Format",
+        description="Format of the output image file",
+        items=[
+            ('HDR', "HDR", "High Dynamic Range"),
+        ],
+        default='HDR'
+    )
+
 
 
 class BIMSolarProperties(PropertyGroup):
