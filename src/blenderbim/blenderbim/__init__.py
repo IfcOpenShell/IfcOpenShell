@@ -310,9 +310,18 @@ if IN_BLENDER:
                 binary_py = get_binary_info().get("binary_python_version")
                 if binary_py and py != binary_py:
                     box.separator()
+                    # From wrong-platform-build issues we're guarded by Blender extension installation.
+                    # But Blender currently doesn't support separate builds for different Python version,
+                    # so those issues might still slip in.
                     box.label(text="BlenderBIM installed for wrong Python version.")
                     box.label(text=f"Expected: {py}. Got: {binary_py}.")
+                    # On reinstallation, dependencies versions doesn't change, so Blender will just ignore new dependencies.
+                    # So, we need to make user will disable an extension (just uninstallation won't remove dependencies).
+                    # Blender restart doesn't seem to be required in that case
+                    # as dependencies failed to load due to Python version mismatch.
                     box.label(text="Try reinstalling with the correct Python version.")
+                    box.label(text="Before reinstallation make sure to")
+                    box.label(text="DISABLE BlenderBIM (uninstallation won't help).")
                     box.label(text="You can download correct version below.")
 
                 layout.operator("bim.copy_debug_information", text="Copy Error Message To Clipboard")
