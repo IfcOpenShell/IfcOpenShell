@@ -175,16 +175,14 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     should_add_representation: bpy.props.BoolProperty(default=True)
     ifc_representation_class: bpy.props.StringProperty()
 
-    @classmethod
-    def poll(cls, context):
-        if not context.active_object and not context.selected_objects:
-            cls.poll_message_set("No object selected.")
-            return False
-        return True
-
     def _execute(self, context):
         props = context.scene.BIMRootProperties
         objects = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects or [context.active_object]
+
+        if not objects:
+            self.report({"INFO"}, "No objects selected.")
+            return
+
         ifc_class = self.ifc_class or props.ifc_class
         predefined_type = self.userdefined_type if self.predefined_type == "USERDEFINED" else self.predefined_type
         ifc_context = self.context_id
