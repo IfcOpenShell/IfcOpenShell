@@ -26,6 +26,7 @@ import requests
 import tempfile
 import datetime
 import addon_utils
+import blenderbim.tool as tool
 
 
 class AuginLogin(bpy.types.Operator):
@@ -77,16 +78,7 @@ class AuginCreateNewModel(bpy.types.Operator):
         props.project_filename = "BBM{}{}".format(
             datetime.datetime.now().strftime("%Y%m%d%H%M%S"), "".join(random.choice(chars) for _ in range(6))
         )
-        addon_version = ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
+        addon_version = tool.Blender.get_blenderbim_version()
 
         payload = {
             "user_token": props.token,

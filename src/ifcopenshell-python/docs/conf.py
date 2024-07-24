@@ -81,10 +81,10 @@ autoapi_add_toctree_entry = True
 autoapi_type = "python"
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+autoapi_dirs = ['../ifcopenshell', '../../bcf/bcf', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 # autoapi_dirs = ['../../ifcdiff']
 # autoapi_dirs = ['../../ifcdiff', '../ifcopenshell/util']
-# autoapi_dirs = ['../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+# autoapi_dirs = ['../../bcf/bcf', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 
 # These are auto-generated based on the IFC schema, so exclude them
 autoapi_ignore = ['*ifcopenshell/express/rules*']

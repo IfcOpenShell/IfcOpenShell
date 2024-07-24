@@ -19,6 +19,12 @@ const pageSizes = [
 
 // Document ready function
 $(document).ready(function () {
+  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+  var theme = localStorage.getItem("theme") || systemTheme;
+  setTheme(theme);
+
   connectSocket();
 });
 
@@ -32,6 +38,7 @@ function connectSocket() {
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("gantt_data", handleGanttData);
+  socket.on("default_data", handleDefaultData);
 }
 
 // Function to handle 'blender_connect' event
@@ -61,7 +68,7 @@ function handleGanttData(data) {
 
   console.log(data);
 
-  const filename = data["data"]["IFC_File"];
+  const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
   const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
   // const ganttWorkSched = {};
@@ -89,6 +96,13 @@ function handleGanttData(data) {
   }
 }
 
+function handleDefaultData(data) {
+  const blenderId = data["blenderId"];
+  const isDirty = data["data"]["is_dirty"];
+  showWarning(blenderId, isDirty);
+  console.log(data);
+}
+
 // Function to add a new gantt with data and filename
 function addGanttElement(blenderId, tasks, workSched, filename) {
   const ganttContainer = $("<div></div>")
@@ -100,6 +114,13 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
     .text(filename)
     .addClass("no-print")
     .css("margin-bottom", "10px");
+
+  const warning = $("<div></div>")
+    .attr("id", "warning-" + blenderId)
+    .html(
+      "&#9888; Warning: This Gantt Chart may contain outdated data due to recent changes in Blender."
+    )
+    .addClass("warning no-print");
 
   const workSchedDiv = $("<div></div>").attr("id", "workSched" + blenderId);
 
@@ -148,6 +169,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
   workSchedDiv.append(scheduleTable);
 
   ganttContainer.append(ganttTitle);
+  ganttContainer.append(warning);
   ganttContainer.append(workSchedDiv);
   ganttContainer.append(ganttInfoDiv);
   ganttContainer.append(ganttDiv);
@@ -233,8 +255,7 @@ function addGanttElement(blenderId, tasks, workSched, filename) {
 
     addEventListener("afterprint", (event) => {
       g.setEditable(true);
-    },);
-
+    });
 
     let css =
       "@media print {\n" +
@@ -280,11 +301,16 @@ function updateGanttElement(blenderId, tasks, workSched, filename) {
   g.Draw();
 
   $("#title-" + blenderId).text(filename);
+  $("#warning-" + blenderId).css("display", "none");
 }
 
 // Function to remove gantt element
 function removeGanttElement(blenderId) {
   $("#container-" + blenderId).remove();
+}
+
+function showWarning(blenderId, isDirty) {
+  $("#warning-" + blenderId).css("display", "block");
 }
 
 // Utility function to create a tooltip for the gantt chars
@@ -336,4 +362,23 @@ function editValue(list, task, event, cell, column) {
     },
   };
   socket.emit("web_operator", msg);
+}
+
+function setTheme(theme) {
+  if (theme === "light") {
+    $("html").removeClass("dark").addClass("light");
+    $("#toggle-theme").html('<i class="fas fa-sun"></i>');
+  } else {
+    $("html").removeClass("light").addClass("dark");
+    $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  }
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  if ($("html").hasClass("dark")) {
+    setTheme("light");
+  } else {
+    setTheme("dark");
+  }
 }

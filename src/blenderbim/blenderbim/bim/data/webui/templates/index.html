@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,12 @@
     <link rel="stylesheet" href="/static/css/index.css" />
     <link
       rel="stylesheet"
+      id="tabulator-stylesheet"
       href="https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
     />
     <script
       type="text/javascript"
@@ -28,12 +33,18 @@
   </head>
   <body>
     <nav>
-      <img src="https://blenderbim.org/assets/images/blender/blender-logo.png" alt="Logo" class="logo" />
+      <img
+        src="https://blenderbim.org/assets/images/blender/blender-logo.png"
+        alt="Logo"
+        class="logo"
+      />
       <ul>
         <li><a href="/" class="active">IFC Data</a></li>
         <li><a href="/gantt">Gantt Chart</a></li>
       </ul>
-      <div class="bottom-bar"></div>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
     </nav>
     <div id="container"></div>
   </body>

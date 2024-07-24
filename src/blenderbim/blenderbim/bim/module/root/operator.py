@@ -166,7 +166,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign the IFC Class to the selected object"
+    bl_description = "Assign the IFC Class to the selected objects"
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -174,6 +174,13 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     context_id: bpy.props.IntProperty()
     should_add_representation: bpy.props.BoolProperty(default=True)
     ifc_representation_class: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object and not context.selected_objects:
+            cls.poll_message_set("No object selected.")
+            return False
+        return True
 
     def _execute(self, context):
         props = context.scene.BIMRootProperties
