@@ -448,7 +448,7 @@ class BIM_PT_tabs(Panel):
                 box = self.layout.box()
                 box.alert = True
                 row = box.row(align=True)
-                box.label(text="BlenderBIM experienced an error :(", icon="ERROR")
+                row.label(text="BlenderBIM experienced an error :(", icon="ERROR")
                 row.operator("bim.close_error", text="", icon="CANCEL")
                 if platform.system() == "Windows":
                     box.operator("wm.console_toggle", text="View the console for full logs.", icon="CONSOLE")
