@@ -26,7 +26,7 @@ jobs:
         run: |
           pip install build
           cd src/ifccsv &&
-          make dist
+          make dist IS_STABLE=TRUE
       - name: Publish a Python distribution to PyPI
         uses: ortega2247/pypi-upload-action@master
         with:

@@ -114,19 +114,18 @@ endif
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
-	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcclash && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcbimtester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifctester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcfm && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bsdd && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcdiff && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccsv && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcpatch && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc4d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc5d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccityjson && make dist && cp dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bcf && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcclash && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifctester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcfm && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bsdd && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcdiff && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccsv && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcpatch && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc4d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc5d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccityjson && make dist && mv dist/*.whl ../blenderbim/build/wheels/
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
 	# Provides audio playback for costing
 	# This is a REALLY IMPORTANT feature
@@ -252,9 +251,22 @@ endif
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/blenderbim/blender_manifest.toml
 
 	# Provides BlenderBIM Add-on functionality
+ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl build/wheels/
+
+	# Safeguard for non-wheel dependencies slipping in.
+	wheels=$$(find build/wheels/* ! -name "*.whl"); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found non-wheel dependencies:"; \
+		echo "$$wheels"; \
+		echo "Error: non-wheel dependencies are not supported by Blender!"; \
+		exit 1; \
+	fi
 	mv build/wheels/*.whl build/blenderbim/wheels/
 
 	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
@@ -295,6 +307,27 @@ ifeq ($(PLATFORM), macos)
 	prev_whl_name=$$(find build/blenderbim/wheels/fonttools-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
+endif
+
+	# Safeguard for unhandled universal files.
+	wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found universal2 wheel files:"; \
+		echo "$$wheels"; \
+		echo "Error: universal2 wheel files are not supported by Blender!"; \
+		exit 1; \
+	fi
+
+ifneq ($(PLATFORM), linux)
+	# Safeguard: in case one of `pip download` will break,
+	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
+	wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found linux wheel files in non-linux build:"; \
+		echo "$$wheels"; \
+		echo "Error: linux wheels are incompatible with build $(PLATFORM)!"; \
+		exit 1; \
+	fi
 endif
 
 	$(PYTHON) scripts/get_wheels.py build/blenderbim/wheels build/blenderbim/blender_manifest.toml

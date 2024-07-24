@@ -6,7 +6,7 @@ on:
       - '.github/workflows/ci-blenderbim-daily.yml'
       - 'src/blenderbim/**'
       - 'src/ifcopenshell-python/ifcopenshell/**'
-      - 'src/bcf/src/bcf/**'
+      - 'src/bcf/bcf/**'
       - 'src/ifcclash/ifcclash/**'
       - 'src/ifccobie/**'
       - 'src/ifcdiff/**'

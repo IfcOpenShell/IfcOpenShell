@@ -18,7 +18,6 @@
 
 import os
 import bpy
-import addon_utils
 import platform
 from pathlib import Path
 from bpy.types import Panel

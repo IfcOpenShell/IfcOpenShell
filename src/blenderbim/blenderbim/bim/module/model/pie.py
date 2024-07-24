@@ -26,6 +26,7 @@ from blenderbim.bim.ifc import IfcStore
 class OpenPieClass(bpy.types.Operator):
     bl_idname = "bim.open_pie_class"
     bl_label = "Open Pie Class"
+    bl_description = "Assign the IFC Class to the selected objects"
 
     def execute(self, context):
         bpy.ops.wm.call_menu_pie(name="VIEW3D_MT_PIE_bim_class")

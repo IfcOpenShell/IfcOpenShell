@@ -27,15 +27,16 @@ import sys
 IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
-    import addon_utils
 
 import re
 import platform
 import traceback
 import webbrowser
+import uuid
+import shutil
 from collections import deque
 from pathlib import Path
-from typing import Union, Any
+from typing import Union, Any, Generator
 
 
 last_commit_hash = "8888888"
@@ -52,19 +53,35 @@ def get_last_commit_hash() -> Union[str, None]:
 
 last_error = None
 last_actions: deque = deque(maxlen=10)
+bbim_semver: dict[str, Any] = {}
+
+
+def initialize_bbim_semver():
+    """Initialize `bbim_semver` dictionary.
+
+    Blender doesn't seem to store a full extension version (only major-minor-patch)
+    in `addon_utils.modules()->bl_info['version']`,
+    therefore we just parse it from .toml.
+    """
+    import tomllib
+
+    toml_path = Path(__file__).parent / "blender_manifest.toml"
+    with open(toml_path, "rb") as f:
+        manifest = tomllib.load(f)
+    semver_pattern = r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)(?:-(?P<prerelease>(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+(?P<buildmetadata>[0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$"
+    version_str = manifest["version"]
+    re_version = re.match(semver_pattern, version_str)
+    assert re_version
+    global bbim_semver
+    bbim_semver = re_version.groupdict()
+    bbim_semver["version"] = version_str
+
+
+initialize_bbim_semver()
 
 
 def get_debug_info():
-    version = ".".join(
-        [
-            str(x)
-            for x in [
-                addon.bl_info.get("version", (-1, -1, -1))
-                for addon in addon_utils.modules()
-                if addon.bl_info["name"] == "BlenderBIM"
-            ][0]
-        ]
-    )
+    bbim_version = bbim_semver["version"]
 
     return {
         "os": platform.system(),
@@ -74,7 +91,7 @@ def get_debug_info():
         "machine": platform.machine(),
         "processor": platform.processor(),
         "blender_version": bpy.app.version_string,
-        "blenderbim_version": version,
+        "blenderbim_version": bbim_version,
         "blenderbim_commit_hash": get_last_commit_hash(),
         "last_actions": last_actions,
         "last_error": last_error,
@@ -90,6 +107,68 @@ def format_debug_info(info: dict):
     info["last_actions"] = last_actions
     text = "\n".join(f"{k}: {v}" for k, v in info.items())
     return text.strip()
+
+
+def get_binaries(path: Path) -> Generator[Path, None, None]:
+    yield from path.glob("**/*.pyd")
+    yield from path.glob("**/*.dll")
+    # pyradiance is using .so files on windows for some reason.
+    yield from path.glob("**/*.so")
+
+
+def safe_link_dlls() -> None:
+    # Blender 4.2+ has a problem on Windows for disabling/enabling/reinstalling extensions
+    # with loaded binary dependencies (on Windows you can't remove a binary if it's loaded by some program).
+    # To avoid this issue we temporary hard link dlls to our temp directory on unregister()
+    # (unregister is executed before Blender will try to uninstall dependencies and the issue will arise).
+    # Then, Blender won't have a problem unlinking unloaded dlls as they are still linked somewhere.
+    # On register() we clean up our temp directory with binaries.
+    #
+    # TODO: If user uninstalls BlenderBIM to never use it again, temporary directory won't be cleared.
+    #
+    # See: https://projects.blender.org/blender/blender/issues/125049
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    local_path = ext_path / ".local"
+
+    # We use random hash subfolder as user may try to enable/disable addon multiple times.
+    random_hash = uuid.uuid4().hex[:8]
+    temp_local = ext_path / ".local_temp" / random_hash
+    temp_local.mkdir(parents=True)
+
+    for filepath in get_binaries(local_path):
+        dest_path = temp_local / filepath.relative_to(local_path)
+        dest_path.parent.mkdir(exist_ok=True, parents=True)
+        os.link(filepath, dest_path)
+
+
+def clean_up_dlls_safe_links() -> None:
+    import bpy
+
+    ext_path = Path(bpy.utils.user_resource("EXTENSIONS"))
+    temp_path = ext_path / ".local_temp"
+    if not temp_path.exists():
+        return
+
+    for filepath in get_binaries(temp_path):
+        try:
+            os.unlink(filepath)
+        except PermissionError:
+            pass
+
+    def is_empty_directory(directory: Path) -> bool:
+        return not any(directory.iterdir())
+
+    def remove_empty_folders(folder: Path) -> None:
+        for subfolder in folder.iterdir():
+            if subfolder.is_dir():
+                remove_empty_folders(subfolder)
+
+        if is_empty_directory(folder):
+            folder.rmdir()
+
+    remove_empty_folders(temp_path)
 
 
 if IN_BLENDER:
@@ -132,8 +211,7 @@ if IN_BLENDER:
 
         # We can't just use __file__ as blenderbim/__init__.py is typically not symlinked
         # as Blender have errors symlinking main addon package file.
-        path = Path(__file__).parent / "bim" / "__init__.py"
-        path = path.resolve().parent
+        path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
     except:
@@ -154,11 +232,17 @@ if IN_BLENDER:
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
         def register():
+            if platform.system() == "Windows":
+                clean_up_dlls_safe_links()
+
             import blenderbim.bim
 
             blenderbim.bim.register()
 
         def unregister():
+            if platform.system() == "Windows":
+                safe_link_dlls()
+
             import blenderbim.bim
 
             blenderbim.bim.unregister()
@@ -229,15 +313,15 @@ if IN_BLENDER:
                 bbim_version = info["blenderbim_version"]
                 py_tag = py.replace(".", "")
                 if "Linux" in info["os"]:
-                    os = "linux"
+                    os = "linux-x64"
                 elif "Darwin" in info["os"]:
                     if "arm64" in info["machine"]:
-                        os = "macosm1"
+                        os = "macos-arm64"
                     else:
-                        os = "macos"
+                        os = "macos-x64"
                 else:
-                    os = "win"
-                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim-{bbim_version}-py{py_tag}-{os}.zip"
+                    os = "windows-x64"
+                op.uri = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/blenderbim-{bbim_version}/blenderbim_py{py_tag}-{bbim_version}-{os}.zip"
 
         class OpenUri(bpy.types.Operator):
             bl_idname = "bim.open_uri"

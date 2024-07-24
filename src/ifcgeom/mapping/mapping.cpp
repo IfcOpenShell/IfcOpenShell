@@ -341,10 +341,10 @@ namespace {
             return item;
         }
 
-        while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
+        while (auto booleanresult = item->as<IfcSchema::IfcBooleanClippingResult>()) {
             // All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
             // IfcGeometricRepresentationItem
-            item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
+            item = booleanresult->FirstOperand()->as<IfcSchema::IfcRepresentationItem>();
             if (item->StyledByItem()->size()) {
                 return item;
             }
@@ -755,6 +755,14 @@ void mapping::initialize_units_() {
 
     if (!angle_unit_encountered) {
         Logger::Warning("No plane angle unit encountered");
+    }
+
+    // @todo move to a more descriptive function
+    if (settings_.get<settings::BuildingLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcBuilding");
+    }
+    if (settings_.get<settings::SiteLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
     }
 }
 

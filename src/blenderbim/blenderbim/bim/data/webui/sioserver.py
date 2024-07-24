@@ -1,3 +1,11 @@
+import sys
+import os
+import webbrowser
+
+blenderbim_lib_path = os.environ.get("blenderbim_lib_path")
+if blenderbim_lib_path:
+    sys.path.insert(0, blenderbim_lib_path)
+
 import argparse
 from aiohttp import web
 import socketio
@@ -21,6 +29,8 @@ sio = socketio.AsyncServer(
 app = web.Application()
 sio.attach(app)
 
+
+# represents a caching for blender messages
 blender_messages = {}
 
 
@@ -31,6 +41,8 @@ class WebNamespace(socketio.AsyncNamespace):
 
     async def on_connect(self, sid, environ):
         print(f"Web client connected: {sid}")
+        if blender_messages:
+            await self.send_cached_messages(sid)
 
     async def on_disconnect(self, sid):
         print(f"Web client disconnected: {sid}")
@@ -42,6 +54,14 @@ class WebNamespace(socketio.AsyncNamespace):
             namespace="/blender",
             room=data["blenderId"],
         )
+
+    async def send_cached_messages(self, sid):
+        # Send cached messages to the connected web client
+        for blenderId, messages in blender_messages.items():
+            if "csv_data" in messages:
+                await self.emit("csv_data", {"blenderId": blenderId, "data": messages["csv_data"]}, room=sid)
+            if "gantt_data" in messages:
+                await self.emit("gantt_data", {"blenderId": blenderId, "data": messages["gantt_data"]}, room=sid)
 
 
 # Blender namespace
@@ -65,7 +85,7 @@ class BlenderNamespace(socketio.AsyncNamespace):
     async def on_data(self, sid, data):
         print(f"Data from Blender client {sid}")
         # blender_messages[sid]["default_data"] = data
-        # await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
+        await sio.emit("default_data", {"blenderId": sid, "data": data}, namespace="/web")
 
     async def on_csv_data(self, sid, data):
         print(f"CSV data from Blender client {sid}")
@@ -99,10 +119,15 @@ async def gantt(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
+async def open_web_browser(app):
+    webbrowser.open(f"http://127.0.0.1:{sio_port}/")
+
+
 app.router.add_get("/", index)
 app.router.add_get("/gantt", gantt)
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
 app.router.add_static("/static/", path="./static", name="static")
+app.on_startup.append(open_web_browser)
 
 
 def main():
