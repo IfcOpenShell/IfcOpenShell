@@ -51,9 +51,14 @@ def get_last_commit_hash() -> Union[str, None]:
     return last_commit_hash[:7]
 
 
+# Accessed from blenderbim extension:
+bbim_semver: dict[str, Any] = {}
+
+# Accessed from blenderbim dependency:
 last_error = None
 last_actions: deque = deque(maxlen=10)
-bbim_semver: dict[str, Any] = {}
+FIRST_INSTALLED_BBIM_VERSION: Union[str, None] = None
+REINSTALLED_BBIM_VERSION: Union[str, None] = None
 
 
 def initialize_bbim_semver():
@@ -236,6 +241,12 @@ if IN_BLENDER:
                 clean_up_dlls_safe_links()
 
             import blenderbim.bim
+
+            current_version = bbim_semver["version"]
+            if blenderbim.FIRST_INSTALLED_BBIM_VERSION is None:
+                blenderbim.FIRST_INSTALLED_BBIM_VERSION = current_version
+            elif not blenderbim.REINSTALLED_BBIM_VERSION and blenderbim.FIRST_INSTALLED_BBIM_VERSION != current_version:
+                blenderbim.REINSTALLED_BBIM_VERSION = current_version
 
             blenderbim.bim.register()
 

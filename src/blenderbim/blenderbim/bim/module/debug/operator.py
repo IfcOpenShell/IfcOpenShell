@@ -775,6 +775,7 @@ class ToggleDetailedIOSLogs(bpy.types.Operator):
 class RestartBlender(bpy.types.Operator):
     bl_idname = "bim.restart_blender"
     bl_label = "Restart Blender"
+    bl_description = "Blender will be immediately restarted, save your data first before running this operator"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
