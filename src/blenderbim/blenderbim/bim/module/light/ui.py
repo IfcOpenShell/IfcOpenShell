@@ -52,9 +52,25 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row = layout.row()
         row.prop(props, "output_dir")
         
+
         row = layout.row()
-        row.prop(props, "json_file")
+        layout.prop(props, "use_json_file")
+
+        if props.use_json_file:
+            row = layout.row()
+            row.prop(props, "json_file")
+        else:
+            # Material Mappings UI
+            layout.label(text="Material Mappings:")
+            for item in props.material_mappings:
+                row = layout.row(align=True)
+                row.label(text=item.name)
+                row.prop(item, '["radiance_material"]', text="")
+
+            layout.operator("bim.refresh_ifc_materials")
+
         
+        layout.separator()
         row = layout.row()
         row.label(text="Resolution")
         row.prop(props, "radiance_resolution_x", text="X")
@@ -71,7 +87,16 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         
         row = layout.row()
         row.prop(props, "radiance_variability")
+
+        layout.separator()
+
+        row = layout.row()
+        row.prop(props, "output_file_name")
         
+        row = layout.row()
+        row.prop(props, "output_file_format")
+        layout.separator()
+
         row = layout.row()
         row.operator("export_scene.radiance", text="Export Geometry for Simulation")
 

@@ -27,6 +27,7 @@ classes = (
     operator.MoveSunPathTo3DCursor,
     operator.RadianceRender,
     operator.ViewFromSun,
+    operator.RefreshIFCMaterials,
     prop.BIMSolarProperties,
     prop.RadianceExporterProperties,
     ui.BIM_PT_radiance_exporter,

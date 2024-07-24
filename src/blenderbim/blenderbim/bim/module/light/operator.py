@@ -35,19 +35,20 @@ import multiprocessing
 from mathutils import Vector
 from blenderbim.bim.module.light.data import SolarData
 
+ifc_materials = []
 
 class ExportOBJ(bpy.types.Operator):
     """Exports the IFC File to OBJ"""
     bl_idname = "export_scene.radiance"
     bl_label = "Export"
     bl_description = "Export the IFC to OBJ"
+    
 
     def execute(self, context):
 
         # Get the output directory
         should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
         output_dir = context.scene.radiance_exporter_properties.output_dir
-        json_file = context.scene.radiance_exporter_properties.json_file
 
         context.scene.radiance_exporter_properties.is_exporting = True
 
@@ -69,8 +70,8 @@ class ExportOBJ(bpy.types.Operator):
             ifc_file_path = context.scene.radiance_exporter_properties.ifc_file
             ifc_file = ifcopenshell.open(ifc_file_path)
         
-        for material in ifc_file.by_type("IfcMaterial"):
-            self.report({'INFO'}, f"Material: {material.Name}, ID: {material.id()}")
+        # for material in ifc_file.by_type("IfcMaterial"):
+        #     self.report({'INFO'}, f"Material: {material.Name}, ID: {material.id()}")
 
         obj_file_path = os.path.join(output_dir, "model.obj")
         mtl_file_path = os.path.join(output_dir, "model.mtl")
@@ -92,16 +93,24 @@ class ExportOBJ(bpy.types.Operator):
             while True:
                 shape = iterator.get()
                 materials = shape.geometry.materials
+                # print(shape.geometry)
                 material_ids = shape.geometry.material_ids
+                # material_names = shape.geometry.material_names
+                # print(material_ids)
+
                 for material in materials:
-                    print(material, dir(material))
-                print(material_ids)
+                    # print(material, dir(material))
+                    # print(material.name)
+                    ifc_materials.append(material.name)
+                    
                 serialiser.write(shape)
                 if not iterator.next():
                     break
        
         serialiser.finalize()
         context.scene.radiance_exporter_properties.is_exporting = False
+
+        self.report({'INFO'}, "Exported OBJ file to: {}".format(obj_file_path))
 
         return {'FINISHED'}
 
@@ -118,14 +127,14 @@ class RadianceRender(bpy.types.Operator):
             return {'CANCELLED'}
         
         # Get the resolution from the user input
-        resolution_x, resolution_y = self.getResolution(context)
-        quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
-        detail = context.scene.radiance_exporter_properties.radiance_detail.upper()
-        variability = context.scene.radiance_exporter_properties.radiance_variability.upper()
-
-        should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
-        output_dir = context.scene.radiance_exporter_properties.output_dir
-        json_file = context.scene.radiance_exporter_properties.json_file
+        props = context.scene.radiance_exporter_properties
+        resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
+        quality = props.radiance_quality.upper()
+        detail = props.radiance_detail.upper()
+        variability = props.radiance_variability.upper()
+        output_dir = props.output_dir
+        output_file_name = props.output_file_name
+        output_file_format = props.output_file_format
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
@@ -139,26 +148,33 @@ class RadianceRender(bpy.types.Operator):
         camera_position, camera_direction = self.get_camera_data(camera)
 
         # Material processing
-        style = []
+        # style = []
         
-        with open(obj_file_path, "r") as obj_file:
-            for line in obj_file:
-                if line.startswith("usemtl"):
-                    l = line.strip().split(" ")
-                    style.append(l[1])
+        # with open(obj_file_path, "r") as obj_file:
+        #     for line in obj_file:
+        #         if line.startswith("usemtl"):
+        #             l = line.strip().split(" ")
+        #             style.append(l[1])
 
 
         # Check if json file is empty or not
-        if json_file:
-            with open(json_file, 'r') as file:
+        props = context.scene.radiance_exporter_properties
+
+        if props.use_json_file:
+            # Load data from JSON file
+            with open(props.json_file, 'r') as file:
                 data = json.load(file)
         else:
-            data = {}
+            # Use in-UI material mappings
+            data = props.get_mappings_dict()
+
+        print(data)
+
         
         # Create materials.rad file
         materials_file = os.path.join(output_dir, "materials.rad")
         with open(materials_file, "w") as file:
-            file.write("void plastic white\n0\n0\n5 0.6 0.6 0.6 0 0\n")
+            file.write("void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n")
             file.write("void plastic blue_plastic\n0\n0\n5 0.1 0.2 0.8 0.05 0.1\n")
             file.write("void plastic red_plastic\n0\n0\n5 0.8 0.1 0.2 0.05 0.1\n")
             file.write("void metal silver_metal\n0\n0\n5 0.8 0.8 0.8 0.9 0.1\n")
@@ -166,8 +182,13 @@ class RadianceRender(bpy.types.Operator):
             file.write("void light white_light\n0\n0\n3 1.0 1.0 1.0\n")
             file.write("void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n")
 
-            for i in set(style):
-                file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
+            for style_id, radiance_material in data.items():
+                print(style_id, radiance_material)
+                file.write("inherit alias " + style_id + " " + data.get(style_id, "white") + "\n")
+                # file.write(f"inherit alias {style_id} {radiance_material}\n")
+            # for i in set(ifc_materials):
+            #     print(i)
+            #     file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
 
         self.report({'INFO'}, "Exported Materials Rad file to: {}".format(materials_file))
 
@@ -178,7 +199,8 @@ class RadianceRender(bpy.types.Operator):
         self.report({'INFO'}, "obj2mesh output: {}".format(mesh_file_path))
         scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
-            file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
+            # file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
+            file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
 
         self.report({'INFO'}, "Exported Scene file to: {}".format(scene_file))
 
@@ -197,11 +219,16 @@ class RadianceRender(bpy.types.Operator):
         image = pr.render(scene, ambbounce=1, resolution=(resolution_x, resolution_y),
                           quality=quality, detail=detail, variability=variability)
         
-        raw_hdr_path = os.path.join(output_dir, "raw.hdr")
-        with open(raw_hdr_path, "wb") as wtr:
-            wtr.write(image)
+        output_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
 
-        self.report({'INFO'}, "Radiance rendering completed. Output: {}".format(raw_hdr_path))
+        if output_file_format == 'HDR':
+            with open(output_path, "wb") as wtr:
+                wtr.write(image)
+        else:
+            pass
+    
+
+        self.report({'INFO'}, "Radiance rendering completed. Output: {}".format(output_path))
         return {'FINISHED'}
     
     def get_active_camera(self, context):
@@ -305,3 +332,22 @@ class ViewFromSun(bpy.types.Operator):
         props = context.scene.BIMSolarProperties
         props.hour = props.hour  # Just to refresh camera position
         return {"FINISHED"}
+
+class RefreshIFCMaterials(bpy.types.Operator):
+    bl_idname = "bim.refresh_ifc_materials"
+    bl_label = "Refresh IFC Materials"
+    bl_description = "Refresh the list of IFC materials for mapping"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
+        
+        for style in ifc_file.by_type("IfcSurfaceStyle"):
+            for render_item in style.Styles:
+                if render_item.is_a("IfcSurfaceStyleRendering"):
+                    style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
+                    style_name = style.Name or f"Unnamed Style {render_item.id()}"
+                    if not props.get_material_mapping(style_name):
+                        props.add_material_mapping(style_id, style_name)
+        
+        return {'FINISHED'}
