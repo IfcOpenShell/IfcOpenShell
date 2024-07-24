@@ -650,7 +650,24 @@ class Loader(blenderbim.core.tool.Loader):
         # absolutely positioned. We check more than 1 because sometimes users
         # try to be clever and put "origin marker" objects.
         element_checking_threshold = 3
-        for element in ifc_file.by_type("IfcElement"):
+        elements = ifc_file.by_type("IfcElement")
+
+        if ifc_file.schema not in ("IFC2X3", "IFC4"):
+            if not elements:
+                elements = ifc_file.by_type("IfcLinearPositioningElement")
+            if not elements:
+                elements = ifc_file.by_type("IfcReferent")
+            if not elements:
+                elements = ifc_file.by_type("IfcGrid")
+
+        if ifc_file.schema == "IFC2X3":
+            if not elements:
+                elements = ifc_file.by_type("IfcSpatialStructureElement")
+        else:
+            if not elements:
+                elements = ifc_file.by_type("IfcSpatialElement")
+
+        for element in elements:
             if elements_checked > element_checking_threshold:
                 return
             if not element.Representation:
