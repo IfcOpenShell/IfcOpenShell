@@ -341,10 +341,10 @@ namespace {
             return item;
         }
 
-        while (item->declaration().is(IfcSchema::IfcBooleanClippingResult::Class())) {
+        while (auto booleanresult = item->as<IfcSchema::IfcBooleanClippingResult>()) {
             // All instantiations of IfcBooleanOperand (type of FirstOperand) are subtypes of
             // IfcGeometricRepresentationItem
-            item = (IfcSchema::IfcGeometricRepresentationItem*) ((IfcSchema::IfcBooleanClippingResult*) item)->FirstOperand();
+            item = booleanresult->FirstOperand()->as<IfcSchema::IfcRepresentationItem>();
             if (item->StyledByItem()->size()) {
                 return item;
             }
@@ -697,12 +697,22 @@ void mapping::initialize_units_() {
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
     
-    auto unit_assignments = file_->instances_by_type<IfcSchema::IfcUnitAssignment>();
-    if (unit_assignments->size() != 1) {
-        Logger::Warning("Not a single unit assignment in file");
+#ifdef SCHEMA_HAS_IfcContext
+    auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+#else
+    auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
+#endif
+    IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
+    if (projects->size() == 1) {
+        auto* project = *projects->begin();
+        unit_assignment = project->UnitsInContext();
+    } else {
+        Logger::Warning("Not a single project or context in file");
+    }
+    if (unit_assignment == nullptr) {
+        Logger::Warning("Unable to detect unit information");
         return;
     }
-    auto unit_assignment = *unit_assignments->begin();
 
     bool length_unit_encountered = false, angle_unit_encountered = false;
 
@@ -755,6 +765,14 @@ void mapping::initialize_units_() {
 
     if (!angle_unit_encountered) {
         Logger::Warning("No plane angle unit encountered");
+    }
+
+    // @todo move to a more descriptive function
+    if (settings_.get<settings::BuildingLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcBuilding");
+    }
+    if (settings_.get<settings::SiteLocalPlacement>().get()) {
+        placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
     }
 }
 

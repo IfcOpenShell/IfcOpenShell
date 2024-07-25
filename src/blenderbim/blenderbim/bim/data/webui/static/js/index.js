@@ -5,6 +5,12 @@ let socket;
 
 // Document ready function
 $(document).ready(function () {
+  var systemTheme = window.matchMedia("(prefers-color-scheme: light)").matches
+    ? "light"
+    : "dark";
+  var theme = localStorage.getItem("theme") || systemTheme;
+  setTheme(theme);
+
   connectSocket();
 });
 
@@ -18,6 +24,7 @@ function connectSocket() {
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("csv_data", handleCsvData);
+  socket.on("default_data", handleDefaultData);
 }
 
 // Function to handle 'blender_connect' event
@@ -41,7 +48,7 @@ function handleBlenderDisconnect(blenderId) {
 function handleCsvData(data) {
   const blenderId = data["blenderId"];
   const csvData = data["data"]["csv_data"];
-  const filename = data["data"]["IFC_File"];
+  const filename = data["data"]["ifc_file"];
   console.log(data);
 
   if (connectedClients.hasOwnProperty(blenderId)) {
@@ -65,6 +72,13 @@ function handleCsvData(data) {
   }
 }
 
+function handleDefaultData(data) {
+  const blenderId = data["blenderId"];
+  const isDirty = data["data"]["is_dirty"];
+  showWarning(blenderId, isDirty);
+  console.log(data);
+}
+
 // Function to add a new table with data and filename
 function addTableElement(blenderId, csvData, filename) {
   // store headers of the csv data
@@ -82,11 +96,19 @@ function addTableElement(blenderId, csvData, filename) {
     .text(filename)
     .css("margin-bottom", "10px");
 
+  const warning = $("<div></div>")
+    .attr("id", "warning-" + blenderId)
+    .html(
+      "&#9888; Warning: This table may contain outdated data due to recent changes in Blender."
+    )
+    .addClass("warning");
+
   const tableDiv = $("<div></div>")
     .addClass("csv-table")
     .attr("id", "table-" + blenderId);
 
   tableContainer.append(tableTitle);
+  tableContainer.append(warning);
   tableContainer.append(tableDiv);
   $("#container").append(tableContainer);
 
@@ -199,12 +221,17 @@ function updateTableElement(blenderId, csvData, filename) {
       connectedClients[blenderId].headers = newHeaders;
     }
     $("#title-" + blenderId).text(filename);
+    $("#warning-" + blenderId).css("display", "none");
   }
 }
 
 // Function to remove table element
 function removeTableElement(blenderId) {
   $("#container-" + blenderId).remove();
+}
+
+function showWarning(blenderId, isDirty) {
+  $("#warning-" + blenderId).css("display", "block");
 }
 
 // Utility function to compare two csv header
@@ -218,4 +245,32 @@ function compareHeaders(headers1, headers2) {
     }
   }
   return true;
+}
+
+function setTheme(theme) {
+  var stylesheet = $("#tabulator-stylesheet");
+  if (theme === "light") {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
+    );
+    $("html").removeClass("dark").addClass("light");
+    $("#toggle-theme").html('<i class="fas fa-sun"></i>');
+  } else {
+    stylesheet.attr(
+      "href",
+      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    );
+    $("html").removeClass("light").addClass("dark");
+    $("#toggle-theme").html('<i class="fas fa-moon"></i>');
+  }
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  if ($("html").hasClass("dark")) {
+    setTheme("light");
+  } else {
+    setTheme("dark");
+  }
 }

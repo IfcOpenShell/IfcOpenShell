@@ -26,6 +26,14 @@ from blenderbim.bim.ifc import IfcStore
 class OpenPieClass(bpy.types.Operator):
     bl_idname = "bim.open_pie_class"
     bl_label = "Open Pie Class"
+    bl_description = "Assign the IFC Class to the selected objects"
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object and not context.selected_objects:
+            cls.poll_message_set("No object selected.")
+            return False
+        return True
 
     def execute(self, context):
         bpy.ops.wm.call_menu_pie(name="VIEW3D_MT_PIE_bim_class")

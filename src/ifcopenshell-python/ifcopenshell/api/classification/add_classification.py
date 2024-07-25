@@ -116,13 +116,7 @@ class Usecase:
 
         self.relate_to_project(result)
 
-        return result  # See bug #1272
-
-        try:
-            result = self.file.add(self.settings["classification"])
-        except:
-            migrator = ifcopenshell.util.schema.Migrator()
-            result = migrator.migrate(self.settings["classification"], self.file)
+        return result
 
     def relate_to_project(self, classification):
         self.file.create_entity(

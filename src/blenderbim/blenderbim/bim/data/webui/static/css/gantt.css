@@ -1,19 +1,65 @@
 :root {
+    --font-family: Arial, sans-serif;
+    --margin-small: 0.625rem;
+    --margin-medium: 1.25rem;
+    --margin-large: 2.5rem;
+    --padding-small: 0.125rem;
+    --padding-medium: 1rem;
+    --font-size-small: 1rem;
+    --font-size-large: 1.2rem;
+    --logo-height: 2.5rem;
+    --folder-collapse-font-size: 0.75rem;
+    --folder-collapse-font-family: Courier, "Courier New", monospace;
+    --box-shadow: 0 0 0.7rem #5f5f5f66;
+}
+
+:root.dark {
     color-scheme: dark;
+    --bg-color: #252525;
+    --primary-text-color: #e0e0e0;
+    --secondary-text-color: #c7c7c7;
+    --nav-bg-color: #121212;
+    --nav-border-color: #25682a;
+    --nav-link-color: #fff;
+    --nav-link-hover-color: #3fb449;
+    --warning-color: #FFDB8F;
+    --border-color: #464444;
+    --hover-bg-color: #3a3a3a;
+    --highlight-color: #009136;
+    --task-complete-bg-color: #777777;
+    --milestone-border-color: #ffffff;
+    --group-item-bg-color: #4b4b4b;
+    --input-bg-color: #3b3b3b;
+    --input-border-color: #000;
+}
+
+:root.light {
+    color-scheme: light;
+    --bg-color: #ffffff;
+    --primary-text-color: #000000;
+    --nav-bg-color: #f8f8f8;
+    --nav-border-color: #cccccc;
+    --nav-link-color: #000000;
+    --nav-link-hover-color: #38a63d;
+    --warning-color: #FF4500;
+}
+
+html {
+    font-size: var(--base-font-size);
 }
 
 body {
-    background-color: #252525;
-    color: #e0e0e0;
+    background-color: var(--bg-color);
+    color: var(--primary-text-color);
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: var(--font-family);
 }
 
 #container {
-    margin-top: 20px;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-bottom: 20px;
+    margin-top: var(--margin-medium);
+    margin-left: var(--margin-small);
+    margin-right: var(--margin-small);
+    margin-bottom: var(--margin-medium);
 }
 
 h3 {
@@ -21,79 +67,89 @@ h3 {
 }
 
 nav {
-    background-color: #121212;
-    padding: 1em 0;
+    background-color: var(--nav-bg-color);
+    padding: var(--padding-medium) 0;
     display: flex;
     align-items: center;
     position: relative;
+    border-bottom: 2px solid var(--nav-border-color);
 }
 
 nav .logo {
-    margin-left: 40px;
-    height: 40px;
-    /* Adjust height as needed */
+    margin-left: var(--margin-large);
+    height: var(--logo-height);
 }
 
 nav ul {
     list-style-type: none;
     margin: 0;
-    margin-left: 1px;
+    margin-left: 0.0625rem;
     display: flex;
     flex-grow: 1;
     justify-content: center;
 }
 
 nav ul li {
-    margin-right: 50px;
+    margin-right: 3.125rem;
 }
 
 nav ul li a {
     text-decoration: none;
-    color: #fff;
-    font-size: 1.2em;
+    color: var(--nav-link-color);
+    font-size: var(--font-size-large);
 }
 
 nav ul li a:hover,
 nav ul li a.active {
-    color: #3fb449;
+    color: var(--nav-link-hover-color);
 }
 
-nav .bottom-bar {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #25682a;
+.warning {
+    color: var(--warning-color);
+    margin-bottom: var(--margin-small);
+    padding: var(--padding-small);
+    display: none;
 }
 
 .table-description {
-    margin-bottom: 1rem;
+    margin-bottom: var(--margin-medium);
     width: 50%;
     background-color: transparent;
     border-collapse: collapse;
     border-spacing: 0;
-    border-color: #464444;
-    border: 1px solid #464444;
+    border-color: var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: 0.25rem;
-    box-shadow: 0 0 0.7rem rgba(95, 95, 95, 0.4);
+    box-shadow: var(--box-shadow);
     text-align: center;
 }
 
 .table-description tr {
     display: table-row;
-    border-bottom: 1px solid #464444;
+    border-bottom: 1px solid var(--border-color);
+}
+
+#toggle-theme {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: var(--font-size-large);
+    margin-right: var(--margin-medium);
+}
+
+#toggle-theme:focus {
+    outline: none;
 }
 
 .gantt-info {
     margin: 0.5rem;
-    font-size: 1rem;
+    font-size: var(--font-size-small);
     font-weight: bold;
 }
 
 .btn {
     margin: 0.5rem;
-    font-size: 1rem;
+    font-size: var(--font-size-small);
     cursor: pointer;
 }
 
@@ -104,86 +160,76 @@ nav .bottom-bar {
 }
 
 /* ------------ Overwriting JSGantt CSS rules ------------ */
-
-div.gantt {
-    background-color: #252525;
-    color: #c7c7c7;
+:root.dark div.gantt {
+    background-color: var(--bg-color);
+    color: var(--secondary-text-color);
 }
 
-.gantt table {
-    border-color: #464444;
-    ;
-}
-
-.gantt td {
-    border-color: #464444;
-    ;
+:root.dark .gantt table,
+:root.dark .gantt td {
+    border-color: var(--border-color);
 }
 
 /* Headings and cell defaults */
-.gmajorheading,
-.gminorheading,
-.gminorheadingwkend,
-.gtaskcell,
-.gtaskcellcurrent,
-.gtaskcellwkend,
-.gname,
-.ggroupitem,
-.gtaskheading {
-    background-color: #252525;
-    border-color: #464444;
-    ;
+:root.dark .gmajorheading,
+:root.dark .gminorheading,
+:root.dark .gminorheadingwkend,
+:root.dark .gtaskcell,
+:root.dark .gtaskcellcurrent,
+:root.dark .gtaskcellwkend,
+:root.dark .gname,
+:root.dark .ggroupitem,
+:root.dark .gtaskheading {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
 }
 
-.gtaskheading,
-.gname,
-.gtaskname,
-.gres,
-.gdur,
-.gcomp,
-.gstartdate,
-.gplanstartdate,
-.gplanenddate,
-.gcost,
-.gchartlbl,
-.gcontainercol,
-.genddate {
-    color: #c7c7c7;
-    border-color: #464444;
-    ;
+:root.dark .gtaskheading,
+:root.dark .gname,
+:root.dark .gtaskname,
+:root.dark .gres,
+:root.dark .gdur,
+:root.dark .gcomp,
+:root.dark .gstartdate,
+:root.dark .gplanstartdate,
+:root.dark .gplanenddate,
+:root.dark .gcost,
+:root.dark .gchartlbl,
+:root.dark .gcontainercol,
+:root.dark .genddate {
+    color: var(--secondary-text-color);
+    border-color: var(--border-color);
 }
 
-.gtaskname>div {
-    color: #c7c7c7;
+:root.dark .gtaskname>div {
+    color: var(--secondary-text-color);
 }
 
-.gtaskbarcontainer.gplan,
-.gchartlbl.gcontainercol {
-    background: #252525;
-    border-color: #464444;
+:root.dark .gtaskbarcontainer.gplan,
+:root.dark .gchartlbl.gcontainercol {
+    background: var(--bg-color);
+    border-color: var(--border-color);
 }
 
-.gtaskname div,
-.gtaskheading div,
-.gtaskname span {
-    color: #c7c7c7;
+:root.dark .gtaskname div,
+:root.dark .gtaskheading div,
+:root.dark .gtaskname span {
+    color: var(--secondary-text-color);
 }
 
-
-.gtasklist,
-.gadditional {
-    border: #464444 1px solid
+:root.dark .gtasklist,
+:root.dark .gadditional {
+    border: var(--border-color) 1px solid;
 }
 
-.gchartgrid {
-    background-color: #252525;
+:root.dark .gchartgrid {
+    background-color: var(--bg-color);
 }
 
-.glistgrid,
-.glistlbl {
-    background-color: #252525;
-    border-color: #464444;
-    ;
+:root.dark .glistgrid,
+:root.dark .glistlbl {
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
 }
 
 /* .gTaskInfo {
@@ -193,88 +239,81 @@ div.gantt {
 } */
 
 /* Dark mode scrollbar */
-.frame::-webkit-scrollbar-thumb {
-    background-color: #252525;
-}
-
-.frame::-webkit-scrollbar-track {
-    background-color: #252525;
+:root.dark .frame::-webkit-scrollbar-thumb,
+:root.dark .frame::-webkit-scrollbar-track {
+    background-color: var(--bg-color);
 }
 
 /* Highlight row */
-.gitemhighlight td {
-    background-color: #009136;
-    color: #ffffff;
+:root.dark .gitemhighlight td {
+    background-color: var(--highlight-color);
+    color: var(--nav-link-color);
 }
 
 /* Differentiate Group, Milestone and Ordinary task items (applied to row) */
-.ggroupitem {
-    background-color: #252525;
+:root.dark .ggroupitem {
+    background-color: var(--bg-color);
     font-weight: bold;
-    border-color: #464444;
+    border-color: var(--border-color);
 }
 
-.gmileitem,
-.glineitem {
-    background-color: #252525;
+:root.dark .gmileitem,
+:root.dark .glineitem {
+    background-color: var(--bg-color);
 }
 
 /* Task bar caption text styles */
-.gmilecaption,
-.ggroupcaption,
-.gcaption {
-    color: #ffffff;
+:root.dark .gmilecaption,
+:root.dark .ggroupcaption,
+:root.dark .gcaption {
+    color: var(--nav-link-color);
 }
 
 /* Task complete %age bar */
-.gtaskcomplete {
-    background-color: #777777;
+:root.dark .gtaskcomplete {
+    background-color: var(--task-complete-bg-color);
 }
 
 /* Milestones */
-.gmdtop {
-    border-bottom: 5px solid #ffffff;
+:root.dark .gmdtop,
+:root.dark .gmdbottom {
+    border-bottom: 5px solid var(--milestone-border-color);
 }
 
-.gmdbottom {
-    border-top: 5px solid #ffffff;
-}
-
-.gfoldercollapse {
-    color: #c7c7c7;
+:root.dark .gfoldercollapse {
+    color: var(--secondary-text-color);
     cursor: pointer;
     font-weight: bold;
-
-    font-size: 12px;
-    font-family: Courier, "Courier New", monospace;
+    font-size: var(--folder-collapse-font-size);
+    font-family: var(--folder-collapse-font-family);
 }
 
 /* Highlight for collapsible row */
-.gname.ggroupitem {
-    background-color: rgb(75, 75, 75);
+:root.dark .gname.ggroupitem {
+    background-color: var(--group-item-bg-color);
 }
 
 /* Form label and selected highlighting */
-.gformlabel {
-    background-color: #2e2e2e;
-    color: #c7c7c7;
-    border: #4a4a4a 1px solid;
+:root.dark .gformlabel {
+    background-color: var(--formlabel-bg-color);
+    color: var(--secondary-text-color);
+    border: var(--formlabel-border-color) 1px solid;
 }
 
-span.gformlabel:hover {
-    background-color: #3a3a3a;
-    border-color: #565656;
+:root.dark span.gformlabel:hover {
+    background-color: var(--hover-bg-color);
+    border-color: var(--border-color);
 }
 
-span.gselected {
-    background-color: #565656;
-    border-color: #777777;
-    color: #ffffff;
+:root.dark span.gselected {
+    background-color: var(--formlabel-selected-bg-color);
+    border-color: var(--task-complete-bg-color);
+    color: var(--nav-link-color);
 }
 
-.gantt-inputtable {
-    background-color: #3b3b3b;
+:root.dark .gantt-inputtable {
+    background-color: var(--input-bg-color);
     box-sizing: border-box;
-    border: 1px solid #000;
-    color: #c7c7c7;
+    border: 1px solid var(--input-border-color);
+    color: var(--secondary-text-color);
 }

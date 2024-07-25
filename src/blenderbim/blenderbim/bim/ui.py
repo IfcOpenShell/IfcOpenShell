@@ -18,7 +18,6 @@
 
 import os
 import bpy
-import addon_utils
 import platform
 from pathlib import Path
 from bpy.types import Panel
@@ -435,6 +434,16 @@ class BIM_PT_tabs(Panel):
             row = self.layout.row(align=True)
             row.prop(aprops, "tab", text="")
 
+            if blenderbim.REINSTALLED_BBIM_VERSION:
+                box = self.layout.box()
+                box.alert = True
+
+                box.label(text="BlenderBIM requires Blender to restart.", icon="ERROR")
+                box.label(text="BlenderBIM was reinstalled in the current session:")
+                box.label(text=f"{blenderbim.FIRST_INSTALLED_BBIM_VERSION} -> {blenderbim.REINSTALLED_BBIM_VERSION}")
+                box.label(text="Please restart Blender to avoid potential issues.")
+                box.operator("bim.restart_blender", text="Restart Blender", icon="BLENDER")
+
             if blenderbim.last_error:
                 box = self.layout.box()
                 box.alert = True
@@ -682,6 +691,20 @@ class BIM_PT_tab_structural(Panel):
 
 class BIM_PT_tab_services(Panel):
     bl_label = "Services"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
+
+    def draw(self, context):
+        pass
+
+
+class BIM_PT_tab_lighting(Panel):
+    bl_label = "Lighting"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
     bl_context = "scene"

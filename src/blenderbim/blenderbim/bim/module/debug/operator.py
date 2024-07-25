@@ -770,3 +770,16 @@ class ToggleDetailedIOSLogs(bpy.types.Operator):
             wrapper.turn_off_detailed_logging()
             self.report({"INFO"}, "Detailed IfcOpenShell logs turned off.")
         return {"FINISHED"}
+
+
+class RestartBlender(bpy.types.Operator):
+    bl_idname = "bim.restart_blender"
+    bl_label = "Restart Blender"
+    bl_description = "Blender will be immediately restarted, save your data first before running this operator"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        import os
+
+        path = bpy.app.binary_path
+        os.execv(path, sys.argv)

@@ -118,6 +118,14 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 
 	auto loop = polygon_from_points(ps);
 
+	for (auto& e : loop->children) {
+		// deduplicate points, now that we have shared pointers, polygon_from_points() creates shared
+		// instances of the points, but when doing fillets we assume we can split and create an intermediate
+		// circular edge.
+		// @todo only deduplicate when there is a fillet radius on that point
+		e->end = taxonomy::make<taxonomy::point3>(*boost::get<taxonomy::point3::ptr>(e->end)->components_);
+	}
+
 	std::vector<profile_point_with_edges> pps(points.size());
 	for (int b = 0; b < points.size(); ++b) {
 		int c = (b - 1) % points.size();
@@ -160,7 +168,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 			c->matrix = taxonomy::make<taxonomy::matrix4>(Eigen::Matrix4d(Eigen::Affine3d(Eigen::Translation3d(O)).matrix()));
 			c->radius = *p.radius;
 			e->basis = c;
-			c->orientation.reset(sign == -1.);
+			e->curve_sense.reset(sign == -1.);
 
 			loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
 		}

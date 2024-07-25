@@ -20,8 +20,12 @@ PYTHON:=python3.11
 PIP:=pip3.11
 PATCH:=patch
 SED:=sed -i
+VENV_ACTIVATE:=bin/activate
+
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
+PYTHON:=python
+VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -105,85 +109,86 @@ endif
 	cp -r blenderbim build/
 
 	# To scope any build-time dependencies
-	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
-	cd build && . env/bin/activate && $(PIP) install wheel
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) install wheel
 
 	mkdir -p build/wheels
 	# Provides IfcOpenShell Python functionality
-	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bcf && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcclash && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcbimtester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifctester && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcfm && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../bsdd && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcdiff && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccsv && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifcpatch && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc4d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifc5d && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd ../ifccityjson && make dist && cp dist/*.whl ../blenderbim/build/wheels/
-	cd build && . env/bin/activate && $(PIP) download GitPython --dest=./wheels
+	cd ../ifcopenshell-python && make dist PLATFORM=$(PLATFORM)64 PYVERSION=$(PYVERSION) && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bcf && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcclash && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifctester && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcfm && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../bsdd && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcdiff && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccsv && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifcpatch && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc4d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifc5d && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd ../ifccityjson && make dist && mv dist/*.whl ../blenderbim/build/wheels/
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download GitPython --dest=./wheels
 	# Provides audio playback for costing
 	# This is a REALLY IMPORTANT feature
-	cd build && . env/bin/activate && $(PIP) wheel git+https://github.com/Andrej730/aud.git --wheel-dir=../wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel git+https://github.com/Andrej730/aud.git --wheel-dir=./wheels
 	# IfcOpenShell dependency - support for new typing features
-	cd build && . env/bin/activate && $(PIP) download typing_extensions --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download typing_extensions --dest=./wheels
 	# Required by IfcCSV
-	cd build && . env/bin/activate && $(PIP) download pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pandas $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Pandas ships with very heavy tests
 	# cd build/site-packages/pandas && rm -rf tests
-	cd build && . env/bin/activate && $(PIP) download openpyxl --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download openpyxl --dest=./wheels
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
-	cd build && . env/bin/activate && $(PIP) wheel odfpy --wheel-dir=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
 	# Required by IFCCityJSON
-	cd build && . env/bin/activate && $(PIP) download cjio --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download cjio --dest=./wheels
 	# Provides express rule validation for ifcopenshell.validate
-	cd build && . env/bin/activate && $(PIP) download pytest --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytest --dest=./wheels
 	# Provides Brickschema functionality
-	cd build && . env/bin/activate && $(PIP) download "brickschema[persistence]==0.7.6a2" --dest=./wheels
+	# Is not platform specific but has platform specific dependencies.
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "brickschema[persistence]==0.7.6a2" $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required for SVG to DXF conversion
-	cd build && . env/bin/activate && $(PIP) download ezdxf --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download ezdxf $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by bcf
-	cd build && . env/bin/activate && $(PIP) download xsdata --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download xmlschema --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download elementpath --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download six --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download xsdata --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download xmlschema --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download elementpath --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download six --dest=./wheels
 	# Required by drawing module
-	cd build && . env/bin/activate && $(PIP) download lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lxml $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by qto and drawing module
-	cd build && . env/bin/activate && $(PIP) download shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download shapely $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by the BIM type manager thumbnail generator
-	cd build && . env/bin/activate && $(PIP) download pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pillow $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Provides mustache templating in construction docs and web UI data
-	cd build && . env/bin/activate && $(PIP) download pystache --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pystache --dest=./wheels
 	# Provides SVG export in construction documentation
-	cd build && . env/bin/activate && $(PIP) download svgwrite --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download svgwrite --dest=./wheels
 	# Provides fuzzy date parsing for construction sequencing
-	cd build && . env/bin/activate && $(PIP) download python-dateutil --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-dateutil --dest=./wheels
 	# Provides duration parsing for construction sequencing
-	cd build && . env/bin/activate && $(PIP) download isodate --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download isodate --dest=./wheels
 	# Provides networkx graph analysis for project dependency calculations
-	cd build && . env/bin/activate && $(PIP) download networkx --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download networkx --dest=./wheels
 	# Required by IFCDiff
-	cd build && . env/bin/activate && $(PIP) download deepdiff --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download deepdiff --dest=./wheels
 	# Required by IFCCSV and ifcopenshell.util.selector
-	cd build && . env/bin/activate && $(PIP) download lark --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download lark --dest=./wheels
 	# Required by IFC4D
-	cd build && . env/bin/activate && $(PIP) download PyP6Xer --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download PyP6Xer --dest=./wheels
 	# Required by web module
-	cd build && . env/bin/activate && $(PIP) download python-socketio[asyncio_client] --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download aiohttp --dest=./wheels
+	# Is not platform specific but has platform specific dependencies.
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# Required by light module
-	cd build && . env/bin/activate && $(PIP) download pytz --dest=./wheels
-	cd build && . env/bin/activate && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	# pyradiance is using different platform versions than defaults in our makefile.
 ifeq ($(PLATFORM), linux)
-	cd build && . env/bin/activate && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform manylinux_2_35_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else ifeq ($(PLATFORM), macos)
-	cd build && . env/bin/activate && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance --platform macosx_10_13_x86_64 --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 else
-	cd build && . env/bin/activate && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
 
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
@@ -194,7 +199,7 @@ endif
 	cd build && wget https://github.com/IFCJSON-Team/IFC2JSON_python/archive/master.zip
 	cd build && unzip master.zip && rm master.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
-	cd build/IFC2JSON_python-master/file_converters && \
+	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-master/file_converters && \
 		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='ifcjson', \
@@ -213,7 +218,7 @@ endif
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
 	cd build && unzip master.zip && rm master.zip
-	cd build/bpypolyskel-master && \
+	cd build && . env/$(VENV_ACTIVATE) && cd bpypolyskel-master && \
 		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='bpypolyskel', \
@@ -223,11 +228,12 @@ endif
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
 	# Required for Desktop icon and file association
-	cp -r blenderbim/libs/desktop dist/blenderbim/libs/
+	cp -r blenderbim/libs/desktop build/blenderbim/libs/
 
 	# Generate translations module for BBIM build
-	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build
-	$(PYTHON) scripts/bbim_translations.py -i "build" -o "build/blenderbim"
+	git clone https://github.com/IfcOpenShell/blenderbim-translations.git build/working
+	$(PYTHON) scripts/bbim_translations.py -i "build/working" -o "build/blenderbim"
+	rm -rf build/working
 
 	# Remove dependencies also bundled with Blender
 	rm -rf build/wheels/numpy*
@@ -245,10 +251,84 @@ endif
 	$(SED) "s/os-arch/$(BLENDER_PLATFORM)/" build/blenderbim/blender_manifest.toml
 
 	# Provides BlenderBIM Add-on functionality
+ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
-	cd build && . env/bin/activate && $(PYTHON) -m build
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+endif
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 	cp build/dist/*.whl build/wheels/
+
+	# Safeguard for non-wheel dependencies slipping in.
+	wheels=$$(find build/wheels/* ! -name "*.whl"); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found non-wheel dependencies:"; \
+		echo "$$wheels"; \
+		echo "Error: non-wheel dependencies are not supported by Blender!"; \
+		exit 1; \
+	fi
 	mv build/wheels/*.whl build/blenderbim/wheels/
+
+	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
+	# Blender doesn't look into the wheel contents, it just checks the name.
+	# So this hack works without working out some way to repack those wheels.
+	# See: https://projects.blender.org/blender/blender/issues/125091
+
+ifeq ($(PLATFORM), macosm1)
+	# Has universal and x86_64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/MarkupSafe-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has universal and x86_64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/lxml-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has only universal build.
+	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+endif
+ifeq ($(PLATFORM), macos)
+	prev_whl_name=$$(find build/blenderbim/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2/macosx_10_9_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	prev_whl_name=$$(find build/blenderbim/wheels/greenlet-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# has universal and amr64 builds.
+	prev_whl_name=$$(find build/blenderbim/wheels/fonttools-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+endif
+
+	# Safeguard for unhandled universal files.
+	wheels=$$(find build/blenderbim/wheels/*universal2*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found universal2 wheel files:"; \
+		echo "$$wheels"; \
+		echo "Error: universal2 wheel files are not supported by Blender!"; \
+		exit 1; \
+	fi
+
+ifneq ($(PLATFORM), linux)
+	# Safeguard: in case one of `pip download` will break,
+	# it will produce a linux wheel for non-linux build (our github action machine is using linux).
+	wheels=$$(find build/blenderbim/wheels/*manylinux_*.whl); \
+	if [ -n "$$wheels" ]; then \
+		echo "Found linux wheel files in non-linux build:"; \
+		echo "$$wheels"; \
+		echo "Error: linux wheels are incompatible with build $(PLATFORM)!"; \
+		exit 1; \
+	fi
+endif
 
 	$(PYTHON) scripts/get_wheels.py build/blenderbim/wheels build/blenderbim/blender_manifest.toml
 	rm -rf build/blenderbim/bim/

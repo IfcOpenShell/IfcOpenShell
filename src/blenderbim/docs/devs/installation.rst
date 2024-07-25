@@ -22,8 +22,8 @@ You will need to choose which build to download.
 - If you are on Blender >=4.1, choose py311
 - If you are on Blender >=3.1 and <=4.0, choose py310
 - If you are on Blender >=2.93 and <3.1, choose py39
-- Choose ``linux``, ``macos`` (Apple Intel), ``macosm1`` (Apple Silicon), or
-  ``win`` depending on your operating system
+- Choose ``linux-x64``, ``macos-x64`` (Apple Intel), ``macos-arm64`` (Apple Silicon), or
+  ``windows-x64`` depending on your operating system
 
 For users who don't follow the `VFX Platform <https://vfxplatform.com/>`_
 standard, we also provide py312 builds.
@@ -75,138 +75,17 @@ restart Blender to see changes).
 
 For Linux or Mac:
 
-.. code-block:: bash
-
-    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    cd IfcOpenShell
-
-    # path to BlenderBIM addon
-    # default path on Mac: "/Users/$USER/Library/Application Support/Blender/X.X/scripts/addons/blenderbim"
-    # default path on Linux: "$HOME/.config/blender/X.X/"
-    BLENDER_ADDON_PATH="/path/to/blender/X.XX/scripts/addons/blenderbim"
-
-    # Remove the Blender add-on Python code
-    rm -r $BLENDER_ADDON_PATH/core/
-    rm -r $BLENDER_ADDON_PATH/tool/
-    rm -r $BLENDER_ADDON_PATH/bim/
-
-    # Replace them with links to the Git repository
-    ln -s $PWD/src/blenderbim/blenderbim/core $BLENDER_ADDON_PATH/core
-    ln -s $PWD/src/blenderbim/blenderbim/tool $BLENDER_ADDON_PATH/tool
-    ln -s $PWD/src/blenderbim/blenderbim/bim $BLENDER_ADDON_PATH/bim
-
-    # Copy over compiled IfcOpenShell files
-    cp $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell/*_wrapper* $PWD/src/ifcopenshell-python/ifcopenshell/
-    
-    # Remove the IfcOpenShell dependency
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
-
-    # Replace them with links to the Git repository
-    ln -s $PWD/src/ifcopenshell-python/ifcopenshell $BLENDER_ADDON_PATH/libs/site/packages/ifcopenshell
-
-    # Remove and link other IfcOpenShell utilities
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/bcf
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcclash
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifctester
-    rm -r $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
-    rm -r $BLENDER_ADDON_PATH/libs/Desktop
-
-    ln -s $PWD/src/ifccsv/ifccsv.py $BLENDER_ADDON_PATH/libs/site/packages/ifccsv.py
-    ln -s $PWD/src/ifcdiff/ifcdiff.py $BLENDER_ADDON_PATH/libs/site/packages/ifcdiff.py
-    ln -s $PWD/src/bsdd/bsdd.py $BLENDER_ADDON_PATH/libs/site/packages/bsdd.py
-    ln -s $PWD/src/bcf/src/bcf $BLENDER_ADDON_PATH/libs/site/packages/bcf
-    ln -s $PWD/src/ifc4d/ifc4d $BLENDER_ADDON_PATH/libs/site/packages/ifc4d
-    ln -s $PWD/src/ifc5d/ifc5d $BLENDER_ADDON_PATH/libs/site/packages/ifc5d
-    ln -s $PWD/src/ifccityjson/ifccityjson $BLENDER_ADDON_PATH/libs/site/packages/ifccityjson
-    ln -s $PWD/src/ifcclash/ifcclash $BLENDER_ADDON_PATH/libs/site/packages/ifcclash
-    ln -s $PWD/src/ifcpatch/ifcpatch $BLENDER_ADDON_PATH/libs/site/packages/ifcpatch
-    ln -s $PWD/src/ifctester/ifctester $BLENDER_ADDON_PATH/libs/site/packages/ifctester
-    ln -s $PWD/src/ifcfm/ifcfm $BLENDER_ADDON_PATH/libs/site/packages/ifcfm
-    ln -s $PWD/src/blenderbim/blenderbim/libs/desktop $BLENDER_ADDON_PATH/libs/Desktop
-
-    # Manually download some third party dependencies
-    cd $BLENDER_ADDON_PATH/bim/data/gantt
-    wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-    wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-    cd $BLENDER_ADDON_PATH/bim/schema
-    wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+.. literalinclude:: ../../scripts/installation/dev_environment.sh
+   :language: bash
+   :caption: dev_environment.sh
 
 Or, if you're on Windows, you can use the batch script below. You need to run
 it as an administrator. Before running it follow the instructions descibed
 in the `rem` tags.
 
-.. code-block:: bat
-
-    @echo off
-
-    rem SETUP BLENDER-BIM LIVE DEVELOPMENT ENVIRONMENT
-    rem Setup blenderbim addon location below (probably just need to change "x.x" for your Blender version).
-    rem Put the script to the folder where IfcOpenShell git repository is located
-    rem (script will try to clone IfcOpenShell.git if it's not present).
-    SET blenderbim=%appdata%\Blender Foundation\Blender\x.x\scripts\addons\blenderbim
-
-    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    cd IfcOpenShell
-
-    echo Removing the Blender add-on Python code...
-    rd /S /Q "%blenderbim%\core\"
-    rd /S /Q "%blenderbim%\tool\"
-    rd /S /Q "%blenderbim%\bim\"
-
-    echo Replacing them with links to the Git repository...
-    mklink /D "%blenderbim%\core" "%cd%\src\blenderbim\blenderbim\core"
-    mklink /D "%blenderbim%\tool" "%cd%\src\blenderbim\blenderbim\tool"
-    mklink /D "%blenderbim%\bim" "%cd%\src\blenderbim\blenderbim\bim"
-
-    echo Copy over compiled IfcOpenShell files...
-    copy "%blenderbim%\libs\site\packages\ifcopenshell\*_wrapper*" "%cd%\src\ifcopenshell-python\ifcopenshell\"
-
-    echo Remove the IfcOpenShell dependency...
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcopenshell"
-
-    echo Replace them with links to the Git repository...
-    mklink /D "%blenderbim%\libs\site\packages\ifcopenshell" "%cd%\src\ifcopenshell-python\ifcopenshell"
-
-    echo Remove and link other IfcOpenShell utilities...
-    del "%blenderbim%\libs\site\packages\ifccsv.py"
-    del "%blenderbim%\libs\site\packages\ifcdiff.py"
-    del "%blenderbim%\libs\site\packages\bsdd.py"
-    rd /S /Q "%blenderbim%\libs\site\packages\bcf"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifc4d"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifc5d"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifccityjson"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcclash"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcpatch"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifctester"
-    rd /S /Q "%blenderbim%\libs\site\packages\ifcfm"
-    rd /S /Q "%blenderbim%\libs\desktop"
-
-    mklink "%blenderbim%\libs\site\packages\ifccsv.py" "%cd%\src\ifccsv\ifccsv.py"
-    mklink "%blenderbim%\libs\site\packages\ifcdiff.py" "%cd%\src\ifcdiff\ifcdiff.py"
-    mklink "%blenderbim%\libs\site\packages\bsdd.py" "%cd%\src\bsdd\bsdd.py"
-    mklink /D "%blenderbim%\libs\site\packages\bcf" "%cd%\src\bcf\src\bcf"
-    mklink /D "%blenderbim%\libs\site\packages\ifc4d" "%cd%\src\ifc4d\ifc4d"
-    mklink /D "%blenderbim%\libs\site\packages\ifc5d" "%cd%\src\ifc5d\ifc5d"
-    mklink /D "%blenderbim%\libs\site\packages\ifccityjson" "%cd%\src\ifccityjson\ifccityjson"
-    mklink /D "%blenderbim%\libs\site\packages\ifcclash" "%cd%\src\ifcclash\ifcclash"
-    mklink /D "%blenderbim%\libs\site\packages\ifcpatch" "%cd%\src\ifcpatch\ifcpatch"
-    mklink /D "%blenderbim%\libs\site\packages\ifctester" "%cd%\src\ifctester\ifctester"
-    mklink /D "%blenderbim%\libs\site\packages\ifcfm" "%cd%\src\ifcfm\ifcfm"
-    mklink /D "%blenderbim%\libs\desktop" "%cd%\src\blenderbim\blenderbim\libs\desktop"
-
-    echo Manually downloading some third party dependencies...
-    curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%blenderbim%\bim\data\gantt\jsgantt.js"
-    curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%blenderbim%\bim\data\gantt\jsgantt.css"
-    curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%blenderbim%\bim\schema\Brick.ttl"
-
-    pause
+.. literalinclude:: ../../scripts/installation/dev_environment.bat
+   :language: bat
+   :caption: dev_environment.bat
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.

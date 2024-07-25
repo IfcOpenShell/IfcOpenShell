@@ -1,12 +1,18 @@
+IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
+VERSION_DATE:=$(shell date '+%y%m%d')
 PYVERSION:=py311
 PLATFORM:=linux64
 
 PYTHON:=python3.11
 PIP:=pip3.11
 SED:=sed -i
+VENV_ACTIVATE:=bin/activate
+
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
+PYTHON:=python
+VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -116,11 +122,20 @@ endif
 	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
 	cp ../../README.md build/
 	cp pyproject.toml build/
+ifeq ($(IS_STABLE), TRUE)
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
+endif
 
-	cd build && $(PYTHON) -m venv env && . env/bin/activate && $(PIP) install build
-	cd build && . env/bin/activate && $(PYTHON) -m build
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 
-	mv build/dist/ifcopenshell-$(VERSION)-py3-none-any.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
-	rm -rf build
+ifeq ($(IS_STABLE), TRUE)
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+else
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+endif
+	# rm -rf build

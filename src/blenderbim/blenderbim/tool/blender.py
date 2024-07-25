@@ -26,8 +26,8 @@ import ifcopenshell.util.element
 import blenderbim.core.tool
 import blenderbim.tool as tool
 import blenderbim.bim
-import addon_utils
 import types
+import importlib
 from mathutils import Vector
 from pathlib import Path
 from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
@@ -920,7 +920,8 @@ class Blender(blenderbim.core.tool.Blender):
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
         """Get 8 symbols of last commit hash if it's present or return None otherwise."""
-        commit_hash = blenderbim.bim.last_commit_hash
+        bbim = cls.get_bbim_extension_package()
+        commit_hash = bbim.last_commit_hash
 
         # Commit hash is unset - user is using __init__ from repo
         # without setting up git repository.
@@ -930,17 +931,9 @@ class Blender(blenderbim.core.tool.Blender):
         return commit_hash[:7]
 
     @classmethod
-    def get_blenderbim_version(cls):
-        version = ".".join(
-            [
-                str(x)
-                for x in [
-                    addon.bl_info.get("version", (-1, -1, -1))
-                    for addon in addon_utils.modules()
-                    if addon.bl_info["name"] == "BlenderBIM"
-                ][0]
-            ]
-        )
+    def get_blenderbim_version(cls) -> str:
+        bbim = cls.get_bbim_extension_package()
+        version = bbim.bbim_semver["version"]
         if commit_hash := cls.get_last_commit_hash():
             version += f"-{commit_hash}"
         return version
@@ -1113,6 +1106,11 @@ class Blender(blenderbim.core.tool.Blender):
             if package_name.endswith(".blenderbim"):
                 return package_name
         return "blenderbim"
+
+    @classmethod
+    def get_bbim_extension_package(cls) -> types.ModuleType:
+        name = cls.get_blender_addon_package_name()
+        return importlib.import_module(name)
 
     @classmethod
     def get_addon_preferences(cls) -> blenderbim.bim.ui.BIM_ADDON_preferences:

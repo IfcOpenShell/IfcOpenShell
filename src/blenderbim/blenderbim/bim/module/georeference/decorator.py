@@ -72,8 +72,13 @@ class GeoreferenceDecorator:
         blf.size(self.font_id, 12)
         color = self.addon_prefs.decorations_colour
         blf.color(self.font_id, *color)
+        blf.enable(self.font_id, blf.SHADOW)
+        blf.shadow(self.font_id, 6, 0, 0, 0, 1)
 
-        text = "X: 0, Y: 0, Z: 0"
+        text = "Blender Coordinates X: 0, Y: 0, Z: 0"
+        text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {props.blender_offset_x}, Y: {props.blender_offset_y}, Z: {props.blender_offset_z}"
+        if GeoreferenceData.data["projected_crs"]:
+            text += f"\nMap Coordinates ({GeoreferenceData.data['local_unit_symbol']}) E: {e}, N: {n}, H: {h}"
         self.draw_text_at_position(context, text, Vector((0, -0.1, 0)))
 
         angle = Matrix.Rotation(radians(self.pn_angle), 4, "Z")
@@ -95,9 +100,6 @@ class GeoreferenceDecorator:
             angle_half = Matrix.Rotation(radians(self.gn_angle / 2), 4, "Z")
             arc_mid = angle_half @ arc_start
             self.draw_text_at_position(context, f"{self.gn_angle}deg", arc_mid)
-
-            text = f"\nE: {e}, N: {n}, H: {h}"
-            self.draw_text_at_position(context, text, Vector((0, -0.1, 0)))
 
         if GeoreferenceData.data["true_north"]:
             angle = Matrix.Rotation(radians(self.tn_angle), 4, "Z")

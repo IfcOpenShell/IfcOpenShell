@@ -17,155 +17,164 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
+try:
+    import pyradiance as pr
+except ImportError:
+    print("PyRadiance is not available. Rendering functionality will be disabled.")
+    pr = None
+
 import bpy
-import json
-import shutil
-import multiprocessing
-import pyradiance as pr
-import ifcopenshell
-import ifcopenshell.geom
 import blenderbim.tool as tool
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional, Sequence
+import json
+import ifcopenshell
+import ifcopenshell.geom
+import multiprocessing
+from mathutils import Vector
 from blenderbim.bim.module.light.data import SolarData
 
+ifc_materials = []
 
 class ExportOBJ(bpy.types.Operator):
     """Exports the IFC File to OBJ"""
-
     bl_idname = "export_scene.radiance"
     bl_label = "Export"
     bl_description = "Export the IFC to OBJ"
+    
 
     def execute(self, context):
-        # Get the resolution from the user input
-        resolution_x, resolution_y = self.getResolution(context)
-        quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
-        detail = context.scene.radiance_exporter_properties.radiance_detail.upper()
-        variability = context.scene.radiance_exporter_properties.radiance_variability.upper()
 
-        # Calculate the aspect ratio
-        aspect_ratio = resolution_x / resolution_y
+        # Get the output directory
+        should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
+        output_dir = context.scene.radiance_exporter_properties.output_dir
 
-        # Get the blend file path and create the "Radiance Rendering" directory
-        self.report({"INFO"}, "Exporting Radiance files...")
-        blend_file_path = bpy.data.filepath
-        if not blend_file_path:
-            self.report({"ERROR"}, "Please save the Blender file before exporting.")
-            return {"CANCELLED"}
+        context.scene.radiance_exporter_properties.is_exporting = True
 
-        blend_file_dir = os.path.dirname(blend_file_path)
-        radiance_dir = os.path.join(blend_file_dir, "RadianceRendering")
 
-        self.report({"INFO"}, "Radiance directory: {}".format(radiance_dir))
-
-        if not os.path.exists(radiance_dir):
-            os.makedirs(radiance_dir)
-
-        # IFC file export and processing
-        settings = ifcopenshell.geom.settings()
+        # Conversion from IFC to OBJ
         # Settings for obj
-
+        settings = ifcopenshell.geom.settings()
         serializer_settings = ifcopenshell.geom.serializer_settings()
-
+        
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.SURFACES_AND_SOLIDS)
         settings.set("apply-default-materials", True)
         serializer_settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
 
-        ifc_file_name = context.scene.radiance_exporter_properties.ifc_file_name
-        ifc_file_path = os.path.join(blend_file_dir, f"{ifc_file_name}.ifc")
+        if should_load_from_memory:
+            ifc_file = tool.Ifc.get()
+            
+        else:
+            ifc_file_path = context.scene.radiance_exporter_properties.ifc_file
+            ifc_file = ifcopenshell.open(ifc_file_path)
+        
+        # for material in ifc_file.by_type("IfcMaterial"):
+        #     self.report({'INFO'}, f"Material: {material.Name}, ID: {material.id()}")
 
-        if not os.path.exists(ifc_file_path):
-            self.report({"ERROR"}, f"IFC file not found: {ifc_file_path}")
-            return {"CANCELLED"}
-
-        ifc_file = ifcopenshell.open(ifc_file_path)
-        for material in ifc_file.by_type("IfcMaterial"):
-            self.report({"INFO"}, f"Material: {material.Name}, ID: {material.id()}")
-
-        obj_file_path = os.path.join(radiance_dir, "model.obj")
-        mtl_file_path = os.path.join(radiance_dir, "model.mtl")
-
-        # serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, ifcopenshell.geom.serializer_settings())
+        obj_file_path = os.path.join(output_dir, "model.obj")
+        mtl_file_path = os.path.join(output_dir, "model.mtl")
+        
         serialiser = ifcopenshell.geom.serializers.obj(obj_file_path, mtl_file_path, settings, serializer_settings)
         serialiser.setFile(ifc_file)
         serialiser.setUnitNameAndMagnitude("METER", 1.0)
         serialiser.writeHeader()
 
-        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count())
+        if ifc_file.schema in ("IFC2X3", "IFC4"):
+            elements = ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcProxy")
+        else:
+            elements = ifc_file.by_type("IfcElement") 
+
+        elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")] 
+        
+        iterator = ifcopenshell.geom.iterator(settings, ifc_file, multiprocessing.cpu_count(), include=elements)
         if iterator.initialize():
             while True:
-                serialiser.write(iterator.get())
+                shape = iterator.get()
+                materials = shape.geometry.materials
+                # print(shape.geometry)
+                material_ids = shape.geometry.material_ids
+                # material_names = shape.geometry.material_names
+                # print(material_ids)
+
+                for material in materials:
+                    # print(material, dir(material))
+                    # print(material.name)
+                    ifc_materials.append(material.name)
+                    
+                serialiser.write(shape)
                 if not iterator.next():
                     break
+       
         serialiser.finalize()
+        context.scene.radiance_exporter_properties.is_exporting = False
 
-        return {"FINISHED"}
+        self.report({'INFO'}, "Exported OBJ file to: {}".format(obj_file_path))
 
-    def getResolution(self, context):
-        scene = context.scene
-        props = scene.radiance_exporter_properties
-        resolution_x = props.radiance_resolution_x
-        resolution_y = props.radiance_resolution_y
-        return resolution_x, resolution_y
+        return {'FINISHED'}
 
 
 class RadianceRender(bpy.types.Operator):
     """Radiance Rendering"""
-
     bl_idname = "render_scene.radiance"
     bl_label = "Render"
     bl_description = "Renders the scene using Radiance"
 
     def execute(self, context):
         if pr is None:
-            self.report({"ERROR"}, "PyRadiance is not available. Cannot perform rendering.")
-            return {"CANCELLED"}
-
+            self.report({'ERROR'}, "PyRadiance is not available. Cannot perform rendering.")
+            return {'CANCELLED'}
+        
         # Get the resolution from the user input
-        resolution_x, resolution_y = self.getResolution(context)
-        quality = context.scene.radiance_exporter_properties.radiance_quality.upper()
-        detail = context.scene.radiance_exporter_properties.radiance_detail.upper()
-        variability = context.scene.radiance_exporter_properties.radiance_variability.upper()
+        props = context.scene.radiance_exporter_properties
+        resolution_x, resolution_y = props.radiance_resolution_x, props.radiance_resolution_y
+        quality = props.radiance_quality.upper()
+        detail = props.radiance_detail.upper()
+        variability = props.radiance_variability.upper()
+        output_dir = props.output_dir
+        output_file_name = props.output_file_name
+        output_file_format = props.output_file_format
 
-        # Get the blend file path and create the "Radiance Rendering" directory
-        blend_file_path = bpy.data.filepath
-        if not blend_file_path:
-            self.report({"ERROR"}, "Please save the Blender file before rendering.")
-            return {"CANCELLED"}
+        obj_file_path = os.path.join(output_dir, "model.obj")
 
-        blend_file_dir = os.path.dirname(blend_file_path)
-        radiance_dir = os.path.join(blend_file_dir, "RadianceRendering")
+        
+        camera = self.get_active_camera(context)
+        if camera is None:
+            self.report({'ERROR'}, "No active camera found in the scene. Please add a camera and set it as active.")
+            return {'CANCELLED'}
+
+        # Get camera position and direction
+        camera_position, camera_direction = self.get_camera_data(camera)
 
         # Material processing
-        style = []
-        obj_file_path = os.path.join(radiance_dir, "model.obj")
-        with open(obj_file_path, "r") as obj_file:
-            for line in obj_file:
-                if line.startswith("usemtl"):
-                    l = line.strip().split(" ")
-                    style.append(l[1])
+        # style = []
+        
+        # with open(obj_file_path, "r") as obj_file:
+        #     for line in obj_file:
+        #         if line.startswith("usemtl"):
+        #             l = line.strip().split(" ")
+        #             style.append(l[1])
 
-        # json_file_path = os.path.join(blend_file_dir, "material_mapping.json")
 
-        json_file_path = context.scene.radiance_exporter_properties.json_file_path
-        self.report({"INFO"}, f"Selected JSON file: {json_file_path}")
-        if json_file_path:
-            # self.report({'INFO'}, f"Selected JSON file: {json_file_name}")
-            json_dest_path = os.path.join(blend_file_dir, json_file_path.split("\\")[-1])
-            shutil.copy(json_file_path, json_dest_path)
-            self.report({"INFO"}, f"JSON file saved to: {json_dest_path}")
+        # Check if json file is empty or not
+        props = context.scene.radiance_exporter_properties
+
+        if props.use_json_file:
+            # Load data from JSON file
+            with open(props.json_file, 'r') as file:
+                data = json.load(file)
         else:
-            self.report({"WARNING"}, "No JSON file selected")
+            # Use in-UI material mappings
+            data = props.get_mappings_dict()
 
-        with open(json_file_path, "r") as file:
-            data = json.load(file)
+        print(data)
 
+        
         # Create materials.rad file
-        materials_file = os.path.join(radiance_dir, "materials.rad")
+        materials_file = os.path.join(output_dir, "materials.rad")
         with open(materials_file, "w") as file:
-            file.write("void plastic white\n0\n0\n5 1 1 1 0 0\n")
+            file.write("void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n")
             file.write("void plastic blue_plastic\n0\n0\n5 0.1 0.2 0.8 0.05 0.1\n")
             file.write("void plastic red_plastic\n0\n0\n5 0.8 0.1 0.2 0.05 0.1\n")
             file.write("void metal silver_metal\n0\n0\n5 0.8 0.8 0.8 0.9 0.1\n")
@@ -173,51 +182,72 @@ class RadianceRender(bpy.types.Operator):
             file.write("void light white_light\n0\n0\n3 1.0 1.0 1.0\n")
             file.write("void trans olive_trans\n0\n0\n7 0.6 0.7 0.4 0.05 0.05 0.7 0.2\n")
 
-            for i in set(style):
-                file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
+            for style_id, radiance_material in data.items():
+                print(style_id, radiance_material)
+                file.write("inherit alias " + style_id + " " + data.get(style_id, "white") + "\n")
+                # file.write(f"inherit alias {style_id} {radiance_material}\n")
+            # for i in set(ifc_materials):
+            #     print(i)
+            #     file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
 
-        self.report({"INFO"}, "Exported Materials Rad file to: {}".format(materials_file))
+        self.report({'INFO'}, "Exported Materials Rad file to: {}".format(materials_file))
 
         # Run obj2mesh
-        rtm_file_path = os.path.join(radiance_dir, "model.rtm")
-        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path, matfiles=[materials_file])
+        rtm_file_path = os.path.join(output_dir, "model.rtm")
+        mesh_file_path = save_obj2mesh_output(obj_file_path, rtm_file_path,  matfiles=[materials_file])
         # subprocess.run(["obj2mesh", "-a", materials_file, obj_file_path, rtm_file_path])
-        self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
-        scene_file = os.path.join(radiance_dir, "scene.rad")
+        self.report({'INFO'}, "obj2mesh output: {}".format(mesh_file_path))
+        scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
-            file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
+            # file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
+            file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
 
-        self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
+        self.report({'INFO'}, "Exported Scene file to: {}".format(scene_file))
 
         # Py Radiance Rendering code
         scene = pr.Scene("ascene")
 
-        material_path = os.path.join(radiance_dir, "materials.rad")
-        scene_path = os.path.join(radiance_dir, "scene.rad")
+        material_path = os.path.join(output_dir, "materials.rad")
+        scene_path = os.path.join(output_dir, "scene.rad")
 
         scene.add_material(material_path)
         scene.add_surface(scene_path)
 
-        aview = pr.View(position=(1, 1.5, 1), direction=(1, 0, 0))
+        aview = pr.View(position=camera_position, direction=camera_direction)
         scene.add_view(aview)
 
-        octpath = os.path.join(blend_file_dir, "ascene.oct")
-        print("Reached here")
-        image = pr.render(
-            scene,
-            ambbounce=1,
-            resolution=(resolution_x, resolution_y),
-            quality=quality,
-            detail=detail,
-            variability=variability,
-        )
+        image = pr.render(scene, ambbounce=1, resolution=(resolution_x, resolution_y),
+                          quality=quality, detail=detail, variability=variability)
+        
+        output_path = os.path.join(output_dir, f"{output_file_name}.{output_file_format.lower()}")
 
-        raw_hdr_path = os.path.join(radiance_dir, "raw.hdr")
-        with open(raw_hdr_path, "wb") as wtr:
-            wtr.write(image)
+        if output_file_format == 'HDR':
+            with open(output_path, "wb") as wtr:
+                wtr.write(image)
+        else:
+            pass
+    
 
-        self.report({"INFO"}, "Radiance rendering completed. Output: {}".format(raw_hdr_path))
-        return {"FINISHED"}
+        self.report({'INFO'}, "Radiance rendering completed. Output: {}".format(output_path))
+        return {'FINISHED'}
+    
+    def get_active_camera(self, context):
+        if context.scene.camera:
+            return context.scene.camera
+        for obj in context.scene.objects:
+            if obj.type == 'CAMERA':
+                return obj
+        return None
+
+    def get_camera_data(self, camera):
+        # Get camera position
+        position = camera.matrix_world.to_translation()
+
+        # Get camera direction
+        direction = camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+        direction.normalize()
+
+        return (position.x, position.y, position.z), (direction.x, direction.y, direction.z)
 
     def getResolution(self, context):
         scene = context.scene
@@ -226,11 +256,10 @@ class RadianceRender(bpy.types.Operator):
         resolution_y = props.radiance_resolution_y
         return resolution_x, resolution_y
 
-
 def save_obj2mesh_output(inp: Union[bytes, str, Path], output_file: str, **kwargs):
     output_bytes = pr.obj2mesh(inp, **kwargs)
 
-    with open(output_file, "wb") as f:
+    with open(output_file, 'wb') as f:
         f.write(output_bytes)
     return output_file
 
@@ -303,3 +332,22 @@ class ViewFromSun(bpy.types.Operator):
         props = context.scene.BIMSolarProperties
         props.hour = props.hour  # Just to refresh camera position
         return {"FINISHED"}
+
+class RefreshIFCMaterials(bpy.types.Operator):
+    bl_idname = "bim.refresh_ifc_materials"
+    bl_label = "Refresh IFC Materials"
+    bl_description = "Refresh the list of IFC materials for mapping"
+
+    def execute(self, context):
+        props = context.scene.radiance_exporter_properties
+        ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
+        
+        for style in ifc_file.by_type("IfcSurfaceStyle"):
+            for render_item in style.Styles:
+                if render_item.is_a("IfcSurfaceStyleRendering"):
+                    style_id = f"IfcSurfaceStyleRendering-{render_item.id()}"
+                    style_name = style.Name or f"Unnamed Style {render_item.id()}"
+                    if not props.get_material_mapping(style_name):
+                        props.add_material_mapping(style_id, style_name)
+        
+        return {'FINISHED'}

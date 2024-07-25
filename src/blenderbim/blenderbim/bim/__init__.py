@@ -168,6 +168,7 @@ classes = [
     ui.BIM_PT_tab_services,
     ui.BIM_PT_tab_zones,
     ui.BIM_PT_tab_solar_analysis,
+    ui.BIM_PT_tab_lighting,
     # Structural analysis
     ui.BIM_PT_tab_structural,
     # Construction scheduling
@@ -195,7 +196,6 @@ for mod in modules.values():
 addon_keymaps = []
 icons = None
 is_registering = False
-last_commit_hash = "8888888"
 original_scene_panels_polls: dict[bpy.types.Panel, Union[Callable, None]] = dict()
 
 
