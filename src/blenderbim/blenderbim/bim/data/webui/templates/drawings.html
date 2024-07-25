@@ -4,8 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Client</title>
-    <link rel="stylesheet" type="text/css" href="/jsgantt/jsgantt.css" />
-    <link rel="stylesheet" href="/static/css/gantt.css" />
+    <link rel="stylesheet" href="/static/css/drawings.css" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
@@ -18,14 +17,13 @@
       type="text/javascript"
       src="https://cdn.socket.io/4.0.0/socket.io.min.js"
     ></script>
-    <script type="text/javascript" src="./jsgantt/jsgantt.js"></script>
     <script>
       var SOCKET_PORT = {{port}};
     </script>
-    <script defer src="./static/js/gantt.js"></script>
+    <script defer src="./static/js/drawings.js"></script>
   </head>
   <body>
-    <nav class="no-print">
+    <nav>
       <img
         src="https://blenderbim.org/assets/images/blender/blender-logo.png"
         alt="Logo"
@@ -33,8 +31,8 @@
       />
       <ul>
         <li><a href="/">IFC Data</a></li>
-        <li><a href="/gantt" class="active">Gantt Chart</a></li>
-        <li><a href="/drawings">Drawings</a></li>
+        <li><a href="/gantt">Gantt Chart</a></li>
+        <li><a href="/drawings" class="active">Drawings</a></li>
       </ul>
       <button id="toggle-theme" onclick="toggleTheme()">
         <i class="fas fa-moon"></i>

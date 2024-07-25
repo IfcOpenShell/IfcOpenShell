@@ -119,11 +119,19 @@ async def gantt(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
+async def drawings(request):
+    with open("templates/drawings.html", "r") as f:
+        template = f.read()
+    html_content = pystache.render(template, {"port": sio_port})
+    return web.Response(text=html_content, content_type="text/html")
+
+
 async def open_web_browser(app):
     webbrowser.open(f"http://127.0.0.1:{sio_port}/")
 
 
 app.router.add_get("/", index)
+app.router.add_get("/drawings", drawings)
 app.router.add_get("/gantt", gantt)
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
 app.router.add_static("/static/", path="./static", name="static")
