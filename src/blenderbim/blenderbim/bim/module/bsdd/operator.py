@@ -47,19 +47,23 @@ class SetActiveBSDDDictionary(bpy.types.Operator):
 class SearchBSDDClass(bpy.types.Operator):
     bl_idname = "bim.search_bsdd_classifications"
     bl_label = "Search bSDD Class"
+    bl_description = "Search for bSDD classes by the provided keyword"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
         keyword = context.scene.BIMBSDDProperties.keyword
-        core.search_class(keyword, bsdd.Client(), tool.Bsdd)
+        classes_found = core.search_class(keyword, bsdd.Client(), tool.Bsdd)
+        self.report({"INFO"}, f"{classes_found} bSDD classes found for '{keyword}'.")
         return {"FINISHED"}
 
 
 class GetBSDDClassificationProperties(bpy.types.Operator):
     bl_idname = "bim.get_bsdd_classification_properties"
-    bl_label = "Search bSDD Classifications"
+    bl_label = "Search bSDD Class Properties"
+    bl_description = "Search for bSDD class properties for the currently selected class"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.get_class_properties(bsdd.Client(), tool.Bsdd)
+        properties_found = core.get_class_properties(bsdd.Client(), tool.Bsdd)
+        self.report({"INFO"}, f"{properties_found} properties found for the active classification.")
         return {"FINISHED"}
