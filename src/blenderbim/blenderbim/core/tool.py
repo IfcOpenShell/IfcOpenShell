@@ -169,6 +169,12 @@ class Clash:
 
 
 @interface
+class Classification:
+    def get_location(cls, classification): pass
+    def set_location(cls, classification): pass
+
+
+@interface
 class Collector:
     def assign(cls, obj): pass
 
