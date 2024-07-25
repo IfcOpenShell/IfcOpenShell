@@ -126,13 +126,17 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 if isinstance(data_type, list):
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
                 new_attr.data_type = {
-                    "Literal": "string",
+                    "Literal": "enum",
                     "str": "string",
                     "float": "float",
                     "int": "integer",
                     "bool": "boolean",
                 }[data_type]
                 new_attr.name = arg_name
+                if new_attr.data_type == "enum":
+                    new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
+                    new_attr.enum_value = arg_info.get("default", new_attr.get_value_default())
+                    continue  # Temporary workaround, because the Argument class resets the type to "string" when calling `set_value`
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
 

@@ -158,6 +158,9 @@ def _extract_docs(cls, method_name, boilerplate_args):
             continue
         if isinstance(type_hint, typing._UnionGenericAlias):
             inputs[input_name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
+        elif type_hint.__name__ == "Literal":
+            inputs[input_name]["type"] = "Literal"
+            inputs[input_name]["enum_items"] = list(typing.get_args(type_hint))
         else:
             inputs[input_name]["type"] = type_hint.__name__
 
