@@ -697,12 +697,22 @@ void mapping::initialize_units_() {
     angle_unit_ = -1.;
     length_unit_name_ = "METER";
     
-    auto unit_assignments = file_->instances_by_type<IfcSchema::IfcUnitAssignment>();
-    if (unit_assignments->size() != 1) {
-        Logger::Warning("Not a single unit assignment in file");
+#ifdef SCHEMA_HAS_IfcContext
+    auto projects = file_->instances_by_type<IfcSchema::IfcContext>();
+#else
+    auto projects = file_->instances_by_type<IfcSchema::IfcProject>();
+#endif
+    IfcSchema::IfcUnitAssignment* unit_assignment = nullptr;
+    if (projects->size() == 1) {
+        auto* project = *projects->begin();
+        unit_assignment = project->UnitsInContext();
+    } else {
+        Logger::Warning("Not a single project or context in file");
+    }
+    if (unit_assignment == nullptr) {
+        Logger::Warning("Unable to detect unit information");
         return;
     }
-    auto unit_assignment = *unit_assignments->begin();
 
     bool length_unit_encountered = false, angle_unit_encountered = false;
 
