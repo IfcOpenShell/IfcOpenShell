@@ -23,6 +23,7 @@ from blenderbim.tool.brick import Brick
 from blenderbim.tool.bsdd import Bsdd
 from blenderbim.tool.cad import Cad
 from blenderbim.tool.clash import Clash
+from blenderbim.tool.classification import Classification
 from blenderbim.tool.collector import Collector
 from blenderbim.tool.context import Context
 from blenderbim.tool.debug import Debug
