@@ -139,6 +139,7 @@ class Brick:
     def clear_breadcrumbs(cls, split_screen=False): pass
 
 
+@interface
 class Bsdd:
     def clear_class_psets(cls): pass
     def clear_classes(cls): pass

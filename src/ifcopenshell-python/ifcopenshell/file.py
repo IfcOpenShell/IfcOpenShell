@@ -24,7 +24,7 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Optional, Any, Union, Callable, Generator
+from typing import Optional, Any, Union, Callable, Generator, Literal
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -406,7 +406,7 @@ class file:
         return e
 
     @property
-    def schema(self) -> str:
+    def schema(self) -> Literal["IFC2X3", "IFC4", "IFC4X3"]:
         """General IFC schema version: IFC2X3, IFC4, IFC4X3."""
         prefixes = ("IFC", "X", "_ADD", "_TC")
         reg = "".join(f"(?P<{s}>{s}\d+)?" for s in prefixes)
@@ -668,5 +668,5 @@ class file:
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod
-    def from_pointer(v):
+    def from_pointer(v) -> "file":
         return file_dict.get(v)()
