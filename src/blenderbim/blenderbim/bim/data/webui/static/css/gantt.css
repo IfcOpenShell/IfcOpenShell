@@ -1,13 +1,17 @@
 :root {
     --font-family: Arial, sans-serif;
+    --base-font-size: 16px;
+    --margin-tiny: 0.125rem;
     --margin-small: 0.625rem;
     --margin-medium: 1.25rem;
     --margin-large: 2.5rem;
-    --padding-small: 0.125rem;
+    --padding-tiny: 0.125rem;
+    --padding-small: 0.625rem;
     --padding-medium: 1rem;
     --font-size-small: 1rem;
     --font-size-large: 1.2rem;
     --logo-height: 2.5rem;
+    --nav-height: 2.5rem;
     --folder-collapse-font-size: 0.75rem;
     --folder-collapse-font-family: Courier, "Courier New", monospace;
     --box-shadow: 0 0 0.7rem #5f5f5f66;
@@ -31,6 +35,7 @@
     --group-item-bg-color: #4b4b4b;
     --input-bg-color: #3b3b3b;
     --input-border-color: #000;
+    --details-border-color: #464444;
 }
 
 :root.light {
@@ -42,6 +47,7 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
+    --details-border-color: #222;
 }
 
 html {
@@ -107,7 +113,7 @@ nav ul li a.active {
 .warning {
     color: var(--warning-color);
     margin-bottom: var(--margin-small);
-    padding: var(--padding-small);
+    padding: var(--padding-tiny);
     display: none;
 }
 
@@ -139,6 +145,74 @@ nav ul li a.active {
 
 #toggle-theme:focus {
     outline: none;
+}
+
+#client-list {
+    position: absolute;
+    top: calc(0 + var(--nav-height));
+    overflow-y: auto;
+    overflow: hidden;
+    transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+    border: 1px solid var(--table-border-color);
+    background-color: var(--nav-bg-color);
+    z-index: 1;
+    opacity: 0;
+    visibility: hidden;
+    width: auto;
+}
+
+#client-list.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+#connected-list-div {
+    display: inline-block;
+}
+
+.client {
+    padding: var(--margin-small);
+    border-bottom: 1px solid var(--table-border-color);
+    cursor: pointer;
+}
+
+.client-details {
+    max-height: 0;
+    overflow: hidden;
+    padding-left: var(--padding-small);
+    transition: max-height 0.2s ease-out, padding 0.2s ease-out, opacity 0.1s ease-out;
+    background-color: var(--nav-bg-color);
+    margin-top: var(--margin-tiny);
+    opacity: 0;
+}
+
+.client-details.show {
+    max-height: none;
+    padding: var(--padding-small);
+    opacity: 1;
+}
+
+.client-detail {
+    border-bottom: 1px solid var(--table-border-color);
+    padding: var(--padding-small);
+}
+
+#show-connected-button {
+    width: auto;
+    background-color: var(--bg-color);
+    border: none;
+    font-size: var(--base-font-size);
+}
+
+#show-connected-button:hover,
+.scroll-button:hover {
+    cursor: pointer;
+}
+
+.scroll-button {
+    font-size: var(--base-font-size);
+    margin-left: var(--margin-tiny);
+    margin-top: var(--margin-small);
 }
 
 .gantt-info {

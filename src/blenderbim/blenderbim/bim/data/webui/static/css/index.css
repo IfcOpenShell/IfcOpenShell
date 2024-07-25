@@ -1,12 +1,13 @@
 :root {
     --font-family: Arial, sans-serif;
-    --margin-tiny: 0.125;
+    --base-font-size: 16px;
+    --margin-tiny: 0.125rem;
     --margin-small: 0.625rem;
     --margin-medium: 1.25rem;
     --margin-large: 2.5rem;
+    --padding-tiny: 0.125rem;
     --padding-small: 0.625rem;
     --padding-medium: 1rem;
-    --warning-padding: 0.125rem;
     --font-size-large: 1.2rem;
     --logo-height: 2.5rem;
     --nav-height: 2.5rem;
@@ -100,7 +101,7 @@ nav ul li a.active {
 .warning {
     color: var(--warning-color);
     margin-bottom: var(--margin-small);
-    padding: var(--warning-padding);
+    padding: var(--padding-tiny);
     display: none;
 }
 

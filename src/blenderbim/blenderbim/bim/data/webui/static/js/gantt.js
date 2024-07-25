@@ -60,6 +60,10 @@ function handleBlenderDisconnect(blenderId) {
     delete connectedClients[blenderId];
     removeGanttElement(blenderId);
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) - 1;
+  });
 }
 
 // Function to handle 'gantt_data' event
@@ -77,6 +81,7 @@ function handleGanttData(data) {
     if (!connectedClients[blenderId].shown) {
       connectedClients[blenderId] = {
         shown: true,
+        ifc_file: filename,
         ganttTasks: ganttTasks,
         workSchedule: ganttWorkSched,
       };
@@ -89,6 +94,7 @@ function handleGanttData(data) {
   } else {
     connectedClients[blenderId] = {
       shown: true,
+      ifc_file: filename,
       ganttTasks: ganttTasks,
       workSchedule: ganttWorkSched,
     };
@@ -105,6 +111,10 @@ function handleDefaultData(data) {
 
 // Function to add a new gantt with data and filename
 function addGanttElement(blenderId, tasks, workSched, filename) {
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
+
   const ganttContainer = $("<div></div>")
     .addClass("gantt-container")
     .attr("id", "container-" + blenderId);
@@ -381,4 +391,76 @@ function toggleTheme() {
   } else {
     setTheme("dark");
   }
+}
+
+function toggleClientList() {
+  var clientList = $("#client-list");
+
+  if (clientList.hasClass("show")) {
+    clientList.removeClass("show");
+    return;
+  }
+
+  clientList.empty();
+
+  $.each(connectedClients, function (id, client) {
+    if (!client.shown) return;
+
+    const dropdownIcon = $("<i>")
+      .addClass("fas fa-chevron-down")
+      .css("margin-left", "0.5rem");
+
+    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+
+    clientDiv.append(dropdownIcon);
+
+    const clientDetailsDiv = $("<div>").addClass("client-details");
+
+    if (id) {
+      const clientId = $("<div>")
+        .addClass("client-detail")
+        .text(`Blender ID: ${id}`);
+      clientDetailsDiv.append(clientId);
+    }
+
+    if (client.workSchedule && client.gantt) {
+      const clientScheduleName = $("<div>")
+        .addClass("client-detail")
+        .text(`Schedule Name: ${client.workSchedule.Name}`);
+
+      const clientScheduleDate = $("<div>")
+        .addClass("client-detail")
+        .text(
+          `Schedule Date: ${new Date(
+            client.workSchedule.CreationDate
+          ).toLocaleDateString()}`
+        );
+
+      const scrollButton = $("<button>")
+        .addClass("scroll-button")
+        .text("Scroll to Gantt Chart")
+        .on("click", function () {
+          $("html, body").animate(
+            {
+              scrollTop: $("#gantt-" + id).offset().top,
+            },
+            600
+          );
+          clientList.removeClass("show");
+        });
+
+      clientDetailsDiv.append(clientScheduleName);
+      clientDetailsDiv.append(clientScheduleDate);
+      clientDetailsDiv.append(scrollButton);
+    }
+
+    clientDiv.append(clientDetailsDiv);
+
+    clientDiv.on("click", function () {
+      clientDetailsDiv.toggleClass("show");
+    });
+
+    clientList.append(clientDiv);
+  });
+  clientList.addClass("show");
 }

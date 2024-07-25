@@ -42,6 +42,10 @@ function handleBlenderDisconnect(blenderId) {
     delete connectedClients[blenderId];
     removeTableElement(blenderId);
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) - 1;
+  });
 }
 
 // Function to handle 'csv_data' event
@@ -294,7 +298,7 @@ function toggleClientList() {
 
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
-      .css("margin-left", "8px");
+      .css("margin-left", "0.5rem");
 
     const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
 
