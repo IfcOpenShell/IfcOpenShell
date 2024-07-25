@@ -62,7 +62,11 @@ class BIMBSDDProperties(PropertyGroup):
     classifications: CollectionProperty(name="Classifications", type=BSDDClassification)
     active_classification_index: IntProperty(name="Active Classification Index")
     keyword: StringProperty(name="Keyword")
-    should_filter_ifc_class: BoolProperty(name="Filter Active IFC Class", default=True)
+    should_filter_ifc_class: BoolProperty(
+        name="Filter Active IFC Class",
+        description="Whether to search only for bSDD classes that match active object's IFC class",
+        default=True,
+    )
     load_preview_domains: BoolProperty(
         name="Load Preview Domains", description="Whether it should load preview and inactive domains", default=False
     )

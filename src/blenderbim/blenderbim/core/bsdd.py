@@ -26,13 +26,14 @@ if TYPE_CHECKING:
     import blenderbim.tool as tool
 
 
-def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
+def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> int:
     bsdd.clear_class_psets()
     data = bsdd.get_active_class_data(client)
     pset_dict = bsdd.get_property_dict(data)
     if pset_dict is None:
-        return
+        return 0
     bsdd.create_class_psets(pset_dict)
+    return len(pset_dict)
 
 
 def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
@@ -44,14 +45,15 @@ def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
     bsdd.create_dictionaries(dictionaries)
 
 
-def search_class(keyword: str, client: bsdd.Client, bsdd: tool.Bsdd) -> None:
+def search_class(keyword: str, client: bsdd.Client, bsdd: tool.Bsdd) -> int:
     bsdd.clear_classes()
     if len(keyword) < 3:
-        return
+        return 0
     related_entities = bsdd.get_related_ifc_entities(keyword)
     active_dictionary_uri = bsdd.get_active_dictionary_uri()
     classes = bsdd.search_class(client, keyword, [active_dictionary_uri], related_entities)
     bsdd.create_classes(classes)
+    return len(classes)
 
 
 def set_active_bsdd_dictionary(name: str, uri: str, bsdd: tool.Bsdd) -> None:
