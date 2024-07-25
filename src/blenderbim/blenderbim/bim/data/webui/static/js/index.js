@@ -292,13 +292,13 @@ function toggleClientList() {
   $.each(connectedClients, function (id, client) {
     if (!client.shown) return;
 
-    const icon = $("<i>")
+    const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "8px");
 
     const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
 
-    clientDiv.append(icon);
+    clientDiv.append(dropdownIcon);
 
     const clientDetailsDiv = $("<div>").addClass("client-details");
 
