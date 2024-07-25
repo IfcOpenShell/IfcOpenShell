@@ -62,10 +62,6 @@ class GeoreferenceDecorator:
         props = context.scene.BIMGeoreferenceProperties
         e, n, h = [round(float(o), 7) for o in props.model_origin.split(",")]
 
-        wcs_matrix = None
-        if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
-            wcs_matrix = GeoreferenceData.data["world_coordinate_system"]["matrix"]
-
         self.addon_prefs = tool.Blender.get_addon_preferences()
 
         self.font_id = 0
@@ -75,7 +71,7 @@ class GeoreferenceDecorator:
         blf.enable(self.font_id, blf.SHADOW)
         blf.shadow(self.font_id, 6, 0, 0, 0, 1)
 
-        text = "Blender Coordinates X: 0, Y: 0, Z: 0"
+        text = f"Blender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: 0, Y: 0, Z: 0"
         text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {props.blender_offset_x}, Y: {props.blender_offset_y}, Z: {props.blender_offset_z}"
         if GeoreferenceData.data["projected_crs"]:
             text += f"\nMap Coordinates ({GeoreferenceData.data['local_unit_symbol']}) E: {e}, N: {n}, H: {h}"
@@ -111,20 +107,20 @@ class GeoreferenceDecorator:
             arc_mid = angle_half @ arc_start
             self.draw_text_at_position(context, f"{self.tn_angle}deg", arc_mid)
 
-        if wcs_matrix:
-            x, y, z = wcs_matrix.translation
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and ["has_transformation"]:
+            text = "WCS"
+            text += f"\nBlender Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {wcs['blender_x']}, Y: {wcs['blender_y']}, Z: {wcs['blender_z']}"
+            text += f"\nLocal Coordinates ({GeoreferenceData.data['local_unit_symbol']}) X: {wcs['x']}, Y: {wcs['y']}, Z: {wcs['z']}"
             if operation := GeoreferenceData.data["coordinate_operation"]:
                 e = operation.get("Eastings")
                 n = operation.get("Northings")
                 h = operation.get("OrthogonalHeight")
-                text = f"WCS\n X: {x}, Y: {y}, Z: {z}\nE: {e}, N: {n}, H: {h}"
-            else:
-                text = f"WCS\n X: {x}, Y: {y}, Z: {z}"
+                text += f"\nMap Coordinates ({GeoreferenceData.data['map_unit_symbol']}) E: {e}, N: {n}, H: {h}"
 
-            if wcs_matrix.translation.length < 1000:
-                position = wcs_matrix.translation.copy()
+            if wcs["blender_location"].length < 1000:
+                position = wcs["blender_location"].copy()
             else:
-                position = wcs_matrix.translation.normalized() * 3
+                position = wcs["blender_location"].normalized() * 3
                 text += "\n(Warning: Actual XYZ Not Shown)"
             position -= Vector((0, 0.1, 0))
 
@@ -143,10 +139,6 @@ class GeoreferenceDecorator:
 
     def draw_geometry(self, context):
         self.calculate_angles(context)
-
-        wcs_matrix = None
-        if GeoreferenceData.data["world_coordinate_system"]["has_transformation"]:
-            wcs_matrix = GeoreferenceData.data["world_coordinate_system"]["matrix"]
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color = self.addon_prefs.decorations_colour
@@ -263,23 +255,24 @@ class GeoreferenceDecorator:
             verts, edges = arc_segments
             self.draw_batch("LINES", verts, decorator_color_special, edges)
 
-        if wcs_matrix:
-            if wcs_matrix.translation.length < 1000:
-                verts = [Vector((0, 0, 0)), wcs_matrix.translation]
+        if (wcs := GeoreferenceData.data["world_coordinate_system"]) and ["has_transformation"]:
+
+            if wcs["blender_location"].length < 1000:
+                verts = [Vector((0, 0, 0)), wcs["blender_location"]]
                 edges = [[0, 1]]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_batch("POINTS", verts[1:], decorator_color_special)
             else:
                 edges = [[0, 1]]
-                verts = [Vector((0, 0, 0)), wcs_matrix.translation.normalized() * 3]
+                verts = [Vector((0, 0, 0)), wcs["blender_location"].normalized() * 3]
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
-                verts = [wcs_matrix.translation.normalized() * 3, wcs_matrix.translation.normalized() * 3.1]
+                verts = [wcs["blender_location"].normalized() * 3, wcs["blender_location"].normalized() * 3.1]
                 self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.12, wcs_matrix.translation.normalized() * 3.2]
+                verts = [wcs["blender_location"].normalized() * 3.12, wcs["blender_location"].normalized() * 3.2]
                 self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.22, wcs_matrix.translation.normalized() * 3.3]
+                verts = [wcs["blender_location"].normalized() * 3.22, wcs["blender_location"].normalized() * 3.3]
                 self.draw_batch("LINES", verts, decorator_color_error, edges)
-                verts = [wcs_matrix.translation.normalized() * 3.32, wcs_matrix.translation.normalized() * 3.4]
+                verts = [wcs["blender_location"].normalized() * 3.32, wcs["blender_location"].normalized() * 3.4]
                 self.draw_batch("LINES", verts, decorator_color_error, edges)
 
     def calculate_angles(self, context):

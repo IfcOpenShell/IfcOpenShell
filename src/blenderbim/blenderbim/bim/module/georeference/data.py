@@ -21,7 +21,7 @@ import bpy
 import numpy as np
 import blenderbim.tool as tool
 import ifcopenshell.util.geolocation
-from mathutils import Matrix
+from mathutils import Matrix, Vector
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -162,6 +162,25 @@ class GeoreferenceData:
             result["has_transformation"] = True
             result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
             result["x"], result["y"], result["z"] = wcs[:, 3][:3]
+
+            props = bpy.context.scene.BIMGeoreferenceProperties
+            if props.has_blender_offset:
+                blender_xyz = ifcopenshell.util.geolocation.xyz2enh(
+                    result["x"],
+                    result["y"],
+                    result["z"],
+                    float(props.blender_offset_x),
+                    float(props.blender_offset_y),
+                    float(props.blender_offset_z),
+                    float(props.blender_x_axis_abscissa),
+                    float(props.blender_x_axis_ordinate),
+                )
+            else:
+                blender_xyz = wcs[:, 3][:3]
+
+            result["blender_x"], result["blender_y"], result["blender_z"] = blender_xyz
+            result["blender_location"] = Vector([co * unit_scale for co in blender_xyz])
+
             wcs[0][3] *= unit_scale
             wcs[1][3] *= unit_scale
             wcs[2][3] *= unit_scale
