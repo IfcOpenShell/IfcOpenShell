@@ -1,7 +1,7 @@
 @echo off
 
 rem SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
-rem Update BLENDER, BLENDER_VERSION, PYTHON_VERSION, BBIM_REPO in the script bellow.
+rem Update BLENDER, BLENDER_VERSION, PYTHON_VERSION, BBIM_REPO, BLENDER_USER_NAME in the script bellow.
 rem Put the script at the root of your IfcOpenShell git repository
 rem This script needs to be run as administrator (to create symbolic links)
 rem Make sure you have followed these steps before proceeding :)
@@ -11,8 +11,11 @@ pause
 SET BLENDER_VERSION=4.2
 SET PYTHON_VERSION=3.11
 SET BBIM_REPO=user_default
+rem Can be useful e.g. if you're running script from administrator account
+rem and need to setup dev environment for some other user.
+SET BLENDER_USER_NAME=%USERNAME%
 
-SET BLENDER=C:\Users\X\AppData\Roaming\Blender Foundation\Blender\%BLENDER_VERSION%
+SET BLENDER=%HOMEDRIVE%\Users\%BLENDER_USER_NAME%\AppData\Roaming\Blender Foundation\Blender\%BLENDER_VERSION%
 SET BLENDER_LOCAL=%BLENDER%\extensions\.local\lib\python%PYTHON_VERSION%\site-packages
 SET BLENDERBIM=%BLENDER_LOCAL%\blenderbim
 SET BLENDER_EXT=%BLENDER%\extensions\%BBIM_REPO%\blenderbim
