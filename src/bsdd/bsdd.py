@@ -725,8 +725,8 @@ class Client:
     def search_class(
         self,
         search_text: str,
-        dictionary_uris=None,
-        related_ifc_entities=None,
+        dictionary_uris: Optional[list[str]] = None,
+        related_ifc_entities: Optional[list[str]] = None,
         version: int = 1,
         offset: int = 0,
         limit: int = 100,

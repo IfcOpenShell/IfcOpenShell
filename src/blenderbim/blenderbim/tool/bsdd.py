@@ -2,10 +2,11 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import bpy
 import json
+import bsdd
+from typing import Any, Union, Optional
 
 
 class Bsdd(blenderbim.core.tool.Bsdd):
-
     @classmethod
     def clear_class_psets(cls) -> None:
         bpy.context.scene.BIMBSDDProperties.classification_psets.clear()
@@ -19,7 +20,7 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         bpy.context.scene.BIMBSDDProperties.domains.clear()
 
     @classmethod
-    def create_class_psets(cls, pset_dict: dict):
+    def create_class_psets(cls, pset_dict: dict[str, dict[str, Any]]) -> None:
         props = bpy.context.scene.BIMBSDDProperties
         data_type_map = {
             "String": "string",
@@ -39,7 +40,7 @@ class Bsdd(blenderbim.core.tool.Bsdd):
                     new2.data_type = data_type_map[data["data_type"]]
 
     @classmethod
-    def create_classes(cls, class_dict):
+    def create_classes(cls, class_dict: list[bsdd.ClassSearchResponseClassContractV1]) -> None:
         props = bpy.context.scene.BIMBSDDProperties
         for _class in sorted(class_dict, key=lambda c: c["referenceCode"]):
             prop = props.classifications.add()
@@ -51,7 +52,7 @@ class Bsdd(blenderbim.core.tool.Bsdd):
             prop.domain_namespace_uri = _class["dictionaryUri"]
 
     @classmethod
-    def create_dictionaries(cls, dictionaries: dict):
+    def create_dictionaries(cls, dictionaries: list[bsdd.DictionaryContractV1]) -> None:
         props = bpy.context.scene.BIMBSDDProperties
         for dictionary in sorted(dictionaries, key=lambda d: d["name"]):
             new = props.domains.add()
@@ -63,7 +64,7 @@ class Bsdd(blenderbim.core.tool.Bsdd):
             new.version = dictionary["version"]
 
     @classmethod
-    def get_active_class_data(cls, client):
+    def get_active_class_data(cls, client: bsdd.Client) -> Union[bsdd.ClassContractV1, dict]:
         prop = bpy.context.scene.BIMBSDDProperties
         bsdd_classification = prop.classifications[prop.active_classification_index]
         if not bsdd_classification:
@@ -75,15 +76,15 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         return bpy.context.scene.BIMBSDDProperties.active_uri
 
     @classmethod
-    def get_dictionaries(cls, client, status=None) -> list:
+    def get_dictionaries(cls, client: bsdd.Client, status: Optional[str] = None) -> list[bsdd.DictionaryContractV1]:
         response = client.get_dictionary()
         dicts = response.get("dictionaries") or []
         if status is not None:
-            dicts = filter(lambda d: d["status"] == status, dicts)
+            dicts = list(filter(lambda d: d["status"] == status, dicts))
         return dicts
 
     @classmethod
-    def get_property_dict(cls, class_data: dict):
+    def get_property_dict(cls, class_data: Union[bsdd.ClassContractV1, dict]) -> Union[dict[str, dict[str, Any]], None]:
         properties = class_data.get("classProperties", None)
         if not properties:
             return None
@@ -108,9 +109,11 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         return psets
 
     @classmethod
-    def get_related_ifc_entities(cls, keyword):
+    def get_related_ifc_entities(cls, keyword: str) -> list[str]:
         active_object = bpy.context.active_object
         related_ifc_entities = []
+        # TODO: keyword length seems to be already double-checked in core.
+        # And {"FINISHED"} return value is never used.
         if len(keyword) < 3:
             return {"FINISHED"}
         if cls.should_filter_ifc_class() and active_object:
@@ -120,13 +123,20 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         return related_ifc_entities
 
     @classmethod
-    def search_class(cls, client, keyword, dictionary_uris, related_ifc_entities) -> dict:
-        response = client.search_class(keyword, dictionary_uris=dictionary_uris,
-                                       related_ifc_entities=related_ifc_entities)
+    def search_class(
+        cls,
+        client: bsdd.Client,
+        keyword: str,
+        dictionary_uris: Union[list[str], None],
+        related_ifc_entities: Union[list[str], None],
+    ) -> list[bsdd.ClassSearchResponseClassContractV1]:
+        response = client.search_class(
+            keyword, dictionary_uris=dictionary_uris, related_ifc_entities=related_ifc_entities
+        )
         return response.get("classes", [])
 
     @classmethod
-    def set_active_bsdd(cls, name, uri):
+    def set_active_bsdd(cls, name: str, uri: str) -> None:
         props = bpy.context.scene.BIMBSDDProperties
         props.active_domain = name
         props.active_uri = uri
