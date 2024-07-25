@@ -32,6 +32,7 @@ class BIM_PT_bsdd(Panel):
 
     def draw(self, context):
         props = context.scene.BIMBSDDProperties
+        layout = self.layout
         row = self.layout.row(align=True)
         row.prop(props, "load_preview_domains")
         if len(props.domains):
@@ -53,6 +54,23 @@ class BIM_PT_bsdd(Panel):
                 props,
                 "active_domain_index",
             )
+            if 0 <= props.active_domain_index < len(props.domains):
+                selected_domain = props.domains[props.active_domain_index]
+            else:
+                selected_domain = None
+
+            if selected_domain:
+                layout.label(text="Selected domain:")
+                box = layout.box()
+                row = box.row(align=True)
+                row.label(text="Language")
+                row.label(text=selected_domain.default_language_code)
+                row = box.row(align=True)
+                row.label(text="Version")
+                row.label(text=selected_domain.version)
+                box.label(text="URI:")
+                box.label(text=selected_domain.uri)
+
         else:
             row = self.layout.row()
             row.operator("bim.load_bsdd_domains")
