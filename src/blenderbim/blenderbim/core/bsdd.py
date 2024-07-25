@@ -37,7 +37,7 @@ def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
 
 def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
     bsdd.clear_domains()
-    if bsdd.should_load_preview_domains:
+    if bsdd.should_load_preview_domains():
         dictionaries = bsdd.get_dictionaries(client)
     else:
         dictionaries = bsdd.get_dictionaries(client, "Active")
