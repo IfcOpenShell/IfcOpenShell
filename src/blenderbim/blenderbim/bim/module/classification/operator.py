@@ -118,10 +118,22 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMBSDDProperties
-        domain = [d for d in props.domains if d.name == props.active_domain][0]
+        domain = next((d for d in props.domains if d.name == props.active_domain and d.uri == props.active_uri), None)
+
+        # Maybe user loaded preview domains, set it as active
+        # and then reloaded them without preview domains.
+        if not domain:
+            self.report(
+                {"INFO"},
+                f"Couldn't find domain '{props.active_domain}' ({props.active_uri}). Try to reload bSDD dictionaries.",
+            )
+            return
+
         for element in tool.Ifc.get().by_type("IfcClassification"):
             if element.Name == props.active_domain or (tool.Classification.get_location(element) == domain.uri):
+                self.report({"INFO"}, f"Classification '{props.active_domain}' is already added to the project.")
                 return
+
         classification = ifcopenshell.api.run(
             "classification.add_classification", tool.Ifc.get(), classification=props.active_domain
         )
