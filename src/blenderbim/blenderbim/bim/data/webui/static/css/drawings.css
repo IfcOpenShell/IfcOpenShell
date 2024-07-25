@@ -22,7 +22,7 @@
     --nav-link-color: #fff;
     --nav-link-hover-color: #3fb449;
     --warning-color: #FFDB8F;
-    --table-border-color: #464444;
+    --border-color: #464444;
 }
 
 :root.light {
@@ -34,11 +34,12 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
-    --table-border-color: #222;
+    --border-color: #222;
 }
 
 html {
     font-size: var(--base-font-size);
+    color: var(--text-color);
 }
 
 body {
@@ -53,6 +54,9 @@ body {
     margin-left: var(--margin-small);
     margin-right: var(--margin-small);
     margin-bottom: var(--margin-medium);
+    height: calc(100vh - var(--nav-height));
+    box-sizing: border-box;
+    display: flex;
 }
 
 h3 {
@@ -183,4 +187,49 @@ nav ul li a.active {
     font-size: var(--base-font-size);
     margin-left: var(--margin-tiny);
     margin-top: var(--margin-small);
+}
+
+
+.left {
+    background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.right {
+    background-color: var(--bg-color);
+    /* Light gray background for the right part */
+}
+
+.panel {
+    background-color: var(--nav-bg-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    flex-grow: 1;
+    /* Take the remaining space */
+    display: flex;
+    flex-direction: column;
+}
+
+.card-header,
+.card {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+
+#dropdown-menu:focus {
+    outline: none;
+}
+
+/* remove bootstrap css confilcts */
+*,
+::after,
+::before {
+    box-sizing: unset;
+}
+
+.btn,
+.btn:hover {
+    color: var(--text-color);
 }

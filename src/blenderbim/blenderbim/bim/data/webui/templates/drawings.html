@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Web Client</title>
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
     <link rel="stylesheet" href="/static/css/drawings.css" />
     <link
       rel="stylesheet"
@@ -13,6 +17,7 @@
       type="text/javascript"
       src="https://code.jquery.com/jquery-3.6.0.min.js"
     ></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script
       type="text/javascript"
       src="https://cdn.socket.io/4.0.0/socket.io.min.js"
@@ -46,6 +51,57 @@
       </button>
       <div id="client-list"></div>
     </div>
-    <div id="container"></div>
+    <div class="container-fluid d-flex" id="container">
+      <div class="col-2 left">
+        <!-- Dropdown menu -->
+        <div class="dropdown mb-3">
+          <label for="dropdown-menu">IFC File</label>
+          <select class="w-50 p-0 pl-2" id="dropdown-menu"></select>
+        </div>
+        <!-- Panel with sub-panels -->
+        <div class="panel">
+          <div id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <button
+                  class="btn p-0"
+                  data-toggle="collapse"
+                  data-target="#collapseOne"
+                >
+                  Sub-panel 1
+                </button>
+              </div>
+
+              <div id="collapseOne" class="collapse">
+                <div class="card-body">
+                  <ul class="sub-panel" id="sub-panel-1"></ul>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingTwo">
+                <button
+                  class="btn p-0"
+                  data-toggle="collapse"
+                  data-target="#collapseTwo"
+                >
+                  Sub-panel 2
+                </button>
+              </div>
+              <div id="collapseTwo" class="collapse">
+                <div class="card-body">
+                  <ul class="sub-panel" id="sub-panel-2"></ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-10 right p-3">
+        <!-- Elements for the right part go here -->
+        <h1>Right Part</h1>
+        <p>This is the right part of the container.</p>
+      </div>
+    </div>
   </body>
 </html>
