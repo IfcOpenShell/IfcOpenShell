@@ -1,10 +1,10 @@
 @echo off
 
-rem SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
-rem Update BLENDER, BLENDER_VERSION, PYTHON_VERSION, BBIM_REPO, BLENDER_USER_NAME in the script bellow.
-rem Put the script at the root of your IfcOpenShell git repository
-rem This script needs to be run as administrator (to create symbolic links)
-rem Make sure you have followed these steps before proceeding :)
+echo SETUP BLENDERBIM ADD-ON LIVE DEVELOPMENT ENVIRONMENT
+echo Update BLENDER, BLENDER_VERSION, PYTHON_VERSION, BBIM_REPO, BLENDER_USER_NAME in the script bellow.
+echo Put the script at the root of your IfcOpenShell git repository
+echo This script needs to be run as administrator (to create symbolic links)
+echo Make sure you have followed these steps before proceeding :)
 
 pause
 
