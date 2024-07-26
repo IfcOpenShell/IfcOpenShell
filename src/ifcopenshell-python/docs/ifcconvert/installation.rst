@@ -14,17 +14,11 @@ Pre-built packages
 
 1. Download the appropriate version for your operating system.
 
-   +----------------+----------------+----------------+----------------+------------------+
-   | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS 64bit    | MacOS M1 64bit   |
-   +================+================+================+================+==================+
-   | build-linux64_ | build-win32_   | build-win64_   | build-macos64_ | build-macosm164_ |
-   +----------------+----------------+----------------+----------------+------------------+
-
-.. _build-linux64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.0-c18e4ea-linux64.zip
-.. _build-win32: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.0-c18e4ea-win32.zip
-.. _build-win64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.0-c18e4ea-win64.zip
-.. _build-macos64: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.0-c18e4ea-macos64.zip
-.. _build-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.0-c18e4ea-macosm164.zip
+   +---------------------------+-------------------------+-------------------------+---------------------------+-----------------------------+
+   | Linux 64bit               | Windows 32bit           | Windows 64bit           | MacOS 64bit               | MacOS M1 64bit              |
+   +===========================+=========================+=========================+===========================+=============================+
+   | :ifcconvert_url:`linux64` | :ifcconvert_url:`win32` | :ifcconvert_url:`win64` | :ifcconvert_url:`macos64` | :ifcconvert_url:`macosm164` |
+   +---------------------------+-------------------------+-------------------------+---------------------------+-----------------------------+
 
 2. Unzip the downloaded file and run IfcConvert using the command line.
 

@@ -48,14 +48,21 @@ with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
 from docutils import nodes
 
 
-def versioned_link_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+def ios_python_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
     url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcopenshell-python-{release}/ifcopenshell-python-{release}-{text}.zip"
     node = nodes.reference(rawtext, text, refuri=url, **options)
     return [node], []
 
 
+def ifcconvert_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcconvert-{release}/ifcconvert-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
 def setup(app):
-    app.add_role("ios_python_url", versioned_link_role)
+    app.add_role("ios_python_url", ios_python_url)
+    app.add_role("ifcconvert_url", ifcconvert_url)
 
 
 # -- General configuration ---------------------------------------------------
