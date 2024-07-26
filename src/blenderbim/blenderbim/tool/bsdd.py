@@ -48,7 +48,6 @@ class Bsdd(blenderbim.core.tool.Bsdd):
             prop = props.classifications.add()
             prop.name = _class["name"]
             prop.reference_code = _class["referenceCode"]
-            prop.description = _class.get("description", "")
             prop.uri = _class["uri"]
             prop.domain_name = _class["dictionaryName"]
             prop.domain_namespace_uri = _class["dictionaryUri"]
