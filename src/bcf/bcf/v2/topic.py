@@ -278,7 +278,7 @@ class TopicHandler:
         self.add_visinfo_handler(new_viewpoint)
         return new_viewpoint
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float_], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
         """Add a viewpoint pointing at an XYZ point in space
 
         Args:

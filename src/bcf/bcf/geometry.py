@@ -5,8 +5,8 @@ from numpy.typing import NDArray
 
 
 def camera_vectors_from_element_placement(
-    elem_placement: NDArray[np.float_],
-) -> tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
+    elem_placement: NDArray[np.float64],
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Calculate the vectors of a camera pointing to an element.
 
@@ -21,8 +21,8 @@ def camera_vectors_from_element_placement(
 
 
 def camera_vectors_from_target_position(
-    target_position: NDArray[np.float_], offset: Optional[NDArray[np.float_]] = None
-) -> tuple[NDArray[np.float_], NDArray[np.float_], NDArray[np.float_]]:
+    target_position: NDArray[np.float64], offset: Optional[NDArray[np.float64]] = None
+) -> tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
     """
     Calculate the vectors of a camera pointing to a target point.
 
@@ -50,7 +50,7 @@ def camera_vectors_from_target_position(
     # return camera_position, -mat[:3, 2], mat[:3, 1]
 
 
-def unit_vector(v: NDArray[np.float_]) -> NDArray[np.float_]:
+def unit_vector(v: NDArray[np.float64]) -> NDArray[np.float64]:
     """
     Return the unit vector of a vector.
 
