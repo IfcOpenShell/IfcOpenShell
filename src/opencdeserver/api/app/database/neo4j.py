@@ -18,9 +18,9 @@ get_secrets()
 # otherwise the environment variable will have a value of neo4j://kontroll_neo4j:27687
 # kontroll_neo4j is the docker-compose network.
 
-driver = GraphDatabase.driver(os.environ['NEO4J_URI'],
-                              auth=(os.environ['NEO4J_USER'],
-                                    os.environ['NEO4J_INITIAL_PASSWORD']))
+driver = GraphDatabase.driver(
+    os.environ["NEO4J_URI"], auth=(os.environ["NEO4J_USER"], os.environ["NEO4J_INITIAL_PASSWORD"])
+)
 
 # initial password should be changed to secret password
 
@@ -33,33 +33,38 @@ class MyDB:
 
     def __init__(self, object_driver):
         self.driver = object_driver
-        self.database = 'neo4j'
+        self.database = "neo4j"
 
     @staticmethod
     def timestamp():
-        return datetime.now(timezone.utc).isoformat(sep='T', timespec='milliseconds')
+        return datetime.now(timezone.utc).isoformat(sep="T", timespec="milliseconds")
 
     @staticmethod
     def bcf_time(any_datetime):
-        if isinstance(any_datetime, type('str')):
+        if isinstance(any_datetime, type("str")):
             datetime_any = parser.parse(any_datetime).astimezone(pytz.utc)
         elif isinstance(any_datetime, type(datetime.now())):
             datetime_any = any_datetime.astimezone(pytz.utc)
         else:
             return False
-        string_date = datetime_any.isoformat(sep='T', timespec='milliseconds')
+        string_date = datetime_any.isoformat(sep="T", timespec="milliseconds")
         return str(string_date)
 
     @staticmethod
     def safe_path(path_name):
-        safe_path_name = ''.join(x for x in path_name if x.isalnum() or '-')
+        safe_path_name = "".join(x for x in path_name if x.isalnum() or "-")
         return safe_path_name
 
     @staticmethod
     def debug(endpoint: str, request, response):
-        print("\n\n\nEndpoint: ", jsonpickle.dumps(endpoint),
-              "\nRequest: ", jsonpickle.dumps(request),
-              "\nResponse: ", jsonpickle.dumps(response))
+        print(
+            "\n\n\nEndpoint: ",
+            jsonpickle.dumps(endpoint),
+            "\nRequest: ",
+            jsonpickle.dumps(request),
+            "\nResponse: ",
+            jsonpickle.dumps(response),
+        )
 
     @staticmethod
     def node_to_json(node):
@@ -89,11 +94,12 @@ class MyDB:
             cypher_file = open(cypher_file_path, "r")
             cypher_data = cypher_file.read()
             cypher_file.close()
-            cypher_statements = cypher_data.split(';')
+            cypher_statements = cypher_data.split(";")
             cypher_statements.pop()
             for cypher_statement in cypher_statements:
                 tx.run(cypher_statement)
             return
+
         with self.driver.session() as session:
             return session.execute_write(initialize_db_work)
 
@@ -113,8 +119,10 @@ class MyDB:
             user_dict = self.node_to_json(user_node)
             user = UserInDB(**user_dict)
             return user
+
         with self.driver.session() as session:
             return session.execute_read(get_user_work, username_work=username)
+
 
 db = MyDB(driver)
 db.initialize_db()

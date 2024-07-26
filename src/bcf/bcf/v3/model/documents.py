@@ -22,7 +22,7 @@ class Document:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
     guid: str = field(
         metadata={
@@ -45,7 +45,7 @@ class DocumentInfoDocuments:
             "name": "Document",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
 
 
@@ -57,5 +57,5 @@ class DocumentInfo:
             "name": "Documents",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )

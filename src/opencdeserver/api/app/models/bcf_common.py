@@ -55,13 +55,13 @@ class ClippingPlane(BaseModel):
 
 
 class SnapshotType(Enum):
-    jpg = 'jpg'
-    png = 'png'
+    jpg = "jpg"
+    png = "png"
 
 
 class BitmapType(Enum):
-    jpg = 'jpg'
-    png = 'png'
+    jpg = "jpg"
+    png = "png"
 
 
 class Component(BaseModel):
