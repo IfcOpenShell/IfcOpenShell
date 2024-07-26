@@ -33,5 +33,6 @@ class TestUnassignReference(test.bootstrap.IFC4):
         assert ifcopenshell.util.element.get_referenced_elements(reference) == set()
         assert len(self.file.by_type("IfcRelAssociatesLibrary")) == 0
 
+
 class TestUnassignReferenceIFC2X3(test.bootstrap.IFC2X3, TestUnassignReference):
     pass

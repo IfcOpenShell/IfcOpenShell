@@ -79,9 +79,7 @@ class TestAssignObject(test.bootstrap.IFC4):
 
         # maintain the order in the affected relationships too
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTask")
-        ifcopenshell.api.nest.assign_object(
-            self.file, related_objects=subelements[2:3], relating_object=element2
-        )
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=subelements[2:3], relating_object=element2)
         assert rel.RelatedObjects == tuple(subelements[:2] + subelements[3:])
 
 

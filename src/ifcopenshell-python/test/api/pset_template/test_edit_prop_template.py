@@ -29,9 +29,7 @@ class TestEditPropTemplate(test.bootstrap.IFC4):
             prop_template=prop,
             attributes={"Name": "DemoA", "PrimaryMeasureType": "IfcLabel"},
         )
-        ifcopenshell.api.pset_template.edit_prop_template(
-            self.file, prop_template=prop, attributes={"Name": "DemoB"}
-        )
+        ifcopenshell.api.pset_template.edit_prop_template(self.file, prop_template=prop, attributes={"Name": "DemoB"})
         assert prop.Name == "DemoB"
 
     def test_editing_an_enumeration(self):

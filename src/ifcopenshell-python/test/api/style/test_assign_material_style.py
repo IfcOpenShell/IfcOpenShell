@@ -82,9 +82,7 @@ class TestAssignMaterialStyleIFC4(test.bootstrap.IFC4, TestAssignMaterialStyleIF
 
         style = self.file.createIfcSurfaceStyle()
         material = ifcopenshell.api.material.add_material(self.file)
-        material_set = ifcopenshell.api.material.add_material_set(
-            self.file, set_type="IfcMaterialConstituentSet"
-        )
+        material_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialConstituentSet")
         constituent = ifcopenshell.api.material.add_constituent(
             self.file, constituent_set=material_set, material=material
         )

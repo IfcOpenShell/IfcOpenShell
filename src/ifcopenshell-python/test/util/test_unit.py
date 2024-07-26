@@ -151,6 +151,7 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC4):
         unit_assignment = subject.get_unit_assignment(output)
         assert len(unit_assignment.Units) == 1
 
+
 class TestConvertFileLengthUnitsIFC2X3(test.bootstrap.IFC2X3):
     def test_converting_map_conversion_if_there_is_no_map_unit(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -171,7 +172,9 @@ class TestConvertFileLengthUnitsIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.context.add_context(self.file, "Model")
         ifcopenshell.api.georeference.add_georeferencing(self.file)
         ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, projected_crs={"MapUnit": subject.get_full_unit_name(meter)}, coordinate_operation={"Eastings": 10, "Scale": 0.001}
+            self.file,
+            projected_crs={"MapUnit": subject.get_full_unit_name(meter)},
+            coordinate_operation={"Eastings": 10, "Scale": 0.001},
         )
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")

@@ -97,6 +97,7 @@ def assign_profile(
 
 class Usecase:
     file: ifcopenshell.file
+
     def execute(self) -> None:
         # TODO: handle composite profiles
         old_profile = self.settings["material_profile"].Profile

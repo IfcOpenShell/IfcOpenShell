@@ -37,7 +37,7 @@ def compress(g):
     bs = [int(g[i : i + 2], 16) for i in range(0, len(g), 2)]
 
     def b64(v, l=4):
-        return "".join([chars[(v // (64 ** i)) % 64] for i in range(l)][::-1])
+        return "".join([chars[(v // (64**i)) % 64] for i in range(l)][::-1])
 
     return "".join([b64(bs[0], 2)] + [b64((bs[i] << 16) + (bs[i + 1] << 8) + bs[i + 2]) for i in range(1, 16, 3)])
 

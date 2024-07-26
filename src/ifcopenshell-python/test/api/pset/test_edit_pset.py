@@ -183,9 +183,7 @@ class TestEditPset(test.bootstrap.IFC4):
         assert pset.HasProperties[0].NominalValue.wrappedValue == 34
 
     def test_editing_list_valued_properties(self):
-        cable = ifcopenshell.api.root.create_entity(
-            self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE"
-        )
+        cable = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionPort", predefined_type="CABLE")
         pset = ifcopenshell.api.pset.add_pset(self.file, product=cable, name="Pset_DistributionPortTypeCable")
         ifcopenshell.api.pset.edit_pset(
             self.file,

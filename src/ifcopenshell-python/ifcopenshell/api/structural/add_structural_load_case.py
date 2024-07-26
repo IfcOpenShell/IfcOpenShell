@@ -38,10 +38,7 @@ def add_structural_load_case(
     """
 
     load_case = ifcopenshell.api.root.create_entity(
-        file,
-        ifc_class="IfcStructuralLoadCase",
-        predefined_type="LOAD_CASE",
-        name=name
+        file, ifc_class="IfcStructuralLoadCase", predefined_type="LOAD_CASE", name=name
     )
     load_case.ActionType = action_type
     load_case.ActionSource = action_source

@@ -93,12 +93,8 @@ class TestAssignContainer(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=element1, matrix=matrix1.copy(), is_si=False
-        )
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=element2, matrix=matrix2.copy(), is_si=False
-        )
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element1, matrix=matrix1.copy(), is_si=False)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element2, matrix=matrix2.copy(), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=subelement, matrix=matrix1.copy(), is_si=False
         )

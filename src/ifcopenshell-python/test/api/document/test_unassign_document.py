@@ -36,9 +36,7 @@ class TestUnassignDocument(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         reference = ifcopenshell.api.document.add_reference(self.file, information=None)
-        ifcopenshell.api.document.assign_document(
-            self.file, products=[element, element2, element3], document=reference
-        )
+        ifcopenshell.api.document.assign_document(self.file, products=[element, element2, element3], document=reference)
         ifcopenshell.api.document.unassign_document(self.file, products=[element, element2], document=reference)
         assert ifcopenshell.util.element.get_referenced_elements(reference) == {element3}
 

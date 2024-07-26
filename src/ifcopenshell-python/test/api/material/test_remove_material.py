@@ -111,9 +111,7 @@ class TestRemoveMaterialIFC4(test.bootstrap.IFC4, TestRemoveMaterialIFC2X3):
     def test_removing_material_in_constituent(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file)
-        material_set = ifcopenshell.api.material.add_material_set(
-            self.file, set_type="IfcMaterialConstituentSet"
-        )
+        material_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialConstituentSet")
         ifcopenshell.api.material.add_constituent(self.file, constituent_set=material_set, material=material)
         ifcopenshell.api.material.assign_material(self.file, products=[wall], material=material_set)
         assert len(self.file.by_type("IfcMaterialConstituentSet")[0].MaterialConstituents) == 1

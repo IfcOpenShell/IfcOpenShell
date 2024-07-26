@@ -62,9 +62,7 @@ class TestReassignClass(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element2], relating_type=element_type)
 
-        element_type = ifcopenshell.api.root.reassign_class(
-            self.file, product=element_type, ifc_class="IfcSlabType"
-        )
+        element_type = ifcopenshell.api.root.reassign_class(self.file, product=element_type, ifc_class="IfcSlabType")
 
         # type occurrences have reassigned classes
         occurrences = ifcopenshell.util.element.get_types(element_type)

@@ -36,9 +36,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
             name="Foobar",
             classification=result,
         )
-        ifcopenshell.api.classification.remove_reference(
-            self.file, products=[element, element2], reference=reference
-        )
+        ifcopenshell.api.classification.remove_reference(self.file, products=[element, element2], reference=reference)
         assert len(ifcopenshell.util.classification.get_references(element)) == 0
         assert len(ifcopenshell.util.classification.get_references(element2)) == 0
         assert len(self.file.by_type("IfcClassificationReference")) == 0
@@ -90,9 +88,7 @@ class TestRemoveReference(test.bootstrap.IFC4):
             classification=result,
         )
         assert len(self.file.by_type("IfcClassificationReference")) == 1
-        ifcopenshell.api.classification.remove_reference(
-            self.file, products=[element, element2], reference=reference
-        )
+        ifcopenshell.api.classification.remove_reference(self.file, products=[element, element2], reference=reference)
         assert len(self.file.by_type("IfcClassificationReference")) == 1
         ifcopenshell.api.classification.remove_reference(self.file, products=[element3], reference=reference)
         assert len(self.file.by_type("IfcClassificationReference")) == 0

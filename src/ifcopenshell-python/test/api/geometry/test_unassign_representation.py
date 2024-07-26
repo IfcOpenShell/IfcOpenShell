@@ -30,9 +30,7 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         )
         ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=representation)
         assert representation not in wall.Representation.Representations
-        ifcopenshell.api.geometry.unassign_representation(
-            self.file, product=wall, representation=representation2
-        )
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=wall, representation=representation2)
         assert not wall.Representation
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
         assert len(self.file.by_type("IfcProductDefinitionShape")) == 0
@@ -42,9 +40,7 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         origin = self.file.createIfcAxis2Placement3D()
         repmap = self.file.createIfcRepresentationMap(MappedRepresentation=representation, MappingOrigin=origin)
         walltype = self.file.createIfcWallType(RepresentationMaps=[repmap])
-        ifcopenshell.api.geometry.unassign_representation(
-            self.file, product=walltype, representation=representation
-        )
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=walltype, representation=representation)
         assert not walltype.RepresentationMaps
         assert len(self.file.by_type("IfcAxis2Placement3D")) == 0
         assert len(self.file.by_type("IfcRepresentationMap")) == 0
@@ -59,9 +55,7 @@ class TestUnassignRepresentation(test.bootstrap.IFC4):
         rep = self.file.createIfcShapeRepresentation(Items=[mapped_item])
         prodrep = self.file.createIfcProductDefinitionShape(Representations=[rep])
         wall = self.file.createIfcWall(Representation=prodrep)
-        ifcopenshell.api.geometry.unassign_representation(
-            self.file, product=walltype, representation=representation
-        )
+        ifcopenshell.api.geometry.unassign_representation(self.file, product=walltype, representation=representation)
         assert not walltype.RepresentationMaps
         assert len(self.file.by_type("IfcAxis2Placement3D")) == 0
         assert len(self.file.by_type("IfcRepresentationMap")) == 0

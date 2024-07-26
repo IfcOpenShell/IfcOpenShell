@@ -20,7 +20,10 @@ from typing import Optional
 
 
 def add_material(
-    file: ifcopenshell.file, name: Optional[str] = None, category: Optional[str] = None, description: Optional[str] = None
+    file: ifcopenshell.file,
+    name: Optional[str] = None,
+    category: Optional[str] = None,
+    description: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new material
 
@@ -50,8 +53,8 @@ def add_material(
     Note that categories are not available in IFC2X3. This shortcoming is
     one of the big reasons projects should upgrade to IFC4.
 
-    Additionally, a material's description provides more information beyond 
-    its name or category. 
+    Additionally, a material's description provides more information beyond
+    its name or category.
 
     :param name: The name of the material, typically tagged in a finishes
         drawing or schedule.
@@ -78,7 +81,7 @@ def add_material(
         # "Style" has been specified.
         ifcopenshell.api.material.assign_material(model, products=[concrete_bench], material=concrete)
     """
-    settings = {"name": name or "Unnamed", "category": category, "description": description }
+    settings = {"name": name or "Unnamed", "category": category, "description": description}
 
     material = file.create_entity("IfcMaterial", **{"Name": settings["name"] or "Unnamed"})
     if settings["category"]:

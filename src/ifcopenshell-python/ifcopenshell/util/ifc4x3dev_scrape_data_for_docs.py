@@ -130,6 +130,8 @@ def get_attributes_keep_md(resource, builder):
 
 # Temporary fix for https://github.com/buildingSMART/IFC4.3.x-development/issues/754.
 _original_get_resource_path = get_resource_path
+
+
 def get_resource_path(resource: str, abort_on_error=False) -> Union[str, None]:
     md = _original_get_resource_path(resource, abort_on_error)
     if md and resource == "IfcURIReference":

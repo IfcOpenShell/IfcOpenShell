@@ -379,23 +379,17 @@ class TestGetMaterial(test.bootstrap.IFC4):
 
     def test_getting_a_material_layer_set_of_a_product(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.material.assign_material(
-            self.file, products=[element], type="IfcMaterialLayerSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSet")
         assert subject.get_material(element) == rel.RelatingMaterial
 
     def test_getting_a_material_profile_set_of_a_product(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.material.assign_material(
-            self.file, products=[element], type="IfcMaterialProfileSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialProfileSet")
         assert subject.get_material(element) == rel.RelatingMaterial
 
     def test_getting_a_material_layer_set_usage_of_a_product(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.material.assign_material(
-            self.file, products=[element], type="IfcMaterialLayerSetUsage"
-        )
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSetUsage")
         assert subject.get_material(element) == rel.RelatingMaterial
 
     def test_getting_a_material_profile_set_usage_of_a_product(self):
@@ -407,9 +401,7 @@ class TestGetMaterial(test.bootstrap.IFC4):
 
     def test_getting_a_material_layer_set_indirectly_from_an_assigned_usage(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        rel = ifcopenshell.api.material.assign_material(
-            self.file, products=[element], type="IfcMaterialLayerSetUsage"
-        )
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSetUsage")
         assert subject.get_material(element, should_skip_usage=True) == rel.RelatingMaterial.ForLayerSet
 
     def test_getting_a_material_profile_set_indirectly_from_an_assigned_usage(self):
@@ -501,9 +493,7 @@ class TestGetStyles(test.bootstrap.IFC4):
             self.file, context=body, length=5, height=3, thickness=0.118
         )
 
-        ifcopenshell.api.geometry.assign_representation(
-            self.file, product=element, representation=representation
-        )
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
         ifcopenshell.api.style.assign_representation_styles(
             self.file, shape_representation=representation, styles=[style2]
         )
@@ -540,9 +530,7 @@ class TestGetElementsByMaterial(test.bootstrap.IFC4):
         material_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialProfileSet")
         ifcopenshell.api.material.add_profile(self.file, profile_set=material_set, material=material)
         ifcopenshell.api.material.assign_material(self.file, products=[element_type], material=material_set)
-        ifcopenshell.api.material.assign_material(
-            self.file, products=[element], type="IfcMaterialProfileSetUsage"
-        )
+        ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialProfileSetUsage")
         usage = self.file.by_type("IfcMaterialProfileSetUsage")[0]
         assert subject.get_elements_by_material(self.file, material) == {element, element_type}
         assert subject.get_elements_by_material(self.file, material_set) == {element, element_type}
@@ -551,9 +539,7 @@ class TestGetElementsByMaterial(test.bootstrap.IFC4):
     def test_getting_elements_of_a_material_constituent_set(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         material = ifcopenshell.api.material.add_material(self.file)
-        material_set = ifcopenshell.api.material.add_material_set(
-            self.file, set_type="IfcMaterialConstituentSet"
-        )
+        material_set = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialConstituentSet")
         ifcopenshell.api.material.add_constituent(self.file, constituent_set=material_set, material=material)
         ifcopenshell.api.material.assign_material(self.file, products=[element], material=material_set)
         assert subject.get_elements_by_material(self.file, material) == {element}

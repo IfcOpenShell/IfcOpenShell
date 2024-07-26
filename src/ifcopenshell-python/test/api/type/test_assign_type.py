@@ -51,9 +51,7 @@ class TestAssignType(test.bootstrap.IFC4):
         element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(
-            self.file, related_objects=[element1, element2], relating_type=element_type1
-        )
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type1)
         rel = element1.IsDefinedBy[0] if self.file.schema == "IFC2X3" else element1.IsTypedBy[0]
         assert len(rel.RelatedObjects) == 2
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type2)
@@ -110,9 +108,7 @@ class TestAssignType(test.bootstrap.IFC4):
         mapped_rep_id = mapped_rep.id()
 
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(
-            self.file, related_objects=[element1, element2], relating_type=element_type
-        )
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type)
         assert (mapped_rep := ifcopenshell.util.representation.get_representation(element1, context=context))
         assert mapped_rep.id() == mapped_rep_id
 
@@ -139,9 +135,7 @@ class TestAssignType(test.bootstrap.IFC4):
 
         # use 2 elements to trigger material assignment code block
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(
-            self.file, related_objects=[element1, element2], relating_type=element_type
-        )
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type)
         assert (material := ifcopenshell.util.element.get_material(element1))
         assert material.id() == material_id
 

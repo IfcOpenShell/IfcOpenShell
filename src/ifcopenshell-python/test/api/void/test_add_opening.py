@@ -61,12 +61,8 @@ class TestAddOpening(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=wall, matrix=matrix1.copy(), is_si=False
-        )
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=opening, matrix=matrix1.copy(), is_si=False
-        )
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix1.copy(), is_si=False)
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=matrix1.copy(), is_si=False)
         ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
         assert opening.ObjectPlacement.PlacementRelTo.PlacesObject[0] == wall
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement), matrix1)

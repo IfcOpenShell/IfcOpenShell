@@ -29,9 +29,7 @@ class TestUnassignType(test.bootstrap.IFC4):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.type.assign_type(
-            self.file, related_objects=[element1, element2], relating_type=element_type
-        )
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1, element2], relating_type=element_type)
         ifcopenshell.api.type.unassign_type(self.file, related_objects=[element1, element2])
         assert ifcopenshell.util.element.get_type(element1) is None
         assert ifcopenshell.util.element.get_type(element2) is None
