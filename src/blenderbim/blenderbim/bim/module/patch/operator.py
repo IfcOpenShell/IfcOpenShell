@@ -136,7 +136,8 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 if new_attr.data_type == "enum":
                     new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
                     new_attr.enum_value = arg_info.get("default", new_attr.get_value_default())
-                    continue  # Temporary workaround, because the Argument class resets the type to "string" when calling `set_value`
+                    continue
+
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
 
