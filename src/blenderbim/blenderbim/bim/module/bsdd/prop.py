@@ -43,7 +43,6 @@ class BSDDDomain(PropertyGroup):
 class BSDDClassification(PropertyGroup):
     name: StringProperty(name="Name")
     reference_code: StringProperty(name="Reference Code")
-    description: StringProperty(name="Description")
     uri: StringProperty(name="Namespace URI")
     domain_name: StringProperty(name="Domain Name")
     domain_namespace_uri: StringProperty(name="Domain Namespace URI")
