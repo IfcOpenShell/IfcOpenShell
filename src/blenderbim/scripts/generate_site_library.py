@@ -98,7 +98,9 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
 
 LibraryGenerator().generate()

@@ -681,7 +681,7 @@ def prop_is_roughly_value(prop, value):
 def the_object_name_has_a_cartesian_point_offset_of_offset(name, offset):
     offset = replace_variables(offset)
     obj = the_object_name_exists(name)
-    assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT" 
+    assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
     obj_offset = np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
     offset = np.array(tuple(map(float, offset.split(","))))
     assert np.allclose(obj_offset, offset)

@@ -1,4 +1,5 @@
 """BCF XML tests."""
+
 import uuid
 from pathlib import Path
 from tempfile import TemporaryDirectory

@@ -61,9 +61,7 @@ class TestUnassignDeclaration(test.bootstrap.IFC4):
         element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element_type2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         element_type3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.project.assign_declaration(
-            self.file, definitions=[element_type1], relating_context=library
-        )
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element_type1], relating_context=library)
         rel = self.file.by_type("IfcRelDeclares")[0]
 
         ifcopenshell.api.project.assign_declaration(

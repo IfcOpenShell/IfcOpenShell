@@ -19,7 +19,9 @@ import ifcopenshell
 from typing import Any
 
 
-def edit_assigned_material(file: ifcopenshell.file, element: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+def edit_assigned_material(
+    file: ifcopenshell.file, element: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcMaterial
 
     For more information about the attributes and data types of an

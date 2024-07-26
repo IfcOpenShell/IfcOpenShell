@@ -54,9 +54,9 @@ class SvIfcCreateShape(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.
 
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
-        row.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Create Blender shape from IfcEntity Id. Takes one or multiple IfcEntity IDs."
+        row.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Create Blender shape from IfcEntity Id. Takes one or multiple IfcEntity IDs."
+        )
         row.prop(self, "refresh_local", icon="FILE_REFRESH")
 
     def process(self):

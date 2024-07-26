@@ -20,6 +20,7 @@ import argparse
 from cjio import cityjson
 from .cityjson2ifc import Cityjson2ifc
 
+
 def cmdline():
     # Example:
     # python ifccityjson.py -i example/3DBAG_example.json -o example/output.ifc -n identificatie
@@ -28,10 +29,10 @@ def cmdline():
     parser.add_argument("-i", "--input", type=str, help="input CityJSON file", required=True)
     parser.add_argument("-o", "--output", type=str, help="output IFC file. Standard is output.ifc")
     parser.add_argument("-n", "--name", type=str, help="Attribute containing the name")
-    parser.add_argument('--split-lod', dest='split', action='store_true',
-                        help="Split the file in multiple LoDs")
-    parser.add_argument('--no-split-lod', dest='split', action='store_false',
-                        help="Do not split the file in multiple LoDs")
+    parser.add_argument("--split-lod", dest="split", action="store_true", help="Split the file in multiple LoDs")
+    parser.add_argument(
+        "--no-split-lod", dest="split", action="store_false", help="Do not split the file in multiple LoDs"
+    )
     parser.add_argument("--lod", type=str, help="extract LOD value (example: 1.2)")
     parser.set_defaults(split=True)
     args = parser.parse_args()
@@ -50,5 +51,6 @@ def cmdline():
     converter.configuration(**data)
     converter.convert(city_model)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     cmdline()

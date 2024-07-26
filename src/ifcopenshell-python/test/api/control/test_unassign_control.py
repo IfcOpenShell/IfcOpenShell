@@ -27,17 +27,13 @@ class TestUnassignControl(test.bootstrap.IFC4):
         control = ifcopenshell.api.cost.add_cost_schedule(self.file)
 
         # assign and unassign
-        relation = ifcopenshell.api.control.assign_control(
-            self.file, relating_control=control, related_object=wall
-        )
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall)
         ifcopenshell.api.control.unassign_control(self.file, relating_control=control, related_object=wall)
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 0
 
         # 1 control 2 related objects
         wall1 = self.file.createIfcWall()
-        relation = ifcopenshell.api.control.assign_control(
-            self.file, relating_control=control, related_object=wall
-        )
+        relation = ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall)
         ifcopenshell.api.control.assign_control(self.file, relating_control=control, related_object=wall1)
         ifcopenshell.api.control.unassign_control(self.file, relating_control=control, related_object=wall1)
         assert len(self.file.by_type("IfcRelAssignsToControl")) == 1

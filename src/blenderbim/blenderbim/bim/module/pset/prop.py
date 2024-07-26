@@ -170,6 +170,7 @@ def get_group_qto_names(self, context):
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return qtonames[ifc_class]
 
+
 def get_profile_pset_names(self, context):
     global psetnames
     pprops = context.scene.BIMProfileProperties

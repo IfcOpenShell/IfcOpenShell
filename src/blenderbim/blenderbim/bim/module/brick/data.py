@@ -166,9 +166,9 @@ class BrickschemaReferencesData:
                 results.append(
                     {
                         "id": reference.id(),
-                        "identification": reference.ItemReference
-                        if tool.Ifc.get_schema() == "IFC2X3"
-                        else reference.Identification,
+                        "identification": (
+                            reference.ItemReference if tool.Ifc.get_schema() == "IFC2X3" else reference.Identification
+                        ),
                         "name": reference.Name or "Unnamed",
                     }
                 )

@@ -133,7 +133,11 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
     for element in distribution_elements:
         feeds = brick.get_element_feeds(element)
         for downstream_equipment in feeds:
-            brick.add_relation(equipment_uris[element], "https://brickschema.org/schema/Brick#feeds", equipment_uris[downstream_equipment])
+            brick.add_relation(
+                equipment_uris[element],
+                "https://brickschema.org/schema/Brick#feeds",
+                equipment_uris[downstream_equipment],
+            )
     brick.run_refresh_brick_viewer()
 
 

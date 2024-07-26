@@ -1,4 +1,5 @@
 """BCF XML V3 Documents handler."""
+
 import zipfile
 from typing import Any, Optional
 

@@ -28,6 +28,7 @@ from typing import Optional, Union, Literal
 
 QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
+
 class Qto(blenderbim.core.tool.Qto):
     @classmethod
     def get_radius_of_selected_vertices(cls, obj: bpy.types.Object) -> float:

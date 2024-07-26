@@ -33,9 +33,7 @@ class TestAddCostItemQuantity(test.bootstrap.IFC4):
 
         quantities = []
         for quantity_type in quantity_types:
-            quantity = ifcopenshell.api.cost.add_cost_item_quantity(
-                self.file, cost_item=item, ifc_class=quantity_type
-            )
+            quantity = ifcopenshell.api.cost.add_cost_item_quantity(self.file, cost_item=item, ifc_class=quantity_type)
             assert quantity.is_a(quantity_type)
             assert quantity.Name == "Unnamed"
             if quantity_type == "IfcQuantityCount":

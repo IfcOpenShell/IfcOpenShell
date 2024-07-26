@@ -89,7 +89,7 @@ class BIM_PT_ifccsv(Panel):
 
         row = layout.row(align=True)
         op = row.operator("bim.search", text="Select", icon="VIEWZOOM")
-        op.property_group = "CsvProperties"  
+        op.property_group = "CsvProperties"
         layout.separator()
 
         row = layout.row(align=True)
@@ -128,6 +128,3 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row(align=True)
         row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
-
-
-        

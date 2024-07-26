@@ -857,13 +857,19 @@ class Usecase:
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
 
-    def create_cartesian_point_list_from_vertices(self, vertices: list[bpy.types.MeshVertex], is_2d=False, is_model_coords=True):
+    def create_cartesian_point_list_from_vertices(
+        self, vertices: list[bpy.types.MeshVertex], is_2d=False, is_model_coords=True
+    ):
         if is_model_coords and self.settings["coordinate_offset"]:
             if is_2d:
                 xy_offset = Vector((self.settings["coordinate_offset"][0:2]))
-                return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy + xy_offset) for v in vertices])
+                return self.file.createIfcCartesianPointList2D(
+                    [self.convert_si_to_unit(v.co.xy + xy_offset) for v in vertices]
+                )
             xyz_offset = Vector((self.settings["coordinate_offset"][0:3]))
-            return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co.xyz + xyz_offset) for v in vertices])
+            return self.file.createIfcCartesianPointList3D(
+                [self.convert_si_to_unit(v.co.xyz + xyz_offset) for v in vertices]
+            )
         if is_2d:
             return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
         return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])

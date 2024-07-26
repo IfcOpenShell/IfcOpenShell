@@ -109,7 +109,7 @@ class BIM_PT_spatial_decomposition(Panel):
             SpatialDecompositionData.load()
         self.props = context.scene.BIMSpatialDecompositionProperties
 
-        if SpatialDecompositionData.data['default_container']:
+        if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
             row.label(
                 text=f"Default: {SpatialDecompositionData.data['default_container']}",

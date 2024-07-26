@@ -32,9 +32,7 @@ from sverchok.data_structure import (
 )
 
 
-class SvIfcCreateEntity(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateEntity"
     bl_label = "IFC Create Entity"
     node_dict = {}
@@ -46,9 +44,7 @@ class SvIfcCreateEntity(
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(
-        name="Update Node", description="Update Node", update=refresh_node
-    )
+    refresh_local: BoolProperty(name="Update Node", description="Update Node", update=refresh_node)
 
     Names: StringProperty(
         name="Names",
@@ -76,18 +72,16 @@ class SvIfcCreateEntity(
         self.inputs.new("SvStringsSocket", "Names").prop_name = "Names"
         self.inputs.new("SvStringsSocket", "Descriptions").prop_name = "Descriptions"
         self.inputs.new("SvStringsSocket", "IfcClass").prop_name = "IfcClass"
-        self.inputs.new(
-            "SvStringsSocket", "Representations"
-        ).prop_name = "Representations"
+        self.inputs.new("SvStringsSocket", "Representations").prop_name = "Representations"
         self.inputs.new("SvMatrixSocket", "Locations").is_mandatory = False
         # self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
         self.outputs.new("SvStringsSocket", "Entities")
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Create IFC Entity. Takes one or multiple inputs. \nIf 'Representation(s)' is given, that determines number of output entities. Otherwise, 'Names' is used."
+        )
 
         row = layout.row(align=True)
         row.prop(self, "is_interactive", icon="SCENE_DATA", icon_only=True)
@@ -95,26 +89,16 @@ class SvIfcCreateEntity(
 
     def process(self):
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
-        self.descriptions = flatten_data(
-            self.inputs["Descriptions"].sv_get(), target_level=1
-        )
-        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[
-            0
-        ]
-        self.representations = ensure_min_nesting(
-            self.inputs["Representations"].sv_get(), 3
-        )
+        self.descriptions = flatten_data(self.inputs["Descriptions"].sv_get(), target_level=1)
+        self.ifc_class = flatten_data(self.inputs["IfcClass"].sv_get(), target_level=1)[0]
+        self.representations = ensure_min_nesting(self.inputs["Representations"].sv_get(), 3)
         self.representations = flatten_data(self.representations, target_level=3)
-        self.locations = ensure_min_nesting(
-            self.inputs["Locations"].sv_get(default=[]), 3
-        )
+        self.locations = ensure_min_nesting(self.inputs["Locations"].sv_get(default=[]), 3)
         self.locations = flatten_data(self.locations, target_level=3)
         self.sv_input_names = [i.name for i in self.inputs]
 
         if hash(self) not in self.node_dict:
-            self.node_dict[
-                hash(self)
-            ] = {}  # happens if node is already on canvas when blender loads
+            self.node_dict[hash(self)] = {}  # happens if node is already on canvas when blender loads
         if not self.node_dict[hash(self)]:
             self.node_dict[hash(self)].update(dict.fromkeys(self.sv_input_names, 0))
         if not self.inputs["IfcClass"].sv_get()[0][0]:
@@ -122,9 +106,7 @@ class SvIfcCreateEntity(
 
         edit = False
         for i in range(len(self.inputs)):
-            input = self.inputs[self.sv_input_names[i]].sv_get(
-                deepcopy=True, default=[]
-            )
+            input = self.inputs[self.sv_input_names[i]].sv_get(deepcopy=True, default=[])
             if (
                 isinstance(self.node_dict[hash(self)][self.inputs[i].name], list)
                 and input != self.node_dict[hash(self)][self.inputs[i].name]
@@ -142,27 +124,18 @@ class SvIfcCreateEntity(
             for group in self.representations:
                 try:
                     group_representations = [
-                        [self.file.by_id(step_id) for step_id in representation]
-                        for representation in group
+                        [self.file.by_id(step_id) for step_id in representation] for representation in group
                     ]
                     representations.append(group_representations)
                 except Exception as e:
                     raise
-                names.append(
-                    self.repeat_input_unique(self.names, len(group_representations))
-                )
-                descriptions.append(
-                    self.repeat_input_unique(
-                        self.descriptions, len(group_representations)
-                    )
-                )
+                names.append(self.repeat_input_unique(self.names, len(group_representations)))
+                descriptions.append(self.repeat_input_unique(self.descriptions, len(group_representations)))
             self.representations = representations
             self.names = names
             self.descriptions = descriptions
         elif not self.representations[0][0][0]:
-            self.descriptions = self.repeat_input_unique(
-                self.descriptions, len(self.names)
-            )
+            self.descriptions = self.repeat_input_unique(self.descriptions, len(self.names))
             self.names = ensure_min_nesting(self.names, 2)
             self.descriptions = ensure_min_nesting(self.descriptions, 2)
         if self.node_id not in SvIfcStore.id_map:
@@ -193,7 +166,7 @@ class SvIfcCreateEntity(
                         self.file,
                         ifc_class=self.ifc_class,
                         name=self.names[i][j],
-                        #description=self.descriptions[i][j],
+                        # description=self.descriptions[i][j],
                     )
                     try:
                         for repr in self.representations[i][j]:
@@ -266,9 +239,7 @@ class SvIfcCreateEntity(
                     pass
                 if entity.is_a() != self.ifc_class:
                     SvIfcStore.id_map[self.node_id][i].remove(step_id)
-                    entity = ifcopenshell.util.schema.reassign_class(
-                        self.file, entity, self.ifc_class
-                    )
+                    entity = ifcopenshell.util.schema.reassign_class(self.file, entity, self.ifc_class)
                 group_entities_ids.append(entity.id())
             entities_ids.append(group_entities_ids)
 
@@ -280,12 +251,10 @@ class SvIfcCreateEntity(
         if input[0]:
             if flag:
                 return [
-                    [a] if not (s := sum(j == a for j in input[:i])) else [f"{a}-{s+1}"]
-                    for i, a in enumerate(input)
+                    [a] if not (s := sum(j == a for j in input[:i])) else [f"{a}-{s+1}"] for i, a in enumerate(input)
                 ]
             input = [
-                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}"
-                for i, a in enumerate(input)
+                a if not (s := sum(j == a for j in input[:i])) else f"{a}-{s+1}" for i, a in enumerate(input)
             ]  # add number to duplicates
         return input
 

@@ -75,7 +75,9 @@ class PsetTemplatesData:
         pset_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "pset")
         files = os.listdir(pset_dir)
         for f in files:
-            results.append((os.path.join(pset_dir, f), os.path.splitext(os.path.basename(f))[0], "Global Pset Template"))
+            results.append(
+                (os.path.join(pset_dir, f), os.path.splitext(os.path.basename(f))[0], "Global Pset Template")
+            )
 
         pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
         if os.path.isdir(pset_dir):

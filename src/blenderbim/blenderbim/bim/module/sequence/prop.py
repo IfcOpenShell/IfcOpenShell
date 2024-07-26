@@ -355,6 +355,7 @@ def update_task_bar_list(self, context):
     else:
         tool.Sequence.remove_task_bar(self.ifc_definition_id)
 
+
 class Task(PropertyGroup):
     name: StringProperty(name="Name", update=updateTaskName)
     identification: StringProperty(name="Identification", update=updateTaskIdentification)

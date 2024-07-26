@@ -361,9 +361,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             description["colourscheme_query"] = query
             group.Description = json.dumps(description)
         else:
-            description = json.dumps(
-                {"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query}
-            )
+            description = json.dumps({"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query})
             group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):

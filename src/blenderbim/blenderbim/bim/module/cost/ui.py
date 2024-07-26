@@ -47,14 +47,14 @@ class BIM_PT_cost_schedules(Panel):
             row = self.layout.row(align=True)
             if CostSchedulesData.data["total_cost_schedules"]:
                 row.alignment = "RIGHT"
-                row.operator("bim.export_cost_schedules",icon="EXPORT",text="Export All Schedules")
+                row.operator("bim.export_cost_schedules", icon="EXPORT", text="Export All Schedules")
                 row = self.layout.row(align=True)
                 row.label(text=f"{CostSchedulesData.data['total_cost_schedules']} Cost Schedules Found", icon="TEXT")
             else:
                 row.label(text="No Cost Schedules found.", icon="TEXT")
 
             row.operator("bim.add_cost_schedule", icon="ADD", text="")
-            row.operator("bim.import_cost_schedule_csv",icon="IMPORT",text="")
+            row.operator("bim.import_cost_schedule_csv", icon="IMPORT", text="")
 
         for schedule in CostSchedulesData.data["schedules"]:
             self.draw_cost_schedule_ui(schedule)
@@ -96,9 +96,9 @@ class BIM_PT_cost_schedules(Panel):
                 text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
             )
             row.operator("bim.enable_editing_cost_items", text="", icon="OUTLINER").cost_schedule = cost_schedule["id"]
-            row.operator(
-                "bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL"
-            ).cost_schedule = cost_schedule["id"]
+            row.operator("bim.enable_editing_cost_schedule_attributes", text="", icon="GREASEPENCIL").cost_schedule = (
+                cost_schedule["id"]
+            )
             row.operator("bim.remove_cost_schedule", text="", icon="X").cost_schedule = cost_schedule["id"]
         if self.props.active_cost_schedule_id == cost_schedule["id"]:
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
@@ -616,9 +616,9 @@ class BIM_UL_cost_items_trait:
     def draw_parent_operator(self, row, cost_item_id):
         if self.props.active_cost_item_id:
             if self.props.active_cost_item_id != cost_item_id:
-                op = row.operator(
-                    "bim.change_parent_cost_item", text="", icon="LINKED", emboss=False
-                ).new_parent = cost_item_id
+                op = row.operator("bim.change_parent_cost_item", text="", icon="LINKED", emboss=False).new_parent = (
+                    cost_item_id
+                )
             else:
                 row.label(text="", icon="BLANK1")
 

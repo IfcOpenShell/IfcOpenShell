@@ -444,7 +444,6 @@ class Html(Json):
                 requirement["total_omitted_passes"] = total_passed_entities - entity_limit
                 requirement["has_omitted_passes"] = total_passed_entities > entity_limit
 
-
     def to_string(self) -> str:
         import pystache
 

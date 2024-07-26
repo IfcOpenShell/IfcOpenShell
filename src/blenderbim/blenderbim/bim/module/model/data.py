@@ -53,7 +53,7 @@ class AuthoringData:
         cls.data["ifc_element_type"] = cls.ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
-        cls.data["predefined_type"] = cls.predefined_type() # only after .relating_type_id()
+        cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
         cls.data["type_class"] = cls.type_class()
 
         # only after .type_class()

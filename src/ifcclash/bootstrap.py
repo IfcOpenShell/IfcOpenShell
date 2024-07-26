@@ -1,4 +1,3 @@
-
 # IfcClash - IFC-based clash detection.
 # Copyright (C) 2020, 2021 Dion Moult <dion@thinkmoult.com>
 #
@@ -18,4 +17,3 @@
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcclash.__main__
-
