@@ -1,5 +1,6 @@
 // keeps track of blenders connected
 const connectedClients = {};
+const allDrawings = {};
 let socket;
 
 // Document ready function
@@ -22,8 +23,14 @@ function connectSocket() {
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
-  //   socket.on("csv_data", handleCsvData);
+  socket.on("connect", handleWebConnect);
+  socket.on("drawings_data", handleDrawingsData);
   //   socket.on("default_data", handleDefaultData);
+}
+
+// function used to join drawings room
+function handleWebConnect() {
+  socket.emit("join_room", { room: "drawings" });
 }
 
 // Function to handle 'blender_connect' event
@@ -32,7 +39,7 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
-      filename: "",
+      ifc_file: "",
     };
   }
 }
@@ -42,7 +49,7 @@ function handleBlenderDisconnect(blenderId) {
   console.log("blender_disconnect: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
-    removeGanttElement(blenderId);
+    // remove(blenderId);
   }
 
   $("#blender-count").text(function (i, text) {
@@ -50,20 +57,41 @@ function handleBlenderDisconnect(blenderId) {
   });
 }
 
+function handleDrawingsData(blenderId) {
+  const blenderId = data["blenderId"];
+
+  console.log(data);
+
+  const filename = data["data"]["ifc_file"];
+  const drawings = data["data"]["drawings_data"]["drawings"];
+  const sheets = data["data"]["drawings_data"]["sheets"];
+
+  allDrawings[filename] = { drawings: drawings, sheets: sheets };
+
+  if (connectedClients.hasOwnProperty(blenderId)) {
+    if (!connectedClients[blenderId].shown) {
+      connectedClients[blenderId] = {
+        shown: true,
+        ifc_file: filename,
+      };
+      // add(blenderId, data, filename);
+    } else {
+      // update(blenderId, data, filename);
+    }
+  } else {
+    connectedClients[blenderId] = {
+      shown: true,
+      ifc_file: filename,
+    };
+    // add(blenderId, data, filename);
+  }
+}
+
 function setTheme(theme) {
-  var stylesheet = $("#tabulator-stylesheet");
   if (theme === "light") {
-    stylesheet.attr(
-      "href",
-      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site.min.css"
-    );
     $("html").removeClass("dark").addClass("light");
     $("#toggle-theme").html('<i class="fas fa-sun"></i>');
   } else {
-    stylesheet.attr(
-      "href",
-      "https://unpkg.com/tabulator-tables/dist/css/tabulator_site_dark.min.css"
-    );
     $("html").removeClass("light").addClass("dark");
     $("#toggle-theme").html('<i class="fas fa-moon"></i>');
   }
