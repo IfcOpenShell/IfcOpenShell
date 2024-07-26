@@ -68,8 +68,7 @@ class BIM_PT_bsdd(Panel):
                 row = box.row(align=True)
                 row.label(text="Version")
                 row.label(text=selected_domain.version)
-                box.label(text="URI:")
-                box.label(text=selected_domain.uri)
+                box.operator("bim.open_uri", text="Open bSDD In Browser", icon="URL").uri = selected_domain.uri
 
         else:
             row = self.layout.row()
@@ -99,3 +98,4 @@ class BIM_UL_bsdd_classifications(UIList):
             row = layout.row(align=True)
             row.label(text=item.reference_code)
             row.label(text=item.name)
+            row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
