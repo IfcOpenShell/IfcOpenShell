@@ -34,6 +34,7 @@ ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 # NOTE: Some values in TypedDicts are actually not guaranteed to be provided
 # and should be typed with NotRequired.
 
+
 class DictionaryContractV1(TypedDict):
     uri: str
     name: str
