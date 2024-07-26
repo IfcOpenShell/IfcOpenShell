@@ -79,14 +79,18 @@ class BIM_PT_bsdd(Panel):
 class BIM_UL_bsdd_domains(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
+            props = context.scene.BIMBSDDProperties
             row = layout.row(align=True)
             if item.status != "Active":
                 row.label(text=f"{item.name} ({item.organization_name_owner}) - {item.status}", icon="ERROR")
             else:
                 row.label(text=f"{item.name} ({item.organization_name_owner})")
-            op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
-            op.name = item.name
-            op.uri = item.uri
+            if item.uri == props.active_uri:
+                row.label(text="", icon="URL")
+            else:
+                op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
+                op.name = item.name
+                op.uri = item.uri
 
 
 class BIM_UL_bsdd_classifications(UIList):
