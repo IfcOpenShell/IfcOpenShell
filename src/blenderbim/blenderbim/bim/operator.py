@@ -83,6 +83,7 @@ class SwitchTab(bpy.types.Operator):
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
+    bl_description = "Open the URL in your Web Browser"
     uri: bpy.props.StringProperty()
 
     def execute(self, context):
@@ -811,20 +812,6 @@ class RemoveIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_open_webbrowser(bpy.types.Operator):
-    bl_idname = "bim.open_webbrowser"
-    bl_description = "Open the URL in your Web Browser"
-    bl_label = "Open URL"
-
-    url: bpy.props.StringProperty()
-
-    def execute(self, context):
-        import webbrowser
-
-        webbrowser.open(self.url)
-        return {"FINISHED"}
-
-
 class FetchObjectPassport(bpy.types.Operator):
     bl_idname = "bim.fetch_object_passport"
     bl_label = "Fetch Object Passport"
@@ -986,7 +973,7 @@ class BIM_OT_show_description(bpy.types.Operator):
         for line in wrapper.wrap(self.attr_name + " : " + self.description):
             layout.label(text=line)
         if self.url:
-            url_op = layout.operator("bim.open_webbrowser", icon="URL", text="Online IFC Documentation")
+            url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
             url_op.url = self.url
 
     @classmethod
