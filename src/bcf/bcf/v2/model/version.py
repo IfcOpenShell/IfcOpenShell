@@ -10,12 +10,12 @@ class Version:
             "name": "DetailedVersion",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     version_id: Optional[str] = field(
         default=None,
         metadata={
             "name": "VersionId",
             "type": "Attribute",
-        }
+        },
     )

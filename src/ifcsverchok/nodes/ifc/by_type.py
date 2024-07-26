@@ -108,17 +108,15 @@ class SvIfcByType(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "ifc_product").prop_name = "ifc_product"
         self.inputs.new("SvStringsSocket", "ifc_class").prop_name = "ifc_class"
-        self.inputs.new(
-            "SvStringsSocket", "custom_ifc_class"
-        ).prop_name = "custom_ifc_class"
+        self.inputs.new("SvStringsSocket", "custom_ifc_class").prop_name = "custom_ifc_class"
         self.outputs.new("SvStringsSocket", "Entities")
         self.outputs.new("SvStringsSocket", "Entity Ids")
         self.width = 200
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Get IFC element(s) in file by type. \nPick an IfcProduct and an IfcClass or give a custom IfcClass."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Get IFC element(s) in file by type. \nPick an IfcProduct and an IfcClass or give a custom IfcClass."
+        )
 
     def process(self):
         self.file = SvIfcStore.get_file()

@@ -17,7 +17,7 @@ class Component:
             "type": "Element",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
     authoring_tool_id: Optional[str] = field(
         default=None,
@@ -26,7 +26,7 @@ class Component:
             "type": "Element",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
     ifc_guid: Optional[str] = field(
         default=None,
@@ -35,7 +35,7 @@ class Component:
             "type": "Attribute",
             "length": 22,
             "pattern": r"[0-9A-Za-z_$]*",
-        }
+        },
     )
 
 
@@ -96,21 +96,21 @@ class ViewSetupHints:
         metadata={
             "name": "SpacesVisible",
             "type": "Attribute",
-        }
+        },
     )
     space_boundaries_visible: bool = field(
         default=False,
         metadata={
             "name": "SpaceBoundariesVisible",
             "type": "Attribute",
-        }
+        },
     )
     openings_visible: bool = field(
         default=False,
         metadata={
             "name": "OpeningsVisible",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -191,7 +191,7 @@ class ComponentColoringColorComponents:
             "name": "Component",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -202,7 +202,7 @@ class ComponentSelection:
         metadata={
             "name": "Component",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -216,7 +216,7 @@ class ComponentVisibilityExceptions:
         metadata={
             "name": "Component",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -249,6 +249,7 @@ class OrthogonalCamera:
         aspect_ratio: Proportional relationship between the width and
             the height of the view (w/h).
     """
+
     camera_view_point: Point = field(
         metadata={
             "name": "CameraViewPoint",
@@ -302,6 +303,7 @@ class PerspectiveCamera:
         aspect_ratio: Proportional relationship between the width and
             the height of the view (w/h).
     """
+
     camera_view_point: Point = field(
         metadata={
             "name": "CameraViewPoint",
@@ -371,21 +373,21 @@ class ComponentVisibility:
         metadata={
             "name": "ViewSetupHints",
             "type": "Element",
-        }
+        },
     )
     exceptions: Optional[ComponentVisibilityExceptions] = field(
         default=None,
         metadata={
             "name": "Exceptions",
             "type": "Element",
-        }
+        },
     )
     default_visibility: bool = field(
         default=False,
         metadata={
             "name": "DefaultVisibility",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -399,7 +401,7 @@ class VisualizationInfoBitmaps:
         metadata={
             "name": "Bitmap",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -413,7 +415,7 @@ class VisualizationInfoClippingPlanes:
         metadata={
             "name": "ClippingPlane",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -427,7 +429,7 @@ class VisualizationInfoLines:
         metadata={
             "name": "Line",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -438,7 +440,7 @@ class ComponentColoring:
         metadata={
             "name": "Color",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -449,21 +451,21 @@ class Components:
         metadata={
             "name": "Selection",
             "type": "Element",
-        }
+        },
     )
     visibility: Optional[ComponentVisibility] = field(
         default=None,
         metadata={
             "name": "Visibility",
             "type": "Element",
-        }
+        },
     )
     coloring: Optional[ComponentColoring] = field(
         default=None,
         metadata={
             "name": "Coloring",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -472,47 +474,48 @@ class VisualizationInfo:
     """
     VisualizationInfo documentation.
     """
+
     components: Optional[Components] = field(
         default=None,
         metadata={
             "name": "Components",
             "type": "Element",
-        }
+        },
     )
     orthogonal_camera: Optional[OrthogonalCamera] = field(
         default=None,
         metadata={
             "name": "OrthogonalCamera",
             "type": "Element",
-        }
+        },
     )
     perspective_camera: Optional[PerspectiveCamera] = field(
         default=None,
         metadata={
             "name": "PerspectiveCamera",
             "type": "Element",
-        }
+        },
     )
     lines: Optional[VisualizationInfoLines] = field(
         default=None,
         metadata={
             "name": "Lines",
             "type": "Element",
-        }
+        },
     )
     clipping_planes: Optional[VisualizationInfoClippingPlanes] = field(
         default=None,
         metadata={
             "name": "ClippingPlanes",
             "type": "Element",
-        }
+        },
     )
     bitmaps: Optional[VisualizationInfoBitmaps] = field(
         default=None,
         metadata={
             "name": "Bitmaps",
             "type": "Element",
-        }
+        },
     )
     guid: str = field(
         metadata={

@@ -5,6 +5,7 @@ Copyright (c) 2017-2020 Anthon van der Neut, Ruamel bvba
 
 original idea from https://stackoverflow.com/a/19722365/1307905
 """
+
 import zipfile
 from io import BytesIO
 from os import PathLike
@@ -13,8 +14,7 @@ from typing import Any, Optional, Protocol
 
 
 class ZipFileInterface(Protocol):
-    def writestr(self, filename_in_zip: str | zipfile.ZipInfo, file_contents: bytes | str) -> None:
-        ...
+    def writestr(self, filename_in_zip: str | zipfile.ZipInfo, file_contents: bytes | str) -> None: ...
 
 
 class InMemoryZipFile:

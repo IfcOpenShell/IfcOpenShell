@@ -27,18 +27,10 @@ from . import reporter
 parser = argparse.ArgumentParser(description="Uses an IDS to audit an IFC")
 parser.add_argument("ids", type=str, help="Path to an IDS")
 parser.add_argument("ifc", type=str, help="Path to an IFC", nargs="?")
-parser.add_argument(
-    "-r", "--reporter", type=str, help="The reporting method to view audit results", default="Console"
-)
-parser.add_argument(
-    "--no-color", help="Disable colour output (supported by Console reporting)", action="store_true"
-)
-parser.add_argument(
-    "--excel-safe", help="Make sure exported ODS is safely exported for Excel", action="store_true"
-)
-parser.add_argument(
-    "-o", "--output", help="Output file (supported for all types of reporting except Console)"
-)
+parser.add_argument("-r", "--reporter", type=str, help="The reporting method to view audit results", default="Console")
+parser.add_argument("--no-color", help="Disable colour output (supported by Console reporting)", action="store_true")
+parser.add_argument("--excel-safe", help="Make sure exported ODS is safely exported for Excel", action="store_true")
+parser.add_argument("-o", "--output", help="Output file (supported for all types of reporting except Console)")
 args = parser.parse_args()
 
 specs = ids.open(args.ids)

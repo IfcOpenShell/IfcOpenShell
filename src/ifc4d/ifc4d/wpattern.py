@@ -62,6 +62,7 @@ class AstaCalendarWorkPattern:
                         if wp["DayOfWeek"] == days[lang][index]:
                             wp["DayOfWeek"] = days["en"][index]
                             return
+
             translate_days(self.Days, self.dict_wp[-1])
 
         for day in self.Days["en"]:

@@ -38,7 +38,6 @@ from behave.__main__ import main as behave_main
 from logging import StreamHandler
 
 
-
 class TestRunner:
     def __init__(self, ifc_path, schema_path=None, ifc=None):
         IfcStore.path = ifc_path

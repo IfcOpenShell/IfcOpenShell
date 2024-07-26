@@ -17,4 +17,5 @@
 # along with IfcTester.  If not, see <http://www.gnu.org/licenses/>.
 
 from .ids import open
+
 __version__ = version = "0.0.0"

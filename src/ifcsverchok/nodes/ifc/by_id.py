@@ -38,9 +38,9 @@ class SvIfcById(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCo
         self.outputs.new("SvStringsSocket", "Entities")
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Get IFC element by step id. Takes one or multiple step ids."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Get IFC element by step id. Takes one or multiple step ids."
+        )
 
     def process(self):
         self.ids = flatten_data(self.inputs["id"].sv_get(), target_level=1)

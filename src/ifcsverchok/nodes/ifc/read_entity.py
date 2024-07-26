@@ -25,9 +25,7 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, ensure_min_nesting, flatten_data
 
 
-class SvIfcReadEntity(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcReadEntity"
     bl_label = "IFC Read Entity"
     entity: StringProperty(name="Entity Id", update=updateNode)
@@ -39,9 +37,7 @@ class SvIfcReadEntity(
         self.outputs.new("SvStringsSocket", "is_a")
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = (
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
             "Decompose an IfcEntity into its attributes. Takes one entity id as input"
         )
 

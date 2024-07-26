@@ -1,4 +1,5 @@
 """BCF XML V2 Topic handler."""
+
 import datetime
 import tempfile
 import uuid

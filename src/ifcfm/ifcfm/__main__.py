@@ -11,7 +11,13 @@ parser.add_argument(
     help="The FM standard to extract. Built-in preset standards include cobie24, cobie3, aohbsem, and basic.",
 )
 parser.add_argument("-i", "--ifc", type=str, required=True, help="The IFC file")
-parser.add_argument("-s", "--spreadsheet", type=str, default="output.ods", help="The spreadsheet file, or directory if the format is csv. Defaults to output.ods")
+parser.add_argument(
+    "-s",
+    "--spreadsheet",
+    type=str,
+    default="output.ods",
+    help="The spreadsheet file, or directory if the format is csv. Defaults to output.ods",
+)
 parser.add_argument(
     "-f", "--format", type=str, default="ods", help="The format, chosen from csv, ods, or xlsx. Defaults to ods."
 )

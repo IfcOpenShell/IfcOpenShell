@@ -10,7 +10,7 @@ class Project:
             "name": "Name",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     project_id: str = field(
         metadata={
@@ -29,7 +29,7 @@ class ProjectExtension:
             "name": "Project",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     extension_schema: str = field(
         metadata={

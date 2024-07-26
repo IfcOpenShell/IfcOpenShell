@@ -24,10 +24,12 @@ from pathlib import Path
 from typing import Dict, List
 
 import ifcopenshell as ios
+
 # import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+
 # import ifcopenshell.util.shape
 import numpy as np
 from jinja2 import Environment, FileSystemLoader

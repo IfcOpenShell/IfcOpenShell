@@ -86,12 +86,36 @@ class Csv2Ifc:
 
         task_relationships = self.parse_task_rel(row[self.headers["Relationships"]])
 
-        scheduled_start_date = ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleStart"]]) if row[self.headers["ScheduleStart"]] else None
-        scheduled_finish_date = ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleFinish"]]) if row[self.headers["ScheduleFinish"]] else None
-        scheduled_duration = ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]]) if row[self.headers["ScheduleDuration"]] else None
-        actual_start_date = ifcopenshell.util.date.string_to_date(row[self.headers["ActualStart"]]) if row[self.headers["ActualStart"]] else None
-        actual_finish_date = ifcopenshell.util.date.string_to_date(row[self.headers["ActualFinish"]]) if row[self.headers["ActualFinish"]] else None
-        actual_duration = ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]]) if row[self.headers["ActualDuration"]] else None
+        scheduled_start_date = (
+            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleStart"]])
+            if row[self.headers["ScheduleStart"]]
+            else None
+        )
+        scheduled_finish_date = (
+            ifcopenshell.util.date.string_to_date(row[self.headers["ScheduleFinish"]])
+            if row[self.headers["ScheduleFinish"]]
+            else None
+        )
+        scheduled_duration = (
+            ifcopenshell.util.date.string_to_duration(row[self.headers["ScheduleDuration"]])
+            if row[self.headers["ScheduleDuration"]]
+            else None
+        )
+        actual_start_date = (
+            ifcopenshell.util.date.string_to_date(row[self.headers["ActualStart"]])
+            if row[self.headers["ActualStart"]]
+            else None
+        )
+        actual_finish_date = (
+            ifcopenshell.util.date.string_to_date(row[self.headers["ActualFinish"]])
+            if row[self.headers["ActualFinish"]]
+            else None
+        )
+        actual_duration = (
+            ifcopenshell.util.date.string_to_duration(row[self.headers["ActualDuration"]])
+            if row[self.headers["ActualDuration"]]
+            else None
+        )
 
         return {
             "Hierarchy": hierarchy,
@@ -191,7 +215,7 @@ class Csv2Ifc:
                 self.file,
                 related_process=task_2,
                 relating_process=task_1,
-                sequence_type = rel_type,
+                sequence_type=rel_type,
             )
             if rel_type:
                 ifcopenshell.api.run(

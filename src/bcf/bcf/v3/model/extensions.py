@@ -15,7 +15,7 @@ class ExtensionsPriorities:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -32,7 +32,7 @@ class ExtensionsSnippetTypes:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -49,7 +49,7 @@ class ExtensionsStages:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -66,7 +66,7 @@ class ExtensionsTopicLabels:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -83,7 +83,7 @@ class ExtensionsTopicStatuses:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -100,7 +100,7 @@ class ExtensionsTopicTypes:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -117,7 +117,7 @@ class ExtensionsUsers:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
 
 
@@ -129,7 +129,7 @@ class Extensions:
             "name": "TopicTypes",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     topic_statuses: Optional[ExtensionsTopicStatuses] = field(
         default=None,
@@ -137,7 +137,7 @@ class Extensions:
             "name": "TopicStatuses",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     priorities: Optional[ExtensionsPriorities] = field(
         default=None,
@@ -145,7 +145,7 @@ class Extensions:
             "name": "Priorities",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     topic_labels: Optional[ExtensionsTopicLabels] = field(
         default=None,
@@ -153,7 +153,7 @@ class Extensions:
             "name": "TopicLabels",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     users: Optional[ExtensionsUsers] = field(
         default=None,
@@ -161,7 +161,7 @@ class Extensions:
             "name": "Users",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     snippet_types: Optional[ExtensionsSnippetTypes] = field(
         default=None,
@@ -169,7 +169,7 @@ class Extensions:
             "name": "SnippetTypes",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     stages: Optional[ExtensionsStages] = field(
         default=None,
@@ -177,5 +177,5 @@ class Extensions:
             "name": "Stages",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )

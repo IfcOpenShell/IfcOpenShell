@@ -12,7 +12,7 @@ class Project:
             "namespace": "",
             "min_length": 1,
             "white_space": "collapse",
-        }
+        },
     )
     project_id: str = field(
         metadata={

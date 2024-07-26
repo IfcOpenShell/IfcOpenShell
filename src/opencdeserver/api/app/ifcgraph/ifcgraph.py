@@ -28,24 +28,24 @@ from py2neo import Graph
 def create_pure_node_from_ifc_entity(ifc_entity, ifc_file, hierarchy=True):
     node = Node()
     if ifc_entity.id() != 0:
-        node['id'] = ifc_entity.id()
+        node["id"] = ifc_entity.id()
     else:
-        node['id'] = str(uuid4())
-    node['name'] = ifc_entity.is_a()
+        node["id"] = str(uuid4())
+    node["name"] = ifc_entity.is_a()
     if hierarchy:
         for label in ifc_file.wrapped_data.types_with_super():
             if ifc_entity.is_a(label):
                 node.add_label(label)
     else:
         node.add_label(ifc_entity.is_a())
-    attributes_type = ['ENTITY INSTANCE', 'AGGREGATE OF ENTITY INSTANCE', 'DERIVED']
+    attributes_type = ["ENTITY INSTANCE", "AGGREGATE OF ENTITY INSTANCE", "DERIVED"]
     for i in range(ifc_entity.__len__()):
         if not ifc_entity.wrapped_data.get_argument_type(i) in attributes_type:
             name = ifc_entity.wrapped_data.get_argument_name(i)
             name_value = ifc_entity.wrapped_data.get_argument(i)
-            node[name]= name_value
-    node.__primarylabel__ = 'Root'
-    node.__primarykey__ = 'id'
+            node[name] = name_value
+    node.__primarylabel__ = "Root"
+    node.__primarykey__ = "id"
     return node
 
 
@@ -55,14 +55,14 @@ def create_graph_from_ifc_entity_all(graph, ifc_entity, ifc_file):
     graph.merge(node)
     for i in range(ifc_entity.__len__()):
         if ifc_entity[i]:
-            if ifc_entity.wrapped_data.get_argument_type(i) == 'ENTITY INSTANCE':
-                if ifc_entity[i].is_a() in ['IfcOwnerHistory'] and ifc_entity.is_a() != 'IfcProject':
+            if ifc_entity.wrapped_data.get_argument_type(i) == "ENTITY INSTANCE":
+                if ifc_entity[i].is_a() in ["IfcOwnerHistory"] and ifc_entity.is_a() != "IfcProject":
                     continue
                 else:
                     sub_node = create_pure_node_from_ifc_entity(ifc_entity[i], ifc_file)
                     REL = Relationship(node, ifc_entity.wrapped_data.get_argument_name(i), sub_node)
                     graph.merge(REL)
-            elif ifc_entity.wrapped_data.get_argument_type(i) == 'AGGREGATE OF ENTITY INSTANCE':
+            elif ifc_entity.wrapped_data.get_argument_type(i) == "AGGREGATE OF ENTITY INSTANCE":
                 for sub_entity in ifc_entity[i]:
                     sub_node = create_pure_node_from_ifc_entity(sub_entity, ifc_file)
                     REL = Relationship(node, ifc_entity.wrapped_data.get_argument_name(i), sub_node)
@@ -83,7 +83,7 @@ def create_full_graph(graph, ifc_file):
     length = len(ifc_file.wrapped_data.entity_names())
     for entity_id in ifc_file.wrapped_data.entity_names():
         entity = ifc_file.by_id(entity_id)
-        print(idx, '/', length, entity)
+        print(idx, "/", length, entity)
         create_graph_from_ifc_entity_all(graph, entity, ifc_file)
         idx += 1
     return

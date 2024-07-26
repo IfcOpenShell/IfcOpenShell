@@ -34,7 +34,7 @@ class BimSnippet:
         metadata={
             "name": "isExternal",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -64,7 +64,7 @@ class HeaderFile:
             "name": "Filename",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     date: Optional[XmlDateTime] = field(
         default=None,
@@ -72,7 +72,7 @@ class HeaderFile:
             "name": "Date",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     reference: Optional[str] = field(
         default=None,
@@ -80,7 +80,7 @@ class HeaderFile:
             "name": "Reference",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     ifc_project: Optional[str] = field(
         default=None,
@@ -89,7 +89,7 @@ class HeaderFile:
             "type": "Attribute",
             "length": 22,
             "pattern": r"[0-9,A-Z,a-z,_$]*",
-        }
+        },
     )
     ifc_spatial_structure_element: Optional[str] = field(
         default=None,
@@ -98,14 +98,14 @@ class HeaderFile:
             "type": "Attribute",
             "length": 22,
             "pattern": r"[0-9,A-Z,a-z,_$]*",
-        }
+        },
     )
     is_external: bool = field(
         default=True,
         metadata={
             "name": "isExternal",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -120,7 +120,7 @@ class TopicDocumentReference:
             "name": "ReferencedDocument",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     description: Optional[str] = field(
         default=None,
@@ -128,7 +128,7 @@ class TopicDocumentReference:
             "name": "Description",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     guid: Optional[str] = field(
         default=None,
@@ -136,14 +136,14 @@ class TopicDocumentReference:
             "name": "Guid",
             "type": "Attribute",
             "pattern": r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}",
-        }
+        },
     )
     is_external: bool = field(
         default=False,
         metadata={
             "name": "isExternal",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -170,7 +170,7 @@ class ViewPoint:
             "name": "Viewpoint",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     snapshot: Optional[str] = field(
         default=None,
@@ -178,7 +178,7 @@ class ViewPoint:
             "name": "Snapshot",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     index: Optional[int] = field(
         default=None,
@@ -186,7 +186,7 @@ class ViewPoint:
             "name": "Index",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     guid: str = field(
         metadata={
@@ -230,7 +230,7 @@ class Comment:
             "name": "Viewpoint",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     modified_date: Optional[XmlDateTime] = field(
         default=None,
@@ -238,7 +238,7 @@ class Comment:
             "name": "ModifiedDate",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     modified_author: Optional[str] = field(
         default=None,
@@ -246,7 +246,7 @@ class Comment:
             "name": "ModifiedAuthor",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     guid: str = field(
         metadata={
@@ -267,7 +267,7 @@ class Header:
             "type": "Element",
             "namespace": "",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -279,7 +279,7 @@ class Topic:
             "name": "ReferenceLink",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     title: str = field(
         metadata={
@@ -295,7 +295,7 @@ class Topic:
             "name": "Priority",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     index: Optional[int] = field(
         default=None,
@@ -303,7 +303,7 @@ class Topic:
             "name": "Index",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     labels: List[str] = field(
         default_factory=list,
@@ -311,7 +311,7 @@ class Topic:
             "name": "Labels",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     creation_date: XmlDateTime = field(
         metadata={
@@ -335,7 +335,7 @@ class Topic:
             "name": "ModifiedDate",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     modified_author: Optional[str] = field(
         default=None,
@@ -343,7 +343,7 @@ class Topic:
             "name": "ModifiedAuthor",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     due_date: Optional[XmlDateTime] = field(
         default=None,
@@ -351,7 +351,7 @@ class Topic:
             "name": "DueDate",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     assigned_to: Optional[str] = field(
         default=None,
@@ -359,7 +359,7 @@ class Topic:
             "name": "AssignedTo",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     stage: Optional[str] = field(
         default=None,
@@ -367,7 +367,7 @@ class Topic:
             "name": "Stage",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     description: Optional[str] = field(
         default=None,
@@ -375,7 +375,7 @@ class Topic:
             "name": "Description",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     bim_snippet: Optional[BimSnippet] = field(
         default=None,
@@ -383,7 +383,7 @@ class Topic:
             "name": "BimSnippet",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     document_reference: List[TopicDocumentReference] = field(
         default_factory=list,
@@ -391,7 +391,7 @@ class Topic:
             "name": "DocumentReference",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     related_topic: List[TopicRelatedTopic] = field(
         default_factory=list,
@@ -399,7 +399,7 @@ class Topic:
             "name": "RelatedTopic",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     guid: str = field(
         metadata={
@@ -414,14 +414,14 @@ class Topic:
         metadata={
             "name": "TopicType",
             "type": "Attribute",
-        }
+        },
     )
     topic_status: Optional[str] = field(
         default=None,
         metadata={
             "name": "TopicStatus",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -433,7 +433,7 @@ class Markup:
             "name": "Header",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     topic: Topic = field(
         metadata={
@@ -449,7 +449,7 @@ class Markup:
             "name": "Comment",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )
     viewpoints: List[ViewPoint] = field(
         default_factory=list,
@@ -457,5 +457,5 @@ class Markup:
             "name": "Viewpoints",
             "type": "Element",
             "namespace": "",
-        }
+        },
     )

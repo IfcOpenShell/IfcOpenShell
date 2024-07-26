@@ -1,4 +1,3 @@
-
 import collections
 import os
 import shutil
@@ -6,7 +5,7 @@ import traceback
 import sys
 
 from fastapi import HTTPException, status, APIRouter, Request, Depends
-from fastapi import  UploadFile, Form
+from fastapi import UploadFile, Form
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.encoders import jsonable_encoder
@@ -87,12 +86,15 @@ templates = Jinja2Templates(directory="templates")
 
 
 @router.post("/documents/1.0/upload-documents", tags=[""])
-def upload_documents_post(upload_documents: UploadDocuments,
-                          current_user: User = Depends(get_current_active_user)) -> DocumentUploadSessionInitialization:
+def upload_documents_post(
+    upload_documents: UploadDocuments, current_user: User = Depends(get_current_active_user)
+) -> DocumentUploadSessionInitialization:
     post_upload_documents_response = doc_db.post_upload_documents(upload_documents, current_user)
-    doc_db.debug(endpoint='upload_documents_post',
-                 request={'upload_documents': upload_documents},
-                 response=post_upload_documents_response.dict())
+    doc_db.debug(
+        endpoint="upload_documents_post",
+        request={"upload_documents": upload_documents},
+        response=post_upload_documents_response.dict(),
+    )
     return post_upload_documents_response
 
 
@@ -101,20 +103,23 @@ def upload_documents_post(upload_documents: UploadDocuments,
 def upload_documents_get(request: Request, upload_session: UUID):
 
     data_for_upload_documents = doc_db.get_data_for_upload_documents(upload_session)
-    print('Data for site: ', data_for_upload_documents)
+    print("Data for site: ", data_for_upload_documents)
 
     return templates.TemplateResponse(
-        'upload_files.html',
-        {'request': request,
-         'upload_session': upload_session,
-         'username': data_for_upload_documents.current_user.username,
-         'email': data_for_upload_documents.current_user.email,
-         'full_name': data_for_upload_documents.current_user.full_name,
-         'server_context': data_for_upload_documents.server_context,
-         'callback_url': data_for_upload_documents.callback.url,
-         'callback_expires_in': data_for_upload_documents.callback.expires_in,
-         'documents': data_for_upload_documents.documents,
-         'projects': data_for_upload_documents.projects})
+        "upload_files.html",
+        {
+            "request": request,
+            "upload_session": upload_session,
+            "username": data_for_upload_documents.current_user.username,
+            "email": data_for_upload_documents.current_user.email,
+            "full_name": data_for_upload_documents.current_user.full_name,
+            "server_context": data_for_upload_documents.server_context,
+            "callback_url": data_for_upload_documents.callback.url,
+            "callback_expires_in": data_for_upload_documents.callback.expires_in,
+            "documents": data_for_upload_documents.documents,
+            "projects": data_for_upload_documents.projects,
+        },
+    )
 
 
 @router.post("/documents/1.0/save-metadata-for-documents", tags=[""])
@@ -127,29 +132,29 @@ async def save_metadata_for_documents_post(request: Request) -> list:
     print(form_data_json)
 
     documents = collections.defaultdict(dict)
-    names = ('session_file_id', 'document', 'title', 'version_number', 'filename')
+    names = ("session_file_id", "document", "title", "version_number", "filename")
 
     for whole_form_key, value in form_data_json.items():
         if whole_form_key.startswith(names):
             start_form_key, document_id = whole_form_key.split("@", 1)
-            print('New field: ', start_form_key, ' for document id: ', document_id)
+            print("New field: ", start_form_key, " for document id: ", document_id)
             documents[document_id][start_form_key] = value
 
     print("Documents: ")
     print(documents)
 
-    username = form_data_json['username']
-    upload_session = form_data_json['upload_session']
-    server_context = form_data_json['server_context']
-    callback_url = form_data_json['callback_url']
-    callback_expires_in = form_data_json['callback_expires_in']
-    project = form_data_json['project']
+    username = form_data_json["username"]
+    upload_session = form_data_json["upload_session"]
+    server_context = form_data_json["server_context"]
+    callback_url = form_data_json["callback_url"]
+    callback_expires_in = form_data_json["callback_expires_in"]
+    project = form_data_json["project"]
 
     documents_saved = list()
 
     for key in documents:
         try:
-            documents[key]['project'] = project
+            documents[key]["project"] = project
             document = DocumentMetadata(**documents[key])
             save_metadata_response = doc_db.save_metadata_for_documents(document, upload_session, username)
             documents_saved.append(save_metadata_response)
@@ -157,9 +162,11 @@ async def save_metadata_for_documents_post(request: Request) -> list:
             print(e)
             continue
 
-    doc_db.debug(endpoint='save_metadata_for_documents_post',
-                 request={'documents': documents},
-                 response={'response': documents_saved})
+    doc_db.debug(
+        endpoint="save_metadata_for_documents_post",
+        request={"documents": documents},
+        response={"response": documents_saved},
+    )
 
     return documents_saved
 
@@ -167,21 +174,29 @@ async def save_metadata_for_documents_post(request: Request) -> list:
 # http://localhost:8080/cde-callback-example?upload_documents_url=
 # https%3A%2F%2Fcde.example.com%2Fupload-instructions%3Fupload_session%3Dee56b8f3-8f93-4819-976e-46a45a5a996f
 
+
 @router.post("/documents/1.0/upload-instructions", tags=[""])
-def upload_instructions(session_id: str, server_context: str, upload_files: UploadFileDetails,
-                        current_user: User = Depends(get_current_active_user)) -> DocumentsToUpload:
+def upload_instructions(
+    session_id: str,
+    server_context: str,
+    upload_files: UploadFileDetails,
+    current_user: User = Depends(get_current_active_user),
+) -> DocumentsToUpload:
     documents_to_upload_model = DocumentsToUpload()
     documents_to_upload_model.server_context = server_context
     documents_to_upload_model.documents_to_upload = list()
     for upload_file in upload_files.files:
-        get_upload_instructions_response = doc_db.get_upload_instructions(session_id, server_context, upload_file, current_user)
-        doc_db.debug(endpoint='upload_instructions',
-                     request={'session_id': session_id,
-                              'server_context': server_context,
-                              'document': upload_file},
-                     response=get_upload_instructions_response.dict())
+        get_upload_instructions_response = doc_db.get_upload_instructions(
+            session_id, server_context, upload_file, current_user
+        )
+        doc_db.debug(
+            endpoint="upload_instructions",
+            request={"session_id": session_id, "server_context": server_context, "document": upload_file},
+            response=get_upload_instructions_response.dict(),
+        )
         documents_to_upload_model.documents_to_upload.append(get_upload_instructions_response)
     return documents_to_upload_model
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 # summary: 'Upload a single file part'
@@ -206,8 +221,7 @@ def upload_instructions(session_id: str, server_context: str, upload_files: Uplo
 
 
 @router.post("/documents/1.0/upload-part/{part_id}", tags=[""])
-async def upload_part(part_id: str, request: Request,
-                current_user: User = Depends(get_current_active_user)):
+async def upload_part(part_id: str, request: Request, current_user: User = Depends(get_current_active_user)):
 
     # file_name = doc_db.safe_path(part_id)
     file_name = part_id
@@ -222,33 +236,31 @@ async def upload_part(part_id: str, request: Request,
 
         # try to receive the uploaded part
         try:
-            print('File contents: ', request_body)
+            print("File contents: ", request_body)
 
             # use document_id instead as dir_name
             # dir_name = doc_db.safe_path(document.document_id)
             dir_name = document.document_id
 
-            path = './data/document_parts/' + dir_name + '/'
+            path = "./data/document_parts/" + dir_name + "/"
 
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            with open(path + file_name, 'wb') as f:
+            with open(path + file_name, "wb") as f:
                 f.write(request_body)
 
         except Exception:
-            print('Error uploading file')
+            print("Error uploading file")
             print(traceback.format_exc())
-            print('Error uploading file')
+            print("Error uploading file")
             print(sys.exc_info()[2])
 
         finally:
             # We will write to the database, information about part successfully uploaded.
             doc_db.mark_part_as_uploaded(part_id, current_user)
 
-        doc_db.debug(endpoint='upload-part',
-                     request={'part_id': part_id},
-                     response={'uploaded': True})
+        doc_db.debug(endpoint="upload-part", request={"part_id": part_id}, response={"uploaded": True})
 
         return {"message": f"Successfully uploaded part {file_name}"}
 
@@ -269,9 +281,11 @@ async def upload_part(part_id: str, request: Request,
 # /server-provided-path-document-upload-cancellation
 # description: This operation should be called to cancel the upload
 
+
 @router.post("/documents/1.0/upload-completion", tags=[""])
-def upload_completion(upload_session: str,
-                      current_user: User = Depends(get_current_active_user)) -> Union[DocumentVersion, bool]:
+def upload_completion(
+    upload_session: str, current_user: User = Depends(get_current_active_user)
+) -> Union[DocumentVersion, bool]:
 
     # check if all parts really are marked as uploaded in database
     # retrieve document_id, file_type, file_ending, and parts_id (in order)
@@ -280,23 +294,23 @@ def upload_completion(upload_session: str,
         raise HTTPException(status_code=400, detail="All parts not uploaded.")
 
     parts = doc_db.retrieve_uploaded_parts(upload_session, current_user)
-    print('Number of parts: ' + str(len(parts)))
+    print("Number of parts: " + str(len(parts)))
     document = doc_db.get_document_from_session(upload_session, current_user)
 
     # check if all parts really are uploaded to document_id-dir
     document_name = doc_db.safe_path(document.document_id)
 
-    path = './data/document_parts/' + document_name + '/'
+    path = "./data/document_parts/" + document_name + "/"
 
     for part in parts:
         part = doc_db.safe_path(part)
-        print('Checking for part ' + part + ' in dir ' + path)
+        print("Checking for part " + part + " in dir " + path)
 
         if not os.path.isfile(path + part):
-            print(part + ' is not in dir ' + path)
+            print(part + " is not in dir " + path)
             raise HTTPException(status_code=400, detail="All parts not in dir.")
         else:
-            print(part + ' is in dir ' + path)
+            print(part + " is in dir " + path)
 
     # merge parts to a new temporary document
     temp_doc_path = path
@@ -304,14 +318,14 @@ def upload_completion(upload_session: str,
     if not os.path.exists(temp_doc_path):
         os.makedirs(temp_doc_path)
 
-    new_doc_path = './data/documents/'
+    new_doc_path = "./data/documents/"
     new_doc_path_name = new_doc_path + document.file_description.name
 
     # Read parts and write to temp doc.
-    with open(temp_doc_file_name, 'ab') as temp_doc:
+    with open(temp_doc_file_name, "ab") as temp_doc:
         for part in parts:
             part = doc_db.safe_path(part)
-            with open(temp_doc_path + part, 'rb') as part_doc:
+            with open(temp_doc_path + part, "rb") as part_doc:
                 temp_doc.write(part_doc.read())
 
     # move document to new location in documents dir
@@ -329,12 +343,11 @@ def upload_completion(upload_session: str,
         # get DocumentVersion
         document = doc_db.get_document_version(document.document_id, document.version_index, current_user)
 
-        doc_db.debug(endpoint='upload_completion',
-                     request={'upload_session': upload_session},
-                     response=document.dict())
+        doc_db.debug(endpoint="upload_completion", request={"upload_session": upload_session}, response=document.dict())
         return document
     else:
         return False
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 # summary: 'Cancel the upload of a single file'
@@ -355,14 +368,14 @@ def upload_cancellation(upload_session: str, current_user: User = Depends(get_cu
 
         # clean temp dir
         document_name = doc_db.safe_path(document.document_id)
-        path = './data/document_parts/' + document_name + '/'
+        path = "./data/document_parts/" + document_name + "/"
         shutil.rmtree(path)
 
     except Exception as e:
         print(e)
 
     finally:
-        print('Upload cancellation complete.')
+        print("Upload cancellation complete.")
 
     return
 
@@ -399,17 +412,17 @@ def upload_cancellation(upload_session: str, current_user: User = Depends(get_cu
 # that has been flagged to have a new version in the response.
 #
 
+
 @router.post("/documents/1.0/document-versions", tags=[""])
-def document_versions_post(document_ids: List[UUID],
-                           current_user: User = Depends(get_current_active_user)) -> List[DocumentVersion]:
+def document_versions_post(
+    document_ids: List[UUID], current_user: User = Depends(get_current_active_user)
+) -> List[DocumentVersion]:
 
     document_versions = list()
     for document_id in document_ids:
         document_versions.append(doc_db.get_document_version(document_id, 1, current_user))
 
-    doc_db.debug(endpoint='document_versions_post',
-                 request={document_ids},
-                 response={document_versions})
+    doc_db.debug(endpoint="document_versions_post", request={document_ids}, response={document_versions})
 
     return document_versions
 
@@ -460,12 +473,15 @@ def document_versions_post(document_ids: List[UUID],
 
 
 @router.post("/documents/1.0/select-documents", tags=[""])
-def select_documents_post(select_documents: SelectDocuments,
-                          current_user: User = Depends(get_current_active_user)) -> DocumentDiscoverySessionInitialization:
+def select_documents_post(
+    select_documents: SelectDocuments, current_user: User = Depends(get_current_active_user)
+) -> DocumentDiscoverySessionInitialization:
     post_select_documents_response = doc_db.post_select_documents(select_documents, current_user)
-    doc_db.debug(endpoint='select_documents_post',
-                 request={'select_documents': select_documents},
-                 response=post_select_documents_response.dict())
+    doc_db.debug(
+        endpoint="select_documents_post",
+        request={"select_documents": select_documents},
+        response=post_select_documents_response.dict(),
+    )
     print("Returns ", post_select_documents_response)
     return post_select_documents_response
 
@@ -490,19 +506,22 @@ def select_documents_post(select_documents: SelectDocuments,
 
 # documents/1.0/document-selection?selection_session=7cf3dd70-c880-4fb1-9897-f60472959533
 
+
 @router.get("/documents/1.0/document-selection", tags=[""], response_class=HTMLResponse)
-def selected_documents_get(request: Request,
-                           selection_session: UUID):
+def selected_documents_get(request: Request, selection_session: UUID):
     data_for_document_selection = doc_db.get_data_for_document_selection(selection_session)
     return templates.TemplateResponse(
-        'select_files.html',
-        {'request': request,
-         'selection_session': selection_session,
-         'current_user': data_for_document_selection.current_user,
-         'server_context': data_for_document_selection.server_context,
-         'callback_url': data_for_document_selection.callback.url,
-         'callback_expires_in': data_for_document_selection.callback.expires_in,
-         'projects': data_for_document_selection.projects})
+        "select_files.html",
+        {
+            "request": request,
+            "selection_session": selection_session,
+            "current_user": data_for_document_selection.current_user,
+            "server_context": data_for_document_selection.server_context,
+            "callback_url": data_for_document_selection.callback.url,
+            "callback_expires_in": data_for_document_selection.callback.expires_in,
+            "projects": data_for_document_selection.projects,
+        },
+    )
 
 
 @router.post("/documents/1.0/mark-documents-as-selected", tags=[""])
@@ -516,44 +535,51 @@ async def mark_documents_as_selected_post(request: Request) -> DocumentsMarkedAs
 
     documents = list()
     for key, value in form_data_json.items():
-        if 'document_' in key:
+        if "document_" in key:
             document_id = key.split("ocument_", 1)[1]
             documents.append(document_id)
 
     print("Sends ", documents)
 
-    get_selected_response = doc_db.post_mark_documents_as_selected(documents, form_data_json['selection_session'])
-    doc_db.debug(endpoint='mark_some_documents_as_selected_post',
-                 request={'documents': documents,
-                          'form_data_json[selection_session]': form_data_json['selection_session']},
-                 response=get_selected_response.dict())
+    get_selected_response = doc_db.post_mark_documents_as_selected(documents, form_data_json["selection_session"])
+    doc_db.debug(
+        endpoint="mark_some_documents_as_selected_post",
+        request={"documents": documents, "form_data_json[selection_session]": form_data_json["selection_session"]},
+        response=get_selected_response.dict(),
+    )
 
     return get_selected_response
 
 
 @router.get("/documents/1.0/download-instructions", tags=[""])
-def download_instructions(session_id: UUID, server_context: str,
-                          current_user: User = Depends(get_current_active_user)) -> SelectedDocuments:
+def download_instructions(
+    session_id: UUID, server_context: str, current_user: User = Depends(get_current_active_user)
+) -> SelectedDocuments:
     get_download_instructions_response = doc_db.get_download_instructions(session_id, server_context, current_user)
-    doc_db.debug(endpoint='download_instructions',
-                 request={'session_id': session_id,
-                          'server_context': server_context},
-                 response=get_download_instructions_response.dict())
+    doc_db.debug(
+        endpoint="download_instructions",
+        request={"session_id": session_id, "server_context": server_context},
+        response=get_download_instructions_response.dict(),
+    )
     return get_download_instructions_response
 
 
 # download links
 
+
 @router.get("/documents/1.0/document/{document_id}/version/{version_index}", tags=[""])
-def document_version(document_id: str, version_index: int,
-                     current_user: User = Depends(get_current_active_user)) -> DocumentVersion:
+def document_version(
+    document_id: str, version_index: int, current_user: User = Depends(get_current_active_user)
+) -> DocumentVersion:
     # This endpoint returns the document version model itself.
     get_document_version = doc_db.get_document_version(document_id, version_index, current_user)
-    doc_db.debug(endpoint='document_version',
-                 request={'document_id': document_id,
-                          'version_index': version_index},
-                 response=get_document_version.dict())
+    doc_db.debug(
+        endpoint="document_version",
+        request={"document_id": document_id, "version_index": version_index},
+        response=get_document_version.dict(),
+    )
     return get_document_version
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 # summary: 'Get document metadata for a single document'
@@ -573,15 +599,20 @@ def document_version(document_id: str, version_index: int,
 
 
 @router.get("/documents/1.0/document/{document_id}/version/{version_index}/metadata", tags=[""])
-def document_version_metadata(document_id: str, version_index: int,
-                              current_user: User = Depends(get_current_active_user)) -> DocumentMetadataEntries:
+def document_version_metadata(
+    document_id: str, version_index: int, current_user: User = Depends(get_current_active_user)
+) -> DocumentMetadataEntries:
     # The metadata for document versions is a list of key-value pairs
-    get_document_version_metadata_result = doc_db.get_document_version_metadata(document_id, version_index, current_user)
-    doc_db.debug(endpoint='document_version',
-                 request={'document_id': document_id,
-                          'version_index': version_index},
-                 response=get_document_version_metadata_result.dict())
+    get_document_version_metadata_result = doc_db.get_document_version_metadata(
+        document_id, version_index, current_user
+    )
+    doc_db.debug(
+        endpoint="document_version",
+        request={"document_id": document_id, "version_index": version_index},
+        response=get_document_version_metadata_result.dict(),
+    )
     return get_document_version_metadata_result
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 # summary: 'Download the document'
@@ -601,47 +632,48 @@ def document_version_metadata(document_id: str, version_index: int,
 
 
 @router.get("/documents/1.0/document/{document_id}/version/{version_index}/download", tags=[""])
-def document_version_download(document_id: str, version_index: int,
-                              current_user: User = Depends(get_current_active_user)) -> FileResponse:
+def document_version_download(
+    document_id: str, version_index: int, current_user: User = Depends(get_current_active_user)
+) -> FileResponse:
     # The url to download the binary content of this document version.
     # May either directly return the result or redirect to a storage provider
-    keep_characters = (' ', '.', '_', '-')
+    keep_characters = (" ", ".", "_", "-")
     document_id = "".join(c for c in document_id if c.isalnum() or c in keep_characters).rstrip()
-    file_location = './data/documents/' + document_id + '.ifc'
-    return FileResponse(file_location,
-                        media_type='application/x-step',
-                        filename='6dbd4d52-14db-11ee-be56-0242ac120002.ifc')
+    file_location = "./data/documents/" + document_id + ".ifc"
+    return FileResponse(
+        file_location, media_type="application/x-step", filename="6dbd4d52-14db-11ee-be56-0242ac120002.ifc"
+    )
 
 
 @router.get("/documents/1.0/document/{document_id}/version/{version_index}/versions", tags=[""])
-def document_versions(document_id: str, version_index: int,
-                      current_user: User = Depends(get_current_active_user)) -> DocumentVersions:
+def document_versions(
+    document_id: str, version_index: int, current_user: User = Depends(get_current_active_user)
+) -> DocumentVersions:
     # This url returns a list of all document versions for the parent document.
     # The client can use this URL to monitor for new document versions
     get_document_versions_result = doc_db.get_document_versions(document_id, current_user)
-    doc_db.debug(endpoint='document_version',
-                 request={'document_id': document_id},
-                 response=get_document_versions_result.dict())
+    doc_db.debug(
+        endpoint="document_version", request={"document_id": document_id}, response=get_document_versions_result.dict()
+    )
     return get_document_versions_result
 
 
-@router.get("/documents/1.0/document/{document_id}/version/{version_index}/details", tags=[""],
-            response_class=HTMLResponse)
-def document_version_details(request: Request,
-                             document_id: str,
-                             version_index: int,
-                             current_user: User = Depends(get_current_active_user)):
+@router.get(
+    "/documents/1.0/document/{document_id}/version/{version_index}/details", tags=[""], response_class=HTMLResponse
+)
+def document_version_details(
+    request: Request, document_id: str, version_index: int, current_user: User = Depends(get_current_active_user)
+):
     # This url returns a list of all document versions for the parent document.
     # The client can use this URL to monitor for new document versions
     details = doc_db.get_document_version(document_id, version_index, current_user)
-    doc_db.debug(endpoint='document_version',
-                 request={'document_id': document_id,
-                          'version_index': version_index},
-                 response=details.dict())
-    return templates.TemplateResponse(
-        'document_details.html',
-        {'request': request,
-         'details': details})
+    doc_db.debug(
+        endpoint="document_version",
+        request={"document_id": document_id, "version_index": version_index},
+        response=details.dict(),
+    )
+    return templates.TemplateResponse("document_details.html", {"request": request, "details": details})
+
 
 # ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ---- ----
 # summary: 'Get the versions of a single document'
@@ -699,7 +731,9 @@ def document_version_details(request: Request,
 
 
 @router.post("/documents/1.0/upload_file_to_project", tags=[""])
-async def upload_documents_post(file: UploadFile, project: str = Form(...), selection_session: str = Form(...)) -> Document:
+async def upload_documents_post(
+    file: UploadFile, project: str = Form(...), selection_session: str = Form(...)
+) -> Document:
 
     # Get the file size (in bytes)
     file.file.seek(0, 2)
@@ -713,49 +747,46 @@ async def upload_documents_post(file: UploadFile, project: str = Form(...), sele
 
     # Find file name ending and create new storage file name
     if file.filename.lower().endswith(tuple(file_types)):
-        file_ending = file.filename.split('.')[-1].lower()
-        name = document_id + '.' + file_ending
+        file_ending = file.filename.split(".")[-1].lower()
+        name = document_id + "." + file_ending
     else:
-        file_ending = ''
+        file_ending = ""
         name = document_id
 
     # Get mime type and file type
-    mime_type = ''
-    file_type = ''
+    mime_type = ""
+    file_type = ""
     if hasattr(file_types, file_ending):
-        mime_type = file_types[file_ending]['mime_type']
-        file_type = file_types[file_ending]['file_type']
+        mime_type = file_types[file_ending]["mime_type"]
+        file_type = file_types[file_ending]["file_type"]
 
     # Create document data
     document_version_dict = {
-        'document_id': document_id,
-        'session_file_id': '',
-        'version_index': 1,
-        'version_number': '1',
-        'creation_date': doc_db.timestamp(),
-        'title': file.filename,
-        'original_file_name': file.filename,
-        'file_ending': file_ending,
-        'mime_type': mime_type,
-        'file_type': file_type,
-        'project': project,
-        'file_description': {
-            'name': name,
-            'size_in_bytes': file_size
-        }
+        "document_id": document_id,
+        "session_file_id": "",
+        "version_index": 1,
+        "version_number": "1",
+        "creation_date": doc_db.timestamp(),
+        "title": file.filename,
+        "original_file_name": file.filename,
+        "file_ending": file_ending,
+        "mime_type": mime_type,
+        "file_type": file_type,
+        "project": project,
+        "file_description": {"name": name, "size_in_bytes": file_size},
     }
 
     document_version_model = Document(**document_version_dict)
 
     # Save file to disc
-    upload_directory = './data/documents/'
+    upload_directory = "./data/documents/"
     destination_path = os.path.join(upload_directory, name)
-    with open(destination_path, 'wb') as buffer:
+    with open(destination_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     # create database record
     inserted_document = doc_db.create_node_for_uploaded_file(selection_session, project, document_version_model)
-    print('Created node for document id: ' + str(inserted_document.document_id))
+    print("Created node for document id: " + str(inserted_document.document_id))
     doc_db.create_ifc_graph_for_document(inserted_document.document_id)
 
     # return document version of database record

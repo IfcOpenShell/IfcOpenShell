@@ -15,14 +15,14 @@ class Component:
         metadata={
             "name": "OriginatingSystem",
             "type": "Element",
-        }
+        },
     )
     authoring_tool_id: Optional[str] = field(
         default=None,
         metadata={
             "name": "AuthoringToolId",
             "type": "Element",
-        }
+        },
     )
     ifc_guid: Optional[str] = field(
         default=None,
@@ -31,7 +31,7 @@ class Component:
             "type": "Attribute",
             "length": 22,
             "pattern": r"[0-9,A-Z,a-z,_$]*",
-        }
+        },
     )
 
 
@@ -92,21 +92,21 @@ class ViewSetupHints:
         metadata={
             "name": "SpacesVisible",
             "type": "Attribute",
-        }
+        },
     )
     space_boundaries_visible: Optional[bool] = field(
         default=None,
         metadata={
             "name": "SpaceBoundariesVisible",
             "type": "Attribute",
-        }
+        },
     )
     openings_visible: Optional[bool] = field(
         default=None,
         metadata={
             "name": "OpeningsVisible",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -139,7 +139,7 @@ class ComponentColoringColor:
             "name": "Component",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
     color: Optional[str] = field(
         default=None,
@@ -147,7 +147,7 @@ class ComponentColoringColor:
             "name": "Color",
             "type": "Attribute",
             "pattern": r"[0-9,a-f,A-F]{6}([0-9,a-f,A-F]{2})?",
-        }
+        },
     )
 
 
@@ -159,7 +159,7 @@ class ComponentSelection:
             "name": "Component",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -174,7 +174,7 @@ class ComponentVisibilityExceptions:
             "name": "Component",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -205,6 +205,7 @@ class OrthogonalCamera:
         camera_up_vector:
         view_to_world_scale: view's visible size in meters
     """
+
     camera_view_point: Point = field(
         metadata={
             "name": "CameraViewPoint",
@@ -247,6 +248,7 @@ class PerspectiveCamera:
             release and viewers should be expect values outside this
             range in current implementations.
     """
+
     camera_view_point: Point = field(
         metadata={
             "name": "CameraViewPoint",
@@ -336,7 +338,7 @@ class ComponentColoring:
             "name": "Color",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -347,14 +349,14 @@ class ComponentVisibility:
         metadata={
             "name": "Exceptions",
             "type": "Element",
-        }
+        },
     )
     default_visibility: Optional[bool] = field(
         default=None,
         metadata={
             "name": "DefaultVisibility",
             "type": "Attribute",
-        }
+        },
     )
 
 
@@ -368,7 +370,7 @@ class VisualizationInfoClippingPlanes:
         metadata={
             "name": "ClippingPlane",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -383,7 +385,7 @@ class VisualizationInfoLines:
             "name": "Line",
             "type": "Element",
             "min_occurs": 1,
-        }
+        },
     )
 
 
@@ -394,14 +396,14 @@ class Components:
         metadata={
             "name": "ViewSetupHints",
             "type": "Element",
-        }
+        },
     )
     selection: Optional[ComponentSelection] = field(
         default=None,
         metadata={
             "name": "Selection",
             "type": "Element",
-        }
+        },
     )
     visibility: ComponentVisibility = field(
         metadata={
@@ -415,7 +417,7 @@ class Components:
         metadata={
             "name": "Coloring",
             "type": "Element",
-        }
+        },
     )
 
 
@@ -424,47 +426,48 @@ class VisualizationInfo:
     """
     VisualizationInfo documentation.
     """
+
     components: Optional[Components] = field(
         default=None,
         metadata={
             "name": "Components",
             "type": "Element",
-        }
+        },
     )
     orthogonal_camera: Optional[OrthogonalCamera] = field(
         default=None,
         metadata={
             "name": "OrthogonalCamera",
             "type": "Element",
-        }
+        },
     )
     perspective_camera: Optional[PerspectiveCamera] = field(
         default=None,
         metadata={
             "name": "PerspectiveCamera",
             "type": "Element",
-        }
+        },
     )
     lines: Optional[VisualizationInfoLines] = field(
         default=None,
         metadata={
             "name": "Lines",
             "type": "Element",
-        }
+        },
     )
     clipping_planes: Optional[VisualizationInfoClippingPlanes] = field(
         default=None,
         metadata={
             "name": "ClippingPlanes",
             "type": "Element",
-        }
+        },
     )
     bitmap: List[VisualizationInfoBitmap] = field(
         default_factory=list,
         metadata={
             "name": "Bitmap",
             "type": "Element",
-        }
+        },
     )
     guid: str = field(
         metadata={

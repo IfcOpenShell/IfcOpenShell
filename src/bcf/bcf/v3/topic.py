@@ -1,4 +1,5 @@
 """BCF XML V3 Topic handler."""
+
 import datetime
 import uuid
 import zipfile

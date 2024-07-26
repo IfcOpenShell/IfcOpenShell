@@ -163,6 +163,7 @@ def import_ifc(filename, use_names, process_relations, blender_booleans):
 
             me.from_pydata(verts, [], faces)
             me.validate()
+
             # MATERIAL CREATION
             def add_material(mname, props):
                 if mname in bpy.data.materials:
