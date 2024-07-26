@@ -175,7 +175,7 @@ class TopicHandler:
         new_viewpoint = VisualizationInfoHandler.create_new(element, self._xml_handler)
         self.add_visinfo_handler(new_viewpoint)
 
-    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float_], *guids: str) -> None:
+    def add_viewpoint_from_point_and_guids(self, position: NDArray[np.float64], *guids: str) -> None:
         """
         Add a viewpoint tergeting an IFC element to the topic.
 

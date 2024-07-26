@@ -176,7 +176,7 @@ class VisualizationInfoHandler:
     @classmethod
     def create_from_point_and_guids(
         cls,
-        position: NDArray[np.float_],
+        position: NDArray[np.float64],
         *guids: str,
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
     ) -> "VisualizationInfoHandler":
@@ -224,7 +224,7 @@ def build_viewpoint(element: entity_instance) -> mdl.VisualizationInfo:
     )
 
 
-def build_viewpoint_from_position_and_guids(position: NDArray[np.float_], *guids: str) -> mdl.VisualizationInfo:
+def build_viewpoint_from_position_and_guids(position: NDArray[np.float64], *guids: str) -> mdl.VisualizationInfo:
     """
     Return a BCF viewpoint of an IFC element.
 
@@ -261,7 +261,7 @@ def build_components(*guids: str) -> mdl.Components:
     )
 
 
-def build_camera(elem_placement: NDArray[np.float_]) -> mdl.PerspectiveCamera:
+def build_camera(elem_placement: NDArray[np.float64]) -> mdl.PerspectiveCamera:
     """
     Return a BCF camera for an IFC element placement matrix.
 
@@ -275,7 +275,7 @@ def build_camera(elem_placement: NDArray[np.float_]) -> mdl.PerspectiveCamera:
 
 
 def build_camera_from_vectors(
-    camera_position: NDArray[np.float_], camera_dir: NDArray[np.float_], camera_up: NDArray[np.float_]
+    camera_position: NDArray[np.float64], camera_dir: NDArray[np.float64], camera_up: NDArray[np.float64]
 ) -> mdl.PerspectiveCamera:
     """
     Return a BCF camera for an IFC element placement matrix.
