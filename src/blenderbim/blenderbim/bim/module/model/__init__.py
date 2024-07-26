@@ -117,6 +117,7 @@ classes = (
     space.ToggleHideSpaces,
     mep.FitFlowSegments,
     mep.RegenerateDistributionElement,
+    prop.SnapVertex,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
