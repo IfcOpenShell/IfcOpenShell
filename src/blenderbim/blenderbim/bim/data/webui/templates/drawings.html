@@ -56,15 +56,20 @@
         <!-- Dropdown menu -->
         <div class="dropdown mb-3">
           <label for="dropdown-menu">IFC File</label>
-          <select class="w-50 p-0 pl-2" id="dropdown-menu"></select>
+          <select class="w-50 p-0 pl-2" id="dropdown-menu">
+            <!-- IFC files will be dynamically populated here -->
+            <option value="option1">Option 1</option>
+            <option value="option2">Option 2</option>
+            <option value="option3">Option 3</option>
+          </select>
         </div>
         <!-- Panel with sub-panels -->
         <div class="panel">
           <div id="accordion">
             <div class="card pb-2">
-              <div class="card-header" id="headingOne">
+              <div class="card-header overflow-hidden" id="headingOne">
                 <button
-                  class="btn p-0"
+                  class="btn p-0 w-100 text-left"
                   data-toggle="collapse"
                   data-target="#collapseOne"
                 >
@@ -74,14 +79,19 @@
 
               <div id="collapseOne" class="collapse show">
                 <div class="card-body">
-                  <ul class="sub-panel" id="sub-panel-1"></ul>
+                  <div class="sub-panel" id="sub-panel-1">
+                    <label>Item 1</label>
+                    <label>Item 2</label>
+                    <label>Item 3</label>
+                    <!-- Drawings will be dynamically populated here -->
+                  </div>
                 </div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header" id="headingTwo">
+              <div class="card-header overflow-hidden" id="headingTwo">
                 <button
-                  class="btn p-0"
+                  class="btn p-0 w-100 text-left"
                   data-toggle="collapse"
                   data-target="#collapseTwo"
                 >
@@ -90,7 +100,9 @@
               </div>
               <div id="collapseTwo" class="collapse show">
                 <div class="card-body">
-                  <ul class="sub-panel" id="sub-panel-2"></ul>
+                  <ul class="sub-panel" id="sub-panel-2">
+                    <!-- Sheets will be dynamically populated here -->
+                  </ul>
                 </div>
               </div>
             </div>
