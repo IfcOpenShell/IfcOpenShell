@@ -41,6 +41,7 @@ from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from bpy_extras import view3d_utils
 from blenderbim.bim.module.model.opening import FilledOpeningGenerator
+from blenderbim.bim.module.model.decorator import WallPolylineDecorator
 from typing import Optional
 
 
@@ -321,6 +322,8 @@ class DrawPolylineWall(bpy.types.Operator):
             return ray_origin, ray_target, ray_direction
 
         
+
+            
         def get_object_ray_data(obj_matrix):
             ray_origin, ray_target, ray_direction = get_viewport_ray_data()
             matrix_inv = obj_matrix.inverted()
@@ -424,7 +427,8 @@ class DrawPolylineWall(bpy.types.Operator):
             
             edges_center = []
             for v1, v2 in zip(vertices, vertices[1:] + [vertices[0]]):
-                edges_center.append((v1-v2) / 2)
+                middle_dist = (v2-v1) / 2
+                edges_center.append(v1 + middle_dist)
 
             snap_points.update({tuple(vertex): "Vertices" for vertex in vertices})
             snap_points.update({tuple(edge_center): "Edge Center" for edge_center in edges_center})
@@ -466,12 +470,26 @@ class DrawPolylineWall(bpy.types.Operator):
 
             snap_points = get_snap_points(obj, face_index)
             snap_point = select_snap_point(snap_points, hit, snap_threshold)
+            try:
+                snap_vextex = context.scene.BIMModelProperties.snap_vertex[0]
+            except:
+                snap_vextex = context.scene.BIMModelProperties.snap_vertex.add()
+                
             if snap_point:
+                snap_vextex.x = snap_point[0][0]
+                snap_vextex.y = snap_point[0][1]
+                snap_vextex.z = snap_point[0][2]
+                snap_vextex.snap_type = snap_point[1]
                 scene.cursor.location = snap_point[0]
             else:
+                snap_vextex.x = hit[0]
+                snap_vextex.y = hit[1]
+                snap_vextex.z = hit[2]
+                snap_vextex.snap_type = "Face"
                 scene.cursor.location = hit
 
         else:
+            WallPolylineDecorator.uninstall()
             bpy.ops.object.select_all(action="DESELECT")
             scene.cursor.location = intersection
 
@@ -481,6 +499,7 @@ class DrawPolylineWall(bpy.types.Operator):
             return {'PASS_THROUGH'}
         elif event.type == 'MOUSEMOVE':
             start_time = time()
+            WallPolylineDecorator.install(context)
             self.main(context, event)
             operator_time = time() - start_time
             print(f"main function was finished in {operator_time:.2f} seconds")
@@ -492,6 +511,7 @@ class DrawPolylineWall(bpy.types.Operator):
             self.ray_cast_type = 'BVH'
             print("BVH selected.")
         elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            WallPolylineDecorator.uninstall()
             print("CANCELLLL")
             return {'CANCELLED'}
 
