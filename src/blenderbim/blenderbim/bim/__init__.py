@@ -98,7 +98,6 @@ classes = [
     operator.AddIfcFile,
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_delete_object,
-    operator.BIM_OT_open_webbrowser,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
