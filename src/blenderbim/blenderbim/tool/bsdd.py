@@ -112,10 +112,8 @@ class Bsdd(blenderbim.core.tool.Bsdd):
     def get_related_ifc_entities(cls, keyword: str) -> list[str]:
         active_object = bpy.context.active_object
         related_ifc_entities = []
-        # TODO: keyword length seems to be already double-checked in core.
-        # And {"FINISHED"} return value is never used.
         if len(keyword) < 3:
-            return {"FINISHED"}
+            return []
         if cls.should_filter_ifc_class() and active_object:
             element = tool.Ifc.get_entity(active_object)
             if element:
