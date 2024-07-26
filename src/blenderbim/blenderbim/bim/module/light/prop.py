@@ -170,108 +170,86 @@ class RadianceExporterProperties(PropertyGroup):
 
     def get_mappings_dict(self):
         return {item["style_id"]: item["radiance_material"] for item in self.material_mappings}
-    
+
     use_json_file: BoolProperty(
         name="Upload JSON",
         description="Toggle between uploading a JSON file and using in-UI material mapping",
-        default=False
-    )
-    
-    is_exporting: bpy.props.BoolProperty(
-        name="Is Exporting",
-        description="Whether the OBJ export is in progress",
-        default=False
+        default=False,
     )
 
-    material_mappings: bpy.props.CollectionProperty(
-        type= bpy.types.PropertyGroup,
-        name="Material Mappings"
+    is_exporting: bpy.props.BoolProperty(
+        name="Is Exporting", description="Whether the OBJ export is in progress", default=False
     )
+
+    material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
 
     should_load_from_memory: BoolProperty(
         name="Load from Memory",
-        default=False, 
+        default=False,
     )
 
     radiance_resolution_x: IntProperty(
-        name="X",
-        description="Horizontal resolution of the output image",
-        default=1920,
-        min=1
+        name="X", description="Horizontal resolution of the output image", default=1920, min=1
     )
     radiance_resolution_y: IntProperty(
-        name="Y",
-        description="Vertical resolution of the output image",
-        default=1080,
-        min=1
+        name="Y", description="Vertical resolution of the output image", default=1080, min=1
     )
     output_dir: StringProperty(
         name="Output Directory",
         description="Directory to output Radiance files",
         default="",
         subtype="DIR_PATH",
-        update=lambda self, context: self.update_output_dir(context)
+        update=lambda self, context: self.update_output_dir(context),
     )
     ifc_file: StringProperty(
         name="IFC File",
         description="Path to the IFC file",
         default="",
         subtype="FILE_PATH",
-        update=lambda self, context: self.update_ifc_file(context)
+        update=lambda self, context: self.update_ifc_file(context),
     )
     json_file: StringProperty(
         name="JSON File",
         description="Path to the JSON file",
         default="",
         subtype="FILE_PATH",
-        update=lambda self, context: self.update_json_file(context)
+        update=lambda self, context: self.update_json_file(context),
     )
-    
+
     radiance_quality: EnumProperty(
         name="Quality",
         description="Radiance rendering quality",
-        items=[
-            ('LOW', "Low", "Low quality"),
-            ('MEDIUM', "Medium", "Medium quality"),
-            ('HIGH', "High", "High quality")
-        ],
-        default='MEDIUM'
+        items=[("LOW", "Low", "Low quality"), ("MEDIUM", "Medium", "Medium quality"), ("HIGH", "High", "High quality")],
+        default="MEDIUM",
     )
     radiance_detail: EnumProperty(
         name="Detail",
         description="Radiance rendering detail",
-        items=[
-            ('LOW', "Low", "Low detail"),
-            ('MEDIUM', "Medium", "Medium detail"),
-            ('HIGH', "High", "High detail")
-        ],
-        default='MEDIUM'
+        items=[("LOW", "Low", "Low detail"), ("MEDIUM", "Medium", "Medium detail"), ("HIGH", "High", "High detail")],
+        default="MEDIUM",
     )
     radiance_variability: EnumProperty(
         name="Variability",
         description="Radiance rendering variability",
         items=[
-            ('LOW', "Low", "Low variability"),
-            ('MEDIUM', "Medium", "Medium variability"),
-            ('HIGH', "High", "High variability")
+            ("LOW", "Low", "Low variability"),
+            ("MEDIUM", "Medium", "Medium variability"),
+            ("HIGH", "High", "High variability"),
         ],
         default="MEDIUM",
     )
     output_file_name: StringProperty(
-        name="Output File Name",
-        description="Name of the output image file (without extension)",
-        default="render"
+        name="Output File Name", description="Name of the output image file (without extension)", default="render"
     )
-    
+
     output_file_format: EnumProperty(
         name="Output File Format",
         description="Format of the output image file",
         items=[
-            ('HDR', "HDR", "High Dynamic Range"),
+            ("HDR", "HDR", "High Dynamic Range"),
         ],
-        default='HDR'
+        default="HDR",
     )
-
 
 
 class BIMSolarProperties(PropertyGroup):

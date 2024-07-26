@@ -159,7 +159,7 @@ class BaseDecorator:
     objecttype = "NOTDEFINED"
 
     def __init__(self):
-        self.font_id = 0 # 0 is the default font
+        self.font_id = 0  # 0 is the default font
 
         # POLYLINE_UNIFORM_COLOR is good for smoothed lines since `bgl.enable(GL_LINE_SMOOTH)` is deprecated
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
@@ -2019,7 +2019,6 @@ class DecorationsHandler:
                 font_id = blf.load(drawing_font_path)
                 for decorator in self.decorators.values():
                     decorator.font_id = font_id
-
 
     def get_objects_and_decorators(self, collection):
         # TODO: do it in data instead of the handler for performance?

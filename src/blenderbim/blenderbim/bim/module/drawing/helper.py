@@ -127,7 +127,7 @@ def format_distance(
     precision=None,
     decimal_places=None,
     suppress_zero_inches=False,
-    in_unit_length = False
+    in_unit_length=False,
 ):
     s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
 
@@ -141,9 +141,9 @@ def format_distance(
     # Imperial Formatting
     if unit_system == "IMPERIAL":
         if in_unit_length:
-            if unit_length == 'INCHES':
+            if unit_length == "INCHES":
                 toInches = 1
-            if unit_length == 'FEET':
+            if unit_length == "FEET":
                 toInches = 11.9999
         else:
             toInches = 39.3700787401574887
@@ -222,11 +222,11 @@ def format_distance(
     # METRIC FORMATTING
     elif unit_system == "METRIC":
         if in_unit_length:
-            if unit_length == 'CENTIMETERS':
-                value = value/100
-            if unit_length == 'MILLIMETERS':
-                value = value/1000
-        
+            if unit_length == "CENTIMETERS":
+                value = value / 100
+            if unit_length == "MILLIMETERS":
+                value = value / 1000
+
         if precision:
             value = precision * round(float(value) / precision)
 

@@ -258,7 +258,9 @@ class ObjectMaterialData:
                         precision = bpy.context.scene.DocProperties.imperial_precision
                     else:
                         precision = None
-                    formatted_thickness = format_distance(total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length = True)
+                    formatted_thickness = format_distance(
+                        total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
+                    )
                     data["name"] = f"{formatted_thickness} - {data['name']}"
                 if item.is_a("IfcMaterial"):
                     data["material"] = item.Name or "Unnamed"

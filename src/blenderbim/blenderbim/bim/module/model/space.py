@@ -61,10 +61,13 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
 
         def msg_no_active_object(self, context):
             self.layout.label(text="No active object. Please select a wall")
+
         def msg_no_active_wall(self, context):
             self.layout.label(text="The active object is not a wall. Please select a wall.")
+
         def msg_no_container(self, context):
             self.layout.label(text="The wall is not contained. Please the selected wall in a building container")
+
         def msg_no_selected_objects(self, context):
             self.layout.label(text="No selected objects found. Please select walls.")
 

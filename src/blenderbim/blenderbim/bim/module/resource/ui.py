@@ -350,9 +350,9 @@ class BIM_UL_resources(UIList):
                         "bim.contract_resource", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
                     ).resource = item.ifc_definition_id
                 else:
-                    row.operator(
-                        "bim.expand_resource", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                    ).resource = item.ifc_definition_id
+                    row.operator("bim.expand_resource", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").resource = (
+                        item.ifc_definition_id
+                    )
             else:
                 row.label(text="", icon="DOT")
             row.prop(item, "name", emboss=False, text="", icon=icon_map[resource["type"]])

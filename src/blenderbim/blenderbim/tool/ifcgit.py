@@ -13,6 +13,7 @@ try:
 except ImportError:
     print("Warning: GitPython not available.")
 
+
 class IfcGit:
     @classmethod
     def init_repo(cls, path_dir):

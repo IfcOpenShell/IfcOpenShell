@@ -150,4 +150,3 @@ class TestIsMaterialUsedInSets(NewFile):
         material_set.MaterialLayers = [material_set_item]
         material_set_item.Material = material
         assert subject.is_material_used_in_sets(material) is True
-

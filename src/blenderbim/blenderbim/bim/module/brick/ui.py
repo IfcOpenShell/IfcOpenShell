@@ -46,7 +46,7 @@ class BIM_PT_brickschema_project_info(Panel):
 
     def draw(self, context):
         self.props = context.scene.BIMBrickProperties
-        
+
         if not BrickschemaData.data["is_loaded"]:
             row = self.layout.row(align=True)
             row.operator("bim.new_brick_file", text="Create Project")
@@ -58,7 +58,7 @@ class BIM_PT_brickschema_project_info(Panel):
             row.label(text=BrickStore.path, icon="FILEBROWSER")
         else:
             row.label(text="No file", icon="FILEBROWSER")
-        
+
         row = self.layout.row(align=True)
         if BrickStore.last_saved:
             row.label(text=BrickStore.last_saved, icon="TIME")
@@ -130,7 +130,7 @@ class BIM_PT_brickschema_create_entity(Panel):
 
         row = self.layout.row(align=True)
         prop_with_search(row, self.props, "brick_entity_class", text="Type")
-        
+
         row = self.layout.row(align=True)
         active = tool.Ifc.get_entity(context.active_object)
         if active and context.selected_objects:
@@ -141,7 +141,7 @@ class BIM_PT_brickschema_create_entity(Panel):
 
         row = self.layout.row(align=True)
         row.operator("bim.add_brick", text="Create Entity")
-     
+
 
 class BIM_PT_brickschema_viewport(Panel):
     bl_label = "Viewport"
@@ -194,7 +194,9 @@ class BIM_PT_brickschema_viewport(Panel):
 
             row = grid_right.row()
             BIM_UL_bricks.split_screen = True
-            row.template_list("BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index")
+            row.template_list(
+                "BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index"
+            )
 
         if BrickschemaData.data["active_relations"]:
             row = self.layout.row(align=True)
@@ -213,7 +215,13 @@ class BIM_PT_brickschema_viewport(Panel):
                     row.label(text="No selection", icon="INFO")
                 else:
                     prop_with_search(row, self.props, "new_brick_relation_type", text="")
-                    row.label(text=split_screen_selection.label if split_screen_selection.label else split_screen_selection.name)
+                    row.label(
+                        text=(
+                            split_screen_selection.label
+                            if split_screen_selection.label
+                            else split_screen_selection.name
+                        )
+                    )
                     row.operator("bim.add_brick_relation", text="", icon="ADD")
 
             elif self.props.brick_create_relations_toggled:
@@ -234,7 +242,11 @@ class BIM_PT_brickschema_viewport(Panel):
             row.label(text=relation["object_name"])
             row = split.row(align=True)
             row.column().alignment = "RIGHT"
-            if self.props.brick_edit_relations_toggled and relation["predicate_uri"] and relation["predicate_name"] != "type":
+            if (
+                self.props.brick_edit_relations_toggled
+                and relation["predicate_uri"]
+                and relation["predicate_name"] != "type"
+            ):
                 op = row.operator("bim.remove_brick_relation", text="", icon="UNLINKED")
                 op.predicate = relation["predicate_uri"]
                 op.object = relation["object_uri"]
@@ -262,6 +274,7 @@ class BIM_UL_bricks(UIList):
             if item.total_items:
                 row = split.row()
                 row.label(text=str(item.total_items))
+
 
 class BIM_PT_ifc_brickschema_references(Panel):
     bl_label = "Brickschema References"
@@ -291,13 +304,13 @@ class BIM_PT_ifc_brickschema_references(Panel):
             row.label(text="No IFC Libraries")
             row.operator("bim.convert_brick_project", text="", icon="ADD")
             return
-        
+
         elif not BrickschemaReferencesData.data["libraries"]:
             row = self.layout.row(align=True)
             row.label(text="No IFC Libraries: save the Brick project to create a new library", icon="ERROR")
 
             row = self.layout.row(align=True)
-            row.label(text="Libraries must have location pointing to a \".ttl\" file", icon="INFO")
+            row.label(text='Libraries must have location pointing to a ".ttl" file', icon="INFO")
             return
 
         row = self.layout.row(align=True)

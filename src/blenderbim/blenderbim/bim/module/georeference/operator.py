@@ -118,6 +118,7 @@ class ConvertGlobalToLocal(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.convert_global_to_local(tool.Georeference)
 
+
 class ConvertAngleToCoordinates(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.convert_angle_to_coord"
     bl_label = "Convert Angle To Y Axis"

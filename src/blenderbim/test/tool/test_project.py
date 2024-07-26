@@ -104,7 +104,14 @@ class TestSetDefaultContext(NewFile):
         tool.Ifc.set(ifc)
         ifc.createIfcProject()
         model = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        body = ifcopenshell.api.run("context.add_context", ifc, parent=model, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW")
+        body = ifcopenshell.api.run(
+            "context.add_context",
+            ifc,
+            parent=model,
+            context_type="Model",
+            context_identifier="Body",
+            target_view="MODEL_VIEW",
+        )
         subject.set_default_context()
         assert bpy.context.scene.BIMRootProperties.contexts == str(body.id())
 

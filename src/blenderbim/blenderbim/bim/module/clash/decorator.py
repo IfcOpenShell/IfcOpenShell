@@ -70,7 +70,7 @@ class ClashDecorator:
         blf.color(font_id, *color)
         if coords_2d:
             w, h = blf.dimensions(font_id, text)
-            coords_2d -= Vector((w * .5, 0))
+            coords_2d -= Vector((w * 0.5, 0))
             blf.position(font_id, coords_2d[0], coords_2d[1], 0)
             blf.draw(font_id, text)  # Set your text here
 

@@ -394,9 +394,9 @@ class LibraryGenerator:
             TreeData("Lollipop Tree (14m)", "simple", (14.0, 7.5, 0.44)),
             TreeData("Lollipop Tree (18m)", "simple", (18.0, 9.5, 0.44)),
             TreeData("Lollipop Tree (25m)", "simple", (25.0, 13.5, 0.50)),
-            TreeData("Tree Small (8m)", "low_poly", (8.0, 6.0, 0.0, .8, 1.0, 0.2, 10)),
-            TreeData("Tree Medium (12m)", "low_poly", (12.0, 10.0, 0.0, .8, 2.0, 0.4, 20)),
-            TreeData("Tree Big (20m)", "low_poly", (20.0, 15.0, 0.0, .8, 4.0, 0.6, 30)),
+            TreeData("Tree Small (8m)", "low_poly", (8.0, 6.0, 0.0, 0.8, 1.0, 0.2, 10)),
+            TreeData("Tree Medium (12m)", "low_poly", (12.0, 10.0, 0.0, 0.8, 2.0, 0.4, 20)),
+            TreeData("Tree Big (20m)", "low_poly", (20.0, 15.0, 0.0, 0.8, 4.0, 0.6, 30)),
         ]
 
         for tree_data in trees:
@@ -409,7 +409,7 @@ class LibraryGenerator:
 
         # From tree species table
 
-        with open(os.path.join(BLEND_DIR, "tree_species.csv"), 'r') as csvfile:
+        with open(os.path.join(BLEND_DIR, "tree_species.csv"), "r") as csvfile:
             reader = csv.reader(csvfile)
             for i, row in enumerate(reader):
                 if i == 0:
@@ -418,9 +418,7 @@ class LibraryGenerator:
                 data = [float(x) for x in row[2:]]
                 preset_data = preset.preset_class(*data)._asdict()
                 tree_geometry = preset.generator(builder, **preset_data)
-                self.create_explicit_type(
-                    "IfcGeographicElementType", row[1], **self.get_representations(tree_geometry)
-                )
+                self.create_explicit_type("IfcGeographicElementType", row[1], **self.get_representations(tree_geometry))
 
         self.file.write(output_filename)
 
@@ -447,7 +445,9 @@ class LibraryGenerator:
         ifcopenshell.api.run(
             "geometry.assign_representation", self.file, product=element, representation=representation_2d
         )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
         return element
 
     def create_type(self, ifc_class, name, representations):
@@ -480,8 +480,9 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
-
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
 
 if __name__ == "__main__":

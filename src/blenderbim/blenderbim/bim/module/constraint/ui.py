@@ -105,7 +105,7 @@ class BIM_PT_object_constraints(Panel):
             if constraint["type"] == "IfcObjective":
                 icon = "LIGHT"
             else:
-                continue # Metric not implemented
+                continue  # Metric not implemented
             row = self.layout.row(align=True)
             row.label(text=constraint["name"])
             row.operator("bim.unassign_constraint", text="", icon="X").constraint = constraint["id"]

@@ -30,11 +30,13 @@ from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon, MultiPolygon
 
+
 class Covering(blenderbim.core.tool.Covering):
     @classmethod
     def get_z_from_ceiling_height(cls):
         props = bpy.context.scene.BIMCoveringProperties
         return props.ceiling_height
+
 
 #    def toggle_spaces_visibility_wired_and_textured(cls, spaces):
 #        first_obj = tool.Ifc.get_object(spaces[0])

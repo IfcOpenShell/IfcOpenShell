@@ -40,26 +40,30 @@ if not file:
     print("No ifc file")
     sys.exit()
 
-annotations = file.by_type('IfcAnnotation')
+annotations = file.by_type("IfcAnnotation")
 count = 0
 
 for annotation in annotations:
-    if annotation.ObjectType == 'DRAWING':
+    if annotation.ObjectType == "DRAWING":
         psets = ifcopenshell.util.element.get_psets(annotation)
-        pset = psets['EPset_Drawing']
-        pset_ifc = file.by_id(pset['id'])
+        pset = psets["EPset_Drawing"]
+        pset_ifc = file.by_id(pset["id"])
         wrong_sep = ""
-        if platform == 'linux' or platform == 'linux2' or platform == 'darwin':
+        if platform == "linux" or platform == "linux2" or platform == "darwin":
             wrong_sep = "\\"
-        if platform == 'win32':
+        if platform == "win32":
             wrong_sep = "/"
-        ifcopenshell.api.run("pset.edit_pset", file, pset = pset_ifc, properties = {
-            'Stylesheet' : pset['Stylesheet'].replace(wrong_sep, os.path.sep),
-            'Markers' : pset['Markers'].replace(wrong_sep, os.path.sep),
-            'Symbols' : pset['Symbols'].replace(wrong_sep, os.path.sep),
-            'Patterns' : pset['Patterns'].replace(wrong_sep, os.path.sep),
-        })
-        count+=1
+        ifcopenshell.api.run(
+            "pset.edit_pset",
+            file,
+            pset=pset_ifc,
+            properties={
+                "Stylesheet": pset["Stylesheet"].replace(wrong_sep, os.path.sep),
+                "Markers": pset["Markers"].replace(wrong_sep, os.path.sep),
+                "Symbols": pset["Symbols"].replace(wrong_sep, os.path.sep),
+                "Patterns": pset["Patterns"].replace(wrong_sep, os.path.sep),
+            },
+        )
+        count += 1
 
 print(f"DONE! Checked {count} drawings")
-

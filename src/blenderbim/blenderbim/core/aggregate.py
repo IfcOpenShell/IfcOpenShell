@@ -45,9 +45,7 @@ def assign_object(
     relating_object = ifc.get_entity(relating_obj)
     if aggregator.has_physical_body_representation(relating_object):
         raise AggregateRepresentationError
-    rel = ifc.run(
-        "aggregate.assign_object", products=[ifc.get_entity(related_obj)], relating_object=relating_object
-    )
+    rel = ifc.run("aggregate.assign_object", products=[ifc.get_entity(related_obj)], relating_object=relating_object)
     collector.assign(relating_obj)
     collector.assign(related_obj)
     aggregator.disable_editing(related_obj)

@@ -29,6 +29,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
@@ -103,7 +104,7 @@ html_theme_options = {
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
         "color-admonition-text": "#651fff",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
     "dark_css_variables": {
         "color-brand-primary": "#39b54a",
@@ -118,9 +119,8 @@ html_theme_options = {
         "color-link--hover": "#d98014",
         "color-link--visited--hover": "#d98014",
         "color-admonition-text": "#EEEEEC",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
-
     "footer_icons": [
         {
             "name": "IfcOpenShell",

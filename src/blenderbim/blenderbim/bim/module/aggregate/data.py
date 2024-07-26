@@ -75,7 +75,7 @@ class AggregateData:
             return []
         if not element:
             return []
-        
+
         product_linked_agg_group = [
             r
             for r in getattr(aggregate, "HasAssignments", []) or []
@@ -85,7 +85,6 @@ class AggregateData:
 
         if not product_linked_agg_group:
             return []
-        
+
         total = len(product_linked_agg_group[0].RelatedObjects)
         return total
-        

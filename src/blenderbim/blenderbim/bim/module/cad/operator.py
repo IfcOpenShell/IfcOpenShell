@@ -144,7 +144,7 @@ class CadFillet(bpy.types.Operator):
     def execute(self, context):
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.radius = self.radius * si_conversion
-        
+
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
 
@@ -369,7 +369,7 @@ class CadOffset(bpy.types.Operator):
 
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.distance = self.distance * si_conversion
-        
+
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
 
@@ -507,8 +507,6 @@ class CadOffset(bpy.types.Operator):
                     local_direction = (rotation_i @ direction).normalized()
                     normals.append(local_direction)
 
-
-
                 if len(normals) == 2:
                     # https://stackoverflow.com/a/54042831/9627415
                     new_normal = (normals[0].lerp(normals[1], 0.5)).normalized()
@@ -638,7 +636,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
     def execute(self, context):
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.radius = self.radius * si_conversion
-        
+
         if self.has_selected_existing_arc(context):
             self.change_radius(context)
         else:
@@ -814,8 +812,8 @@ class AddRectangle(bpy.types.Operator):
     def execute(self, context):
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.x = self.x * si_conversion
-        self.y = self.y * si_conversion        
-        
+        self.y = self.y * si_conversion
+
         obj = context.active_object
         bm = bmesh.from_edit_mesh(obj.data)
         cursor = obj.matrix_world.inverted() @ context.scene.cursor.location

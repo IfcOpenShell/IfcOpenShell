@@ -1,5 +1,6 @@
 try:
     import bpy
+
     # Ensure it's not fake-bpy-module.
     if not hasattr(bpy, "context"):
         raise ModuleNotFoundError

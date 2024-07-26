@@ -66,10 +66,7 @@ class LoadBcfProject(bpy.types.Operator):
             if bcfxml.version.version_id.startswith("2"):
                 print("No project, we will create one for BBIM.")
                 bcfxml.project_info = bcf.v2.model.ProjectExtension(
-                    project=bcf.v2.model.Project(
-                        name=nameless,
-                        project_id=str(uuid.uuid4())
-                    ), extension_schema=""
+                    project=bcf.v2.model.Project(name=nameless, project_id=str(uuid.uuid4())), extension_schema=""
                 )
         if bcfxml.project.name is None:
             bcfxml.project.name = nameless
@@ -971,13 +968,14 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         self.set_colours(viewpoint)
 
     def set_exceptions(self, viewpoint, context):
-        if (
-            not hasattr(viewpoint.visualization_info.components, "visibility")
-            or not hasattr(viewpoint.visualization_info.components.visibility.exceptions, "component")
+        if not hasattr(viewpoint.visualization_info.components, "visibility") or not hasattr(
+            viewpoint.visualization_info.components.visibility.exceptions, "component"
         ):
             return
 
-        exception_global_ids = {v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []}
+        exception_global_ids = {
+            v.ifc_guid for v in viewpoint.visualization_info.components.visibility.exceptions.component or []
+        }
 
         # print("default_visibility: {}".format(viewpoint.visualization_info.components.visibility.default_visibility))
         if viewpoint.visualization_info.components.visibility.default_visibility:
@@ -1034,7 +1032,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         context.area.type = old
 
     def set_openings_visibility(self, is_visible, context):
-        pass # We no longer have an openings collection
+        pass  # We no longer have an openings collection
 
     def set_selection(self, viewpoint):
         if not viewpoint.visualization_info.components or not viewpoint.visualization_info.components.selection:
@@ -1147,7 +1145,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         # https://github.com/buildingSMART/BCF-XML/tree/release_3_0/Documentation#coloring
         if lv == 8:
             t = tuple(int(value[i : i + lv // 4], 16) for i in range(0, lv, lv // 4))
-            col = [t[1] / 255.0, t[2] / 255.0, t[3] / 255.0,  t[0] / 255.0]
+            col = [t[1] / 255.0, t[2] / 255.0, t[3] / 255.0, t[0] / 255.0]
         else:
             t = tuple(int(value[i : i + lv // 3], 16) for i in range(0, lv, lv // 3))
             col = [t[0] / 255.0, t[1] / 255.0, t[2] / 255.0, 1]

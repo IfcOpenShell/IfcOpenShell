@@ -1,30 +1,35 @@
 import csv
 import os
 import json
-#import pystache
+
+# import pystache
 import subprocess
 import ifcopenshell
 from pathlib import Path
 
-class Generator():
+
+class Generator:
     def __init__(self):
-        self.file = ifcopenshell.file(schema='IFC4')
-        self.out_dir = './'
+        self.file = ifcopenshell.file(schema="IFC4")
+        self.out_dir = "./"
 
     def generate(self):
-        classification = self.file.create_entity('IfcClassification', **{
-            'Source': 'VBIS',
-            'Edition': 'May-20',
-            'EditionDate': '2020-05-01',
-            'Name': 'VBIS',
-            'Description': '',
-            'Location': 'https://vbis.com.au/',
-            'ReferenceTokens': ['-']
-        })
+        classification = self.file.create_entity(
+            "IfcClassification",
+            **{
+                "Source": "VBIS",
+                "Edition": "May-20",
+                "EditionDate": "2020-05-01",
+                "Name": "VBIS",
+                "Description": "",
+                "Location": "https://vbis.com.au/",
+                "ReferenceTokens": ["-"],
+            }
+        )
         # We assume all the Excel spreadsheets are re-exported in CSV format
-        for filename in Path('./').glob('*.csv'):
-            with open(filename, newline='') as csvfile:
-                reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+        for filename in Path("./").glob("*.csv"):
+            with open(filename, newline="") as csvfile:
+                reader = csv.reader(csvfile, delimiter=",", quotechar='"')
                 name = None
                 levels = [None, None, None, None]
                 ref = classification
@@ -39,17 +44,17 @@ class Generator():
                         name = row[2]
                     elif row[3]:
                         name = row[3]
-                    ref = self.file.create_entity('IfcClassificationReference', **{
-                        'Identification': row[4],
-                        'Name': name
-                    })
-                    cur_level = len(row[4].split('-')) - 1
+                    ref = self.file.create_entity(
+                        "IfcClassificationReference", **{"Identification": row[4], "Name": name}
+                    )
+                    cur_level = len(row[4].split("-")) - 1
                     levels[cur_level] = ref
                     if cur_level == 0:
                         ref.ReferencedSource = classification
                     else:
-                        ref.ReferencedSource = levels[cur_level-1]
-        self.file.write('VBIS.ifc')
+                        ref.ReferencedSource = levels[cur_level - 1]
+        self.file.write("VBIS.ifc")
+
 
 generator = Generator()
 generator.generate()

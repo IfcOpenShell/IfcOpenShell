@@ -6,7 +6,7 @@ import multiprocessing
 
 class BlenderImporter:
     def __init__(self):
-        self.file = ifcopenshell.open('/home/dion/untitled.ifc')
+        self.file = ifcopenshell.open("/home/dion/untitled.ifc")
         self.cache_path = "cache.h5"
         self.should_use_cpu_multiprocessing = True
         self.deflection_tolerance = 0.001
@@ -77,9 +77,7 @@ class BlenderImporter:
             return results
         settings = self.settings_2d if is_curve else self.settings
         if self.should_use_cpu_multiprocessing:
-            iterator = ifcopenshell.geom.iterator(
-                settings, self.file, multiprocessing.cpu_count(), include=products
-            )
+            iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
         else:
             iterator = ifcopenshell.geom.iterator(settings, self.file, include=products)
         cache = self.get_cache()
@@ -119,5 +117,6 @@ class BlenderImporter:
             return ifcopenshell.geom.serializers.hdf5(self.cache_path, cache_settings)
         except:
             return
+
 
 BlenderImporter().execute()

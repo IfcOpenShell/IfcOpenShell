@@ -40,6 +40,7 @@
 # described in regular sentences in under 50 lines. That is the purpose of the
 # core.
 
+
 # Here's the simplest possible core function. It does one thing only. Remember:
 # core functions delegate tasks to tools, so all core functions need at least
 # one tool.

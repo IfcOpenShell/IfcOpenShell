@@ -195,7 +195,9 @@ class TestSwitchRepresentation:
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return(None)
-        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return("new_data")
+        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return(
+            "new_data"
+        )
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("new_data", "name").should_be_called()
         geometry.link("representation", "new_data").should_be_called()
@@ -220,7 +222,9 @@ class TestSwitchRepresentation:
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
         geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
         geometry.get_representation_data("representation").should_be_called().will_return("existing_data")
-        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return("new_data")
+        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return(
+            "new_data"
+        )
         geometry.get_representation_name("representation").should_be_called().will_return("name")
         geometry.rename_object("new_data", "name").should_be_called()
         geometry.link("representation", "new_data").should_be_called()

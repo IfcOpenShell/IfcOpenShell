@@ -87,7 +87,6 @@ class SolarDecorator:
             blf.position(self.font_id, co[0], co[1], 0)
             blf.draw(self.font_id, line)
 
-
     def draw_geometry(self, context):
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
@@ -153,8 +152,7 @@ class SolarDecorator:
             analemma_verts = sun_position.sun_calc.calc_analemma(context, h)
             coords.extend([origin @ v for v in analemma_verts])
             for i in range(len(analemma_verts) - 1):
-                indices.append((coord_offset + i,
-                                coord_offset + i+1))
+                indices.append((coord_offset + i, coord_offset + i + 1))
             coord_offset += len(analemma_verts)
 
         self.draw_batch("LINES", coords, decorator_color_special, indices)

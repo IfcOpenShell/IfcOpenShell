@@ -90,9 +90,9 @@ class BIM_PT_debug(Panel):
         row.operator("bim.select_high_polygon_meshes").threshold = context.scene.BIMDebugProperties.number_of_polygons
         row.prop(props, "number_of_polygons", text="")
         row = layout.split(factor=0.7, align=True)
-        row.operator(
-            "bim.select_highest_polygon_meshes"
-        ).percentile = context.scene.BIMDebugProperties.percentile_of_polygons
+        row.operator("bim.select_highest_polygon_meshes").percentile = (
+            context.scene.BIMDebugProperties.percentile_of_polygons
+        )
         row.prop(props, "percentile_of_polygons", text="")
 
         row = layout.split(factor=0.5, align=True)
@@ -140,9 +140,9 @@ class BIM_PT_debug(Panel):
                 op = row.operator("bim.print_object_placement", icon="OBJECT_ORIGIN", text="")
                 op.step_id = attribute.int_value
             if attribute.int_value:
-                row.operator(
-                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
-                ).step_id = attribute.int_value
+                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
+                    attribute.int_value
+                )
 
         if props.inverse_attributes:
             layout.label(text="Inverse attributes:")
@@ -152,9 +152,9 @@ class BIM_PT_debug(Panel):
             row.prop(attribute, "name", text="")
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator(
-                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
-                ).step_id = attribute.int_value
+                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
+                    attribute.int_value
+                )
 
         if props.inverse_references:
             layout.label(text="Inverse references:")
@@ -163,6 +163,6 @@ class BIM_PT_debug(Panel):
             row = layout.row(align=True)
             row.prop(attribute, "string_value", text="")
             if attribute.int_value:
-                row.operator(
-                    "bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text=""
-                ).step_id = attribute.int_value
+                row.operator("bim.inspect_from_step_id", icon="DISCLOSURE_TRI_RIGHT", text="").step_id = (
+                    attribute.int_value
+                )

@@ -12,12 +12,12 @@ props = bpy.context.scene.BIMGeoreferenceProperties
 # georeferencing coordinates in the IFC Georeferencing panel before filling out
 # these details.
 
-#props.blender_eastings = '334134181.0'
-#props.blender_northings = '6254570511.0'
-#props.blender_orthogonal_height = '0.0'
-#props.blender_x_axis_abscissa = '0.147487884244522'
-#props.blender_x_axis_ordinate = '0.989063862448262'
-#props.has_blender_offset = True
+# props.blender_eastings = '334134181.0'
+# props.blender_northings = '6254570511.0'
+# props.blender_orthogonal_height = '0.0'
+# props.blender_x_axis_abscissa = '0.147487884244522'
+# props.blender_x_axis_ordinate = '0.989063862448262'
+# props.has_blender_offset = True
 
 props = bpy.context.scene.BIMProjectProperties
 

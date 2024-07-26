@@ -9,7 +9,7 @@ V = lambda *x: Vector([float(i) for i in x])
 def simple_uses():
     ifc_file = ifcopenshell.file()
     builder = ShapeBuilder(ifc_file)
-    triangle_curve = builder.polyline(( (0., 0.), (1., 2.), (2., 0.) ), closed=True)
+    triangle_curve = builder.polyline(((0.0, 0.0), (1.0, 2.0), (2.0, 0.0)), closed=True)
     print(triangle_curve)
 
     rectangle_curve = builder.rectangle()
@@ -18,26 +18,19 @@ def simple_uses():
     circle_curve = builder.circle()
     print(circle_curve)
 
-    translated_rect = builder.translate(rectangle_curve, Vector( (2.5, 2.5) ), create_copy=True)
+    translated_rect = builder.translate(rectangle_curve, Vector((2.5, 2.5)), create_copy=True)
     print(translated_rect)
 
-    rotated_triangle = builder.rotate(triangle_curve, 90, 
-        pivot_point=Vector( (1., 1.) ),
-        counter_clockwise=True,
-        create_copy=True)
+    rotated_triangle = builder.rotate(
+        triangle_curve, 90, pivot_point=Vector((1.0, 1.0)), counter_clockwise=True, create_copy=True
+    )
     print(rotated_triangle)
 
-    a, b = builder.translate(
-            [rectangle_curve, circle_curve], 
-            Vector( (5., 5.) ), create_copy=True)
+    a, b = builder.translate([rectangle_curve, circle_curve], Vector((5.0, 5.0)), create_copy=True)
     print(f"Multiple translated objects: {a}, {b}")
 
-    c, d = builder.rotate(
-            [a, b], 90,
-            pivot_point=Vector( (0., 0.) ),
-            counter_clockwise=False, 
-            create_copy=True)
-    print(f'Multiple rotated objects: {c}, {d}')
+    c, d = builder.rotate([a, b], 90, pivot_point=Vector((0.0, 0.0)), counter_clockwise=False, create_copy=True)
+    print(f"Multiple rotated objects: {c}, {d}")
 
     mirrored_objects = builder.mirror(
         [a, b],
@@ -57,8 +50,7 @@ def simple_uses():
     print(rotated_circle)
 
     profile = builder.profile(
-        rectangle_curve, "test_profile", 
-        inner_curves=[builder.circle(center=Vector((0.5, 0.5)), radius=0.2)]
+        rectangle_curve, "test_profile", inner_curves=[builder.circle(center=Vector((0.5, 0.5)), radius=0.2)]
     )
     print(profile)
 
@@ -129,20 +121,14 @@ def mirror_placement_test():
 
     rect_profile = builder.profile(rect, inner_curves=rect_small)
 
-    pl = builder.extrude(rect_profile, 
-        magnitude=7.0,
-        position_z_axis=V(0, -1, 0),
-        extrusion_vector=V(0, 0, -1),
-        position=V(0, 5, 0)
+    pl = builder.extrude(
+        rect_profile, magnitude=7.0, position_z_axis=V(0, -1, 0), extrusion_vector=V(0, 0, -1), position=V(0, 5, 0)
     )
 
     rect = builder.rectangle(size=size)
 
-    back_wall = builder.extrude(rect,
-        magnitude=2.0,
-        position_z_axis=V(0, -1, 0),
-        extrusion_vector=V(0, 0, -1),
-        position=V(0, 1, 0)
+    back_wall = builder.extrude(
+        rect, magnitude=2.0, position_z_axis=V(0, -1, 0), extrusion_vector=V(0, 0, -1), position=V(0, 1, 0)
     )
 
     items_3d = [pl, back_wall]
@@ -195,20 +181,18 @@ def curve_between_two_points_test():
     width, depth = (200.0, 200.0)
 
     curve_coords = (
-        (V(0, depth), V(-width, 0)), # ccw
-        (V(0, depth), V(width, 0)), # cw
-        (V(0, -depth), V(width, 0)), # ccw
-        (V(0, -depth), V(-width, 0)), # cw
-
-        (V(+width/2, 0), V(0, depth)), # ccw
-        (V(-width/2, 0), V(0, depth)), # cw
-        (V(-width/2, 0), V(0, -depth)), # ccw
-        (V(+width/2, 0), V(0, -depth)), # cw
-
-        (V(0, depth/2), V(+width, 0)), # cw
-        (V(0, depth/2), V(-width, 0)), # ccw
-        (V(0, -depth/2), V(+width, 0)), # ccw
-        (V(0, -depth/2), V(-width, 0)), # cw
+        (V(0, depth), V(-width, 0)),  # ccw
+        (V(0, depth), V(width, 0)),  # cw
+        (V(0, -depth), V(width, 0)),  # ccw
+        (V(0, -depth), V(-width, 0)),  # cw
+        (V(+width / 2, 0), V(0, depth)),  # ccw
+        (V(-width / 2, 0), V(0, depth)),  # cw
+        (V(-width / 2, 0), V(0, -depth)),  # ccw
+        (V(+width / 2, 0), V(0, -depth)),  # cw
+        (V(0, depth / 2), V(+width, 0)),  # cw
+        (V(0, depth / 2), V(-width, 0)),  # ccw
+        (V(0, -depth / 2), V(+width, 0)),  # ccw
+        (V(0, -depth / 2), V(-width, 0)),  # cw
     )
     items_2d = [builder.curve_between_two_points(c) for c in curve_coords]
 

@@ -155,10 +155,16 @@ class LibraryGenerator:
         self.create_line_type("MEDIUM", "medium")
         self.create_line_type("THICK", "thick")
         self.create_line_type("STRONG", "strong")
-        self.create_text_type("SETOUT-TAG", "setout-tag", ["E ``round({{easting}}, 0.001)``", "N ``round({{northing}}, 0.001)``"])
+        self.create_text_type(
+            "SETOUT-TAG", "setout-tag", ["E ``round({{easting}}, 0.001)``", "N ``round({{northing}}, 0.001)``"]
+        )
         self.create_text_type("DOOR-TAG", "door-tag", ["{{type.Name}}", "{{Name}}"])
         self.create_text_type("WINDOW-TAG", "window-tag", ["{{Name}}"])
-        self.create_text_type("SPACE-TAG", "space-tag", ["{{Name}}", "{{Description}}", "``round({{Qto_SpaceBaseQuantities.NetFloorArea}}, 0.01)``"])
+        self.create_text_type(
+            "SPACE-TAG",
+            "space-tag",
+            ["{{Name}}", "{{Description}}", "``round({{Qto_SpaceBaseQuantities.NetFloorArea}}, 0.01)``"],
+        )
         self.create_text_type("MATERIAL-TAG", "rectangle-tag", ["{{material.Name}}"])
         self.create_text_type("TYPE-TAG", "capsule-tag", ["{{type.Name}}"])
         self.create_text_type("NAME-TAG", "capsule-tag", ["{{Name}}"])
@@ -189,9 +195,11 @@ class LibraryGenerator:
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             )
-            items.append(self.file.createIfcTextLiteralWithExtent(
-                literal, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), "center"
-            ))
+            items.append(
+                self.file.createIfcTextLiteralWithExtent(
+                    literal, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), "center"
+                )
+            )
 
         representation = self.file.createIfcShapeRepresentation(
             self.representations["model_annotation"],
@@ -205,22 +213,30 @@ class LibraryGenerator:
 
     def create_layer_type(self, ifc_class, name, thickness):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
+        )
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
         return element
 
     def create_profile_type(self, ifc_class, name, profile):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run("material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet")
+        rel = ifcopenshell.api.run(
+            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet"
+        )
         profile_set = rel.RelatingMaterial
         material_profile = ifcopenshell.api.run(
             "material.add_profile", self.file, profile_set=profile_set, material=self.material
         )
         ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
     def create_type(self, ifc_class, name, representations):
         element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
@@ -252,7 +268,9 @@ class LibraryGenerator:
             ifcopenshell.api.run(
                 "geometry.assign_representation", self.file, product=element, representation=representation
             )
-        ifcopenshell.api.run("project.assign_declaration", self.file, definitions=[element], relating_context=self.library)
+        ifcopenshell.api.run(
+            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
+        )
 
 
 LibraryGenerator().generate()

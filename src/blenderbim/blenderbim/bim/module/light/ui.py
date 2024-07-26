@@ -26,11 +26,12 @@ sun_position = tool.Blender.get_sun_position_addon()
 
 class BIM_PT_radiance_exporter(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
+
     bl_label = "Radiance Exporter"
     bl_idname = "BIM_PT_radiance_exporter"
-    bl_options = {'DEFAULT_CLOSED'}
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_lighting"
 
@@ -43,7 +44,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         if tool.Ifc.get():
             row = self.layout.row()
             row.prop(props, "should_load_from_memory")
-        
+
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             row.prop(props, "ifc_file")
@@ -51,7 +52,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         row = layout.row()
         row.prop(props, "output_dir")
-        
 
         row = layout.row()
         layout.prop(props, "use_json_file")
@@ -69,22 +69,21 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
             layout.operator("bim.refresh_ifc_materials")
 
-        
         layout.separator()
         row = layout.row()
         row.label(text="Resolution")
         row.prop(props, "radiance_resolution_x", text="X")
-        
+
         row = layout.row()
         row.label(text="")
         row.prop(props, "radiance_resolution_y", text="Y")
-        
+
         row = layout.row()
         row.prop(props, "radiance_quality")
-        
+
         row = layout.row()
         row.prop(props, "radiance_detail")
-        
+
         row = layout.row()
         row.prop(props, "radiance_variability")
 
@@ -92,7 +91,7 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
 
         row = layout.row()
         row.prop(props, "output_file_name")
-        
+
         row = layout.row()
         row.prop(props, "output_file_format")
         layout.separator()
@@ -104,12 +103,14 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         row.operator("render_scene.radiance", text="Radiance Render")
         row.enabled = not props.is_exporting
 
+
 class BIM_PT_solar(bpy.types.Panel):
     """Creates a Panel in the render properties window"""
+
     bl_label = "Solar Access / Shadow"
     bl_idname = "BIM_PT_solar"
-    bl_space_type = 'PROPERTIES'
-    bl_region_type = 'WINDOW'
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
     bl_context = "scene"
     bl_parent_id = "BIM_PT_tab_solar_analysis"
     bl_options = {"HIDE_HEADER"}
@@ -135,7 +136,7 @@ class BIM_PT_solar(bpy.types.Panel):
         sun_props = context.scene.sun_pos_properties
 
         row = self.layout.row()
-        row.prop(sun_props, "coordinates", icon='URL')
+        row.prop(sun_props, "coordinates", icon="URL")
         row = self.layout.row(align=True)
         row.prop(props, "latitude")
         row.prop(props, "longitude")
@@ -146,20 +147,24 @@ class BIM_PT_solar(bpy.types.Panel):
             row.operator("bim.import_true_north", icon="IMPORT", text="")
 
         row = self.layout.row(align=True)
-        row.prop(props, "month", text={
-            1: "January",
-            2: "February",
-            3: "March",
-            4: "April",
-            5: "May",
-            6: "June",
-            7: "July",
-            8: "August",
-            9: "September",
-            10: "October",
-            11: "November",
-            12: "December",
-        }[props.month])
+        row.prop(
+            props,
+            "month",
+            text={
+                1: "January",
+                2: "February",
+                3: "March",
+                4: "April",
+                5: "May",
+                6: "June",
+                7: "July",
+                8: "August",
+                9: "September",
+                10: "October",
+                11: "November",
+                12: "December",
+            }[props.month],
+        )
         row.prop(props, "day")
 
         row = self.layout.row(align=True)

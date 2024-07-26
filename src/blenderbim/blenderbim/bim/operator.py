@@ -141,6 +141,7 @@ class SelectURIAttribute(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class MultipleFileSelector(bpy.types.Operator):
     bl_label = "Select Multiple Files"
     bl_options = {"REGISTER", "UNDO"}
@@ -156,10 +157,10 @@ class MultipleFileSelector(bpy.types.Operator):
             new.name = os.path.join(dirname, f.name)
         setattr(props, single_file, self.filepath)
 
-
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
 
 class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
     bl_idname = "bim.select_ifc_file"

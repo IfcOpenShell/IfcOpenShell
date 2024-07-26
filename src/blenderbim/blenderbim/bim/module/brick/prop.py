@@ -34,6 +34,7 @@ import blenderbim.core.brick as core
 import blenderbim.tool.brick as tool
 from blenderbim.tool.brick import BrickStore
 
+
 def update_active_brick_index(self, context):
     BrickschemaData.is_loaded = False
 
@@ -53,7 +54,7 @@ def get_brick_entity_classes(self, context):
     return [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
 
 
-def get_brick_roots(self, context): 
+def get_brick_roots(self, context):
     return [(root, root, "") for root in BrickStore.root_classes]
 
 
@@ -64,12 +65,12 @@ def get_brick_relations(self, context):
             return relations
     relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
     return relations
-    
 
 
 def update_view(self, context):
     root = context.scene.BIMBrickProperties.brick_list_root
     core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=False)
+
 
 def split_screen_update_view(self, context):
     root = context.scene.BIMBrickProperties.split_screen_brick_list_root
@@ -108,7 +109,11 @@ class BIMBrickProperties(PropertyGroup):
     # create relations split screen
     split_screen_toggled: BoolProperty(name="Split Screen Toggled", default=False)
     split_screen_bricks: CollectionProperty(name="Split Screen Bricks", type=Brick)
-    split_screen_active_brick_index: IntProperty(name="Split Screen Active Brick Index", update=update_active_brick_index)
+    split_screen_active_brick_index: IntProperty(
+        name="Split Screen Active Brick Index", update=update_active_brick_index
+    )
     split_screen_active_brick_class: StringProperty(name="Split Screen Active Brick Class")
     split_screen_brick_breadcrumbs: CollectionProperty(name="Split Screen Brick Breadcrumbs", type=StrProperty)
-    split_screen_brick_list_root: EnumProperty(name="Split Screen Brick List Root", items=get_brick_roots, update=split_screen_update_view)
+    split_screen_brick_list_root: EnumProperty(
+        name="Split Screen Brick List Root", items=get_brick_roots, update=split_screen_update_view
+    )
