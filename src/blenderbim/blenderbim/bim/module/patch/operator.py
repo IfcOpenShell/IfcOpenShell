@@ -132,7 +132,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                     "int": "integer",
                     "bool": "boolean",
                 }[data_type]
-                new_attr.name = arg_name
+                new_attr.name = self.pretty_arg_name(arg_name)
                 if new_attr.data_type == "enum":
                     new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
                     new_attr.enum_value = arg_info.get("default", new_attr.get_value_default())
@@ -140,6 +140,21 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
 
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))
         return {"FINISHED"}
+
+    def pretty_arg_name(self, arg_name: str):
+        words = []
+
+        for word in arg_name.split("_"):
+            word = word.strip().capitalize()
+
+            replacements = [("Dir", "Directory"), ("Sql", "SQL")]
+
+            for prev, new in replacements:
+                word = word.replace(prev, new)
+
+            words.append(word)
+
+        return " ".join(words)
 
 
 class RunMigratePatch(bpy.types.Operator):
