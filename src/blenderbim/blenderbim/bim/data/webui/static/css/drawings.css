@@ -199,7 +199,7 @@ nav ul li a.active {
 
 .right {
     background-color: var(--bg-color);
-    /* Light gray background for the right part */
+    border: 1px solid var(--border-color);
 }
 
 .panel {
@@ -207,15 +207,20 @@ nav ul li a.active {
     border: 1px solid var(--border-color);
     padding: 10px;
     flex-grow: 1;
-    /* Take the remaining space */
     display: flex;
     flex-direction: column;
 }
 
 .card-header,
-.card {
+.card-body {
     background-color: var(--bg-color);
     border: 1px solid var(--border-color);
+    overflow: auto;
+}
+
+.card {
+    background-color: var(--nav-bg-color);
+    overflow: auto;
 }
 
 #dropdown-menu:focus {
@@ -231,5 +236,5 @@ nav ul li a.active {
 
 .btn,
 .btn:hover {
-    color: var(--text-color);
+    color: var(--nav-link-hover-color);
 }

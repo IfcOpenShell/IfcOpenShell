@@ -1,5 +1,4 @@
-// keeps track of blenders connected in form of
-// {shown:bool, filename:string, headers:array}
+// keeps track of blenders connected
 const connectedClients = {};
 let socket;
 
@@ -21,10 +20,34 @@ function connectSocket() {
   console.log("socket: ", socket);
 
   // Register socket event handlers
-  //   socket.on("blender_connect", handleBlenderConnect);
-  //   socket.on("blender_disconnect", handleBlenderDisconnect);
+  socket.on("blender_connect", handleBlenderConnect);
+  socket.on("blender_disconnect", handleBlenderDisconnect);
   //   socket.on("csv_data", handleCsvData);
   //   socket.on("default_data", handleDefaultData);
+}
+
+// Function to handle 'blender_connect' event
+function handleBlenderConnect(blenderId) {
+  console.log("blender_connect: ", blenderId);
+  if (!connectedClients.hasOwnProperty(blenderId)) {
+    connectedClients[blenderId] = {
+      shown: false,
+      filename: "",
+    };
+  }
+}
+
+// Function to handle 'blender_disconnect' event
+function handleBlenderDisconnect(blenderId) {
+  console.log("blender_disconnect: ", blenderId);
+  if (connectedClients.hasOwnProperty(blenderId)) {
+    delete connectedClients[blenderId];
+    removeGanttElement(blenderId);
+  }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) - 1;
+  });
 }
 
 function setTheme(theme) {
