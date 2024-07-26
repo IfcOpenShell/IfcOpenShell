@@ -61,18 +61,18 @@
         <!-- Panel with sub-panels -->
         <div class="panel">
           <div id="accordion">
-            <div class="card">
+            <div class="card pb-2">
               <div class="card-header" id="headingOne">
                 <button
                   class="btn p-0"
                   data-toggle="collapse"
                   data-target="#collapseOne"
                 >
-                  Sub-panel 1
+                  Drawings
                 </button>
               </div>
 
-              <div id="collapseOne" class="collapse">
+              <div id="collapseOne" class="collapse show">
                 <div class="card-body">
                   <ul class="sub-panel" id="sub-panel-1"></ul>
                 </div>
@@ -85,10 +85,10 @@
                   data-toggle="collapse"
                   data-target="#collapseTwo"
                 >
-                  Sub-panel 2
+                  Sheets
                 </button>
               </div>
-              <div id="collapseTwo" class="collapse">
+              <div id="collapseTwo" class="collapse show">
                 <div class="card-body">
                   <ul class="sub-panel" id="sub-panel-2"></ul>
                 </div>
@@ -98,9 +98,7 @@
         </div>
       </div>
       <div class="col-10 right p-3">
-        <!-- Elements for the right part go here -->
-        <h1>Right Part</h1>
-        <p>This is the right part of the container.</p>
+        <div id="svg-container"></div>
       </div>
     </div>
   </body>
