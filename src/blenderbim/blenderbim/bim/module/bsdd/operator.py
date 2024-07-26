@@ -60,10 +60,14 @@ class SearchBSDDClass(bpy.types.Operator):
 class GetBSDDClassificationProperties(bpy.types.Operator):
     bl_idname = "bim.get_bsdd_classification_properties"
     bl_label = "Search bSDD Class Properties"
-    bl_description = "Search for bSDD class properties for the currently selected class"
+    bl_description = (
+        "Search for bSDD class properties for the currently selected class. All non-IFC properties are skipped"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        properties_found = core.get_class_properties(bsdd.Client(), tool.Bsdd)
-        self.report({"INFO"}, f"{properties_found} properties found for the active classification.")
+        pset_data = core.get_class_properties(bsdd.Client(), tool.Bsdd)
+        psets_found = len(pset_data)
+        props_found = sum(len(pset) for pset in pset_data.values())
+        self.report({"INFO"}, f"{psets_found} psets found ({props_found} props) for the active classification.")
         return {"FINISHED"}

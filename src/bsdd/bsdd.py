@@ -31,6 +31,8 @@ __version__ = version = "0.0.0"
 Status = Literal["Preview", "Active", "Inactive"]
 ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 
+# NOTE: Some values in TypedDicts are actually not guaranteed to be provided
+# and should be typed with NotRequired.
 
 class DictionaryContractV1(TypedDict):
     uri: str
