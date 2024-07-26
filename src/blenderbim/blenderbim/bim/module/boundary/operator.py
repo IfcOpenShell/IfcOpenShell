@@ -603,7 +603,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         objs = context.selected_objects
 
-        if not any((element:=tool.Ifc.get_entity(obj)) and element.is_a("IfcSpace") for obj in objs):
+        if not any((element := tool.Ifc.get_entity(obj)) and element.is_a("IfcSpace") for obj in objs):
             self.report({"INFO"}, "No IfcSpace elements selected.")
             return {"FINISHED"}
 

@@ -84,9 +84,9 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMArrayProperties
-        
+
         relating_obj = props.relating_array_object
-        
+
         if relating_obj:
             element = tool.Ifc.get_entity(relating_obj)
             parent_globalid = ifcopenshell.util.element.get_pset(element, "BBIM_Array", "Parent")
@@ -102,9 +102,9 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
         props.use_local_space = data.get("use_local_space", False)
         props.sync_children = data.get("sync_children", False)
         props.method = data.get("method", "OFFSET")
-        
+
         props.is_editing = self.item
-        
+
         return {"FINISHED"}
 
 
@@ -149,9 +149,9 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.Modifier.Array.set_children_lock_state(element, self.item, True)
         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
-        #clears the relating_array_object so it doesn't show again next time
+        # clears the relating_array_object so it doesn't show again next time
         props.relating_array_object = None
-        
+
         return {"FINISHED"}
 
 
@@ -285,8 +285,11 @@ class SelectAllArrayObjects(bpy.types.Operator):
 
                     array_objects = tool.Blender.Modifier.Array.get_all_objects(parent_element)
                     tool.Blender.set_objects_selection(
-                        context, active_object=array_objects[0], selected_objects=array_objects, clear_previous_selection=False
-                )
+                        context,
+                        active_object=array_objects[0],
+                        selected_objects=array_objects,
+                        clear_previous_selection=False,
+                    )
         return {"FINISHED"}
 
 

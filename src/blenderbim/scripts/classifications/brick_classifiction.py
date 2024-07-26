@@ -1,23 +1,27 @@
 import ifcopenshell
 from brickschema.graph import Graph
 
-class Generator():
+
+class Generator:
     def __init__(self):
-        self.file = ifcopenshell.file(schema='IFC4')
+        self.file = ifcopenshell.file(schema="IFC4")
         self.schema = Graph()
-        self.schema.load_file("Brick.ttl") # stable 1.3 loaded from external file
+        self.schema.load_file("Brick.ttl")  # stable 1.3 loaded from external file
 
     def generate(self):
-        classification = self.file.create_entity('IfcClassification', **{
-            'Source': 'Brick',
-            'Edition': 'August-11',
-            'EditionDate': '2023-08-11',
-            'Name': 'Brick',
-            'Description': '',
-            'Location': 'https://brickschema.org/schema/Brick',
-            'ReferenceTokens': []
-        })
-        
+        classification = self.file.create_entity(
+            "IfcClassification",
+            **{
+                "Source": "Brick",
+                "Edition": "August-11",
+                "EditionDate": "2023-08-11",
+                "Name": "Brick",
+                "Description": "",
+                "Location": "https://brickschema.org/schema/Brick",
+                "ReferenceTokens": [],
+            }
+        )
+
         query = self.schema.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -54,11 +58,11 @@ class Generator():
         for row in query:
             # location is the entity URI
             location = row.get("entity")
-            
+
             # description is the entity's definition
             description = row.get("definition")
             if not description:
-                description = ''
+                description = ""
 
             # name is the entity's label if it exists, else the name in the URI
             name = row.get("label")
@@ -66,13 +70,11 @@ class Generator():
                 name = location.split("#")[-1].replace("_", " ")
 
             # create the reference
-            ref = self.file.create_entity('IfcClassificationReference', **{
-                                        'Location': location,
-                                        'Description': description,
-                                        'Identification': name,
-                                        'Name': name
-                                    })
-            
+            ref = self.file.create_entity(
+                "IfcClassificationReference",
+                **{"Location": location, "Description": description, "Identification": name, "Name": name}
+            )
+
             # get all parents of the entity
             query = self.schema.query(
                 """
@@ -88,7 +90,7 @@ class Generator():
             # filter parents for the brick entity
             for row in query:
                 parent = row.get("parent").toPython()
-                if "brickschema.org" in parent and parent in references.keys(): 
+                if "brickschema.org" in parent and parent in references.keys():
                     # some parents are not a brick type, so those should be ignored
                     # some entities have multiple parents that are a brick type
                     # since the query traverses down the graph, we can assume at least one parent has been seen, so pick that one
@@ -96,7 +98,7 @@ class Generator():
                     break
                 parent = None
 
-            # assign reference source        
+            # assign reference source
             if parent:
                 ref.ReferencedSource = references[parent]
             else:
@@ -105,7 +107,8 @@ class Generator():
             # save this reference for future reference sources
             references[location.toPython()] = ref
 
-        self.file.write('Brick.ifc')
+        self.file.write("Brick.ifc")
+
 
 generator = Generator()
 generator.generate()

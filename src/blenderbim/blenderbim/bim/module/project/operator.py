@@ -127,7 +127,9 @@ class CreateProject(bpy.types.Operator):
                 bpy.data.meshes.remove(mesh)
             for mat in bpy.data.materials:
                 bpy.data.materials.remove(mat)
-        core.create_project(tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template)
+        core.create_project(
+            tool.Ifc, tool.Georeference, tool.Project, tool.Spatial, schema=props.export_schema, template=template
+        )
         blenderbim.bim.schema.reload(tool.Ifc.get().schema_identifier)
         tool.Blender.register_toolbar()
 

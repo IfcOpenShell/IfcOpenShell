@@ -98,7 +98,7 @@ class BIM_PT_tester(Panel):
             row = box.row(align=True)
             row.label(text=requirement["description"], icon="CHECKMARK" if requirement["status"] else "CANCEL")
             if not requirement["status"]:
-                op  = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
+                op = row.operator("bim.select_requirement", text="", icon="LONGDISPLAY")
                 op2 = row.operator("bim.select_failed_entities", text="", icon="RESTRICT_SELECT_OFF")
                 op.spec_index = props.active_specification_index
                 op.req_index = i

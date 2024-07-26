@@ -560,7 +560,7 @@ class Scheduler:
 
         text_tag = self.svg.text("", **(text_params | {"font-size": "0"} | box_alignment_params))
 
-        # TODO: Should be done without using magic number for self.font_width 
+        # TODO: Should be done without using magic number for self.font_width
         if wrap_text:
             wrapped_lines = []
             for line in text_lines:

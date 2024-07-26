@@ -39,6 +39,7 @@ class SelectFMIfcFile(MultipleFileSelector):
         self.update_props(props, "ifc_file", props.ifc_files)
         return {"FINISHED"}
 
+
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"

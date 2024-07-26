@@ -59,7 +59,9 @@ def register():
         bpy.utils.register_tool(workspace.SpatialTool, after={"bim.annotation_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMSpatialProperties = bpy.props.PointerProperty(type=prop.BIMSpatialProperties)
     bpy.types.Object.BIMObjectSpatialProperties = bpy.props.PointerProperty(type=prop.BIMObjectSpatialProperties)
-    bpy.types.Scene.BIMSpatialDecompositionProperties = bpy.props.PointerProperty(type=prop.BIMSpatialDecompositionProperties)
+    bpy.types.Scene.BIMSpatialDecompositionProperties = bpy.props.PointerProperty(
+        type=prop.BIMSpatialDecompositionProperties
+    )
 
 
 def unregister():

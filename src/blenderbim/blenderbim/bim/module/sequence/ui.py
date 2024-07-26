@@ -188,9 +188,9 @@ class BIM_PT_work_schedules(Panel):
                     row1.label(text="Schedule tools")
                     row1 = col.row(align=True)
                     row1.alignment = "RIGHT"
-                    row1.operator(
-                        "bim.generate_gantt_chart", text="Generate Gantt", icon="NLA"
-                    ).work_schedule = work_schedule_id
+                    row1.operator("bim.generate_gantt_chart", text="Generate Gantt", icon="NLA").work_schedule = (
+                        work_schedule_id
+                    )
                     row1.operator(
                         "bim.recalculate_schedule", text="Re-calculate Schedule", icon="FILE_REFRESH"
                     ).work_schedule = work_schedule_id
@@ -226,9 +226,9 @@ class BIM_PT_work_schedules(Panel):
                 )
                 col2 = grid.column()
                 row = col2.row(align=True)
-                row.operator(
-                    "bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION"
-                ).work_schedule = work_schedule_id
+                row.operator("bim.enable_editing_work_schedule_tasks", text="Tasks", icon="ACTION").work_schedule = (
+                    work_schedule_id
+                )
                 row.operator(
                     "bim.enable_editing_work_schedule", text="Attributes", icon="GREASEPENCIL"
                 ).work_schedule = work_schedule_id
@@ -266,12 +266,12 @@ class BIM_PT_work_schedules(Panel):
                     row2.prop(self.props, "enable_reorder", text="", icon="SORTALPHA")
                     row2.operator("bim.enable_editing_task_sequence", text="", icon="TRACKING")
                     row2.operator("bim.enable_editing_task_time", text="", icon="TIME").task = ifc_definition_id
-                    row2.operator(
-                        "bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO"
-                    ).task = ifc_definition_id
-                    row2.operator(
-                        "bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL"
-                    ).task = ifc_definition_id
+                    row2.operator("bim.enable_editing_task_calendar", text="", icon="VIEW_ORTHO").task = (
+                        ifc_definition_id
+                    )
+                    row2.operator("bim.enable_editing_task_attributes", text="", icon="GREASEPENCIL").task = (
+                        ifc_definition_id
+                    )
                 row.operator("bim.add_task", text="Add", icon="ADD").task = ifc_definition_id
                 row.operator("bim.duplicate_task", text="Copy", icon="DUPLICATE").task = ifc_definition_id
                 row.operator("bim.remove_task", text="Delete", icon="X").task = ifc_definition_id
@@ -876,13 +876,13 @@ class BIM_UL_tasks(UIList):
             row.label(text="", icon="BLANK1")
         if item.has_children:
             if item.is_expanded:
-                row.operator(
-                    "bim.contract_task", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
-                ).task = item.ifc_definition_id
+                row.operator("bim.contract_task", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").task = (
+                    item.ifc_definition_id
+                )
             else:
-                row.operator(
-                    "bim.expand_task", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
-                ).task = item.ifc_definition_id
+                row.operator("bim.expand_task", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").task = (
+                    item.ifc_definition_id
+                )
         else:
             row.label(text="", icon="DOT")
 
