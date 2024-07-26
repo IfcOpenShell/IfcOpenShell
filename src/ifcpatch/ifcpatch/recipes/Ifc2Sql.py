@@ -22,6 +22,7 @@ import re
 import json
 import time
 import tempfile
+import typing
 import itertools
 import numpy as np
 import multiprocessing
@@ -33,15 +34,19 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import ifcopenshell.util.placement
 
+SQLTypes = typing.Literal["SQLite", "MySQL"]
+
 try:
     import sqlite3
 except:
     print("No SQLite support")
+    SQLTypes = typing.Literal["MySQL"]
 
 try:
     import mysql.connector
 except:
     print("No MySQL support")
+    SQLTypes = typing.Literal["SQLite"]
 
 
 class Patcher:
@@ -50,7 +55,7 @@ class Patcher:
         src,
         file,
         logger,
-        sql_type: str = "sqlite",
+        sql_type: SQLTypes = "SQLite",
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
@@ -79,8 +84,8 @@ class Patcher:
           IfcRepresentation and IfcRepresentationItem classes. These tables are
           unnecessary if you are not interested in geometry.
 
-        :param sql_type: Choose between "sqlite" or "mysql"
-        :type sql_type: str
+        :param sql_type: Choose between "SQLite" or "MySQL"
+        :type sql_type: typing.Literal["SQLite", "MySQL"]
 
         Example:
 
@@ -92,7 +97,7 @@ class Patcher:
         self.src = src
         self.file = file
         self.logger = logger
-        self.sql_type = sql_type
+        self.sql_type = sql_type.lower()
         self.host = host
         self.username = username
         self.password = password
