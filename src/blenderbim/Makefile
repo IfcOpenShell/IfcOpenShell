@@ -96,7 +96,6 @@ OLD:=c18e4ea
 bump:
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
-	cd ../ifcopenshell-python/docs/ifcconvert/ && $(SED) -b "s/$(OLD)/$(NEW)/" installation.rst
 
 .PHONY: dist
 dist:
