@@ -1,4 +1,4 @@
-name: black-formatting
+name: ci-black-formatting
 
 on:
   push:
