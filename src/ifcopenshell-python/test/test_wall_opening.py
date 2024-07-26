@@ -230,7 +230,11 @@ class TestWallOpenings:
 
                 if i == 0 and j == 0:
                     for ln, st in cs:
-                        assert len([l for l in log if l.startswith(st)]) == ln, f"\nOn file:\n - {fn}\nMessages:" +  "".join(f'\n - "{l}"' for l in log) + f"\nExpected:\n - \"{st}\""
+                        assert len([l for l in log if l.startswith(st)]) == ln, (
+                            f"\nOn file:\n - {fn}\nMessages:"
+                            + "".join(f'\n - "{l}"' for l in log)
+                            + f'\nExpected:\n - "{st}"'
+                        )
 
                 # breakpoint()
 

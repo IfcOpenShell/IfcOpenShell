@@ -32,24 +32,16 @@ class TestOpen:
         assert ifcopenshell.open(TEST_FILE_DIR / "wall-with-opening-and-window.ifcxml")
 
     def test_open_ifc_zip_ifcxml_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "wall-with-opening-and-window_ifcxml_format.ifczip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "wall-with-opening-and-window_ifcxml_format.ifczip")
 
     def test_open_ifc_zip_ifcspf_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.ifczip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.ifczip")
 
     def test_open_zip(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.zip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.zip")
 
     def test_open_anyextension_ifcspf_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.anyextension"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.anyextension")
 
     def test_open_anyextension_ifczip_ifcspf_format(self):
         assert ifcopenshell.open(

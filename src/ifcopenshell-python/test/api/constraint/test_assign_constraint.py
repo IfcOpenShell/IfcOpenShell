@@ -27,9 +27,7 @@ class TestAssignConstraint(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         constraint = ifcopenshell.api.constraint.add_objective(self.file)
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element, element2], constraint=constraint)
         assert ifcopenshell.util.constraint.get_constrained_elements(constraint) == {element, element2}
         assert len(self.file.by_type("IfcRelAssociatesConstraint")) == 1
 
@@ -37,13 +35,9 @@ class TestAssignConstraint(test.bootstrap.IFC4):
         constraint = ifcopenshell.api.constraint.add_objective(self.file)
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element, element2], constraint=constraint)
         total_elements = len([e for e in self.file])
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element, element2], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element, element2], constraint=constraint)
         assert len([e for e in self.file]) == total_elements
 
     def test_that_old_relationships_are_updated_if_they_still_contain_elements(self):
@@ -54,9 +48,7 @@ class TestAssignConstraint(test.bootstrap.IFC4):
 
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
-        ifcopenshell.api.constraint.assign_constraint(
-            self.file, products=[element2, element3], constraint=constraint
-        )
+        ifcopenshell.api.constraint.assign_constraint(self.file, products=[element2, element3], constraint=constraint)
         assert len(rel.RelatedObjects) == 3
 
 

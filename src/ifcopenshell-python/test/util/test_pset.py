@@ -57,7 +57,7 @@ class TestPsetQto:
         assert "Pset_FurnitureTypeTable" in names
         names = self.pset_qto.get_applicable_names("IfcFurnitureType", "TABLE")
         assert "Pset_FurnitureTypeTable" in names
-        names = self.pset_qto.get_applicable_names("IfcFurnitureType" )
+        names = self.pset_qto.get_applicable_names("IfcFurnitureType")
         names2 = self.pset_qto.get_applicable_names("IfcFurnitureType", "CUSTOM")
         assert names == names2
 

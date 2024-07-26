@@ -50,7 +50,9 @@ def edit_prop_template(
     if enum_values := attributes.get("Enumerators", None):
         prop_name = attributes.get("Name", None) or getattr(prop_template, "Name", None) or "Unnamed"
         primary_measure_type = (
-            attributes.get("PrimaryMeasureType", None) or getattr(prop_template, "PrimaryMeasureType", None) or "IfcLabel"
+            attributes.get("PrimaryMeasureType", None)
+            or getattr(prop_template, "PrimaryMeasureType", None)
+            or "IfcLabel"
         )
         enum_values = [file.create_entity(primary_measure_type, v) for v in enum_values]
         if enumerators := prop_template.Enumerators:

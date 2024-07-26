@@ -61,9 +61,7 @@ class TestAssignPort(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.geometry.edit_object_placement(
-            self.file, product=element, matrix=matrix.copy(), is_si=False
-        )
+        ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix.copy(), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=subelement, matrix=submatrix.copy(), is_si=False
         )

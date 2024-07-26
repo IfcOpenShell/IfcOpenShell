@@ -1,5 +1,6 @@
 [tool.black]
 line-length = 120
+extend-exclude = 'src/ifcopenshell-python/ifcopenshell/express/*'
 
 [tool.pyright]
 reportInvalidTypeForm = false

@@ -19,7 +19,9 @@ import ifcopenshell
 from typing import Any
 
 
-def edit_organisation(file: ifcopenshell.file, organisation: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+def edit_organisation(
+    file: ifcopenshell.file, organisation: ifcopenshell.entity_instance, attributes: dict[str, Any]
+) -> None:
     """Edits the attributes of an IfcOrganization
 
     For more information about the attributes and data types of an
