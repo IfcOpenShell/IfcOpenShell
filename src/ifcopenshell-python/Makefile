@@ -90,6 +90,15 @@ coverage:
 clean:
 	rm -rf htmlcov
 
+.PHONY: zip-ifcconvert
+zip-ifcconvert:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(IFCCONVERT_URL)
+	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
+
 .PHONY: zip
 zip:
 ifndef PLATFORM
@@ -139,4 +148,4 @@ ifeq ($(IS_STABLE), TRUE)
 else
 	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 endif
-	# rm -rf build
+	rm -rf build
