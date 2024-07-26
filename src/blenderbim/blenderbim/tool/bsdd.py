@@ -38,6 +38,8 @@ class Bsdd(blenderbim.core.tool.Bsdd):
                     new2.data_type = "enum"
                 else:
                     new2.data_type = data_type_map[data["data_type"]]
+                new2.description = data["description"]
+                new2.ifc_class = data["ifc_class"]
 
     @classmethod
     def create_classes(cls, class_dict: list[bsdd.ClassSearchResponseClassContractV1]) -> None:
@@ -89,6 +91,10 @@ class Bsdd(blenderbim.core.tool.Bsdd):
         if not properties:
             return None
 
+        ifc_class = class_data.get("relatedIfcEntityNames") or ""
+        if ifc_class:
+            ifc_class = ifc_class[0]
+
         psets = {}
         for prop in properties:
             if prop.get("propertyDictionaryName") != "IFC":
@@ -105,7 +111,14 @@ class Bsdd(blenderbim.core.tool.Bsdd):
                 possible_values = prop.get("allowedValues", []) or []
                 possible_values = [v["value"] for v in possible_values]
 
-            psets[pset][prop["name"]] = {"data_type": prop["dataType"], "possible_values": possible_values}
+            description = prop.get("description", "")
+
+            psets[pset][prop["name"]] = {
+                "data_type": prop["dataType"],
+                "possible_values": possible_values,
+                "description": description,
+                "ifc_class": ifc_class,
+            }
         return psets
 
     @classmethod

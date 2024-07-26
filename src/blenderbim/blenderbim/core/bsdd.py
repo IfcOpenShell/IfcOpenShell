@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     import bpy
@@ -26,14 +26,14 @@ if TYPE_CHECKING:
     import blenderbim.tool as tool
 
 
-def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> int:
+def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> dict[str, dict[str, Any]]:
     bsdd.clear_class_psets()
     data = bsdd.get_active_class_data(client)
     pset_dict = bsdd.get_property_dict(data)
     if pset_dict is None:
-        return 0
+        return {}
     bsdd.create_class_psets(pset_dict)
-    return len(pset_dict)
+    return pset_dict
 
 
 def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
