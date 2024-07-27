@@ -44,6 +44,7 @@ class GeoreferenceData:
         cls.data["local_unit_symbol"] = cls.local_unit_symbol()
         cls.data["map_unit_symbol"] = cls.map_unit_symbol()
         cls.data["world_coordinate_system"] = cls.world_coordinate_system()
+        cls.data["local_origin"] = cls.local_origin()
         cls.is_loaded = True
 
     @classmethod
@@ -165,7 +166,7 @@ class GeoreferenceData:
 
             props = bpy.context.scene.BIMGeoreferenceProperties
             if props.has_blender_offset:
-                blender_xyz = ifcopenshell.util.geolocation.xyz2enh(
+                blender_xyz = ifcopenshell.util.geolocation.enh2xyz(
                     result["x"],
                     result["y"],
                     result["z"],
@@ -186,3 +187,16 @@ class GeoreferenceData:
             wcs[2][3] *= unit_scale
             result["matrix"] = Matrix(wcs)
         return result
+
+    @classmethod
+    def local_origin(cls):
+        props = bpy.context.scene.BIMGeoreferenceProperties
+        if not props.has_blender_offset:
+            return
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        x = float(props.blender_offset_x) * -1
+        y = float(props.blender_offset_y) * -1
+        z = float(props.blender_offset_z) * -1
+        enh = ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), 0, 0, 0)
+        xyz_si = Vector([x * unit_scale, y * unit_scale, z * unit_scale])
+        return {"x": x, "y": y, "z": z, "enh": enh, "location": xyz_si}
