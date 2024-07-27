@@ -17,7 +17,24 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 
-def copy_property_to_selection(ifc, pset, is_pset=True, obj=None, pset_name=None, prop_name=None, prop_value=None):
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union, Any
+
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def copy_property_to_selection(
+    ifc: tool.Ifc,
+    pset: tool.Pset,
+    obj: bpy.types.Object,
+    pset_name: str,
+    prop_name: str,
+    prop_value: Any,
+    is_pset: bool = True,
+) -> None:
     element = ifc.get_entity(obj)
     if not element:
         return
@@ -30,7 +47,9 @@ def copy_property_to_selection(ifc, pset, is_pset=True, obj=None, pset_name=None
         ifc.run("pset.edit_qto", qto=ifc_pset, properties={prop_name: prop_value})
 
 
-def add_pset(ifc, pset, blender, obj_name, obj_type):
+def add_pset(
+    ifc: tool.Ifc, pset: tool.Pset, blender: tool.Blender, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE
+) -> None:
     pset_name = pset.get_pset_name(obj_name, obj_type, pset_type="PSET")
     if obj_type == "Object":
         elements = [ifc.get_entity(obj) for obj in blender.get_selected_objects()]
@@ -44,7 +63,14 @@ def add_pset(ifc, pset, blender, obj_name, obj_type):
         pset.enable_pset_editing(pset_id=0, pset_name=pset_name, pset_type="PSET", obj=obj_name, obj_type=obj_type)
 
 
-def enable_pset_editing(pset_tool, pset, pset_name, pset_type, obj_name, obj_type):
+def enable_pset_editing(
+    pset_tool: tool.Pset,
+    pset: ifcopenshell.entity_instance,
+    pset_name: str,
+    pset_type: tool.Pset.PSET_TYPE,
+    obj_name: str,
+    obj_type: tool.Ifc.OBJECT_TYPE,
+) -> None:
     props = pset_tool.get_pset_props(obj_name, obj_type)
     pset_tool.clear_blender_pset_properties(props)
 
@@ -63,6 +89,6 @@ def enable_pset_editing(pset_tool, pset, pset_name, pset_type, obj_name, obj_typ
         pset_tool.enable_proposed_pset(props, pset_name, pset_type, has_template)
 
 
-def add_proposed_prop(pset, obj_name, obj_type, name, value):
+def add_proposed_prop(pset: tool.Pset, obj_name: str, obj_type: tool.Ifc.OBJECT_TYPE, name: str, value: Any) -> None:
     props = pset.get_pset_props(obj_name, obj_type)
     pset.add_proposed_property(name, pset.cast_string_to_primitive(value), props)
