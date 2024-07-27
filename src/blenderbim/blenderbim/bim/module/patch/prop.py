@@ -65,6 +65,5 @@ class BIMPatchProperties(PropertyGroup):
     ifc_patch_recipes: EnumProperty(items=get_ifcpatch_recipes, name="Recipes", update=update_ifc_patch_recipe)
     ifc_patch_input: StringProperty(default="", name="IFC Patch Input IFC")
     ifc_patch_output: StringProperty(default="", name="IFC Patch Output IFC")
-    ifc_patch_args: StringProperty(default="", name="Arguments")
     ifc_patch_args_attr: CollectionProperty(type=Attribute, name="Arguments")
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
