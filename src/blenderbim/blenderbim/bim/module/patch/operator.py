@@ -77,7 +77,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
         props = context.scene.BIMPatchProperties
         arguments = []
         if props.ifc_patch_args_attr:
-           arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
+            arguments = [arg.get_value() for arg in props.ifc_patch_args_attr]
 
         if props.should_load_from_memory and tool.Ifc.get():
             input_file = props.ifc_patch_input
