@@ -288,12 +288,15 @@ class BIM_PT_gis_calculator(Panel):
 
         props = context.scene.BIMGeoreferenceProperties
 
-        row = self.layout.row(align=True)
-        row.prop(props, "local_coordinates", text=f"Local ({GeoreferenceData.data['local_unit_symbol']})")
-        row.operator("bim.get_cursor_location", text="", icon="TRACKER")
-        row = self.layout.row()
-        row.prop(props, "map_coordinates", text=f"Map ({GeoreferenceData.data['map_unit_symbol']})")
+        if props.has_blender_offset:
+            row = self.layout.row(align=True)
+            row.prop(props, "blender_coordinates", text=f"Blender ({GeoreferenceData.data['local_unit_symbol']})")
+            row.operator("bim.get_cursor_location", text="", icon="TRACKER")
 
         row = self.layout.row(align=True)
-        row.operator("bim.convert_local_to_global", text="Local to Global")
-        row.operator("bim.convert_global_to_local", text="Global to Local")
+        row.prop(props, "local_coordinates", text=f"Local ({GeoreferenceData.data['local_unit_symbol']})")
+        if not props.has_blender_offset:
+            row.operator("bim.get_cursor_location", text="", icon="TRACKER")
+
+        row = self.layout.row()
+        row.prop(props, "map_coordinates", text=f"Map ({GeoreferenceData.data['map_unit_symbol']})")
