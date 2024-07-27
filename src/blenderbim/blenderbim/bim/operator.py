@@ -974,7 +974,7 @@ class BIM_OT_show_description(bpy.types.Operator):
             layout.label(text=line)
         if self.url:
             url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
-            url_op.url = self.url
+            url_op.uri = self.url
 
     @classmethod
     def description(cls, context, properties):
