@@ -2,7 +2,9 @@ import sys
 import os
 import webbrowser
 
-blenderbim_lib_path = os.environ.get("blenderbim_lib_path")
+blenderbim_lib_path = os.environ.get("BLENDERBIM_LIB_PATH")
+blender_version = os.environ.get("BLENDER_VERSION")
+
 if blenderbim_lib_path:
     sys.path.insert(0, blenderbim_lib_path)
 
@@ -120,14 +122,14 @@ sio.register_namespace(BlenderNamespace("/blender"))
 async def index(request):
     with open("templates/index.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port})
+    html_content = pystache.render(template, {"port": sio_port, "version": blender_version})
     return web.Response(text=html_content, content_type="text/html")
 
 
 async def gantt(request):
     with open("templates/gantt.html", "r") as f:
         template = f.read()
-    html_content = pystache.render(template, {"port": sio_port})
+    html_content = pystache.render(template, {"port": sio_port, "version": blender_version})
     return web.Response(text=html_content, content_type="text/html")
 
 

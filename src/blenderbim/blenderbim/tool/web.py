@@ -122,7 +122,8 @@ class Web(blenderbim.core.tool.Web):
             blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
 
         env = os.environ.copy()
-        env["blenderbim_lib_path"] = str(blenderbim_lib_path)
+        env["BLENDERBIM_LIB_PATH"] = str(blenderbim_lib_path)
+        env["BLENDER_VERSION"] = ".".join(map(str, bpy.app.version))
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
