@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.util.geolocation
+import blenderbim.tool as tool
 from blenderbim.bim.prop import Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -101,6 +102,74 @@ def update_should_visualise(self, context):
         GeoreferenceDecorator.uninstall()
 
 
+def update_blender_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    blender_coordinates = tool.Georeference.get_coordinates("blender")
+    local_coordinates = ifcopenshell.util.geolocation.xyz2enh(
+        *blender_coordinates,
+        float(props.blender_offset_x),
+        float(props.blender_offset_y),
+        float(props.blender_offset_z),
+        float(props.blender_x_axis_abscissa),
+        float(props.blender_x_axis_ordinate),
+    )
+    tool.Georeference.set_coordinates("local", local_coordinates)
+    tool.Georeference.set_coordinates(
+        "map", ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *local_coordinates)
+    )
+    props.is_updating_coordinates = False
+
+
+def update_local_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    local_coordinates = tool.Georeference.get_coordinates("local")
+    tool.Georeference.set_coordinates(
+        "map", ifcopenshell.util.geolocation.auto_xyz2enh(tool.Ifc.get(), *local_coordinates)
+    )
+    if props.has_blender_offset:
+        tool.Georeference.set_coordinates(
+            "blender",
+            ifcopenshell.util.geolocation.enh2xyz(
+                *local_coordinates,
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            ),
+        )
+    props.is_updating_coordinates = False
+
+
+def update_map_coordinates(self, context):
+    props = bpy.context.scene.BIMGeoreferenceProperties
+    if props.is_updating_coordinates:
+        return
+    props.is_updating_coordinates = True
+    map_coordinates = tool.Georeference.get_coordinates("map")
+    local_coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *map_coordinates)
+    tool.Georeference.set_coordinates("local", local_coordinates)
+    if props.has_blender_offset:
+        tool.Georeference.set_coordinates(
+            "blender",
+            ifcopenshell.util.geolocation.enh2xyz(
+                *local_coordinates,
+                float(props.blender_offset_x),
+                float(props.blender_offset_y),
+                float(props.blender_offset_z),
+                float(props.blender_x_axis_abscissa),
+                float(props.blender_x_axis_ordinate),
+            ),
+        )
+    props.is_updating_coordinates = False
+
+
 class BIMGeoreferenceProperties(PropertyGroup):
     coordinate_operation_class: bpy.props.EnumProperty(
         items=get_coordinate_operation_class, name="Coordinate Operation Class"
@@ -111,11 +180,24 @@ class BIMGeoreferenceProperties(PropertyGroup):
     is_editing_true_north: BoolProperty(name="Is Editing True North")
     coordinate_operation: CollectionProperty(name="Coordinate Operation", type=Attribute)
     projected_crs: CollectionProperty(name="Projected CRS", type=Attribute)
+    is_updating_coordinates: BoolProperty(name="Is Updating Coordinates", default=False)
+    blender_coordinates: StringProperty(
+        name="Blender Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_blender_coordinates,
+    )
     local_coordinates: StringProperty(
-        name="Local Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+        name="Local Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_local_coordinates,
     )
     map_coordinates: StringProperty(
-        name="Map Coordinates", description='Formatted "x,y,z" (without quotes)', default="0,0,0"
+        name="Map Coordinates",
+        description='Formatted "x,y,z" (without quotes)',
+        default="0,0,0",
+        update=update_map_coordinates,
     )
     should_visualise: BoolProperty(
         name="Should Visualise",
