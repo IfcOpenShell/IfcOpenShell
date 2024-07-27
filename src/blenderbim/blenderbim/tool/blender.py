@@ -32,6 +32,7 @@ from mathutils import Vector
 from pathlib import Path
 from blenderbim.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable
+from typing_extensions import assert_never
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -163,8 +164,14 @@ class Blender(blenderbim.core.tool.Blender):
 
     @classmethod
     def get_obj_ifc_definition_id(
-        cls, obj: Optional[str] = None, obj_type: Optional[str] = None, context: Optional[bpy.types.Context] = None
+        cls,
+        obj: Optional[str] = None,
+        obj_type: Optional[tool.Ifc.OBJECT_TYPE] = None,
+        context: Optional[bpy.types.Context] = None,
     ) -> Union[int, None]:
+        # TODO: is it ever used as None?
+        if obj_type is None:
+            return None
         if context is None:
             context = bpy.context
         if obj_type == "Object":
@@ -200,6 +207,7 @@ class Blender(blenderbim.core.tool.Blender):
         elif obj_type == "Group":
             prop = context.scene.BIMGroupProperties
             return prop.groups[prop.active_group_index].ifc_definition_id
+        assert_never(obj_type)
 
     @classmethod
     def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
