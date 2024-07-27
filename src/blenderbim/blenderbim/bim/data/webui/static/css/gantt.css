@@ -59,9 +59,13 @@ body {
     color: var(--primary-text-color);
     margin: 0;
     font-family: var(--font-family);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 #container {
+    flex: 1;
     margin-top: var(--margin-medium);
     margin-left: var(--margin-small);
     margin-right: var(--margin-small);
@@ -213,6 +217,20 @@ nav ul li a.active {
     font-size: var(--base-font-size);
     margin-left: var(--margin-tiny);
     margin-top: var(--margin-small);
+}
+
+footer {
+    background-color: var(--nav-bg-color);
+    text-align: right;
+    padding: var(--padding-tiny);
+    border-top: 1px solid var(--nav-border-color);
+}
+
+footer p {
+    margin: 0;
+    color: var(--text-color);
+    margin-right: var(--margin-small);
+    font-size: 0.8rem;
 }
 
 .gantt-info {
