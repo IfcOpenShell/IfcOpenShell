@@ -1111,4 +1111,4 @@ def draw_custom_context_menu(self, context):
             if url:
                 layout.separator()
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
-                url_op.url = url
+                url_op.uri = url
