@@ -11,6 +11,7 @@ $(document).ready(function () {
   var theme = localStorage.getItem("theme") || systemTheme;
   setTheme(theme);
 
+  $("#dropdown-menu").change(displayDrawingsNames);
   connectSocket();
 });
 
@@ -74,13 +75,15 @@ function handleDrawingsData(data) {
 
   allDrawings[filename] = { drawings: drawings, sheets: sheets };
 
+  console.log(connectedClients);
+
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
       connectedClients[blenderId] = {
         shown: true,
         ifc_file: filename,
       };
-      // add(blenderId, data, filename);
+      addSelectOption(blenderId, filename);
     } else {
       // update(blenderId, data, filename);
     }
@@ -89,8 +92,43 @@ function handleDrawingsData(data) {
       shown: true,
       ifc_file: filename,
     };
-    // add(blenderId, data, filename);
+    addSelectOption(blenderId, filename);
   }
+}
+
+function addSelectOption(blenderId, filename) {
+  const filenameOption = $("<option></option>")
+    .attr("id", "blender" + blenderId)
+    .val(filename)
+    .text(filename);
+  $("#dropdown-menu").append(filenameOption);
+}
+
+function displayDrawingsNames() {
+  ifcFile = $("#dropdown-menu").val();
+
+  drawings = allDrawings[ifcFile].drawings;
+  sheets = allDrawings[ifcFile].sheets;
+
+  function createLabel(text, index, type) {
+    var label = $("<li></lio>")
+      .text(text)
+      .attr("id", index)
+      .click(function () {
+        console.log("ID:", $(this).attr("id"), "Name:", text);
+      });
+
+    if (type === "drawing") $("#drawings-sub-panel").append(label);
+    else if (type === "sheet") $("#sheets-sub-panel").append(label);
+  }
+
+  drawings.forEach(function (drawing, index) {
+    createLabel(drawing.name, index, "drawing");
+  });
+
+  sheets.forEach(function (sheet, index) {
+    createLabel(sheet.name, index, "sheet");
+  });
 }
 
 function setTheme(theme) {

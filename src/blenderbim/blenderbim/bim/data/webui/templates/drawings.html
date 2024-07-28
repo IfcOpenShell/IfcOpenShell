@@ -55,10 +55,10 @@
       <div class="col-2 left">
         <!-- Dropdown menu -->
         <div class="dropdown mb-3">
-          <label for="dropdown-menu">IFC File</label>
+          <label for="dropdown-menu">IFC File:</label>
           <select class="p-0 pl-2" id="dropdown-menu">
             <!-- IFC files will be dynamically populated here -->
-            <option value="" selected disabled hidden>Select IFC File</option>
+            <option value="" selected disabled hidden>IFC File</option>
           </select>
         </div>
         <!-- Panel with sub-panels -->
@@ -77,16 +77,13 @@
 
               <div id="collapseOne" class="collapse show">
                 <div class="card-body">
-                  <div class="sub-panel" id="sub-panel-1">
-                    <label>Item 1</label>
-                    <label>Item 2</label>
-                    <label>Item 3</label>
+                  <div class="sub-panel pl-2" id="drawings-sub-panel">
                     <!-- Drawings will be dynamically populated here -->
                   </div>
                 </div>
               </div>
             </div>
-            <div class="card">
+            <div class="card pb-2">
               <div class="card-header overflow-hidden" id="headingTwo">
                 <button
                   class="btn p-0 w-100 text-left"
@@ -98,7 +95,7 @@
               </div>
               <div id="collapseTwo" class="collapse show">
                 <div class="card-body">
-                  <ul class="sub-panel" id="sub-panel-2">
+                  <ul class="sub-panel pl-2" id="sheets-sub-panel">
                     <!-- Sheets will be dynamically populated here -->
                   </ul>
                 </div>
