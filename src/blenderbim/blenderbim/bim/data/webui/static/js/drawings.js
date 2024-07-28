@@ -11,7 +11,12 @@ $(document).ready(function () {
   var theme = localStorage.getItem("theme") || systemTheme;
   setTheme(theme);
 
-  $("#dropdown-menu").change(displayDrawingsNames);
+  $("#dropdown-menu").change(function () {
+    const blenderId = $(this).attr("id");
+    const ifcFile = $(this).val();
+    displayDrawingsNames(blenderId, ifcFile);
+  });
+
   connectSocket();
 });
 
@@ -98,15 +103,13 @@ function handleDrawingsData(data) {
 
 function addSelectOption(blenderId, filename) {
   const filenameOption = $("<option></option>")
-    .attr("id", "blender" + blenderId)
+    .attr("id", "blender-" + blenderId)
     .val(filename)
     .text(filename);
   $("#dropdown-menu").append(filenameOption);
 }
 
-function displayDrawingsNames() {
-  ifcFile = $("#dropdown-menu").val();
-
+function displayDrawingsNames(blenderId, ifcFile) {
   drawings = allDrawings[ifcFile].drawings;
   sheets = allDrawings[ifcFile].sheets;
 
@@ -123,10 +126,12 @@ function displayDrawingsNames() {
     else if (type === "sheet") $("#sheets-sub-panel").append(label);
   }
 
+  $("#drawings-sub-panel").empty();
   drawings.forEach(function (drawing, index) {
     createSvgNames(drawing.name, index, "drawing");
   });
 
+  $("#sheets-sub-panel").empty();
   sheets.forEach(function (sheet, index) {
     createSvgNames(sheet.name, index, "sheet");
   });
