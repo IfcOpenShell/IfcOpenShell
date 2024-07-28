@@ -223,6 +223,10 @@ nav ul li a.active {
     overflow: auto;
 }
 
+li.svg-name {
+    list-style-type: none;
+}
+
 #dropdown-menu:focus {
     outline: none;
 }

@@ -110,10 +110,11 @@ function displayDrawingsNames() {
   drawings = allDrawings[ifcFile].drawings;
   sheets = allDrawings[ifcFile].sheets;
 
-  function createLabel(text, index, type) {
+  function createSvgNames(text, index, type) {
     var label = $("<li></lio>")
       .text(text)
       .attr("id", index)
+      .addClass("svg-name")
       .click(function () {
         console.log("ID:", $(this).attr("id"), "Name:", text);
       });
@@ -123,11 +124,11 @@ function displayDrawingsNames() {
   }
 
   drawings.forEach(function (drawing, index) {
-    createLabel(drawing.name, index, "drawing");
+    createSvgNames(drawing.name, index, "drawing");
   });
 
   sheets.forEach(function (sheet, index) {
-    createLabel(sheet.name, index, "sheet");
+    createSvgNames(sheet.name, index, "sheet");
   });
 }
 
