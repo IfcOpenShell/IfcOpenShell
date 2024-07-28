@@ -49,19 +49,12 @@ class WebNamespace(socketio.AsyncNamespace):
     async def on_disconnect(self, sid):
         print(f"Web client disconnected: {sid}")
 
-    async def on_join_room(self, sid, data):
-        room = data["room"]
-        await sio.enter_room(sid, room=room)
-
-        if room == "drawings":
-            await sio.emit("get_drawings_data", namespace="/blender")
-
     async def on_web_operator(self, sid, data):
         await sio.emit(
             "web_operator",
             data,
             namespace="/blender",
-            room=data["blenderId"],
+            room=data.get("blenderId", None),
         )
 
     async def send_cached_messages(self, sid):
@@ -109,6 +102,7 @@ class BlenderNamespace(socketio.AsyncNamespace):
 
     async def on_drawings_data(self, sid, data):
         print(f"Drawings directory from Blender client {sid}")
+        print(data)
         blender_messages[sid]["drwings_data"] = data
         await sio.emit("drawings_data", {"blenderId": sid, "data": data}, namespace="/web")
 

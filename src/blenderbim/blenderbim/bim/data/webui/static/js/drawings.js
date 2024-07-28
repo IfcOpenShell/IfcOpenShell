@@ -28,9 +28,15 @@ function connectSocket() {
   //   socket.on("default_data", handleDefaultData);
 }
 
-// function used to join drawings room
+// function used to get drawings data from blenderbim
 function handleWebConnect() {
-  socket.emit("join_room", { room: "drawings" });
+  const msg = {
+    sourcePage: "drawings",
+    operator: {
+      type: "getDrawings",
+    },
+  };
+  socket.emit("web_operator", msg);
 }
 
 // Function to handle 'blender_connect' event
@@ -57,7 +63,7 @@ function handleBlenderDisconnect(blenderId) {
   });
 }
 
-function handleDrawingsData(blenderId) {
+function handleDrawingsData(data) {
   const blenderId = data["blenderId"];
 
   console.log(data);

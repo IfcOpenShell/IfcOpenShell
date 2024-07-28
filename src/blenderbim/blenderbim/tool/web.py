@@ -280,6 +280,8 @@ class Web(blenderbim.core.tool.Web):
                 cls.handle_csv_operator(operator["operator"])
             elif operator["sourcePage"] == "gantt":
                 cls.handle_gantt_operator(operator["operator"])
+            elif operator["sourcePage"] == "drawings":
+                cls.handle_drawings_operator(operator["operator"])
         return 1.0
 
     @classmethod
@@ -323,6 +325,29 @@ class Web(blenderbim.core.tool.Web):
         task_json = tool.Sequence.create_tasks_json(work_schedule)
         gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
         cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
+
+    @classmethod
+    def handle_drawings_operator(cls, operator_data: dict) -> None:
+        if operator_data["type"] == "getDrawings":
+            drawings_data = []
+            sheets_data = []
+            ifc_file_dir = os.path.dirname(bpy.context.scene.BIMProperties.ifc_file)
+
+            sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
+            for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
+                for reference in tool.Drawing.get_document_references(sheet):
+                    reference_description = tool.Drawing.get_reference_description(reference)
+                    reference_location = tool.Drawing.get_reference_location(reference)
+                    reference_name = os.path.basename(reference_location)
+                    reference_path = os.path.join(ifc_file_dir, reference_location)
+                    if reference_description == "SHEET":
+                        sheets_data.append({"name": reference_name, "path": reference_path})
+                    if reference_description == "DRAWING":
+                        drawings_data.append({"name": reference_name, "path": reference_path})
+
+            cls.send_webui_data(
+                data={"drawings": drawings_data, "sheets": sheets_data}, data_key="drawings_data", event="drawings_data"
+            )
 
     @classmethod
     def open_web_browser(cls, port: int) -> None:
