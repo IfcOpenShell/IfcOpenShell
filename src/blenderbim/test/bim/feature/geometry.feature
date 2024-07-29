@@ -50,7 +50,6 @@ Scenario: Add representation - add a representation with a scale factor applied
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" has no scale
@@ -62,7 +61,6 @@ Scenario: Add representation - add a representation with a scale factor removed 
     And I press "object.duplicate_move_linked"
     And the object "Cube" is selected
     When the object "Cube" is scaled to "2"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
@@ -192,7 +190,6 @@ Scenario: Update representation - updating a tessellation
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And I press "bim.update_representation(obj='IfcWall/Cube')"
@@ -202,7 +199,6 @@ Scenario: Update representation - updating a layered extrusion
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
