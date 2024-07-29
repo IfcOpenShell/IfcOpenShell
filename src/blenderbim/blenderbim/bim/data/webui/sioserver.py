@@ -57,6 +57,13 @@ class WebNamespace(socketio.AsyncNamespace):
             room=data.get("blenderId", None),
         )
 
+    async def on_get_svg(self, sid, data):
+        print("hello world!")
+        file_path = data["path"]
+        with open(file_path, "r") as file:
+            svg_data = file.read()
+        await sio.emit("svg_data", svg_data, room=sid, namespace="/web")
+
     async def send_cached_messages(self, sid):
         # Send cached messages to the connected web client
         for blenderId, messages in blender_messages.items():
