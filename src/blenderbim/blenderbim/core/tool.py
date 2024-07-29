@@ -496,23 +496,30 @@ class Material:
     def add_material_to_set(cls, material_set, material): pass
     def disable_editing_material(cls): pass
     def disable_editing_materials(cls): pass
+    def duplicate_material(cls, material): pass
     def enable_editing_material(cls, material): pass
     def enable_editing_materials(cls): pass
-    def get_active_material(cls): pass
+    def ensure_material_assigned(cls, elements, material_type, material): pass
+    def ensure_material_unassigned(cls, elements): pass
+    def get_active_material_item(cls): pass
     def get_active_material_type(cls): pass
-    def get_active_object_material_type(cls, obj): pass
+    def get_default_material(cls): pass
     def get_elements_by_material(cls, material): pass
-    def get_material(cls, element, should_inherit): pass
     def get_material_attributes(cls): pass
+    def get_material(cls, element, should_inherit: bool = False): pass
+    def get_object_ui_active_material(cls): pass
+    def get_object_ui_material_type(cls): pass
+    def get_style(cls, material): pass
     def get_type(cls, element): pass
     def has_material_profile(cls, element): pass
-    def import_material_definitions(cls, material_type): pass
+    def import_material_definitions(cls, material_type: str): pass
     def is_a_flow_segment(cls, element): pass
     def is_a_material_set(cls, material): pass
     def is_editing_materials(cls): pass
     def is_material_used_in_sets(cls, material): pass
     def load_material_attributes(cls, material): pass
     def replace_material_with_material_profile(cls, element): pass
+    def update_elements_using_material(cls, material): pass
 
 
 @interface
