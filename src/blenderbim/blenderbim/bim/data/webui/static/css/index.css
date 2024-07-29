@@ -162,7 +162,6 @@ nav ul li a.active {
 
 .client-details.show {
     max-height: none;
-    padding: var(--padding-small);
     opacity: 1;
 }
 
