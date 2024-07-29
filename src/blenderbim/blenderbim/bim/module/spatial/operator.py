@@ -30,11 +30,9 @@ class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reference_structure"
     bl_label = "Reference Structure"
     bl_options = {"REGISTER", "UNDO"}
-    structure: bpy.props.IntProperty()
 
     def _execute(self, context):
-        sprops = context.scene.BIMSpatialProperties
-        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        containers = tool.Spatial.get_selected_containers()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -47,11 +45,9 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.dereference_structure"
     bl_label = "Dereference Structure"
     bl_options = {"REGISTER", "UNDO"}
-    structure: bpy.props.IntProperty()
 
     def _execute(self, context):
-        sprops = context.scene.BIMSpatialProperties
-        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        containers = tool.Spatial.get_selected_containers()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -64,14 +60,13 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
     bl_options = {"REGISTER", "UNDO"}
-    structure: bpy.props.IntProperty()
 
     def _execute(self, context):
-        structure_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.structure))
-        for element_obj in context.selected_objects:
-            core.assign_container(
-                tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
-            )
+        if container := tool.Root.get_default_container():
+            for element_obj in context.selected_objects:
+                core.assign_container(
+                    tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
+                )
 
 
 class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -81,16 +76,6 @@ class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.enable_editing_container(tool.Spatial, obj=context.active_object)
-
-
-class ChangeSpatialLevel(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.change_spatial_level"
-    bl_label = "Change Spatial Level"
-    bl_options = {"REGISTER", "UNDO"}
-    parent: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        core.change_spatial_level(tool.Spatial, parent=tool.Ifc.get().by_id(self.parent))
 
 
 class DisableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -129,11 +114,10 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        sprops = context.scene.BIMSpatialProperties
         # Track decompositions so they can be recreated after the operation
         relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
         old_to_new = {}
-        containers = [tool.Ifc.get().by_id(c.ifc_definition_id) for c in sprops.containers if c.is_selected]
+        containers = tool.Spatial.get_selected_containers()
         for obj in context.selected_objects:
             result_objs = core.copy_to_container(tool.Ifc, tool.Collector, tool.Spatial, obj=obj, containers=containers)
             if result_objs:

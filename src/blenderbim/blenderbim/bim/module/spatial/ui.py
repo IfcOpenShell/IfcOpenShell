@@ -39,24 +39,32 @@ class BIM_PT_spatial(Panel):
         if not SpatialData.is_loaded:
             SpatialData.load()
 
-        props = context.scene.BIMSpatialProperties
         osprops = context.active_object.BIMObjectSpatialProperties
 
         if osprops.is_editing:
-            row = self.layout.row(align=True)
-            if SpatialData.data["parent_container_id"]:
-                op = row.operator("bim.change_spatial_level", text="", icon="FRAME_PREV")
-                op.parent = SpatialData.data["parent_container_id"]
-            if props.containers and props.active_container_index < len(props.containers):
-                op = row.operator("bim.assign_container", icon="CHECKMARK")
-                op.structure = props.containers[props.active_container_index].ifc_definition_id
-            row.operator("bim.reference_structure", icon="LINKED", text="")
-            row.operator("bim.dereference_structure", icon="UNLINKED", text="")
-            row.operator("bim.copy_to_container", icon="COPYDOWN", text="")
-            row.operator("bim.disable_editing_container", icon="CANCEL", text="")
+            if SpatialData.data["default_container"]:
+                row = self.layout.row(align=True)
+                row.label(text=f"Target: {SpatialData.data['default_container']}", icon="OUTLINER_COLLECTION")
+                row.operator("bim.assign_container", icon="CHECKMARK", text="Reassign Container")
+                row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
-            self.layout.template_list("BIM_UL_containers", "", props, "containers", props, "active_container_index")
-            self.layout.prop(osprops, "relating_container_object")
+            if SpatialData.data["selected_containers"]:
+                row = self.layout.row()
+                row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
+                for name in SpatialData.data['selected_containers'][:3]:
+                    row = self.layout.row()
+                    row.label(text=name, icon="OUTLINER_COLLECTION")
+                if len(SpatialData.data['selected_containers']) > 3:
+                    row = self.layout.row()
+                    row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
+                row = self.layout.row(align=True)
+                row.operator("bim.reference_structure", icon="LINKED", text="Reference Selected")
+                row.operator("bim.dereference_structure", icon="UNLINKED", text="")
+                row = self.layout.row()
+                row.operator("bim.copy_to_container", icon="COPYDOWN", text="Copy Object To Selected")
+            else:
+                row = self.layout.row()
+                row.label(text="No Selected Containers")
         else:
             row = self.layout.row(align=True)
             if SpatialData.data["label"]:
@@ -72,23 +80,6 @@ class BIM_PT_spatial(Panel):
             for reference in SpatialData.data["references"]:
                 row = self.layout.row()
                 row.label(text=reference, icon="LINKED")
-
-
-class BIM_UL_containers(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        if item:
-            if item.has_decomposition:
-                op = layout.operator("bim.change_spatial_level", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
-                op.parent = item.ifc_definition_id
-            layout.label(text=item.name)
-            layout.label(text=item.long_name)
-            layout.prop(
-                item,
-                "is_selected",
-                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
-                text="",
-                emboss=False,
-            )
 
 
 class BIM_PT_spatial_decomposition(Panel):
