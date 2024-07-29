@@ -478,3 +478,31 @@ class BIMFacet(PropertyGroup):
 
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
+
+
+def update_single_file(self, context):
+    self.file_list.clear()
+    new = self.file_list.add()
+    new.name = self.single_file
+
+
+class MultipleFileSelect(bpy.types.PropertyGroup):
+    single_file: bpy.props.StringProperty(name="Single File Path", description="", update=update_single_file)
+    file_list: bpy.props.CollectionProperty(type=StrProperty)
+
+    def set_file_list(self, dirname: str, files: list[str]):
+        self.file_list.clear()
+
+        for f in files:
+            new = self.file_list.add()
+            new.name = os.path.join(dirname, f)
+
+    def layout_file_select(self, layout, filter_glob="", text=""):
+        if len(self.file_list) > 1:
+            layout.label(text=f"{len(self.file_list)} Files Selected")
+        else:
+            layout.prop(self, "single_file", text=text)
+
+        layout.context_pointer_set("file_props", self)
+        op = layout.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
+        op.filter_glob = filter_glob

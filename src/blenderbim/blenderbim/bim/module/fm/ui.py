@@ -45,12 +45,8 @@ class BIM_PT_fm(Panel):
             row.prop(props, "should_load_from_memory")
 
         if not IfcStore.get_file() or not props.should_load_from_memory:
-            row = layout.row(align=True)
-            if len(props.ifc_files) > 1:
-                row.label(text=f"{len(props.ifc_files)} Files Selected")
-            else:
-                row.prop(props, "ifc_file")
-            row.operator("bim.select_fm_ifc_file", icon="FILE_FOLDER", text="")
+            row = layout.row()
+            props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
 
         row = layout.row()
         row.prop(props, "engine")

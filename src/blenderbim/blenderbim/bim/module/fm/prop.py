@@ -18,7 +18,7 @@
 
 import bpy
 from blenderbim.bim.module.fm.data import FMData
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import MultipleFileSelect, StrProperty
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -39,8 +39,7 @@ def get_engine(self, context):
 
 
 class BIMFMProperties(PropertyGroup):
-    ifc_file: StringProperty(default="", name="IFC File")
-    ifc_files: CollectionProperty(name="IFC Files", type=StrProperty)
+    ifc_files: PointerProperty(type=MultipleFileSelect)
     spreadsheet_files: CollectionProperty(name="Spreadsheets", type=StrProperty)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
     engine: EnumProperty(items=get_engine, name="Engine")
