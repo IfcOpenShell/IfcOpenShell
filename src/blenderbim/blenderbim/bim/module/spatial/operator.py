@@ -237,15 +237,36 @@ class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_decomposed_elements"
     bl_label = "Select Children"
     bl_options = {"REGISTER", "UNDO"}
+    should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
     ifc_class: bpy.props.StringProperty()
+    relating_type: bpy.props.IntProperty()
 
     @classmethod
     def description(cls, context, operator):
-        return f"Select all elements contained in this {operator.ifc_class}"
+        return "Select all contained elements filtered by this type" + "\nALT+CLICK to select all contained elements"
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.should_filter = False
+        return self.execute(context)
 
     def _execute(self, context):
-        core.select_decomposed_elements(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        if self.should_filter:
+            ifc_class = self.ifc_class
+            relating_type = tool.Ifc.get().by_id(self.relating_type) if self.relating_type else None
+            is_untyped = self.relating_type == 0
+        else:
+            ifc_class = ""
+            relating_type = None
+            is_untyped = False
+        core.select_decomposed_elements(
+            tool.Spatial,
+            container=tool.Ifc.get().by_id(self.container),
+            ifc_class=ifc_class,
+            relating_type=relating_type,
+            is_untyped=is_untyped,
+        )
 
 
 class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):

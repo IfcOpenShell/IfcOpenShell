@@ -161,15 +161,20 @@ class BIM_PT_spatial_decomposition(Panel):
 
         if not self.props.total_elements:
             row = self.layout.row(align=True)
-            row.label(text="No Contained Elements", icon="FILE_3D")
+            row.label(text=f"{self.props.active_container.ifc_class} > No Contained Elements", icon="FILE_3D")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
             return
 
         row = self.layout.row(align=True)
-        row.label(text=f"{self.props.total_elements} Contained Elements", icon="FILE_3D")
+        row.label(text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Contained Elements", icon="FILE_3D")
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
-        op.ifc_class = self.props.active_container.ifc_class
+        if self.props.active_element.is_class:
+            op.ifc_class = self.props.active_element.name
+            op.relating_type = 0
+        elif self.props.active_element.is_type:
+            op.ifc_class = ""
+            op.relating_type = self.props.active_element.ifc_definition_id
         op.container = ifc_definition_id
 
         self.layout.template_list(
@@ -187,7 +192,20 @@ class BIM_UL_containers_manager(UIList):
         if item:
             row = layout.row(align=True)
             self.draw_hierarchy(row, item)
-            row.prop(item, "name", emboss=False, text="")
+            icon = {
+                "IfcProject": "FILE",
+                "IfcSite": "WORLD",
+                "IfcBuilding": "HOME",
+                "IfcBuildingStorey": "LINENUMBERS_OFF",
+                "IfcSpace": "ANTIALIASED",
+                "IfcFacilityPart": "MOD_FLUID",
+                "IfcBridgePart": "MOD_FLUID",
+                "IfcFacilityPartCommon": "MOD_FLUID",
+                "IfcMarinePart": "MOD_FLUID",
+                "IfcRailwayPart": "MOD_FLUID",
+                "IfcRoadPart": "MOD_FLUID",
+            }.get(item.ifc_class, "META_PLANE")
+            row.prop(item, "name", emboss=False, text="", icon=icon)
             if item.long_name:
                 row.prop(item, "long_name", emboss=False, text="")
             col = row.column()
@@ -208,24 +226,6 @@ class BIM_UL_containers_manager(UIList):
                 )
         else:
             row.label(text="", icon="BLANK1")
-        if item.ifc_class == "IfcProject":
-            row.label(text="", icon="FILE")
-        else:
-            icon = {
-                "IfcSite": "WORLD",
-                "IfcBuilding": "HOME",
-                "IfcBuildingStorey": "LINENUMBERS_OFF",
-                "IfcSpace": "ANTIALIASED",
-                "IfcFacilityPart": "MOD_FLUID",
-                "IfcBridgePart": "MOD_FLUID",
-                "IfcFacilityPartCommon": "MOD_FLUID",
-                "IfcMarinePart": "MOD_FLUID",
-                "IfcRailwayPart": "MOD_FLUID",
-                "IfcRoadPart": "MOD_FLUID",
-            }.get(item.ifc_class, "META_PLANE")
-            op = row.operator("bim.select_decomposed_elements", icon=icon, text="", emboss=False)
-            op.ifc_class = item.ifc_class
-            op.container = item.ifc_definition_id
 
 
 class BIM_UL_elements(UIList):
@@ -240,7 +240,6 @@ class BIM_UL_elements(UIList):
                 col.label(text=str(item.total))
             elif item.is_type:
                 row.label(text="", icon="BLANK1")
-                row.label(text="", icon="DISCLOSURE_TRI_DOWN")
                 row.label(text=item.name)
                 col = row.column()
                 col.alignment = "RIGHT"
