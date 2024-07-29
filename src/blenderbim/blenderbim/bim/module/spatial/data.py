@@ -97,7 +97,7 @@ class SpatialDecompositionData:
         }
 
     @classmethod
-    def default_container(cls) -> str:
+    def default_container(cls) -> str | None:
         props = bpy.context.scene.BIMSpatialDecompositionProperties
         if props.default_container:
             try:
