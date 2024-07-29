@@ -42,7 +42,7 @@ class BIMFMProperties(PropertyGroup):
     ifc_files: PointerProperty(type=MultipleFileSelect)
     spreadsheet_files: CollectionProperty(name="Spreadsheets", type=StrProperty)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory")
-    engine: EnumProperty(items=get_engine, name="Engine")
+    engine: EnumProperty(items=get_engine, name="Engine", options=set())
     format: EnumProperty(
         items=[
             ("csv", "csv", ""),
@@ -51,4 +51,5 @@ class BIMFMProperties(PropertyGroup):
         ],
         name="Format",
         default="ods",
+        options=set(),
     )
