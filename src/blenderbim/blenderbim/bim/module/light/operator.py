@@ -24,6 +24,7 @@ except ImportError:
     print("PyRadiance is not available. Rendering functionality will be disabled.")
     pr = None
 
+from datetime import datetime
 import bpy
 import blenderbim.tool as tool
 from pathlib import Path
@@ -139,6 +140,12 @@ class RadianceRender(bpy.types.Operator):
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
+<<<<<<< Updated upstream
+=======
+        sky_file_path = os.path.join(output_dir, "sky.rad")
+
+        
+>>>>>>> Stashed changes
         camera = self.get_active_camera(context)
         if camera is None:
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
@@ -147,6 +154,7 @@ class RadianceRender(bpy.types.Operator):
         # Get camera position and direction
         camera_position, camera_direction = self.get_camera_data(camera)
 
+<<<<<<< Updated upstream
         # Material processing
         # style = []
 
@@ -156,6 +164,32 @@ class RadianceRender(bpy.types.Operator):
         #             l = line.strip().split(" ")
         #             style.append(l[1])
 
+=======
+
+        dt = datetime(2024, 7, 29, 12, 0)  # July 29, 2024, at 12:00 PM
+        latitude = 40.7128  # New York City latitude
+        longitude = -74.0060  # New York City longitude
+        timezone = -4  # Eastern Daylight Time (EDT)
+
+        sky_description = pr.gensky(
+            dt=dt,
+            latitude=latitude,
+            longitude=longitude,
+            timezone=timezone,
+            sunny_with_sun=True,  # Assuming a sunny day with visible sun
+            ground_reflectance=0.2,  # Typical ground reflectance value
+            turbidity=3.0  # Clear sky condition
+            )
+
+        sky_description_str = sky_description.decode('utf-8')
+
+        # Print the generated sky description
+        print(sky_description_str)
+
+        with open(sky_file_path, 'w') as f:
+            f.write(sky_description_str)
+
+>>>>>>> Stashed changes
         # Check if json file is empty or not
         props = context.scene.radiance_exporter_properties
 
@@ -166,9 +200,13 @@ class RadianceRender(bpy.types.Operator):
         else:
             # Use in-UI material mappings
             data = props.get_mappings_dict()
+<<<<<<< Updated upstream
 
         print(data)
 
+=======
+        
+>>>>>>> Stashed changes
         # Create materials.rad file
         materials_file = os.path.join(output_dir, "materials.rad")
         with open(materials_file, "w") as file:
@@ -210,6 +248,7 @@ class RadianceRender(bpy.types.Operator):
 
         scene.add_material(material_path)
         scene.add_surface(scene_path)
+        scene.add_sky(sky_file_path)
 
         aview = pr.View(position=camera_position, direction=camera_direction)
         scene.add_view(aview)
