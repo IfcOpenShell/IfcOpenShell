@@ -143,22 +143,30 @@ class SelectURIAttribute(bpy.types.Operator):
         return {"RUNNING_MODAL"}
 
 
-class MultipleFileSelector(bpy.types.Operator):
+class BIM_OT_multiple_file_selector(bpy.types.Operator):
+    """Open Blender's file explorer to select one or multiple files."""
+
+    bl_idname = "bim.multiple_file_selector"
     bl_label = "Select Multiple Files"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
+    filter_glob: bpy.props.StringProperty(default="*", options={"HIDDEN"})
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
-    def update_props(self, props, single_file: str, file_list: bpy.types.CollectionProperty):
+    @classmethod
+    def poll(self, context):
+        return getattr(context, "file_props", None) is not None
+
+    def execute(self, context):
         dirname = os.path.dirname(self.filepath)
-        file_list.clear()
+        self.file_props.single_file = self.filepath
+        self.file_props.set_file_list(dirname, [f.name for f in self.files])
 
-        for f in self.files:
-            new = file_list.add()
-            new.name = os.path.join(dirname, f.name)
-        setattr(props, single_file, self.filepath)
+        return {"FINISHED"}
 
     def invoke(self, context, event):
+        self.file_props = context.file_props
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -458,7 +466,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
         else:
             group.inputs.new("NodeSocketFloat", "Value")
-            group.inputs["Value"].default_value = 1.0  # Mandatory multiplier for the last node group
+            # Mandatory multiplier for the last node group
+            group.inputs["Value"].default_value = 1.0
             group.inputs.new("NodeSocketVector", "Vector")
             group.inputs.new("NodeSocketFloat", "Line Decorator")
             group.outputs.new("NodeSocketFloat", "Value")
@@ -526,12 +535,14 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
         mix_decorator = group.nodes.new(type="ShaderNodeMixShader")
         mix_decorator.name = "Line Decorator Mix"
-        mix_decorator.inputs[0].default_value = 0  # Directly pass input shader when there is no cutaway
+        # Directly pass input shader when there is no cutaway
+        mix_decorator.inputs[0].default_value = 0
         mix_decorator.location = group_output.location - Vector((200, 0))
 
         mix_section = group.nodes.new(type="ShaderNodeMixShader")
         mix_section.name = "Section Mix"
-        mix_section.inputs[0].default_value = 1  # Directly pass input shader when there is no cutaway
+        # Directly pass input shader when there is no cutaway
+        mix_section.inputs[0].default_value = 1
         mix_section.location = mix_decorator.location - Vector((200, 200))
 
         transparent = nodes.new(type="ShaderNodeBsdfTransparent")

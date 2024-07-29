@@ -22,7 +22,6 @@ from . import ui, prop, operator
 classes = (
     operator.ExecuteIfcFM,
     operator.ExecuteIfcFMFederate,
-    operator.SelectFMIfcFile,
     operator.SelectFMSpreadsheetFiles,
     prop.BIMFMProperties,
     ui.BIM_PT_fm,

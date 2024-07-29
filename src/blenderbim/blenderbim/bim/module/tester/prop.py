@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 from blenderbim.bim.module.tester.data import TesterData
-from blenderbim.bim.prop import StrProperty
+from blenderbim.bim.prop import StrProperty, MultipleFileSelect
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -48,10 +48,8 @@ class FailedEntities(PropertyGroup):
 
 
 class IfcTesterProperties(PropertyGroup):
-    specs: StringProperty(default="", name="IDS File(s)")
-    specs_files: CollectionProperty(name="IDS Files", type=StrProperty)
-    ifc_file: StringProperty(default="", name="IFC File(s)")
-    ifc_files: CollectionProperty(name="IFC Files", type=StrProperty)
+    specs: PointerProperty(type=MultipleFileSelect)
+    ifc_files: PointerProperty(type=MultipleFileSelect)
     should_load_from_memory: BoolProperty(default=False, name="Load from Memory", options=set())
     generate_html_report: BoolProperty(default=False, name="Generate HTML report", options=set())
     generate_ods_report: BoolProperty(default=False, name="Generate ODS report", options=set())
