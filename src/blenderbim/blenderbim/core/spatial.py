@@ -149,8 +149,21 @@ def delete_container(
     spatial.import_spatial_decomposition()
 
 
-def select_decomposed_elements(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
-    spatial.select_products(spatial.get_decomposed_elements(container))
+def select_decomposed_elements(
+    spatial: tool.Spatial,
+    container: ifcopenshell.entity_instance,
+    ifc_class: str | None = None,
+    relating_type: ifcopenshell.entity_instance | None = None,
+    is_untyped: bool = False,
+) -> None:
+    elements = spatial.get_decomposed_elements(container)
+    if ifc_class:
+        elements = spatial.filter_elements_by_class(elements, ifc_class)
+    elif relating_type:
+        elements = spatial.filter_elements_by_relating_type(elements, relating_type)
+    elif is_untyped:
+        elements = spatial.filter_elements_by_untyped(elements)
+    spatial.select_products(elements)
 
 
 def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type) -> None:

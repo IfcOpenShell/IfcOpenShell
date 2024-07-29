@@ -123,6 +123,7 @@ class Element(PropertyGroup):
     name: StringProperty(name="Name")
     is_class: BoolProperty(name="Is Class", default=False)
     is_type: BoolProperty(name="Is Type", default=False)
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
     total: IntProperty(name="Total")
 
 
@@ -144,3 +145,8 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     def active_container(self):
         if self.containers and self.active_container_index < len(self.containers):
             return self.containers[self.active_container_index]
+
+    @property
+    def active_element(self):
+        if self.elements and self.active_element_index < len(self.elements):
+            return self.elements[self.active_element_index]

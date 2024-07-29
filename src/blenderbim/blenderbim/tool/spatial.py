@@ -39,7 +39,7 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, Any
+from typing import Generator, Optional, Union, Literal, Any, List
 
 
 class Spatial(blenderbim.core.tool.Spatial):
@@ -244,9 +244,10 @@ class Spatial(blenderbim.core.tool.Spatial):
                 continue
             element_type = ifcopenshell.util.element.get_type(element)
             ifc_class = element.is_a()
+            ifc_definition_id = element_type.id() if element_type else 0
             type_name = element_type.Name or "Unnamed" if element_type else "Untyped"
-            results.setdefault(ifc_class, {}).setdefault(type_name, 0)
-            results[ifc_class][type_name] += 1
+            results.setdefault(ifc_class, {}).setdefault(ifc_definition_id, {"total": 0, "type_name": type_name})
+            results[ifc_class][ifc_definition_id]["total"] += 1
 
         total_elements = 0
         for ifc_class in sorted(results.keys()):
@@ -254,16 +255,33 @@ class Spatial(blenderbim.core.tool.Spatial):
             new.name = ifc_class
             new.is_class = True
             total = 0
-            for type_name in sorted(results[ifc_class].keys()):
+            for ifc_definition_id in sorted(
+                results[ifc_class].keys(), key=lambda x: results[ifc_class][x]["type_name"]
+            ):
                 new2 = props.elements.add()
-                new2.name = type_name
                 new2.is_type = True
-                new2.total = results[ifc_class][type_name]
+                new2.name = results[ifc_class][ifc_definition_id]["type_name"]
+                new2.total = results[ifc_class][ifc_definition_id]["total"]
+                new2.ifc_definition_id = ifc_definition_id
                 total += new2.total
             new.total = total
             total_elements += total
 
         props.total_elements = total_elements
+
+    @classmethod
+    def filter_elements_by_class(cls, elements: List[ifcopenshell.entity_instance], ifc_class: str):
+        return [e for e in elements if e.is_a(ifc_class)]
+
+    @classmethod
+    def filter_elements_by_relating_type(
+        cls, elements: List[ifcopenshell.entity_instance], relating_type: ifcopenshell.entity_instance
+    ):
+        return [e for e in elements if ifcopenshell.util.element.get_type(e) == relating_type]
+
+    @classmethod
+    def filter_elements_by_untyped(cls, elements: List[ifcopenshell.entity_instance]):
+        return [e for e in elements if not ifcopenshell.util.element.get_type(e)]
 
     @classmethod
     def import_spatial_decomposition(cls) -> None:
