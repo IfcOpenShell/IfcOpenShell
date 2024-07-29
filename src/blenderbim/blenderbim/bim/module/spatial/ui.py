@@ -166,7 +166,10 @@ class BIM_PT_spatial_decomposition(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.label(text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Contained Elements", icon="FILE_3D")
+        row.label(
+            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Contained Elements",
+            icon="FILE_3D",
+        )
         row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
         op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         if self.props.active_element.is_class:
