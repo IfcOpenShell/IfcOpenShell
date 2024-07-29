@@ -21,8 +21,6 @@ from . import ui, prop, operator
 
 classes = (
     operator.ExecuteIfcTester,
-    operator.SelectSpecs,
-    operator.SelectIfcTesterIfcFile,
     operator.SelectRequirement,
     operator.SelectFailedEntities,
     operator.SelectEntity,

@@ -48,7 +48,6 @@ class BIM_PT_radiance_exporter(bpy.types.Panel):
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = self.layout.row(align=True)
             row.prop(props, "ifc_file")
-            # row.operator("bim.select_ifctester_ifc_file", icon="FILE_FOLDER", text="")
 
         row = layout.row()
         row.prop(props, "output_dir")

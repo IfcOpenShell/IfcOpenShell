@@ -27,7 +27,6 @@ import ifctester.reporter
 import ifcopenshell
 import blenderbim.tool as tool
 import blenderbim.bim.handler
-from blenderbim.bim.operator import MultipleFileSelector
 from pathlib import Path
 
 
@@ -38,7 +37,7 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         props = context.scene.IfcTesterProperties
-        return (props.ifc_file or props.should_load_from_memory) and props.specs
+        return (props.ifc_files.single_file or props.should_load_from_memory) and props.specs
 
     def execute(self, context):
         props = context.scene.IfcTesterProperties
@@ -49,13 +48,13 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
             ifc_data = tool.Ifc.get()
             ifc_path = tool.Ifc.get_path()
 
-            for f in props.specs_files:
+            for f in props.specs.file_list:
                 self.execute_tester(ifc_data, ifc_path, f.name)
         else:
-            for ifc_file in props.ifc_files:
+            for ifc_file in props.ifc_files.file_list:
                 ifc_data = ifcopenshell.open(ifc_file.name)
 
-                for f in props.specs_files:
+                for f in props.specs.file_list:
                     self.execute_tester(ifc_data, ifc_file.name, f.name)
 
         blenderbim.bim.handler.refresh_ui_data()
@@ -101,33 +100,6 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
                 new_spec.status = spec["status"]
-
-
-class SelectSpecs(MultipleFileSelector):
-    bl_idname = "bim.select_specs"
-    bl_label = "Select IDS"
-    filename_ext = ".ids"
-    filter_glob: bpy.props.StringProperty(default="*.ids;*.xml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        props = context.scene.IfcTesterProperties
-
-        self.update_props(props, "specs", props.specs_files)
-        return {"FINISHED"}
-
-
-class SelectIfcTesterIfcFile(MultipleFileSelector):
-    bl_idname = "bim.select_ifctester_ifc_file"
-    bl_label = "Select IfcTester IFC File"
-    filename_ext = ".ifc"
-    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-
-    def execute(self, context):
-        props = context.scene.IfcTesterProperties
-
-        self.update_props(props, "ifc_file", props.ifc_files)
-        return {"FINISHED"}
 
 
 class SelectRequirement(bpy.types.Operator):
