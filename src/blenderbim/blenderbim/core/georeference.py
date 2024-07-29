@@ -46,19 +46,11 @@ def edit_georeferencing(ifc, georeference):
 
 
 def get_cursor_location(georeference):
-    georeference.set_coordinates("local", georeference.get_cursor_location())
-
-
-def convert_local_to_global(georeference):
-    coordinates = georeference.xyz2enh(georeference.get_coordinates("local"))
-    georeference.set_coordinates("map", coordinates)
-    georeference.set_cursor_location()
-
-
-def convert_global_to_local(georeference):
-    coordinates = georeference.enh2xyz(georeference.get_coordinates("map"))
-    georeference.set_coordinates("local", coordinates)
-    georeference.set_cursor_location()
+    location = georeference.get_cursor_location()
+    if georeference.has_blender_offset:
+        georeference.set_coordinates("blender", location)
+    else:
+        georeference.set_coordinates("local", location)
 
 
 def convert_angle_to_coord(georeference, type):
