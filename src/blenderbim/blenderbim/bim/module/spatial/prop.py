@@ -82,20 +82,6 @@ def is_object_applicable(self, obj):
     return bool(element)
 
 
-class SpatialElement(PropertyGroup):
-    name: StringProperty(name="Name")
-    long_name: StringProperty(name="Long Name")
-    has_decomposition: BoolProperty(name="Has Decomposition")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
-    is_selected: BoolProperty(name="Is Selected")
-
-
-class BIMSpatialProperties(PropertyGroup):
-    containers: CollectionProperty(name="Containers", type=SpatialElement)
-    active_container_index: IntProperty(name="Active Container Index")
-    active_container_id: IntProperty(name="Active Container Id")
-
-
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_container_object: PointerProperty(

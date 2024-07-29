@@ -49,17 +49,13 @@ def assign_container(
     ifc: tool.Ifc,
     collector: tool.Collector,
     spatial: tool.Spatial,
-    structure_obj: Optional[bpy.types.Object] = None,
+    container: ifcopenshell.entity_instance,
     element_obj: Optional[bpy.types.Object] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
-    if not spatial.can_contain(structure_obj, element_obj):
+    if not spatial.can_contain(container, element_obj):
         return
-    assert element_obj and structure_obj  # Type checker.
-    rel = ifc.run(
-        "spatial.assign_container",
-        products=[ifc.get_entity(element_obj)],
-        relating_structure=ifc.get_entity(structure_obj),
-    )
+    assert element_obj  # Type checker.
+    rel = ifc.run("spatial.assign_container", products=[ifc.get_entity(element_obj)], relating_structure=container)
     spatial.disable_editing(element_obj)
     collector.assign(element_obj)
     return rel
@@ -67,15 +63,10 @@ def assign_container(
 
 def enable_editing_container(spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     spatial.enable_editing(obj)
-    spatial.import_containers()
 
 
 def disable_editing_container(spatial: tool.Spatial, obj: bpy.types.Object) -> None:
     spatial.disable_editing(obj)
-
-
-def change_spatial_level(spatial: tool.Spatial, parent: Union[ifcopenshell.entity_instance, None] = None) -> None:
-    spatial.import_containers(parent=parent)
 
 
 def remove_container(ifc: tool.Ifc, collector: tool.Collector, obj: bpy.types.Object) -> None:

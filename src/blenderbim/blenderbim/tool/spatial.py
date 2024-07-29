@@ -39,23 +39,20 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, Any, List
+from typing import Generator, Optional, Union, Literal, List
 
 
 class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
-    def can_contain(
-        cls, structure_obj: Union[bpy.types.Object, None], element_obj: Union[bpy.types.Object, None]
-    ) -> bool:
-        structure = tool.Ifc.get_entity(structure_obj)
+    def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
         element = tool.Ifc.get_entity(element_obj)
-        if not structure or not element:
+        if not element:
             return False
         if tool.Ifc.get_schema() == "IFC2X3":
-            if not structure.is_a("IfcSpatialStructureElement"):
+            if not container.is_a("IfcSpatialStructureElement"):
                 return False
         else:
-            if not structure.is_a("IfcSpatialStructureElement") and not structure.is_a(
+            if not container.is_a("IfcSpatialStructureElement") and not container.is_a(
                 "IfcExternalSpatialStructureElement"
             ):
                 return False
@@ -110,31 +107,6 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_relative_object_matrix(cls, target_obj: bpy.types.Object, relative_to_obj: bpy.types.Object) -> Matrix:
         return relative_to_obj.matrix_world.inverted() @ target_obj.matrix_world
-
-    @classmethod
-    def import_containers(cls, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
-        props = bpy.context.scene.BIMSpatialProperties
-        props.containers.clear()
-
-        if not parent:
-            parent = tool.Ifc.get().by_type("IfcProject")[0]
-
-        props.active_container_id = parent.id()
-
-        for rel in parent.IsDecomposedBy or []:
-            related_objects = []
-            for element in rel.RelatedObjects:
-                # skip objects without placements
-                if not element.is_a("IfcProduct"):
-                    continue
-                related_objects.append((element, ifcopenshell.util.placement.get_storey_elevation(element)))
-            related_objects = sorted(related_objects, key=lambda e: e[1])
-            for element, _ in related_objects:
-                new = props.containers.add()
-                new.name = element.Name or "Unnamed"
-                new.long_name = element.LongName or ""
-                new.has_decomposition = bool(element.IsDecomposedBy)
-                new.ifc_definition_id = element.id()
 
     @classmethod
     def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
@@ -886,3 +858,11 @@ class Spatial(blenderbim.core.tool.Spatial):
         if subelement:
             return subelement
         return None
+
+    @classmethod
+    def get_selected_containers(cls) -> List[ifcopenshell.entity_instance]:
+        results = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and tool.Root.is_spatial_element(element):
+                results.append(element)
+        return results
