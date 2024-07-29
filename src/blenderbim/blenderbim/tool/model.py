@@ -1308,7 +1308,8 @@ class Model(blenderbim.core.tool.Model):
 
             obj = next(iter(mesh_users))
             element = tool.Ifc.get_entity(obj)
-            own_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
+            assert element  # Type checker.
+            own_material = next(iter(ifcopenshell.util.element.get_materials(element, should_inherit=False)), None)
             inherited_mstyle = tool.Geometry.get_inherited_material_style(element)
 
             if assigned_material:

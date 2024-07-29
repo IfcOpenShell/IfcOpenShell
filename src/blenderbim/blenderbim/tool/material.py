@@ -321,7 +321,8 @@ class Material(blenderbim.core.tool.Material):
     ) -> None:
         """Ensure blender materials are updated after a material assignment.
 
-        Designed to be called after material.assign_material API call."""
+        Designed to be called after material.assign_material API call.
+        For material sets it should be called after some item is already added to the material set."""
 
         # NOTE: adding/editing/removing layers/profiles/constituents is not supported.
         # Adding support for profiles/layers it only will be possible when we'll be adding styles
