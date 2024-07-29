@@ -1,0 +1,10 @@
+[
+  {
+    "ceiling": {
+      "Black Ceiling 1": "void plastic black_ceiling\n0\n0\n5 0.0460 0.0456 0.0463 0.0052 0.2000",
+      "Black Ceiling 2": "void plastic black_ceiling\n0\n0\n5 0.1116 0.1085 0.0938 0.0000 0.0000",
+      "Plastic Ceiling Vent E14 526": "void plastic plastic_ceiling_vent_e14_526\n0\n0\n5 0.7384 0.7195 0.6540 0.0110 0.0500",
+      "Specular Reflective Ceiling Panels": "void plastic specular_reflective_ceiling_panels\n0\n0\n5 0.7708 0.7673 0.6819 0.0741 0.0500"
+    }
+  }
+]
