@@ -207,7 +207,7 @@ Scenario: Update representation - updating a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -235,7 +235,7 @@ Scenario: Update representation - updating a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -327,19 +327,24 @@ Scenario: Override duplicate move - copying a coloured representation
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I add a material
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And the material "Material" colour is set to "1,0,0,1"
+    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
+    And I press "bim.enable_adding_presentation_style"
+    And I set "scene.BIMStylesProperties.style_name" to "Style"
+    And I set "scene.BIMStylesProperties.surface_colour" to "[1.0,0.0,0.0]"
+    And I press "bim.add_presentation_style"
+    And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
+    And I press "bim.assign_style_to_selected(style_id={style})"
     When I duplicate the selected objects
     And I press "export_ifc.bim(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc', should_start_fresh_session=False)"
-    Then the material "Material" colour is "1,0,0,1"
-    And the object "IfcWall/Cube" has the material "Material"
-    And the object "IfcWall/Cube.001" has the material "Material"
+    Then the material "Style" colour is "1,0,0,1"
+    And the object "IfcWall/Cube" has the material "Style"
+    And the object "IfcWall/Cube.001" has the material "Style"
 
 Scenario: Override duplicate move - copying a type instance with a representation map
     Given an empty IFC project
@@ -369,7 +374,7 @@ Scenario: Override duplicate move - copying a layered extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
@@ -399,7 +404,7 @@ Scenario: Override duplicate move - copying a profiled extrusion
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
+    And I press "bim.add_material()"
     And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialProfileSet"
     And I press "bim.assign_material"
     And I press "bim.enable_editing_assigned_material"
