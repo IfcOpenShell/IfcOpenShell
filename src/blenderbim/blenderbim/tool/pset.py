@@ -98,7 +98,7 @@ class Pset(blenderbim.core.tool.Pset):
         elif pset.is_a("IfcMaterialProperties") or pset.is_a("IfcProfileProperties"):
             pset_props = pset.Properties
 
-        for prop in pset_props:
+        for prop in sorted(pset_props, key=lambda p: p.Name):
             if props.properties.get(prop.Name):
                 continue  # This property has already been added from a template
             if prop.is_a("IfcPropertyEnumeratedValue"):
@@ -213,7 +213,7 @@ class Pset(blenderbim.core.tool.Pset):
             del data["id"]
         else:
             data = {}
-        for prop_template in pset_template.HasPropertyTemplates:
+        for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
             if not prop_template.is_a("IfcSimplePropertyTemplate"):
                 continue  # Other types not yet supported
             if prop_template.TemplateType == "P_SINGLEVALUE":
