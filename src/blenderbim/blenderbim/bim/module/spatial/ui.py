@@ -51,10 +51,10 @@ class BIM_PT_spatial(Panel):
             if SpatialData.data["selected_containers"]:
                 row = self.layout.row()
                 row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
-                for name in SpatialData.data['selected_containers'][:3]:
+                for name in SpatialData.data["selected_containers"][:3]:
                     row = self.layout.row()
                     row.label(text=name, icon="OUTLINER_COLLECTION")
-                if len(SpatialData.data['selected_containers']) > 3:
+                if len(SpatialData.data["selected_containers"]) > 3:
                     row = self.layout.row()
                     row.label(text=f"... {len(SpatialData.data['selected_containers']) - 3} More")
                 row = self.layout.row(align=True)
