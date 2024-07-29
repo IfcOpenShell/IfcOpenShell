@@ -118,7 +118,6 @@ def assign_material(
             continue
 
         ifc.run("material.assign_material", products=[element], type=material_type, material=material)
-        material_tool.ensure_material_assigned(elements=[element], material_type=material_type, material=material)
         assigned_material = material_tool.get_material(element)
         assert assigned_material  # Type checker.
 
@@ -128,6 +127,7 @@ def assign_material(
             material_tool.add_material_to_set(material_set=material, material=default_material)
         elif material_tool.is_a_material_set(assigned_material):
             material_tool.add_material_to_set(material_set=assigned_material, material=material)
+        material_tool.ensure_material_assigned(elements=[element], material_type=material_type, material=material)
 
 
 def unassign_material(ifc: tool.Ifc, material_tool: tool.Material, objects: list[bpy.types.Object]) -> None:

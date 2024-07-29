@@ -74,6 +74,9 @@ def assign_material(
     :param material: The IfcMaterial or material set you are assigning here.
         If type is Usage then no need to provide `material`, it will be deduced
         from the element type automatically.
+        If IfcMaterial is provided as material and type is not IfcMaterial,
+        provided material will be ignored except for IfcMaterialList
+        where it will be used as part of the list.
     :type material: ifcopenshell.entity_instance, optional
     :return: IfcRelAssociatesMaterial entity
         or a list of IfcRelAssociatesMaterial entities
