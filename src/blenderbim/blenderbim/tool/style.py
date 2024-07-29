@@ -56,6 +56,18 @@ class Style(blenderbim.core.tool.Style):
         tool.Blender.remove_data_block(obj)
 
     @classmethod
+    def enable_adding_presentation_style(cls) -> None:
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = True
+        props.update_graph = False
+
+    @classmethod
+    def disable_adding_presentation_style(cls) -> None:
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_adding = False
+        props.update_graph = True
+
+    @classmethod
     def disable_editing(cls) -> None:
         bpy.context.scene.BIMStylesProperties.is_editing_style = 0
 
