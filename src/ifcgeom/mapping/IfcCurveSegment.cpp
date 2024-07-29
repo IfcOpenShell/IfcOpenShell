@@ -890,7 +890,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCurveSegment* inst) {
 
     taxonomy::piecewise_function::spans spans;
     spans.emplace_back(fabs(length), fn);
-    auto pwf = taxonomy::make<taxonomy::piecewise_function>(spans,&settings_,inst);
+    auto pwf = taxonomy::make<taxonomy::piecewise_function>(0.0, spans,&settings_,inst);
     return pwf;
 }
 
