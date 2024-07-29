@@ -31,6 +31,7 @@ function connectSocket() {
   socket.on("blender_disconnect", handleBlenderDisconnect);
   socket.on("connect", handleWebConnect);
   socket.on("drawings_data", handleDrawingsData);
+  socket.on("svg_data", handleSvgData);
   //   socket.on("default_data", handleDefaultData);
 }
 
@@ -101,6 +102,31 @@ function handleDrawingsData(data) {
   }
 }
 
+function handleSvgData(data) {
+  const svgContainer = document.getElementById("svg-container");
+  svgContainer.innerHTML = "";
+  svgContainer.style.backgroundColor = "white";
+
+  const dom = SVG(svgContainer).svg(data);
+  const svgElement = dom.node.children[0];
+
+  // to make the svg not grow outside the svg container
+  svgElement.setAttribute("width", "100%");
+  svgElement.setAttribute("height", "100%");
+  svgElement.style.maxWidth = "100%";
+  svgElement.style.maxHeight = "100%";
+  svgElement.style.width = "100%";
+  svgElement.style.height = "100%";
+  svgElement.style.boxSizing = "border-box"; // Ensure padding and borders are included in the element's total width and height
+
+  const panZoomControls = svgPanZoom(svgElement, {
+    zoomEnabled: true,
+    controlIconsEnabled: true,
+    fit: true,
+    center: true,
+  });
+}
+
 function addSelectOption(blenderId, filename) {
   const filenameOption = $("<option></option>")
     .attr("id", "blender-" + blenderId)
@@ -116,10 +142,27 @@ function displayDrawingsNames(blenderId, ifcFile) {
   function createSvgNames(text, index, type) {
     var label = $("<li></lio>")
       .text(text)
-      .attr("id", index)
+      .attr("id", type + "-" + index)
       .addClass("svg-name")
       .click(function () {
-        console.log("ID:", $(this).attr("id"), "Name:", text);
+        const id = $(this).attr("id").split("-");
+        const index = parseInt(id[1]);
+        const type = id[0];
+        const ifcFile = $("#dropdown-menu").val();
+
+        var path = "";
+
+        if (type === "drawing") {
+          path = allDrawings[ifcFile].drawings[index].path;
+        } else if (type === "sheet") {
+          path = allDrawings[ifcFile].sheets[index].path;
+        }
+
+        const msg = {
+          path: path,
+        };
+        console.log(msg);
+        socket.emit("get_svg", msg);
       });
 
     if (type === "drawing") $("#drawings-sub-panel").append(label);
