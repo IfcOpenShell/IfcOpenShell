@@ -50,20 +50,16 @@ Scenario: Enable pset editing - object
 
 Scenario: Enable pset editing - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
-    And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    And I set "active_object.active_material.PsetProperties.properties[0].metadata.float_value" to "0.42"
-    And I press "bim.edit_pset(obj='Default', obj_type='Material')"
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
+    And I set "scene.MaterialPsetProperties.pset_name" to "Pset_MaterialCommon"
+    And I press "bim.add_pset(obj='', obj_type='Material')"
+    And I set "scene.MaterialPsetProperties.properties[0].metadata.float_value" to "0.42"
+    And I press "bim.edit_pset(obj='', obj_type='Material')"
     And the variable "pset" is "{ifc}.by_type('IfcMaterialProperties')[-1].id()"
-    When I press "bim.enable_pset_editing(pset_id={pset}, obj='Default', obj_type='Material')"
+    When I press "bim.enable_pset_editing(pset_id={pset}, obj='', obj_type='Material')"
     Then nothing happens
 
 Scenario: Enable pset editing - profile
@@ -143,15 +139,10 @@ Scenario: Disable pset editing - object
 
 Scenario: Disable pset editing - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
     And I press "bim.add_pset(obj='Default', obj_type='Material')"
     When I press "bim.disable_pset_editing(obj='Default', obj_type='Material')"
     Then nothing happens
@@ -236,17 +227,12 @@ Scenario: Edit qto - object
 
 Scenario: Edit pset - material
     Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And I press "bim.add_material(obj='')"
-    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterial"
-    And I press "bim.assign_material"
-    And the object "IfcWall/Cube" is selected
-    And I press "bim.add_pset(obj='Default', obj_type='Material')"
-    When I press "bim.edit_pset(obj='Default', obj_type='Material')"
+    And I press "bim.add_material()"
+    And I press "bim.load_materials"
+    And I press "bim.expand_material_category(category='Uncategorised')"
+    And I set "scene.BIMMaterialProperties.active_material_index" to "1"
+    And I press "bim.add_pset(obj='', obj_type='Material')"
+    When I press "bim.edit_pset(obj='', obj_type='Material')"
     Then nothing happens
 
 Scenario: Edit pset - profile

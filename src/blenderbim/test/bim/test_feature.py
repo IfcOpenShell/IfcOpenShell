@@ -22,6 +22,7 @@ import traceback
 import webbrowser
 import numpy as np
 import ifcopenshell
+import ifcopenshell.util.element
 import blenderbim.tool as tool
 import blenderbim.bim
 from blenderbim.bim.ifc import IfcStore
@@ -31,6 +32,7 @@ from pytest_bdd import scenarios, given, when, then, parsers
 from mathutils import Vector
 from math import radians
 from pathlib import Path
+from typing import Union
 
 scenarios("feature")
 
@@ -324,7 +326,7 @@ def i_rename_the_object_name1_to_name2(name1, name2):
 
 @given(parsers.parse('I set "{prop}" to "{value}"'))
 @when(parsers.parse('I set "{prop}" to "{value}"'))
-def i_set_prop_to_value(prop, value):
+def i_set_prop_to_value(prop: str, value: str) -> None:
     value = replace_variables(value)
     try:
         eval(f"bpy.context.{prop}")
@@ -467,7 +469,7 @@ def the_object_name_data_is_a_type_representation_of_context(name, type, context
 
 
 @then(parsers.parse('the material "{name}" exists'))
-def the_material_name_exists(name) -> bpy.types.Material:
+def the_material_name_exists(name: str) -> bpy.types.Material:
     obj = bpy.data.materials.get(name)
     if not obj:
         assert False, f'The material "{name}" does not exist'
@@ -477,6 +479,25 @@ def the_material_name_exists(name) -> bpy.types.Material:
 @then(parsers.parse('the material "{name}" does not exist'))
 def the_material_name_does_not_exist(name):
     assert bpy.data.materials.get(name) is None, "Material exists"
+
+
+def get_ifc_material_by_name(name: str) -> Union[ifcopenshell.entity_instance, None]:
+    ifc_file = tool.Ifc.get()
+    material = next((m for m in ifc_file.by_type("IfcMaterial") if m.Name == name), None)
+    return material
+
+
+@then(parsers.parse('the IFC material "{name}" exists'))
+def the_ifc_material_name_exists(name: str) -> ifcopenshell.entity_instance:
+    material = get_ifc_material_by_name(name)
+    if not material:
+        assert False, f'The IFC material "{name}" does not exist'
+    return material
+
+
+@then(parsers.parse('the material "{name}" does not exist'))
+def the_ifc_material_name_does_not_exist(name):
+    assert get_ifc_material_by_name(name) is None, "IFC Material exists"
 
 
 @then("an IFC file does not exist")
@@ -678,7 +699,7 @@ def prop_is_roughly_value(prop, value):
 
 
 @then(parsers.parse('the object "{name}" has a cartesian point offset of "{offset}"'))
-def the_object_name_has_a_cartesian_point_offset_of_offset(name, offset):
+def the_object_name_has_a_cartesian_point_offset_of_offset(name: str, offset: str) -> None:
     offset = replace_variables(offset)
     obj = the_object_name_exists(name)
     assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
@@ -688,8 +709,15 @@ def the_object_name_has_a_cartesian_point_offset_of_offset(name, offset):
 
 
 @then(parsers.parse('the object "{name}" has the material "{material}"'))
-def the_object_name_has_the_material_material(name, material):
-    assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots]
+def the_object_name_has_the_material_material(name: str, material: str) -> None:
+    assert material in [ms.material.name for ms in the_object_name_exists(name).material_slots if ms.material]
+
+
+@then(parsers.parse('the object "{name}" has the IFC material "{material_name}"'))
+def the_object_name_has_the_ifc_material_material_name(name: str, material_name: str):
+    element = tool.Ifc.get_entity(the_object_name_exists(name))
+    material = ifcopenshell.util.element.get_material(element)
+    assert material and material.Name == material_name
 
 
 @then(
@@ -715,7 +743,7 @@ def the_object_name_has_a_thickness_thick_layered_material_containing_the_materi
 
 
 @then(parsers.parse('the object "{name}" has no IFC materials'))
-def the_object_has_no_ifc_materials(name):
+def the_object_has_no_ifc_materials(name: str) -> None:
     element = tool.Ifc.get_entity(the_object_name_exists(name))
     material = ifcopenshell.util.element.get_material(element)
     assert material is None

@@ -54,6 +54,7 @@ class TestRemoveStyle:
         ifc.unlink(element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
         style.delete_object("obj").should_be_called()
+        style.get_active_style_type().should_be_called().will_return("style_type")
 
     def test_removing_a_style(self, ifc, style):
         self.remove_a_style_common(ifc, style)
@@ -63,7 +64,6 @@ class TestRemoveStyle:
     def test_removing_a_style_and_reloading_imported_styles(self, ifc, style):
         self.remove_a_style_common(ifc, style)
         style.is_editing_styles().should_be_called().will_return(True)
-        style.get_active_style_type().should_be_called().will_return("style_type")
         style.import_presentation_styles("style_type").should_be_called()
         subject.remove_style(ifc, style, style="style")
 
