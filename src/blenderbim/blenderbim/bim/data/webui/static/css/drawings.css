@@ -22,7 +22,7 @@
     --nav-link-color: #fff;
     --nav-link-hover-color: #3fb449;
     --warning-color: #FFDB8F;
-    --table-border-color: #464444;
+    --border-color: #464444;
 }
 
 :root.light {
@@ -34,11 +34,12 @@
     --nav-link-color: #000000;
     --nav-link-hover-color: #38a63d;
     --warning-color: #FF4500;
-    --table-border-color: #222;
+    --border-color: #222;
 }
 
 html {
     font-size: var(--base-font-size);
+    color: var(--text-color);
 }
 
 body {
@@ -46,17 +47,16 @@ body {
     color: var(--text-color);
     margin: 0;
     font-family: var(--font-family);
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
 }
 
 #container {
-    flex: 1;
     margin-top: var(--margin-medium);
     margin-left: var(--margin-small);
     margin-right: var(--margin-small);
     margin-bottom: var(--margin-medium);
+    height: calc(100vh - var(--nav-height));
+    box-sizing: border-box;
+    display: flex;
 }
 
 h3 {
@@ -188,37 +188,62 @@ nav ul li a.active {
     margin-top: var(--margin-small);
 }
 
-footer {
+
+.left {
+    flex: 1;
+    background-color: var(--bg-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.right {
+    flex: 4;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+}
+
+#svg-container {
+    height: 100%;
+}
+
+.panel {
     background-color: var(--nav-bg-color);
-    text-align: right;
-    padding: var(--padding-tiny);
-    border-top: 1px solid var(--nav-border-color);
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-footer p {
-    margin: 0;
-    color: var(--text-color);
-    margin-right: var(--margin-small);
-    font-size: 0.8rem;
+.card-header,
+.card-body {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    overflow: auto;
 }
 
-.table-container {
-    margin-bottom: var(--margin-large);
+.card {
+    background-color: var(--nav-bg-color);
+    overflow: auto;
 }
 
-.csv-table {
-    margin-top: var(--margin-small);
+li.svg-name {
+    list-style-type: none;
 }
 
-/* ------------ Overwriting Tabulator CSS rules ------------ */
-
-:root.light .tabulator-header,
-:root.light .tabulator .tabulator-header .tabulator-col {
-    background: var(--nav-bg-color) !important;
-    color: var(--text-color);
+#dropdown-menu:focus {
+    outline: none;
 }
 
-:root.light .tabulator {
-    border-top: 1px solid var(--table-border-color);
-    border-bottom: 2px solid var(--table-border-color);
+/* remove bootstrap css confilcts */
+*,
+::after,
+::before {
+    box-sizing: unset;
+}
+
+.btn,
+.btn:hover {
+    color: var(--nav-link-hover-color);
 }
