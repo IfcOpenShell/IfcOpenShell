@@ -287,13 +287,57 @@ class DrawPolylineWall(bpy.types.Operator):
     bl_idname = "bim.draw_polyline_wall"
     bl_label = "Draw Polyline Wall"
     bl_options = {"REGISTER", "UNDO"}
-    ray_cast_type = bpy.props.StringProperty()
+    
+    objs_bvhs = []
+    viewport_box = []
 
     @classmethod
     def poll(cls, context):
         return context.space_data.type == 'VIEW_3D'
                                                                              
+        
+    def __init__(self):
+        self.mousemove_count = 0
+        self.visible_objs = None
+        
+    def get_visible_objects(self, context):
+        depsgraph = context.evaluated_depsgraph_get()
+        all_objs = []
+        for dup in depsgraph.object_instances:
+            if dup.is_instance:  # Real dupli instance
+                obj = dup.instance_object
+                all_objs.append(obj)
+            else:  # Usual object
+                obj = dup.object
+                all_objs.append(obj)
+        return all_objs
 
+    def get_objects_2d_bounding_boxes(self, context, obj):
+        obj_matrix = obj.matrix_world.copy()
+        bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
+
+        transposed_bbox = []
+        bbox_2d = []
+        screen_size = (context.region.width, context.region.height)
+        
+        for v in bbox:
+            coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
+            if coord_2d is not None:
+                transposed_bbox.append(coord_2d)
+            
+        region = context.region
+        borders = (region.width, region.height)
+        for i, axis in enumerate(zip(*transposed_bbox)):
+            if all(ax < 0 or  ax > borders[i] for ax in axis): # Filter only objects in viewport
+                return (obj, None)
+            min_point = min(axis)
+            max_point = max(axis)
+            bbox_2d.extend([min_point, max_point])
+            
+
+        return (obj, bbox_2d)
+            
+            
     def main(self, context, event):
         scene = context.scene
         region = context.region
@@ -321,8 +365,6 @@ class DrawPolylineWall(bpy.types.Operator):
             
             return ray_origin, ray_target, ray_direction
 
-        
-
             
         def get_object_ray_data(obj_matrix):
             ray_origin, ray_target, ray_direction = get_viewport_ray_data()
@@ -334,17 +376,15 @@ class DrawPolylineWall(bpy.types.Operator):
             return ray_origin_obj, ray_target_obj, ray_direction_obj
                                    
 
-        def get_visible_objects():
-            depsgraph = context.evaluated_depsgraph_get()
-            for dup in depsgraph.object_instances:
-                if dup.is_instance:  # Real dupli instance
-                    obj = dup.instance_object
-                    yield (obj, dup.matrix_world.copy())
-                else:  # Usual object
-                    obj = dup.object
-                    yield (obj, obj.matrix_world.copy())
+        def in_view_2d_bounding_box(obj, bbox):
+            x, y = self.mouse_pos
+            xmin, xmax, ymin, ymax = bbox
 
-                    
+            if xmin < x < xmax and ymin < y < ymax:
+                return True
+            else:
+                return False
+                
         def obj_ray_cast(obj):
             ray_origin_obj, _, ray_direction_obj = get_object_ray_data(obj.matrix_world.copy())
             success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
@@ -352,19 +392,6 @@ class DrawPolylineWall(bpy.types.Operator):
                 return location, normal, face_index
             else:
                 return None, None, None
-
-        
-        def bvh_ray_cast(obj):
-            depsgraph = context.evaluated_depsgraph_get()
-            bvh = BVHTree.FromObject(obj, depsgraph)
-            #BVH uses objects local matrix
-            ray_origin_obj, _, ray_direction_obj = get_object_ray_data(obj.matrix_local.copy())
-            location, normal, face_index, distance = bvh.ray_cast(ray_origin_obj, ray_direction_obj)
-            if location:
-                return location, normal, face_index
-            else:
-                return None, None, None
-            pass
 
         
         def ray_cast_to_plane(context, plane_origin, plane_normal):
@@ -389,27 +416,44 @@ class DrawPolylineWall(bpy.types.Operator):
             best_hit = None
             best_face_index = None
                     
-            for obj, matrix in get_visible_objects():
-                if obj.type == 'MESH':
-                    hit, normal, face_index = obj_ray_cast(obj) if self.ray_cast_type == 'OBJ' else bvh_ray_cast(obj)
-                    if hit is None:
-                        # Tried original mouse position. Now it will try the offsets.
-                        original_mouse_pos = self.mouse_pos
-                        for value in mouse_offset:
-                            self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                            hit, normal, face_index = obj_ray_cast(obj) if self.ray_cast_type == 'OBJ' else bvh_ray_cast(obj)
-                            if hit:
-                                break
-                        self.mouse_pos = original_mouse_pos
-                    if hit is not None:
-                        hit_world = matrix @ hit
-                        length_squared = (hit_world - ray_origin).length_squared
-                        if best_obj is None or length_squared < best_length_squared:
-                            best_length_squared = length_squared
-                            best_obj = obj
-                            best_hit = hit_world
-                            best_face_index = face_index
+            in_viewport = []
+            objs_to_raycast = []
+            start_time = time()
+            
+            for obj, bbox_2d in self.objs_2d_bbox:
+                if obj.type == 'MESH' and bbox_2d:
+                    if in_view_2d_bounding_box(obj, bbox_2d):
+                        objs_to_raycast.append(obj)
+                    
+            operator_time = time() - start_time
+            print(f"raycast bound box was finished in {operator_time:.2f} seconds")
+            print("Len to raycast: ", len(objs_to_raycast))
+            
+            start_time = time()
+            for obj in objs_to_raycast:
+                hit, normal, face_index = obj_ray_cast(obj)
+                if hit is None:
+                    # Tried original mouse position. Now it will try the offsets.
+                    original_mouse_pos = self.mouse_pos
+                    for value in mouse_offset:
+                        self.mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                        hit, normal, face_index = obj_ray_cast(obj)
+                        if hit:
+                            break
+                    self.mouse_pos = original_mouse_pos
+                if hit is not None:
+                    hit_world = obj.original.matrix_world @ hit
+                    length_squared = (hit_world - ray_origin).length_squared
+                    if best_obj is None or length_squared < best_length_squared:
+                        best_length_squared = length_squared
+                        best_obj = obj
+                        best_hit = hit_world
+                        best_face_index = face_index
                             
+
+            operator_time = time() - start_time
+            print(f"raycast objects was finished in {operator_time:.2f} seconds")
+            
             if best_obj is not None:
                 return best_obj, best_hit, best_face_index
                         
@@ -462,57 +506,63 @@ class DrawPolylineWall(bpy.types.Operator):
         obj, hit, face_index = cast_rays_and_get_best_object()
         intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
         
+        try:
+            snap_vertex = context.scene.BIMModelProperties.snap_vertex[0]
+        except:
+            snap_vertex = context.scene.BIMModelProperties.snap_vertex.add()
+            
         if obj is not None:
             original_obj = obj.original
-            bpy.ops.object.select_all(action="DESELECT")
-            original_obj.select_set(True)
-            context.view_layer.objects.active = original_obj
 
             snap_points = get_snap_points(obj, face_index)
             snap_point = select_snap_point(snap_points, hit, snap_threshold)
-            try:
-                snap_vextex = context.scene.BIMModelProperties.snap_vertex[0]
-            except:
-                snap_vextex = context.scene.BIMModelProperties.snap_vertex.add()
                 
             if snap_point:
-                snap_vextex.x = snap_point[0][0]
-                snap_vextex.y = snap_point[0][1]
-                snap_vextex.z = snap_point[0][2]
-                snap_vextex.snap_type = snap_point[1]
-                scene.cursor.location = snap_point[0]
+                snap_vertex.x = snap_point[0][0]
+                snap_vertex.y = snap_point[0][1]
+                snap_vertex.z = snap_point[0][2]
+                snap_vertex.snap_type = snap_point[1]
             else:
-                snap_vextex.x = hit[0]
-                snap_vextex.y = hit[1]
-                snap_vextex.z = hit[2]
-                snap_vextex.snap_type = "Face"
-                scene.cursor.location = hit
+                snap_vertex.x = hit[0]
+                snap_vertex.y = hit[1]
+                snap_vertex.z = hit[2]
+                snap_vertex.snap_type = "Face"
 
         else:
-            WallPolylineDecorator.uninstall()
-            bpy.ops.object.select_all(action="DESELECT")
-            scene.cursor.location = intersection
+            snap_vertex.x = intersection[0]
+            snap_vertex.y = intersection[1]
+            snap_vertex.z = intersection[2]
+            snap_vertex.snap_type = "Plane"
 
     
     def modal(self, context, event):
-        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
-            return {'PASS_THROUGH'}
-        elif event.type == 'MOUSEMOVE':
+        
+        if event.type == 'MOUSEMOVE':
+            self.mousemove_count += 1
+            tool.Blender.update_viewport()
+
+        else:
+            self.mousemove_count = 0
+        
+        if self.mousemove_count == 2:
+            self.objs_2d_bbox = []
+            for obj in self.visible_objs:
+                self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
+
+        if self.mousemove_count > 3:
             start_time = time()
-            WallPolylineDecorator.install(context)
             self.main(context, event)
             operator_time = time() - start_time
             print(f"main function was finished in {operator_time:.2f} seconds")
             return {'RUNNING_MODAL'}
-        elif event.type == 'O':
-            self.ray_cast_type = 'OBJ'
-            print("OBJ selected.")
-        elif event.type == 'B':
-            self.ray_cast_type = 'BVH'
-            print("BVH selected.")
-        elif event.type in {'RIGHTMOUSE', 'ESC'}:
+            
+        if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
+            return {'PASS_THROUGH'}
+            
+        if event.type in {'RIGHTMOUSE', 'ESC'}:
             WallPolylineDecorator.uninstall()
-            print("CANCELLLL")
+            tool.Blender.update_viewport()
+            print("CANCELLED")
             return {'CANCELLED'}
 
         return {'RUNNING_MODAL'}
@@ -520,7 +570,16 @@ class DrawPolylineWall(bpy.types.Operator):
             
     def invoke(self, context, event):
         if context.space_data.type == 'VIEW_3D':
+            WallPolylineDecorator.install(context)
+            start_time = time()
+            self.objs_2d_bbox = []
+            self.visible_objs = self.get_visible_objects(context)
+            for obj in self.visible_objs: # TODO check if matrix is needed here
+                self.objs_2d_bbox.append(self.get_objects_2d_bounding_boxes(context, obj))
+                # self.objs_bvhs.append(self.get_bvh_objects_bounding_boxes(obj))
             context.window_manager.modal_handler_add(self)
+            operator_time = time() - start_time
+            print(f"invoke was finished in {operator_time:.2f} seconds")
             return {'RUNNING_MODAL'}
         else:
             self.report({'WARNING'}, "Active space must be a View3d")
