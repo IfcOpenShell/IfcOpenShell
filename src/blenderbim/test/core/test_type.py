@@ -17,7 +17,7 @@
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
 import blenderbim.core.type as subject
-from test.core.bootstrap import ifc, type
+from test.core.bootstrap import ifc, type, geometry
 
 
 class TestAssignType:
@@ -42,11 +42,16 @@ class TestAssignType:
 
 
 class TestPurgeUnusedTypes:
-    def test_run(self, ifc, type):
+    def test_purge_types_obj_found(self, ifc, type, geometry):
         type.get_model_types().should_be_called().will_return(["element_type"])
         type.get_type_occurrences("element_type").should_be_called().will_return([])
-        ifc.run("root.remove_product", product="element_type").should_be_called()
         ifc.get_object("element_type").should_be_called().will_return("obj")
-        ifc.unlink(element="element_type").should_be_called()
-        type.remove_object("obj").should_be_called()
-        subject.purge_unused_types(ifc, type)
+        geometry.delete_ifc_object("obj").should_be_called()
+        subject.purge_unused_types(ifc, type, geometry)
+
+    def test_purge_types_obj_not_found(self, ifc, type, geometry):
+        type.get_model_types().should_be_called().will_return(["element_type"])
+        type.get_type_occurrences("element_type").should_be_called().will_return([])
+        ifc.get_object("element_type").should_be_called().will_return(None)
+        ifc.run("root.remove_product", product="element_type").should_be_called()
+        subject.purge_unused_types(ifc, type, geometry)

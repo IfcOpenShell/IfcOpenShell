@@ -100,10 +100,6 @@ class Type(blenderbim.core.tool.Type):
         return False
 
     @classmethod
-    def remove_object(cls, obj: bpy.types.Object) -> None:
-        bpy.data.objects.remove(obj)
-
-    @classmethod
     def run_geometry_add_representation(
         cls,
         obj: bpy.types.Object,
