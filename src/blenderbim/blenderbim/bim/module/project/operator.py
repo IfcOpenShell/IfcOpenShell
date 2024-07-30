@@ -1237,6 +1237,10 @@ class ExportIFCBase:
         if bpy.data.is_saved:
             layout.prop(self, "use_relative_path")
 
+        layout.separator()
+        layout.label(text="Supported formats for export:")
+        layout.label(text=".ifc, .ifczip, .ifcjson")
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             bpy.ops.wm.save_mainfile("INVOKE_DEFAULT")
