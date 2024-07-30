@@ -382,10 +382,10 @@ class file:
             for (attr_index, _), attr_name in zip(kwargs_attrs, kwargs):
                 if attr_index == 0xFFFFFFFF:
                     invalid_attrs.append(attr_name)
-                raise ValueError(
-                    "entity instance of type '%s' doesn't have the following attributes: %s."
-                    % (e.is_a(True), ", ".join(invalid_attrs))
-                )
+            raise ValueError(
+                "entity instance of type '%s' doesn't have the following attributes: %s."
+                % (e.is_a(True), ", ".join(invalid_attrs))
+            )
 
         # Restore transaction status
         if attrs:
