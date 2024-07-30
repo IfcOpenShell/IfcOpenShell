@@ -339,7 +339,7 @@ class WallPolylineDecorator:
 
         snap_prop = context.scene.BIMModelProperties.snap_vertex[0]
         points = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
-        if snap_prop.snap_type != "Face":
-            self.draw_batch("POINTS", points, decorator_color_selected)
-        else:
+        if snap_prop.snap_type in ["Face", "Plane"]:
             self.draw_batch("POINTS", points, decorator_color_special)
+        else:
+            self.draw_batch("POINTS", points, decorator_color_selected)
