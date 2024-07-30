@@ -119,15 +119,26 @@ async def gantt(request):
     return web.Response(text=html_content, content_type="text/html")
 
 
-async def open_web_browser(app):
-    webbrowser.open(f"http://127.0.0.1:{sio_port}/")
+async def on_startup(app):
+    pid_file = "running_pid.json"
+
+    if os.path.exists(pid_file):
+        with open(pid_file, "r") as f:
+            pids = json.load(f)
+    else:
+        pids = {}
+
+    pids[str(os.getpid())] = sio_port
+
+    with open(pid_file, "w") as f:
+        json.dump(pids, f, indent=4)
 
 
 app.router.add_get("/", index)
 app.router.add_get("/gantt", gantt)
 app.router.add_static("/jsgantt/", path="../gantt", name="jsgantt")
 app.router.add_static("/static/", path="./static", name="static")
-app.on_startup.append(open_web_browser)
+app.on_startup.append(on_startup)
 
 
 def main():

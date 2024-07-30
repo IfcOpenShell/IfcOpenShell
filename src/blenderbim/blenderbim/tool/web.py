@@ -22,6 +22,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.api.sequence
 from typing import Any, Dict, Optional
+import time
 import socket
 import sys
 import os
@@ -130,19 +131,6 @@ class Web(blenderbim.core.tool.Web):
             env=env,
         )
 
-        pid_file = os.path.join(webui_path, "running_pid.json")
-
-        if os.path.exists(pid_file):
-            with open(pid_file, "r") as f:
-                pids = json.load(f)
-        else:
-            pids = {}
-
-        pids[str(ws_process.pid)] = port
-
-        with open(pid_file, "w") as f:
-            json.dump(pids, f, indent=4)
-
         cls.set_is_running(True)
 
     @classmethod
@@ -229,6 +217,24 @@ class Web(blenderbim.core.tool.Web):
 
         cls.set_is_running(False)
         print("Websocket server terminated successfully")
+
+    @classmethod
+    def has_started(cls, port):
+        max_time = 5
+        start = time.time()
+        while True:
+            if time.time() - start > max_time:
+                return False
+            webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
+            pid_file = os.path.join(webui_path, "running_pid.json")
+            with open(pid_file, "r") as f:
+                try:
+                    data = json.load(f)
+                    if port in data.values():
+                        return True
+                except:
+                    pass
+            time.sleep(0.1)
 
     @classmethod
     def send_webui_data(
