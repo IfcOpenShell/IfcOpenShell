@@ -23,7 +23,7 @@ import datetime
 import blenderbim.tool as tool
 from math import radians, pi
 from mathutils import Euler, Vector, Matrix, Quaternion
-from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty, BoolProperty
+from bpy.props import IntProperty, StringProperty, EnumProperty, FloatProperty, FloatVectorProperty, BoolProperty, CollectionProperty
 from bpy.types import PropertyGroup
 from blenderbim.bim.module.light.data import SolarData
 from blenderbim.bim.module.light.decorator import SolarDecorator
@@ -182,6 +182,7 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     material_mappings: bpy.props.CollectionProperty(type=bpy.types.PropertyGroup, name="Material Mappings")
+    # material_mappings: CollectionProperty(type=MaterialMapping)
 
     should_load_from_memory: BoolProperty(
         name="Load from Memory",

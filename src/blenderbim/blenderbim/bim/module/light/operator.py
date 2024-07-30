@@ -71,9 +71,6 @@ class ExportOBJ(bpy.types.Operator):
             ifc_file_path = context.scene.radiance_exporter_properties.ifc_file
             ifc_file = ifcopenshell.open(ifc_file_path)
 
-        # for material in ifc_file.by_type("IfcMaterial"):
-        #     self.report({'INFO'}, f"Material: {material.Name}, ID: {material.id()}")
-
         obj_file_path = os.path.join(output_dir, "model.obj")
         mtl_file_path = os.path.join(output_dir, "model.mtl")
 
@@ -140,12 +137,17 @@ class RadianceRender(bpy.types.Operator):
 
         obj_file_path = os.path.join(output_dir, "model.obj")
 
-<<<<<<< Updated upstream
-=======
+        sun_props = context.scene.BIMSolarProperties
         sky_file_path = os.path.join(output_dir, "sky.rad")
+        latitude = sun_props.latitude
+        longitude = sun_props.longitude
+        timezone = sun_props.timezone
+        month = sun_props.month
+        day = sun_props.day
+        hour = sun_props.hour
+        minute = sun_props.minute
 
         
->>>>>>> Stashed changes
         camera = self.get_active_camera(context)
         if camera is None:
             self.report({"ERROR"}, "No active camera found in the scene. Please add a camera and set it as active.")
@@ -154,60 +156,33 @@ class RadianceRender(bpy.types.Operator):
         # Get camera position and direction
         camera_position, camera_direction = self.get_camera_data(camera)
 
-<<<<<<< Updated upstream
-        # Material processing
-        # style = []
 
-        # with open(obj_file_path, "r") as obj_file:
-        #     for line in obj_file:
-        #         if line.startswith("usemtl"):
-        #             l = line.strip().split(" ")
-        #             style.append(l[1])
-
-=======
-
-        dt = datetime(2024, 7, 29, 12, 0)  # July 29, 2024, at 12:00 PM
-        latitude = 40.7128  # New York City latitude
-        longitude = -74.0060  # New York City longitude
-        timezone = -4  # Eastern Daylight Time (EDT)
+        dt = datetime(2024, month, day, hour, minute)
 
         sky_description = pr.gensky(
             dt=dt,
             latitude=latitude,
             longitude=longitude,
             timezone=timezone,
-            sunny_with_sun=True,  # Assuming a sunny day with visible sun
-            ground_reflectance=0.2,  # Typical ground reflectance value
-            turbidity=3.0  # Clear sky condition
+            sunny_with_sun=True,
+            ground_reflectance=0.2,
+            turbidity=3.0
             )
 
         sky_description_str = sky_description.decode('utf-8')
 
-        # Print the generated sky description
-        print(sky_description_str)
-
         with open(sky_file_path, 'w') as f:
             f.write(sky_description_str)
 
->>>>>>> Stashed changes
-        # Check if json file is empty or not
+
         props = context.scene.radiance_exporter_properties
 
         if props.use_json_file:
-            # Load data from JSON file
             with open(props.json_file, "r") as file:
                 data = json.load(file)
         else:
-            # Use in-UI material mappings
             data = props.get_mappings_dict()
-<<<<<<< Updated upstream
-
-        print(data)
-
-=======
         
->>>>>>> Stashed changes
-        # Create materials.rad file
         materials_file = os.path.join(output_dir, "materials.rad")
         with open(materials_file, "w") as file:
             file.write("void plastic white\n0\n0\n5 0.8 0.8 0.8 0 0\n")
@@ -221,10 +196,6 @@ class RadianceRender(bpy.types.Operator):
             for style_id, radiance_material in data.items():
                 print(style_id, radiance_material)
                 file.write("inherit alias " + style_id + " " + data.get(style_id, "white") + "\n")
-                # file.write(f"inherit alias {style_id} {radiance_material}\n")
-            # for i in set(ifc_materials):
-            #     print(i)
-            #     file.write("inherit alias " + i + " " + data.get(i, "white") + "\n")
 
         self.report({"INFO"}, "Exported Materials Rad file to: {}".format(materials_file))
 
@@ -235,7 +206,6 @@ class RadianceRender(bpy.types.Operator):
         self.report({"INFO"}, "obj2mesh output: {}".format(mesh_file_path))
         scene_file = os.path.join(output_dir, "scene.rad")
         with open(scene_file, "w") as file:
-            # file.write("void mesh model\n1 " + rtm_file_path + "\n0\n0\n")
             file.write('void mesh model\n1 "' + rtm_file_path + '"\n0\n0\n')
 
         self.report({"INFO"}, "Exported Scene file to: {}".format(scene_file))
@@ -248,7 +218,7 @@ class RadianceRender(bpy.types.Operator):
 
         scene.add_material(material_path)
         scene.add_surface(scene_path)
-        scene.add_sky(sky_file_path)
+        scene.add_source(sky_file_path)
 
         aview = pr.View(position=camera_position, direction=camera_direction)
         scene.add_view(aview)
