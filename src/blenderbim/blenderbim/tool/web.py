@@ -227,13 +227,13 @@ class Web(blenderbim.core.tool.Web):
                 return False
             webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
             pid_file = os.path.join(webui_path, "running_pid.json")
-            with open(pid_file, "r") as f:
-                try:
+            try:
+                with open(pid_file, "r") as f:
                     data = json.load(f)
                     if port in data.values():
                         return True
-                except:
-                    pass
+            except:
+                pass
             time.sleep(0.1)
 
     @classmethod
