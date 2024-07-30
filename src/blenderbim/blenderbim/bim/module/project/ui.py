@@ -299,9 +299,8 @@ class BIM_PT_new_project_wizard(Panel):
         row.prop(props, "volume_unit", text="Volume Unit")
         prop_with_search(self.layout, pprops, "template_file", text="Template")
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.operator("bim.create_project")
-        row.operator("bim.load_project").should_start_fresh_session = False
 
 
 class BIM_PT_project_library(Panel):
