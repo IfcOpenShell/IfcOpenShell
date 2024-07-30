@@ -75,7 +75,6 @@ Scenario: Disable editing style
 
 Scenario: Load styles
     Given an empty IFC project
-    And I press "bim.add_style"
     When I press "bim.load_styles(style_type='IfcSurfaceStyle')"
     Then nothing happens
 
