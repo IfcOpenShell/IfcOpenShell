@@ -40,6 +40,8 @@ class Patcher:
         :param filepath: The filepath of the second IFC model to merge into the
             first. The first model is already specified as the input to
             IfcPatch.
+        :type filepath: Union[str, ifcopenshell.file]
+        :filter_glob filepath: *.ifc;*.ifczip;*.ifcxml
 
         Example:
 
@@ -53,11 +55,15 @@ class Patcher:
         self.filepath = filepath
 
     def patch(self):
-        if isinstance(self.filepath, ifcopenshell.file):
-            other = self.filepath
-        else:
-            other = ifcopenshell.open(self.filepath)
+        for filepath in self.filepath:
+            if isinstance(filepath, ifcopenshell.file):
+                other = filepath
+            else:
+                other = ifcopenshell.open(filepath)
 
+            self.merge(other)
+
+    def merge(self, other):
         if (main_unit := self.get_unit_name(self.file)) != self.get_unit_name(other):
             other = ifcopenshell.util.unit.convert_file_length_units(other, main_unit)
 
