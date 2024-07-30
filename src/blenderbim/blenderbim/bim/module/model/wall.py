@@ -338,7 +338,7 @@ class DrawPolylineWall(bpy.types.Operator):
         return (obj, bbox_2d)
             
             
-    def main(self, context, event):
+    def snaping_movement(self, context, event):
         scene = context.scene
         region = context.region
         rv3d = context.region_data
@@ -506,35 +506,27 @@ class DrawPolylineWall(bpy.types.Operator):
         obj, hit, face_index = cast_rays_and_get_best_object()
         intersection = ray_cast_to_plane(context, plane_origin, plane_normal)
         
-        try:
-            snap_vertex = context.scene.BIMModelProperties.snap_vertex[0]
-        except:
-            snap_vertex = context.scene.BIMModelProperties.snap_vertex.add()
             
         if obj is not None:
             original_obj = obj.original
 
-            snap_points = get_snap_points(obj, face_index)
-            snap_point = select_snap_point(snap_points, hit, snap_threshold)
+            snap_points = tool.Snaping.get_snap_points_on_raycasted_obj(obj, face_index)
+            snap_point = tool.Snaping.select_snap_point(snap_points, hit, snap_threshold)
                 
             if snap_point:
-                snap_vertex.x = snap_point[0][0]
-                snap_vertex.y = snap_point[0][1]
-                snap_vertex.z = snap_point[0][2]
-                snap_vertex.snap_type = snap_point[1]
+                tool.Snaping.update_snaping_point(snap_point[0], snap_point[1])
+                
             else:
-                snap_vertex.x = hit[0]
-                snap_vertex.y = hit[1]
-                snap_vertex.z = hit[2]
-                snap_vertex.snap_type = "Face"
+                tool.Snaping.update_snaping_point(hit, "Face")
 
         else:
-            snap_vertex.x = intersection[0]
-            snap_vertex.y = intersection[1]
-            snap_vertex.z = intersection[2]
-            snap_vertex.snap_type = "Plane"
+            tool.Snaping.update_snaping_point(intersection, "Plane")
 
     
+    def draw_polyline(self, context):
+        tool.Snaping.insert_polyline_point()        
+
+        
     def modal(self, context, event):
         
         if event.type == 'MOUSEMOVE':
@@ -551,16 +543,20 @@ class DrawPolylineWall(bpy.types.Operator):
 
         if self.mousemove_count > 3:
             start_time = time()
-            self.main(context, event)
+            self.snaping_movement(context, event)
             operator_time = time() - start_time
             print(f"main function was finished in {operator_time:.2f} seconds")
             return {'RUNNING_MODAL'}
+
+        if event.type == 'LEFTMOUSE':
+            self.draw_polyline(context)
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
             
         if event.type in {'RIGHTMOUSE', 'ESC'}:
             WallPolylineDecorator.uninstall()
+            tool.Snaping.clear_polyline()
             tool.Blender.update_viewport()
             print("CANCELLED")
             return {'CANCELLED'}

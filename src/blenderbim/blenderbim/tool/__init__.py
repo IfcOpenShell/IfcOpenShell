@@ -50,6 +50,7 @@ from blenderbim.tool.qto import Qto
 from blenderbim.tool.resource import Resource
 from blenderbim.tool.root import Root
 from blenderbim.tool.sequence import Sequence
+from blenderbim.tool.snaping import Snaping
 from blenderbim.tool.spatial import Spatial
 from blenderbim.tool.covering import Covering
 from blenderbim.tool.structural import Structural

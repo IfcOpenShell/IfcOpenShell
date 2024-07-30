@@ -935,6 +935,10 @@ class Covering:
     def get_z_from_ceiling_height(cls): pass
 
 @interface
+class Snaping:
+    pass
+
+@interface
 class Structural:
     def disable_editing_structural_analysis_model(cls): pass
     def disable_structural_analysis_model_editing_ui(cls): pass
