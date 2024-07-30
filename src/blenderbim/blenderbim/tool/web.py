@@ -211,12 +211,11 @@ class Web(blenderbim.core.tool.Web):
         with open(pid_file, "w") as f:
             json.dump(pids, f, indent=4)
 
-        ws_process.terminate()
-        ws_process.wait()
+        ws_process.kill()
         ws_process = None
 
         cls.set_is_running(False)
-        print("Websocket server terminated successfully")
+        print("Websocket server killed successfully")
 
     @classmethod
     def has_started(cls, port):
