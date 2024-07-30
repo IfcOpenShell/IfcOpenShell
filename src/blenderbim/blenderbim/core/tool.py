@@ -380,6 +380,7 @@ class Geometry:
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
     def delete_data(cls, data): pass
+    def delete_ifc_object(cls, obj): pass
     def does_representation_id_exist(cls, representation_id): pass
     def duplicate_object_data(cls, obj): pass
     def get_cartesian_point_coordinate_offset(cls, obj): pass
@@ -1007,7 +1008,6 @@ class Type:
     def get_representation_context(cls, representation): pass
     def get_type_occurrences(cls, element_type): pass
     def has_material_usage(cls, element): pass
-    def remove_object(cls, obj): pass
     def run_geometry_add_representation(cls, obj=None, context=None, ifc_representation_class=None, profile_set_usage=None): pass
     def run_geometry_switch_representation(cls, obj=None, representation=None, should_reload=None, is_global=None): pass
 

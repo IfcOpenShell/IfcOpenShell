@@ -40,15 +40,15 @@ def assign_type(
     type_tool.disable_editing(obj)
 
 
-def purge_unused_types(ifc: tool.Ifc, type: tool.Type) -> int:
+def purge_unused_types(ifc: tool.Ifc, type: tool.Type, geometry: tool.Geometry) -> int:
     """Remove all types without occurrences, return an amount of the removed types."""
     purged_types = 0
     for element_type in type.get_model_types():
         if not type.get_type_occurrences(element_type):
             obj = ifc.get_object(element_type)
-            ifc.run("root.remove_product", product=element_type)
-            purged_types += 1
             if obj:
-                ifc.unlink(element=element_type)
-                type.remove_object(obj)
+                geometry.delete_ifc_object(obj)
+            else:
+                ifc.run("root.remove_product", product=element_type)
+            purged_types += 1
     return purged_types
