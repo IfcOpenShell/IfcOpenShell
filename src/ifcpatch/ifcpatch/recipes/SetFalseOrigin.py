@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.georeference
 from ifcpatch.recipes import OffsetObjectPlacements, SetWorldCoordinateSystem
+import typing
 
 
 class Patcher:
@@ -28,14 +29,14 @@ class Patcher:
         file,
         logger,
         name: str = "EPSG:1234",
-        x: float = 0,
-        y: float = 0,
-        z: float = 0,
-        e: float = 0,
-        n: float = 0,
-        h: float = 0,
-        gn_angle: float = 0,
-        rotate_angle: float = 0,
+        x: typing.Union[str, float] = "0",
+        y: typing.Union[str, float] = "0",
+        z: typing.Union[str, float] = "0",
+        e: typing.Union[str, float] = "0",
+        n: typing.Union[str, float] = "0",
+        h: typing.Union[str, float] = "0",
+        gn_angle: typing.Union[str, float] = "0",
+        rotate_angle: typing.Union[str, float] = "0",
     ):
         """Sets a false origin with a map conversion in a model
 
@@ -62,14 +63,14 @@ class Patcher:
         self.file = file
         self.logger = logger
         self.name = name
-        self.x = x
-        self.y = y
-        self.z = z
-        self.e = e
-        self.n = n
-        self.h = h
-        self.gn_angle = gn_angle
-        self.rotate_angle = rotate_angle
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
+        self.e = float(e)
+        self.n = float(n)
+        self.h = float(h)
+        self.gn_angle = float(gn_angle)
+        self.rotate_angle = float(rotate_angle)
 
     def patch(self):
         SetWorldCoordinateSystem.Patcher(self.src, self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
