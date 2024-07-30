@@ -298,6 +298,7 @@ class DrawPolylineWall(bpy.types.Operator):
         
     def __init__(self):
         self.mousemove_count = 0
+        self.action_count = 0
         self.visible_objs = None
         
     def get_visible_objects(self, context):
@@ -523,16 +524,16 @@ class DrawPolylineWall(bpy.types.Operator):
             tool.Snaping.update_snaping_point(intersection, "Plane")
 
     
-    def draw_polyline(self, context):
-        tool.Snaping.insert_polyline_point()        
-
         
     def modal(self, context, event):
+        # NOTE Blender seem to have a bug where some event types are triggered twice.
+        # The use of self.action_count is to prevent that. However, it's necessary to
+        # check if this behavior happens in every OS. Reference: https://blender.stackexchange.com/questions/30985/modal-operator-double-keytrigger-release-triggered-twice-on-ubuntu
         
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
             tool.Blender.update_viewport()
-
+            print(self.action_count)
         else:
             self.mousemove_count = 0
         
@@ -549,7 +550,21 @@ class DrawPolylineWall(bpy.types.Operator):
             return {'RUNNING_MODAL'}
 
         if event.type == 'LEFTMOUSE':
-            self.draw_polyline(context)
+            if self.action_count == 0: 
+                tool.Snaping.insert_polyline_point()
+                self.action_count += 1
+                return {'RUNNING_MODAL'}
+            if self.action_count == 1:
+                self.action_count = 0
+
+        if event.type == 'BACK_SPACE': 
+            if self.action_count == 0: 
+                tool.Snaping.remove_last_polyline_point()
+                tool.Blender.update_viewport()
+                self.action_count += 1
+                return {'RUNNING_MODAL'}
+            if self.action_count == 1:
+                self.action_count = 0
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
