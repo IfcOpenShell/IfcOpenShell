@@ -121,6 +121,7 @@ classes = [
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
+    prop.MultipleFileSelect,
     prop.Attribute,
     prop.BIMAreaProperties,
     prop.BIMTabProperties,
@@ -133,7 +134,6 @@ classes = [
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
-    prop.MultipleFileSelect,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,

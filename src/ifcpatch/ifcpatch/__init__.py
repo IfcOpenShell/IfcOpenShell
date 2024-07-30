@@ -177,6 +177,10 @@ def _extract_docs(cls, method_name, boilerplate_args):
                 param_name = line.split(":")[1].strip().replace("param ", "")
                 if param_name in inputs:
                     inputs[param_name]["description"] = line.split(":")[2].strip()
+            elif line.startswith(":filter_glob"):
+                param_name = line.split(":")[1].strip().replace("filter_glob ", "")
+                if param_name in inputs:
+                    inputs[param_name]["filter_glob"] = line.split(":")[2].strip()
             elif i == 2:
                 description += line
             elif i > 2:
