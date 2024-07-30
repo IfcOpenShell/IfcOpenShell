@@ -196,10 +196,10 @@ endif
 
 	# Provides IFCJSON functionality
 	# TODO: replace with main repo if https://github.com/IFCJSON-Team/IFC2JSON_python/pull/3 is merged.
-	cd build && wget -O master.zip https://github.com/Moult/IFC2JSON_python/archive/refs/heads/feature-ios-v0.8.0.zip
-	cd build && unzip master.zip && rm master.zip
+	cd build && wget -O ifc2json.zip https://github.com/Moult/IFC2JSON_python/archive/refs/heads/feature-ios-v0.8.0.zip
+	cd build && unzip ifc2json.zip && rm ifc2json.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
-	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-master/file_converters && \
+	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
 		$(PYTHON) -c "from setuptools import setup; \
 		setup( \
 			name='ifcjson', \
@@ -208,7 +208,7 @@ endif
 			author_email='jan@brewsky.nl', \
 			packages=['ifcjson'], \
 		)" bdist_wheel
-	cp -r build/IFC2JSON_python-master/file_converters/dist/*.whl build/wheels/
+	cp -r build/IFC2JSON_python-*/file_converters/dist/*.whl build/wheels/
 
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
