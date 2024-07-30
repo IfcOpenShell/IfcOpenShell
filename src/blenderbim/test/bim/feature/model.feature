@@ -272,7 +272,7 @@ Scenario: Add a slab
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     When I press "bim.hotkey(hotkey='S_A')"
     Then the object "IfcSlab/Slab" is an "IfcSlab"
@@ -284,7 +284,7 @@ Scenario: Enable editing a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected
@@ -297,7 +297,7 @@ Scenario: Disable editing a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected
@@ -311,7 +311,7 @@ Scenario: Edit a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected

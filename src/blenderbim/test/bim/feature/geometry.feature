@@ -451,7 +451,7 @@ Scenario: Override duplicate move - copying objects with connection
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     When I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     When I press "bim.add_constr_type_instance"
     Then the object "IfcSlab/Slab" is an "IfcSlab"
