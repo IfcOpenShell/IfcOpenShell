@@ -735,7 +735,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                     bpy.data.objects.remove(obj)
 
             filepath = Path(self.get_filepath())
-            context.scene.BIMProperties.ifc_file = str(filepath)
+            context.scene.BIMProperties.ifc_file = filepath.as_posix()
             context.scene.BIMProjectProperties.is_loading = True
             context.scene.BIMProjectProperties.total_elements = len(tool.Ifc.get().by_type("IfcElement"))
             tool.Blender.register_toolbar()
