@@ -122,9 +122,14 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 new_attr = patch_args.add()
                 data_type = arg_info.get("type", "str")
                 if isinstance(data_type, list):
+                    if "file" in data_type:
+                        data_type = ["file"]
+
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
+
                 new_attr.data_type = {
                     "Literal": "enum",
+                    "file": "file",
                     "str": "string",
                     "float": "float",
                     "int": "integer",
@@ -134,6 +139,11 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 if new_attr.data_type == "enum":
                     new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
                     new_attr.enum_value = arg_info.get("default", new_attr.get_value_default())
+                    continue
+
+                if new_attr.data_type == "file":
+                    new_attr.filepath_value.single_file = arg_info.get("default", new_attr.get_value_default())
+                    new_attr.filter_glob = arg_info.get("filter_glob", "*.ifc;*.ifczip;*.ifcxml")
                     continue
 
                 new_attr.set_value(arg_info.get("default", new_attr.get_value_default()))

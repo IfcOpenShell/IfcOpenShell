@@ -50,6 +50,8 @@ def draw_attribute(attribute, layout, copy_operator=None):
         return
     if value_name == "enum_value":
         prop_with_search(layout, attribute, "enum_value", text=attribute.name)
+    elif value_name == "filepath_value":
+        attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
     elif attribute.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
         propis = bpy.context.scene.BIMWorkScheduleProperties
         for item in propis.durations_attributes:

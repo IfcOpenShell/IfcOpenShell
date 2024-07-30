@@ -147,7 +147,7 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
     """Open Blender's file explorer to select one or multiple files."""
 
     bl_idname = "bim.multiple_file_selector"
-    bl_label = "Select Multiple Files"
+    bl_label = "Select File(s)"
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
