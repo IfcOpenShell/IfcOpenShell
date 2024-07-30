@@ -730,7 +730,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_existing_ifc_file():
                 return {"FINISHED"}
 
-            if tool.Blender.is_default_scene():
+            if self.should_start_fresh_session and tool.Blender.is_default_scene():
                 for obj in bpy.data.objects:
                     bpy.data.objects.remove(obj)
 
@@ -743,6 +743,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
 
             if not self.is_advanced:
                 bpy.ops.bim.load_project_elements()
+                if not self.should_start_fresh_session:
+                    bpy.ops.bim.convert_to_blender()
         except:
             blenderbim.last_error = traceback.format_exc()
             raise
