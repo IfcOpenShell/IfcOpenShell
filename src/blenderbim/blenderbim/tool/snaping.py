@@ -79,13 +79,6 @@ class Snaping(blenderbim.core.tool.Snaping):
     def insert_polyline_point(cls):
         snap_vertex = bpy.context.scene.BIMModelProperties.snap_mouse_point[0]
         polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        print(len(polyline_data))
-        if len(polyline_data) > 0:
-            print("X", snap_vertex.x, polyline_data[-1].x)
-            if snap_vertex.x == polyline_data[-1].x and\
-                snap_vertex.y == polyline_data[-1].y and\
-                snap_vertex.z == polyline_data[-1].z:
-                return
             
         polyline_point = bpy.context.scene.BIMModelProperties.polyline_point.add()
         polyline_point.x = snap_vertex.x
@@ -96,4 +89,7 @@ class Snaping(blenderbim.core.tool.Snaping):
     def clear_polyline(cls):
         bpy.context.scene.BIMModelProperties.polyline_point.clear()
 
-        
+    @classmethod
+    def remove_last_polyline_point(cls):
+        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
+        polyline_data.remove(len(polyline_data) - 1)
