@@ -1333,18 +1333,6 @@ class ExportIFC(ExportIFCBase, bpy.types.Operator):
     pass
 
 
-# TODO: remove as deprecated, better wait couple releases since
-# this operator is used for saving IFC files in user scripts.
-class ExportIFCDeprecated(ExportIFCBase, bpy.types.Operator):
-    bl_idname = "export_ifc.bim"
-
-    def execute(self, context):
-        msg = f"'{ExportIFCDeprecated.bl_idname}' operator name is deprecated, use '{ExportIFC.bl_idname}'."
-        self.report({"WARNING"}, msg)
-        print(msg)
-        return super().execute(context)
-
-
 class LoadLinkedProject(bpy.types.Operator):
     bl_idname = "bim.load_linked_project"
     bl_label = "Load a project for viewing only."
