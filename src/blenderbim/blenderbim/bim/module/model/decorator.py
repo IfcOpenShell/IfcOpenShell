@@ -337,9 +337,26 @@ class WallPolylineDecorator:
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
         gpu.state.point_size_set(10)
 
-        snap_prop = context.scene.BIMModelProperties.snap_vertex[0]
-        points = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
+        snap_prop = context.scene.BIMModelProperties.snap_mouse_point[0]
+        point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
         if snap_prop.snap_type in ["Face", "Plane"]:
-            self.draw_batch("POINTS", points, decorator_color_special)
+            self.draw_batch("POINTS", point, decorator_color_special)
         else:
-            self.draw_batch("POINTS", points, decorator_color_selected)
+            self.draw_batch("POINTS", point, decorator_color_selected)
+
+        polyline_data = context.scene.BIMModelProperties.polyline_point
+        polyline_points = []
+        polyline_edges = []
+        for point_prop in polyline_data:
+            point = Vector((point_prop.x, point_prop.y, point_prop.z))
+            polyline_points.append(point)
+
+        for i in range(len(polyline_points) - 1):
+            polyline_edges.append([i, i+1])
+            
+        self.draw_batch("POINTS", polyline_points, decorator_color_selected)
+        if len(polyline_points) > 1:
+            self.draw_batch("LINES", polyline_points, decorator_color_selected, polyline_edges)
+            
+        self.line_shader.uniform_float("lineWidth", 2.0)
+            
