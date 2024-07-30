@@ -91,6 +91,7 @@ def register():
         bpy.utils.register_tool(workspace.ExploreTool, after={"builtin.transform"}, separator=True, group=False)
     bpy.types.Scene.BIMProjectProperties = bpy.props.PointerProperty(type=prop.BIMProjectProperties)
     bpy.app.handlers.load_post.append(decorator.toggle_decorations_on_load)
+    bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
     wm = bpy.context.window_manager
