@@ -344,6 +344,13 @@ class WallPolylineDecorator:
         else:
             self.draw_batch("POINTS", point, decorator_color_selected)
 
+        if snap_prop.snap_type != "Plane":
+            projection_point = [Vector((snap_prop.x, snap_prop.y, 0))] # TODO get height from default container
+            self.draw_batch("POINTS", projection_point, decorator_color_special)
+            edges = [[0, 1]]
+            self.draw_batch("LINES", point + projection_point, decorator_color_selected, edges)
+            self.line_shader.uniform_float("lineWidth", 0.5)
+            
         polyline_data = context.scene.BIMModelProperties.polyline_point
         polyline_points = []
         polyline_edges = []
