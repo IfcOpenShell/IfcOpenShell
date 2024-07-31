@@ -150,7 +150,6 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     ifcopenshell
     bcf
     ifcclash
-    bimtester
     ifccobie
     ifccsv
     ifcdiff
@@ -172,7 +171,6 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
     elementpath
     six
     lark-parser
-    behave
     parse
     parse_type
     xlsxwriter
@@ -184,8 +182,7 @@ Required Python modules to be stored in ``libs/site/packages/`` are:
 Notes:
 
 1. ``ifcopenshell`` almost always requires the latest version due to the fast paced nature of the add-on development.
-2. ``behave`` requires `patches <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcbimtester/patch>`__.
-3. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
+2. ``ifcjson`` can be found `here <https://github.com/IFCJSON-Team/IFC2JSON_python/tree/master/file_converters>`__.
 
 Required static assets are:
 ::
