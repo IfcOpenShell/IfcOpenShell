@@ -927,6 +927,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         new_representation = None
         for r in cls.get_representations_iter(element):
+            r = tool.Geometry.resolve_mapped_representation(r)
             if r != representation:
                 new_representation = r
                 break
