@@ -342,13 +342,18 @@ class Web(blenderbim.core.tool.Web):
             for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
                 for reference in tool.Drawing.get_document_references(sheet):
                     reference_description = tool.Drawing.get_reference_description(reference)
-                    reference_location = tool.Drawing.get_reference_location(reference)
-                    reference_name = os.path.basename(reference_location)
-                    reference_path = os.path.join(ifc_file_dir, reference_location)
-                    if reference_description == "SHEET":
-                        sheets_data.append({"name": reference_name, "path": reference_path})
-                    if reference_description == "DRAWING":
-                        drawings_data.append({"name": reference_name, "path": reference_path})
+                    if reference_description != "SHEET":
+                        continue
+                    reference_name = os.path.basename(reference.Location)
+                    reference_path = os.path.join(ifc_file_dir, reference.Location)
+                    sheets_data.append({"name": reference_name, "path": reference_path})
+
+            drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
+            for drawing in drawings:
+                document = tool.Drawing.get_drawing_document(drawing)
+                reference_name = os.path.basename(document.Location)
+                reference_path = os.path.join(ifc_file_dir, document.Location)
+                drawings_data.append({"name": reference_name, "path": reference_path})
 
             cls.send_webui_data(
                 data={"drawings": drawings_data, "sheets": sheets_data}, data_key="drawings_data", event="drawings_data"
