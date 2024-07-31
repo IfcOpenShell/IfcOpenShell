@@ -37,6 +37,7 @@ function connectSocket() {
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
+  socket.on("connected_clients", handleConnectedClients);
   socket.on("gantt_data", handleGanttData);
   socket.on("default_data", handleDefaultData);
 }
@@ -51,6 +52,10 @@ function handleBlenderConnect(blenderId) {
       ganttTasks: {},
     };
   }
+
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
 }
 
 // Function to handle 'blender_disconnect' event
@@ -66,6 +71,18 @@ function handleBlenderDisconnect(blenderId) {
   });
 }
 
+function handleConnectedClients(data) {
+  $("#blender-count").text(data.length);
+  console.log(data);
+  data.forEach(function (id) {
+    connectedClients[id] = {
+      shown: false,
+      workSchedule: {},
+      ganttTasks: {},
+    };
+  });
+}
+
 // Function to handle 'gantt_data' event
 function handleGanttData(data) {
   const blenderId = data["blenderId"];
@@ -75,7 +92,6 @@ function handleGanttData(data) {
   const filename = data["data"]["ifc_file"];
   const ganttTasks = data["data"]["gantt_data"]["tasks"];
   const ganttWorkSched = data["data"]["gantt_data"]["work_schedule"];
-  // const ganttWorkSched = {};
 
   if (connectedClients.hasOwnProperty(blenderId)) {
     if (!connectedClients[blenderId].shown) {
@@ -111,10 +127,6 @@ function handleDefaultData(data) {
 
 // Function to add a new gantt with data and filename
 function addGanttElement(blenderId, tasks, workSched, filename) {
-  $("#blender-count").text(function (i, text) {
-    return parseInt(text, 10) + 1;
-  });
-
   const ganttContainer = $("<div></div>")
     .addClass("gantt-container")
     .attr("id", "container-" + blenderId);
@@ -402,15 +414,17 @@ function toggleClientList() {
   }
 
   clientList.empty();
+  var counter = 0;
 
   $.each(connectedClients, function (id, client) {
-    if (!client.shown) return;
-
+    counter++;
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "0.5rem");
 
-    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
 
     clientDiv.append(dropdownIcon);
 
@@ -421,6 +435,13 @@ function toggleClientList() {
         .addClass("client-detail")
         .text(`Blender ID: ${id}`);
       clientDetailsDiv.append(clientId);
+    }
+
+    if (!client.shown) {
+      const clientShown = $("<div>")
+        .addClass("client-detail")
+        .text("No work schedule exported for this Blender yet");
+      clientDetailsDiv.append(clientShown);
     }
 
     if (client.workSchedule && client.gantt) {
@@ -441,9 +462,7 @@ function toggleClientList() {
         .text("Scroll to Gantt Chart")
         .on("click", function () {
           $("html, body").animate(
-            {
-              scrollTop: $("#gantt-" + id).offset().top,
-            },
+            { scrollTop: $("#gantt-" + id).offset().top },
             600
           );
           clientList.removeClass("show");
