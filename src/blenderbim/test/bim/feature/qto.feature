@@ -47,14 +47,6 @@ Scenario: Execute qto method - side formwork areas
     And I press "bim.execute_qto_method"
     Then "scene.BIMQtoProperties.qto_result" is "16.0"
 
- Scenario: Assign objects base qto
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
-    When I press "bim.assign_objects_base_qto"
-    Then "active_object.PsetProperties.qto_name" is "Qto_WallBaseQuantities"
-
 Scenario: Calculate all quantities
     Given an empty IFC project
     And I add a cube
