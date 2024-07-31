@@ -81,9 +81,15 @@ class BIM_PT_spatial(Panel):
             else:
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
-            for reference in SpatialData.data["references"]:
+
+        references = SpatialData.data["references"]
+        if references:
+            self.layout.label(text="Referenced In Structures:")
+            for reference in references:
                 row = self.layout.row()
                 row.label(text=reference, icon="LINKED")
+        else:
+            self.layout.label(text="No References In Structures")
 
 
 class BIM_PT_spatial_decomposition(Panel):
