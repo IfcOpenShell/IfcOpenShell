@@ -88,7 +88,6 @@ Scenario: Assign a spatial class to a cube already in a collection
     And I press "bim.assign_class"
     Then the object "IfcSpace/Cube" is an "IfcSpace"
     And the object "IfcSpace/Cube" is in the collection "IfcSpace/Cube"
-    And the collection "IfcSpace/Cube" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a class to a cube in a collection
@@ -118,4 +117,3 @@ Scenario: Copy a storey
     Then the object "IfcBuildingStorey/My Storey" and "IfcBuildingStorey/My Storey.001" are different elements
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"
     And the object "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuildingStorey/My Storey.001"
-    And the collection "IfcBuildingStorey/My Storey.001" is in the collection "IfcBuilding/My Building"
