@@ -64,7 +64,7 @@ Scenario: Assign a type class to a cube
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
     Then the object "IfcWallType/Cube" is an "IfcWallType"
-    And the object "IfcWallType/Cube" is in the collection "Types"
+    And the object "IfcWallType/Cube" is in the collection "IfcTypeProduct"
     And the object "IfcWallType/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a spatial class to a cube
