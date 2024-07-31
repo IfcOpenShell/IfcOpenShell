@@ -61,7 +61,7 @@ class Web(blenderbim.core.tool.Web):
         It then retrieves the port number, and returns it.
 
         Returns:
-            int: The port number that was generated.
+            - int: The port number that was generated.
         """
         print("Generating port number")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -81,7 +81,7 @@ class Web(blenderbim.core.tool.Web):
            - port (int): The port number to check.
 
         Returns:
-            bool: True if the port is available, False if it is in use.
+            - bool: True if the port is available, False if it is in use.
         """
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # connect_ex returns errno.SUCCESS (0) if the connection succeeds
@@ -219,7 +219,19 @@ class Web(blenderbim.core.tool.Web):
         print("Websocket server killed successfully")
 
     @classmethod
-    def has_started(cls, port):
+    def has_started(cls, port: int) -> bool:
+        """
+        Check if the WebSocket server has started on the specified port.
+
+        This function continuously checks for the existence of the WebSocket server's process ID (PID) in the running_pid JSON file.
+        It waits for a maximum of 5 seconds before returning False.
+
+        Args:
+            - port (int): The port number on which the WebSocket server is expected to be running.
+
+        Returns:
+            - bool: True if the WebSocket server has started on the specified port within the maximum time limit, False otherwise.
+        """
         max_time = 5
         start = time.time()
         while True:
@@ -249,11 +261,11 @@ class Web(blenderbim.core.tool.Web):
         Sends data to the Web UI via Websocket connection.
 
         Args:
-        - data (Optional[Any]): The data to send. If None, just sends data from WebData.
-        - data_key (str): The key under which to store the data in the payload. Defaults to "data".
-        - event (str): The WebSocket event to emit. Defaults to "data".
-        - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
-        - use_web_data (bool): Whether to use data from WebData. Defaults to True.
+            - data (Optional[Any]): The data to send. If None, just sends data from WebData.
+            - data_key (str): The key under which to store the data in the payload. Defaults to "data".
+            - event (str): The WebSocket event to emit. Defaults to "data".
+            - namespace (str): The namespace for the WebSocket event. Defaults to "/blender".
+            - use_web_data (bool): Whether to use data from WebData. Defaults to True.
         """
 
         global ws_thread
