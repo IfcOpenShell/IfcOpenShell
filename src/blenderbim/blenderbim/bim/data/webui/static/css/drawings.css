@@ -236,6 +236,20 @@ li.svg-name {
     outline: none;
 }
 
+footer {
+    background-color: var(--nav-bg-color);
+    text-align: right;
+    padding: var(--padding-tiny);
+    border-top: 1px solid var(--nav-border-color);
+}
+
+footer p {
+    margin: 0;
+    color: var(--text-color);
+    margin-right: var(--margin-small);
+    font-size: 0.8rem;
+}
+
 /* remove bootstrap css confilcts */
 *,
 ::after,
