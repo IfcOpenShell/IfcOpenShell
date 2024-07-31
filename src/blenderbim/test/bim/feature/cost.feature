@@ -377,7 +377,7 @@ Scenario: Assign cost item quantity - quantity based
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
-    And I press "bim.calculate_all_quantities"
+    And I press "bim.perform_quantity_take_off"
     When I press "bim.assign_cost_item_quantity(cost_item={cost_item}, related_object_type='PRODUCT', prop_name='NetVolume')"
     Then nothing happens
 

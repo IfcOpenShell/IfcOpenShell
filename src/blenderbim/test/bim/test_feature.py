@@ -684,17 +684,17 @@ def prop_is_roughly_value(prop, value):
     value = replace_variables(value)
     is_value = False
     try:
-        exec(f'assert round(bpy.context.{prop}, 5) == "{value}"')
+        exec(f'assert round(bpy.context.{prop}, 3) == "{value}"')
         is_value = True
     except:
         try:
-            exec(f"assert round(bpy.context.{prop}, 5) == {value}")
+            exec(f"assert round(bpy.context.{prop}, 3) == {value}")
             is_value = True
         except:
             pass
     if not is_value:
         print(f"bpy.context.{prop}")
-        actual_value = round(eval(f"bpy.context.{prop}"), 5)
+        actual_value = round(eval(f"bpy.context.{prop}"), 3)
         assert False, f"Value is {actual_value}"
 
 

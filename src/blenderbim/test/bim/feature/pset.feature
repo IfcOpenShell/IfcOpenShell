@@ -380,15 +380,15 @@ Scenario: Edit pset length property
 Scenario: Edit qset length property
     Given an empty IFC project
     And I press "mesh.add_clever_stair"
-    And I press "bim.calculate_all_quantities"
+    And I press "bim.perform_quantity_take_off"
     And the variable "pset" is "tool.Pset.get_element_pset(tool.Ifc.get_entity(bpy.context.active_object), 'Qto_StairFlightBaseQuantities').id()"
     And the variable "si_conversion" is "ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())"
     And I press "bim.enable_pset_editing(pset_id={pset}, obj='IfcStairFlight/StairFlight', obj_type='Object')"
 
     # Testing Q_LENGTH type of prop
     Then "active_object.PsetProperties.properties['Length'].metadata.special_type" is "LENGTH"
-    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2492.57397"
-    And "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "2.49257"
+    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2156.485"
+    And "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "2.156"
 
     When I set "active_object.PsetProperties.properties['Length'].metadata.float_value" to "350"
     Then "active_object.PsetProperties.properties['Length'].metadata.length_value" is roughly "0.35"

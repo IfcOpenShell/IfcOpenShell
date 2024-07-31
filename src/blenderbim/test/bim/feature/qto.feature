@@ -60,9 +60,8 @@ Scenario: Calculate all quantities
     And I add a cube
     And the object "Cube" is selected
     And I press "bim.assign_class(ifc_class='IfcWall', predefined_type='SOLIDWALL')"
-    When I press "bim.calculate_all_quantities"
+    When I press "bim.perform_quantity_take_off"
     And the variable "qset_id" is "{ifc}.by_type('IfcElementQuantity')[0].id()"
     And I press "bim.enable_pset_editing(pset_id={qset_id}, obj='IfcWall/Cube', obj_type='Object')"
-    And I press "bim.disable_pset_editing(obj='IfcWall/Cube', obj_type='Object')"
-    Then "active_object.PsetProperties.qto_name" is "Qto_WallBaseQuantities"
-    Then "active_object.PsetProperties.properties['Length'].metadata.float_value" is "2000.0"
+    Then "active_object.PsetProperties.active_pset_name" is "Qto_WallBaseQuantities"
+    And "active_object.PsetProperties.properties['Length'].metadata.float_value" is roughly "2000.0"
