@@ -66,14 +66,6 @@ Scenario: Add grid
     And the object "IfcGridAxis/02" is an "IfcGridAxis"
     And the object "IfcGridAxis/03" is an "IfcGridAxis"
 
-Scenario: Pie update container
-    Given an empty Blender session
-    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
-    When the object "IfcSlab/Slab" is placed in the collection "IfcBuildingStorey/Level 1"
-    And I press "bim.pie_update_container"
-    Then nothing happens
-
 Scenario: Add a wall
     Given an empty IFC project
     And I load the demo construction library
