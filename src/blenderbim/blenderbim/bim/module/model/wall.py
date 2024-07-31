@@ -533,7 +533,6 @@ class DrawPolylineWall(bpy.types.Operator):
         if event.type == 'MOUSEMOVE':
             self.mousemove_count += 1
             tool.Blender.update_viewport()
-            print(self.action_count)
         else:
             self.mousemove_count = 0
         
@@ -549,22 +548,12 @@ class DrawPolylineWall(bpy.types.Operator):
             print(f"main function was finished in {operator_time:.2f} seconds")
             return {'RUNNING_MODAL'}
 
-        if event.type == 'LEFTMOUSE':
-            if self.action_count == 0: 
-                tool.Snaping.insert_polyline_point()
-                self.action_count += 1
-                return {'RUNNING_MODAL'}
-            if self.action_count == 1:
-                self.action_count = 0
+        if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
+            tool.Snaping.insert_polyline_point()
 
-        if event.type == 'BACK_SPACE': 
-            if self.action_count == 0: 
-                tool.Snaping.remove_last_polyline_point()
-                tool.Blender.update_viewport()
-                self.action_count += 1
-                return {'RUNNING_MODAL'}
-            if self.action_count == 1:
-                self.action_count = 0
+        if event.value == 'RELEASE' and event.type == 'BACK_SPACE': 
+            tool.Snaping.remove_last_polyline_point()
+            tool.Blender.update_viewport()
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
