@@ -21,10 +21,12 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import multiprocessing
 from collections import namedtuple
+from typing import Any
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
@@ -47,7 +49,7 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
     return results
 
 
-def edit_qtos(ifc_file, results) -> None:
+def edit_qtos(ifc_file: ifcopenshell.file, results: dict[ifcopenshell.entity_instance, Any]) -> None:
     for element, qtos in results.items():
         for name, quantities in qtos.items():
             qto = ifcopenshell.util.element.get_pset(element, name, should_inherit=False)
@@ -59,7 +61,7 @@ def edit_qtos(ifc_file, results) -> None:
 
 
 class SI2ProjectUnitConverter:
-    def __init__(self, ifc_file):
+    def __init__(self, ifc_file: ifcopenshell.file):
         self.project_units = {
             "IfcAreaMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "AREAUNIT"),
             "IfcLengthMeasure": ifcopenshell.util.unit.get_project_unit(ifc_file, "LENGTHUNIT"),

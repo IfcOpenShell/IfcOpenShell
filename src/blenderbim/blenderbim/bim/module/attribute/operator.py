@@ -21,6 +21,7 @@ import json
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import blenderbim.bim.helper
 import blenderbim.bim.handler
 import blenderbim.tool as tool
@@ -36,7 +37,7 @@ class EnableEditingAttributes(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj)
+        obj = bpy.data.objects[self.obj]
         props = obj.BIMAttributeProperties
         props.attributes.clear()
 

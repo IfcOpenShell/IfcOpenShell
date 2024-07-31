@@ -32,6 +32,7 @@ from bpy.props import (
 )
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 def get_subelement_class(self, context):
