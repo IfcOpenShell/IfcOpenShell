@@ -12,4 +12,3 @@ Scenario: Execute generate flooring coverings from walls
     And the object "IfcWall/Wall" is selected
     When I press "bim.add_instance_flooring_coverings_from_walls"
     Then nothing happens
-

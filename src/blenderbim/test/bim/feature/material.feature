@@ -157,7 +157,7 @@ Scenario: Unassign material - removing inherited material
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
 
     Then the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
-    
+
     When I press "bim.unassign_material"
     Then the object "IfcWall/Cube" has no IFC materials
 
