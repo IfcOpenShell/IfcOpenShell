@@ -17,12 +17,15 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
+from logging import Logger
+from typing import Union
 
 
 class Patcher:
-    def __init__(self, src, file, logger, property_name=None, quantity_name=None):
+    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, property_name: str, quantity_name: str):
         """Converts a property to a standardised quantity
 
         IFC can store arbitrary key value metadata associated with a elements
@@ -40,14 +43,12 @@ class Patcher:
 
         :param property_name: The name of the property to convert into a
             quantity. The name of the property set is not considered.
-        :type property_name: str
         :param quantity_name: The name of the quantity that this property should
             be stored in. This should be a standard name that is one of the
             quantity names of a buildingSMART quantity template. For example, it
             may be "NetSideArea" for walls, which exists in
             Qto_WallBaseQuantities. The quantity set name will be based on the
             standard buildingSMART quantity template.
-        :type quantity_name: str
 
         Example:
 
@@ -63,7 +64,7 @@ class Patcher:
         self.source_property_name = property_name
         self.destination_quantity_name = quantity_name
 
-    def patch(self):
+    def patch(self) -> None:
         self.qto_template_cache = {}
         self.psetqto = ifcopenshell.util.pset.get_template("IFC4")
 
@@ -76,7 +77,9 @@ class Patcher:
                 [r.RelatingPropertyDefinition for r in product.IsDefinedBy if r.is_a("IfcRelDefinesByProperties")],
             )
 
-    def process_product(self, product, definitions):
+    def process_product(
+        self, product: ifcopenshell.entity_instance, definitions: list[ifcopenshell.entity_instance]
+    ) -> None:
         value = None
         has_quantity = False
         qtos = {}
@@ -98,12 +101,12 @@ class Patcher:
                 "pset.edit_qto", self.file, qto=qto, Properties={self.destination_quantity_name: value}
             )
 
-    def get_qto_name(self, ifc_class):
+    def get_qto_name(self, ifc_class: str) -> Union[str, None]:
         for template in self.get_qto_templates(ifc_class):
             if self.destination_quantity_name in [t.Name for t in template.HasPropertyTemplates]:
                 return template.Name
 
-    def get_qto_templates(self, ifc_class):
+    def get_qto_templates(self, ifc_class: str) -> list[ifcopenshell.entity_instance]:
         if ifc_class not in self.qto_template_cache:
             self.qto_template_cache[ifc_class] = self.psetqto.get_applicable(ifc_class, qto_only=True)
         return self.qto_template_cache[ifc_class]
