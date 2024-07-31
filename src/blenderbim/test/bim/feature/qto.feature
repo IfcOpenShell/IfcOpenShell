@@ -35,16 +35,14 @@ Scenario: Execute qto method - formwork areas
     And I add a cube of size "1" at "1,0,0"
     And the object "Cube" is selected
     And additionally the object "Cube.001" is selected
-    When I set "scene.BIMQtoProperties.qto_methods" to "FORMWORK"
-    And I press "bim.execute_qto_method"
+    When I press "bim.calculate_formwork_area"
     Then "scene.BIMQtoProperties.qto_result" is "21.5"
 
 Scenario: Execute qto method - side formwork areas
     Given an empty Blender session
     And I add a cube
     And the object "Cube" is selected
-    When I set "scene.BIMQtoProperties.qto_methods" to "SIDE_FORMWORK"
-    And I press "bim.execute_qto_method"
+    When I press "bim.calculate_side_formwork_area"
     Then "scene.BIMQtoProperties.qto_result" is "16.0"
 
 Scenario: Calculate all quantities
