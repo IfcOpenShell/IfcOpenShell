@@ -300,6 +300,15 @@ class DrawPolylineWall(bpy.types.Operator):
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = None
+        self.number_options = {'0', '1', '2', '3',
+                               '4', '5', '6', '7', '8', '9', '.', '-'}
+        self.number_input = []
+        self.number_output = ''
+        self.is_input_on = False
+        self.input_options = {'X', 'Y', 'D', 'A'}
+        self.input_type = ''
+        self.input_value_xy = [None, None]
+        
         
     def get_visible_objects(self, context):
         depsgraph = context.evaluated_depsgraph_get()
@@ -546,6 +555,7 @@ class DrawPolylineWall(bpy.types.Operator):
             self.snaping_movement(context, event)
             operator_time = time() - start_time
             print(f"main function was finished in {operator_time:.2f} seconds")
+            print(len(bpy.context.scene.BIMModelProperties.polyline_point))            
             return {'RUNNING_MODAL'}
 
         if event.value == 'RELEASE' and event.type == 'LEFTMOUSE':
@@ -554,6 +564,35 @@ class DrawPolylineWall(bpy.types.Operator):
         if event.value == 'RELEASE' and event.type == 'BACK_SPACE': 
             tool.Snaping.remove_last_polyline_point()
             tool.Blender.update_viewport()
+
+        if event.value == 'PRESS' and event.type == 'I': 
+            self.is_input_on = True
+
+        if self.is_input_on:
+            if event.value == 'PRESS' and event.type in self.input_options:
+                self.input_type = event.type
+                self.number_input = []
+                self.number_output = ''
+
+        if self.input_type:
+            if event.ascii and event.ascii in self.number_options:
+                print(self.input_type)
+                self.number_input.append(event.ascii)
+                self.number_output = ''.join(self.number_input) 
+                print(self.number_output)
+
+        if event.value == 'PRESS' and event.type in {'RET', 'NUMPAD_ENTER'}:
+            if not None in self.input_value_xy:
+                tool.Snaping.insert_polyline_point(self.input_value_xy[0], self.input_value_xy[1])
+                tool.Blender.update_viewport()
+                self.is_input_on = False
+            if self.number_output and self.input_type == 'X':
+                print("-> ", float(self.number_output))
+                self.input_value_xy[0] = float(self.number_output)
+            if self.number_output and self.input_type == 'Y':
+                print("-> ", float(self.number_output))
+                self.input_value_xy[1] = float(self.number_output)
+                
             
         if event.type in {'MIDDLEMOUSE', 'WHEELUPMOUSE', 'WHEELDOWNMOUSE'}:
             return {'PASS_THROUGH'}
