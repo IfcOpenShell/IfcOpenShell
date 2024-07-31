@@ -866,3 +866,18 @@ class Spatial(blenderbim.core.tool.Spatial):
             if (element := tool.Ifc.get_entity(obj)) and tool.Root.is_spatial_element(element):
                 results.append(element)
         return results
+
+    @classmethod
+    def get_selected_objects_without_containers(cls) -> list[bpy.types.Object]:
+        """Get selected objects skipping spatial elements.
+
+        Useful for operators that are using selected objects to identify selected containers.
+        Note that those operators are typically have a limitation since they can't tell
+        objects to operate on from containers that should be used in the operation.
+
+        E.g. we cannot bim.copy_to_container containers to other containers."""
+        results: list[bpy.types.Object] = []
+        for obj in tool.Blender.get_selected_objects():
+            if (element := tool.Ifc.get_entity(obj)) and not tool.Root.is_spatial_element(element):
+                results.append(obj)
+        return results

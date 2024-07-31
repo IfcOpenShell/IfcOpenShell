@@ -29,11 +29,21 @@ import blenderbim.bim.handler
 class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reference_structure"
     bl_label = "Reference Structure"
+    bl_description = (
+        "Reference selected objects from all selected structures.\n\n"
+        "Currently we do not support referencing structures in other structures "
+        "though it is allowed in IFC4X3"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
         containers = tool.Spatial.get_selected_containers()
-        for obj in context.selected_objects:
+        for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -44,11 +54,21 @@ class ReferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.dereference_structure"
     bl_label = "Dereference Structure"
+    bl_description = (
+        "Dereference selected objects from all selected structures.\n\n"
+        "Currently we do not support referencing structures in other structures "
+        "though it is allowed in IFC4X3"
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
         containers = tool.Spatial.get_selected_containers()
-        for obj in context.selected_objects:
+        for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -100,29 +120,36 @@ class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
 
 class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
     """
-    Copies selected 3D elements in the viewport to checkmarked spatial containers
+    Copies selected 3D elements in the viewport to the selected spatial containers
 
     Example: bulk copy a wall to multiple storeys
 
     1. Select one or more 3D elements in the viewport
-    2. Enable the checkmark next to one or more containers in the container list below to select it
+    2. Select one or more spatial containers in the viewport
     3. Press this button
     4. The copied elements will have a new position relative to the destination containers
-    """
+
+    Copying containers to other containers currently is not supported."""
 
     bl_idname = "bim.copy_to_container"
     bl_label = "Copy To Container"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        # Track decompositions so they can be recreated after the operation
-        relationships = tool.Root.get_decomposition_relationships(context.selected_objects)
-        old_to_new = {}
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
         containers = tool.Spatial.get_selected_containers()
-        for obj in context.selected_objects:
+        # Track decompositions so they can be recreated after the operation
+        relationships = tool.Root.get_decomposition_relationships(objs)
+        old_to_new = {}
+        for obj in objs:
             result_objs = core.copy_to_container(tool.Ifc, tool.Collector, tool.Spatial, obj=obj, containers=containers)
             if result_objs:
                 old_to_new[tool.Ifc.get_entity(obj)] = result_objs
+
         # Recreate decompositions
         tool.Root.recreate_decompositions(relationships, old_to_new)
         blenderbim.bim.handler.refresh_ui_data()

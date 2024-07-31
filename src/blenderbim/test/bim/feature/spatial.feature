@@ -38,10 +38,10 @@ Scenario: Copy to container
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcSite/My Site" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.copy_to_container"
+    When I press "bim.copy_to_container"
     Then the object "IfcWall/Cube.001" is in the collection "IfcSite/My Site"
 
 Scenario: Reference structure
