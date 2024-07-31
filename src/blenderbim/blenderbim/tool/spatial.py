@@ -114,10 +114,10 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def run_spatial_assign_container(
-        cls, structure_obj: bpy.types.Object, element_obj: bpy.types.Object
+        cls, container: ifcopenshell.entity_instance, element_obj: bpy.types.Object
     ) -> Union[ifcopenshell.entity_instance, None]:
         return blenderbim.core.spatial.assign_container(
-            tool.Ifc, tool.Collector, tool.Spatial, structure_obj=structure_obj, element_obj=element_obj
+            tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj
         )
 
     @classmethod

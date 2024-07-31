@@ -846,11 +846,10 @@ class Sequence:
 
 @interface
 class Spatial:
-    def can_contain(cls, structure_obj, element_obj): pass
+    def can_contain(cls, container, element_obj): pass
     def can_reference(cls, structure, element): pass
     def contract_container(cls, container): pass
     def copy_xy(cls, src_obj, destination_obj): pass
-    def import_spatial_element(cls, element, level_index): pass
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
@@ -858,6 +857,9 @@ class Spatial:
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass
+    def filter_elements_by_class(cls, elements, ifc_class): pass
+    def filter_elements_by_relating_type(cls, elements, relating_type): pass
+    def filter_elements_by_untyped(cls, elements): pass
     def filter_products(cls, products, action): pass
     def get_active_container(cls): pass
     def get_container(cls, element): pass
@@ -866,21 +868,24 @@ class Spatial:
     def get_relative_object_matrix(cls, target_obj, relative_to_obj): pass
     def get_selected_product_types(cls): pass
     def get_selected_products(cls): pass
-    def import_containers(cls, parent=None): pass
     def import_spatial_decomposition(cls): pass
-    def run_root_copy_class(cls, obj=None): pass
-    def run_spatial_assign_container(cls, structure_obj=None, element_obj=None): pass
+    def import_spatial_element(cls, element, level_index): pass
+    def load_contained_elements(cls): pass
+    def run_root_copy_class(cls, obj): pass
+    def run_spatial_assign_container(cls, container, element_obj): pass
     def run_spatial_import_spatial_decomposition(cls): pass
     def select_object(cls, obj): pass
     def select_products(cls, products, unhide=False): pass
     def set_active_object(cls, obj): pass
     def set_relative_object_matrix(cls, target_obj, relative_to_obj, matrix): pass
-    def set_default_container(cls, container): pass
     def show_scene_objects(cls): pass
-    #HERE STARTS SPATIAL TOOL
+
+    # HERE STARTS SPATIAL TOOL
     def is_bounding_class(cls, visible_element): pass
     def get_space_polygon_from_context_visible_objects(cls, x, y): pass
-    def get_boundary_lines_from_context_visible_objects(cls, visible_objects): pass
+    def debug_shape(cls, foo): pass
+    def debug_line(cls, start, end): pass
+    def get_boundary_lines_from_context_visible_objects(cls): pass
     def get_gross_mesh_from_element(cls, visible_element): pass
     def create_mesh_from_shape(cls, shape): pass
     def get_x_y_z_h_mat_from_active_obj(cls, active_obj): pass
@@ -907,17 +912,20 @@ class Spatial:
     def get_active_obj_z(cls): pass
     def get_active_obj_height(cls): pass
     def get_relating_type_id(cls): pass
-    def translate_obj_to_z_location(cls, obj): pass
+    def translate_obj_to_z_location(cls, obj, z): pass
     def get_2d_vertices_from_obj(cls, obj): pass
     def get_scaled_2d_vertices(cls, points): pass
     def assign_swept_area_outer_curve_from_2d_vertices(cls, obj, vertices): pass
     def get_body_representation(cls, obj): pass
     def assign_ifcspace_class_to_obj(cls, obj): pass
     def assign_type_to_obj(cls, obj): pass
-    def assign_relating_type_to_element(cls, ifc, Type, element, relating_type): pass
-    def regen_obj_representation(cls, ifc, geometry, obj, body): pass
+    def assign_relating_type_to_element(cls, ifc, type, element, relating_type): pass
+    def regen_obj_representation(cls, obj, body): pass
     def toggle_spaces_visibility_wired_and_textured(cls, spaces): pass
     def toggle_hide_spaces(cls, spaces): pass
+    def set_default_container(cls, container): pass
+    def guess_default_container(cls): pass
+    def get_selected_containers(cls): pass
 
 @interface
 class Covering:
