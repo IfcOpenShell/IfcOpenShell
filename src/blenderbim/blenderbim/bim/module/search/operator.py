@@ -175,6 +175,9 @@ class Search(Operator):
             props = context.scene.CsvProperties
         elif self.property_group == "BIMSearchProperties":
             props = context.scene.BIMSearchProperties
+        else:
+            raise Exception(f"bim.search - unexpected property group name '{self.property_group}'.")
+
         results = ifcopenshell.util.selector.filter_elements(
             tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
         )
