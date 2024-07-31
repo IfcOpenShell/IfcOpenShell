@@ -609,4 +609,3 @@ Scenario: Refresh linked aggregate - after duplicating an object
     Then the object "IfcWall/Wall_01.001" exists
     And the object "IfcWall/Wall_02.001" exists
     And the object "IfcWall/Wall_03.001" exists
-

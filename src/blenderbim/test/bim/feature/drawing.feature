@@ -96,4 +96,3 @@ Scenario: Remove drawing - deleting active drawing
     And the object "IfcAnnotation/PLAN_VIEW" is selected
     When I press "bim.override_object_delete"
     Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
-
