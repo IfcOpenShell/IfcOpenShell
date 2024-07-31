@@ -209,7 +209,7 @@ Scenario: Enable Editing Resource Quantity
     When I press "bim.add_resource(ifc_class="IfcLaborResource", parent_resource={crew_resource})"
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()"
     When I press "bim.enable_editing_resource_base_quantity(resource={labor_resource})"
-    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityArea")"
+    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityTime")"
     When I press "bim.enable_editing_resource_quantity(resource={labor_resource})"
     Then nothing happens
 
@@ -221,11 +221,11 @@ Scenario: Edit Resource Quantity
     When I press "bim.add_resource(ifc_class="IfcLaborResource", parent_resource={crew_resource})"
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()"
     When I press "bim.enable_editing_resource_base_quantity(resource={labor_resource})"
-    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityArea")"
+    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityTime")"
     When I press "bim.enable_editing_resource_quantity(resource={labor_resource})"
-    And I set "scene.BIMResourceProperties.quantity_attributes.get('AreaValue').float_value" to "50.00"
-    And the variable "quantity_area" is "IfcStore.get_file().by_type('IfcQuantityArea')[0].id()"
-    When I press "bim.edit_resource_quantity(physical_quantity={quantity_area})"
+    And I set "scene.BIMResourceProperties.quantity_attributes.get('TimeValue').float_value" to "50.00"
+    And the variable "quantity_time" is "IfcStore.get_file().by_type('IfcQuantityTime')[0].id()"
+    When I press "bim.edit_resource_quantity(physical_quantity={quantity_time})"
     Then nothing happens
 
 Scenario: Remove Resource Quantity
@@ -236,8 +236,7 @@ Scenario: Remove Resource Quantity
     When I press "bim.add_resource(ifc_class="IfcLaborResource", parent_resource={crew_resource})"
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()"
     When I press "bim.enable_editing_resource_base_quantity(resource={labor_resource})"
-    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityArea")"
-    And the variable "quantity_area" is "IfcStore.get_file().by_type('IfcQuantityArea')[0].id()"
+    When I press "bim.add_resource_quantity(resource={labor_resource}, ifc_class="IfcQuantityTime")"
     When I press "bim.remove_resource_quantity(resource={labor_resource})"
     Then nothing happens
 
