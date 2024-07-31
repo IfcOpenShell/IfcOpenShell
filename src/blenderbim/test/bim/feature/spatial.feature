@@ -51,10 +51,10 @@ Scenario: Reference structure
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcBuilding/My Building" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.reference_structure"
+    When I press "bim.reference_structure"
     Then nothing happens
 
 Scenario: Dereference structure
@@ -64,10 +64,10 @@ Scenario: Dereference structure
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcBuilding/My Building" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.reference_structure"
+    When I press "bim.reference_structure"
     And I press "bim.dereference_structure"
     Then nothing happens
 
