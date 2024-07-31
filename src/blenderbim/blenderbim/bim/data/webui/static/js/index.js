@@ -23,6 +23,7 @@ function connectSocket() {
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
   socket.on("blender_disconnect", handleBlenderDisconnect);
+  socket.on("connected_clients", handleConnectedClients);
   socket.on("csv_data", handleCsvData);
   socket.on("default_data", handleDefaultData);
 }
@@ -33,6 +34,9 @@ function handleBlenderConnect(blenderId) {
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = { shown: false, ifc_file: "" };
   }
+  $("#blender-count").text(function (i, text) {
+    return parseInt(text, 10) + 1;
+  });
 }
 
 // Function to handle 'blender_disconnect' event
@@ -45,6 +49,14 @@ function handleBlenderDisconnect(blenderId) {
 
   $("#blender-count").text(function (i, text) {
     return parseInt(text, 10) - 1;
+  });
+}
+
+function handleConnectedClients(data) {
+  $("#blender-count").text(data.length);
+  console.log(data);
+  data.forEach(function (id) {
+    connectedClients[id] = { shown: false, ifc_file: "" };
   });
 }
 
@@ -85,10 +97,6 @@ function handleDefaultData(data) {
 
 // Function to add a new table with data and filename
 function addTableElement(blenderId, csvData, filename) {
-  $("#blender-count").text(function (i, text) {
-    return parseInt(text, 10) + 1;
-  });
-
   // store headers of the csv data
   const firstLine = csvData.indexOf("\n");
   const csvHeaders = csvData.substring(0, firstLine).split(",");
@@ -292,15 +300,18 @@ function toggleClientList() {
   }
 
   clientList.empty();
+  var counter = 0;
 
   $.each(connectedClients, function (id, client) {
-    if (!client.shown) return;
+    counter++;
 
     const dropdownIcon = $("<i>")
       .addClass("fas fa-chevron-down")
       .css("margin-left", "0.5rem");
 
-    const clientDiv = $("<div>").addClass("client").text(client.ifc_file);
+    const clientDiv = $("<div>")
+      .addClass("client")
+      .text(client.ifc_file || "Blender " + counter);
 
     clientDiv.append(dropdownIcon);
 
@@ -313,6 +324,13 @@ function toggleClientList() {
       clientDetailsDiv.append(clientId);
     }
 
+    if (!client.shown) {
+      const clientShown = $("<div>")
+        .addClass("client-detail")
+        .text("No CSV exported for this Blender yet");
+      clientDetailsDiv.append(clientShown);
+    }
+
     if (client.headers && client.headers.length) {
       const clientHeaders = $("<div>")
         .addClass("client-detail")
@@ -323,9 +341,7 @@ function toggleClientList() {
         .text("Scroll to Table")
         .on("click", function () {
           $("html, body").animate(
-            {
-              scrollTop: $("#table-" + id).offset().top,
-            },
+            { scrollTop: $("#table-" + id).offset().top },
             600
           );
           clientList.removeClass("show");

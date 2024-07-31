@@ -157,7 +157,7 @@ nav ul li a.active {
     overflow-y: auto;
     overflow: hidden;
     transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
-    border: 1px solid var(--table-border-color);
+    border: 1px solid var(--details-border-color);
     background-color: var(--nav-bg-color);
     z-index: 1;
     opacity: 0;
@@ -176,7 +176,7 @@ nav ul li a.active {
 
 .client {
     padding: var(--margin-small);
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--details-border-color);
     cursor: pointer;
 }
 
@@ -196,7 +196,7 @@ nav ul li a.active {
 }
 
 .client-detail {
-    border-bottom: 1px solid var(--table-border-color);
+    border-bottom: 1px solid var(--details-border-color);
     padding: var(--padding-small);
 }
 
