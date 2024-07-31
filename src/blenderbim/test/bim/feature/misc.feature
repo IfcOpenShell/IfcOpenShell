@@ -33,7 +33,8 @@ Scenario: Resize to storey
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And the variable "storey" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
-    And I press "bim.assign_container(structure={storey})"
+    And I press "bim.set_default_container(container={storey})"
+    And I press "bim.assign_container()"
     When I press "bim.resize_to_storey(total_storeys=1)"
     Then nothing happens
 

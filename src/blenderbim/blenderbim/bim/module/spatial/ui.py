@@ -36,6 +36,10 @@ class BIM_PT_spatial(Panel):
         return SpatialData.data["poll"]
 
     def draw(self, context):
+        # TODO: expose relating_container_object so users could
+        # assign container without switching default container back and forth
+        # just for 1 operation.
+
         if not SpatialData.is_loaded:
             SpatialData.load()
 

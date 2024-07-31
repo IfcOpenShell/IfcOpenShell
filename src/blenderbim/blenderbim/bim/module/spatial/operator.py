@@ -59,6 +59,7 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
+    bl_description = "Assign current default container to the selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
