@@ -137,7 +137,10 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.perform_quantity_take_off"
     bl_label = "Perform Quantity Take-off"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Perform a quantity take off based of a QTO rule configuration"
+    bl_description = (
+        "Perform a quantity take off on selected objects based of a QTO rule configuration."
+        "If no objects are selected, quantities calculated for all available IfcElements."
+    )
 
     @classmethod
     def poll(cls, context):
@@ -162,4 +165,6 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         results = ifc5d.qto.quantify(ifc_file, elements, rules)
         ifc5d.qto.edit_qtos(ifc_file, results)
+
+        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.")
         return {"FINISHED"}
