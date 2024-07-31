@@ -12,5 +12,5 @@ Scenario: Select all walls
     And I set "scene.BIMSearchProperties.facet" to "entity"
     And I press "bim.add_filter(index=0, type='entity', module='search')"
     And I set "scene.BIMSearchProperties.filter_groups[0].filters[0].value" to "IfcWall"
-    When I press "bim.search"
+    When I press "bim.search(property_group='BIMSearchProperties')"
     Then the object "IfcWall/Cube" is selected
