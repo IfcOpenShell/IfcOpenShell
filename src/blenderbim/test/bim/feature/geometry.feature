@@ -131,8 +131,10 @@ Scenario: Remove representation - remove an active representation
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWall/Cube" has no data
 
 Scenario: Remove representation - remove an unloaded representation
@@ -160,8 +162,10 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWallType/Cube" is selected
-    When the variable "representation" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[0].MappedRepresentation.id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data
@@ -179,8 +183,10 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" is selected
-    When the variable "representation" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
-    And I press "bim.remove_representation(representation_id={representation})"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
+    And the variable "representation_bbox" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[0].id()"
+    And I press "bim.remove_representation(representation_id={representation_body})"
+    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data

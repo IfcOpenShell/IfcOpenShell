@@ -169,8 +169,11 @@ def get_representation_ifc_parameters(
 def remove_representation(
     ifc: tool.Ifc, geometry: tool.Geometry, obj: bpy.types.Object, representation: ifcopenshell.entity_instance
 ) -> None:
-    """Consider changing obj representation before using the function,
-    otherwise it will replace object with empty."""
+    """Remove IFC representation from an object.
+
+    If removed representation is active will automatically change it to some other one.
+    If it is the object's only representation, object will be recreated as an empty.
+    """
 
     element = ifc.get_entity(obj)
     assert element
