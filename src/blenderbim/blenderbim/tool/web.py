@@ -262,7 +262,7 @@ class Web(blenderbim.core.tool.Web):
         if use_web_data:
             if not WebData.is_loaded:
                 WebData.load()
-            payload = WebData.data
+            payload = WebData.data.copy()
 
         if data is not None:
             payload[data_key] = data
