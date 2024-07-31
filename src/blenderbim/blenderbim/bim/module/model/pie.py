@@ -63,28 +63,6 @@ class PieAddOpening(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PieUpdateContainer(bpy.types.Operator):
-    bl_idname = "bim.pie_update_container"
-    bl_label = "Update Spatial Container"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
-
-    def _execute(self, context):
-        for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
-                continue
-            for collection in obj.users_collection:
-                spatial_obj = collection.BIMCollectionProperties.obj
-                if spatial_obj and spatial_obj.BIMObjectProperties.ifc_definition_id:
-                    blenderbim.core.spatial.assign_container(
-                        tool.Ifc, tool.Collector, tool.Spatial, structure_obj=spatial_obj, element_obj=obj
-                    )
-                    break
-        return {"FINISHED"}
-
-
 class VIEW3D_MT_PIE_bim(bpy.types.Menu):
     bl_label = "Geometry"
 
@@ -93,7 +71,6 @@ class VIEW3D_MT_PIE_bim(bpy.types.Menu):
         pie.operator("bim.edit_object_placement")
         pie.operator("bim.update_representation").ifc_representation_class = ""
         pie.operator("bim.pie_add_opening")
-        pie.operator("bim.pie_update_container")
         pie.operator("bim.open_pie_class", text="Assign IFC Class")
         pie.operator("bim.aggregate_assign_object", text="Assign Aggregation")
         pie.operator("bim.aggregate_unassign_object", text="Unassign Aggregation")
