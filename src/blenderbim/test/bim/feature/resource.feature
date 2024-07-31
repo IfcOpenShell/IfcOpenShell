@@ -312,7 +312,7 @@ Scenario: Assign Resource
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.assign_resource(resource={labor_resource}, related_object="")"
+    And I press "bim.assign_resource(resource={labor_resource})"
     Then nothing happens
 
 Scenario: Unassign Resource
@@ -328,7 +328,7 @@ Scenario: Unassign Resource
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.assign_resource(resource={labor_resource}, related_object="")"
+    And I press "bim.assign_resource(resource={labor_resource})"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.unassign_resource(resource={labor_resource}, related_object="")"
+    And I press "bim.unassign_resource(resource={labor_resource})"
     Then nothing happens
