@@ -30,6 +30,7 @@
 #include <boost/multi_index/sequenced_index.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/variant.hpp>
 #include <iterator>
 #include <map>
 
@@ -61,6 +62,75 @@ class IFC_PARSE_API file_open_status {
 
     operator bool() const {
         return error_ == SUCCESS;
+    }
+};
+
+struct parse_context {
+    boost::variant<
+        Blank,
+        storage_t,                           // IFCWALL(x)
+        std::vector<Token>,                  // IFCCARTESIANPOINT((x, y, z))
+        std::vector<IfcUtil::IfcBaseClass*>, // IFCCARTESIANPOINT((IFCTEXT(), IFCTEXT()))
+        std::list<parse_context>           // IFCCARTESIANPOINTLIST3D(((x, y, z), (q, r, s)))
+    > tokens;
+
+    parse_context(const parse_context&) = delete;
+    parse_context& operator=(const parse_context&) = delete;
+
+    parse_context()
+        : tokens(Blank{})
+    {}
+
+    parse_context(storage_t&& instance_attribute_storage)
+        : tokens(std::move(instance_attribute_storage))
+    {}
+
+    parse_context& push() {
+        if (tokens.which() == 0) {
+            // tokens = std::vector<Token>{};
+            throw std::runtime_error("d");
+        } else if (tokens.which() == 1) {
+            throw std::runtime_error("e");
+        } else if (tokens.which() == 2) {
+            throw std::runtime_error("e");
+        } else if (tokens.which() == 3) {
+            if (boost::get<std::vector<Token>>(tokens).size() == 0) {
+                tokens = std::list<parse_context>{};
+                return push();
+            } else {
+                throw std::runtime_error("b");
+            }
+        } else if (tokens.which() == 4) {
+            boost::get<std::list<parse_context>>(tokens).emplace_back();
+            return boost::get<std::list<parse_context>>(tokens).back();
+        }
+    }
+
+    void push(Token t) {
+        if (tokens.which() == 1) {
+            boost::get<std::vector<Token>>(tokens).push_back(t);
+        } else if (tokens.which() == 3) {
+            boost::get<std::list<parse_context>>(tokens).back().push(t);
+        } else {
+            throw std::runtime_error("a");
+        }
+    }
+
+    void push(IfcUtil::IfcBaseClass* inst) {
+        if (tokens.which() == 2) {
+            boost::get<std::vector<IfcUtil::IfcBaseClass*>>(tokens).push_back(inst);
+        } else if (tokens.which() == 3) {
+            boost::get<std::list<parse_context>>(tokens).back().push(inst);
+        } else {
+            throw std::runtime_error("a");
+        }
+    }
+    void pop() {
+
+    }
+
+    storage_t&& data() {
+        return std::move(boost::get<storage_t>(tokens));
     }
 };
 
@@ -116,10 +186,6 @@ class IFC_PARSE_API IfcFile {
         }
     };
 
-    static bool lazy_load_;
-    static bool lazy_load() { return lazy_load_; }
-    static void lazy_load(bool b) { lazy_load_ = b; }
-
     static bool guid_map_;
     static bool guid_map() { return guid_map_; }
     static void guid_map(bool b) { guid_map_ = b; }
@@ -127,13 +193,12 @@ class IFC_PARSE_API IfcFile {
   private:
     typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_entity_map_t;
 
-    bool parsing_complete_;
     file_open_status good_ = file_open_status::SUCCESS;
 
     const IfcParse::schema_definition* schema_;
     const IfcParse::declaration* ifcroot_type_;
 
-    std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
+    // std::vector<Argument*> internal_attribute_vector_, internal_attribute_vector_simple_type_;
 
     entity_by_id_t byid_;
     // this is for simple types
@@ -264,7 +329,7 @@ class IFC_PARSE_API IfcFile {
 
     aggregate_of_instance::ptr getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index);
 
-    int getTotalInverses(int instance_id);
+    size_t getTotalInverses(int instance_id);
 
     unsigned int FreshId() { return ++MaxId; }
 
@@ -299,8 +364,7 @@ class IFC_PARSE_API IfcFile {
 
     std::string createTimestamp() const;
 
-    size_t load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index = -1);
-    void seek_to(const IfcEntityInstanceData& data);
+    void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
     void try_read_semicolon();
 
     void register_inverse(unsigned, const IfcParse::entity* from_entity, Token, int attribute_index);
@@ -310,9 +374,6 @@ class IFC_PARSE_API IfcFile {
     const IfcParse::schema_definition* schema() const { return schema_; }
 
     std::pair<IfcUtil::IfcBaseClass*, double> getUnit(const std::string& unit_type);
-
-    bool parsing_complete() const { return parsing_complete_; }
-    bool& parsing_complete() { return parsing_complete_; }
 
     void build_inverses();
 

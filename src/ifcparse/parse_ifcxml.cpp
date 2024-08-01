@@ -90,11 +90,11 @@ class stack_node {
           aggregate_elem_type_(nullptr) {}
 
   public:
-    static stack_node instance(const std::string& id_in_file, IfcUtil::IfcBaseClass* inst) {
+    static stack_node instance(const std::string& id, IfcUtil::IfcBaseClass* inst) {
         stack_node node;
         node.type_ = node_instance;
         node.inst_ = inst;
-        node.id_in_file_ = id_in_file;
+        node.id_in_file_ = id;
         return node;
     }
 
@@ -157,7 +157,7 @@ class stack_node {
     int idx() const { return idx_; }
     const IfcParse::inverse_attribute* inv_attr() const { return inv_; }
     const std::string& tagname() const { return tagname_; }
-    const std::string& id_in_file() const { return id_in_file_; }
+    const std::string& id() const { return id_in_file_; }
     const IfcParse::parameter_type* aggregate_elem_type() const { return aggregate_elem_type_; }
 
     std::string repr() const {
@@ -181,7 +181,7 @@ struct ifcxml_parse_state {
     IfcParse::IfcFile* file;
     std::vector<stack_node> stack;
     std::map<std::string, int> idmap;
-    std::vector<std::pair<IfcWrite::IfcWriteArgument*, std::string>> forward_references;
+    std::vector<std::tuple<IfcUtil::IfcBaseEntity*, size_t, std::string>> forward_references;
     ifcxml_dialect dialect;
 };
 
@@ -258,7 +258,7 @@ static void end_element(void* user, const xmlChar* tag) {
 
     if (state->dialect == ifcxml_dialect_ifc2x3 && state->stack.back().ntype() == stack_node::node_instance) {
         if (state->stack.back().inst() != nullptr) {
-            state->idmap[state->stack.back().id_in_file()] = state->file->addEntity(state->stack.back().inst())->data().id();
+            state->idmap[state->stack.back().id()] = state->file->addEntity(state->stack.back().inst())->data().id();
         }
     }
 
@@ -414,32 +414,31 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
         // XML identifiers need to start with a alphabetic character). This convention
         // is not always followed, so a mapping is kept from XML string attribute to
         // numeric index into the IfcParse::IfcFile.
-        std::string id_in_file;
+        std::string id;
 
         // Create an attribute value from an instance. Potentially NULL in case it is a
         // forward reference to an instance not yet encountered.
-        auto instance_to_attribute = [&state](const boost::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, Argument*& attr, IfcUtil::IfcBaseClass*& inst) {
-            IfcWrite::IfcWriteArgument* wattr = new IfcWrite::IfcWriteArgument;
-            attr = wattr;
+        auto instance_to_attribute = [&state](const boost::variant<std::string, IfcUtil::IfcBaseClass*>& inst_or_ref, size_t attribute_index, IfcUtil::IfcBaseClass*& inst) {
             if (inst_or_ref.which() == 0) {
                 inst = nullptr;
                 // This attribute is NULL initially and after parsing the complete
                 // file populated in a subsequent step.
-                state->forward_references.push_back(std::make_pair((IfcWrite::IfcWriteArgument*)attr, boost::get<std::string>(inst_or_ref)));
+                state->forward_references.push_back(std::make_tuple(inst->as<IfcUtil::IfcBaseEntity>(), attribute_index, boost::get<std::string>(inst_or_ref)));
             } else {
                 inst = boost::get<IfcUtil::IfcBaseClass*>(inst_or_ref);
-                wattr->set(inst);
+                // wattr->set(inst);
+                inst->set_attribute_value(attribute_index, inst);
             }
         };
 
         // Create or reference an instance from the file and set attributes based on XML attributes.
-        auto create_instance = [&state, &attributes, &id_in_file](const IfcParse::declaration* decl) {
+        auto create_instance = [&state, &attributes, &id](const IfcParse::declaration* decl) {
             boost::optional<std::string> id;
             boost::variant<std::string, IfcUtil::IfcBaseClass*> rv;
 
             for (auto& pair : attributes) {
                 if (pair.first == "id" || pair.first == "href" || pair.first == "ref") {
-                    id = id_in_file = pair.second;
+                    id = id = pair.second;
                     if (pair.first == "href" || pair.first == "ref") {
                         if (state->idmap.find(pair.second) == state->idmap.end()) {
                             rv = pair.second;
@@ -482,7 +481,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                 // subsequent child nodes
                 newinst = state->file->addEntity(newinst);
                 if (id) {
-                    state->idmap[*id] = newinst->data().id();
+                    state->idmap[*id] = newinst->id();
                 }
             }
 
@@ -499,12 +498,12 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
 
         if (state_type == stack_node::node_select) {
             const IfcParse::declaration* decl = state->file->schema()->declaration_by_name(tagname_copy);
-            Argument* attr;
+            // Argument* attr;
             IfcUtil::IfcBaseClass* inst;
             auto inst_ = create_instance(decl);
-            instance_to_attribute(inst_, attr, inst);
-            state->stack.back().inst()->data().setArgument(state->stack.back().idx(), attr);
-            state->stack.push_back(stack_node::instance(id_in_file, inst));
+            instance_to_attribute(inst_, state->stack.back().idx(), inst);
+            // state->stack.back().inst()->data().storage_.set(state->stack.back().idx(), attr);
+            state->stack.push_back(stack_node::instance(id, inst));
         } else if (state_type == stack_node::node_aggregate) {
 
             const IfcParse::parameter_type* attribute_type = state->stack.back().inst()->declaration().as_entity()->attribute_by_index(state->stack.back().idx())->type_of_attribute();
@@ -536,7 +535,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     Argument* attr;
                     instance_to_attribute(inst_or_ref, attr, inst);
                     state->stack.back().aggregate_elements.push_back(attr);
-                    state->stack.push_back(stack_node::instance(id_in_file, inst));
+                    state->stack.push_back(stack_node::instance(id, inst));
                 }
             }
         } else if (state_type == stack_node::node_instance) {
@@ -567,7 +566,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 IfcWrite::IfcWriteArgument* attr_inv = new IfcWrite::IfcWriteArgument();
                                 attr_inv->set(state->stack.back().inst());
                                 inst->data().setArgument(idx, attr_inv);
-                                state->stack.push_back(stack_node::instance(id_in_file, inst));
+                                state->stack.push_back(stack_node::instance(id, inst));
                             } else {
                                 Logger::Error("Unknown attribute " + tagname);
                                 state->stack.push_back(state->stack.back());
@@ -593,7 +592,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                                 IfcUtil::IfcBaseClass* newinst;
                                 instance_to_attribute(inst_or_reference, attr, newinst);
                                 state->stack.back().inst()->data().setArgument(idx, attr);
-                                state->stack.push_back(stack_node::instance(id_in_file, newinst));
+                                state->stack.push_back(stack_node::instance(id, newinst));
                             } else if (attribute_type->as_named_type()->declared_type()->as_select_type() != nullptr) {
                                 // Select types cause an additional indirection, so the current stack node is simply repeated
                                 state->stack.push_back(stack_node::select(state->stack.back().inst(), idx));
@@ -652,7 +651,7 @@ static void start_element(void* user, const xmlChar* tag, const xmlChar** attrs)
                     // Type declaration, immediately populate attr 0
                     state->stack.push_back(stack_node::instance_attribute(inst, 0));
                 } else {
-                    state->stack.push_back(stack_node::instance(id_in_file, inst));
+                    state->stack.push_back(stack_node::instance(id, inst));
                 }
             }
         }

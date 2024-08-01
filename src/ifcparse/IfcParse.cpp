@@ -32,6 +32,7 @@
 #include <algorithm>
 #include <boost/algorithm/string.hpp>
 #include <boost/circular_buffer.hpp>
+#include <boost/variant.hpp>
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <ctime>
 #include <mutex>
@@ -39,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <iomanip>
 
 #ifdef USE_MMAP
 #include <boost/filesystem/path.hpp>
@@ -676,64 +678,14 @@ std::string TokenFunc::toString(const Token& token) {
     return result;
 }
 
-TokenArgument::TokenArgument(const Token& tok) {
-    token = tok;
-}
-
-EntityArgument::EntityArgument(const Token& token) {
-    IfcParse::IfcFile* file = token.lexer->file;
-    IfcEntityInstanceData* data = read(0, file, token.startPos);
-    // Data needs to be loaded, for the tokens
-    // to be consumed and parsing to continue.
-    data->load();
-    entity_ = file->schema()->instantiate(data);
-}
-
-namespace {
-template <typename T>
-class vector_or_array {
-    std::vector<T>* vector_;
-    T* array_;
-    size_t size_, index_;
-
-  public:
-    vector_or_array(std::vector<T>* vector)
-        : vector_(vector),
-          array_(0),
-          size_(0),
-          index_(0) {}
-
-    vector_or_array(Argument** arr, size_t size)
-        : vector_(0),
-          array_(arr),
-          size_(size),
-          index_(0) {}
-
-    void push_back(const T& type) {
-        // @todo this should log a warning when the size is exceeded
-        if (array_ && index_ < size_) {
-            array_[index_++] = type;
-        } else if (vector_) {
-            vector_->push_back(type);
-        }
-    }
-
-    size_t index() const {
-        if (vector_) {
-            return vector_->size();
-        }
-        return index_;
-    }
-};
-} // namespace
-
 //
 // Reads the arguments from a list of token
 // Aditionally, registers the ids (i.e. #[\d]+) in the inverse map
 //
-size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::entity* entity, Argument**& attributes, size_t num_attributes, int attribute_index) {
+void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context& context, int attribute_index) {
     Token next = tokens->Next();
 
+    /*
     std::vector<Argument*>* vector = 0;
     vector_or_array<Argument*> filler(attributes, num_attributes);
     if (attributes == 0) {
@@ -752,46 +704,48 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
         }
         filler = vector_or_array<Argument*>(vector);
     }
+    */
 
+    size_t attribute_index_within_data = 0;
     size_t return_value = 0;
 
     while ((next.startPos != 0U) || (next.lexer != nullptr)) {
         if (TokenFunc::isOperator(next, ',')) {
-            // do nothing
+            if (attribute_index == 0) {
+                attribute_index_within_data += 1;
+            }
         } else if (TokenFunc::isOperator(next, ')')) {
             break;
         } else if (TokenFunc::isOperator(next, '(')) {
             return_value++;
-            ArgumentList* alist = new ArgumentList();
-            // entity is passed along here, after all the it is the type of the instance
-            // that owns the list that is significant for inverse attributes
-            alist->size() = load(entity_instance_name, entity, alist->arguments(), 0, attribute_index == -1 ? (int)filler.index() : attribute_index);
-            filler.push_back(alist);
+            load(entity_instance_name, entity, context.push(), attribute_index == -1 ? (int) attribute_index_within_data : attribute_index);
         } else {
             return_value++;
             if (TokenFunc::isIdentifier(next)) {
-                if (!parsing_complete_) {
-                    register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? (int)filler.index() : attribute_index);
-                }
+                // register_inverse(entity_instance_name, entity, next, attribute_index == -1 ? attribute_index_within_data : attribute_index);
             }
 
             if (TokenFunc::isKeyword(next)) {
                 try {
-                    auto* entity = new EntityArgument(next);
-                    addEntity(((IfcUtil::IfcBaseClass*)*entity));
-                    filler.push_back(entity);
+                    parse_context ps(storage_t(1));
+                    load(0, nullptr, ps, -1);
+                    IfcParse::schema_definition* schema;
+                    auto* simple_type_instance = schema->instantiate(TokenFunc::asStringRef(next), IfcEntityInstanceData(ps.data()));
+                    //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
+                    context.push(simple_type_instance);
                 } catch (IfcException& e) {
                     Logger::Message(Logger::LOG_ERROR, e.what());
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
                     return_value--;
                 }
             } else {
-                filler.push_back(new TokenArgument(next));
+                context.push(next);
             }
         }
         next = tokens->Next();
     }
 
+    /*
     if (vector != nullptr) {
         // Obviously don't try and create a 0-length array.
         if ((num_attributes != 0U) || !vector->empty()) {
@@ -816,141 +770,30 @@ size_t IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::en
     }
 
     return return_value;
-}
-
-IfcUtil::ArgumentType ArgumentList::type() const {
-    if (size_ == 0) {
-        return IfcUtil::Argument_EMPTY_AGGREGATE;
-    }
-
-    const IfcUtil::ArgumentType elem_type = list_[0]->type();
-    return IfcUtil::make_aggregate(elem_type);
+    */
 }
 
 // templated helper function for reading arguments into a list
 template <typename T>
-std::vector<T> read_aggregate_as_vector(Argument** list, size_t size) {
+std::vector<T> read_aggregate_as_vector(const std::vector<Token>& tokens) {
     std::vector<T> return_value;
-    return_value.reserve(size);
-    for (size_t i = 0; i < size; ++i) {
-        return_value.push_back(*list[i]);
+    return_value.reserve(tokens.size());
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        return_value.push_back(tokens[i]);
     }
     return return_value;
 }
 template <typename T>
-std::vector<std::vector<T>> read_aggregate_of_aggregate_as_vector2(Argument** list, size_t size) {
+std::vector<std::vector<T>> read_aggregate_of_aggregate_as_vector2(const std::vector<parse_context>& tokens) {
     std::vector<std::vector<T>> return_value;
-    return_value.reserve(size);
-    for (size_t i = 0; i < size; ++i) {
-        return_value.push_back(*list[i]);
+    return_value.reserve(tokens.size());
+    for (size_t i = 0; i < tokens.size(); ++i) {
+        return_value.push_back(read_aggregate_as_vector<T>(boost::get< std::vector<Token>>(tokens[i].tokens)));
     }
     return return_value;
 }
 
-//
-// Functions for casting the ArgumentList to other types
-//
-ArgumentList::operator std::vector<double>() const {
-    return read_aggregate_as_vector<double>(list_, size_);
-}
-
-ArgumentList::operator std::vector<int>() const {
-    return read_aggregate_as_vector<int>(list_, size_);
-}
-
-ArgumentList::operator std::vector<std::string>() const {
-    return read_aggregate_as_vector<std::string>(list_, size_);
-}
-
-ArgumentList::operator std::vector<boost::dynamic_bitset<>>() const {
-    return read_aggregate_as_vector<boost::dynamic_bitset<>>(list_, size_);
-}
-
-ArgumentList::operator aggregate_of_instance::ptr() const {
-    aggregate_of_instance::ptr l(new aggregate_of_instance());
-    for (size_t i = 0; i < size_; ++i) {
-        // FIXME: account for $
-        try {
-            IfcUtil::IfcBaseClass* entity = *list_[i];
-            l->push(entity);
-        } catch (IfcException e) {
-            Logger::Error(e);
-        }
-    }
-    return l;
-}
-
-ArgumentList::operator std::vector<std::vector<int>>() const {
-    return read_aggregate_of_aggregate_as_vector2<int>(list_, size_);
-}
-
-ArgumentList::operator std::vector<std::vector<double>>() const {
-    return read_aggregate_of_aggregate_as_vector2<double>(list_, size_);
-}
-
-ArgumentList::operator aggregate_of_aggregate_of_instance::ptr() const {
-    aggregate_of_aggregate_of_instance::ptr l(new aggregate_of_aggregate_of_instance());
-    for (size_t i = 0; i < size_; ++i) {
-        const Argument* arg = list_[i];
-        const ArgumentList* arg_list;
-        if ((arg_list = dynamic_cast<const ArgumentList*>(arg)) != 0) {
-            aggregate_of_instance::ptr e = *arg_list;
-            l->push(e);
-        } else {
-            const auto* token = dynamic_cast<const TokenArgument*>(arg);
-            int startpos = token != nullptr ? token->token.startPos : 0;
-            std::string string_rep = this->toString();
-            throw IfcInvalidTokenException(startpos, string_rep, "nested aggregate");
-        }
-    }
-    return l;
-}
-
-unsigned int ArgumentList::size() const { return (unsigned int)size_; }
-
-Argument* ArgumentList::operator[](unsigned int i) const {
-    if (i >= size_) {
-        throw IfcAttributeOutOfRangeException("Argument index out of range");
-    }
-    return list_[i];
-}
-
 /*
-void ArgumentList::set(unsigned int i, Argument* argument) {
-	while (size() < i) {
-		push(new NullArgument());
-	}
-	if (i < size()) {
-		delete list[i];
-		list[i] = argument;
-	} else {
-		list.push_back(argument);
-	}	
-}
-*/
-
-std::string ArgumentList::toString(bool upper) const {
-    std::stringstream ss;
-    ss << "(";
-    for (size_t i = 0; i < size_; ++i) {
-        if (i != 0) {
-            ss << ",";
-        }
-        ss << list_[i]->toString(upper);
-    }
-    ss << ")";
-    return ss.str();
-}
-
-bool ArgumentList::isNull() const { return false; }
-
-ArgumentList::~ArgumentList() {
-    for (size_t i = 0; i < size_; ++i) {
-        delete list_[i];
-    }
-    delete[] list_;
-}
-
 IfcUtil::ArgumentType TokenArgument::type() const {
     if (TokenFunc::isInt(token)) {
         return IfcUtil::Argument_INT;
@@ -984,85 +827,20 @@ IfcUtil::ArgumentType TokenArgument::type() const {
     }
     return IfcUtil::Argument_UNKNOWN;
 }
-
-//
-// Functions for casting the TokenArgument to other types
-//
-TokenArgument::operator int() const { return TokenFunc::asInt(token); }
-TokenArgument::operator bool() const { return TokenFunc::asBool(token); }
-TokenArgument::operator boost::logic::tribool() const { return TokenFunc::asLogical(token); }
-TokenArgument::operator double() const { return TokenFunc::asFloat(token); }
-TokenArgument::operator std::string() const { return TokenFunc::asString(token); }
-TokenArgument::operator boost::dynamic_bitset<>() const { return TokenFunc::asBinary(token); }
-TokenArgument::operator IfcUtil::IfcBaseClass*() const { return token.lexer->file->instance_by_id(TokenFunc::asIdentifier(token)); }
-unsigned int TokenArgument::size() const { return 1; }
-Argument* TokenArgument::operator[](unsigned int /*i*/) const { throw IfcException("Argument is not a list of attributes"); }
-std::string TokenArgument::toString(bool upper) const {
-    if (upper && TokenFunc::isString(token)) {
-        return IfcWrite::IfcCharacterEncoder(TokenFunc::asString(token));
-    }
-    return TokenFunc::toString(token);
-}
-bool TokenArgument::isNull() const { return TokenFunc::isOperator(token, '$'); }
-
-IfcUtil::ArgumentType EntityArgument::type() const {
-    return IfcUtil::Argument_ENTITY_INSTANCE;
-}
-
-//
-// Functions for casting the EntityArgument to other types
-//
-EntityArgument::operator IfcUtil::IfcBaseClass*() const {
-    return entity_;
-}
-
-unsigned int EntityArgument::size() const {
-    return 1;
-}
-
-Argument* EntityArgument::operator[](unsigned int /*i*/) const {
-    throw IfcException("Argument is not a list of arguments");
-}
-
-std::string EntityArgument::toString(bool upper) const {
-    return entity_->data().toString(upper);
-}
-
-bool EntityArgument::isNull() const { return false; }
-EntityArgument::~EntityArgument() {
-    // We don't delete it here, rather it will be freed as part of the entity_file_map.
-    // For that purpose when parsed, the simple type instance is explicitly added to the
-    // file. The reason is we want parsed simply types to behave the same as constructed
-    // simple types.
-
-    // delete entity;
-}
+*/
 
 //
 // Reads an Entity from the list of Tokens at the specified offset in the file
 //
-IfcEntityInstanceData* IfcParse::read(unsigned int i, IfcFile* f, boost::optional<unsigned> offset) {
-    if (offset) {
-        f->tokens->stream->Seek(*offset);
-    }
+IfcEntityInstanceData&& IfcParse::read(unsigned int i, IfcFile* f) {
     Token datatype = f->tokens->Next();
     if (!TokenFunc::isKeyword(datatype)) {
         throw IfcException("Unexpected token while parsing entity");
     }
     const IfcParse::declaration* ty = f->schema()->declaration_by_name(TokenFunc::asStringRef(datatype));
-    IfcEntityInstanceData* e = new IfcEntityInstanceData(ty, f, i, offset.get_value_or(0));
-    return e;
-}
-
-void IfcParse::IfcFile::seek_to(const IfcEntityInstanceData& data) {
-    if (tokens->stream->Tell() != data.offset_in_file()) {
-        tokens->stream->Seek(data.offset_in_file());
-        Token datatype = tokens->Next();
-        if (!TokenFunc::isKeyword(datatype)) {
-            throw IfcException("Unexpected token while parsing entity instance");
-        }
-    }
-    tokens->Next();
+    parse_context pc(storage_t((uint8_t) ty->as_entity()->all_attributes().size()));
+    f->load(i, ty->as_entity(), pc, -1);
+    return IfcEntityInstanceData(pc.data());
 }
 
 void IfcParse::IfcFile::try_read_semicolon() {
@@ -1085,9 +863,9 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 
 void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
     const auto* e = from_entity;
-    byref_excl_[inst->data().id()].push_back(id_from);
+    byref_excl_[inst->id()].push_back(id_from);
     while (e != nullptr) {
-        byref_[{inst->data().id(), e->index_in_schema(), attribute_index}].push_back(id_from);
+        byref_[{inst->id(), e->index_in_schema(), attribute_index}].push_back(id_from);
         e = e->supertype();
     }
 }
@@ -1095,7 +873,7 @@ void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entit
 void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
     const auto* entity = from_entity;
     while (entity != nullptr) {
-        std::vector<int>& ids = byref_[{inst->data().id(), entity->index_in_schema(), attribute_index}];
+        std::vector<int>& ids = byref_[{inst->id(), entity->index_in_schema(), attribute_index}];
         std::vector<int>::iterator iter = std::find(ids.begin(), ids.end(), id_from);
         if (iter == ids.end()) {
             // @todo inverses also need to be populated when multiple instances are added to a new file.
@@ -1106,7 +884,7 @@ void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::ent
         entity = entity->supertype();
     }
 
-    std::vector<int>& ids = byref_excl_[inst->data().id()];
+    std::vector<int>& ids = byref_excl_[inst->id()];
     std::vector<int>::iterator iter = std::find(ids.begin(), ids.end(), id_from);
     if (iter == ids.end()) {
         // @todo inverses also need to be populated when multiple instances are added to a new file.
@@ -1116,18 +894,211 @@ void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::ent
     }
 }
 
+namespace {
+    class StringBuilderVisitor : public boost::static_visitor<void> {
+    private:
+        StringBuilderVisitor(const StringBuilderVisitor&);            //N/A
+        StringBuilderVisitor& operator=(const StringBuilderVisitor&); //N/A
+
+        std::ostringstream& data_;
+        template <typename T>
+        void serialize(const std::vector<T>& i) {
+            data_ << "(";
+            for (typename std::vector<T>::const_iterator it = i.begin(); it != i.end(); ++it) {
+                if (it != i.begin()) {
+                    data_ << ",";
+                }
+                data_ << *it;
+            }
+            data_ << ")";
+        }
+        // The REAL token definition from the IFC SPF standard does not necessarily match
+        // the output of the C++ ostream formatting operation.
+        // REAL = [ SIGN ] DIGIT { DIGIT } "." { DIGIT } [ "E" [ SIGN ] DIGIT { DIGIT } ] .
+        std::string format_double(const double& d) {
+            std::ostringstream oss;
+            oss.imbue(std::locale::classic());
+            oss << std::setprecision(std::numeric_limits<double>::digits10) << d;
+            const std::string str = oss.str();
+            oss.str("");
+            std::string::size_type e = str.find('e');
+            if (e == std::string::npos) {
+                e = str.find('E');
+            }
+            const std::string mantissa = str.substr(0, e);
+            oss << mantissa;
+            if (mantissa.find('.') == std::string::npos) {
+                oss << ".";
+            }
+            if (e != std::string::npos) {
+                oss << "E";
+                oss << str.substr(e + 1);
+            }
+            return oss.str();
+        }
+
+        std::string format_binary(const boost::dynamic_bitset<>& b) {
+            std::ostringstream oss;
+            oss.imbue(std::locale::classic());
+            oss.put('"');
+            oss << std::uppercase << std::hex << std::setw(1);
+            unsigned c = (unsigned)b.size();
+            unsigned n = (4 - (c % 4)) & 3;
+            oss << n;
+            for (unsigned i = 0; i < c + n;) {
+                unsigned accum = 0;
+                for (int j = 0; j < 4; ++j, ++i) {
+                    unsigned bit = i < n ? 0 : b.test(c - i + n - 1) ? 1
+                        : 0;
+                    accum |= bit << (3 - j);
+                }
+                oss << accum;
+            }
+            oss.put('"');
+            return oss.str();
+        }
+
+        bool upper_;
+
+    public:
+        StringBuilderVisitor(std::ostringstream& stream, bool upper = false)
+            : data_(stream),
+            upper_(upper) {}
+        void operator()(const Blank& /*i*/) { data_ << "$"; }
+        void operator()(const Derived& /*i*/) { data_ << "*"; }
+        void operator()(const int& i) { data_ << i; }
+        void operator()(const bool& i) { data_ << (i ? ".T." : ".F."); }
+        void operator()(const boost::logic::tribool& i) { data_ << (i ? ".T." : (boost::logic::indeterminate(i) ? ".U." : ".F.")); }
+        void operator()(const double& i) { data_ << format_double(i); }
+        void operator()(const boost::dynamic_bitset<>& i) { data_ << format_binary(i); }
+        void operator()(const std::string& i) {
+            std::string s = i;
+            if (upper_) {
+                data_ << static_cast<std::string>(IfcCharacterEncoder(s));
+            } else {
+                data_ << '\'' << s << '\'';
+            }
+        }
+        void operator()(const std::vector<int>& i);
+        void operator()(const std::vector<double>& i);
+        void operator()(const std::vector<std::string>& i);
+        void operator()(const std::vector<boost::dynamic_bitset<>>& i);
+        void operator()(const EnumerationReference& i) {
+            data_ << "." << i.value() << ".";
+        }
+        void operator()(const IfcUtil::IfcBaseClass* const& i) {
+            if (i->declaration().as_entity() == nullptr) {
+                i->data().toString(data_, true);
+            } else {
+                data_ << "#" << i->id();
+            }
+        }
+        void operator()(const aggregate_of_instance::ptr& i) {
+            data_ << "(";
+            for (aggregate_of_instance::it it = i->begin(); it != i->end(); ++it) {
+                if (it != i->begin()) {
+                    data_ << ",";
+                }
+                (*this)(*it);
+            }
+            data_ << ")";
+        }
+        void operator()(const std::vector<std::vector<int>>& i);
+        void operator()(const std::vector<std::vector<double>>& i);
+        void operator()(const aggregate_of_aggregate_of_instance::ptr& i) {
+            data_ << "(";
+            for (aggregate_of_aggregate_of_instance::outer_it outer_it = i->begin(); outer_it != i->end(); ++outer_it) {
+                if (outer_it != i->begin()) {
+                    data_ << ",";
+                }
+                data_ << "(";
+                for (aggregate_of_aggregate_of_instance::inner_it inner_it = outer_it->begin(); inner_it != outer_it->end(); ++inner_it) {
+                    if (inner_it != outer_it->begin()) {
+                        data_ << ",";
+                    }
+                    (*this)(*inner_it);
+                }
+                data_ << ")";
+            }
+            data_ << ")";
+        }
+        void operator()(const empty_aggregate_t&) const { data_ << "()"; }
+        void operator()(const empty_aggregate_of_aggregate_t&) const { data_ << "()"; }
+        operator std::string() { return data_.str(); }
+    };
+
+    template <>
+    void StringBuilderVisitor::serialize(const std::vector<std::string>& i) {
+        data_ << "(";
+        for (std::vector<std::string>::const_iterator it = i.begin(); it != i.end(); ++it) {
+            if (it != i.begin()) {
+                data_ << ",";
+            }
+            std::string encoder = IfcCharacterEncoder(*it);
+            data_ << encoder;
+        }
+        data_ << ")";
+    }
+
+    template <>
+    void StringBuilderVisitor::serialize(const std::vector<double>& i) {
+        data_ << "(";
+        for (std::vector<double>::const_iterator it = i.begin(); it != i.end(); ++it) {
+            if (it != i.begin()) {
+                data_ << ",";
+            }
+            data_ << format_double(*it);
+        }
+        data_ << ")";
+    }
+
+    template <>
+    void StringBuilderVisitor::serialize(const std::vector<boost::dynamic_bitset<>>& i) {
+        data_ << "(";
+        for (std::vector<boost::dynamic_bitset<>>::const_iterator it = i.begin(); it != i.end(); ++it) {
+            if (it != i.begin()) {
+                data_ << ",";
+            }
+            data_ << format_binary(*it);
+        }
+        data_ << ")";
+    }
+
+    void StringBuilderVisitor::operator()(const std::vector<int>& i) { serialize(i); }
+    void StringBuilderVisitor::operator()(const std::vector<double>& i) { serialize(i); }
+    void StringBuilderVisitor::operator()(const std::vector<std::string>& i) { serialize(i); }
+    void StringBuilderVisitor::operator()(const std::vector<boost::dynamic_bitset<>>& i) { serialize(i); }
+    void StringBuilderVisitor::operator()(const std::vector<std::vector<int>>& i) {
+        data_ << "(";
+        for (std::vector<std::vector<int>>::const_iterator it = i.begin(); it != i.end(); ++it) {
+            if (it != i.begin()) {
+                data_ << ",";
+            }
+            serialize(*it);
+        }
+        data_ << ")";
+    }
+    void StringBuilderVisitor::operator()(const std::vector<std::vector<double>>& i) {
+        data_ << "(";
+        for (std::vector<std::vector<double>>::const_iterator it = i.begin(); it != i.end(); ++it) {
+            if (it != i.begin()) {
+                data_ << ",";
+            }
+            serialize(*it);
+        }
+        data_ << ")";
+    }
+}
+
 //
 // Returns a string representation of the entity
 // Note that this initializes the entity if it is not initialized
 //
 std::string IfcEntityInstanceData::toString(bool upper) const {
-    if (attributes_ == 0) {
-        load();
-    }
-
-    std::stringstream ss;
+    std::ostringstream ss;
     ss.imbue(std::locale::classic());
 
+    /*
     std::string dt;
     if (type_ != nullptr) {
         dt = type()->name();
@@ -1139,62 +1110,43 @@ std::string IfcEntityInstanceData::toString(bool upper) const {
             ss << "#" << id_ << "=";
         }
     }
+    */
 
-    ss << dt << "(";
+    ss << "(";
 
-    for (size_t i = 0; i < getArgumentCount(); ++i) {
+    StringBuilderVisitor vis(ss, upper);
+
+    for (size_t i = 0; i < size(); ++i) {
         if (i != 0) {
             ss << ",";
         }
-        if (attributes_[i] == 0) {
+        /*
+        if (storage_.has<Blank>(i)) {
+            // @todo
             if (type_->as_entity() != nullptr && type_->as_entity()->derived()[i]) {
                ss << "*";
             } else {
                ss << "$";
-	    }
+	        // }
         } else {
-            ss << attributes_[i]->toString(upper);
+            
         }
+        */
+        storage_.apply_visitor(vis, i);
     }
     ss << ")";
 
     return ss.str();
 }
 
-void IfcEntityInstanceData::clearArguments() {
-    if (attributes_ != NULL) {
-        for (size_t i = 0; i < getArgumentCount(); ++i) {
-            delete attributes_[i];
-        }
-        delete[] attributes_;
-        attributes_ = NULL;
-    }
-}
-
-IfcEntityInstanceData::~IfcEntityInstanceData() {
-    clearArguments();
-}
-
-unsigned IfcEntityInstanceData::set_id(boost::optional<unsigned> i) {
+unsigned IfcUtil::IfcBaseEntity::set_id(const boost::optional<unsigned>& i) {
     if (i) {
         return id_ = *i;
     }
-    return id_ = file->FreshId();
+    return id_ = file_->FreshId();
 }
-
-//
-// Returns the entities of Entity type that have this entity in their ArgumentList
-//
-aggregate_of_instance::ptr IfcEntityInstanceData::getInverse(const IfcParse::declaration* type, int attribute_index) const {
-    static std::mutex mtx;
-    std::lock_guard<std::mutex> lock(mtx);
-
-    return file->getInverse(id_, type, attribute_index);
-}
-
+/*
 void IfcEntityInstanceData::load() const {
-    static std::recursive_mutex mtx;
-    std::lock_guard<std::recursive_mutex> lockk(mtx);
 
     Argument** tmp_data = nullptr;
 
@@ -1225,6 +1177,7 @@ void IfcEntityInstanceData::load() const {
         attributes_ = tmp_data;
     }
 }
+*/
 
 namespace {
 // @todo remove redundancy with python wrapper code (which is not identical due to
@@ -1249,6 +1202,7 @@ IfcUtil::ArgumentType get_argument_type(const IfcParse::declaration* decl, size_
 }
 } // namespace
 
+/*
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data) {
     file = 0;
     type_ = data.type_;
@@ -1261,52 +1215,38 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data) 
 
     for (unsigned int i = 0; i < count; ++i) {
         attributes_[i] = 0;
-        this->setArgument(i, data.getArgument(i), get_argument_type(data.type(), i), true);
+        this->setArgument(i, data.get_attribute_value(i), get_argument_type(data.type(), i), true);
     }
 }
-
-static IfcParse::NullArgument static_null_attribute;
-
-Argument* IfcEntityInstanceData::getArgument(size_t i) const {
-    if (attributes_ == 0) {
-        load();
-    }
-    if (i < getArgumentCount()) {
-        if (attributes_[i] == nullptr) {
-            return &static_null_attribute;
-        }
-        return attributes_[i];
-    }
-    throw IfcParse::IfcException("Attribute index out of range");
-}
+*/
 
 class unregister_inverse_visitor {
   private:
     IfcFile& file_;
-    const IfcEntityInstanceData& data_;
+    const IfcUtil::IfcBaseClass* data_;
 
   public:
-    unregister_inverse_visitor(IfcFile& file, const IfcEntityInstanceData& data)
+    unregister_inverse_visitor(IfcFile& file, const IfcUtil::IfcBaseClass* data)
         : file_(file),
           data_(data) {}
 
     void operator()(IfcUtil::IfcBaseClass* inst, int index) {
-        file_.unregister_inverse(data_.id(), data_.type()->as_entity(), inst, index);
+        file_.unregister_inverse(data_->id(), data_->declaration().as_entity(), inst, index);
     }
 };
 
 class register_inverse_visitor {
   private:
     IfcFile& file_;
-    const IfcEntityInstanceData& data_;
+    const IfcUtil::IfcBaseClass* data_;
 
   public:
-    register_inverse_visitor(IfcFile& file, const IfcEntityInstanceData& data)
+    register_inverse_visitor(IfcFile& file, const IfcUtil::IfcBaseClass* data)
         : file_(file),
           data_(data) {}
 
     void operator()(IfcUtil::IfcBaseClass* inst, int index) {
-        file_.register_inverse(data_.id(), data_.type()->as_entity(), inst, index);
+        file_.register_inverse(data_->id(), data_->declaration().as_entity(), inst, index);
     }
 };
 
@@ -1325,26 +1265,26 @@ class add_to_instance_list_visitor {
 
 class apply_individual_instance_visitor {
   private:
-    Argument* attribute_;
+    AttributeValue attribute_;
     IfcEntityInstanceData* data_;
     int attribute_index_;
 
     template <typename T>
-    void apply_attribute_(T& t, Argument* attr, int index) const {
+    void apply_attribute_(T& t, const AttributeValue& attr, int index) const {
         if (!attr) {
             return;
         }
 
-        if (attr->type() == IfcUtil::Argument_ENTITY_INSTANCE) {
-            IfcUtil::IfcBaseClass* inst = *attr;
+        if (attr.type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+            IfcUtil::IfcBaseClass* inst = attr;
             t(inst, index);
-        } else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-            aggregate_of_instance::ptr entity_list_attribute = *attr;
+        } else if (attr.type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+            aggregate_of_instance::ptr entity_list_attribute = attr;
             for (aggregate_of_instance::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
                 t(*it, index);
             }
-        } else if (attr->type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-            aggregate_of_aggregate_of_instance::ptr entity_list_attribute = *attr;
+        } else if (attr.type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+            aggregate_of_aggregate_of_instance::ptr entity_list_attribute = attr;
             for (aggregate_of_aggregate_of_instance::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
                 for (aggregate_of_aggregate_of_instance::inner_it jt = it->begin(); jt != it->end(); ++jt) {
                     t(*jt, index);
@@ -1354,32 +1294,56 @@ class apply_individual_instance_visitor {
     };
 
   public:
-    apply_individual_instance_visitor(Argument* attribute, int idx)
-        : attribute_(attribute),
-          data_(0),
-          attribute_index_(idx) {}
+    apply_individual_instance_visitor(const AttributeValue& attribute, int idx)
+        : attribute_(attribute)
+        , attribute_index_(idx)
+    {}
 
     apply_individual_instance_visitor(IfcEntityInstanceData* data)
-        : attribute_(0),
-          data_(data) {}
+        : data_(data) 
+    {}
 
     template <typename T>
     void apply(T& t) const {
         if (attribute_) {
             apply_attribute_(t, attribute_, attribute_index_);
         } else {
-            for (size_t i = 0; i < data_->getArgumentCount(); ++i) {
-                Argument* attr = data_->getArgument(i);
-                apply_attribute_(t, attr, i);
+            for (size_t i = 0; i < data_->size(); ++i) {
+                auto attr = data_->get_attribute_value(i);
+                apply_attribute_(t, attr, (int) i);
             }
         }
     };
 };
 
-void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::ArgumentType attr_type, bool make_copy) {
-    if (attributes_ == 0) {
-        load();
+template <typename T>
+void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+    auto current_attribute = data_.get_attribute_value(i);
+    if (file_ != nullptr) {
+
+        // Deregister old attribute guid in file guid map.
+        if (i == 0 && (file_->ifcroot_type() != nullptr) && this->declaration().is(*file_->ifcroot_type())) {
+            try {
+                auto guid = (std::string) current_attribute;
+                auto it = file_->internal_guid_map().find(guid);
+                if (it != file_->internal_guid_map().end() && it->second == this) {
+                    file_->internal_guid_map().erase(it);
+                }
+            } catch (IfcParse::IfcException& e) {
+                Logger::Error(e);
+            }
+        }
+
+        // Deregister inverse indices in file
+        unregister_inverse_visitor visitor(*file_, this);
+        apply_individual_instance_visitor(current_attribute, (int) i).apply(visitor);
     }
+
+    data_.storage_.set(i, t);
+
+    auto new_attribute = data_.get_attribute_value(i);
+
+    /*
     Argument* new_attribute = a;
     if (make_copy) {
         if (attr_type == IfcUtil::Argument_UNKNOWN) {
@@ -1517,54 +1481,32 @@ void IfcEntityInstanceData::setArgument(size_t i, Argument* a, IfcUtil::Argument
 
         new_attribute = copy;
     }
+    */    
 
-    if (attributes_[i] != 0) {
-        Argument* current_attribute = attributes_[i];
-        if (this->file != nullptr) {
-
-            // Deregister old attribute guid in file guid map.
-            if (i == 0 && (this->type() != nullptr) && (this->file->ifcroot_type() != nullptr) && this->type()->is(*this->file->ifcroot_type())) {
-                try {
-                    auto guid = (std::string)*current_attribute;
-                    auto it = this->file->internal_guid_map().find(guid);
-                    if (it != this->file->internal_guid_map().end() && &it->second->data() == this) {
-                        this->file->internal_guid_map().erase(it);
-                    }
-                } catch (IfcParse::IfcException& e) {
-                    Logger::Error(e);
-                }
-            }
-
-            // Deregister inverse indices in file
-            unregister_inverse_visitor visitor(*this->file, *this);
-            apply_individual_instance_visitor(current_attribute, i).apply(visitor);
-        }
-        delete attributes_[i];
-    }
-
-    if (this->file != nullptr) {
+    if (file_ != nullptr) {
         // Register inverse indices in file
-        register_inverse_visitor visitor(*this->file, *this);
-        apply_individual_instance_visitor(new_attribute, i).apply(visitor);
-    }
-
-    attributes_[i] = new_attribute;
-
-    // Register new attribute guid in guid map
-    if (this->file != nullptr) {
-        if (i == 0 && (this->type() != nullptr) && (this->file->ifcroot_type() != nullptr) && this->type()->is(*this->file->ifcroot_type())) {
+        register_inverse_visitor visitor(*file_, this);
+        apply_individual_instance_visitor(new_attribute, (int) i).apply(visitor);
+    
+        // Register new attribute guid in guid map
+        if (i == 0 && (file_->ifcroot_type() != nullptr) && this->declaration().is(*file_->ifcroot_type())) {
             try {
-                auto guid = (std::string)*new_attribute;
-                auto it = this->file->internal_guid_map().find(guid);
-                if (it != this->file->internal_guid_map().end()) {
+                auto guid = (std::string) new_attribute;
+                auto it = file_->internal_guid_map().find(guid);
+                if (it != file_->internal_guid_map().end()) {
                     Logger::Warning("Duplicate guid " + guid);
                 }
-                this->file->internal_guid_map()[guid] = this->file->instance_by_id(this->id());
+                file_->internal_guid_map()[guid] = file_->instance_by_id(this->id());
             } catch (IfcParse::IfcException& e) {
                 Logger::Error(e);
             }
         }
     }
+}
+
+template <typename T>
+void IfcUtil::IfcBaseClass::set_attribute_value(const std::string& s, const T& t) {
+    set_attribute_value(declaration().as_entity()->attribute_index(s), t);
 }
 
 //
@@ -1594,8 +1536,7 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
 }
 
 IfcFile::IfcFile(const IfcParse::schema_definition* schema)
-    : parsing_complete_(true),
-      schema_(schema),
+    : schema_(schema),
       ifcroot_type_(schema_->declaration_by_name("IfcRoot")),
       MaxId(0),
       tokens(0),
@@ -1608,11 +1549,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     // number parsing. See comment above on line 41.
     init_locale();
 
-    // prevent heap allocations during parse
-    internal_attribute_vector_.reserve(64);
-    internal_attribute_vector_simple_type_.reserve(16);
-
-    parsing_complete_ = false;
     MaxId = 0;
     tokens = 0;
     stream = 0;
@@ -1659,8 +1595,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
     boost::circular_buffer<Token> token_stream(3, Token());
 
-    IfcEntityInstanceData* data;
-    IfcUtil::IfcBaseClass* instance = 0;
+    IfcUtil::IfcBaseClass* instance = nullptr;
 
     unsigned current_id = 0;
     int progress = 0;
@@ -1685,8 +1620,16 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                 goto advance;
             }
 
-            data = new IfcEntityInstanceData(entity_type, this, current_id, token_stream[2].startPos);
-            instance = schema()->instantiate(data);
+            if (entity_type->as_entity() == nullptr) {
+                Logger::Message(Logger::LOG_ERROR, "Non entity type " + entity_type->name() + " at offset " + std::to_string(token_stream[2].startPos));
+                goto advance;
+            }
+
+            // @todo implement attribute_size() accessor
+            parse_context ps(storage_t(entity_type->as_entity()->all_attributes().size()));
+            load(current_id, entity_type->as_entity(), ps, -1);
+            IfcParse::schema_definition* schema;
+            instance = schema->instantiate(entity_type->name(), IfcEntityInstanceData(ps.data()));
 
             /// @todo Printing to stdout in a library class feels weird. Maybe move the progress prints to the client code?
             // Update the status after every 1000 instances parsed
@@ -1696,13 +1639,9 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                 Logger::Status(ss.str(), false);
             }
 
-            if (!lazy_load_) {
-                data->load();
-            }
-
             if (instance->declaration().is(*ifcroot_type_)) {
                 try {
-                    const std::string guid = *instance->data().getArgument(0);
+                    const std::string guid = instance->data().get_attribute_value(0);
                     if (byguid_.find(guid) != byguid_.end()) {
                         std::stringstream ss;
                         ss << "Instance encountered with non-unique GlobalId " << guid;
@@ -1782,8 +1721,6 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     }
 
     Logger::Status("\rDone scanning file   ");
-
-    parsing_complete_ = true;
 
     return;
 }
@@ -1922,25 +1859,23 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
     // Obtain all forward references by a depth-first
     // traversal and add them to the file.
-    if (parsing_complete_) {
-        try {
-            aggregate_of_instance::ptr entity_attributes = traverse(entity, 1);
-            for (aggregate_of_instance::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
-                if (*it != entity) {
-                    entity_entity_map_t::iterator mit2 = entity_file_map_.find((*it)->identity());
-                    if (mit2 == entity_file_map_.end()) {
-                        entity_file_map_.insert(entity_entity_map_t::value_type((*it)->identity(), addEntity(*it)));
-                    }
+    try {
+        aggregate_of_instance::ptr entity_attributes = traverse(entity, 1);
+        for (aggregate_of_instance::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+            if (*it != entity) {
+                entity_entity_map_t::iterator mit2 = entity_file_map_.find((*it)->identity());
+                if (mit2 == entity_file_map_.end()) {
+                    entity_file_map_.insert(entity_entity_map_t::value_type((*it)->identity(), addEntity(*it)));
                 }
             }
-        } catch (...) {
-            Logger::Message(Logger::LOG_ERROR, "Failed to visit forward references of", entity);
         }
+    } catch (...) {
+        Logger::Message(Logger::LOG_ERROR, "Failed to visit forward references of", entity);
     }
 
     // See whether the instance is already part of a file
-    if (entity->data().file != 0) {
-        if (entity->data().file == this) {
+    if (entity->file_ != nullptr) {
+        if (entity->file_ == this) {
             if (entity->declaration().as_entity() == nullptr) {
                 // While not a mapping that can be queried, we do need to free the instance later on
                 byidentity_[new_entity->identity()] = new_entity;
@@ -1954,17 +1889,18 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         // An instance is being added from another file. A copy of the
         // container and entity is created. The attribute references
         // need to be updated to point to instances in this file.
-        IfcFile* other_file = entity->data().file;
-        IfcEntityInstanceData* we = new IfcEntityInstanceData(entity->data());
-        new_entity = schema()->instantiate(we);
+        IfcFile* other_file = entity->file_;
+
+        IfcEntityInstanceData we(entity->data());
+        new_entity = schema()->instantiate(entity->declaration().name(), std::move(we));
 
         // In case an entity is added that contains geometry, the unit
         // information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-        for (size_t i = 0; i < we->getArgumentCount(); ++i) {
-            Argument* attr = we->getArgument(i);
-            IfcUtil::ArgumentType attr_type = attr->type();
+        for (size_t i = 0; i < we.size(); ++i) {
+            auto attr = we.get_attribute_value(i);
+            IfcUtil::ArgumentType attr_type = attr.type();
 
             IfcParse::declaration* decl = 0;
             if (entity->declaration().as_entity() != nullptr) {
@@ -1979,16 +1915,13 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             }
 
             if (attr_type == IfcUtil::Argument_ENTITY_INSTANCE) {
-                entity_entity_map_t::const_iterator eit = entity_file_map_.find(((IfcUtil::IfcBaseClass*)(*attr))->identity());
+                entity_entity_map_t::const_iterator eit = entity_file_map_.find(((IfcUtil::IfcBaseClass*)(attr))->identity());
                 if (eit == entity_file_map_.end()) {
                     throw IfcParse::IfcException("Unable to map instance to file");
                 }
-
-                IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                copy->set(eit->second);
-                we->setArgument(i, copy);
+                we.storage_.set(i, eit->second);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
-                aggregate_of_instance::ptr instances = *attr;
+                aggregate_of_instance::ptr instances = attr;
                 aggregate_of_instance::ptr new_instances(new aggregate_of_instance);
                 for (aggregate_of_instance::it it = instances->begin(); it != instances->end(); ++it) {
                     entity_entity_map_t::const_iterator eit = entity_file_map_.find((*it)->identity());
@@ -1998,11 +1931,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     new_instances->push(eit->second);
                 }
 
-                IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                copy->set(new_instances);
-                we->setArgument(i, copy);
+                we.storage_.set(i, new_instances);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
-                aggregate_of_aggregate_of_instance::ptr instances = *attr;
+                aggregate_of_aggregate_of_instance::ptr instances = attr;
                 aggregate_of_aggregate_of_instance::ptr new_instances(new aggregate_of_aggregate_of_instance);
                 for (aggregate_of_aggregate_of_instance::outer_it it = instances->begin(); it != instances->end(); ++it) {
                     std::vector<IfcUtil::IfcBaseClass*> list;
@@ -2015,10 +1946,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     }
                     new_instances->push(list);
                 }
-
-                IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                copy->set(new_instances);
-                we->setArgument(i, copy);
+                
+                we.storage_.set(i, new_instances);
             } else if ((decl != nullptr) && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
                 if (boost::math::isnan(conversion_factor)) {
                     std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = {nullptr, 1.0};
@@ -2035,45 +1964,36 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     }
                 }
                 if (attr_type == IfcUtil::Argument_DOUBLE) {
-                    double v = *attr;
+                    double v = attr;
                     v *= conversion_factor;
-
-                    IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                    copy->set(v);
-                    we->setArgument(i, copy);
+                    we.storage_.set(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
-                    std::vector<double> v = *attr;
+                    std::vector<double> v = attr;
                     for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
                         (*it) *= conversion_factor;
                     }
-
-                    IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                    copy->set(v);
-                    we->setArgument(i, copy);
+                    we.storage_.set(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
-                    std::vector<std::vector<double>> v = *attr;
+                    std::vector<std::vector<double>> v = attr;
                     for (std::vector<std::vector<double>>::iterator it = v.begin(); it != v.end(); ++it) {
                         std::vector<double>& v2 = (*it);
                         for (std::vector<double>::iterator jt = v2.begin(); jt != v2.end(); ++jt) {
                             (*jt) *= conversion_factor;
                         }
                     }
-
-                    IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                    copy->set(v);
-                    we->setArgument(i, copy);
+                    we.storage_.set(i, v);
                 }
             }
         }
 
         // A new entity instance name is generated and
         // the instance is pointed to this file.
-        we->file = this;
-        if (we->type()->as_entity() != nullptr) {
+        new_entity->file_ = this;
+        if (new_entity->declaration().as_entity() != nullptr) {
             if (id == -1) {
-                we->set_id(FreshId());
+                new_entity->as<IfcUtil::IfcBaseEntity>()->set_id(FreshId());
             } else {
-                we->set_id((unsigned int)id);
+                new_entity->as<IfcUtil::IfcBaseEntity>()->set_id((unsigned int)id);
                 if ((unsigned)id > MaxId) {
                     MaxId = (unsigned)id;
                 }
@@ -2086,7 +2006,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     // For subtypes of IfcRoot, the GUID mapping needs to be updated.
     if (new_entity->declaration().is(*ifcroot_type_)) {
         try {
-            const std::string guid = *new_entity->data().getArgument(0);
+            const std::string guid = new_entity->data().get_attribute_value(0);
             if (byguid_.find(guid) != byguid_.end()) {
                 std::stringstream ss;
                 ss << "Overwriting entity with guid " << guid;
@@ -2128,9 +2048,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
     if (ty->as_entity() != nullptr) {
         int new_id = -1;
-        if (new_entity->data().file == nullptr) {
+        if (new_entity->file_ == nullptr) {
             // For newly created entities ensure a valid ENTITY_INSTANCE_NAME is set
-            new_entity->data().file = this;
+            new_entity->file_ = this;
             boost::optional<unsigned> id_value;
             if (id != -1) {
                 id_value = (unsigned)id;
@@ -2138,9 +2058,9 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     MaxId = (unsigned)id;
                 }
             }
-            new_id = new_entity->data().set_id(id_value);
+            new_id = new_entity->as<IfcUtil::IfcBaseEntity>()->set_id(id_value);
         } else {
-            new_id = new_entity->data().id();
+            new_id = new_entity->id();
         }
 
         if (byid_.find(new_id) != byid_.end()) {
@@ -2151,17 +2071,17 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         }
         // The mapping by entity instance name is updated.
         byid_[new_id] = new_entity;
-    } else if (new_entity->data().file == nullptr) {
+    } else if (new_entity->file_ == nullptr) {
         // For non-entity instances, no mappings are updated, but the file
         // pointer has to be set, so that actual copies are created in subsequent
         // times.
-        new_entity->data().file = this;
+        new_entity->file_ = this;
 
         // While not a mapping that can be queried, we do need to free the instance
         byidentity_[new_entity->identity()] = new_entity;
     }
 
-    if (parsing_complete_ && (ty->as_entity() != nullptr)) {
+    if ((ty->as_entity() != nullptr)) {
         build_inverses_(new_entity);
     }
 
@@ -2169,7 +2089,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 }
 
 void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
-    const unsigned id = entity->data().id();
+    const unsigned id = entity->id();
 
     IfcUtil::IfcBaseClass* file_entity = instance_by_id(id);
 
@@ -2215,42 +2135,38 @@ void IfcFile::process_deletion_() {
             for (aggregate_of_instance::it iit = references->begin(); iit != references->end(); ++iit) {
                 IfcUtil::IfcBaseEntity* related_instance = (IfcUtil::IfcBaseEntity*)*iit;
 
-                if (std::find(batch_deletion_ids_.begin(), batch_deletion_ids_.end(), related_instance->data().id()) != batch_deletion_ids_.end()) {
+                if (std::find(batch_deletion_ids_.begin(), batch_deletion_ids_.end(), related_instance->id()) != batch_deletion_ids_.end()) {
                     continue;
                 }
 
-                for (size_t i = 0; i < related_instance->data().getArgumentCount(); ++i) {
-                    Argument* attr = related_instance->data().getArgument(i);
-                    if (attr->isNull()) {
+                for (size_t i = 0; i < related_instance->data().size(); ++i) {
+                    auto attr = related_instance->data().get_attribute_value(i);
+                    if (attr.isNull()) {
                         continue;
                     }
 
-                    IfcUtil::ArgumentType attr_type = attr->type();
+                    IfcUtil::ArgumentType attr_type = attr.type();
                     switch (attr_type) {
                     case IfcUtil::Argument_ENTITY_INSTANCE: {
-                        IfcUtil::IfcBaseClass* instance_attribute = *attr;
+                        IfcUtil::IfcBaseClass* instance_attribute = attr;
                         if (instance_attribute == entity) {
-                            IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                            copy->set(boost::blank());
-                            related_instance->data().setArgument(i, copy);
+                            related_instance->set_attribute_value(i, Blank{});
                         }
                     } break;
                     case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
-                        aggregate_of_instance::ptr instance_list = *attr;
+                        aggregate_of_instance::ptr instance_list = attr;
                         if (instance_list->contains(entity)) {
-                            IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
                             instance_list->remove(entity);
                             if ((instance_list->size() == 0U) && related_instance->declaration().as_entity()->attribute_by_index(i)->optional()) {
                                 // @todo we can also check the lower bound of the attribute type before setting to null.
-                                copy->set(boost::blank());
+                                related_instance->set_attribute_value(i, Blank{});
                             } else {
-                                copy->set(instance_list);
+                                related_instance->set_attribute_value(i, instance_list);
                             }
-                            related_instance->data().setArgument(i, copy);
                         }
                     } break;
                     case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
-                        aggregate_of_aggregate_of_instance::ptr instance_list_list = *attr;
+                        aggregate_of_aggregate_of_instance::ptr instance_list_list = attr;
                         if (instance_list_list->contains(entity)) {
                             aggregate_of_aggregate_of_instance::ptr new_list(new aggregate_of_aggregate_of_instance);
                             for (aggregate_of_aggregate_of_instance::outer_it it = instance_list_list->begin(); it != instance_list_list->end(); ++it) {
@@ -2261,10 +2177,7 @@ void IfcFile::process_deletion_() {
                                 }
                                 new_list->push(instances);
                             }
-
-                            IfcWrite::IfcWriteArgument* copy = new IfcWrite::IfcWriteArgument();
-                            copy->set(new_list);
-                            related_instance->data().setArgument(i, copy);
+                            related_instance->set_attribute_value(i, new_list);
                         }
                     } break;
                     default:
@@ -2289,7 +2202,7 @@ void IfcFile::process_deletion_() {
                 if (entity_attribute == entity) {
                     continue;
                 }
-                const unsigned int name = entity_attribute->data().id();
+                const unsigned int name = entity_attribute->id();
                 // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
                 if (name != 0) {
                     {
@@ -2312,8 +2225,8 @@ void IfcFile::process_deletion_() {
             }
         }
 
-        if (entity->declaration().is(*ifcroot_type_) && !entity->data().getArgument(0)->isNull()) {
-            const std::string global_id = *entity->data().getArgument(0);
+        if (entity->declaration().is(*ifcroot_type_) && !entity->data().get_attribute_value(0).isNull()) {
+            const std::string global_id = entity->data().get_attribute_value(0);
             auto it = byguid_.find(global_id);
             if (it != byguid_.end()) {
                 byguid_.erase(it);
@@ -2549,7 +2462,7 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
     auto refs = instances_by_reference(instance_id);
 
     for (const auto& ref : *refs) {
-        auto it = mapping.find(ref->data().id());
+        auto it = mapping.find(ref->id());
         if (it == mapping.end() || it->second.empty()) {
             throw IfcException("Internal error");
         }
@@ -2569,6 +2482,10 @@ std::vector<int> IfcFile::get_inverse_indices(int instance_id) {
 }
 
 aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::declaration* type, int attribute_index) {
+    // @todo is this mutex still necessary?
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
+
     if (type == nullptr && attribute_index == -1) {
         return instances_by_reference(instance_id);
     }
@@ -2596,7 +2513,7 @@ aggregate_of_instance::ptr IfcFile::getInverse(int instance_id, const IfcParse::
     return return_value;
 }
 
-int IfcFile::getTotalInverses(int instance_id) {
+size_t IfcFile::getTotalInverses(int instance_id) {
     return byref_excl_[instance_id].size();
 }
 
@@ -2630,23 +2547,23 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
     if (!projects || projects->size() == 0) {
         try {
             projects = instances_by_type(schema()->declaration_by_name("IfcContext"));
-        } catch (IfcException& e) {
+        } catch (IfcException&) {
         }
     }
 
     if (projects && projects->size() == 1) {
         IfcUtil::IfcBaseClass* project = *projects->begin();
 
-        IfcUtil::IfcBaseClass* unit_assignment = *project->data().getArgument(
+        IfcUtil::IfcBaseClass* unit_assignment = project->data().get_attribute_value(
             project->declaration().as_entity()->attribute_index("UnitsInContext"));
 
-        aggregate_of_instance::ptr units = *unit_assignment->data().getArgument(
+        aggregate_of_instance::ptr units = unit_assignment->data().get_attribute_value(
             unit_assignment->declaration().as_entity()->attribute_index("Units"));
 
         for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
             IfcUtil::IfcBaseClass* unit = *it;
             if (unit->declaration().is("IfcNamedUnit")) {
-                const std::string file_unit_type = *unit->data().getArgument(
+                const std::string file_unit_type = unit->data().get_attribute_value(
                     unit->declaration().as_entity()->attribute_index("UnitType"));
 
                 if (file_unit_type != unit_type) {
@@ -2655,16 +2572,16 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 
                 IfcUtil::IfcBaseClass* siunit = 0;
                 if (unit->declaration().is("IfcConversionBasedUnit")) {
-                    IfcUtil::IfcBaseClass* mu = *unit->data().getArgument(
+                    IfcUtil::IfcBaseClass* mu = unit->data().get_attribute_value(
                         unit->declaration().as_entity()->attribute_index("ConversionFactor"));
 
-                    IfcUtil::IfcBaseClass* vlc = *mu->data().getArgument(
+                    IfcUtil::IfcBaseClass* vlc = mu->data().get_attribute_value(
                         mu->declaration().as_entity()->attribute_index("ValueComponent"));
 
-                    IfcUtil::IfcBaseClass* unc = *mu->data().getArgument(
+                    IfcUtil::IfcBaseClass* unc = mu->data().get_attribute_value(
                         mu->declaration().as_entity()->attribute_index("UnitComponent"));
 
-                    return_value.second *= static_cast<double>(*vlc->data().getArgument(0));
+                    return_value.second *= static_cast<double>(vlc->data().get_attribute_value(0));
                     return_value.first = unit;
 
                     if (unc->declaration().is("IfcSIUnit")) {
@@ -2676,11 +2593,11 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
                 }
 
                 if (siunit != nullptr) {
-                    Argument* prefix = siunit->data().getArgument(
+                    AttributeValue prefix = siunit->data().get_attribute_value(
                         siunit->declaration().as_entity()->attribute_index("Prefix"));
 
-                    if (!prefix->isNull()) {
-                        return_value.second *= IfcSIPrefixToValue(*prefix);
+                    if (!prefix.isNull()) {
+                        return_value.second *= IfcSIPrefixToValue(prefix);
                     }
                 }
             }
@@ -2693,11 +2610,11 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
     std::function<void(IfcUtil::IfcBaseClass*, int)> fn = [this, inst](IfcUtil::IfcBaseClass* attr, int idx) {
         if (attr->declaration().as_entity() != nullptr) {
-            unsigned entity_attribute_id = attr->data().id();
+            unsigned entity_attribute_id = attr->id();
             const auto* decl = inst->declaration().as_entity();
-            byref_excl_[entity_attribute_id].push_back(inst->data().id());
+            byref_excl_[entity_attribute_id].push_back(inst->id());
             while (decl != nullptr) {
-                byref_[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->data().id());
+                byref_[{entity_attribute_id, decl->index_in_schema(), idx}].push_back(inst->id());
                 decl = decl->supertype();
             }
         }
@@ -2714,21 +2631,32 @@ void IfcParse::IfcFile::build_inverses() {
 
 std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 
-bool IfcParse::IfcFile::lazy_load_ = true;
 bool IfcParse::IfcFile::guid_map_ = true;
 
+/*
 template <typename T>
 void IfcUtil::IfcBaseClass::set_value(int index, const T& value) {
     IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
     attr->set(value);
     data_->setArgument(index, attr);
 }
+*/
 
-void IfcUtil::IfcBaseClass::unset_value(int index) {
-    IfcWrite::IfcWriteArgument* attr = new IfcWrite::IfcWriteArgument();
-    data_->setArgument(index, attr);
+void IfcUtil::IfcBaseClass::unset_attribute_value(size_t index) {
+    data_.storage_.set(index, Blank{});
 }
 
+IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
+    : storage_(data.storage_.size() )
+{
+    for (size_t i = 0; i < data.storage_.size(); ++i) {
+        data.storage_.apply_visitor([this, i](auto& v) {
+            storage_.set(i, v);
+        }, i);
+    }
+}
+
+/*
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<int>(int index, const int& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<bool>(int index, const bool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<boost::logic::tribool>(int index, const boost::logic::tribool& value);
@@ -2745,3 +2673,4 @@ template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_instan
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<int>>>(int index, const std::vector<std::vector<int>>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<std::vector<std::vector<double>>>(int index, const std::vector<std::vector<double>>& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_value<aggregate_of_aggregate_of_instance::ptr>(int index, const aggregate_of_aggregate_of_instance::ptr& value);
+*/

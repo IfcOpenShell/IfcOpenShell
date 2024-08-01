@@ -65,7 +65,7 @@ void plain_text_message(T& out, const boost::optional<const IfcUtil::IfcBaseClas
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
+        std::string global_id = (*current_product)->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
         out << "{" << global_id.c_str() << "} ";
     }
     out << message.c_str() << std::endl;

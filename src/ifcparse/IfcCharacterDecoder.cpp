@@ -70,7 +70,6 @@
 #define CLEAR_HEX(C) (C &= ~(HEX(1) | HEX(2) | HEX(3) | HEX(4) | HEX(5) | HEX(6) | HEX(7) | HEX(8)))
 
 using namespace IfcParse;
-using namespace IfcWrite;
 
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* stream) {
     stream_ = stream;
