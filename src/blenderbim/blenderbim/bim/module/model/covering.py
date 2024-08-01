@@ -32,9 +32,7 @@ class AddInstanceFlooringCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operato
 
     @classmethod
     def poll(cls, context):
-        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
-        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        return relating_type == "FLOORING"
+        return tool.Covering.covering_poll_relating_type_check(cls, context, "FLOORING")
 
     def _execute(self, context):
         try:
@@ -51,9 +49,7 @@ class AddInstanceCeilingCoveringFromCursor(bpy.types.Operator, tool.Ifc.Operator
 
     @classmethod
     def poll(cls, context):
-        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
-        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        return relating_type == "CEILING"
+        return tool.Covering.covering_poll_relating_type_check(cls, context, "CEILING")
 
     def _execute(self, context):
         try:
@@ -70,8 +66,10 @@ class RegenSelectedCoveringObject(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        return element and element.is_a("IfcCovering")
+        if (obj := context.active_object) and (element := tool.Ifc.get_entity(obj)) and element.is_a("IfcCovering"):
+            return True
+        cls.poll_message_set("IfcCovering must be selected.")
+        return False
 
     def _execute(self, context):
         try:
@@ -90,11 +88,7 @@ class AddInstanceFlooringCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operato
 
     @classmethod
     def poll(cls, context):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
-        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-            return context.selected_objects and relating_type == "FLOORING"
+        return tool.Covering.covering_poll_wall_selected(cls, context, "FLOORING")
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
@@ -118,11 +112,7 @@ class AddInstanceCeilingCoveringsFromWalls(bpy.types.Operator, tool.Ifc.Operator
 
     @classmethod
     def poll(cls, context):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        relating_type_id = int(bpy.context.scene.BIMModelProperties.relating_type_id)
-        relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(relating_type_id))
-        if element and element.is_a("IfcWall") and tool.Model.get_usage_type(element) == "LAYER2":
-            return context.selected_objects and relating_type == "CEILING"
+        return tool.Covering.covering_poll_wall_selected(cls, context, "CEILING")
 
     def _execute(self, context):
         # This only works based on a 2D plan only considering the standard
