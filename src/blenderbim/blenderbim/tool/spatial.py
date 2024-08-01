@@ -490,13 +490,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         selected_objects = bpy.context.selected_objects
         boundary_elements = cls.get_boundary_elements(selected_objects)
         polys = cls.get_polygons(boundary_elements)
-        converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
         union = shapely.ops.unary_union(polys).buffer(
             converted_tolerance,
             cap_style=shapely.constructive.BufferCapStyle.flat,
             join_style=shapely.constructive.BufferJoinStyle.mitre,
         )
-        union = cls.get_purged_inner_holes_poly(union_geom=union, min_area=cls.get_converted_tolerance(tolerance=0.1))
+        union = cls.get_purged_inner_holes_poly(
+            union_geom=union, min_area=cls.get_converted_tolerance(tolerance_si=0.1)
+        )
         return union
 
     @classmethod
@@ -526,28 +528,20 @@ class Spatial(blenderbim.core.tool.Spatial):
 
     @classmethod
     def get_obj_base_points(cls, obj: bpy.types.Object) -> dict[str, tuple[float, float]]:
-        x_values = [(obj.matrix_world @ Vector(v)).x for v in obj.bound_box]
-        y_values = [(obj.matrix_world @ Vector(v)).y for v in obj.bound_box]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        bbox_ws = [obj.matrix_world @ Vector(v) / si_conversion for v in obj.bound_box]
         return {
-            "low_left": (x_values[0], y_values[0]),
-            "high_left": (x_values[3], y_values[3]),
-            "low_right": (x_values[4], y_values[4]),
-            "high_right": (x_values[7], y_values[7]),
+            "low_left": (bbox_ws[0].x, bbox_ws[0].y),
+            "high_left": (bbox_ws[3].x, bbox_ws[3].y),
+            "low_right": (bbox_ws[4].x, bbox_ws[4].y),
+            "high_right": (bbox_ws[7].x, bbox_ws[7].y),
         }
 
     @classmethod
-    def get_converted_tolerance(cls, tolerance: float) -> float:
+    def get_converted_tolerance(cls, tolerance_si: float) -> float:
         model = tool.Ifc.get()
-        project_unit = ifcopenshell.util.unit.get_project_unit(model, "LENGTHUNIT")
-        prefix = getattr(project_unit, "Prefix", None)
-
-        return ifcopenshell.util.unit.convert(
-            value=tolerance,
-            from_prefix=None,
-            from_unit="METRE",
-            to_prefix=prefix,
-            to_unit=project_unit.Name,
-        )
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(model)
+        return tolerance_si / si_conversion
 
     @classmethod
     def get_purged_inner_holes_poly(cls, union_geom: Polygon, min_area: float) -> Polygon:
@@ -580,7 +574,7 @@ class Spatial(blenderbim.core.tool.Spatial):
     @classmethod
     def get_buffered_poly_from_linear_ring(cls, linear_ring: shapely.LinearRing) -> Polygon:
         poly = Polygon(linear_ring)
-        converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
+        converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
         poly = poly.buffer(
             converted_tolerance,
             single_sided=True,
@@ -597,8 +591,10 @@ class Spatial(blenderbim.core.tool.Spatial):
         bm.edges.index_update()
 
         mat_invert = mat.inverted()
-
-        new_verts = [bm.verts.new(mat_invert @ Vector([v[0], v[1], 0])) for v in poly.exterior.coords[0:-1]]
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        new_verts = [
+            bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
+        ]
         [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
         bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
 
