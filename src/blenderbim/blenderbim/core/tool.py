@@ -423,6 +423,9 @@ class Geometry:
     def unresolve_type_representation(cls, representation, element): pass
     def delete_opening_object_placement(cls, opening): pass
     def switch_from_representation(cls, obj, representation): pass
+    def get_blender_offset_type(cls, obj): pass
+    def has_material_style_override(cls, obj): pass
+    def should_use_immediate_representation(cls, entity, apply_openings): pass
 
 
 @interface
