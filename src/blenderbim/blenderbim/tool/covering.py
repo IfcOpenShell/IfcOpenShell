@@ -33,7 +33,7 @@ from shapely import Polygon, MultiPolygon
 
 class Covering(blenderbim.core.tool.Covering):
     @classmethod
-    def get_z_from_ceiling_height(cls):
+    def get_z_from_ceiling_height(cls) -> float:
         props = bpy.context.scene.BIMCoveringProperties
         return props.ceiling_height
 

@@ -392,10 +392,11 @@ class Spatial(blenderbim.core.tool.Spatial):
                 continue
 
             old_mesh = obj.data
+            assert isinstance(old_mesh, bpy.types.Mesh)
             if visible_element.HasOpenings:
                 new_mesh = cls.get_gross_mesh_from_element(visible_element)
             else:
-                new_mesh = obj.data.copy()
+                new_mesh = old_mesh.copy()
             obj.data = new_mesh
 
             # Boundary objects are likely triangulated. If a triangulated quad
@@ -463,15 +464,15 @@ class Spatial(blenderbim.core.tool.Spatial):
         return mesh
 
     @classmethod
-    def get_x_y_z_h_mat_from_active_obj(cls, active_obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
-        mat = active_obj.matrix_world
-        local_bbox_center = 0.125 * sum((Vector(b) for b in active_obj.bound_box), Vector())
+    def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
+        mat = obj.matrix_world
+        local_bbox_center = 0.125 * sum((Vector(b) for b in obj.bound_box), Vector())
         global_bbox_center = mat @ local_bbox_center
         x = global_bbox_center.x
         y = global_bbox_center.y
-        z = (mat @ Vector(active_obj.bound_box[0])).z
+        z = (mat @ Vector(obj.bound_box[0])).z
 
-        h = active_obj.dimensions.z
+        h = obj.dimensions.z
         return x, y, z, h, mat
 
     @classmethod
@@ -490,7 +491,11 @@ class Spatial(blenderbim.core.tool.Spatial):
         boundary_elements = cls.get_boundary_elements(selected_objects)
         polys = cls.get_polygons(boundary_elements)
         converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
-        union = shapely.ops.unary_union(polys).buffer(converted_tolerance, cap_style=2, join_style=2)
+        union = shapely.ops.unary_union(polys).buffer(
+            converted_tolerance,
+            cap_style=shapely.constructive.BufferCapStyle.flat,
+            join_style=shapely.constructive.BufferJoinStyle.mitre,
+        )
         union = cls.get_purged_inner_holes_poly(union_geom=union, min_area=cls.get_converted_tolerance(tolerance=0.1))
         return union
 
@@ -576,7 +581,12 @@ class Spatial(blenderbim.core.tool.Spatial):
     def get_buffered_poly_from_linear_ring(cls, linear_ring: shapely.LinearRing) -> Polygon:
         poly = Polygon(linear_ring)
         converted_tolerance = cls.get_converted_tolerance(tolerance=0.03)
-        poly = poly.buffer(converted_tolerance, single_sided=True, cap_style=2, join_style=2)
+        poly = poly.buffer(
+            converted_tolerance,
+            single_sided=True,
+            cap_style=shapely.BufferCapStyle.flat,
+            join_style=shapely.BufferJoinStyle.mitre,
+        )
         return poly
 
     @classmethod

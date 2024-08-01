@@ -888,7 +888,7 @@ class Spatial:
     def get_boundary_lines_from_context_visible_objects(cls): pass
     def get_gross_mesh_from_element(cls, visible_element): pass
     def create_mesh_from_shape(cls, shape): pass
-    def get_x_y_z_h_mat_from_active_obj(cls, active_obj): pass
+    def get_x_y_z_h_mat_from_obj(cls, obj): pass
     def get_x_y_z_h_mat_from_cursor(cls): pass
     def get_union_shape_from_selected_objects(cls): pass
     def get_boundary_elements(cls, selected_objects): pass

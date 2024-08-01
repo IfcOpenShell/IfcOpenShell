@@ -17,14 +17,15 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-from typing import Optional, Literal
+import ifcopenshell.util.representation
+from typing import Optional
 
 
 def add_context(
     file: ifcopenshell.file,
-    context_type: Optional[Literal["Model", "Plan"]] = None,
-    context_identifier: Optional[str] = None,
-    target_view: Optional[str] = None,
+    context_type: Optional[ifcopenshell.util.representation.CONTEXT_TYPE] = None,
+    context_identifier: Optional[ifcopenshell.util.representation.REPRESENTATION_IDENTIFIER] = None,
+    target_view: Optional[ifcopenshell.util.representation.TARGET_VIEW] = None,
     parent: Optional[ifcopenshell.entity_instance] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new geometric representation context
@@ -106,7 +107,6 @@ def add_context(
         the common target views above or consult the IFC documentation
         (under the IfcShapeRepresentation page) for more details. Optional
         for contexts, but mandatory for subcontexts.
-    :type target_view: str, optional
     :param parent: the parent context. Must be left as None (the default)
         for contexts, and only set for subcontexts. Note that there are only
         contexts and subcontexts, a subcontext cannot have any children.

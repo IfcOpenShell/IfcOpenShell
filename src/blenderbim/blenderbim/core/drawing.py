@@ -18,11 +18,12 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 if TYPE_CHECKING:
     import bpy
     import ifcopenshell
+    import ifcopenshell.util.representation
     import blenderbim.tool as tool
 
 
@@ -225,7 +226,11 @@ def disable_editing_drawings(drawing: tool.Drawing) -> None:
 
 
 def add_drawing(
-    ifc: tool.Ifc, collector: tool.Collector, drawing: tool.Drawing, target_view=None, location_hint=None
+    ifc: tool.Ifc,
+    collector: tool.Collector,
+    drawing: tool.Drawing,
+    target_view: Union[ifcopenshell.util.representation.TARGET_VIEW, None] = None,
+    location_hint: Union[str, None] = None,
 ) -> None:
     drawing_name = drawing.ensure_unique_drawing_name(drawing.generate_drawing_name(target_view, location_hint))
     drawing_matrix = drawing.generate_drawing_matrix(target_view, location_hint)
