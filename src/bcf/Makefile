@@ -33,6 +33,10 @@ models:
 	cd src && xsdata generate -p bcf.v2.model --unnest-classes --kw-only --slots -ds Google bcf/v2/xsd
 	cd src && xsdata generate -p bcf.v3.model --unnest-classes --kw-only --slots -ds Google bcf/v3/xsd
 
+.PHONY: test
+test:
+	pytest -p no:pytest-blender tests
+
 # .PHONY
 # api:
 #     openapi-python-client generate --url https://api.swaggerhub.com/apis/buildingSMART/BCF/3.0
