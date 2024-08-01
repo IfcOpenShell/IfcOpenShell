@@ -229,7 +229,7 @@ Handle(Geom_Surface) OpenCascadeKernel::convert_surface(const taxonomy::ptr surf
 	}
 }
 
-bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result) {
+bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& result, bool reversed_surface) {
 #ifdef IFOPSH_DEBUG
 	std::ostringstream oss;
 	face->print(oss);
@@ -382,7 +382,11 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 			}
 		}
 	} else if (!fd.all_outer()) {
-		BRepBuilderAPI_MakeFace mf(fd.surface(), fd.outer_wire());
+		auto surf = fd.surface();
+		if (reversed_surface) {
+			surf = surf->UReversed();
+		}
+		BRepBuilderAPI_MakeFace mf(surf, fd.outer_wire());
 
 		if (mf.IsDone()) {
 			// Is this necessary
@@ -434,10 +438,20 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 				for (; jt.More(); jt.Next()) {
 					Message_ListIteratorOfListOfMsg kt(jt.Value());
 					for (; kt.More(); kt.Next()) {
-						char* c = new char[kt.Value().Value().LengthOfCString() + 1];
-						kt.Value().Value().ToUTF8CString(c);
-						Logger::Notice(c, face->instance);
+						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
+						kt.Value().Original().ToUTF8CString(c);
+						std::string message = c;
 						delete[] c;
+#if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR == 7
+						if (!fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
+							Logger::Notice("Detected reversed wire, reattempting with reversed basis surface");
+							TopoDS_Face reversed_result;
+							convert(face, reversed_result, true);
+							result = reversed_result;
+							return true;
+						} else
+#endif
+							Logger::Warning(message, face->instance);
 					}
 				}
 			}
