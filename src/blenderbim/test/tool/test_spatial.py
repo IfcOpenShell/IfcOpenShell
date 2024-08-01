@@ -40,7 +40,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcWall()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is True
+        assert subject.can_contain(structure, element_obj) is True
 
     def test_a_spatial_structure_element_can_contain_an_element_ifc2x3(self):
         ifc = ifcopenshell.file(schema="IFC2X3")
@@ -51,7 +51,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcWall()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is True
+        assert subject.can_contain(structure, element_obj) is True
 
     def test_a_spatial_zone_element_cannot_contain_an_element(self):
         ifc = ifcopenshell.file()
@@ -62,7 +62,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcWall()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is False
+        assert subject.can_contain(structure, element_obj) is False
 
     def test_unlinked_elements_cannot_contain_anything(self):
         structure_obj = bpy.data.objects.new("Object", None)
@@ -78,7 +78,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcWall()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is False
+        assert subject.can_contain(structure, element_obj) is False
 
     def test_a_non_element_cannot_be_contained(self):
         ifc = ifcopenshell.file()
@@ -89,7 +89,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcTask()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is False
+        assert subject.can_contain(structure, element_obj) is False
 
     def test_other_non_elements_that_have_a_contained_in_structure_attribute_can_be_contained(self):
         ifc = ifcopenshell.file()
@@ -100,7 +100,7 @@ class TestCanContain(NewFile):
         element = ifc.createIfcGrid()
         element_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(element, element_obj)
-        assert subject.can_contain(structure_obj, element_obj) is True
+        assert subject.can_contain(structure, element_obj) is True
 
 
 class TestCanReference(NewFile):
@@ -179,46 +179,6 @@ class TestGetRelativeObjectMatrix(NewFile):
         relative_obj = bpy.data.objects.new("Object", None)
         relative_obj.matrix_world[0][3] = 1
         assert subject.get_relative_object_matrix(obj, relative_obj)[0][3] == -1
-
-
-class TestImportContainers(NewFile):
-    def test_run(self):
-        bpy.ops.bim.create_project()
-        subject.import_containers()
-        props = bpy.context.scene.BIMSpatialProperties
-        assert len(props.containers) == 1
-        assert props.containers[0].name == "My Site"
-        assert props.containers[0].long_name == ""
-        assert props.containers[0].has_decomposition is True
-        assert props.containers[0].ifc_definition_id == tool.Ifc.get().by_type("IfcSite")[0].id()
-        assert props.active_container_id == tool.Ifc.get().by_type("IfcProject")[0].id()
-
-    def test_importing_with_a_specified_parent(self):
-        bpy.ops.bim.create_project()
-        site = tool.Ifc.get().by_type("IfcSite")[0]
-        subject.import_containers(site)
-        props = bpy.context.scene.BIMSpatialProperties
-        assert len(props.containers) == 1
-        assert props.containers[0].name == "My Building"
-        assert props.containers[0].long_name == ""
-        assert props.containers[0].has_decomposition is True
-        assert props.containers[0].ifc_definition_id == tool.Ifc.get().by_type("IfcBuilding")[0].id()
-        assert props.active_container_id == site.id()
-
-    def test_importing_sorted_by_z_placement(self):
-        bpy.ops.bim.create_project()
-        building = tool.Ifc.get().by_type("IfcBuilding")[0]
-        storey1 = tool.Ifc.get().by_type("IfcBuildingStorey")[0]
-        storey1.Name = "Higher"
-        bpy.ops.bim.copy_class(obj=tool.Ifc.get_object(storey1).name)
-        storey2 = tool.Ifc.get().by_type("IfcBuildingStorey")[1]
-        storey2.Name = "Lower"
-        storey2.ObjectPlacement.RelativePlacement.Location.Coordinates = (0.0, 0.0, -100.0)
-        subject.import_containers(building)
-        props = bpy.context.scene.BIMSpatialProperties
-        assert len(props.containers) == 2
-        assert props.containers[0].name == "Lower"
-        assert props.containers[1].name == "Higher"
 
 
 class TestRunRootCopyClass(NewFile):

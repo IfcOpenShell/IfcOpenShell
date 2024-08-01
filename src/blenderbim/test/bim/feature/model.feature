@@ -66,14 +66,6 @@ Scenario: Add grid
     And the object "IfcGridAxis/02" is an "IfcGridAxis"
     And the object "IfcGridAxis/03" is an "IfcGridAxis"
 
-Scenario: Pie update container
-    Given an empty Blender session
-    And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
-    Then the object "IfcSlab/Slab" is in the collection "IfcBuildingStorey/Ground Floor"
-    When the object "IfcSlab/Slab" is placed in the collection "IfcBuildingStorey/Level 1"
-    And I press "bim.pie_update_container"
-    Then nothing happens
-
 Scenario: Add a wall
     Given an empty IFC project
     And I load the demo construction library
@@ -272,7 +264,7 @@ Scenario: Add a slab
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     When I press "bim.hotkey(hotkey='S_A')"
     Then the object "IfcSlab/Slab" is an "IfcSlab"
@@ -284,7 +276,7 @@ Scenario: Enable editing a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected
@@ -297,7 +289,7 @@ Scenario: Disable editing a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected
@@ -311,7 +303,7 @@ Scenario: Edit a slab profile
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR150'][0].id()"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     And I press "bim.hotkey(hotkey='S_A')"
     And the object "IfcSlab/Slab" is selected

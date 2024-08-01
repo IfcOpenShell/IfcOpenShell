@@ -20,10 +20,23 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.util.placement
+import typing
 
 
 class Patcher:
-    def __init__(self, src, file, logger, x=None, y=None, z=None, should_rotate_first=True, ax=None, ay=None, az=None):
+    def __init__(
+        self,
+        src,
+        file,
+        logger,
+        x: typing.Union[str, float] = "0",
+        y: typing.Union[str, float] = "0",
+        z: typing.Union[str, float] = "0",
+        should_rotate_first: bool = True,
+        ax: typing.Optional[typing.Union[str, float]] = "",
+        ay: typing.Optional[typing.Union[str, float]] = "",
+        az: typing.Optional[typing.Union[str, float]] = "",
+    ):
         """Offset and rotate all object placements in a model
 
         Every physical object in an IFC model has an object placement, a
@@ -41,11 +54,11 @@ class Patcher:
         entire IFC model.
 
         :param x: The X coordinate to offset by in project length units.
-        :type x: float
+        :type x: typing.Union[str, float]
         :param y: The Y coordinate to offset by in project length units.
-        :type y: float
+        :type y: typing.Union[str, float]
         :param z: The Z coordinate to offset by in project length units.
-        :type z: float
+        :type z: typing.Union[str, float]
         :param should_rotate_first: Whether or not to rotate first and then
             translate, or to first translate and rotate afterwards. Defaults to
             rotate first then translate.
@@ -55,13 +68,13 @@ class Patcher:
             around the Z axis). If all angle parameters are specified, then it
             is treated as the angle to rotate around the X axis. Angles are in
             decimal degrees and positive is anticlockwise.
-        :type ax: float,optional
+        :type ax: typing.Union[str, float],optional
         :param ay: An optional angle to rotate by for 3D rotations along the Y
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type ay: float,optional
+        :type ay: typing.Union[str, float],optional
         :param az: An optional angle to rotate by for 3D rotations along the Z
             axis. Angles are in decimal degrees and positive is anticlockwise.
-        :type az: float,optional
+        :type az: typing.Union[str, float],optional
 
         Example:
 
@@ -79,13 +92,21 @@ class Patcher:
         self.src = src
         self.file = file
         self.logger = logger
-        self.x = x
-        self.y = y
-        self.z = z
+        self.x = float(x)
+        self.y = float(y)
+        self.z = float(z)
         self.should_rotate_first = should_rotate_first
-        self.ax = ax
-        self.ay = ay
-        self.az = az
+        self.ax = None
+        self.ay = None
+        self.az = None
+
+        try:
+            self.ax = float(ax)
+            self.ay = float(ay)
+            self.az = float(az)
+        except Exception:
+            print("At least one input angle is not specified.")
+
         if self.ax is None:
             self.angle_type = None
         elif self.ay is None:

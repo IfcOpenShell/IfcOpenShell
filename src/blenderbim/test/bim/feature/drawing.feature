@@ -93,7 +93,6 @@ Scenario: Remove drawing - deleting active drawing
     And the collection "IfcAnnotation/PLAN_VIEW" exists
     And I set "scene.DocProperties.active_drawing_index" to "0"
     And I press "bim.activate_drawing(drawing={drawing})"
-    And the object "IfcAnnotation/PLAN_VIEW" is selected
-    When I press "bim.override_object_delete"
+    When the object "IfcAnnotation/PLAN_VIEW" is selected
+    And I press "bim.override_object_delete"
     Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
-

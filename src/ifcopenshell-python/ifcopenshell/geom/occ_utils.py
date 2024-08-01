@@ -41,6 +41,7 @@ except ImportError:
 
 class shape_tuple(NamedTuple):
     """A tuple containing IfcOpenShell serialized element/shape and pythonOCC shape."""
+
     data: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
     geometry: TopoDS.TopoDS_Shape
     styles: tuple[tuple[float, float, float, float], ...]

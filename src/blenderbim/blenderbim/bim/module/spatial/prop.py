@@ -32,6 +32,7 @@ from bpy.props import (
 )
 import blenderbim.tool as tool
 import ifcopenshell
+import ifcopenshell.util.element
 
 
 def get_subelement_class(self, context):
@@ -71,6 +72,7 @@ def update_relating_container_from_object(self, context):
         return
     container = ifcopenshell.util.element.get_container(element)
     if container:
+        # TODO: currently broken and relating_container_object is not used in UI.
         bpy.ops.bim.assign_container(structure=container.id())
     else:
         bpy.ops.bim.disable_editing_container()

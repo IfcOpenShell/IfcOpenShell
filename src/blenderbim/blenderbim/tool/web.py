@@ -22,6 +22,7 @@ import blenderbim.core.tool
 import blenderbim.tool as tool
 import ifcopenshell.api.sequence
 from typing import Any, Dict, Optional
+import time
 import socket
 import sys
 import os
@@ -122,26 +123,14 @@ class Web(blenderbim.core.tool.Web):
             blenderbim_lib_path = os.path.join(blenderbim_path, "libs", "site", "packages")
 
         env = os.environ.copy()
-        env["blenderbim_lib_path"] = str(blenderbim_lib_path)
+        env["BLENDERBIM_LIB_PATH"] = str(blenderbim_lib_path)
+        env["BLENDERBIM_VERSION"] = tool.Blender.get_blenderbim_version()
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
             cwd=webui_path,
             env=env,
         )
-
-        pid_file = os.path.join(webui_path, "running_pid.json")
-
-        if os.path.exists(pid_file):
-            with open(pid_file, "r") as f:
-                pids = json.load(f)
-        else:
-            pids = {}
-
-        pids[str(ws_process.pid)] = port
-
-        with open(pid_file, "w") as f:
-            json.dump(pids, f, indent=4)
 
         cls.set_is_running(True)
 
@@ -223,12 +212,29 @@ class Web(blenderbim.core.tool.Web):
         with open(pid_file, "w") as f:
             json.dump(pids, f, indent=4)
 
-        ws_process.terminate()
-        ws_process.wait()
+        ws_process.kill()
         ws_process = None
 
         cls.set_is_running(False)
-        print("Websocket server terminated successfully")
+        print("Websocket server killed successfully")
+
+    @classmethod
+    def has_started(cls, port):
+        max_time = 5
+        start = time.time()
+        while True:
+            if time.time() - start > max_time:
+                return False
+            webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
+            pid_file = os.path.join(webui_path, "running_pid.json")
+            try:
+                with open(pid_file, "r") as f:
+                    data = json.load(f)
+                    if port in data.values():
+                        return True
+            except:
+                pass
+            time.sleep(0.1)
 
     @classmethod
     def send_webui_data(
@@ -279,6 +285,8 @@ class Web(blenderbim.core.tool.Web):
                 cls.handle_csv_operator(operator["operator"])
             elif operator["sourcePage"] == "gantt":
                 cls.handle_gantt_operator(operator["operator"])
+            elif operator["sourcePage"] == "drawings":
+                cls.handle_drawings_operator(operator["operator"])
         return 1.0
 
     @classmethod
@@ -322,6 +330,29 @@ class Web(blenderbim.core.tool.Web):
         task_json = tool.Sequence.create_tasks_json(work_schedule)
         gantt_data = {"tasks": task_json, "work_schedule": work_schedule.get_info(recursive=True)}
         cls.send_webui_data(data=gantt_data, data_key="gantt_data", event="gantt_data")
+
+    @classmethod
+    def handle_drawings_operator(cls, operator_data: dict) -> None:
+        if operator_data["type"] == "getDrawings":
+            drawings_data = []
+            sheets_data = []
+            ifc_file_dir = os.path.dirname(bpy.context.scene.BIMProperties.ifc_file)
+
+            sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
+            for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
+                for reference in tool.Drawing.get_document_references(sheet):
+                    reference_description = tool.Drawing.get_reference_description(reference)
+                    reference_location = tool.Drawing.get_reference_location(reference)
+                    reference_name = os.path.basename(reference_location)
+                    reference_path = os.path.join(ifc_file_dir, reference_location)
+                    if reference_description == "SHEET":
+                        sheets_data.append({"name": reference_name, "path": reference_path})
+                    if reference_description == "DRAWING":
+                        drawings_data.append({"name": reference_name, "path": reference_path})
+
+            cls.send_webui_data(
+                data={"drawings": drawings_data, "sheets": sheets_data}, data_key="drawings_data", event="drawings_data"
+            )
 
     @classmethod
     def open_web_browser(cls, port: int) -> None:

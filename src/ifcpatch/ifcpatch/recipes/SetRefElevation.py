@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import typing
+
 
 class Patcher:
-    def __init__(self, src, file, logger, elevation=0):
+    def __init__(self, src, file, logger, elevation: typing.Union[str, float] = "0"):
         """Sets the reference elevation of all IfcSites
 
         To completely reference model coordinates, a reference elevation should
@@ -30,7 +32,7 @@ class Patcher:
         The reference elevation is simply a numerical attribute.
 
         :param elevation: The elevation to set.
-        :type elevation: float
+        :type elevation: typing.Union[str, float]
 
         Example:
 
@@ -42,7 +44,7 @@ class Patcher:
         self.src = src
         self.file = file
         self.logger = logger
-        self.elevation = elevation
+        self.elevation = float(elevation)
 
     def patch(self):
         project = self.file.by_type("IfcProject")[0]

@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with BlenderBIM Add-on.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional
 
-def add_instance_flooring_covering_from_cursor(ifc, root, spatial):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import blenderbim.tool as tool
+
+
+def add_instance_flooring_covering_from_cursor(ifc: tool.Ifc, root: tool.Root, spatial: tool.Spatial) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -32,7 +40,7 @@ def add_instance_flooring_covering_from_cursor(ifc, root, spatial):
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
 
@@ -59,7 +67,9 @@ def add_instance_flooring_covering_from_cursor(ifc, root, spatial):
     spatial.regen_obj_representation(obj, body)
 
 
-def add_instance_ceiling_covering_from_cursor(ifc, root, covering, spatial):
+def add_instance_ceiling_covering_from_cursor(
+    ifc: tool.Ifc, root: tool.Root, covering: tool.Covering, spatial: tool.Spatial
+) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -74,7 +84,7 @@ def add_instance_ceiling_covering_from_cursor(ifc, root, covering, spatial):
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()
         ceiling_height = covering.get_z_from_ceiling_height()
@@ -101,7 +111,7 @@ def add_instance_ceiling_covering_from_cursor(ifc, root, covering, spatial):
     spatial.regen_obj_representation(obj, body)
 
 
-def regen_selected_covering_object(root, spatial):
+def regen_selected_covering_object(root: tool.Root, spatial: tool.Spatial) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -109,7 +119,7 @@ def regen_selected_covering_object(root, spatial):
     selected_objects = spatial.get_selected_objects()
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
@@ -132,7 +142,7 @@ def regen_selected_covering_object(root, spatial):
 
 
 # TODO CHECK IF IT IS POSSIBLE TO CREATE ONLY ONE CORE FUNCTION FOR _FROM_WALLS
-def add_instance_flooring_coverings_from_walls(root, spatial):
+def add_instance_flooring_coverings_from_walls(root: tool.Root, spatial: tool.Spatial) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 
@@ -158,7 +168,7 @@ def add_instance_flooring_coverings_from_walls(root, spatial):
         spatial.regen_obj_representation(obj, body)
 
 
-def add_instance_ceiling_coverings_from_walls(root, spatial, covering):
+def add_instance_ceiling_coverings_from_walls(root: tool.Root, spatial: tool.Spatial, covering: tool.Covering) -> None:
     if not root.get_default_container():
         raise NoDefaultContainer()
 

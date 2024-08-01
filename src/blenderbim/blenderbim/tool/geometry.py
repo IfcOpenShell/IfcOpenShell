@@ -927,6 +927,7 @@ class Geometry(blenderbim.core.tool.Geometry):
 
         new_representation = None
         for r in cls.get_representations_iter(element):
+            r = tool.Geometry.resolve_mapped_representation(r)
             if r != representation:
                 new_representation = r
                 break
@@ -1227,3 +1228,9 @@ class Geometry(blenderbim.core.tool.Geometry):
             return
         material_style = tool.Material.get_style(materials[0])
         return material_style
+
+    @classmethod
+    def should_use_immediate_representation(cls, element: ifcopenshell.entity_instance, apply_openings: bool) -> bool:
+        use_immediate_repr = apply_openings and bool(getattr(element, "HasOpenings", None))
+        use_immediate_repr = use_immediate_repr or cls.has_material_style_override(element)
+        return use_immediate_repr

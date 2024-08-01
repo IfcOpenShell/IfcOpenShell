@@ -18,8 +18,14 @@
 
 import ifcpatch
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
+import ifcopenshell.geom
+import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import test.bootstrap
 import tempfile

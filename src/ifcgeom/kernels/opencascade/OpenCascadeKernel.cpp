@@ -391,6 +391,31 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 	return true;
 }
 
+#include <BRepPrimAPI_MakeRevol.hxx>
+
+bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, IfcGeom::ConversionResults& results) {
+
+
+	gp_Ax1 ax(
+		convert_xyz<gp_Pnt>(*r->axis_origin),
+		convert_xyz<gp_Dir>(*r->direction));
+
+	TopoDS_Shape face;
+	if (!convert(taxonomy::cast<taxonomy::face>(r->basis), face)) {
+		return false;
+	}
+
+	TopoDS_Shape shape = BRepPrimAPI_MakeRevol(face, ax);
+
+	results.emplace_back(ConversionResult(
+		r->instance->data().id(),
+		r->matrix,
+		new OpenCascadeShape(shape),
+		r->surface_style
+	));
+	return true;
+}
+
 // IfcSchema::IfcRelVoidsElement::list::ptr IfcGeom::Kernel::find_openings(IfcSchema::IfcProduct* product) {
 // 	std::vector<IfcSchema::IfcRelVoidsElement*> rs;
 // 

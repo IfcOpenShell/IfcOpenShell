@@ -143,7 +143,6 @@ classes = (
     stair.EnableEditingStair,
     stair.RemoveStair,
     pie.OpenPieClass,
-    pie.PieUpdateContainer,
     pie.PieAddOpening,
     pie.VIEW3D_MT_PIE_bim,
     pie.VIEW3D_MT_PIE_bim_class,

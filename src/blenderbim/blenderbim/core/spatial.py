@@ -95,7 +95,7 @@ def copy_to_container(
         copied_obj = spatial.duplicate_object_and_data(obj)
         spatial.set_relative_object_matrix(copied_obj, to_container_obj, matrix)
         result_objs.append(spatial.run_root_copy_class(obj=copied_obj))
-        spatial.run_spatial_assign_container(structure_obj=to_container_obj, element_obj=copied_obj)
+        spatial.run_spatial_assign_container(container=to_container, element_obj=copied_obj)
     spatial.disable_editing(obj)
     return result_objs
 
@@ -173,7 +173,7 @@ def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: t
             relating_type = None
 
     if selected_objects and active_obj:
-        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_active_obj(active_obj)
+        x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_obj(active_obj)
         element = ifc.get_entity(active_obj)
     else:
         x, y, z, h, mat = spatial.get_x_y_z_h_mat_from_cursor()

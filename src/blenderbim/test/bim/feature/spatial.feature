@@ -27,7 +27,8 @@ Scenario: Assign container
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    When I press "bim.assign_container(structure={site})"
+    And I press "bim.set_default_container(container={site})"
+    When I press "bim.assign_container()"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
 
 Scenario: Copy to container
@@ -37,10 +38,10 @@ Scenario: Copy to container
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcSite/My Site" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.copy_to_container"
+    When I press "bim.copy_to_container"
     Then the object "IfcWall/Cube.001" is in the collection "IfcSite/My Site"
 
 Scenario: Reference structure
@@ -50,10 +51,10 @@ Scenario: Reference structure
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcBuilding/My Building" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.reference_structure"
+    When I press "bim.reference_structure"
     Then nothing happens
 
 Scenario: Dereference structure
@@ -63,10 +64,10 @@ Scenario: Dereference structure
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
-    And the object "IfcWall/Cube" is selected
+    And the object "IfcBuilding/My Building" is selected
+    And additionally the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
-    When I set "scene.BIMSpatialProperties.containers[0].is_selected" to "True"
-    And I press "bim.reference_structure"
+    When I press "bim.reference_structure"
     And I press "bim.dereference_structure"
     Then nothing happens
 
@@ -80,7 +81,8 @@ Scenario: Select container
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.assign_container(structure={site})"
+    And I press "bim.set_default_container(container={site})"
+    And I press "bim.assign_container()"
     When I press "bim.select_container"
     Then nothing happens
 
@@ -94,7 +96,8 @@ Scenario: Select similar container
     And the object "IfcWall/Cube" is selected
     And I press "bim.enable_editing_container"
     And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.assign_container(structure={site})"
+    And I press "bim.set_default_container(container={site})"
+    And I press "bim.assign_container()"
     When I press "bim.select_similar_container"
     Then nothing happens
 

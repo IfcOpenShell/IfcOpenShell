@@ -116,7 +116,9 @@ class TestAssignClass:
             ifc_representation_class="ifc_representation_class",
         )
 
-    def test_assign_a_class_with_geometry_and_autodetected_spatial_container(self, ifc, collector, root):
+    def test_assign_a_class_with_geometry_and_autodetected_spatial_container_spatial_element(
+        self, ifc, collector, root
+    ):
         ifc.get_entity("obj").should_be_called().will_return(None)
         root.get_object_name("obj").should_be_called().will_return("name")
         ifc.run(
@@ -127,7 +129,11 @@ class TestAssignClass:
         root.run_geometry_add_representation(
             obj="obj", context="context", ifc_representation_class="ifc_representation_class", profile_set_usage=None
         ).should_be_called()
-        collector.sync("obj").should_be_called()
+
+        root.get_default_container().should_be_called().will_return("default_container")
+        root.is_spatial_element("element").should_be_called().will_return(True)
+        ifc.run("aggregate.assign_object", products=["element"], relating_object="default_container").should_be_called()
+
         collector.assign("obj").should_be_called()
         subject.assign_class(
             ifc,
@@ -141,7 +147,9 @@ class TestAssignClass:
             ifc_representation_class="ifc_representation_class",
         )
 
-    def test_not_adding_a_representation_if_requested(self, ifc, collector, root):
+    def test_assign_a_class_with_geometry_and_autodetected_spatial_container_non_spatial_containable(
+        self, ifc, collector, root
+    ):
         ifc.get_entity("obj").should_be_called().will_return(None)
         root.get_object_name("obj").should_be_called().will_return("name")
         ifc.run(
@@ -149,7 +157,39 @@ class TestAssignClass:
         ).should_be_called().will_return("element")
         root.set_object_name("obj", "element").should_be_called()
         ifc.link("element", "obj").should_be_called()
-        collector.sync("obj").should_be_called()
+        root.run_geometry_add_representation(
+            obj="obj", context="context", ifc_representation_class="ifc_representation_class", profile_set_usage=None
+        ).should_be_called()
+
+        root.get_default_container().should_be_called().will_return("default_container")
+        root.is_spatial_element("element").should_be_called().will_return(False)
+        root.is_containable("element").should_be_called().will_return(True)
+        ifc.run(
+            "spatial.assign_container", products=["element"], relating_structure="default_container"
+        ).should_be_called()
+
+        collector.assign("obj").should_be_called()
+        subject.assign_class(
+            ifc,
+            collector,
+            root,
+            obj="obj",
+            ifc_class="ifc_class",
+            predefined_type="predefined_type",
+            should_add_representation=True,
+            context="context",
+            ifc_representation_class="ifc_representation_class",
+        )
+
+    def test_not_adding_a_representation_if_requested_no_default_container(self, ifc, collector, root):
+        ifc.get_entity("obj").should_be_called().will_return(None)
+        root.get_object_name("obj").should_be_called().will_return("name")
+        ifc.run(
+            "root.create_entity", ifc_class="ifc_class", predefined_type="predefined_type", name="name"
+        ).should_be_called().will_return("element")
+        root.set_object_name("obj", "element").should_be_called()
+        ifc.link("element", "obj").should_be_called()
+        root.get_default_container().should_be_called().will_return(None)
         collector.assign("obj").should_be_called()
         subject.assign_class(
             ifc,
