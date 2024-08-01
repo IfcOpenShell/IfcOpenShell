@@ -43,7 +43,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
     double start = pw_curve->start();
     double basis_curve_length = pw_curve->length();
 
-    taxonomy::piecewise_function::spans offset_spans;
+    taxonomy::piecewise_function::spans_t offset_spans;
 
 #if defined SCHEMA_HAS_IfcDistanceExpression
    double first_distance = first_offset_value->DistanceAlong();
@@ -155,7 +155,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
 
    // current implementation assumes that composition is equal to the full length of basis curve
    // this may change depending on decisions in the bSI-IF
-   taxonomy::piecewise_function::spans spans;
+   taxonomy::piecewise_function::spans_t spans;
    spans.emplace_back(basis_curve_length, composition);
 	auto pwf = taxonomy::make<taxonomy::piecewise_function>(start,spans,&settings_,inst);
 	return pwf;
