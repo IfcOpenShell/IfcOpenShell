@@ -330,13 +330,13 @@ class EarlyBoundCodeWriter:
             name = idx_name[1]
             return name in can_be_instantiated_set
 
-        instance_mapping = """switch(data->type()->index_in_schema()) {
+        instance_mapping = """switch(decl->index_in_schema()) {
             %s
-            default: throw IfcParse::IfcException(data->type()->name() + " cannot be instantiated");
+            default: throw IfcParse::IfcException(decl->name() + " cannot be instantiated");
         }
 """ % "\n            ".join(
             map(
-                lambda tup: ("case %%d: return new ::%s::%%s(data);" % schema_name_title) % tup,
+                lambda tup: ("case %%d: return new ::%s::%%s(std::move(data));" % schema_name_title) % tup,
                 filter(can_be_instantiated, enumerate(self.names)),
             )
         )
@@ -344,7 +344,7 @@ class EarlyBoundCodeWriter:
         self.statements[self.statements.index("{factory_placeholder}")] = (
             """
 class %(schema_name)s_instance_factory : public IfcParse::instance_factory {
-    virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const {
+    virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const {
         %(instance_mapping)s
     }
 };
