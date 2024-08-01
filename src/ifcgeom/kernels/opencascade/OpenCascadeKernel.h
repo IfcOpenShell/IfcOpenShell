@@ -128,7 +128,7 @@ public:
 	{}
 
 	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
 	bool convert(const ifcopenshell::geometry::taxonomy::loop::ptr, TopoDS_Wire&);
 	bool convert(const ifcopenshell::geometry::taxonomy::matrix4::ptr, gp_GTrsf&);
 	bool convert(const ifcopenshell::geometry::taxonomy::shell::ptr, TopoDS_Shape&);
